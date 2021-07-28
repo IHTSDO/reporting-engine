@@ -48,7 +48,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected TermServerClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
-	//protected Resty resty = new Resty();
 	protected Project project;
 	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;

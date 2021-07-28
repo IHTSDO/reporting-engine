@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
@@ -125,7 +126,6 @@ public class GraphLoader implements ScriptConstants {
 		ancestorsCache.reset();
 		statedAncestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-		
 		excludedModules = new HashSet<>();;
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
@@ -133,8 +133,35 @@ public class GraphLoader implements ScriptConstants {
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
 		previousTransativeClosure = null;
+		
+		fsnMap = null;
+		usptMap = null;
+		gbptMap = null;
+		orphanetConcepts= null;
+		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
+		duplicateLangRefsetEntriesMap= null;
+		duplicateLangRefsetIdsReported = new HashSet<>();
+		mrcmAttributeRangeMap = new HashMap<>();
+		mrcmDomainMap = new HashMap<>();
+		
+		System.gc();
+		outputMemoryUsage();
 	}
 	
+	private void outputMemoryUsage() {
+		Runtime runtime = Runtime.getRuntime();
+		NumberFormat format = NumberFormat.getInstance();
+
+		long maxMemory = runtime.maxMemory();
+		long allocatedMemory = runtime.totalMemory();
+		long freeMemory = runtime.freeMemory();
+
+		TermServerScript.info("free memory: " + format.format(freeMemory / 1024));
+		TermServerScript.info("allocated memory: " + format.format(allocatedMemory / 1024) );
+		TermServerScript.info("max memory: " + format.format(maxMemory / 1024));
+		TermServerScript.info("total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
+	}
+
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException {
 		Set<Concept> concepts = new HashSet<Concept>();
@@ -1282,6 +1309,7 @@ public class GraphLoader implements ScriptConstants {
 	public void populatePreviousTransativeClosure() throws TermServerScriptException {
 		TermServerScript.info("Populating PREVIOUS transitive closure");
 		previousTransativeClosure = generateTransativeClosure();
+		TermServerScript.info("PREVIOUS transitive closure complete");
 	}
 	
 	public TransitiveClosure generateTransativeClosure() throws TermServerScriptException {

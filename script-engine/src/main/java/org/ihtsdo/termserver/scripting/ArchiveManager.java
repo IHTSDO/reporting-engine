@@ -68,6 +68,7 @@ public class ArchiveManager implements ScriptConstants {
 		//Don't assume that just because we're being reused, we're loading the same files
 		singleton.loadEditionArchive = false;
 		singleton.loadDependencyPlusExtensionArchive = false;
+		singleton.populatePreviousTransativeClosure = false;
 		singleton.ts = ts;
 		return singleton;
 	}
