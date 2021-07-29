@@ -134,4 +134,8 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 		return entry;
 	}
 
+	public String toStringWithModule() {
+		return "[" + moduleId + "]" + id + " : " + toString();
+	}
+
 }

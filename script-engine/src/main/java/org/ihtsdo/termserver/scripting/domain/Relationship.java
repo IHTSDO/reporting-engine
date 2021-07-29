@@ -7,10 +7,12 @@ import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Relationship extends Component implements IRelationshipTemplate, ScriptConstants, Comparable<Relationship> {
 
@@ -69,6 +71,8 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	public boolean isNotConcrete() {
 		return !isConcrete();
 	}
+	
+	private transient String axiomIdPart;
 	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
@@ -250,15 +254,21 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		if (includeRelIds && relationshipId != null) {
 			relId = ":" + relationshipId;
 		}
-		String axiomIdPart = getAxiomEntry() == null ? "" : ":" + getAxiomEntry().getId().substring(0,6);
-		if (axiomIdPart.isEmpty() && getAxiom() != null && getAxiom().getId() != null) {
-			axiomIdPart = ":" + getAxiom().getId().substring(0,6);
-		}
 		
 		if (isConcrete()) {
-			return "[" + activeIndicator +  charType + groupId + relId + axiomIdPart + "] " + type + " -> " + valueAsRF2();
+			return "[" + activeIndicator +  charType + groupId + relId + getAxiomIdPart() + "] " + type + " -> " + valueAsRF2();
 		}
-		return "[" + activeIndicator +  charType + groupId + relId + axiomIdPart + "] " + type + " -> " + target;
+		return "[" + activeIndicator +  charType + groupId + relId + getAxiomIdPart() + "] " + type + " -> " + target;
+	}
+
+	private String getAxiomIdPart() {
+		if (axiomIdPart == null) {
+			axiomIdPart = getAxiomEntry() == null ? "" : ":" + getAxiomEntry().getId().substring(0,6);
+			if (axiomIdPart.isEmpty() && getAxiom() != null && getAxiom().getId() != null) {
+				axiomIdPart = ":" + getAxiom().getId().substring(0,6);
+			}
+		}
+		return axiomIdPart;
 	}
 
 	@Override
@@ -266,7 +276,17 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		if (StringUtils.isEmpty(relationshipId)) {
 			//Do not include the inactivation indicator, otherwise we might not
 			//be able to recognise the object in a set if it changes after being created.
-			return toString(true, false).hashCode();
+			//return toString(true, false).hashCode();
+			try {
+				if (isConcrete()) {
+					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), value);
+				} else {
+					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
+				}
+			} catch (NullPointerException e) {
+				TermServerScript.debug("Null pointer here");
+				throw e;
+			}
 		} else {
 			return relationshipId.hashCode();
 		}

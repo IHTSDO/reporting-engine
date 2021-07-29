@@ -22,6 +22,7 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
@@ -264,8 +265,7 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
 					info("Generating fresh snapshot because previous transative closure must be populated");
 				}
-				gl.reset();
-				System.gc();
+				reset();
 				generateSnapshot (ts.getProject());
 				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it
@@ -334,9 +334,57 @@ public class ArchiveManager implements ScriptConstants {
 			String msg = ExceptionUtils.getExceptionCause("Unable to load " + ts.getProject(), e);
 			throw new TermServerScriptException (msg, e);
 		}
-		info ("Snapshot loading complete");
+		info ("Snapshot loading complete, checking integrity");
+		checkIntegrity(fsnOnly);
 	}
 	
+	private void checkIntegrity(boolean fsnOnly) throws TermServerScriptException {
+		if (gl.getAllConcepts().size() < 300000) {
+			throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
+		}
+		
+		//Ensure that every active parent other than root has at least one parent in both views
+		debug("Ensuring all concepts have parents and depth if required.");
+		StringBuffer integrityFailureMessage = new StringBuffer();
+		for (Concept c : gl.getAllConcepts()) {
+			/*if (c.getId().equals("15747361000119104")) {
+				debug("here");
+			}*/
+			if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
+				checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
+				checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
+			}
+			
+			if (populateHierarchyDepth && c.isActive() && c.getDepth() == NOT_SET) {
+				if (integrityFailureMessage.length() > 0) {
+					integrityFailureMessage.append(",\n");
+				}
+				integrityFailureMessage.append(c + " failed to populate depth");
+				String ancestorStr = c.getAncestors(NOT_SET).stream().map(a -> a.toString()).collect(Collectors.joining(","));
+				TermServerScript.warn(c + " ancestors are :" + ancestorStr );
+			}
+		}
+		if (integrityFailureMessage.length() > 0) {
+			throw new UnrecoverableTermServerScriptException(integrityFailureMessage.toString());
+		}
+		info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");
+		
+		if (!fsnOnly) {  
+			//Check that we've got some descriptions to be sure we've not been given
+			//a malformed, or classification style archive.
+			debug("Checking first 100 concepts for integrity");
+			List<Description> first100Descriptions = gl.getAllConcepts()
+					.stream()
+					.limit(100)
+					.flatMap(c -> c.getDescriptions().stream())
+					.collect(Collectors.toList());
+			if (first100Descriptions.size() < 100) {
+				throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
+			}
+			debug("Integrity check complete");
+		}
+	}
+
 	private boolean checkIsStale(TermServerScript ts, Branch branch, File snapshot) throws IOException {
 		Date branchHeadTime = new Date(branch.getHeadTimestamp());
 		BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
@@ -467,55 +515,57 @@ public class ArchiveManager implements ScriptConstants {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
 			
-			if (gl.getAllConcepts().size() < 300000) {
-				throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
-			}
-			
-			//Ensure that every active parent other than root has at least one parent in both views
-			debug("Ensuring all concepts have parents...");
-			String integrityFailureMessage = "";
-			boolean firstFailure = true;
-			for (Concept c : gl.getAllConcepts()) {
-				/*if (c.getId().equals("551000220107")) {
-					debug("here");
-				}*/
-				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
-					if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() == 0) {
-						integrityFailureMessage += (firstFailure ? "":",\n") + c + " has no inferred parents";
-						firstFailure = false;
-					}
-					
-					if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
-						integrityFailureMessage += (firstFailure ? "":",\n") + c + " has no stated parents";
-						firstFailure = false;
-					}
-				}
-			}
-			if (integrityFailureMessage.length() > 0) {
-				throw new UnrecoverableTermServerScriptException(integrityFailureMessage);
-			}
-			
-			if (!fsnOnly) {  
-				//Check that we've got some descriptions to be sure we've not been given
-				//a malformed, or classification style archive.
-				debug("Checking first 100 concepts for integrity");
-				List<Description> first100Descriptions = gl.getAllConcepts()
-						.stream()
-						.limit(100)
-						.flatMap(c -> c.getDescriptions().stream())
-						.collect(Collectors.toList());
-				if (first100Descriptions.size() < 100) {
-					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
-				}
-				debug("Integrity check complete");
-			}
-			
 			//Are we generating the transitive closure?
 			if (fileType.equals(SNAPSHOT) && populatePreviousTransativeClosure) {
 				gl.populatePreviousTransativeClosure();
 			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
+		}
+	}
+
+	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuffer sb) throws TermServerScriptException {
+		Set<Concept> parents = c.getParents(charType);
+		if (parents.size() == 0) {
+			if (sb.length() > 0) {
+				sb.append(",\n");
+			}
+			sb.append(c + " has no " + charType + " parents");
+		}
+		
+		for (Concept parent : parents) {
+			if (!parent.isActive()) {
+				sb.append(c + " has inactive " + charType + " parent: " + parent);
+			}
+		}
+		
+		//Check that we've captured those parents correctly;
+		//Looping through existing objects rather than calling getRelationships so we're 
+		//not creating new collections.   getRelationships does all the looping anyway, so no cheaper.
+		int parentRelCount = 0;
+		for (Relationship r : c.getRelationships()) {
+			if (r.isActive() && r.getCharacteristicType().equals(charType)
+					&& r.getType().equals(IS_A)) {
+				parentRelCount++;
+				if (!parents.contains(r.getTarget())) {
+					if (sb.length() > 0) {
+						sb.append(",\n");
+					}
+					sb.append(c + " has internal " + charType + " inconsistency between parents and parental relationship for parent " + r.getTarget());
+				}
+			}
+		}
+		
+		if (parentRelCount != parents.size()) {
+			//Trying for minimal memory allocations here, so only check for duplicate targets between 
+			//axioms if we detect a problem
+			Set<Concept> parentsFromRels = SnomedUtils.getTargets(c, new Concept[] {IS_A}, charType);
+			if (parentsFromRels.size() != parents.size()) {
+				if (sb.length() > 0) {
+					sb.append(",\n");
+				}
+				sb.append(c + " has internal " + charType + " inconsistency between parents and parental relationship count");
+			}
 		}
 	}
 
@@ -677,5 +727,13 @@ public class ArchiveManager implements ScriptConstants {
 
 	public void setReleasedFlagPopulated(boolean releasedFlagPopulated) {
 		this.releasedFlagPopulated = releasedFlagPopulated;
+	}
+
+	public void reset() {
+		//Do we need to reset?
+		if (this.gl.getAllConcepts().size() > 100) {
+			this.gl.reset();
+			this.currentlyHeldInMemory = null;
+		}
 	}
 }

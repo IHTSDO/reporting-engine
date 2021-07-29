@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -75,8 +76,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_MEMBER_20210731T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_MEMBER_20210731T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
@@ -143,31 +144,33 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		}
 		
 		getProject().setKey(prevRelease);
-		getArchiveManager().setLoadEditionArchive(true);
-		getArchiveManager().loadProjectSnapshot(fsnOnly);
+		ArchiveManager mgr = getArchiveManager();
+		mgr.setLoadEditionArchive(true);
+		mgr.loadProjectSnapshot(fsnOnly);
 		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 		statsGenerator.setModuleFilter(moduleFilter);
 		statsGenerator.runJob();
-		gl.reset();
+		mgr.reset();
 		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	};
 	
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		info ("Previous Data Generated, now loading 'current' position");
+		ArchiveManager mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
-			getArchiveManager().setLoadEditionArchive(true);
+			mgr.setLoadEditionArchive(true);
 			setProject(new Project(projectKey));
-			getArchiveManager().loadProjectSnapshot(false);
+			mgr.loadProjectSnapshot(false);
 			//Descriptions for the root concept are a quick way to find the effeciveTime
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			info ("Detected this effective time as " + thisEffectiveTime);
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
-			getArchiveManager().setPopulatePreviousTransativeClosure(true);
-			getArchiveManager().setLoadEditionArchive(false);
+			mgr.setPopulatePreviousTransativeClosure(true);
+			mgr.setLoadEditionArchive(false);
 			getProject().setKey(projectKey);
-			getArchiveManager().loadProjectSnapshot(fsnOnly);
+			mgr.loadProjectSnapshot(fsnOnly);
 		}
 	}
 

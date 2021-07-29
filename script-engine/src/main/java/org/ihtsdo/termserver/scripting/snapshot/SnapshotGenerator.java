@@ -68,13 +68,18 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public void generateSnapshot (File dependencySnapshot, File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException {
+	public void generateSnapshot (File dependencySnapshot, File releaseSnapshot, File delta, File newLocation) throws TermServerScriptException {
 		setQuiet(true);
 		init(newLocation, false);
 		if (dependencySnapshot != null) {
+			info("Loading dependency snapshot " + dependencySnapshot);
 			loadArchive(dependencySnapshot, false, "Snapshot", true);
 		}
-		loadArchive(previousReleaseSnapshot, false, "Snapshot", true);
+		
+		info("Loading release snapshot " + releaseSnapshot);
+		loadArchive(releaseSnapshot, false, "Snapshot", true);
+		
+		info("Loading delta " + delta);
 		loadArchive(delta, false, "Delta", false);
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
 		//The disk copy will save time when we run again for the same project
@@ -100,8 +105,6 @@ public class SnapshotGenerator extends TermServerScript {
 	protected void init (File newLocation, boolean addTodaysDate) throws TermServerScriptException {
 		//Make sure the Graph Loader is clean
 		gl.reset();
-		System.gc();
-		
 		if (!skipSave) {
 			File outputDir = new File (outputDirName);
 			int increment = 0;

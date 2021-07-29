@@ -152,14 +152,14 @@ public class GraphLoader implements ScriptConstants {
 		Runtime runtime = Runtime.getRuntime();
 		NumberFormat format = NumberFormat.getInstance();
 
-		long maxMemory = runtime.maxMemory();
-		long allocatedMemory = runtime.totalMemory();
+		//long maxMemory = runtime.maxMemory();
+		//long allocatedMemory = runtime.totalMemory();
 		long freeMemory = runtime.freeMemory();
 
-		TermServerScript.info("free memory: " + format.format(freeMemory / 1024));
-		TermServerScript.info("allocated memory: " + format.format(allocatedMemory / 1024) );
-		TermServerScript.info("max memory: " + format.format(maxMemory / 1024));
-		TermServerScript.info("total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
+		TermServerScript.info("free memory now: " + format.format(freeMemory / 1024));
+		//TermServerScript.info("allocated memory: " + format.format(allocatedMemory / 1024) );
+		//TermServerScript.info("max memory: " + format.format(maxMemory / 1024));
+		//TermServerScript.info("total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
 	}
 
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
@@ -186,12 +186,18 @@ public class GraphLoader implements ScriptConstants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				
-				/*if (thisConcept.getId().equals("551000220107") && lineItems[REL_IDX_TYPEID].equals("116680003")) {
+				/*if ( lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_INFERRED_RELATIONSHIP) 
+						&& thisConcept.getId().equals("65371000119109") 
+						&& lineItems[REL_IDX_TYPEID].equals("116680003")) {
 					TermServerScript.debug ("here");
+				}
+				
+				if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
+					TermServerScript.warn("Didn't expected to see any more of these! " + String.join(" ", lineItems));
 				}*/
 				
 				//If we've already received a newer version of this component, say
-				//by loading INT first and a published MS 2nd, then skip
+				//by loading published INT first and a previously published MS 2nd, then skip
 				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
 				if (existing != null &&
 						!StringUtils.isEmpty(existing.getEffectiveTime()) 
@@ -224,6 +230,7 @@ public class GraphLoader implements ScriptConstants {
 		String line;
 		boolean isHeaderLine = true;
 		int axiomsLoaded = 0;
+		int ignoredAxioms = 0;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
@@ -240,11 +247,11 @@ public class GraphLoader implements ScriptConstants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
-				/*if (c.getId().equals("373120008")) {
+				/*if (c.getId().equals("419188005")) {
 					TermServerScript.debug ("here");
-				}
+				}*/
 				
-				if (lineItems[IDX_ID].equals("a4271895-d420-4209-9487-57bb361905bd")) {
+				/*if (lineItems[IDX_ID].equals("a4271895-d420-4209-9487-57bb361905bd")) {
 					TermServerScript.debug ("here");
 				}*/
 				
@@ -254,6 +261,18 @@ public class GraphLoader implements ScriptConstants {
 					//Are we overwriting an existing axiom?
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
+						
+						//It might be that depending on the point in the release cycle,
+						//we might try to load an extension on top of a more recent dependency
+						//if the core has recently been released.  Don't allow an overwrite in this case.
+						if (!StringUtils.isEmpty(axiomEntry.getEffectiveTime())
+								&& replacedAxiomEntry.getEffectiveTime().compareTo(axiomEntry.getEffectiveTime()) > 0) {
+							ignoredAxioms++;
+							if (ignoredAxioms < 5) {
+								TermServerScript.warn("Ignoring " + axiomEntry.getEffectiveTime() + " since " + replacedAxiomEntry.getEffectiveTime() + " " + replacedAxiomEntry.getId() + " already held");
+							} 
+							continue;
+						}
 						if (detectNoChangeDelta && !isReleased) {
 							detectNoChangeDelta(c, replacedAxiomEntry, lineItems);
 						}
@@ -321,6 +340,7 @@ public class GraphLoader implements ScriptConstants {
 			}
 		}
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
+		System.err.println("Ignored " + ignoredAxioms + " already held with later effective time");
 	}
 	
 	private void removeRelsNoLongerFeaturedInAxiom(Concept c, String axiomId, Set<Relationship> currentAxiomRels) {
@@ -494,7 +514,7 @@ public class GraphLoader implements ScriptConstants {
 			if (r.isActive()) {
 				source.addParent(r.getCharacteristicType(),r.getTarget());
 				target.addChild(r.getCharacteristicType(),r.getSource());
-			} else if (isDelta) {
+			} else {
 				//Ah this gets tricky.  We only remove the parent child relationship if
 				//the source concept has no other relationships with the same triple
 				//because the relationship might exist in another axiom
@@ -720,6 +740,7 @@ public class GraphLoader implements ScriptConstants {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
+		int attemptPublishedRemovals = 0;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
@@ -784,7 +805,6 @@ public class GraphLoader implements ScriptConstants {
 				
 				//Do we have an existing entry for this description & dialect that is later and inactive?
 				boolean clearToAdd = true;
-				String issue = "";
 				List<LangRefsetEntry> allExisting = d.getLangRefsetEntries(ActiveState.BOTH, langRefsetEntry.getRefsetId());
 				for (LangRefsetEntry existing : allExisting) {
 					//If we have two active for the same description, and neither has an effectiveTime delete the one that hasn't been published
@@ -795,28 +815,23 @@ public class GraphLoader implements ScriptConstants {
 					
 					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) <= 1) {
 						clearToAdd = false;
-						//issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority over incoming " + (langRefsetEntry.isActive()? "active":"inactive") + " as later : " + existing;
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
 						//As long as they have different UUIDs, it's OK to have the same effective time
 						//But we'll ignore the inactivation
 						if (!langRefsetEntry.isActive()) {
 							clearToAdd = false;
-							//issue = "Ignoring inactive langrefset entry with same effective time as active : " + existing;
 						}
 					} else {
 						//New entry is later or same effective time as one we already know about
 						if (existing.isReleased() && !existing.getId().equals(langRefsetEntry.getId())) {
-							System.err.println ("Attempt to remove published entry");
+							attemptPublishedRemovals++;
+							if (attemptPublishedRemovals < 5) {
+								System.err.println ("Attempt to remove published entry: " + existing.toStringWithModule() + " by " + langRefsetEntry.toStringWithModule());
+							}
 						} else {
 							d.getLangRefsetEntries().remove(existing);
 						}
-						//issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
-						//System.err.println(issue);
 					}
-				}
-				
-				if (!issue.isEmpty()) {
-					//TermServerScript.warn(issue);
 				}
 				
 				//INFRA-5274 We're going to add the entry in all cases so we can detect duplicates,
@@ -834,6 +849,9 @@ public class GraphLoader implements ScriptConstants {
 			} else {
 				isHeaderLine = false;
 			}
+		}
+		if (attemptPublishedRemovals > 0)  {
+			System.err.println ("Attempted to remove " + attemptPublishedRemovals + " published entries in total");
 		}
 	}
 
