@@ -14,13 +14,11 @@ import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
-import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
@@ -38,8 +36,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static Integer headlessEnvironment = null;
 	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
-	protected boolean quiet = false; 
-	protected boolean suppressOutput = false;
 	protected static int dryRunCounter = 0;
 	protected String env;
 	protected String url = environments[0];
@@ -52,8 +48,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
-	private Date startTime;
-	private Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
@@ -72,8 +66,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
-	private ReportManager reportManager;
-	private RF2Manager rf2Manager;
 	protected ApplicationContext appContext;
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail, AdditionalDetail";
@@ -113,9 +105,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	@Autowired
 	protected ReportDataUploader reportDataUploader;
-	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
-	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
-	protected ReportConfiguration reportConfiguration;
 
 	private static int PAGING_LIMIT = 1000;
 
@@ -246,7 +235,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		// Configure the type(s) and locations(s) for processing report output.
-		initialiseReportConfiguration();
+		initialiseReportConfiguration(jobRun);
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
@@ -401,21 +390,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
-		if (!suppressOutput) {
-			debug ("Initialising Report Manager");
-			reportManager = ReportManager.create(this, getReportConfiguration());
-			if (tabNames != null) {
-				reportManager.setTabNames(tabNames);
-			}
-			if (csvOutput) {
-				reportManager.setWriteToFile(true);
-				reportManager.setWriteToSheet(false);
-				reportManager.setWriteToS3(false);
-			}
-			
-			getReportManager().initialiseReportFiles(columnHeadings);
-			debug ("Report Manager initialisation complete");
-		}
+		super.postInit(tabNames, columnHeadings, csvOutput);
 	}
 	
 	public void instantiate(JobRun jobRun, ApplicationContext appContext) {
@@ -1120,88 +1095,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return items;
 	}
 
-	public Project getProject() {
-		return project;
-	}
-	
-	public void setProject(Project project) {
-		this.project = project;
-	}
-
-	public void startTimer() {
-		startTime = new Date();
-	}
-	
-	public void addSummaryInformation(String item, Object detail) {
-		info(item + ": " + detail);
-		summaryDetails.put(item, detail);
-	}
-	
-	public void incrementSummaryInformation(String key) {
-		if (!quiet) {
-			incrementSummaryInformation(key, 1);
-		}
-	}
-	
-	public int getSummaryInformationInt(String key) {
-		Object info = summaryDetails.get(key);
-		if (info == null || !(info instanceof Integer)) {
-			return 0;
-		}
-		return (Integer)info;
-	}
-	
-	public void incrementSummaryInformationQuiet(String key) {
-		//There are occasions where we can only capture all information when doing the first pass
-		//When we're looking at ALL information eg which concepts do not require changes.
-		if (quiet) {
-			incrementSummaryInformation(key, 1);
-		}
-	}
-	
-	public void initialiseSummaryInformation(String key) {
-		summaryDetails.put(key, new Integer(0));
-	}
-	
-	public void incrementSummaryInformation(String key, int incrementAmount) {
-		if (!summaryDetails.containsKey(key)) {
-			summaryDetails.put(key, new Integer(0));
-		}
-		int newValue = ((Integer)summaryDetails.get(key)).intValue() + incrementAmount;
-		summaryDetails.put(key, newValue);
-	}
-	
-	public void flushFilesSoft() throws TermServerScriptException {
-		getReportManager().flushFilesSoft();
-	}
-	
-	public void flushFiles(boolean andClose, boolean withWait) throws TermServerScriptException {
-		if (getRF2Manager() != null) {
-			getRF2Manager().flushFiles(andClose);
-		}
-		if (getReportManager() != null) {
-			getReportManager().flushFiles(andClose, withWait);
-		}
-	}
-	
-	public void flushFilesSafely(boolean andClose) {
-		try {
-			boolean andWait = false;
-			flushFiles(andClose, andWait);
-		} catch (Exception e) {
-			error("Failed to flush files.", e);
-		}
-	}
-	
-	public void flushFilesWithWait(boolean andClose) {
-		try {
-			boolean andWait = true;
-			flushFiles(andClose, andWait);
-		} catch (Exception e) {
-			error("Failed to flush files.", e);
-		}
-	}
-	
 	public void finish() throws TermServerScriptException {
 		info (BREAK);
 
@@ -1278,18 +1171,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		getRF2Manager().writeToRF2File(fileName, columns);
 	}
 	
-	protected boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
-		if (getReportManager() == null) {
-			throw new TermServerScriptException("Attempted to write to report before Report Manager is available. Check postInit() has been called.\n Message was " + line);
-		}
-		return getReportManager().writeToReportFile(reportIdx, line);
-	}
-	
-	protected boolean writeToReportFile(String line) throws TermServerScriptException {
-		return writeToReportFile(0, line);
-	}
-	
-
 	public String getReportName() {
 		if (reportName == null) {
 			String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
@@ -1472,92 +1353,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 	
-	protected void reportSafely (int reportIdx, Object... details) {
-		try {
-			report (reportIdx, details);
-		} catch (TermServerScriptException e) {
-			throw new IllegalStateException("Failed to write to report", e);
-		}
-	}
-	
-	protected boolean report (int reportIdx, Object...details) throws TermServerScriptException {
-		boolean writeSuccess = writeToReportFile (reportIdx, writeToString(details));
-		if (writeSuccess) {
-			incrementSummaryInformation("Report lines written");
-		}
-		return writeSuccess;
-	}
-	
-	protected String writeToString(Object[] details) {
-		StringBuffer sb = new StringBuffer();
-		boolean isFirst = true;
-		for (Object detail : details) {
-			if (detail == null) {
-				detail = "";
-			}
-			if (detail instanceof Boolean) {
-				detail = ((Boolean)detail)?"Y":"N";
-			}
-			boolean isNumeric = StringUtils.isNumeric(detail.toString()) || detail.toString().startsWith(QUOTE);
-			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
-			if (isNumeric) {
-				prefix = isFirst ? "" : COMMA;
-			}
-			if (detail instanceof String[]) {
-				String[] arr = (String[]) detail;
-				for (String str : arr) {
-					boolean isNestedNumeric = false;
-					if (str != null) {
-						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
-						str = isNestedNumeric ? str : str.replaceAll("\"", "\"\"");
-					}
-					sb.append((isNestedNumeric?"":prefix) + str + (isNestedNumeric?"":QUOTE));
-					prefix = COMMA_QUOTE;
-				}
-			} else if (detail instanceof Object []) {
-				addObjectArray(sb,detail, prefix, isNumeric);
-			} else if (detail instanceof int[]) {
-				prefix = isFirst ? "" : COMMA;
-				boolean isNestedFirst = true;
-				int[] arr = (int[]) detail;
-				for (int i : arr) {
-					sb.append(isNestedFirst?"":COMMA);
-					sb.append(prefix + i );
-					isNestedFirst = false;
-				}
-			} else if (detail instanceof String) {
-				String str = (String) detail;
-				str = isNumeric ? str : str.replaceAll("\"", "\"\"");
-				sb.append(prefix + str + (isNumeric?"":QUOTE));
-			} else {
-				sb.append(prefix + detail + (isNumeric?"":QUOTE));
-			}
-			isFirst = false;
-		}
-		return sb.toString();
-	}
-
-	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {
-		Object[] arr = (Object[]) detail;
-		for (Object obj : arr) {
-			if (obj instanceof String[] || obj instanceof Object[]) {
-				addObjectArray(sb,obj, prefix, isNumeric);
-			} else if (obj instanceof int[]) {
-				for (int data : ((int[])obj)) {
-					sb.append(COMMA + data);
-				}
-			} else {
-				if (obj instanceof Boolean) {
-					obj = ((Boolean)obj)?"Y":"N";
-				}
-				String data = (obj==null?"":obj.toString());
-				data = isNumeric ? data : data.replaceAll("\"", "\"\"");
-				sb.append(prefix + data + (isNumeric?"":QUOTE));
-				prefix = COMMA_QUOTE;
-			}
-		}
-	}
-
 	protected void countIssue(Concept c) {
 		if (c==null || !whiteListedConcepts.contains(c)) {
 			incrementSummaryInformation(ISSUE_COUNT);
@@ -1612,21 +1407,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return inputFile;
 	}
 
-	public ReportManager getReportManager() {
-		return reportManager;
-	}
-	
-	public RF2Manager getRF2Manager() {
-		if (rf2Manager == null) {
-			rf2Manager = new RF2Manager();
-		}
-		return rf2Manager;
-	}
-
-	public void setReportManager(ReportManager reportManager) {
-		this.reportManager = reportManager;
-	}
-	
 	public void setExclusions(String[] exclusions) throws TermServerScriptException {
 		this.excludeHierarchies = exclusions;
 	}
@@ -1713,26 +1493,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected void setDependencyArchive(String dependencyArchive) {
 		this.dependencyArchive = dependencyArchive;
 		getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
-	}
-
-	private void initialiseReportConfiguration() {
-		try {
-			if (jobRun != null) {
-				reportConfiguration = new ReportConfiguration(
-						jobRun.getParamValue(REPORT_OUTPUT_TYPES),
-						jobRun.getParamValue(REPORT_FORMAT_TYPE));
-			}
-		} catch (Exception e) {
-			// In case of any error we don't care as this is not default for the reports.
-		}
-
-		// if it's not valid default to the the current mode of operation
-		if (reportConfiguration == null || !reportConfiguration.isValid()) {
-			TermServerScript.info("Using default ReportConfiguration (Google/Sheet)...");
-			reportConfiguration = new ReportConfiguration(
-					ReportConfiguration.ReportOutputType.GOOGLE,
-					ReportConfiguration.ReportFormatType.CSV);
-		}
 	}
 
 	public ReportDataUploader getReportDataUploader() throws TermServerScriptException {
