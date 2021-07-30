@@ -509,7 +509,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			if (jobRun.getParamValue(INPUT_FILE) != null) {
 				inputFile = new File(jobRun.getParamValue(INPUT_FILE));
 			} else {
-				throw new TermServerScriptException("No valid batch import file detected in command line arguments");
+				warn("No valid batch import file detected in command line arguments, assuming self determining");
+				selfDetermining = true;
 			}
 		}
 		

@@ -13,6 +13,8 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.reports.release.KPIPatternsReport;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
@@ -45,22 +47,13 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
-		MisalignedConcepts app = new MisalignedConcepts(null);
-		try {
-			//app.includeComplexTemplates = true;
-			//app.safetyProtocols = false;
-			//app.excludeSdMultiRG = true;
-			app.init(args);
-			//app.getArchiveManager().allowStaleData = true;  //Use when running offline
-			app.loadProjectSnapshot(false);  //Load all descriptions
-			app.postInit();
-  			app.runJob();
-		} catch (Exception e) {
-			info("Failed to produce Misaligned Concepts Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			app.finish();
-		}
+		Map<String, String> params = new HashMap<>();
+		params.put(ECL, "<< 75506009 |Construction of stoma (procedure)| MINUS << 258174001 |Imaging guidance procedure (procedure)|");
+		params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..1 @rolegroup]] { [[~1..1]] 260686004 |Method (attribute)| = [[+id ( << 129376004 |Construction - action (qualifier value)| ) ]], [[~1..1]] 363700003 |Direct morphology (attribute)| = [[+id ( << 245857005 |Stoma (morphologic abnormality)| ) ]], [[~1..1]] 405814001 |Procedure site - Indirect (attribute)| = [[+id ( < 442083009 |Anatomical or acquired body structure (body structure)| ) ]] }");
+		params.put(INCLUDE_COMPLEX, "false");
+		params.put(INCLUDE_ORPHANET, "true");
+		params.put(KNOWN_COMPLETE, "true");
+		TermServerReport.run(MisalignedConcepts.class, args, params);
 	}
 	
 	@Override
@@ -190,8 +183,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		info ("Loaded user specified template: " + template);
 	}
 
-	protected void init(String[] args) throws TermServerScriptException {
-		init((JobRun)null);
+	protected void init(String[] args, JobRun jobRun) throws TermServerScriptException {
+		init(jobRun);
 		/*
 		subHierarchyECL = "<<125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -395,9 +388,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subsetECL = "<< 7895008 |Poisoning caused by drug AND/OR medicinal substance (disorder)| OR << 441952005 |Poisoning caused by chemical substance (disorder)|";
 		templateNames = new String[] { "templates/Poisoning.json"};
-		*/
+		
 		
 		templateNames = new String[] { "templates/drugs/MP only.json" };
+		*/
 		
 		super.init(args);
 	}

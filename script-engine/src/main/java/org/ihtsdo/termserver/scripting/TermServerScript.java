@@ -44,7 +44,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected TermServerClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
-	protected Project project;
 	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
@@ -256,7 +255,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		env = envKeys[envChoice];
 		
 		if (jobRun != null) {
+			//Not sure historically why we have this in two places
 			jobRun.setTerminologyServerUrl(url);
+			jobRun.setParameter(SERVER_URL, url);
 		}
 	
 		if (jobRun != null && !jobRun.getAuthToken().isEmpty()) {
@@ -398,6 +399,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
 			debug ("Application context has " + (appContext == null?"not " : "") + "been supplied");
 			this.appContext = appContext;
+			//Job Runs generally self determine
 			preInit();
 			//Are we running locally?
 			if (appContext == null) {
