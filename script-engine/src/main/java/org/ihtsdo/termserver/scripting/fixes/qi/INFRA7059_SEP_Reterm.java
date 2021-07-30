@@ -9,7 +9,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -22,6 +21,7 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 	
 	Map<Concept, String> changeTypeMap = new HashMap<>();
 	Map<String, Map<String,String>> changePatterns = new HashMap<>();
+	Set<Concept> exclusions = new HashSet<>();
 	
 	protected INFRA7059_SEP_Reterm(BatchFix clone) {
 		super(clone);
@@ -36,6 +36,8 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 			fix.selfDetermining = false;
 			fix.reportNoChange = true;
 			fix.inputFileHasHeaderRow = true;
+			fix.expectNullConcepts = true;
+			fix.validateConceptOnUpdate = false;
 			fix.init(args);
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.loadProjectSnapshot(false);
@@ -67,6 +69,17 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 		
 		changePatterns.put(BONE, boneStructurePatterns);
 		changePatterns.put(SKIN, skinStructurePatterns);
+		
+		exclusions.add(gl.getConcept("181791008 |Skull and/or spine and/or bones structure and/or joints (body structure)|"));
+		exclusions.add(gl.getConcept("70657000 |Structure of gastrointestinal spaces (body structure)|"));
+		exclusions.add(gl.getConcept("257472005 |Structure of aVF (body structure)|"));
+		exclusions.add(gl.getConcept("257473000 |Structure of aVL (body structure)|"));
+		
+		exclusions.addAll(findConcepts("<< 245643006|Tooth surface (body structure)|"));
+		exclusions.addAll(findConcepts("<< 698969006|Material anatomical point (body structure)|"));
+		exclusions.addAll(findConcepts("<<279012004 Structure of vertical reference line (body structure)"));
+		exclusions.addAll(findConcepts("<<272743000|Acupuncture point (body structure)|"));
+		
 	}
 
 	@Override
@@ -75,9 +88,9 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = modifyDescriptions(task, loadedConcept);
-			String fsnMinusTag = SnomedUtils.deconstructFSN(loadedConcept.getFsn())[0];
+			/*String fsnMinusTag = SnomedUtils.deconstructFSN(loadedConcept.getFsn())[0];
 			String usPT = loadedConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
-			/*if (!usPT.equals(fsnMinusTag)) {
+			if (!usPT.equals(fsnMinusTag)) {
 				report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "PT is not FSN minus Semtag", usPT);
 			}*/
 			if (changesMade > 0) {
@@ -165,6 +178,10 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[1], false, true);
+		if (exclusions.contains(c)) {
+			report (SECONDARY_REPORT, c, "", "Explicit exclusion");
+			return null;
+		}
 		changeTypeMap.put(c, lineItems[0]);
 		return new ArrayList<>(Collections.singletonList(c));
 	}
