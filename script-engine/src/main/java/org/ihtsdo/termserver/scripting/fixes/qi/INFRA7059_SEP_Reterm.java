@@ -182,7 +182,12 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 			report (SECONDARY_REPORT, c, "", "Explicit exclusion");
 			return null;
 		}
-		changeTypeMap.put(c, lineItems[0]);
-		return new ArrayList<>(Collections.singletonList(c));
+		
+		if (!SnomedUtils.deconstructFSN(c.getFsn())[0].toLowerCase().contains("structure")) {
+			changeTypeMap.put(c, lineItems[0]);
+			return new ArrayList<>(Collections.singletonList(c));
+		} else {
+			return null;
+		}
 	}
 }
