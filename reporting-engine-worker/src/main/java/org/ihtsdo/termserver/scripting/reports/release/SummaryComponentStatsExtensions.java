@@ -52,6 +52,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 				"This report is for extensions packaged as extensions only.  Use 'Summary Component Stats' for the US Edition.")
 				.withParameters(params)
 				.withTag(INT)
+				.withTag(MS)
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.build();
 	}
