@@ -32,10 +32,17 @@ import com.google.common.io.Files;
 public class ZoomAndEnhanceLOINC extends BatchFix {
 	
 	enum REL_PART {Type, Target};
+	private static String LOINC_CONTENT_FILESTR = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/LOINC_2020_CONTENT.tsv";
+	//private static String LOINC_CONTENT_FILESTR = "G:\\My Drive\\018_Loinc\\2021\\LOINC_2020_CONTENT.tsv";
 	
-	private static String LOINC_CONTENT_FILESTR = "G:\\My Drive\\018_Loinc\\2021\\LOINC_2020_CONTENT.tsv";
-	private static String TARGET_BRANCH = "MAIN/SNOMEDCT-LOINC/LOINC2020";
-
+	//private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
+	private static String publishedRefsetFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
+	
+	//private static String loincFile = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
+	private static String loincFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/Loinc_2_70.csv";
+	
+	private static String TARGET_BRANCH = "MAIN/SNOMEDCT-LOINC/LOINC2022";
+	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	
 	private static enum LoincCol { LOINC_NUM,COMPONENT,PROPERTY,TIME_ASPCT,SYSTEM,SCALE_TYP,METHOD_TYP,CLASS,VersionLastChanged,CHNG_TYPE,DefinitionDescription,STATUS,CONSUMER_NAME,CLASSTYPE,FORMULA,EXMPL_ANSWERS,SURVEY_QUEST_TEXT,SURVEY_QUEST_SRC,UNITSREQUIRED,SUBMITTED_UNITS,RELATEDNAMES2,SHORTNAME,ORDER_OBS,CDISC_COMMON_TESTS,HL7_FIELD_SUBFIELD_ID,EXTERNAL_COPYRIGHT_NOTICE,EXAMPLE_UNITS,LONG_COMMON_NAME,UnitsAndRange,EXAMPLE_UCUM_UNITS,EXAMPLE_SI_UCUM_UNITS,STATUS_REASON,STATUS_TEXT,CHANGE_REASON_PUBLIC,COMMON_TEST_RANK,COMMON_ORDER_RANK,COMMON_SI_TEST_RANK,HL7_ATTACHMENT_STRUCTURE,EXTERNAL_COPYRIGHT_LINK,PanelType,AskAtOrderEntry,AssociatedObservations,VersionFirstReleased,ValidHL7AttachmentRequest,DisplayName }
 	private static enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
@@ -104,7 +111,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	private void mapLoincContent() throws TermServerScriptException {
 		try {
 			//Load the LOINC file
-
 			File checkFile = new File(LOINC_CONTENT_FILESTR);
 			if (checkFile.canRead()) {
 				loincConceptMap = new HashMap<>();
@@ -136,10 +142,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		Set<String> checkReplacementAvailable = new HashSet<>();
 		try {
 			//Load the LOINC file
-			String fileStr = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
-			info ("Loading " + fileStr);
+			info ("Loading " + loincFile);
 			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(fileStr))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(loincFile))) {
 				String origline;
 				while ((origline = br.readLine()) != null) {
 					if (!isFirstLine) {
@@ -234,10 +239,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		
 		try {
 			//Load the Refset Expression file
-			String fileStr = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
-			info ("Loading " + fileStr);
+			info ("Loading " + publishedRefsetFile);
 			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(fileStr))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(publishedRefsetFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					if (!isFirstLine) {
@@ -289,7 +293,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		int changesMade = 0;
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-			//changesMade += addAttribute(task, loadedConcept);
+			changesMade += upgradeLOINCConcept(task, loadedConcept);
 			if (changesMade > 0) {
 				updateConcept(task, loadedConcept, info);
 			}
@@ -301,46 +305,50 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		return changesMade;
 	}
 	
-	public void upgradeLOINCConcept(Concept c) throws TermServerScriptException {
-		String loincNum = LoincUtils.getLoincNumFromDescription(c);
-		validateAgainstCurrentLOINC(c, loincNum);
+	public int upgradeLOINCConcept(Task t, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		String loincNum = getLoincNumFromDescription(c);
+		changesMade += validateAgainstCurrentLOINC(t, c, loincNum);
 		validateAgainstPublishedLOINC(c, loincNum);
 		
 		Set<Relationship> origRels = new HashSet<>(c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE));
 		for (Relationship r : origRels) {
 			Concept localType = gl.getConcept(r.getType().getId());
-			Concept replaceType = replaceIfRequired(c, r, localType, REL_PART.Type);
+			Concept replaceType = replaceIfRequired(t, c, r, localType, REL_PART.Type);
 			
 			if (replaceType == null) {
 				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to lack of historical association");
-				return;
+				return NO_CHANGES_MADE;
 			} else if (replaceType.equals(MULTI_CONCEPT)) {
 				String alternatives = getReplacements(localType).stream().map(rep -> rep.toString()).collect(Collectors.joining(", "));
 				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to multiple historical associations", alternatives);
-				return;
+				return NO_CHANGES_MADE;
 			}
 			
 			Concept localTarget = gl.getConcept(r.getTarget().getId());
-			Concept replaceTarget = replaceIfRequired(c, r, localTarget, REL_PART.Target);
+			Concept replaceTarget = replaceIfRequired(t, c, r, localTarget, REL_PART.Target);
 			if (replaceTarget == null) {
 				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to lack of historical association");
-				return;
+				return NO_CHANGES_MADE;
 			} else if (replaceTarget.equals(MULTI_CONCEPT)) {
 				String alternatives = getReplacements(localTarget).stream().map(rep -> rep.toString()).collect(Collectors.joining(", "));
 				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to multiple historical associations", alternatives);
-				return;
+				return NO_CHANGES_MADE;
 			}
 			
 			if (!localType.equals(replaceType) || !localTarget.equals(replaceTarget)) {
 				Relationship replaceRel = r.clone();
 				replaceRel.setType(replaceType);
 				replaceRel.setTarget(replaceTarget);
+				changesMade = replaceRelationship(t, c, r, replaceRel);
 			}
 		}
+		return changesMade;
 	}
 
 
-	private void validateAgainstCurrentLOINC(Concept c, String loincNum) throws TermServerScriptException {
+	private int validateAgainstCurrentLOINC(Task t, Concept c, String loincNum) throws TermServerScriptException {
+		int changesMade = 0;
 		//Did LOINC tell us about this loincNum?
 		List<String> loincRow = loincFileMap.get(loincNum);
 		String fsn = SnomedUtils.deconstructFSN(c.getFsn())[0];
@@ -380,8 +388,10 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			String newTerm = LoincUtils.LOINC_NUM_PREFIX + newLoincNum;
 			Description oldDesc = LoincUtils.getLoincNumDescription(c);
 			String info = getDetails(loincNum);
-			replaceDescription(null, c, oldDesc, newTerm, InactivationIndicator.OUTDATED, info);
+			replaceDescription(t, c, oldDesc, newTerm, InactivationIndicator.OUTDATED, info);
+			changesMade++;
 		}
+		return changesMade;
 	}
 	
 	private String formLoincFSN(String loincNum) {
@@ -487,7 +497,20 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		return attributeMap;
 	}
 
-	private Concept replaceIfRequired(Concept c, Relationship r, Concept local, REL_PART relPart) throws TermServerScriptException {
+	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
+		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
+	}
+	
+	private Description getLoincNumDescription(Concept c) throws TermServerScriptException {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getTerm().startsWith(LOINC_NUM_PREFIX)) {
+				return d;
+			}
+		}
+		throw new TermServerScriptException(c + " does not specify a LOINC num");
+	}
+
+	private Concept replaceIfRequired(Task t, Concept c, Relationship r, Concept local, REL_PART relPart) throws TermServerScriptException {
 		Concept replacement = local;
 		if (!local.isActive()) {
 			List<Concept> replacements = getReplacements(local);
@@ -497,7 +520,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 				return MULTI_CONCEPT;
 			}
 			replacement = replacements.get(0);
-			report((Task)null, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Inactive rel " + relPart.toString() + " " + local + " replaced by " + replacement);
+			report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Inactive rel " + relPart.toString() + " " + local + " replaced by " + replacement);
 		}
 		return replacement;
 	}
@@ -544,7 +567,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 					throw new TermServerScriptException("Unable to write to " + LOINC_CONTENT_FILESTR, e);
 				}
 			}
-			upgradeLOINCConcept(loadedConcept);
 		}
 		return componentsToProcess;
 	}
