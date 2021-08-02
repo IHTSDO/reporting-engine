@@ -1,9 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes.loinc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -70,10 +67,16 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
 			fix.selfDetermining = false;
+			fix.populateEditPanel = false;
 			fix.reportNoChange = false;
 			fix.selfDetermining = true;
 			fix.runStandAlone = false;
 			fix.stateComponentType = false;
+			//We haven't actually published since we moved to axioms, so stated rel
+			//inactivations have a null effective time
+			fix.expectStatedRelationshipInactivations = true;
+			//Allow LOINC content to be imported
+			fix.getGraphLoader().setExcludedModules(new HashSet<>());
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -428,9 +431,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		BiMap<String, String> attributeMap = formAttributeMap(c, workingCopy);
 		
 		Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
-		if (parents.size() > 1) {
-			debug ("here");
-		}
 		Concept parent = parents.iterator().next();
 		if (!focusConcept.contentEquals(parent.getConceptId())) {
 			report(SECONDARY_REPORT, c, "Mismatched Focus Concept", focusConcept, parent);
@@ -556,10 +556,16 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		File loincConceptFile = new File(LOINC_CONTENT_FILESTR);
 		CharSink chs = Files.asCharSink(loincConceptFile, Charsets.UTF_8, FileWriteMode.APPEND);
 		//Don't use local copies of concepts, they might not exist
-		for (Concept c : findConceptsByCriteria("module=715515008", TARGET_BRANCH, false)) {
-			Concept loadedConcept = loadConcept(c, TARGET_BRANCH);
+		Set<Concept> loincConcepts = findConceptsByCriteria("module=715515008", TARGET_BRANCH, false);
+		info ("Found " + loincConcepts.size() + " in " + TARGET_BRANCH);
+		setQuiet(true);
+		for (Concept c : loincConcepts) {
+			//Concepts found by criteria are concept mini.  Need to grab the full thing
+			//which we can NOW do from memory
+			c = gl.getConcept(c.getId());
 			if (createLoincConceptMap) {
-				String line = LoincUtils.getLoincNumFromDescription(loadedConcept) 
+				Concept loadedConcept = loadConcept(c, TARGET_BRANCH);
+				String line = getLoincNumFromDescription(loadedConcept) 
 						+ "\t" + loadedConcept.toString() + "\r\n";
 				try {
 					chs.write(line);
@@ -567,7 +573,12 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 					throw new TermServerScriptException("Unable to write to " + LOINC_CONTENT_FILESTR, e);
 				}
 			}
+			//Only process component if we have changes to make
+			if (upgradeLOINCConcept(null, c.cloneWithIds()) > 0) {
+				componentsToProcess.add(c);
+			}
 		}
+		setQuiet(false);
 		return componentsToProcess;
 	}
 	
