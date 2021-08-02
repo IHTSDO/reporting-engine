@@ -29,8 +29,10 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
   * */
 public class HistoricStatsAnalyzer extends TermServerReport implements ReportClass {
 	
-	String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
-												"20190731", "MAIN" };
+	//String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
+	//											"20190731", "MAIN" };
+	
+	String[] releasesToAnalyse = new String[] { "20190131", "20210731" };
 	
 	Map<String, Map<Long, Datum>> prevData;
 	Map<String, Map<Long, Datum>> thisData;
@@ -54,7 +56,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 	public void postInit() throws TermServerScriptException {
 		String standardHeading = "Hierarchy, FSN, SemTag, Active Start, Concepts Added, Concepts Inactivated, " +
 				"P made SD, SD made P, SD Inactivated, SD Added, CHECK_ALIGNMENT," +
-				"IPs Start, IPs Removed Total, IPs Added Total, IPs Brand New, IPs Inactivated, " + 
+				"IPs Start, IPs Removed Total, IPs Added Total, IPs Finish, IPs Brand New, IPs Inactivated, " + 
 				"IPs made SD, IPs No Longer - lost SD ancestor, IPs No Longer - lost SD descendant," +
 				"IPs No Longer - lost either, CHECK_ALIGNMENT, " +
 				"New IPs gained SD descendant, New IPs gained SD ancestor, New IPs gained SD either, New IP SD->P";
@@ -130,7 +132,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 	private void runAnalysis(int tabIdx, final String hierarchyStr) throws TermServerScriptException {
 		Map<Long, Datum> thisHierarchy = thisData.get(hierarchyStr);
 		Map<Long, Datum> prevHierarchy = prevData.get(hierarchyStr);
-		Object[] results = new Object[22];
+		Object[] results = new Object[23];
 		int column = 0;
 		
 		//Sanity check here that we've no SD IPs
@@ -224,52 +226,66 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 								!getConcept(d.conceptId, hierarchyStr, prevData).isIP))
 				.count();
 		
-		//12. IPs brand new.  Use our collection of new concepts to count these
+		//12. How many IPs do we finish up with?
+		debug ("Item " + (column + 1));
+		results[column++] = thisHierarchy.values().stream().filter(d -> d.isIP).count();
+		
+		//13. IPs brand new.  Use our collection of new concepts to count these
 		debug ("Item " + (column + 1));
 		results[column++] = newConcepts.stream().filter(d -> d.isIP).count();
 		
-		//13. IPs inactivated.  IPs in the prev release that are now inactive
+		//14. IPs inactivated.  IPs in the prev release that are now inactive
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isActive)
 				.count();
 		
-		//14. IPs made SD
+		//15. IPs made SD
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
-				.filter(d -> d.isIP && getConcept(d.conceptId, hierarchyStr, thisData).isSD)
+				.filter(d -> d.isIP 
+						&& getConcept(d.conceptId, hierarchyStr, thisData).isSD)
 				.count();
 		
-		//15. IPs No Longer - lost SD ancestor. So still active, but no SD ancestor
-		debug ("Item " + (column + 1));
-		results[column++] = prevHierarchy.values().stream()
-				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
-						&& !getConcept(d.conceptId, hierarchyStr, thisData).hasSdAncestor)
-				.count();
-		
-		//16. IPs No Longer - lost SD descendant
+		//16. IPs No Longer - lost SD ancestor. So still active, but no SD ancestor
+		//Also check that it's still primitive, else it will have been counted elsewhere
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
-						&& !getConcept(d.conceptId, hierarchyStr, thisData).hasSdDescendant)
+						&& !getConcept(d.conceptId, hierarchyStr, thisData).hasSdAncestor
+						&& getConcept(d.conceptId, hierarchyStr, thisData).isActive
+						&& !getConcept(d.conceptId, hierarchyStr, thisData).isSD)
 				.count();
 		
-		//17. IPs No Longer - lost either
+		//17. IPs No Longer - lost SD descendant
+		//Also check that it's still primitive, else it will have been counted elsewhere
+		debug ("Item " + (column + 1));
+		results[column++] = prevHierarchy.values().stream()
+				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
+						&& !getConcept(d.conceptId, hierarchyStr, thisData).hasSdDescendant
+						&& getConcept(d.conceptId, hierarchyStr, thisData).isActive
+						&& !getConcept(d.conceptId, hierarchyStr, thisData).isSD)
+				.count();
+		
+		//18. IPs No Longer - lost either
+		//Also check that it's still primitive, else it will have been counted elsewhere
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
 						&& (!getConcept(d.conceptId, hierarchyStr, thisData).hasSdAncestor
-						|| !getConcept(d.conceptId, hierarchyStr, thisData).hasSdDescendant))
+						|| !getConcept(d.conceptId, hierarchyStr, thisData).hasSdDescendant)
+						&& getConcept(d.conceptId, hierarchyStr, thisData).isActive
+						&& !getConcept(d.conceptId, hierarchyStr, thisData).isSD)
 				.count();
 		
-		//18. Check alignement
+		//19. Check alignement
 		debug ("Item " + (column + 1));
 		results[column++] = "Check";
 		
 		//For these next few, filter out the cases where it was previously not an IP
 		//because it was SD.  We'll count them at the end.
 		
-		//19. New IPs gained SD descendant. So without SD descendant and is now IP 
+		//20. New IPs gained SD descendant. So without SD descendant and is now IP 
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isIP && !d.isSD
@@ -277,7 +293,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 						&& getConcept(d.conceptId, hierarchyStr, thisData).isIP)
 				.count();
 		
-		//20. New IPs gained SD ancestor, So without SD ancestor and is now IP
+		//21. New IPs gained SD ancestor, So without SD ancestor and is now IP
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isIP  && !d.isSD
@@ -285,7 +301,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 						&& getConcept(d.conceptId, hierarchyStr, thisData).isIP)
 				.count();
 		
-		//21. New IPs gained SD either
+		//22. New IPs gained SD either
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isIP && !d.isSD 
@@ -293,7 +309,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 						&& getConcept(d.conceptId, hierarchyStr, thisData).isIP)
 				.count();
 		
-		//21. New IPs switched from SD to P
+		//23. New IPs switched from SD to P
 		debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isSD &&
