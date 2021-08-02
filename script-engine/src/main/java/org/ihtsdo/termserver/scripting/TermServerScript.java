@@ -56,6 +56,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private String reportName;
 	protected boolean includeSummaryTab = false;
 	protected boolean reportNullConcept = true;
+	protected boolean expectStatedRelationshipInactivations = false;
 	protected String subHierarchyStr;
 	protected String subsetECL;
 	protected Concept subHierarchy;
@@ -359,7 +360,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 		}
 		
-		info ("Init Complete. Project Key determined: " + project.getKey());
+		info ("Init Complete. Project Key determined: " + project.getKey() + " on " + project.getBranchPath());
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -634,9 +635,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		debug("Validating " + c);
 		
 		//We should not be modifying any stated relationships
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
-			if (StringUtils.isEmpty(r.getEffectiveTime())) {
-				throw new IllegalStateException("Stated Relationship update attempt (during validation): " + r);
+		if (!expectStatedRelationshipInactivations) {
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+				if (StringUtils.isEmpty(r.getEffectiveTime())) {
+					throw new IllegalStateException("Stated Relationship update attempt (during validation): " + r);
+				}
 			}
 		}
 		
@@ -1333,6 +1336,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
+		if (quiet) {
+			return;
+		}
 		//Have we whiteListed this concept?
 		if (whiteListedConcepts.contains(c)) {
 			String detailsStr = writeToString(details);

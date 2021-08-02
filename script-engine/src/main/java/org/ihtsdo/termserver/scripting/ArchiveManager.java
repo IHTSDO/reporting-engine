@@ -290,7 +290,7 @@ public class ArchiveManager implements ScriptConstants {
 						generateSnapshot (ts.getProject());
 						releasedFlagPopulated=true;
 					} else {
-						info ("Loading snapshot archive contents into memory...");
+						info ("Loading snapshot archive contents into memory: " + snapshot);
 						try {
 							//This archive is 'current state' so we can't know what is released or not
 							//Unless it's an edition archive
@@ -616,6 +616,12 @@ public class ArchiveManager implements ScriptConstants {
 	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, Boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
+			
+			if (fileName.contains("._")) {
+				//info("Skipping " + fileName);
+				return;
+			}
+			
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Concept_" )) {
 					info("Loading Concept " + fileType + " file.");

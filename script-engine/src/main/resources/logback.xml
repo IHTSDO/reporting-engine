@@ -5,4 +5,5 @@
 	<include resource="org/springframework/boot/logging/logback/base.xml"/>
 	<logger name="ch.qos.logback.classic.jora" level="WARN"/>
 	<logger name="org.ihtsdo" level="DEBUG"/>
+	<logger name="org.snomed" level="DEBUG"/>
 </configuration>

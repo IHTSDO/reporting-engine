@@ -498,6 +498,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 
 	public void setAxiomEntry(AxiomEntry axiom) {
 		this.axiomEntry = axiom;
+		this.axiomIdPart = null;
 	}
 	
 	public Axiom getAxiom() {
@@ -506,6 +507,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 
 	public void setAxiom(Axiom axiom) {
 		this.axiom = axiom;
+		this.axiomIdPart = null;
 	}
 	
 	public CdType getCdType() {

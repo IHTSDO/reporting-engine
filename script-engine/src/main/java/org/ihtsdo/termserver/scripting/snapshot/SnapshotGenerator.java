@@ -68,7 +68,7 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public void generateSnapshot (File dependencySnapshot, File releaseSnapshot, File delta, File newLocation) throws TermServerScriptException {
+	public void generateSnapshot (File dependencySnapshot, File previousSnapshot, File delta, File newLocation) throws TermServerScriptException {
 		setQuiet(true);
 		init(newLocation, false);
 		if (dependencySnapshot != null) {
@@ -76,8 +76,8 @@ public class SnapshotGenerator extends TermServerScript {
 			loadArchive(dependencySnapshot, false, "Snapshot", true);
 		}
 		
-		info("Loading release snapshot " + releaseSnapshot);
-		loadArchive(releaseSnapshot, false, "Snapshot", true);
+		info("Loading previous snapshot " + previousSnapshot);
+		loadArchive(previousSnapshot, false, "Snapshot", true);
 		
 		info("Loading delta " + delta);
 		loadArchive(delta, false, "Delta", false);

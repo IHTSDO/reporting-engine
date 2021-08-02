@@ -737,6 +737,9 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	
 	public List<Description> getDescriptions(ActiveState a) {
 		List<Description> results = new ArrayList<Description>();
+		if (descriptions == null) {
+			throw new IllegalStateException("Concept " + this + " has no descriptions");
+		}
 		for (Description d : descriptions) {
 			if (SnomedUtils.descriptionHasActiveState(d, a)) {
 				results.add(d);

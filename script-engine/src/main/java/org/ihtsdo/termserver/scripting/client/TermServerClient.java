@@ -422,7 +422,6 @@ public class TermServerClient {
 			case UNPUBLISHED:
 				//Now leaving effective date blank if not specified
 				if (effectiveDate != null) {
-					//String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
 					exportRequest.put("transientEffectiveTime", effectiveDate);
 				}
 				break;

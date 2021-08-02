@@ -61,6 +61,10 @@ public class GraphLoader implements ScriptConstants {
 		return singleton;
 	}
 	
+	private GraphLoader() {
+		//Prevents instantiation by other than getGraphLoader()
+	}
+	
 	private static void populateKnownConcepts() {
 		//Pre populate known concepts to ensure we only ever refer to one object
 		//Reset concept each time, to avoid contamination from previous runs
@@ -126,7 +130,6 @@ public class GraphLoader implements ScriptConstants {
 		ancestorsCache.reset();
 		statedAncestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-		excludedModules = new HashSet<>();;
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
 		
@@ -178,6 +181,10 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				
+				/*if (lineItems[REL_IDX_ID].equals("14004406025")) {
+					TermServerScript.debug("here");
+				}*/
+				
 				//Might need to modify the characteristic type for Additional Relationships
 				characteristicType = SnomedUtils.translateCharacteristicType(lineItems[REL_IDX_CHARACTERISTICTYPEID]);
 				
@@ -189,7 +196,7 @@ public class GraphLoader implements ScriptConstants {
 				/*if ( lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_INFERRED_RELATIONSHIP) 
 						&& thisConcept.getId().equals("65371000119109") 
 						&& lineItems[REL_IDX_TYPEID].equals("116680003")) {
-					TermServerScript.debug ("here");
+					TermServerScript.debug("here");
 				}
 				
 				if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
@@ -234,6 +241,11 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				
+				//Exclude LOINC
+				if (isExcluded(lineItems[IDX_MODULEID])) {
+					continue;
+				}
 				
 				//Only load OWL Expressions
 				if (!lineItems[REF_IDX_REFSETID].equals(SCTID_OWL_AXIOM_REFSET)) {
@@ -340,7 +352,9 @@ public class GraphLoader implements ScriptConstants {
 			}
 		}
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
-		System.err.println("Ignored " + ignoredAxioms + " already held with later effective time");
+		if (ignoredAxioms > 0) {
+			System.err.println("Ignored " + ignoredAxioms + " already held with later effective time");
+		}
 	}
 	
 	private void removeRelsNoLongerFeaturedInAxiom(Concept c, String axiomId, Set<Relationship> currentAxiomRels) {
@@ -1093,6 +1107,10 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (isExcluded(lineItems[IDX_MODULEID])) {
+					continue;
+				}
 				MRCMAttributeRange ar = MRCMAttributeRange.fromRf2(lineItems);
 				
 				//Only set the released flag if it's not set already
@@ -1114,6 +1132,10 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (isExcluded(lineItems[IDX_MODULEID])) {
+					continue;
+				}
 				MRCMDomain d = MRCMDomain.fromRf2(lineItems);
 				
 				//Only set the released flag if it's not set already
