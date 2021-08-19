@@ -97,8 +97,8 @@ public class TraceabilityService {
 			}
 			for (Activity activity : traceabilityInfo) {
 				Object[] info = new Object[3];
-				info[0] = activity.getUser().getUsername();
-				info[1] = activity.getBranch().getBranchPath();
+				info[0] = activity.getUsername();
+				info[1] = activity.getBranch();
 				info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
 				
 				if (StringUtils.isEmpty(info[1])) {
