@@ -1,13 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * ISP-20 List properties of Pharmaceutical Dose forms
@@ -19,25 +22,37 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Has dose form release characteristic (id, PT), 
  * Has dose form transformation (id, PT)
  */
-public class DoseFormProperties extends TermServerReport {
+public class DoseFormProperties extends TermServerReport implements ReportClass {
+	
+	public static final String THIS_RELEASE = "This Release";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
-		DoseFormProperties report = new DoseFormProperties();
-		try {
-			report.additionalReportColumns = "Dose Form FSN,SemTag,Dose Form PT,ParentIds,Parents,Used in Int,DefnStat,BDFID, Basic Dose Form, AMID, Administration Method, ISID, Intended Site, RCID, Release Characteristic, TransId, Transformation";
-			report.init(args);
-			report.loadProjectSnapshot(false);  
-			report.postInit();
-			report.reportDoseForms();
-		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			report.finish();
-		}
+		TermServerReport.run(DoseFormProperties.class, args, new HashMap<>());
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "1H7T_dqmvQ-zaaRtfrd-T3QCUMD7_K8st"; //Drugs Analysis
+		additionalReportColumns = "Dose Form FSN,SemTag,Dose Form PT,ParentIds,Parents,Used in Int,DefnStat,BDFID, Basic Dose Form, AMID, Administration Method, ISID, Intended Site, RCID, Release Characteristic, TransId, Transformation";
+		super.init(run);
+	}
+	
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.build();
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
+				.withName("Dose Form Properties")
+				.withDescription("This report lists dose form properties.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
-	private void reportDoseForms() throws TermServerScriptException {
+	public void runJob() throws TermServerScriptException {
 		Concept pharmDoseForm = gl.getConcept("736542009 |Pharmaceutical dose form (dose form)|");
 		List<Concept> pharmDoseForms = new ArrayList<>(pharmDoseForm.getDescendents(NOT_SET));
 		pharmDoseForms.sort(Comparator.comparing(Concept::getFsn));
