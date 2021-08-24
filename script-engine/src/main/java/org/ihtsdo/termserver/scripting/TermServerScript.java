@@ -400,6 +400,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
 			debug ("Application context has " + (appContext == null?"not " : "") + "been supplied");
 			this.appContext = appContext;
+			this.getArchiveManager().reset();
 			//Job Runs generally self determine
 			preInit();
 			//Are we running locally?
@@ -1409,6 +1410,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public ArchiveManager getArchiveManager() {
 		return ArchiveManager.getArchiveManager(this, appContext);
+	}
+	
+	public ArchiveManager getArchiveManager(boolean forceReuse) {
+		return ArchiveManager.getArchiveManager(this, appContext, forceReuse);
 	}
 
 	public File getInputFile() {

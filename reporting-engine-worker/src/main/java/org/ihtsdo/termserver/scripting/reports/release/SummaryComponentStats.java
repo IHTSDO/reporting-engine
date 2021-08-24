@@ -144,7 +144,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		}
 		
 		getProject().setKey(prevRelease);
-		ArchiveManager mgr = getArchiveManager();
+		ArchiveManager mgr = getArchiveManager(true);
 		mgr.setLoadEditionArchive(true);
 		mgr.loadProjectSnapshot(fsnOnly);
 		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);

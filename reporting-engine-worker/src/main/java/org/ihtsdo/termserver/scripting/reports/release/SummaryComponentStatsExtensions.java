@@ -27,7 +27,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		
 		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		TermServerReport.run(SummaryComponentStatsExtensions.class, args, params);
 	}
 
@@ -75,13 +75,13 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 			info("Previous dependency recovered from previous release branch: " + prevDependency);*/
 			throw new TermServerScriptException("Previous dependency archive must always be supplied as not available through metadata");
 		}
+		
 		setDependencyArchive(prevDependency);
 		
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
 		if (StringUtils.isEmpty(thisDependency)) {
 			thisDependency = getProject().getMetadata().getDependencyPackage();
 		}
-		getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
 		
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_DEPENDENCY)) 
 				&& StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {

@@ -54,6 +54,10 @@ public class ArchiveManager implements ScriptConstants {
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	
 	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
+		return getArchiveManager(ts, appContext, false);
+	}
+	
+	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext, boolean forceReuse) {
 		if (singleton == null) {
 			singleton = new ArchiveManager();
 			singleton.appContext = appContext;
@@ -66,10 +70,12 @@ public class ArchiveManager implements ScriptConstants {
 			TermServerScript.info("Archive manager being reused in: " + ts.getClass().getSimpleName()); 
 		}
 		
-		//Don't assume that just because we're being reused, we're loading the same files
-		singleton.loadEditionArchive = false;
-		singleton.loadDependencyPlusExtensionArchive = false;
-		singleton.populatePreviousTransativeClosure = false;
+		if (!forceReuse) {
+			//Don't assume that just because we're being reused, we're loading the same files
+			singleton.loadEditionArchive = false;
+			singleton.loadDependencyPlusExtensionArchive = false;
+			singleton.populatePreviousTransativeClosure = false;
+		}
 		singleton.ts = ts;
 		return singleton;
 	}
@@ -741,5 +747,9 @@ public class ArchiveManager implements ScriptConstants {
 			this.gl.reset();
 			this.currentlyHeldInMemory = null;
 		}
+		
+		singleton.loadEditionArchive = false;
+		singleton.loadDependencyPlusExtensionArchive = false;
+		singleton.populatePreviousTransativeClosure = false;
 	}
 }
