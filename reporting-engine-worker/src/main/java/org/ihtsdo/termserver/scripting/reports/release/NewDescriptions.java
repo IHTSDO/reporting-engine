@@ -61,7 +61,8 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("New Descriptions")
-				.withDescription("This report lists all discriptions (optionally filtered by ECL) created in the current authoring cycle")
+				.withDescription("This report lists all discriptions (optionally filtered by ECL) created in the current authoring cycle." +
+				"Ticking the 'Unpromoted Changes' box will cause only those new descriptions that have been created since the last time the project was promoted, to be listed.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -78,9 +79,9 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		
 		List<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
-			conceptsOfInterest = new ArrayList(findConcepts(subsetECL));
+			conceptsOfInterest = new ArrayList<>(findConcepts(subsetECL));
 		} else {
-			conceptsOfInterest = new ArrayList(gl.getAllConcepts());
+			conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
 		}
 		
 		conceptsOfInterest.sort(Comparator.comparing(Concept::getSemTag).thenComparing(Concept::getFsn));
