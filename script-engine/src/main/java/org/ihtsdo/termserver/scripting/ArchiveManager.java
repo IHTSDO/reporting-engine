@@ -650,7 +650,8 @@ public class ArchiveManager implements ScriptConstants {
 					gl.loadAxioms(is, isDelta, isReleased);
 				} else if (fileName.contains("sct2_Description_" )) {
 					info("Loading Description " + fileType + " file.");
-					gl.loadDescriptionFile(is, fsnOnly, isReleased);
+					int count = gl.loadDescriptionFile(is, fsnOnly, isReleased);
+					info("Loaded " + count + " descriptions.");
 				} else if (fileName.contains("sct2_TextDefinition_" )) {
 					info("Loading Text Definition " + fileType + " file.");
 					gl.loadDescriptionFile(is, fsnOnly, isReleased);

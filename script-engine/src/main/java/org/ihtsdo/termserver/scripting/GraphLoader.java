@@ -679,11 +679,12 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException {
+	public int loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeader = true;
+		int count = 0;
 		while ((line = br.readLine()) != null) {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
@@ -734,11 +735,13 @@ public class GraphLoader implements ScriptConstants {
 					}
 					
 					c.addDescription(d);
+					count++;
 				}
 			} else {
 				isHeader = false;
 			}
 		}
+		return count;
 	}
 
 	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException {

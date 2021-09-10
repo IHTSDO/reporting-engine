@@ -28,7 +28,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(UNPROMOTED_CHANGES_ONLY, "true");
+		params.put(UNPROMOTED_CHANGES_ONLY, Boolean.FALSE.toString());
 		TermServerReport.run(NewDescriptions.class, args, params);
 	}
 	
@@ -84,7 +84,27 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 			conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
 		}
 		
+		//DK Is throwing a wobbly here missing an FSN or SemTag.  Lets check them all.
+		List<Concept> ignore = new ArrayList<>();
+		for (Concept c : conceptsOfInterest) {
+			//Ah, apparently DK really released a concept with no descriptions or relationships.
+			//We'll complain but skip
+			if (c.isActive()) {
+				if (c.getFsn() == null) {
+					throw new TermServerScriptException ("Integrity Faiure. " + c.getId() + " has no FSN");
+				}
+				if (c.getSemTag() == null) {
+					throw new TermServerScriptException ("Integrity Faiure. " + c + " has no Semantic Tag");
+				}
+			} else if (c.getFsn() == null || c.getSemTag() == null){
+				warn ("Inactive concept " + c.getId() + " has a missing or malformed FSN");
+				ignore.add(c);
+			}
+		}
+		conceptsOfInterest.removeAll(ignore);
+		debug("Sorting...");
 		conceptsOfInterest.sort(Comparator.comparing(Concept::getSemTag).thenComparing(Concept::getFsn));
+		debug("Sorted.");
 		
 		List<Description> unpromotedDescriptions = null;
 		if (jobRun.getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY)) {
@@ -94,9 +114,6 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		
 		for (Concept c : conceptsOfInterest) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (d.getId().equals("4588845012")) {
-					debug("here");
-				}
 				if (!d.isReleased() && inScope(d) && 
 						(unpromotedDescriptions == null || unpromotedDescriptions.contains(d))) {
 					int tabIdx = d.getType().equals(DescriptionType.TEXT_DEFINITION) ? SECONDARY_REPORT : PRIMARY_REPORT;
