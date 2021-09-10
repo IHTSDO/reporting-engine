@@ -120,7 +120,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
 
 	public String detectReleaseBranch() {
-		return getArchiveManager().detectReleaseBranch(project.getKey());
+		return getArchiveManager(true).detectReleaseBranch(project.getKey());
 	}
 
 	public String getScriptName() {
@@ -491,13 +491,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
-		getArchiveManager().loadProjectSnapshot(fsnOnly);
+		getArchiveManager(true).loadProjectSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
 	
 	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException  {
-		getArchiveManager().loadArchive(archive, fsnOnly, fileType, isReleased);
+		getArchiveManager(true).loadArchive(archive, fsnOnly, fileType, isReleased);
 	}
 	
 	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
@@ -571,7 +571,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected RefsetMember loadPreviousRefsetMember(String uuid) throws TermServerScriptException {
 		if (project.getPreviousBranchPath() == null) {
-			String previousBranchPath = getArchiveManager().getPreviousBranch(project);
+			String previousBranchPath = getArchiveManager(true).getPreviousBranch(project);
 			project.setPreviousBranchPath(previousBranchPath);
 		}
 		debug ("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
@@ -1505,7 +1505,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected void setDependencyArchive(String dependencyArchive) {
 		this.dependencyArchive = dependencyArchive;
-		getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
+		getArchiveManager(true).setLoadDependencyPlusExtensionArchive(true);
 	}
 
 	public ReportDataUploader getReportDataUploader() throws TermServerScriptException {

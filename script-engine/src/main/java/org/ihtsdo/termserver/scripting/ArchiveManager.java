@@ -271,7 +271,6 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
 					info("Generating fresh snapshot because previous transative closure must be populated");
 				}
-				reset();
 				generateSnapshot (ts.getProject());
 				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it
