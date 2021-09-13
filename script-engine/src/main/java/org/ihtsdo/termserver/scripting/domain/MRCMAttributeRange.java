@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
+
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId
 public class MRCMAttributeRange extends RefsetMember implements ScriptConstants {
 
@@ -25,7 +27,7 @@ public class MRCMAttributeRange extends RefsetMember implements ScriptConstants 
 		return clone;
 	}
 
-	public static MRCMAttributeRange fromRf2(String[] lineItems) {
+	public static MRCMAttributeRange fromRf2(String[] lineItems) throws TermServerScriptException {
 		MRCMAttributeRange r = new MRCMAttributeRange();
 		populatefromRf2(r, lineItems, additionalFieldNames);
 		return r;

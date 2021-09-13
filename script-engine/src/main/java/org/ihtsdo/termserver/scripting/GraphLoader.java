@@ -1109,7 +1109,8 @@ public class GraphLoader implements ScriptConstants {
 		String line;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Allow trailing empty fields
+				String[] lineItems = line.split(FIELD_DELIMITER, -1);
 				//Exclude LOINC
 				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
@@ -1134,7 +1135,8 @@ public class GraphLoader implements ScriptConstants {
 		String line;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Allow trailing empty fields
+				String[] lineItems = line.split(FIELD_DELIMITER, -1);
 				//Exclude LOINC
 				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;

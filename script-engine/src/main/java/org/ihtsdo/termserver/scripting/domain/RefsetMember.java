@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
 import com.google.gson.annotations.Expose;
@@ -206,7 +207,7 @@ RefsetMember extends Component implements ScriptConstants {
 		return rf2;
 	}
 	
-	public static void populatefromRf2(RefsetMember m, String[] lineItems, String[] additionalFieldNames) {
+	public static void populatefromRf2(RefsetMember m, String[] lineItems, String[] additionalFieldNames) throws TermServerScriptException {
 		m.setId(lineItems[REF_IDX_ID]);
 		m.setEffectiveTime(lineItems[REF_IDX_EFFECTIVETIME]);
 		m.setActive(lineItems[REF_IDX_ACTIVE].equals("1"));
@@ -215,6 +216,10 @@ RefsetMember extends Component implements ScriptConstants {
 		m.setReferencedComponentId(lineItems[REF_IDX_REFCOMPID]);
 		for (int i=0; i < additionalFieldNames.length; i++) {
 			int idx = i + REF_IDX_FIRST_ADDITIONAL;
+			if (lineItems.length < idx) {
+				String objectName = m.getClass().getSimpleName();
+				throw new TermServerScriptException(objectName + " " + m.getId() + " expected " + (idx+1) + " columns in RF2, but only contained " + lineItems.length);
+			}
 			m.setField(additionalFieldNames[i], lineItems[idx]);
 		}
 	}

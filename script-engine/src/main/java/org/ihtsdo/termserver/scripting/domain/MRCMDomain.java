@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
+
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId
 //domainConstraint,parentDomain,proximalPrimitiveConstraint,proximalPrimitiveRefinement
 //domainTemplateForPrecoordination,domainTemplateForPostcoordination,guideURL
@@ -31,7 +33,7 @@ public class MRCMDomain extends RefsetMember implements ScriptConstants {
 		return clone;
 	}
 
-	public static MRCMDomain fromRf2(String[] lineItems) {
+	public static MRCMDomain fromRf2(String[] lineItems) throws TermServerScriptException {
 		MRCMDomain r = new MRCMDomain();
 		populatefromRf2(r, lineItems, additionalFieldNames);
 		return r;
