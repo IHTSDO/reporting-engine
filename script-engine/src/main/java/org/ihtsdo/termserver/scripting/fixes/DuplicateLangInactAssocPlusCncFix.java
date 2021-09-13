@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
 
@@ -114,9 +112,13 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				Description dLoaded = loaded.getDescription(d.getDescriptionId());
 				//We'll set the indicator directly on the description in the browser object
 				//and let the TS work out if it needs to add a new refset member or reactive one
-				dLoaded.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
-				report(t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "ConceptNonCurrent", dLoaded);
-				changesMade++;
+				if (dLoaded == null) {
+					report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Local import expected description " + d.getDescriptionId() + " but was not found on " + t.getBranchPath(), d);
+				} else {
+					dLoaded.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
+					report(t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "ConceptNonCurrent", dLoaded);
+					changesMade++;
+				}
 			}
 		}
 		

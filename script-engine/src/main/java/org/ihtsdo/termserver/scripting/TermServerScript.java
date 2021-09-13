@@ -22,6 +22,7 @@ import org.snomed.otf.script.dao.ReportConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -506,7 +507,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//But we'll clone it, so the object isn't confused with any local changes
 			
 			//If we're already working at project level, don't modify branchPath
-			if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
+			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
+			if (branchPath.contains("SNOMEDCT-") && CharMatcher.is('/').countIn(branchPath) == 2) {
+				debug ("MS Project detected as branch path: " + branchPath);
+			} else if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
 			if (runStandAlone) {
