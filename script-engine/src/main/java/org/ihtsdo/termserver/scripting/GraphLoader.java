@@ -47,6 +47,7 @@ public class GraphLoader implements ScriptConstants {
 	private Map<Concept, MRCMDomain> mrcmDomainMap = new HashMap<>();
 
 	private boolean detectNoChangeDelta = false;
+	private boolean runIntegrityChecks = true;
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -184,6 +185,11 @@ public class GraphLoader implements ScriptConstants {
 				/*if (lineItems[REL_IDX_ID].equals("14004406025")) {
 					TermServerScript.debug("here");
 				}*/
+				
+				String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.RELATIONSHIP);
+				if (msg != null) {
+					TermServerScript.warn(msg);
+				}
 				
 				//Might need to modify the characteristic type for Additional Relationships
 				characteristicType = SnomedUtils.translateCharacteristicType(lineItems[REL_IDX_CHARACTERISTICTYPEID]);
@@ -586,7 +592,14 @@ public class GraphLoader implements ScriptConstants {
 		
 		//Seeing a concept appear from somewhere that fails Verhoeff.  Blow up if this happens, we
 		//need to know what file it's in and deal with it as a P1
-		SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT, true);
+		if (isRunIntegrityChecks()) {
+			SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT, true);
+		} else {
+			String msg = SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT);
+			if (msg != null) {
+				TermServerScript.warn(msg);
+			}
+		}
 		
 		Concept c = concepts.get(sctId);
 		if (c == null) {
@@ -700,6 +713,15 @@ public class GraphLoader implements ScriptConstants {
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
 					c.setFsn(lineItems[DES_IDX_TERM]);
+				}
+				
+				if (isRunIntegrityChecks()) {
+					SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.DESCRIPTION, true);
+				} else {
+					String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.DESCRIPTION);
+					if (msg != null) {
+						TermServerScript.warn(msg);
+					}
 				}
 				
 				if (!fsnOnly) {
@@ -1525,6 +1547,14 @@ public class GraphLoader implements ScriptConstants {
 
 	public Map<Concept, MRCMDomain> getMrcmDomainMap() {
 		return mrcmDomainMap;
+	}
+
+	public boolean isRunIntegrityChecks() {
+		return runIntegrityChecks;
+	}
+
+	public void setRunIntegrityChecks(boolean runIntegrityChecks) {
+		this.runIntegrityChecks = runIntegrityChecks;
 	}
 
 }

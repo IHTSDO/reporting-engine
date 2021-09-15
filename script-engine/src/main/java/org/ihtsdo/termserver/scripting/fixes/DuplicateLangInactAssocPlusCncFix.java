@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -43,7 +44,9 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 	
 	@Override
 	public void init(String[] args) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		ArchiveManager mgr = getArchiveManager();
+		mgr.setPopulateReleasedFlag(true);
+		//mgr.setRunIntegrityChecks(false);  //MSSP-1087
 		super.init(args);
 	}
 

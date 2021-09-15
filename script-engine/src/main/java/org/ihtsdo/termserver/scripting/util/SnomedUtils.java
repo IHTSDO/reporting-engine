@@ -43,7 +43,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		
 		if (!verhoeffCheck.isValid(sctId)) {
-			errorMsg = sctId + " does not exhibit a valid check digit";
+			errorMsg = partitionIdentifier.name() + " " + sctId + " does not exhibit a valid check digit";
 		}
 		return errorMsg;
 	}

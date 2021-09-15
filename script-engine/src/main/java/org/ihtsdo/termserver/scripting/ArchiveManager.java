@@ -48,6 +48,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean populateReleasedFlag = false;
 	private boolean populatePreviousTransativeClosure = false;
 	private boolean releasedFlagPopulated = false;
+	private boolean runIntegrityChecks = true;
 	
 	private Project currentlyHeldInMemory;
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
@@ -348,31 +349,33 @@ public class ArchiveManager implements ScriptConstants {
 			throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
 		}
 		
-		//Ensure that every active parent other than root has at least one parent in both views
-		debug("Ensuring all concepts have parents and depth if required.");
-		StringBuffer integrityFailureMessage = new StringBuffer();
-		for (Concept c : gl.getAllConcepts()) {
-			/*if (c.getId().equals("15747361000119104")) {
-				debug("here");
-			}*/
-			if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
-				checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
-				checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
-			}
-			
-			if (populateHierarchyDepth && c.isActive() && c.getDepth() == NOT_SET) {
-				if (integrityFailureMessage.length() > 0) {
-					integrityFailureMessage.append(",\n");
+		if (isRunIntegrityChecks()) {
+			//Ensure that every active parent other than root has at least one parent in both views
+			debug("Ensuring all concepts have parents and depth if required.");
+			StringBuffer integrityFailureMessage = new StringBuffer();
+			for (Concept c : gl.getAllConcepts()) {
+				/*if (c.getId().equals("15747361000119104")) {
+					debug("here");
+				}*/
+				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
+					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
+					checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
 				}
-				integrityFailureMessage.append(c + " failed to populate depth");
-				String ancestorStr = c.getAncestors(NOT_SET).stream().map(a -> a.toString()).collect(Collectors.joining(","));
-				TermServerScript.warn(c + " ancestors are :" + ancestorStr );
+				
+				if (populateHierarchyDepth && c.isActive() && c.getDepth() == NOT_SET) {
+					if (integrityFailureMessage.length() > 0) {
+						integrityFailureMessage.append(",\n");
+					}
+					integrityFailureMessage.append(c + " failed to populate depth");
+					String ancestorStr = c.getAncestors(NOT_SET).stream().map(a -> a.toString()).collect(Collectors.joining(","));
+					TermServerScript.warn(c + " ancestors are :" + ancestorStr );
+				}
 			}
+			if (integrityFailureMessage.length() > 0) {
+				throw new UnrecoverableTermServerScriptException(integrityFailureMessage.toString());
+			}
+			info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");
 		}
-		if (integrityFailureMessage.length() > 0) {
-			throw new UnrecoverableTermServerScriptException(integrityFailureMessage.toString());
-		}
-		info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");
 		
 		if (!fsnOnly) {  
 			//Check that we've got some descriptions to be sure we've not been given
@@ -751,5 +754,17 @@ public class ArchiveManager implements ScriptConstants {
 		singleton.loadEditionArchive = false;
 		singleton.loadDependencyPlusExtensionArchive = false;
 		singleton.populatePreviousTransativeClosure = false;
+	}
+	
+	public boolean isRunIntegrityChecks() {
+		return runIntegrityChecks;
+	}
+
+	public void setRunIntegrityChecks(boolean runIntegrityChecks) {
+		if (!runIntegrityChecks) {
+			TermServerScript.warn("INTEGRITY CHECK DISABLED - ARE YOU SURE?");
+		}
+		this.runIntegrityChecks = runIntegrityChecks;
+		this.gl.setRunIntegrityChecks(runIntegrityChecks);
 	}
 }
