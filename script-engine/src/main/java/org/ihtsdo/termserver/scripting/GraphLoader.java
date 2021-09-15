@@ -48,6 +48,7 @@ public class GraphLoader implements ScriptConstants {
 
 	private boolean detectNoChangeDelta = false;
 	private boolean runIntegrityChecks = true;
+	private boolean checkForExcludedModules = false;
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -177,8 +178,7 @@ public class GraphLoader implements ScriptConstants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
@@ -248,8 +248,7 @@ public class GraphLoader implements ScriptConstants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
@@ -642,8 +641,8 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
@@ -701,8 +700,8 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
@@ -783,8 +782,8 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
@@ -962,8 +961,8 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				String id = lineItems[IDX_ID];
@@ -1043,8 +1042,8 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				String id = lineItems[IDX_ID];
@@ -1160,8 +1159,8 @@ public class GraphLoader implements ScriptConstants {
 			if (!isHeaderLine) {
 				//Allow trailing empty fields
 				String[] lineItems = line.split(FIELD_DELIMITER, -1);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				MRCMAttributeRange ar = MRCMAttributeRange.fromRf2(lineItems);
@@ -1186,8 +1185,8 @@ public class GraphLoader implements ScriptConstants {
 			if (!isHeaderLine) {
 				//Allow trailing empty fields
 				String[] lineItems = line.split(FIELD_DELIMITER, -1);
-				//Exclude LOINC
-				if (isExcluded(lineItems[IDX_MODULEID])) {
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				MRCMDomain d = MRCMDomain.fromRf2(lineItems);

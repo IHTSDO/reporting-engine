@@ -37,12 +37,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		Map<String, String> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(WORDS, "Located");
-		params.put(WHOLE_WORD, "true");
+		params.put(WORDS, "Glucose:SCnc:Pt:Bld:Qn");
+		params.put(WHOLE_WORD, "false");
 		params.put(ATTRIBUTE_TYPE, null);
-		//params.put(REPORT_OUTPUT_TYPES, ReportManager.ReportOutputType.GOOGLE_SHEET + "|" + ReportManager.ReportOutputType.S3);
-		params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
-		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
 	
