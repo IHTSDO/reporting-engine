@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -41,6 +40,12 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			fix.finish();
 		}
 	}
+	
+	@Override
+	public void init(String[] args) throws TermServerScriptException {
+		getArchiveManager().setPopulateReleasedFlag(true);
+		super.init(args);
+	}
 
 	@Override
 	public int doFix(final Task task, final Concept concept, final String info)
@@ -60,35 +65,31 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			throws TermServerScriptException {
 		int changesMade = 0;
 		
-		final List<LangRefsetEntry> ls = getMultipleLangRefsetEntries(c, t);
-		for (final LangRefsetEntry l : ls) {
-			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + l);
-			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
-			changesMade++;
-			if (!dryRun) {
-				tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
-			}
-			changesMade++;
-		}
+		/*if (c.getId().equals("840534001")) {
+			debug ("here");
+		}*/
 		
-		final InactivationIndicatorEntry[] ciis = getDuplicateInactivationIndicators(c, c.getInactivationIndicatorEntries(), t);
-		for (final InactivationIndicatorEntry cii : ciis) {
+		final RefsetMember[] ciis = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
+		for (final RefsetMember cii : ciis) {
 			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + cii);
 			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, cii);
 			if (!dryRun) {
 				tsClient.deleteRefsetMember(cii.getId(), t.getBranchPath(), false);
 			}
 			changesMade++;
+			reactivateRemainingMemberIfRequired(c, cii, c.getInactivationIndicatorEntries(), t);
+			
 		}
 		
-		final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociationEntries(), t);
-		for (final AssociationEntry a : as) {
+		final RefsetMember[] as = getDuplicateRefsetMembers(c, c.getAssociationEntries());
+		for (final RefsetMember a : as) {
 			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + a);
 			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, a);
 			if (!dryRun) {
 				tsClient.deleteRefsetMember(a.getId(), t.getBranchPath(), false);
 			}
 			changesMade++;
+			reactivateRemainingMemberIfRequired(c, a, c.getAssociationEntries(), t);
 		}
 		
 		//Do we need to load and save the concept?
@@ -98,17 +99,33 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		}
 		
 		for (final Description d : c.getDescriptions()) {
-			final InactivationIndicatorEntry[] diis = getDuplicateInactivationIndicators(d, d.getInactivationIndicatorEntries(), t);
-			for (final InactivationIndicatorEntry dii : diis) {
+			final RefsetMember[] ls = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
+			if (true);
+			for (final RefsetMember l : ls) {
+				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + l);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
+				if (!dryRun) {
+					tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
+				}
+				changesMade++;
+				reactivateRemainingMemberIfRequired(c, l, d.getLangRefsetEntries(), t);
+			}
+			
+			final RefsetMember[] diis = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
+			for (final RefsetMember dii : diis) {
 				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + dii);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, dii);
 				if (!dryRun) {
 					tsClient.deleteRefsetMember(dii.getId(), t.getBranchPath(), false);
 				}
 				changesMade++;
+				reactivateRemainingMemberIfRequired(c, dii, d.getInactivationIndicatorEntries(), t);
 			}
 			
 			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
+				/*if (d.getId().equals("3902340014")) {
+					debug("here");
+				}*/
 				Description dLoaded = loaded.getDescription(d.getDescriptionId());
 				//We'll set the indicator directly on the description in the browser object
 				//and let the TS work out if it needs to add a new refset member or reactive one
@@ -128,15 +145,46 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		return changesMade;
 	}
 
+	private int reactivateRemainingMemberIfRequired(Concept c, RefsetMember r,
+			List<? extends RefsetMember> siblings, Task t) throws TermServerScriptException {
+		//Was the member we deleted active?
+		if (!r.isActive()) {
+			return NO_CHANGES_MADE;
+		}
+		
+		int changesMade = 0;
+		//Find the duplicate again and reactivate 
+		for (RefsetMember sibling : siblings) {
+			if (!sibling.getId().equals(r.getId()) &&
+				r.duplicates(sibling) &&
+				!sibling.isActive()) {
+				sibling.setActive(true);
+				debug((dryRun?"Dry Run, not ":"") + "Reactivating published: " + sibling);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REACTIVATED, sibling);
+				if (!dryRun) {
+					tsClient.updateRefsetMember(sibling, t.getBranchPath());
+				}
+				changesMade++;
+			}
+		}
+		return changesMade;
+	}
+
 	@Override
 	protected List<Component> identifyComponentsToProcess() {
 		// Work through all inactive concepts and check the inactivation indicators on
 		// active descriptions
 		info("Identifying concepts to process");
+		setQuiet(true);
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
 		for (final Concept c : gl.getAllConcepts()) {
+			
+			/*if (c.getId().equals("840534001")) {
+				debug("here");
+			}*/
+			
 			for (String dialectRefset : ENGLISH_DIALECTS) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (d.getLangRefsetEntries(ActiveState.ACTIVE, dialectRefset).size() > 1) {
@@ -145,16 +193,23 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 					}
 				}
 			}
+			
+			for (Description d : c.getDescriptions()) {
+				if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).length > 0) {
+					processMe.add(c);
+					continue nextConcept;
+				}
+			}
 			 
 			if (!c.isActive()) {
-				final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociationEntries(), null);
+				final RefsetMember[] as = getDuplicateRefsetMembers(c, c.getAssociationEntries());
 				if (as.length > 0) {
 					processMe.add(c);
 				} else {
-					final InactivationIndicatorEntry[] ciis = getDuplicateInactivationIndicators(c, c.getInactivationIndicatorEntries(), null);
+					final RefsetMember[] ciis = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
 					if (ciis.length == 0) {
 						for (final Description d : c.getDescriptions()) {
-							final InactivationIndicatorEntry[] diis = getDuplicateInactivationIndicators(d, d.getInactivationIndicatorEntries(), null);
+							final RefsetMember[] diis = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
 							if (diis.length > 0) {
 								processMe.add(c);
 								continue nextConcept;
@@ -174,6 +229,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				}
 			}
 		}
+		setQuiet(false);
 		info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
@@ -198,138 +254,36 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		return !hasConceptInactiveIndicator;
 	}
 
-	private InactivationIndicatorEntry[] getDuplicateInactivationIndicators(final Component c,
-			final List<InactivationIndicatorEntry> inactivationIndicatorEntries, Task t) {
+	private RefsetMember[] getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) {
+		final List<RefsetMember> duplicates = new ArrayList<>();
+		final List<RefsetMember> keepers = new ArrayList<>();
 
-		final List<InactivationIndicatorEntry> duplicates = new ArrayList<>();
-		final List<InactivationIndicatorEntry> keepers = new ArrayList<>();
-
-		for (final InactivationIndicatorEntry thisEntry : inactivationIndicatorEntries) {
+		for (final RefsetMember thisEntry : refsetMembers) {
+			/*if (thisEntry.getId().equals("7816cc67-b074-4bb3-993d-ce8487e23e0a")) {
+				debug("here");
+			}*/
 			// Check against every other entry
-			for (final InactivationIndicatorEntry thatEntry : inactivationIndicatorEntries) {
-				// If we've already decided we're keeping this entry, skip
-				if (thisEntry.getId().equals(thatEntry.getId()) || keepers.contains(thisEntry) || duplicates.contains(thisEntry)) {
+			for (final RefsetMember thatEntry : refsetMembers) {
+				// If we've already decided we're keeping this entry or deleting this entry, skip
+				if (thisEntry.getId().equals(thatEntry.getId()) || 
+						keepers.contains(thisEntry) || keepers.contains(thatEntry) ||
+						duplicates.contains(thisEntry) || duplicates.contains(thatEntry)) {
 					continue;
 				}
-				if (thisEntry.getRefsetId().equals(thatEntry.getRefsetId())
-						&& thisEntry.getReferencedComponentId().equals(thatEntry.getReferencedComponentId())
-						&& thisEntry.getInactivationReasonId().equals(thatEntry.getInactivationReasonId())) {
-					debug("Found duplicates for " + c + ": " + thisEntry + " + " + thatEntry);
-					// Delete the unpublished one.   If they're both unpublished, get that refset entry 
-					// directly to check the published flag.   Don't worry if we're just finding the concept though - t == null
-					if (t != null && StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-						warn("Both entries look modified, checking TS for published status of " + thisEntry);
-						RefsetMember r = tsClient.getRefsetMember(thisEntry.getId(), getBranchPath(t));
-						warn("Result: Is " + (r.getReleased()?"":"not ") + "published.");
-						if (r.getReleased()) {
-							duplicates.add(thatEntry);
-							keepers.add(thisEntry);
-						} else {
-							duplicates.add(thisEntry);
-							keepers.add(thatEntry);
-						}
-					} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime())) {
-						duplicates.add(thisEntry);
-						keepers.add(thatEntry);
-					} else if (StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-						duplicates.add(thatEntry);
-						keepers.add(thisEntry);
-					} else {
-						// Only a problem historically if they're both active
-						if (thisEntry.isActive() && thatEntry.isActive()) {
-							warn("Both entries look published! " + thisEntry.getEffectiveTime());
-						}
-					}
-				}
-			}
-		}
-		return duplicates.toArray(new InactivationIndicatorEntry[] {});
-	}
-	
-	
-	/*
-	 * This is less about duplicates as it is about having more than one active entry for a given
-	 * description in a given dialect, so the values may be different
-	 */
-	private List<LangRefsetEntry> getMultipleLangRefsetEntries(Concept c, Task t) throws TermServerScriptException {
-		List<LangRefsetEntry> forDeletion = new ArrayList<>();
-		for (String dialectRefset : ENGLISH_DIALECTS) {
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				LangRefsetEntry keep = null;
-				for (LangRefsetEntry thisEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, dialectRefset)) {
-					if (keep == null) {
-						keep = thisEntry;
-					} else {
-						if (!keep.getAcceptabilityId().equals(thisEntry.getAcceptabilityId())) {
-							report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "LangRefsetEntries have conflicting acceptability", d, keep, thisEntry);
-						}
-						debug("Found duplicates for " + c + ": " + thisEntry + " + " + keep);
-						// Delete the unpublished one.   If they're both unpublished, get that refset entry 
-						// directly to check the published flag.
-						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(keep.getEffectiveTime())) {
-							warn("Both entries look modified, checking TS for published status of " + thisEntry);
-							RefsetMember r = tsClient.getRefsetMember(thisEntry.getId(), getBranchPath(t));
-							warn("Result: Is " + (r.getReleased()?"":"not ") + "published.");
-							if (r.getReleased()) {
-								forDeletion.add(keep);
-								keep = thisEntry;
-							} else {
-								forDeletion.add(thisEntry);
-							}
-						} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime())) {
-							forDeletion.add(thisEntry);
-						} else if (StringUtils.isEmpty(keep.getEffectiveTime())) {
-							forDeletion.add(keep);
-							keep = thisEntry;
-						} else {
-							// Only a problem historically if they're both active
-							if (thisEntry.isActive() && keep.isActive()) {
-								warn("Both entries look published! " + thisEntry.getEffectiveTime());
-							}
-						}
-					}
-				}
-			}
-		}
-		return forDeletion; 
-	}
-	
-	private String getBranchPath(Task t) {
-		//If we're in dry run, we need to use the project path rather than the task
-		if (dryRun) {
-			return t.getBranchPath().substring(0, t.getBranchPath().lastIndexOf('/'));
-		}
-		return t.getBranchPath();
-	}
-
-	//TODO Create a common interface for reference set entries and remove this method.
-	private AssociationEntry[] getDuplicateAssociations(final Component c, final List<AssociationEntry> AssociationEntries, Task t) {
-		final List<AssociationEntry> duplicates = new ArrayList<>();
-		final List<AssociationEntry> keepers = new ArrayList<>();
-
-		for (final AssociationEntry thisEntry : AssociationEntries) {
-			// Check against every other entry
-			for (final AssociationEntry thatEntry : AssociationEntries) {
-				// If we've already decided we're keeping this entry, skip
-				if (thisEntry.getId().equals(thatEntry.getId()) || keepers.contains(thisEntry) || duplicates.contains(thisEntry)) {
-					continue;
-				}
-				if (thisEntry.getRefsetId().equals(thatEntry.getRefsetId())
-						&& thisEntry.getRefsetId().equals(thatEntry.getRefsetId())
-						&& thisEntry.getReferencedComponentId().equals(thatEntry.getReferencedComponentId())
-						&& thisEntry.getTargetComponentId().equals(thatEntry.getTargetComponentId())) {
-					debug("Found duplicates for " + c + ": " + thisEntry + " + " + thatEntry);
+				if (thisEntry.duplicates(thatEntry)) {
 					// Delete the unpublished one
-					if (t != null && StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-						warn("Both entries look modified, checking TS for published status of " + thisEntry);
-						RefsetMember r = tsClient.getRefsetMember(thisEntry.getId(), getBranchPath(t));
-						warn("Result: Is " + (r.getReleased()?"":"not ") + "published.");
-						if (r.getReleased()) {
+					if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+						if (thisEntry.getReleased() && !thatEntry.getReleased()) {
 							duplicates.add(thatEntry);
-							keepers.add(thisEntry);
-						} else {
+						} else if (!thisEntry.getReleased() && thatEntry.getReleased()) {
 							duplicates.add(thisEntry);
-							keepers.add(thatEntry);
+						} else if (!thisEntry.getReleased() && !thatEntry.getReleased()) {
+							//Neither released.   Delete the inactive one, or randomly otherwise
+							if (!thisEntry.isActive()) {
+								duplicates.add(thisEntry);
+							} else {
+								duplicates.add(thatEntry);
+							}
 						}
 					} else if (thisEntry.getEffectiveTime() == null || thisEntry.getEffectiveTime().isEmpty()) {
 						duplicates.add(thisEntry);
@@ -343,16 +297,14 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 							warn("Both entries look published! " + thisEntry.getEffectiveTime());
 						}
 					}
+					
+					if (duplicates.contains(thisEntry)) {
+						debug("Found duplicates for " + c + ": " + thisEntry + " + " + thatEntry);
+					}
 				}
 			}
 		}
-		return duplicates.toArray(new AssociationEntry[] {});
-	}
-
-	@Override
-	protected List<Component> loadLine(final String[] lineItems)
-			throws TermServerScriptException {
-		throw new NotImplementedException("This class self determines concepts to process");
+		return duplicates.toArray(new RefsetMember[] {});
 	}
 
 }

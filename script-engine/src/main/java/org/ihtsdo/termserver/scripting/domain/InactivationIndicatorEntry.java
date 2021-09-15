@@ -19,6 +19,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		clone.referencedComponentId = newComponentSctId;
 		clone.setInactivationReasonId(getInactivationReasonId());
 		clone.isDirty = true; //New components need to be written to any delta
+		clone.released = this.released;
 		return clone;
 	}
 	private static InactivationIndicatorEntry withDefaults() {
@@ -47,7 +48,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 	
 	public String toString() {
 		String activeIndicator = isActive()?"":"*";
-		return "[" + activeIndicator + "IA]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + getInactivationReasonId();
+		return "[" + activeIndicator + "II]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + getInactivationReasonId();
 	}
 	
 	public String[] toRF2() {

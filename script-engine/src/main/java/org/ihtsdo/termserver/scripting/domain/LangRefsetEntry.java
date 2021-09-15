@@ -20,6 +20,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 		clone.referencedComponentId = descriptionSctId;
 		clone.setAcceptabilityId(getAcceptabilityId());
 		clone.setDirty(); //New components need to be written to any delta
+		clone.released = this.released;
 		return clone;
 	}
 	
@@ -93,7 +94,10 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	
 	public String toString(boolean detail) {
 		try {
-		return "[ " + getReferencedComponentId() + " is " + 
+			String activeIndicator = isActive()?"":"*";
+			
+		return "[" + activeIndicator + "LR]:" + id + " - " + 
+				"[ " + getReferencedComponentId() + " is " + 
 				SnomedUtils.translateAcceptability(getAcceptabilityId()) + " in " +
 				getRefsetId() + 
 				(detail? " - ET" + effectiveTime : "" ) +

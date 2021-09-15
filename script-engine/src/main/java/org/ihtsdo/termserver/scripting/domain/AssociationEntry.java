@@ -24,6 +24,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		clone.referencedComponentId = newComponentSctId;
 		clone.setTargetComponentId(this.getTargetComponentId());
 		clone.isDirty = true; //New components need to be written to any delta
+		clone.released = this.released;
 		return clone;
 	}
 	

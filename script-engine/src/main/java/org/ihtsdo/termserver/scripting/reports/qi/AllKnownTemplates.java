@@ -22,6 +22,9 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 	public void init (JobRun run) throws TermServerScriptException {
 		String templateServiceUrl = run.getMandatoryParamValue(SERVER_URL);
+		if (!templateServiceUrl.endsWith("/template-service")) {
+			templateServiceUrl += "/template-service";
+		}
 		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
 		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
 		

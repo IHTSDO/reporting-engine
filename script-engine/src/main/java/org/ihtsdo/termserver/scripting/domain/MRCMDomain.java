@@ -30,6 +30,7 @@ public class MRCMDomain extends RefsetMember implements ScriptConstants {
 		clone.referencedComponentId = newComponentSctId;
 		clone.setAdditionalFields(new HashMap<>(this.additionalFields));
 		clone.isDirty = true; //New components need to be written to any delta
+		clone.released = this.released;
 		return clone;
 	}
 

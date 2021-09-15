@@ -944,6 +944,10 @@ public class GraphLoader implements ScriptConstants {
 				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
+				String id = lineItems[IDX_ID];
+				/*if (id.equals("7816cc67-b074-4bb3-993d-ce8487e23e0a")) {
+					TermServerScript.debug("here");
+				}*/
 				
 				String revertEffectiveTime = null;
 				if (detectNoChangeDelta && isReleased != null && !isReleased) {
@@ -971,12 +975,22 @@ public class GraphLoader implements ScriptConstants {
 					/*if (c.getConceptId().equals("198308002")) {
 						TermServerScript.debug("Check Here");
 					}*/
+					//Do we already have this indicator?  Copy the released flag if so
+					InactivationIndicatorEntry existing = c.getInactivationIndicatorEntry(id);
+					if (existing != null) {
+						inactivation.setReleased(existing.getReleased());
+					}
 					c.addInactivationIndicator(inactivation);
 				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
 					/*if (d.getDescriptionId().equals("1221136011")) {
 						TermServerScript.debug("Check here");
 					}*/
+					//Do we already have this indicator?  Copy the released flag if so
+					InactivationIndicatorEntry existing = d.getInactivationIndicatorEntry(id);
+					if (existing != null) {
+						inactivation.setReleased(existing.getReleased());
+					}
 					d.addInactivationIndicator(inactivation);
 				}
 			} else {
@@ -1011,6 +1025,7 @@ public class GraphLoader implements ScriptConstants {
 				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
+				String id = lineItems[IDX_ID];
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
@@ -1040,6 +1055,12 @@ public class GraphLoader implements ScriptConstants {
 						association.setEffectiveTime(revertEffectiveTime);
 					}
 					
+					//Do we already have this association?  Copy the released flag if so
+					AssociationEntry existing = c.getAssociationEntry(id);
+					if (existing != null) {
+						association.setReleased(existing.getReleased());
+					}
+					
 					//Remove first in case we're replacing
 					c.getAssociationEntries().remove(association);
 					c.getAssociationEntries().add(association);
@@ -1054,6 +1075,12 @@ public class GraphLoader implements ScriptConstants {
 					//Only set the released flag if it's not set already
 					if (association.isReleased() == null) {
 						association.setReleased(isReleased);
+					}
+					
+					//Do we already have this association?  Copy the released flag if so
+					AssociationEntry existing = d.getAssociationEntry(id);
+					if (existing != null) {
+						association.setReleased(existing.getReleased());
 					}
 					
 					//Remove first in case we're replacing

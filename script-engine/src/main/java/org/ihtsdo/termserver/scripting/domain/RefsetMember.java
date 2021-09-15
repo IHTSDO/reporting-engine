@@ -147,10 +147,6 @@ RefsetMember extends Component implements ScriptConstants {
 		this.additionalFields.put(key, value);
 	}
 
-	/*public Object getReferencedComponent() {
-		return referencedComponent;
-	}*/
-
 	public void setReferencedComponent(Object referencedComponent) {
 		this.referencedComponent = referencedComponent;
 	}
@@ -181,9 +177,6 @@ RefsetMember extends Component implements ScriptConstants {
 	}
 	
 	public Boolean isReleased() {
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
 		return released;
 	}
 	
@@ -252,5 +245,20 @@ RefsetMember extends Component implements ScriptConstants {
 		}
 		String activeIndicator = isActive()?"":"*";
 		return "[" + activeIndicator + "RM]:" + id + " - " + refsetId + " : " + referencedComponentId + " -> " + additionalStr;
+	}
+
+	/**
+	 * @return true if both refset members have the same refsetId, referencedComponentId and additionalFields
+	 */
+	public boolean duplicates(RefsetMember that) {
+		if (this.getRefsetId().equals(that.getRefsetId()) &&
+				this.getReferencedComponentId().equals(that.getReferencedComponentId())) {
+			return matchesAdditionalFields(that);
+		}
+		return false;
+	}
+
+	private boolean matchesAdditionalFields(RefsetMember that) {
+		return this.getAdditionalFields().equals(that.getAdditionalFields());
 	}
 }

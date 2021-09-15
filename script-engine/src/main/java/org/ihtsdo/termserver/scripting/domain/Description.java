@@ -714,6 +714,10 @@ public class Description extends Component implements ScriptConstants {
 	}
 
 	public AssociationEntry getAssociationEntry(String assocId) {
+		if (associationEntries == null) {
+			return null;
+		}
+		
 		for (AssociationEntry i : associationEntries) {
 			if (i.getId().equals(assocId)) {
 				return i;
