@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -24,11 +24,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class TermContainsXReport extends TermServerReport implements ReportClass {
 	
 	String[] textsToMatch;
+	String[] textsToAvoid = null;
 	boolean reportConceptOnceOnly = true;
 	public static final String STARTS_WITH = "Starts With";
 	public static final String WHOLE_WORD = "Whole Word Only";
 	public static final String WORDS = "Words";
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
+	public static final String WITHOUT = "Without";
 	Concept attributeDetail;
 	boolean startsWith = false;
 	boolean wholeWord = false;
@@ -51,6 +53,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		getArchiveManager().setPopulateHierarchyDepth(true);
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
 		
+		if (StringUtils.isEmpty(run.getParamValue(WITHOUT))) {
+			textsToAvoid = run.getMandatoryParamValue(WITHOUT).toLowerCase().split(COMMA);
+		}
+		
 		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			attributeDetail = gl.getConcept(attribStr);
@@ -67,13 +73,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WHOLE_WORD).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory().withDescription("Use a comma to separate multiple words in an 'or' search")
+				.add(WITHOUT).withType(JobParameter.Type.STRING).withMandatory().withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Term contains X")
-				.withDescription("This report lists all concepts containing the specified words, with optional attribute details.  Search for multiple words (in an either/or fashion) using a comma to separate.")
+				.withDescription("This report lists all concepts containing the specified words, with optional attribute details.  Search for multiple words (in an either/or fashion) using a comma to separate.  'Without' words must not be present, again comma separated")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -88,6 +95,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;
 				}
+				
+				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean reported = false;
 					String term = d.getTerm().toLowerCase();
@@ -98,6 +107,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 					}
 					for (String matchText : textsToMatch) {
 						matchText = matchText.toLowerCase().trim();
+						
+						if (textsToAvoid != null) {
+							for (String avoidText : textsToAvoid) {
+								if (term.contains(avoidText)) {
+									continue nextDescription;
+								}
+							}
+						}
 						if (wholeWord) {
 							matchText = " " + matchText + " ";
 						}
