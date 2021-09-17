@@ -14,6 +14,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.reports.loinc.LoincUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.otf.script.utils.CVSUtils;
@@ -34,7 +35,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	
 	private static String LOINC_CONTENT_FILESTR = "G:\\My Drive\\018_Loinc\\2021\\LOINC_2020_CONTENT.tsv";
 	private static String TARGET_BRANCH = "MAIN/SNOMEDCT-LOINC/LOINC2020";
-	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
+
 	
 	private static enum LoincCol { LOINC_NUM,COMPONENT,PROPERTY,TIME_ASPCT,SYSTEM,SCALE_TYP,METHOD_TYP,CLASS,VersionLastChanged,CHNG_TYPE,DefinitionDescription,STATUS,CONSUMER_NAME,CLASSTYPE,FORMULA,EXMPL_ANSWERS,SURVEY_QUEST_TEXT,SURVEY_QUEST_SRC,UNITSREQUIRED,SUBMITTED_UNITS,RELATEDNAMES2,SHORTNAME,ORDER_OBS,CDISC_COMMON_TESTS,HL7_FIELD_SUBFIELD_ID,EXTERNAL_COPYRIGHT_NOTICE,EXAMPLE_UNITS,LONG_COMMON_NAME,UnitsAndRange,EXAMPLE_UCUM_UNITS,EXAMPLE_SI_UCUM_UNITS,STATUS_REASON,STATUS_TEXT,CHANGE_REASON_PUBLIC,COMMON_TEST_RANK,COMMON_ORDER_RANK,COMMON_SI_TEST_RANK,HL7_ATTACHMENT_STRUCTURE,EXTERNAL_COPYRIGHT_LINK,PanelType,AskAtOrderEntry,AssociatedObservations,VersionFirstReleased,ValidHL7AttachmentRequest,DisplayName }
 	private static enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
@@ -301,7 +302,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	}
 	
 	public void upgradeLOINCConcept(Concept c) throws TermServerScriptException {
-		String loincNum = getLoincNumFromDescription(c);
+		String loincNum = LoincUtils.getLoincNumFromDescription(c);
 		validateAgainstCurrentLOINC(c, loincNum);
 		validateAgainstPublishedLOINC(c, loincNum);
 		
@@ -376,8 +377,8 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		}
 		
 		if (newLoincNum != null && !newLoincNum.equals(loincNum)) {
-			String newTerm = LOINC_NUM_PREFIX + newLoincNum;
-			Description oldDesc = getLoincNumDescription(c);
+			String newTerm = LoincUtils.LOINC_NUM_PREFIX + newLoincNum;
+			Description oldDesc = LoincUtils.getLoincNumDescription(c);
 			String info = getDetails(loincNum);
 			replaceDescription(null, c, oldDesc, newTerm, InactivationIndicator.OUTDATED, info);
 		}
@@ -486,19 +487,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		return attributeMap;
 	}
 
-	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
-		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
-	}
-	
-	private Description getLoincNumDescription(Concept c) throws TermServerScriptException {
-		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (d.getTerm().startsWith(LOINC_NUM_PREFIX)) {
-				return d;
-			}
-		}
-		throw new TermServerScriptException(c + " does not specify a LOINC num");
-	}
-
 	private Concept replaceIfRequired(Concept c, Relationship r, Concept local, REL_PART relPart) throws TermServerScriptException {
 		Concept replacement = local;
 		if (!local.isActive()) {
@@ -548,7 +536,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		for (Concept c : findConceptsByCriteria("module=715515008", TARGET_BRANCH, false)) {
 			Concept loadedConcept = loadConcept(c, TARGET_BRANCH);
 			if (createLoincConceptMap) {
-				String line = getLoincNumFromDescription(loadedConcept) 
+				String line = LoincUtils.getLoincNumFromDescription(loadedConcept) 
 						+ "\t" + loadedConcept.toString() + "\r\n";
 				try {
 					chs.write(line);

@@ -1571,4 +1571,8 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		return "";
 	}
 
+	public boolean isPrimitive() {
+		return definitionStatus.equals(DefinitionStatus.PRIMITIVE);
+	}
+
 }
