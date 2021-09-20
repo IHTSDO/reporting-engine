@@ -7,11 +7,11 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.springframework.util.StringUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * Report to list concepts from some file which have been, or are being inactivated
