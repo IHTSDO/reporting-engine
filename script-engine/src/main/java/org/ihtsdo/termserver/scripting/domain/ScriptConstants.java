@@ -75,13 +75,17 @@ public interface ScriptConstants extends RF2Constants {
 	static Concept ORGANISM = new Concept ("410607006", "Organism (organism)");
 	static Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	static Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
-	static Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");
 	static Concept SITN_WITH_EXP_CONTXT = new Concept ("243796009","Situation with explicit context (situation)");
 	static Concept SPECIMEN = new Concept("123038009","Specimen (specimen)");
 	static Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
 	static Concept DISEASE = new Concept ("64572001", "Disease (disorder)");
 	static Concept EVENT = new Concept("272379006", "Event (event)");
 	static Concept DEVICE = new Concept ("49062001","Device (physical object)");
+	
+	static Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");
+	static Concept PROCEDURE_SITE = new Concept ("363704007", "Procedure site (attribute)");
+	static Concept PROCEDURE_SITE_DIRECT = new Concept ("405813007", "Procedure site - Direct (attribute)");
+	static Concept PROCEDURE_SITE_INDIRECT = new Concept ("405814001", "Procedure site - Indirect (attribute)");
 	
 	static Concept CAUSE_AGENT = new Concept ("246075003","Causative agent (attribute)");
 	static Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
