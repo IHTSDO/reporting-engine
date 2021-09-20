@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 
