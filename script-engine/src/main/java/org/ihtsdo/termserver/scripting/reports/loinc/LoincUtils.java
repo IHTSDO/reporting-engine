@@ -11,7 +11,11 @@ public class LoincUtils {
 	public static String CORRELATION_PREFIX = "Correlation ID:";
 
 	public static String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
-		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
+		try {
+			return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
+		} catch (Exception e) {
+			return "No LOINCNum"; 
+		}
 	}
 	
 	public static Description getLoincNumDescription(Concept c) throws TermServerScriptException {
@@ -19,7 +23,11 @@ public class LoincUtils {
 	}
 	
 	public static String getCorrelation(Concept c) throws TermServerScriptException {
-		return getDescription(c, CORRELATION_PREFIX).getTerm().substring(CORRELATION_PREFIX.length());
+		try {
+			return getDescription(c, CORRELATION_PREFIX).getTerm().substring(CORRELATION_PREFIX.length());
+		} catch (Exception e) {
+			return "No Correlation"; 
+		}
 	}
 	
 	private static Description getDescription(Concept c, String prefix) throws TermServerScriptException {
@@ -29,5 +37,6 @@ public class LoincUtils {
 			}
 		}
 		throw new TermServerScriptException(c + " does not specify a " + prefix);
+		
 	}
 }

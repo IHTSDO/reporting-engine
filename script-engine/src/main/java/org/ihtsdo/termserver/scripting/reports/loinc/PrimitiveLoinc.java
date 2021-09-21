@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -17,7 +17,7 @@ public class PrimitiveLoinc extends TermServerScript{
 		try {
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
 			report.getArchiveManager().setRunIntegrityChecks(false);
-			report.headers="SCTID, FSN, SemTag, PT, LoincNum, Correlation, Expression";
+			report.headers="SCTID, FSN, SemTag, PT, LoincNum, Correlation, Update Details, Expression";
 			report.init(args);
 			report.loadProjectSnapshot(false);
 			report.postInit();
@@ -28,9 +28,10 @@ public class PrimitiveLoinc extends TermServerScript{
 	}
 
 	private void reportMatchingConcepts() throws TermServerScriptException {
-
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive() && 
+			if (c.getModuleId() == null) {
+				warn ("Invalid concept loaded through reference? " + c.getId());
+			} else if (c.isActive() && 
 					c.getModuleId().equals(SCTID_LOINC_MODULE) &&
 					c.isPrimitive()) {
 				report (c, 
@@ -41,5 +42,4 @@ public class PrimitiveLoinc extends TermServerScript{
 			}
 		}
 	}
-
 }
