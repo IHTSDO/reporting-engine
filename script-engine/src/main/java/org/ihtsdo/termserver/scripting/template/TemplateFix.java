@@ -179,8 +179,9 @@ abstract public class TemplateFix extends BatchFix {
 					String attributeClause = a.toString().replaceAll("  ", " ");
 					String attributeClauseValue = attributeClause.substring(attributeClause.indexOf("=") + 1).trim();
 					if (namedSlots.containsKey(a.getValueSlotName())) {
+						//TODO This comparison should be made without FSNs involved
 						if (!attributeClauseValue.equals(namedSlots.get(a.getValueSlotName()))) {
-							throw new IllegalArgumentException("Named slots sharing the same name must have identical slot definition: " + a.getValueSlotName() + " -> " + attributeClauseValue);
+							throw new IllegalArgumentException("Named slots sharing the same name must have identical slot definition: " + a.getValueSlotName() + " -> " + attributeClauseValue + " vs " + namedSlots.get(a.getValueSlotName()));
 						}
 					} else {
 						namedSlots.put(a.getValueSlotName(), attributeClauseValue);
