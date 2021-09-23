@@ -200,12 +200,12 @@ public class GraphLoader implements ScriptConstants {
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				
 				/*if ( lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_INFERRED_RELATIONSHIP) 
-						&& thisConcept.getId().equals("65371000119109") 
+						&& thisConcept.getId().equals("422435005") 
 						&& lineItems[REL_IDX_TYPEID].equals("116680003")) {
 					TermServerScript.debug("here");
-				}
+				}*/
 				
-				if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
+				/*if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
 					TermServerScript.warn("Didn't expected to see any more of these! " + String.join(" ", lineItems));
 				}*/
 				

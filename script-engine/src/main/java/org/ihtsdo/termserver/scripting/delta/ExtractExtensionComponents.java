@@ -44,6 +44,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
+			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
