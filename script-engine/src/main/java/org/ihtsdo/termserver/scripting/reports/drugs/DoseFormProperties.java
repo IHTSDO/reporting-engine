@@ -45,7 +45,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Dose Form Properties")
-				.withDescription("This report lists dose form properties.")
+				.withDescription("This report lists dose form properties. Use 'This Release' optionally, to run against an S3 published package.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -58,6 +58,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 		pharmDoseForms.sort(Comparator.comparing(Concept::getFsn));
 		Set<Concept> usedInInternationalEdition = findDoseFormsUsed();
 		for (Concept c : pharmDoseForms) {
+			countIssue(c);
 			report (c, 
 					c.getPreferredSynonym(),
 					reportValue(c, IS_A),
