@@ -39,7 +39,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		Map<String, String> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(WORDS, "Glucose:SCnc:Pt:Bld:Qn");
+		params.put(WORDS, "angiography, angiogram, arteriography, arteriogram");
+		params.put(WITHOUT, "fluoroscopic, fluoroscopy, computed tomography, CT, magnetic resonance, MR, MRA, MRI");
 		params.put(WHOLE_WORD, "false");
 		params.put(ATTRIBUTE_TYPE, null);
 		TermServerReport.run(TermContainsXReport.class, args, params);
@@ -52,9 +53,15 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		super.init(run);
 		getArchiveManager().setPopulateHierarchyDepth(true);
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
+		for (int i=0; i < textsToMatch.length; i++) {
+			textsToMatch[i] = textsToMatch[i].toLowerCase().trim();
+		}
 		
-		if (StringUtils.isEmpty(run.getParamValue(WITHOUT))) {
+		if (!StringUtils.isEmpty(run.getParamValue(WITHOUT))) {
 			textsToAvoid = run.getMandatoryParamValue(WITHOUT).toLowerCase().split(COMMA);
+			for (int i=0; i < textsToAvoid.length; i++) {
+				textsToAvoid[i] = textsToAvoid[i].toLowerCase().trim();
+			}
 		}
 		
 		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
@@ -73,7 +80,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WHOLE_WORD).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory().withDescription("Use a comma to separate multiple words in an 'or' search")
-				.add(WITHOUT).withType(JobParameter.Type.STRING).withMandatory().withDescription("Use a comma to separate multiple words in an 'or' search")
+				.add(WITHOUT).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		
@@ -106,8 +113,6 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 						altTerm = term.replaceAll("[^A-Za-z0-9]", " ");
 					}
 					for (String matchText : textsToMatch) {
-						matchText = matchText.toLowerCase().trim();
-						
 						if (textsToAvoid != null) {
 							for (String avoidText : textsToAvoid) {
 								if (term.contains(avoidText)) {
