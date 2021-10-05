@@ -24,8 +24,8 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
-		params.put(SEMTAG_FILTER_PARAM, "(procedure)");
+		//params.put(RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
+		//params.put(SEMTAG_FILTER_PARAM, "(procedure)");
 		TermServerReport.run(InactivatedConcepts.class, args, params);
 	}
 	
