@@ -661,4 +661,14 @@ public class TermServerClient {
 		}
 	}
 
+	public void setAuthorFlag(String branchPath, String key, String value) throws TermServerScriptException {
+		String url = this.url + "/branches/" + branchPath + "/actions/set-author-flag";
+		Map<String, String> requestBody = Map.of("name", key, "value", value);
+		try {
+			restTemplate.postForObject(url, requestBody, Object.class);
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
+	}
+
 }
