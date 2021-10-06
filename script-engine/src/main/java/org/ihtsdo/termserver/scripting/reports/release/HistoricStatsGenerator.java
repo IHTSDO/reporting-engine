@@ -112,7 +112,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String[] histAssocIds = getHistAssocIds(c);
 				String[] descHistAssocIds = getDescHistAssocIds(c);
 				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
-				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
+				ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
 						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
 						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],

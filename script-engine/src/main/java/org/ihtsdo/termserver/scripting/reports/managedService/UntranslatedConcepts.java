@@ -111,23 +111,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		//filter for appropriate scope at the same time - avoids problems with FSNs without semtags
 		return superSet.stream()
 		.filter (c -> inScope(c))
-		.sorted((c1, c2) -> compareSemTagFSN(c1,c2))
+		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 		.collect(Collectors.toList());
 	}
-
-	private int compareSemTagFSN(Concept c1, Concept c2) {
-		String[] fsnSemTag1 = SnomedUtils.deconstructFSN(c1.getFsn());
-		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
-		
-		if (fsnSemTag1[1] == null || fsnSemTag2[1] == null) {
-			System.out.println("FSN Encountered without semtag: " + fsnSemTag1[1] == null ? c1 : c2);
-			return fsnSemTag1[0].compareTo(fsnSemTag2[0]);
-		} 
-		
-		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
-			return fsnSemTag1[0].compareTo(fsnSemTag2[0]);
-		}
-		return fsnSemTag1[1].compareTo(fsnSemTag2[1]);
-	}
-	
 }

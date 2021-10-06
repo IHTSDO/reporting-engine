@@ -1754,4 +1754,38 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		parts[1] = split[1];
 		return parts;
 	}
+	
+	
+	public static List<Concept> sort(Collection<Concept> superSet) {
+		//We're going to sort on top level hierarchy, then alphabetically
+		return superSet.stream()
+		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.collect(Collectors.toList());
+	}
+	
+	public static List<Concept> sortActive(Collection<Concept> superSet) {
+		//We're going to sort on top level hierarchy, then alphabetically
+		return superSet.stream()
+		.filter(c -> c.isActive())
+		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.collect(Collectors.toList());
+	}
+	
+	public static int compareSemTagFSN(Concept c1, Concept c2) {
+		String[] fsnSemTag1 = SnomedUtils.deconstructFSN(c1.getFsn());
+		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
+		
+		if (fsnSemTag1[1] == null) {
+			System.out.println("FSN Encountered without semtag: " + c1);
+			return 1;
+		} else if (fsnSemTag2[1] == null) {
+			System.out.println("FSN Encountered without semtag: " + c2);
+			return -1;
+		}
+		
+		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
+			return fsnSemTag1[0].compareTo(fsnSemTag2[0]);
+		}
+		return fsnSemTag1[1].compareTo(fsnSemTag2[1]);
+	}
 }

@@ -16,6 +16,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.mortbay.jetty.HttpStatus;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
@@ -347,8 +348,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						project = scaClient.getProject(projectName);
 						ok = true;
 					} catch (Exception e) {
-						if (++retry < 3) {
-							System.err.println("Timeout received from Google. Retrying after short nap.");
+						//No need to retry if we get a 403
+						String exceptionMsg = ExceptionUtils.getExceptionCause("Unable to recover project", e) + " Retrying after short nap.";
+						if (!exceptionMsg.contains("403") && ++retry < 3) {
+							System.err.println(exceptionMsg);
 							Thread.sleep(1000 * 10);
 						} else {
 							throw new TermServerScriptException("Failed to recover project " + projectName, e);

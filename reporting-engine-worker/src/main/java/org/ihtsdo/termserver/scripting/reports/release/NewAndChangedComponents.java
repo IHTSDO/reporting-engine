@@ -368,7 +368,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(defStatusChanged);
 		superSet.addAll(inactivatedConcepts);
 		debug ("Creating concept report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport (SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newConcepts.contains(c)?"Y":"N",
@@ -382,7 +382,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasNewInferredRelationships);
 		superSet.addAll(hasLostInferredRelationships);
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			populateTraceabilityAndReport (TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -396,7 +396,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasChangedAxioms);
 		superSet.addAll(hasLostAxioms);
 		debug ("Creating axiom report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			populateTraceabilityAndReport (QUATERNARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -412,7 +412,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasLostDescriptions);
 		superSet.addAll(hasChangedAcceptabilityDesc);
 		debug ("Creating description report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			populateTraceabilityAndReport (QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -430,7 +430,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasChangedAssociations);
 		superSet.addAll(hasChangedInactivationIndicators);
 		debug ("Creating association report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport (SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
@@ -441,7 +441,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			report (SEPTENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
@@ -454,7 +454,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasLostTextDefn);
 		superSet.addAll(hasChangedAcceptabilityTextDefn);
 		debug ("Creating text defn report for " + superSet.size() + " concepts");
-		for (Concept c : sort(superSet)) {
+		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport (DENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewTextDefn.contains(c)?"Y":"N",
@@ -527,32 +527,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			countIssue(c);
 		}
 	}
-	
-	private List<Concept> sort(Set<Concept> superSet) {
-		//We're going to sort on top level hierarchy, then alphabetically
-		return superSet.stream()
-		.sorted((c1, c2) -> compareSemTagFSN(c1,c2))
-		.collect(Collectors.toList());
-	}
 
-	private int compareSemTagFSN(Concept c1, Concept c2) {
-		String[] fsnSemTag1 = SnomedUtils.deconstructFSN(c1.getFsn());
-		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
-		
-		if (fsnSemTag1[1] == null) {
-			System.out.println("FSN Encountered without semtag: " + c1);
-			return 1;
-		} else if (fsnSemTag2[1] == null) {
-			System.out.println("FSN Encountered without semtag: " + c2);
-			return -1;
-		}
-		
-		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
-			return fsnSemTag1[0].compareTo(fsnSemTag2[0]);
-		}
-		return fsnSemTag1[1].compareTo(fsnSemTag2[1]);
-	}
-	
 	class SummaryCount {
 		int isNew;
 		int isChanged;
