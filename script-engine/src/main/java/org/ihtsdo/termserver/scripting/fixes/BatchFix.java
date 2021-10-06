@@ -297,6 +297,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
 					debug ("Creating task branch in terminology server: " + task);
 					task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
+					tsClient.setAuthorFlag(task.getBranchPath(), "batch-change", "true");
 					taskCreated = true;
 				} catch (Exception e) {
 					taskCreationAttempts++;
