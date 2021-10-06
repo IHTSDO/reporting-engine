@@ -11,6 +11,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.otf.script.utils.CVSUtils;
 
@@ -38,7 +39,6 @@ public class UpdateLOINC extends BatchFix {
 	private Map<String, List<String>> loincFileMap;
 	private BiMap<String, String> fsnBestLoincMap;
 	private Map<String, List<String>> fsnAllLoincMap;
-	private Map<String, Concept> loincConceptMap;
 	private Map<String, String> deprecatedMap;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
@@ -70,10 +70,12 @@ public class UpdateLOINC extends BatchFix {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"TaskId, TaskDesc,SCTID, FSN, SemTag, Severity, Action, Detail, Details, , , ",
+				"SCTID, FSN, SemTag, LoincNum, Issue, Detail, Detail, Details",
 				"Item, Count"
 		};
 		String[] tabNames = new String[] {
 				"Updates to LOINC2020",
+				"Issues Encountered",
 				"Summary Counts"
 		};
 		super.postInit(tabNames, columnHeadings, false);
@@ -163,21 +165,6 @@ public class UpdateLOINC extends BatchFix {
 			throw new TermServerScriptException(e);
 		}
 		
-		for (String fsn : checkReplacementAvailable) {
-			String bestLoincNum = fsnBestLoincMap.get(fsn);
-			String status = get(loincFileMap, bestLoincNum, LoincCol.STATUS.ordinal());
-			if (status.equals(ACTIVE)) {
-				increment("Double deprecated loincNum subsequently replaced");
-			} else {
-				for (String loincNum : fsnAllLoincMap.get(fsn)) {
-					String usedHere = "Unknown";
-					if (loincConceptMap != null) {
-						usedHere = loincConceptMap.containsKey(loincNum) ? loincConceptMap.get(loincNum).toString() : "No";
-					}
-					//report(QUATERNARY_REPORT, "No active replacements found", fsn, getDetails(loincNum), "", usedHere);
-				}
-			}
-		}
 		flushFiles(false, false);
 	}
 
@@ -195,7 +182,6 @@ public class UpdateLOINC extends BatchFix {
 		return row.get(idx);
 	}
 
-	
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		int changesMade = 0;
@@ -221,6 +207,21 @@ public class UpdateLOINC extends BatchFix {
 		}
 		return changesMade;
 	}
+	
+	private void validateLoincConcept(Concept c) throws TermServerScriptException {
+		String loincNum = getLoincNumFromDescription(c);
+		
+		//Compare FSN formed from LOINC Parts against what we have here
+		String loincFSN = formLoincFSN(loincNum);
+		
+		//We use Ratio instead of IgE/IgE.total:AFr
+		loincFSN = loincFSN.replace("IgE/IgE.total:AFr", "IgE:Ratio");
+		
+		if (!loincFSN.toLowerCase().equals(c.getPreferredSynonym().toLowerCase())) {
+			String diff = org.ihtsdo.otf.utils.StringUtils.differenceCaseInsensitive(c.getPreferredSynonym(), loincFSN);
+			report(SECONDARY_REPORT, c, loincNum, "LOINC Parts mismatch", loincFSN, diff);
+		}
+	}
 
 	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
 		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
@@ -234,13 +235,29 @@ public class UpdateLOINC extends BatchFix {
 		}
 		throw new TermServerScriptException(c + " does not specify a LOINC num");
 	}
+	
+	private String formLoincFSN(String loincNum) {
+		String fsn = "";
+		for (int idx=1; idx<7; idx++) {
+			fsn += get(loincFileMap, loincNum, idx);
+			if (idx < 6) {
+				fsn += ":";
+			}
+		}
+		//Did we get anything for that last field
+		if (fsn.endsWith(":")) {
+			fsn = fsn.substring(0, fsn.length()-1);
+		}
+		return fsn;
+	}
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
 		//setQuiet(true);
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (c.isActive() && c.getModuleId().equals(SCTID_LOINC_MODULE)) {
+				validateLoincConcept(c);
 				//Only process component if we have changes to make
 				if (upgradeLOINCConcept(null, c.cloneWithIds()) > 0) {
 					//componentsToProcess.add(c);
@@ -250,7 +267,7 @@ public class UpdateLOINC extends BatchFix {
 		//setQuiet(false);
 		return componentsToProcess;
 	}
-	
+
 	private void populateSummaryTab() throws TermServerScriptException {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
