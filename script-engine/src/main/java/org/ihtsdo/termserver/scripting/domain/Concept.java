@@ -214,7 +214,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 			if (fsn instanceof String) {
 				return fsn.toString();
 			} else if (fsn instanceof Map){
-				return ((Map)fsn).get("term").toString();
+				return ((Map<?,?>)fsn).get("term").toString();
 			}else {
 				return fsn.toString();
 			}
@@ -684,8 +684,8 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 				//Are we working with JSON representation and acceptability map, or an RF2 representation
 				//with language refset entries?
 				if (thisDescription.getAcceptabilityMap() != null) {
-					if (acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability)) {
-						if (acceptability.equals(Acceptability.BOTH)) {
+					if (acceptability == null || acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability)) {
+						if (acceptability == null || acceptability.equals(Acceptability.BOTH)) {
 							matchingDescriptions.add(thisDescription);
 						} else if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
 							matchingDescriptions.add(thisDescription);
@@ -695,7 +695,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 					boolean match = false;
 					boolean preferredFound = false;
 					for (LangRefsetEntry l : thisDescription.getLangRefsetEntries(ActiveState.ACTIVE)) {
-						if (acceptability.equals(Acceptability.BOTH) || 
+						if (acceptability == null || acceptability.equals(Acceptability.BOTH) || 
 							acceptability.equals(SnomedUtils.translateAcceptability(l.getAcceptabilityId()))) {
 							match = true;
 						} 
@@ -706,7 +706,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 					}
 					//Did we find one, and if it's acceptable, did we also not find another preferred
 					if (match) {
-						if (acceptability.equals(Acceptability.ACCEPTABLE)) {
+						if (acceptability != null && acceptability.equals(Acceptability.ACCEPTABLE)) {
 							if (!preferredFound) {
 								matchingDescriptions.add(thisDescription);
 							}

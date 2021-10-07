@@ -48,7 +48,7 @@ public class NormaliseConcepts extends BatchFix {
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
-		includeSummaryTab = true;
+		summaryTabIdx = SECONDARY_REPORT;
 		super.init(args);
 	}
 	

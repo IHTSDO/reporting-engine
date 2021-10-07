@@ -22,6 +22,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class PreReleaseContentValidation extends HistoricDataUser implements ReportClass {
 	
 	List<Concept> allActiveConceptsSorted;
+	List<Concept> allInactiveConceptsSorted;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -46,7 +47,6 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				.withTag(INT)
 				.build();
 	}
-	
 
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
@@ -62,6 +62,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 					.collect(Collectors.toList());
 		}
 		
+		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 	}
 
@@ -72,26 +73,31 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			getJobRun().setProject(origProject);
 		}
 		
-		String[] columnHeadings = new String[] {"Stat, count",
+		String[] columnHeadings = new String[] {"Summary Item, Count",
 												"SCTID, FSN, SemTag, New Hierarchy, Old Hierarchy", 
-												"SCTID, FSN, SemTag, New FSN, Old FSN, Difference",
+												"SCTID, FSN, SemTag, Old FSN, Difference",
 												"SCTID, FSN, SemTag",
 												"SCTID, FSN, SemTag",
+												"SCTID, FSN, SemTag, Defn Status Change",
 												"SCTID, FSN, SemTag",
+												"SCTID, FSN, SemTag, Text Definition",
 												"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Summary Counts",
 											"Hierarchy Switches", 
 											"FSN Changes",
-											"Query 3",
-											"Query 4",
-											"Query 5",
-											"Query 6"};
+											"Inactivated",
+											"Reactivated",
+											"DefnStatus",
+											"New FSNs",
+											"Text Defn",
+											"ICD-O"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	public void runJob() throws TermServerScriptException {
 		
 		allActiveConceptsSorted = SnomedUtils.sortActive(gl.getAllConcepts());
+		allInactiveConceptsSorted = SnomedUtils.sortInactive(gl.getAllConcepts());
 		TransitiveClosure tc = gl.generateTransativeClosure();
 		
 		info ("Loading Previous Data");
@@ -101,12 +107,33 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		topLevelHierarchySwitch(tc);
 		
 		info("Checking for fsn changes");
-		checkforFsnChange();
+		checkForFsnChange();
 		
+		info("Checking for inactivated concepts");
+		checkForInactivatedConcepts();
 		
+		info("Checking for reactivated concepts");
+		checkForReactivatedConcepts();
+		
+		info("Checking for Definition Status Change");
+		checkForDefinitionStatusChange();
+		
+		info("Checking for New FSNs");
+		checkForNewFSNs();
+		
+		info("Check for New / Changed Text Definitions");
+		checkForUpsertedTextDefinitions();
+		
+		info("Check for ICD-O changes");
+		checkForICDOChanges();
+		
+		info("Compiling Summary Counts");
+		compileSummaryCounts();
 	}
 
 	private void topLevelHierarchySwitch(TransitiveClosure tc) throws TermServerScriptException {
+		String summaryItem = "Top level hierarchy switch";
+		initialiseSummaryInformation(summaryItem);
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
@@ -115,6 +142,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 					Concept topLevel = getHierarchy(tc, c);
 					if (!prevDatum.hierarchy.equals(topLevel.getId())) {
 						report (SECONDARY_REPORT, c, topLevel.toStringPref(), gl.getConcept(prevDatum.hierarchy).toStringPref());
+						incrementSummaryInformation(summaryItem);
 					}
 				}
 			} catch (Exception e) {
@@ -123,14 +151,17 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		}
 	}
 	
-	private void checkforFsnChange() throws TermServerScriptException {
+	private void checkForFsnChange() throws TermServerScriptException {
+		String summaryItem = "FSN Changes";
+		initialiseSummaryInformation(summaryItem);
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
 				Datum prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
 					if (!prevDatum.fsn.equals(c.getFsn())) {
-						report (TERTIARY_REPORT, c, c.getFsn(), prevDatum.fsn, StringUtils.difference(c.getFsn(), prevDatum.fsn));
+						report (TERTIARY_REPORT, c, prevDatum.fsn, StringUtils.difference(c.getFsn(), prevDatum.fsn));
+						incrementSummaryInformation(summaryItem);
 					}
 				}
 			} catch (Exception e) {
@@ -138,5 +169,121 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			}
 		}
 	}
+	
+	private void checkForInactivatedConcepts() throws TermServerScriptException {
+		String summaryItem = "Inactivated Concepts";
+		initialiseSummaryInformation(summaryItem);
+		for (Concept c : allInactiveConceptsSorted) {
+			try {
+				//Was this concept in the previous release and if so, has it switched?
+				Datum prevDatum = prevData.get(c.getId());
+				if (prevDatum != null) {
+					if (prevDatum.isActive) {
+						report (QUATERNARY_REPORT, c);
+						incrementSummaryInformation(summaryItem);
+					}
+				}
+			} catch (Exception e) {
+				report (QUATERNARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
 
+	private void checkForReactivatedConcepts() throws TermServerScriptException {
+		String summaryItem = "Reactivated Concepts";
+		initialiseSummaryInformation(summaryItem);
+		for (Concept c : allActiveConceptsSorted) {
+			try {
+				//Was this concept in the previous release and if so, has it switched?
+				Datum prevDatum = prevData.get(c.getId());
+				if (prevDatum != null) {
+					if (!prevDatum.isActive) {
+						report (QUINARY_REPORT, c);
+						incrementSummaryInformation(summaryItem);
+					}
+				}
+			} catch (Exception e) {
+				report (QUINARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
+	
+	private void checkForDefinitionStatusChange() throws TermServerScriptException {
+		String summaryItem = "Definition Status Changes";
+		initialiseSummaryInformation(summaryItem);
+		for (Concept c : allActiveConceptsSorted) {
+			try {
+				//Was this concept in the previous release and if so, has it switched?
+				Datum prevDatum = prevData.get(c.getId());
+				if (prevDatum != null) {
+					//If what was SD is now P, or visa versa, report
+					if (prevDatum.isSD == c.isPrimitive()) {
+						report (SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
+						incrementSummaryInformation(summaryItem);
+					}
+				}
+			} catch (Exception e) {
+				report (SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
+	
+	private void checkForNewFSNs() throws TermServerScriptException {
+		String summaryItem = "New FSNs";
+		initialiseSummaryInformation(summaryItem);
+		for (Concept c : allActiveConceptsSorted) {
+			try {
+				Description fsn = c.getFSNDescription();
+				//Was this concept in the previous release and if so, has it switched?
+				Datum prevDatum = prevData.get(c.getId());
+				if (prevDatum == null || !prevDatum.descIds.contains(fsn.getId())) {
+					report (SEPTENARY_REPORT, c);
+					incrementSummaryInformation(summaryItem);
+				}
+			} catch (Exception e) {
+				report (SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
+	
+	private void checkForUpsertedTextDefinitions() throws TermServerScriptException {
+		String summaryItem = "Text Definitions new / changed";
+		initialiseSummaryInformation(summaryItem);
+		for (Concept c : allActiveConceptsSorted) {
+			try {
+				for (Description textDefn : c.getDescriptions(null, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE)) {
+					//Is this text definition in the delta?  Check null or current effective time
+					if (StringUtils.isEmpty(textDefn.getEffectiveTime())) {
+						report (OCTONARY_REPORT, c, textDefn);
+						incrementSummaryInformation(summaryItem);
+					}
+				}
+				
+			} catch (Exception e) {
+				report (OCTONARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
+
+	private void checkForICDOChanges() throws TermServerScriptException {
+		report (NONARY_REPORT, "ICDO Refset Members not available");
+	}
+
+	private void compileSummaryCounts() {
+		String msg = "Active concepts with active historical associations";
+		initialiseSummaryInformation(msg);
+		for (Concept c : allActiveConceptsSorted) {
+			if (c.getAssociations(ActiveState.ACTIVE, true).size() > 0) {
+				incrementSummaryInformation(projectKey);
+			}
+		}
+		
+		msg = "Active concepts with active inactivation reason";
+		initialiseSummaryInformation(msg);
+		for (Concept c : allActiveConceptsSorted) {
+			if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
+				incrementSummaryInformation(projectKey);
+			}
+		}
+	}
 }

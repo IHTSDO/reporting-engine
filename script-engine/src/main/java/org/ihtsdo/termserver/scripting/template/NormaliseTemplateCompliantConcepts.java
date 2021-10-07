@@ -49,7 +49,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		selfDetermining = true;
 		runStandAlone = true;
 		classifyTasks = true;
-		includeSummaryTab = true;
+		summaryTabIdx = SECONDARY_REPORT;
 		
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();

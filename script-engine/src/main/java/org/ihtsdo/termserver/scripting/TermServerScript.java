@@ -16,7 +16,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.mortbay.jetty.HttpStatus;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
@@ -56,7 +55,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private String dependencyArchive;
 	protected String projectName;
 	private String reportName;
-	protected boolean includeSummaryTab = false;
+	protected int summaryTabIdx = NOT_SET;
 	protected boolean reportNullConcept = true;
 	protected boolean expectStatedRelationshipInactivations = false;
 	protected String subHierarchyStr;
@@ -1119,7 +1118,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		recordSummaryText ("Finished at: " + endTime);
 		
-		if (includeSummaryTab) {
+		if (summaryTabIdx != NOT_SET) {
 			recordSummaryText("");
 		}
 		
@@ -1165,9 +1164,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private synchronized void recordSummaryText(String msg) {
 		info (msg);
 		if (getReportManager() != null) {
-			if (includeSummaryTab) {
+			if (summaryTabIdx != NOT_SET) {
 				try {
-					writeToReportFile (SECONDARY_REPORT, msg);
+					//Split the colon into it's own column (unless it's a time stamp!)
+					if (msg.contains(":") && !msg.contains("at: ")) {
+						msg = QUOTE + msg.replaceAll(": ", QUOTE_COMMA_QUOTE).replaceAll(":", QUOTE_COMMA_QUOTE) + QUOTE;
+					}
+					writeToReportFile (summaryTabIdx, msg);
 				} catch (Exception e) {
 					error ("Failed to write summary info: " + msg, e);
 				}

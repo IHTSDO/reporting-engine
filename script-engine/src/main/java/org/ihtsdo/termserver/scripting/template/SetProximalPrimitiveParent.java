@@ -43,7 +43,7 @@ public class SetProximalPrimitiveParent extends BatchFix {
 		selfDetermining = true;
 		runStandAlone = true;
 		classifyTasks = true;
-		includeSummaryTab = true;
+		summaryTabIdx = SECONDARY_REPORT;
 		super.init(args);
 	}
 	

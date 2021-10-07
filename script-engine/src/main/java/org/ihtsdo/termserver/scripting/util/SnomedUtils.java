@@ -1771,6 +1771,14 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		.collect(Collectors.toList());
 	}
 	
+	public static List<Concept> sortInactive(Collection<Concept> superSet) {
+		//We're going to sort on top level hierarchy, then alphabetically
+		return superSet.stream()
+		.filter(c -> !c.isActive())
+		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.collect(Collectors.toList());
+	}
+	
 	public static int compareSemTagFSN(Concept c1, Concept c2) {
 		String[] fsnSemTag1 = SnomedUtils.deconstructFSN(c1.getFsn());
 		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());

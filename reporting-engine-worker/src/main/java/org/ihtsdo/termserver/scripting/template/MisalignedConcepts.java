@@ -101,7 +101,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
-		includeSummaryTab = true;
+		summaryTabIdx = SECONDARY_REPORT;
 		
 		if (inclusionWords == null) {
 			inclusionWords = new ArrayList<>();

@@ -14,7 +14,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class NewAndChangedComponents extends TermServerReport implements ReportClass {
 	
