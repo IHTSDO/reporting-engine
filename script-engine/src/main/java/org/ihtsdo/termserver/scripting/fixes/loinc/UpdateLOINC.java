@@ -26,8 +26,8 @@ public class UpdateLOINC extends BatchFix {
 	
 	enum REL_PART {Type, Target};
 	
-	private static String loincFile = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
-	//private static String loincFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/Loinc_2_70.csv";
+	//private static String loincFile = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
+	private static String loincFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/Loinc_2_70.csv";
 	
 	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	
@@ -40,6 +40,7 @@ public class UpdateLOINC extends BatchFix {
 	private BiMap<String, String> fsnBestLoincMap;
 	private Map<String, List<String>> fsnAllLoincMap;
 	private Map<String, String> deprecatedMap;
+	private Map<String, String> discouragedMap;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
 	protected UpdateLOINC(BatchFix clone) {
@@ -86,6 +87,7 @@ public class UpdateLOINC extends BatchFix {
 		loincFileMap = new HashMap<>();
 		fsnBestLoincMap = HashBiMap.create();
 		deprecatedMap = new HashMap<>();
+		discouragedMap = new HashMap<>();
 		fsnAllLoincMap = new HashMap<>();
 		Set<String> checkReplacementAvailable = new HashSet<>();
 		try {
@@ -123,6 +125,9 @@ public class UpdateLOINC extends BatchFix {
 						if (thisStatus.equals(DEPRECATED)) {
 							String statusText = get(loincFileMap, loincNum, LoincCol.STATUS_TEXT.ordinal());
 							deprecatedMap.put(loincNum, statusText);
+						} else if (thisStatus.equals(DISCOURAGED)) {
+							String statusText = get(loincFileMap, loincNum, LoincCol.STATUS_TEXT.ordinal());
+							discouragedMap.put(loincNum, statusText);
 						}
 						
 						if (!fsnBestLoincMap.containsKey(fsn) && !fsnBestLoincMap.containsValue(loincNum)) {
@@ -204,6 +209,10 @@ public class UpdateLOINC extends BatchFix {
 		String loincNum = getLoincNumFromDescription(c);
 		if (deprecatedMap.containsKey(loincNum)) {
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, loincNum, "LOINC Num marked as deprecated", deprecatedMap.get(loincNum));
+		}
+		
+		if (discouragedMap.containsKey(loincNum)) {
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, loincNum, "LOINC Num marked as discouraged", discouragedMap.get(loincNum));
 		}
 		return changesMade;
 	}
