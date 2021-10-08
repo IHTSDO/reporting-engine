@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.qi;
+package org.ihtsdo.termserver.scripting.fixes.oneOffs;
 
 import java.util.*;
 import java.util.stream.Collectors;
