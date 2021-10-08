@@ -165,10 +165,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		populateTemplates(subsetECL, templateNames);
 		
-		subsetECL = "<< 64572001 |Disease (disorder)|"; 
-		templateNames = new String[] {	"templates/Disease.json" };
-		populateTemplates(subsetECL, templateNames);
-		
 		subsetECL = "<< 7890003 |Contracture of joint (disorder)|"; //QI-261
 		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
 		populateTemplates(subsetECL, templateNames);
@@ -456,6 +452,35 @@ public abstract class AllKnownTemplates extends TermServerReport {
 										"templates/drugs/CD precise discrete.json",
 										"templates/drugs/CD precise continuous.json"};
 		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/CT Guided.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Misalignment.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Generic Morphologies.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Recession CF.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Recession.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Poisoning.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/Stoma.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/CT of Body Structure.json" };
+		populateTemplates(null, templateNames);
+		
+		//Do this one last to pick up whatever is left under Disease
+		subsetECL = "<< 64572001 |Disease (disorder)|"; 
+		templateNames = new String[] {	"templates/Disease.json" };
+		populateTemplates(subsetECL, templateNames);
 		
 		populateTemplatesFromTS();
 		super.init(run);
