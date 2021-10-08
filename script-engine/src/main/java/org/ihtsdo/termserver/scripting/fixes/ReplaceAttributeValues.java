@@ -122,7 +122,7 @@ public class ReplaceAttributeValues extends BatchFix {
 		return changesMade;
 	}
 
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> allAffected = new ArrayList<>();
 		LOGGER.info("Identifying concepts to process");
 		
@@ -143,5 +143,5 @@ public class ReplaceAttributeValues extends BatchFix {
 		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
-	}
+	}*/
 }
