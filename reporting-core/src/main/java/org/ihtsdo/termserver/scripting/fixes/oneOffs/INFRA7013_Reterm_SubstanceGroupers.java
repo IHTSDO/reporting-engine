@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.qi;
+package org.ihtsdo.termserver.scripting.fixes.oneOffs;
 
 import java.io.IOException;
 import java.util.*;
