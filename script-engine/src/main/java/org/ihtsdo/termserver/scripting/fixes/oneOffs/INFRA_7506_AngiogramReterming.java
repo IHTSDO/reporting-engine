@@ -102,6 +102,12 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 			}
 		}
 		
+		//If we're missing an "of", it might be that we're X <type of procedure> when we want to be
+		//<type of procedure> of X
+		if (!c.getFsn().contains(" of ")) {
+			changesMade += shiftXOfIfRequired(t, c, sites);
+		}
+		
 		changesMade += removeIfRequired(t, c);
 		changesMade += doTranslationIfRequired(t, c, termTranslationPT, true);
 		changesMade += doTranslationIfRequired(t, c, termTranslationAll, false);
@@ -124,14 +130,75 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 					}
 					changesMade++;
 				}
-			} else {
-				//Only report in first pass
-				if (t == null) {
-					report (SECONDARY_REPORT, c,  hasArtery?"Y":"N", sitesStr, "No issues detected", descriptionsStr);
+			} 
+		}
+		
+		//Only report in first pass
+		if (t == null && changesMade == NO_CHANGES_MADE) {
+			report (SECONDARY_REPORT, c,  hasArtery?"Y":"N", sitesStr, "No issues detected", descriptionsStr);
+		}
+		return changesMade;
+	}
+	
+	private int shiftXOfIfRequired(Task t, Concept c, Set<Concept> sites) throws TermServerScriptException {
+		int changesMade = 0;
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			String newTerm = null;
+			boolean isFsn = d.getType().equals(DescriptionType.FSN);
+			String term = d.getTerm();
+			String semtag = "";
+			if (isFsn) {
+				String[] parts = SnomedUtils.deconstructSCTIDFsn(term);
+				term = parts[0].trim();
+				semtag = " " + parts[1];
+			}
+			if (d.isPreferred()) {
+				String site = null;
+				if (term.endsWith("angiography")) {
+					int cutPoint = term.length() - "angiography".length();
+					site = term.substring(0, cutPoint);
+					newTerm = "Angiography of " + site + semtag;
+				}
+				
+				if (term.endsWith("arteriography")) {
+					int cutPoint = term.length() - "arteriography".length();
+					site = term.substring(0, cutPoint);
+					newTerm = "Angiography of " + site + semtag;
+				}
+				
+				if (term.endsWith("arteriogram")) {
+					int cutPoint = term.length() - "arteriogram".length();
+					site = term.substring(0, cutPoint);
+					newTerm = "Angiography of " + site + semtag;
+				}
+				
+				if (newTerm != null) {
+					if (sites.size() == 1) {
+						String betterSite = sites.iterator().next().getPreferredSynonym();
+						if (betterSite.startsWith("Structure of")) {
+							betterSite = betterSite.substring(0, "Structure of".length());
+							newTerm = newTerm.replace(site, betterSite);
+						}
+					}
+					newTerm = swapAround(newTerm, new String[] {"Isotope ", "Intravenous "});
+					if (t != null) {
+						replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, true);
+					}
+					changesMade++;
 				}
 			}
 		}
 		return changesMade;
+	}
+
+	private String swapAround(String newTerm, String[] swaps) {
+		for (String swap : swaps) {
+			if (newTerm.contains(swap)) {
+				String initialLower = StringUtils.decapitalizeFirstLetter(newTerm);
+				newTerm = swap + initialLower.replace(swap, "");
+			}
+		}
+		return newTerm;
 	}
 
 	private int doTranslationIfRequired(Task t, Concept c, Map<String, String> translations, boolean onlyPreferred) throws TermServerScriptException {
@@ -208,6 +275,15 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 
 	private boolean identifiesAsArtery(Description d) {
 		String term = d.getTerm().toLowerCase();
+		
+		//If the artery thing comes after a 'for' like in 
+		// Computed tomography angiography with contrast for transcatheter aortic valve implantation planning (procedure)
+		//ignore anything after " for ";
+		int cutPoint = term.indexOf(" for ");
+		if (cutPoint != NOT_FOUND) {
+			term = term.substring(0, cutPoint);
+		}
+		
 		return (term.contains("arteri") 
 				|| term.contains("artery")
 				|| term.contains("aorta")
