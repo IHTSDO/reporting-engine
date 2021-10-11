@@ -2,10 +2,8 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -68,12 +66,6 @@ public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerat
 				outputRF2(concept);  //Will only output dirty fields.
 			}
 		}
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
 	}
 
 }

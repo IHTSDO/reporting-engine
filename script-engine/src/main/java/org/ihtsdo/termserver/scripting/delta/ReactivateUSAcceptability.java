@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -91,12 +90,6 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptC
 				report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			}
 		}
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
 	}
 
 }

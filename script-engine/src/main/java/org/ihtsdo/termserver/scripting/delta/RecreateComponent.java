@@ -2,9 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
@@ -17,7 +15,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *
  */
 public class RecreateComponent extends DeltaGenerator {
-	
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RecreateComponent delta = new RecreateComponent();
@@ -47,12 +44,6 @@ public class RecreateComponent extends DeltaGenerator {
 		Concept c = gl.getConcept("376166005");
 		c.getAssociationEntries().add(h);
 		outputRF2(c);
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }
