@@ -98,8 +98,8 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 			
 		return "[" + activeIndicator + "LR]:" + id + " - " + 
 				"[ " + getReferencedComponentId() + " is " + 
-				SnomedUtils.translateAcceptability(getAcceptabilityId()) + " in " +
-				getRefsetId() + 
+				(getAcceptabilityId() == null ? "null" : SnomedUtils.translateAcceptability(getAcceptabilityId())) +
+				" in " + getRefsetId() + 
 				(detail? " - ET" + effectiveTime : "" ) +
 				(detail? " - " + id : "" ) +
 				" ]";
@@ -135,6 +135,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 		entry.referencedComponentId = d.getDescriptionId();
 		entry.setAcceptabilityId(acceptabilityId);
 		entry.moduleId = SCTID_CORE_MODULE;
+		entry.setDirty();
 		return entry;
 	}
 

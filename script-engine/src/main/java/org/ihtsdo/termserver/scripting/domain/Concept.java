@@ -1183,6 +1183,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		clone.setConceptType(conceptType);
 		clone.setInactivationIndicator(inactivationIndicator);
 		clone.setReleased(released);
+		clone.setFsn(getFsn());
 		
 		//Copy all descriptions
 		ActiveState activeState = includeInactiveComponents ? ActiveState.BOTH : ActiveState.ACTIVE;

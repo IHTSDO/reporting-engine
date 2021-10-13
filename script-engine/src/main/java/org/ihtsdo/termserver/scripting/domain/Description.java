@@ -543,15 +543,26 @@ public class Description extends Component implements ScriptConstants {
 		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
 	}
 
+	public void addAcceptability(LangRefsetEntry lang) throws TermServerScriptException {
+		addLangRefsetEntry(lang);
+	}
 	//A langrefset entry is an RF2 representation, where the acceptability map
 	//is a text based json representation.   This method allows the former to 
 	//be converted to the latter.
-	public void addAcceptability(LangRefsetEntry lang) throws TermServerScriptException {
+	public void addLangRefsetEntry(LangRefsetEntry lang) throws TermServerScriptException {
 		if (lang.isActive()) {
 			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
 			setAcceptablity(lang.getRefsetId(), acceptability);
 		} else {
 			removeAcceptability(lang.getRefsetId());
+		}
+		//We only need one refset entry per description for a given refsetId
+		//Remove any entries with the same id first
+		langRefsetEntries.remove(lang);
+		if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
+			langRefsetEntries.stream()
+				.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
+			throw new IllegalStateException("Check here, don't want two entries for same refset");
 		}
 		langRefsetEntries.add(lang);
 	}

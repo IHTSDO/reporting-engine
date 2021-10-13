@@ -27,6 +27,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
 	
+	private static HashSet<String> missingFsnReport = new HashSet<>();
+	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		
@@ -1784,11 +1786,17 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
 		
 		if (fsnSemTag1[1] == null) {
-			System.out.println("FSN Encountered without semtag: " + c1);
-			return 1;
+			if (!missingFsnReport.contains(c1.getId())) {
+				System.out.println("FSN Encountered without semtag: " + c1);
+				missingFsnReport.add(c1.getId());
+			}
+			return c1.getId().compareTo(c2.getId());
 		} else if (fsnSemTag2[1] == null) {
-			System.out.println("FSN Encountered without semtag: " + c2);
-			return -1;
+			if (!missingFsnReport.contains(c2.getId())) {
+				System.out.println("FSN Encountered without semtag: " + c2);
+				missingFsnReport.add(c2.getId());
+			}
+			return c1.getId().compareTo(c2.getId());
 		}
 		
 		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
