@@ -1804,4 +1804,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return fsnSemTag1[1].compareTo(fsnSemTag2[1]);
 	}
+
+	public static boolean isCore(Component c) {
+		return c.getModuleId().equals(SCTID_CORE_MODULE)
+				|| c.getModuleId().equals(SCTID_MODEL_MODULE);
+	}
 }
