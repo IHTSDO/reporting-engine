@@ -31,9 +31,8 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			fix.runStandAlone = false;  //We need to look up the project path for MS projects
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
+			fix.getArchiveManager().setRunIntegrityChecks(false);
 			fix.init(args);
-			// Recover the current project state from TS (or local cached archive) to allow
-			// quick searching of all concepts
 			fix.loadProjectSnapshot(false); // Load all descriptions
 			fix.postInit();
 			fix.processFile();
@@ -72,27 +71,27 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			debug ("here");
 		}*/
 		
-		final RefsetMember[] ciis = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
-		for (final RefsetMember cii : ciis) {
-			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + cii);
-			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, cii);
+		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
+		for (DuplicatePair duplicatePair : duplicatePairs) {
+			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete);
 			if (!dryRun) {
-				tsClient.deleteRefsetMember(cii.getId(), t.getBranchPath(), false);
+				tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
 			}
 			changesMade++;
-			reactivateRemainingMemberIfRequired(c, cii, c.getInactivationIndicatorEntries(), t);
+			reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getInactivationIndicatorEntries(), t);
 			
 		}
 		
-		final RefsetMember[] as = getDuplicateRefsetMembers(c, c.getAssociationEntries());
-		for (final RefsetMember a : as) {
-			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + a);
-			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, a);
+		duplicatePairs = getDuplicateRefsetMembers(c, c.getAssociationEntries());
+		for (DuplicatePair duplicatePair : duplicatePairs) {
+			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 			if (!dryRun) {
-				tsClient.deleteRefsetMember(a.getId(), t.getBranchPath(), false);
+				tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
 			}
 			changesMade++;
-			reactivateRemainingMemberIfRequired(c, a, c.getAssociationEntries(), t);
+			reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getAssociationEntries(), t);
 		}
 		
 		//Do we need to load and save the concept?
@@ -102,27 +101,26 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		}
 		
 		for (final Description d : c.getDescriptions()) {
-			final RefsetMember[] ls = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
-			if (true);
-			for (final RefsetMember l : ls) {
-				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + l);
-				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
+			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
+			for (final DuplicatePair duplicatePair : duplicatePairs) {
+				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 				if (!dryRun) {
-					tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
+					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
 				}
 				changesMade++;
-				reactivateRemainingMemberIfRequired(c, l, d.getLangRefsetEntries(), t);
+				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
 			}
 			
-			final RefsetMember[] diis = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
-			for (final RefsetMember dii : diis) {
-				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + dii);
-				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, dii);
+			duplicatePairs = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
+			for (final DuplicatePair duplicatePair : duplicatePairs) {
+				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 				if (!dryRun) {
-					tsClient.deleteRefsetMember(dii.getId(), t.getBranchPath(), false);
+					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
 				}
 				changesMade++;
-				reactivateRemainingMemberIfRequired(c, dii, d.getInactivationIndicatorEntries(), t);
+				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getInactivationIndicatorEntries(), t);
 			}
 			
 			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
@@ -174,7 +172,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 	}
 
 	@Override
-	protected List<Component> identifyComponentsToProcess() {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		// Work through all inactive concepts and check the inactivation indicators on
 		// active descriptions
 		info("Identifying concepts to process");
@@ -182,53 +180,38 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
+		//for (final Concept c : Collections.singleton(gl.getConcept("57640003"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
-			
-			/*if (c.getId().equals("840534001")) {
-				debug("here");
-			}*/
-			
-			for (String dialectRefset : ENGLISH_DIALECTS) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getLangRefsetEntries(ActiveState.ACTIVE, dialectRefset).size() > 1) {
-						processMe.add(c);
-						continue nextConcept;
-					}
-				}
-			}
-			
 			for (Description d : c.getDescriptions()) {
-				if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).length > 0) {
+				//Only do this for newly inactivated descriptions
+				if (!c.isActive() 
+						&& StringUtils.isEmpty(d.getEffectiveTime())
+						&& isMissingConceptInactiveIndicator(d)) {
+					debug("Missing CII: " + d);
+					processMe.add(c);
+					continue nextConcept;
+				}
+				
+				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
+					processMe.add(c);
+					continue nextConcept;
+				}
+				
+				if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).size() > 0) {
 					processMe.add(c);
 					continue nextConcept;
 				}
 			}
 			 
 			if (!c.isActive()) {
-				final RefsetMember[] as = getDuplicateRefsetMembers(c, c.getAssociationEntries());
-				if (as.length > 0) {
+				if (getDuplicateRefsetMembers(c, c.getAssociationEntries()).size() > 0) {
 					processMe.add(c);
-				} else {
-					final RefsetMember[] ciis = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
-					if (ciis.length == 0) {
-						for (final Description d : c.getDescriptions()) {
-							final RefsetMember[] diis = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
-							if (diis.length > 0) {
-								processMe.add(c);
-								continue nextConcept;
-							}
-						}
-					} else {
-						processMe.add(c);
-						continue nextConcept;
-					}
+					continue nextConcept;
 				}
 				
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (isMissingConceptInactiveIndicator(d)) {
-						processMe.add(c);
-						continue nextConcept;
-					}
+				if (getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries()).size() > 0) {
+					processMe.add(c);
+					continue nextConcept;	
 				}
 			}
 		}
@@ -237,6 +220,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		return processMe;
 	}
 	
+
 	private boolean hasMissingConceptInactiveIndicator(Concept c) {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (isMissingConceptInactiveIndicator(d)) {
@@ -257,57 +241,76 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		return !hasConceptInactiveIndicator;
 	}
 
-	private RefsetMember[] getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) {
-		final List<RefsetMember> duplicates = new ArrayList<>();
-		final List<RefsetMember> keepers = new ArrayList<>();
-
+	private List<DuplicatePair> getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) {
+		List<DuplicatePair> duplicatePairs = new ArrayList<>();
+		
 		for (final RefsetMember thisEntry : refsetMembers) {
 			/*if (thisEntry.getId().equals("7816cc67-b074-4bb3-993d-ce8487e23e0a")) {
 				debug("here");
 			}*/
 			// Check against every other entry
 			for (final RefsetMember thatEntry : refsetMembers) {
+				DuplicatePair duplicatePair = null;
 				// If we've already decided we're keeping this entry or deleting this entry, skip
 				if (thisEntry.getId().equals(thatEntry.getId()) || 
-						keepers.contains(thisEntry) || keepers.contains(thatEntry) ||
-						duplicates.contains(thisEntry) || duplicates.contains(thatEntry)) {
+						mentioned(duplicatePairs, thisEntry) ||
+						mentioned(duplicatePairs, thatEntry)) {
 					continue;
 				}
 				if (thisEntry.duplicates(thatEntry)) {
 					// Delete the unpublished one
 					if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
 						if (thisEntry.getReleased() && !thatEntry.getReleased()) {
-							duplicates.add(thatEntry);
+							duplicatePair = new DuplicatePair(thisEntry, thatEntry);
 						} else if (!thisEntry.getReleased() && thatEntry.getReleased()) {
-							duplicates.add(thisEntry);
+							duplicatePair = new DuplicatePair(thatEntry,thisEntry);
 						} else if (!thisEntry.getReleased() && !thatEntry.getReleased()) {
 							//Neither released.   Delete the inactive one, or randomly otherwise
 							if (!thisEntry.isActive()) {
-								duplicates.add(thisEntry);
+								duplicatePair = new DuplicatePair(thatEntry,thisEntry);
 							} else {
-								duplicates.add(thatEntry);
+								duplicatePair = new DuplicatePair(thisEntry, thatEntry);
 							}
 						}
 					} else if (thisEntry.getEffectiveTime() == null || thisEntry.getEffectiveTime().isEmpty()) {
-						duplicates.add(thisEntry);
-						keepers.add(thatEntry);
+						duplicatePair = new DuplicatePair(thatEntry,thisEntry);
 					} else if (thatEntry.getEffectiveTime() == null || thatEntry.getEffectiveTime().isEmpty()) {
-						duplicates.add(thatEntry);
-						keepers.add(thisEntry);
+						duplicatePair = new DuplicatePair(thisEntry, thatEntry);
 					} else {
 						// Only a problem historically if they're both active
 						if (thisEntry.isActive() && thatEntry.isActive()) {
 							warn("Both entries look published! " + thisEntry.getEffectiveTime());
 						}
 					}
-					
-					if (duplicates.contains(thisEntry)) {
-						debug("Found duplicates for " + c + ": " + thisEntry + " + " + thatEntry);
-					}
+				}
+				if (duplicatePair != null) {
+					debug(duplicatePair);
+					duplicatePairs.add(duplicatePair);
 				}
 			}
 		}
-		return duplicates.toArray(new RefsetMember[] {});
+		return duplicatePairs;
 	}
 
+	private boolean mentioned(List<DuplicatePair> duplicatePairs, RefsetMember rm) {
+		for (DuplicatePair pair : duplicatePairs) {
+			if (pair.keep.equals(rm) || pair.delete.equals(rm)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	class DuplicatePair {
+		RefsetMember keep;
+		RefsetMember delete;
+		DuplicatePair (RefsetMember keep, RefsetMember delete) {
+			this.keep = keep;
+			this.delete = delete;
+		}
+		
+		public String toString() {
+			return "Delete: " + delete + " vs Keep: " + keep;
+		}
+	}
 }
