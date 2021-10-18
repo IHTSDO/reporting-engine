@@ -21,8 +21,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * */
 public class PreReleaseContentValidation extends HistoricDataUser implements ReportClass {
 	
-	List<Concept> allActiveConceptsSorted;
-	List<Concept> allInactiveConceptsSorted;
+	private List<Concept> allActiveConceptsSorted;
+	private List<Concept> allInactiveConceptsSorted;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -253,7 +253,8 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			try {
 				for (Description textDefn : c.getDescriptions(null, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE)) {
 					//Is this text definition in the delta?  Check null or current effective time
-					if (StringUtils.isEmpty(textDefn.getEffectiveTime())) {
+					if (StringUtils.isEmpty(textDefn.getEffectiveTime()) ||
+						(thisEffectiveTime != null && textDefn.getEffectiveTime().equals(thisEffectiveTime))) {
 						report (OCTONARY_REPORT, c, textDefn);
 						incrementSummaryInformation(summaryItem);
 					}

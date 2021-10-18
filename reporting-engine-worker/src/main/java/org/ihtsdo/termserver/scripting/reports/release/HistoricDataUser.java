@@ -88,7 +88,6 @@ public class HistoricDataUser extends TermServerReport {
 			mgr.setLoadEditionArchive(true);
 			setProject(new Project(projectKey));
 			mgr.loadProjectSnapshot(false);
-			//Descriptions for the root concept are a quick way to find the effeciveTime
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			info ("Detected this effective time as " + thisEffectiveTime);
 		} else {

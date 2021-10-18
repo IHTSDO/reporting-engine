@@ -1536,7 +1536,6 @@ public class GraphLoader implements ScriptConstants {
 				}
 			}
 		}
-		if (true);
 		return maxEffectiveTime;
 	}
 
