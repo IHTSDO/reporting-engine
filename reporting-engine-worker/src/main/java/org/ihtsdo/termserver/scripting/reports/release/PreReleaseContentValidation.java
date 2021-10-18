@@ -209,8 +209,11 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	}
 	
 	private void checkForDefinitionStatusChange() throws TermServerScriptException {
-		String summaryItem = "Definition Status Changes";
-		initialiseSummaryInformation(summaryItem);
+		String summaryItem1 = "Definition Status Change SD->P";
+		initialiseSummaryInformation(summaryItem1);
+		String summaryItem2 = "Definition Status Change P->SD";
+		initialiseSummaryInformation(summaryItem2);
+		
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
@@ -219,7 +222,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 					//If what was SD is now P, or visa versa, report
 					if (prevDatum.isSD == c.isPrimitive()) {
 						report (SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
-						incrementSummaryInformation(summaryItem);
+						incrementSummaryInformation(c.isPrimitive()?summaryItem1:summaryItem2);
 					}
 				}
 			} catch (Exception e) {
