@@ -309,10 +309,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			projectName = "MAIN";
 		}
 		
-		if (StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
-			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
+		if (!StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
+			subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
 		}
-		subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
 		
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
