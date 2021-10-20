@@ -157,6 +157,17 @@ public class SchedulerController {
 		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
 	}
 	
+	@ApiOperation(value="Delete job runs in bulk")
+	@RequestMapping(value = "/jobs/{typeName}/{jobName}/runs/delete", method = RequestMethod.POST)
+	public ResponseEntity<?> deleteJobRuns(@PathVariable final String typeName,
+			@PathVariable final String jobName,
+			@RequestParam UUID[] runIds) {
+		for (UUID runId : runIds) {
+			scheduleService.deleteJobRun(typeName, jobName, runId);
+		}
+		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
+	}
+	
 	@ApiOperation(value="Re-initialise")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
