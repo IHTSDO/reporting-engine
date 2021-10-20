@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.apache.commons.io.IOUtils;
@@ -14,7 +13,6 @@ import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.reports.release.KPIPatternsReport;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
@@ -90,7 +88,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 									"or enter one yourself using template language or a known QI project internal path (eg /reporting-engine-worker/src/main/resources/templates/burn/Burn of body structure.json)")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
-				.withTag(INT)
+				.withTag(INT).withTag(MS)
 				.build();
 	}
 	
