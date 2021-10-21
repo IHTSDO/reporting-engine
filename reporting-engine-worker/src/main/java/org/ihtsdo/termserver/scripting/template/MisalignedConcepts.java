@@ -397,7 +397,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
-				"Report Metadata", 
+				"Report Metadata, , ", 
 				"SCTID, FSN, SEMTAG, SEVERITY, ACTION_TYPE, IsComplex, IsOrphanet, Template Diagnostic",
 				"SCTID, FSN, SEMTAG, SEVERITY, ACTION_TYPE, IsComplex, IsOrphanet, Template Diagnostic",
 				"SCTID, FSN, SemTag, Reason", 
