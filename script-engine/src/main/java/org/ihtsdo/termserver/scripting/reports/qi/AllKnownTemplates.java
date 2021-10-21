@@ -474,6 +474,9 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/procedures/Stoma.json" };
 		populateTemplates(null, templateNames);
 		
+		templateNames = new String[] { "templates/procedures/CT of Body Structure with constrast.json" };
+		populateTemplates(null, templateNames);
+		
 		templateNames = new String[] { "templates/procedures/CT of Body Structure.json" };
 		populateTemplates(null, templateNames);
 		
