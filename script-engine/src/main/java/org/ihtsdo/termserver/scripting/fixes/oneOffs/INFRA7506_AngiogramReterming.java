@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-public class INFRA_7506_AngiogramReterming extends BatchFix {
+public class INFRA7506_AngiogramReterming extends BatchFix {
 
 	String ecl = "<< 71388002 |Procedure (procedure)|";
 	Concept[] types = new Concept[] { FINDING_SITE, PROCEDURE_SITE, PROCEDURE_SITE_DIRECT, PROCEDURE_SITE_INDIRECT };
@@ -28,12 +28,12 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 	Map<String, String> termTranslationAll = new HashMap<>();
 	Map<String, String> removeWhenPresent = new HashMap<>();
 	
-	protected INFRA_7506_AngiogramReterming(BatchFix clone) {
+	protected INFRA7506_AngiogramReterming(BatchFix clone) {
 		super(clone);
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		INFRA_7506_AngiogramReterming fix = new INFRA_7506_AngiogramReterming(null);
+		INFRA7506_AngiogramReterming fix = new INFRA7506_AngiogramReterming(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
@@ -105,12 +105,12 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 		//If we're missing an "of", it might be that we're X <type of procedure> when we want to be
 		//<type of procedure> of X
 		if (!c.getFsn().contains(" of ")) {
-			changesMade += shiftXOfIfRequired(t, c, sites);
+			changesMade += shiftXOfIfRequired(t, c, sites, sitesStr, hasArtery);
 		}
 		
 		changesMade += removeIfRequired(t, c);
-		changesMade += doTranslationIfRequired(t, c, termTranslationPT, true);
-		changesMade += doTranslationIfRequired(t, c, termTranslationAll, false);
+		changesMade += doTranslationIfRequired(t, c, termTranslationPT, true, sitesStr);
+		changesMade += doTranslationIfRequired(t, c, termTranslationAll, false, sitesStr);
 		if (hasArtery) {
 			changesMade += ensureArteriographySynonym(t, c);
 		}
@@ -140,49 +140,54 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 		return changesMade;
 	}
 	
-	private int shiftXOfIfRequired(Task t, Concept c, Set<Concept> sites) throws TermServerScriptException {
+	private int shiftXOfIfRequired(Task t, Concept c, Set<Concept> sites, String sitesStr, boolean hasArtery) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			String newTerm = null;
 			boolean isFsn = d.getType().equals(DescriptionType.FSN);
 			String term = d.getTerm();
-			String semtag = "";
+			String semTag = "";
 			if (isFsn) {
-				String[] parts = SnomedUtils.deconstructSCTIDFsn(term);
+				String[] parts = SnomedUtils.deconstructFSN(term);
 				term = parts[0].trim();
-				semtag = " " + parts[1];
+				semTag = " " + parts[1];
 			}
 			if (d.isPreferred()) {
 				String site = null;
 				if (term.endsWith("angiography")) {
 					int cutPoint = term.length() - "angiography".length();
-					site = term.substring(0, cutPoint);
-					newTerm = "Angiography of " + site + semtag;
+					site = term.substring(0, cutPoint).toLowerCase();
+					newTerm = "Angiography of " + site;
 				}
 				
 				if (term.endsWith("arteriography")) {
 					int cutPoint = term.length() - "arteriography".length();
-					site = term.substring(0, cutPoint);
-					newTerm = "Angiography of " + site + semtag;
+					site = term.substring(0, cutPoint).toLowerCase();
+					newTerm = "Angiography of " + site;
 				}
 				
 				if (term.endsWith("arteriogram")) {
 					int cutPoint = term.length() - "arteriogram".length();
-					site = term.substring(0, cutPoint);
-					newTerm = "Angiography of " + site + semtag;
+					site = term.substring(0, cutPoint).toLowerCase();
+					newTerm = "Angiography of " + site;
 				}
 				
 				if (newTerm != null) {
 					if (sites.size() == 1) {
 						String betterSite = sites.iterator().next().getPreferredSynonym();
 						if (betterSite.startsWith("Structure of")) {
-							betterSite = betterSite.substring(0, "Structure of".length());
+							betterSite = betterSite.substring("Structure of ".length());
 							newTerm = newTerm.replace(site, betterSite);
 						}
+					} else if (hasArtery & !newTerm.contains("arter")) {
+						//Also matches arteries
+						newTerm += " artery";
 					}
+					newTerm += semTag;
 					newTerm = swapAround(newTerm, new String[] {"Isotope ", "Intravenous "});
+					newTerm = newTerm.replaceAll("  ", " ");
 					if (t != null) {
-						replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, true);
+						replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, true, sitesStr);
 					}
 					changesMade++;
 				}
@@ -201,7 +206,7 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 		return newTerm;
 	}
 
-	private int doTranslationIfRequired(Task t, Concept c, Map<String, String> translations, boolean onlyPreferred) throws TermServerScriptException {
+	private int doTranslationIfRequired(Task t, Concept c, Map<String, String> translations, boolean onlyPreferred, String sitesStr) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Entry<String, String> entry : translations.entrySet()) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -213,7 +218,7 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 						newTerm = StringUtils.capitalizeFirstLetter(newTerm);
 						
 						if (t != null) {
-							replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, true);
+							replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, true, sitesStr);
 						}
 						changesMade++;
 					}
@@ -272,6 +277,7 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 		}
 		return NO_CHANGES_MADE;
 	}
+	
 
 	private boolean identifiesAsArtery(Description d) {
 		String term = d.getTerm().toLowerCase();
@@ -289,12 +295,12 @@ public class INFRA_7506_AngiogramReterming extends BatchFix {
 				|| term.contains("aorta")
 				|| term.contains("aortic"));
 	}
-
-	/*@Override
+	/*
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return Collections.singletonList(gl.getConcept("448541001"));
-	}*/
-
+		return Collections.singletonList(gl.getConcept("352689002"));
+	}
+*/
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> process = new ArrayList<>();
