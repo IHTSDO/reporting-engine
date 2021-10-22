@@ -112,6 +112,23 @@ public class SchedulerController {
 		return scheduleService.runJob(typeName, jobName, jobRun);
 	}
 	
+	@ApiOperation(value="Bulk delete job-runs")
+	@ApiResponses({
+			@ApiResponse(code = 204, message = "Deleted")
+	})
+	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/delete", method= RequestMethod.POST)
+	public List<JobRun> deleteJobRuns(
+			HttpServletRequest request,
+			@PathVariable final String typeName, 
+			@PathVariable final String jobName,
+			@RequestParam(required=false) final String user,
+			@RequestBody List<UUID> uuids) throws BusinessServiceException {
+		for (UUID uuid : uuids) {
+			scheduleService.deleteJobRun(null, null, uuid);
+		}
+		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request));
+	}
+	
 	@ApiOperation(value="Schedule job")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
@@ -153,17 +170,6 @@ public class SchedulerController {
 		boolean deleted = scheduleService.deleteJobRun(typeName, jobName, runId);
 		if (!deleted) {
 			return new ResponseEntity<JobRun>(HttpStatus.NOT_FOUND);
-		}
-		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
-	}
-	
-	@ApiOperation(value="Delete job runs in bulk")
-	@RequestMapping(value = "/jobs/{typeName}/{jobName}/runs/delete", method = RequestMethod.POST)
-	public ResponseEntity<?> deleteJobRuns(@PathVariable final String typeName,
-			@PathVariable final String jobName,
-			@RequestParam UUID[] runIds) {
-		for (UUID runId : runIds) {
-			scheduleService.deleteJobRun(typeName, jobName, runId);
 		}
 		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
 	}
