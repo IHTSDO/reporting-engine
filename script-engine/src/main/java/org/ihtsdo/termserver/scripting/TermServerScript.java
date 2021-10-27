@@ -170,6 +170,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				authenticatedCookie = args[x+1];
 			} else if (thisArg.equals("-d")) {
 				dryRun = args[x+1].toUpperCase().equals("Y");
+				if (!dryRun) {
+					this.runStandAlone = false;
+				}
 			} else if (thisArg.equals("-f")) {
 				inputFile = new File(args[x+1]);
 				if (!inputFile.canRead()) {
@@ -1166,7 +1169,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (summaryTabIdx != NOT_SET) {
 				try {
 					//Split the colon into it's own column (unless it's a time stamp!)
-					if (msg.contains(":") && !msg.contains("at: ")) {
+					if (msg.contains(":") 
+							&& !msg.contains("at: ")
+							&& !msg.contains("\"")) {
 						msg = QUOTE + msg.replaceAll(": ", QUOTE_COMMA_QUOTE).replaceAll(":", QUOTE_COMMA_QUOTE) + QUOTE;
 					}
 					writeToReportFile (summaryTabIdx, msg);
