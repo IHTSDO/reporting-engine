@@ -14,7 +14,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * MQI-5 For a specific list of concepts, switch  |Associated morphology (attribute)| value 
  * from |Cataract (morphologic abnormality)| to |Abnormally opaque structure (morphologic abnormality)|
- * DEVICES-152 Update to replace a set of attributes type/values 
+ * DEVICES-152 Update to replace a set of attributes type/values
  */
 public class ReplaceAttributes extends BatchFix {
 	

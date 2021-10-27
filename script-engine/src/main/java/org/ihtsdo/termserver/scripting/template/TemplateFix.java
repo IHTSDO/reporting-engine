@@ -256,7 +256,7 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		println("");
-		addSummaryInformation("Concepts in \"" + t.getDomain() + "\" matching template: " + t.getId(), matches.size());
+		addSummaryInformation("Concepts in \"" + t.getDomain() + "\" matching template " + t.getId(), matches.size());
 		return matches;
 	}
 	
