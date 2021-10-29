@@ -15,6 +15,7 @@ public class PrimitiveLoinc extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		PrimitiveLoinc report = new PrimitiveLoinc();
 		try {
+			report.runStandAlone = false;
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
 			report.getArchiveManager().setRunIntegrityChecks(false);
 			report.headers="SCTID, FSN, SemTag, PT, LoincNum, Correlation, Update Details, Expression";

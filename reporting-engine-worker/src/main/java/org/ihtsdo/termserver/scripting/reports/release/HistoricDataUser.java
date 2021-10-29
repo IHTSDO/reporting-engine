@@ -73,7 +73,7 @@ public class HistoricDataUser extends TermServerReport {
 		getProject().setKey(prevRelease);
 		ArchiveManager mgr = getArchiveManager(true);
 		mgr.setLoadEditionArchive(true);
-		mgr.loadProjectSnapshot(fsnOnly);
+		mgr.loadSnapshot(fsnOnly);
 		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 		statsGenerator.setModuleFilter(moduleFilter);
 		statsGenerator.runJob();
@@ -87,7 +87,7 @@ public class HistoricDataUser extends TermServerReport {
 		if (compareTwoSnapshots) {
 			mgr.setLoadEditionArchive(true);
 			setProject(new Project(projectKey));
-			mgr.loadProjectSnapshot(false);
+			mgr.loadSnapshot(false);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			info ("Detected this effective time as " + thisEffectiveTime);
 		} else {
@@ -96,7 +96,7 @@ public class HistoricDataUser extends TermServerReport {
 			mgr.setPopulatePreviousTransativeClosure(true);
 			mgr.setLoadEditionArchive(false);
 			getProject().setKey(projectKey);
-			mgr.loadProjectSnapshot(fsnOnly);
+			mgr.loadSnapshot(fsnOnly);
 		}
 	}
 

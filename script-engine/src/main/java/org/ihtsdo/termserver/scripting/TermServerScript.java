@@ -348,6 +348,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					try {
 						project = scaClient.getProject(projectName);
 						ok = true;
+						
+						//Are we in fact running against a task?
+						if (jobRun != null && !StringUtils.isEmpty(jobRun.getTask())) {
+							String taskBranchPath = project.getBranchPath() + "/" + jobRun.getTask();
+							project.setBranchPath(taskBranchPath);
+						}
 					} catch (Exception e) {
 						//No need to retry if we get a 403
 						String exceptionMsg = ExceptionUtils.getExceptionCause("Unable to recover project", e) + " Retrying after short nap.";
@@ -496,7 +502,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
-		getArchiveManager(true).loadProjectSnapshot(fsnOnly);
+		getArchiveManager(true).loadSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}

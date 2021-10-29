@@ -3,8 +3,6 @@ package org.ihtsdo.snowowl.authoring.scheduler.api.security;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -50,7 +48,7 @@ public class RequestHeaderAuthenticationDecorator extends org.ihtsdo.sso.integra
 		}
 		if (!Strings.isNullOrEmpty(overrideToken)) {
 			token = overrideToken;
-			logger.warn("Using authentication override token"); // We don't log the token
+			logger.warn("Using authentication override token supplied from configuration"); // We don't log the token
 		}
 		List decoratedRoles = roles != null ? AuthorityUtils.commaSeparatedStringToAuthorityList(roles) : new ArrayList();
 		decoratedRoles.addAll(SecurityContextHolder.getContext().getAuthentication().getAuthorities());
@@ -59,7 +57,7 @@ public class RequestHeaderAuthenticationDecorator extends org.ihtsdo.sso.integra
 		SecurityContextHolder.getContext().setAuthentication(decoratedAuthentication);
 		filterChain.doFilter(request, response);
 	}
-
+ 
 	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		return authentication == null || !authentication.isAuthenticated();

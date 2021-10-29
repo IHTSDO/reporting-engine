@@ -187,7 +187,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 
-	public void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	public void loadSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		try {
 			if (loadDependencyPlusExtensionArchive) {
 				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
@@ -328,7 +328,7 @@ public class ArchiveManager implements ScriptConstants {
 							//Next time round the snapshot on disk won't be detected and we'll take a different code path
 							if (!loadEditionArchive) {
 								TermServerScript.warn("Attempting to regenerate...");
-								loadProjectSnapshot(fsnOnly);
+								loadSnapshot(fsnOnly);
 							} 
 						}
 					}
@@ -485,22 +485,26 @@ public class ArchiveManager implements ScriptConstants {
 	private File getSnapshotPath() {
 		//If the project specifies its a .zip file, that's another way to know we're loading an edition
 		String fileExt = ".zip";
-		String projectKey = ts.getProject().getKey();
+		String projectTaskKey = ts.getProject().getKey();
+		if (ts.getJobRun() != null && !StringUtils.isEmpty(ts.getJobRun().getTask())) {
+			projectTaskKey += "_" + ts.getJobRun().getTask();
+		}
+		
 		if (loadEditionArchive || 
-				StringUtils.isNumeric(projectKey) ||
-				projectKey.endsWith(fileExt)) {
-			if (projectKey.endsWith(fileExt)) {
+				StringUtils.isNumeric(projectTaskKey) ||
+				projectTaskKey.endsWith(fileExt)) {
+			if (projectTaskKey.endsWith(fileExt)) {
 				fileExt = "";
 			}
-			return new File (dataStoreRoot + "releases/" + projectKey + fileExt);
+			return new File (dataStoreRoot + "releases/" + projectTaskKey + fileExt);
 		} else {
 			//Do we have a release effective time as a project?  Or a branch release
-			String releaseBranch = detectReleaseBranch(projectKey);
+			String releaseBranch = detectReleaseBranch(projectTaskKey);
 			if (releaseBranch != null) {
 				info ("Release branch determined to be numeric: " + releaseBranch);
 				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
 			} else  {
-				return new File (dataStoreRoot + "snapshots/" + projectKey + "_" + ts.getEnv());
+				return new File (dataStoreRoot + "snapshots/" + projectTaskKey + "_" + ts.getEnv());
 			}
 		}
 	}

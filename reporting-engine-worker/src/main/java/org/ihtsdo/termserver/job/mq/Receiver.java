@@ -20,8 +20,8 @@ public class Receiver {
 	@JmsListener(destination = "${schedule.manager.queue.request}")
 	public void receiveMessage(JobRun jobRun) {
 		String cookieStart = "AuthToken Missing";
-		if (!StringUtils.isEmpty(jobRun.getAuthToken()) && jobRun.getAuthToken().length() > 16) {
-			cookieStart = jobRun.getAuthToken().substring(0,15);
+		if (!StringUtils.isEmpty(jobRun.getAuthToken()) && jobRun.getAuthToken().length() > 20) {
+			cookieStart = jobRun.getAuthToken().substring(0,20);
 		}
 		logger.info("Received request to run {} with parameters: {} and authToken starting: {}", jobRun, jobRun.getParameters(), cookieStart);
 		jobManager.run(jobRun);
