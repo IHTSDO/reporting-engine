@@ -9,9 +9,14 @@ public class CodeSystem {
 	@SerializedName("shortName")
 	@Expose
 	private String shortName;
+	
 	@SerializedName("latestVersion")
 	@Expose
 	private CodeSystemVersion latestVersion;
+	
+	@SerializedName("branchPath")
+	@Expose
+	private String branchPath;
 
 	public String getShortName() {
 		return shortName;
@@ -27,6 +32,14 @@ public class CodeSystem {
 
 	public void setLatestVersion(CodeSystemVersion latestVersion) {
 		this.latestVersion = latestVersion;
+	}
+
+	public String getBranchPath() {
+		return branchPath;
+	}
+
+	public void setBranchPath(String branchPath) {
+		this.branchPath = branchPath;
 	}
 
 }

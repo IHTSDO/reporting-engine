@@ -131,7 +131,7 @@ public class TermServerClient {
 		try {
 			String url = this.url + "/codesystems/SNOMEDCT/versions?showFutureVersions=true";
 			logger.debug("Recovering codesystem versions from " + url);
-			return restTemplate.getForObject(url, CodeSystemCollection.class).getItems();
+			return restTemplate.getForObject(url, CodeSystemVersionCollection.class).getItems();
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
 		}
@@ -624,6 +624,16 @@ public class TermServerClient {
 				RefsetMember.class);
 		return response.getBody();
 	}
+	
+	public List<CodeSystem> getCodeSystems() throws TermServerScriptException {
+		try {
+			String url = this.url + "/codesystems";
+			logger.debug("Recovering codesystems from " + url);
+			return restTemplate.getForObject(url, CodeSystemCollection.class).getItems();
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
+	}
 
 	public CodeSystem getCodeSystem(String codeSystemName) throws TermServerScriptException {
 		try {
@@ -666,6 +676,15 @@ public class TermServerClient {
 		Map<String, String> requestBody = Map.of("name", key, "value", value);
 		try {
 			restTemplate.postForObject(url, requestBody, Object.class);
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
+	}
+
+	public void updateMetadata(String branchPath, Map<String, String> metaDataUpdate) throws TermServerScriptException {
+		String url = this.url + "/branches/" + branchPath + "/metadata-upsert";
+		try {
+			restTemplate.put(url, metaDataUpdate, Object.class);
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
 		}
