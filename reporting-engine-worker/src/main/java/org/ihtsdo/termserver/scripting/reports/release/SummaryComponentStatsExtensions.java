@@ -27,7 +27,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		
 		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
+		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		TermServerReport.run(SummaryComponentStatsExtensions.class, args, params);
 	}
 
@@ -35,7 +35,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING).withMandatory()
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
@@ -46,10 +46,10 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Summary Component Stats for Extensions")
-				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId (comma separate if multiple). You can either specify two releases (with their dependencies) to compare as archives stored in S3 " + 
-				"or leave blank to compare the current delta to the previous release as specified " +
-				"by that project branch.  The previous package's dependency is always required to be specified as it is not available in system metadata.  " + 
-				"This report is for extensions packaged as extensions only.  Use 'Summary Component Stats' for the US Edition.")
+				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId " +
+				"(comma separate if multiple). You can either specify two releases (with their dependencies) to compare as archives stored in S3 " + 
+				"or leave ALL FIELDS blank to compare the current delta to the previous release as specified " +
+				"by that project branch.  This report is for extensions packaged as extensions only.  Use 'Summary Component Stats' for the US Edition.")
 				.withParameters(params)
 				.withTag(INT)
 				.withTag(MS)
@@ -60,20 +60,16 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		//Either specify all values or none of them.   Use the XOR indicator
-		if (XOR(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE)) {
-			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease], or NONE of them to run against the in-flight project.");
+		if (XOR(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
+			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");
 		}
 		
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 		if (StringUtils.isEmpty(prevDependency)) {
-			//Find previous dependency via project and previous release branches
-			//Note, this information is not currently available.   See MAINT-1346
-			/*prevRelease = getProject().getMetadata().getPreviousRelease();
-			String releaseBranchPath = "MAIN/" + getProject().getMetadata().getCodeSystemShortName() + "/" + SnomedUtils.formatReleaseDate(prevRelease);
-			Branch releaseBranch = getTSClient().getBranch(releaseBranchPath);
-			prevDependency = releaseBranch.getMetadata().getDependencyPackage();
-			info("Previous dependency recovered from previous release branch: " + prevDependency);*/
-			throw new TermServerScriptException("Previous dependency archive must always be supplied as not available through metadata");
+			prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
+			if (StringUtils.isEmpty(prevDependency)) {
+				throw new TermServerScriptException("Previous dependency package not populated in branch metadata");
+			}
 		}
 		
 		setDependencyArchive(prevDependency);
