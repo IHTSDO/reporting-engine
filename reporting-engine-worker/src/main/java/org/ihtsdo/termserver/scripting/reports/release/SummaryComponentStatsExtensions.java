@@ -49,7 +49,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId " +
 				"(comma separate if multiple). You can either specify two releases (with their dependencies) to compare as archives stored in S3 " + 
 				"or leave ALL FIELDS blank to compare the current delta to the previous release as specified " +
-				"by that project branch.  This report is for extensions packaged as extensions only.  Use 'Summary Component Stats' for the US Edition.")
+				"by that project branch.  This report is for projects packaged as extensions only.  Use 'Summary Component Stats for Editions' for the International and US Edition.")
 				.withParameters(params)
 				.withTag(INT)
 				.withTag(MS)
@@ -64,11 +64,15 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");
 		}
 		
+		if (project.getKey().equals("MAIN")) {
+			throw new TermServerScriptException ("This report cannot be run on MAIN.  Use 'Summary Component Stats for Editions' instead.");
+		}
+		
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 		if (StringUtils.isEmpty(prevDependency)) {
 			prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
 			if (StringUtils.isEmpty(prevDependency)) {
-				throw new TermServerScriptException("Previous dependency package not populated in branch metadata");
+				throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
 			}
 		}
 		
