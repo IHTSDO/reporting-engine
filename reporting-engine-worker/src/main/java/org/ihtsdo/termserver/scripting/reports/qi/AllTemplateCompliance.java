@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -144,8 +145,12 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		Set<Concept> allInScopeConcepts = new HashSet<>();
 		//We'll create a set to avoid double counting concepts in multiple TLHs
 		for (Concept subHierarchy : inScope) {
-			Set<Concept> concepts = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy);
-			info(subHierarchy + " contains " + concepts.size() + " concepts.");
+			Set<Concept> concepts = gl.getDescendantsCache()
+					.getDescendentsOrSelf(subHierarchy)
+					.stream()
+					.filter(c -> inModuleScope(c))
+					.collect(Collectors.toSet());
+			info(subHierarchy + " contains " + concepts.size() + " concepts (in target module).");
 			allInScopeConcepts = ImmutableSet.copyOf(Iterables.concat(allInScopeConcepts, concepts));
 		}
 		//Now only count those concepts that have some non-ISA inferred attributes
@@ -156,22 +161,6 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		}
 		return inScopeCount;
 	}
-
-/*	private int compare(Entry<String, List<Template>> entry1, Entry<String, List<Template>> entry2) {
-		//First sort on top level hierarchy
-		Concept c1 = gl.getConceptSafely(entry1.getKey());
-		Concept c2 = gl.getConceptSafely(entry2.getKey());
-		
-		Concept top1 = SnomedUtils.getHighestAncestorBefore(c1, ROOT_CONCEPT);
-		Concept top2 = SnomedUtils.getHighestAncestorBefore(c2, ROOT_CONCEPT);
-		
-		if (top1.equals(top2)) {
-			//In the same major hierarchy, sort on the domain fsn
-			return c1.getFsn().compareTo(c2.getFsn());
-		} else {
-			return top1.getFsn().compareTo(top2.getFsn());
-		}
-	}*/
 
 	private void examineSubset(String ecl, List<Template> templates) throws TermServerScriptException {
 		DescendantsCache cache = DescendantsCache.getDescendentsCache();
@@ -230,6 +219,17 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		//Domain/SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
 		report(PRIMARY_REPORT, ecl, topHierarchyText, subsetSize, noModelSize, outOfScope, countedElsewhere, templateMatches.size(), templatesConsidered);
 		totalTemplateMatches += templateMatches.size();
+	}
+	
+	protected boolean inModuleScope(Component c) {
+		if (project.getKey().equals("MAIN")) {
+			return true;
+		}
+		//Do we have a default module id ie for a managed service project?
+		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
+			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+		}
+		return true;
 	}
 	
 }

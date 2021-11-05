@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -457,10 +458,13 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess(CharacteristicType charType) throws TermServerScriptException {
 		Map<Concept, List<String>> conceptDiagnostics = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? conceptDiagnosticsInferred : conceptDiagnosticsStated;
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Collection<Concept> potentiallyMisaligned = new ArrayList<>(findConcepts(subsetECL));
+		//This will be so much quicker for MS once we can filter on Module Id first, rather than post-process
+		Collection<Concept> potentiallyMisaligned = findConcepts(subsetECL).stream()
+				.filter(c -> inModuleScope(c))
+				.collect(Collectors.toList());
 		
 		if (potentiallyMisaligned == null || potentiallyMisaligned.size() == 0) {
-			throw new TermServerScriptException("Failed to find any concepts matching ECL: '" + subsetECL + "'");
+			throw new TermServerScriptException("Failed to find any concepts matching ECL: '" + subsetECL + "' (in target module)");
 		}
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
@@ -527,6 +531,17 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			if (ig.equals(sg)) {
 				return false;
 			}
+		}
+		return true;
+	}
+	
+	protected boolean inModuleScope(Component c) {
+		if (project.getKey().equals("MAIN")) {
+			return true;
+		}
+		//Do we have a default module id ie for a managed service project?
+		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
+			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
 		}
 		return true;
 	}
