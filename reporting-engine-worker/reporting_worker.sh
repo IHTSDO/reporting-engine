@@ -1,17 +1,34 @@
 #!/bin/bash
 
-#Variables to be set by calling script: RPW_Environment, RPW_Version, RPW_Env
-echo "****************************************"
-echo "Reporting Platform Worker installation for environment: $RPW_Environment ($RPW_Env) and version: $RPW_Version"
-echo "Time is now: `date`"
-echo "****************************************"
-echo
-
 # Check that we're running as root
 if [[ $EUID -ne 0 ]]; then
-	echo "This script must be run as root"
-	exit 1
+        echo "This script must be run as root"
+        exit 1
 fi
+
+# Source profile for Consul config
+source /root/.profile
+
+# Set variables
+# RPW and RPW_Environment passed in via terraform
+#
+# Package and git repo release versions from Consul
+RPW_Version=`consul kv get consul/schedule-manager/${RPW_Env}/autoscaling/schedule.manager.version`
+
+# For testing and manual override
+#RPW_Env="dev"
+#RPW_Version="latest"
+#RPW_Environment="dev-snowstorm-int"
+
+#Variables to be set by calling script: RPW_Environment, RPW_Version, RPW_Env
+echo "**************************************************************************"
+echo "Reporting Platform Worker installation for environment: $RPW_Env"
+echo " RPW_Environment: $RPW_Environment"
+echo " RPW_Verison: $RPW_Version"
+echo " " 
+echo "Time is now: `date`"
+echo "**************************************************************************"
+echo " "
 
 supervisorctl stop reporting-engine-worker || true;
 
@@ -50,7 +67,7 @@ if [ -e  $rp_config ];then
 	sed -i "/schedule.manager.queue.response/c\schedule.manager.queue.response = ${RPW_Environment}.schedule-manager.response" ${rp_config}
 	sed -i "/schedule.manager.queue.metadata/c\schedule.manager.queue.metadata = ${RPW_Environment}.schedule-manager.metadata" ${rp_config}
 	sed -i "/reports.s3.cloud.path=/c\reports.s3.cloud.path=authoring/reporting-service/${RPW_Env}" ${rp_config}
-
+	
 	echo "reporting.worker.queue.service-alert = ${RPW_Env}.service-alert" >> $rp_config
 else
 	echo "$rp_config not found"
