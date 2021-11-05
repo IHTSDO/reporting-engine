@@ -173,10 +173,10 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	}
 
 	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && (!moduleId.equals(SCTID_CORE_MODULE) 
+		/*if (this.moduleId != null && (!moduleId.equals(SCTID_CORE_MODULE) 
 				|| moduleId.equals(SCTID_CORE_MODULE) && this.moduleId.equals(SCTID_MODEL_MODULE))) {
 			TermServerScript.debug("here");
-		}
+		}*/
 		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
 			setDirty();
 			this.effectiveTime = null;
@@ -263,6 +263,10 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	public Description getPreferredSynonym(String refsetId) throws TermServerScriptException {
 		List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		return pts.size() == 0 ? null : pts.iterator().next();
+	}
+	
+	public List<Description> getPreferredSynonyms() throws TermServerScriptException {
+		return getDescriptions(null, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 	}
 	
 	public Description getPreferredSynonymSafely(String refsetId) {
@@ -1455,7 +1459,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	@Override
 	public List<String> fieldComparison(Component other) {
 		if (!(other instanceof Concept)) {
-			throw new IllegalStateException("Comarison of " + other + " failed.  It's not a concept");
+			throw new IllegalStateException("Comparison of " + other + " failed.  It's not a concept");
 		}
 		Concept otherConcept = (Concept)other;
 		List<String> differences = new ArrayList<>();

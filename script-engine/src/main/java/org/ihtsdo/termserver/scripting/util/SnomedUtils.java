@@ -129,6 +129,18 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		throw new TermServerScriptException("Unable to translate Acceptability '" + sctid + "'");
 	}
 	
+	public static Acceptability translateAcceptabilitySafely(String sctid) {
+		if (sctid.equals(SCTID_ACCEPTABLE_TERM)) {
+			return Acceptability.ACCEPTABLE;
+		}
+		
+		if (sctid.equals(SCTID_PREFERRED_TERM)) {
+			return Acceptability.PREFERRED;
+		} 
+		
+		return null;
+	}
+	
 	public static String[] translateLangRefset(Description d) throws TermServerScriptException {
 		String[] acceptabilities = new String[] {"N","N"};
 		for (LangRefsetEntry entry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
@@ -1275,18 +1287,36 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	public static boolean hasAcceptabilityInDialect(Description d, String langRefsetId,
 			Acceptability targetAcceptability) throws TermServerScriptException {
 		
-		Acceptability acceptability = d.getAcceptability(langRefsetId);
-		if (targetAcceptability == null && acceptability == null) {
-			return true;
-		} else if (acceptability == null || targetAcceptability == null) {
-			return false;
+		//Can we have this acceptablity in ANY langRefSet?
+		if (langRefsetId == null) {
+			Collection<Acceptability> acceptabilities = d.getAcceptabilities();
+			if (acceptabilities.size() == 0) {
+				return targetAcceptability.equals(Acceptability.NONE);
+			} else if (targetAcceptability.equals(Acceptability.BOTH) && acceptabilities.size() > 0) {
+				return true;
+			} else {
+				for (Acceptability acceptability : acceptabilities) {
+					if (acceptability.equals(targetAcceptability)) {
+						return true;
+					}
+				}
+				return false;
+			}
+		} else {
+			Acceptability acceptability = d.getAcceptability(langRefsetId);
+			if ((targetAcceptability == null || targetAcceptability.equals(Acceptability.NONE)) 
+					&& acceptability == null) {
+				return true;
+			} else if (acceptability == null || targetAcceptability == null) {
+				return false;
+			}
+			
+			//Once we're here, the descriptions acceptability cannot be null.
+			if (targetAcceptability.equals(Acceptability.BOTH)) {
+				return true;
+			}
+			return acceptability.equals(targetAcceptability);
 		}
-		
-		//Once we're here, the descriptions acceptability cannot be null.
-		if (targetAcceptability == Acceptability.BOTH) {
-			return true;
-		}
-		return acceptability.equals(targetAcceptability);
 	}
 
 	//Check every stated relationship is exactly matched by an inferred one

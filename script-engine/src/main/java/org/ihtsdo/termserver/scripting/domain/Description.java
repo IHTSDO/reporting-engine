@@ -2,6 +2,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -593,6 +594,21 @@ public class Description extends Component implements ScriptConstants {
 			}
 		}
 		return null;
+	}
+	
+	public Collection<Acceptability> getAcceptabilities() throws TermServerScriptException {
+		//Are we working with the JSON map, or RF2 Lang refset entries?
+		if (acceptabilityMap != null) {
+			return acceptabilityMap.values();
+		}
+		
+		if (langRefsetEntries != null) {
+			return langRefsetEntries.stream()
+					.filter(rm -> rm.isActive())
+					.map(rm -> SnomedUtils.translateAcceptabilitySafely(rm.getAcceptabilityId()))
+					.collect(Collectors.toSet());
+		}
+		return new ArrayList<>();
 	}
 	
 	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries() {

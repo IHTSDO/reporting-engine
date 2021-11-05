@@ -519,7 +519,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//If we're already working at project level, don't modify branchPath
 			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
 			if (branchPath.contains("SNOMEDCT-") && CharMatcher.is('/').countIn(branchPath) == 2) {
-				debug ("MS Project detected as branch path: " + branchPath);
+				//debug ("MS Project detected as branch path: " + branchPath);
 			} else if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
