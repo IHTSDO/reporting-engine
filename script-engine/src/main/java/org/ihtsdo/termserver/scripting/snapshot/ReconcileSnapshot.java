@@ -29,12 +29,17 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * RP-272 Reconcile an exported snapshot against a generated one
+ * 
+ * NB Use the -f <file> option after the first time you've exported an archive.  Those things
+ * take an hour to obtain.  Actually the last time I ran this I didn't get the snapshot out programmatically
+ * and with it taking so long it might be easier to just do it manually and pick up with wget
  */
 public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	
-	Map<String, Component> remainingComponents;
-	int componentsChecked = 0;
-	int totalToCheck = 0;
+	private Map<String, Component> remainingComponents;
+	private int componentsChecked = 0;
+	private int totalToCheck = 0;
+	private String[] modulesOfInterest = new String[] { SCTID_CORE_MODULE, SCTID_MODEL_MODULE };
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -85,7 +90,11 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		validateArchiveZip(exportedSnapshot);
 		reportRemainder();
 	}
-
+	
+	/*private File getSnapshot() {
+		return new File ("/var/folders/qz/8vj68s7s1t76ghztwp9p4cym0000gn/T/snapshot_export-17928967159967084931.zip");
+	}*/
+	
 	private File getSnapshot() throws TermServerScriptException {
 		File snapshot = null;
 		try {
@@ -179,9 +188,11 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				issueCount += validate(reportTabIdx, createComponent(componentType, lineItems));
-				if (++componentsChecked % 100000 == 0) {
-					debug("Checked " + componentsChecked + " / " + totalToCheck);
+				if (inScope(lineItems[IDX_MODULEID])) {
+					issueCount += validate(reportTabIdx, createComponent(componentType, lineItems));
+					if (++componentsChecked % 100000 == 0) {
+						debug("Checked " + componentsChecked + " / " + totalToCheck);
+					}
 				}
 			} else {
 				isHeaderLine = false;
@@ -192,27 +203,30 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	}
 	
 	private int validate(int reportTabIdx, Component c) throws TermServerScriptException {
-		//What does our generated snapshot hold for this component?
-		Component other = gl.getComponent(c.getId());
-		if (other == null) {
-			if (!c.isActive() && 
-					(c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP) ||
-					c.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP))) {
-				remainingComponents.remove(c.getId());
-				//TODO Investigate here. I think we're replacing duplicate triples when importing
-				//perhaps we can stop doing that.
-				return NO_CHANGES_MADE;
+		List<String> issues = new ArrayList<>();
+		if (inScope(c)) {
+			//What does our generated snapshot hold for this component?
+			Component other = gl.getComponent(c.getId());
+			if (other == null) {
+				if (!c.isActive() && 
+						(c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP) ||
+						c.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP))) {
+					remainingComponents.remove(c.getId());
+					//TODO Investigate here. I think we're replacing duplicate triples when importing
+					//perhaps we can stop doing that.
+					return NO_CHANGES_MADE;
+				}
+				Concept owner = gl.getComponentOwner(c.getId());	
+				report (reportTabIdx, owner, c.getId(), c.isActive(), c.getComponentType() + " from export not present in generated snapshot", c);
+				countIssue(null);
+				return 1;
 			}
-			Concept owner = gl.getComponentOwner(c.getId());	
-			report (reportTabIdx, owner, c.getId(), c.isActive(), c.getComponentType() + " from export not present in generated snapshot", c);
-			countIssue(null);
-			return 1;
-		}
-		List<String> issues = c.fieldComparison(other);
-		Concept owner = gl.getComponentOwner(c.getId());
-		for (String issue : issues) {
-			countIssue(owner);
-			report (reportTabIdx, owner, c.getId(), c.isActive(), issue);
+			issues = c.fieldComparison(other);
+			Concept owner = gl.getComponentOwner(c.getId());
+			for (String issue : issues) {
+				countIssue(owner);
+				report (reportTabIdx, owner, c.getId(), c.isActive(), issue);
+			}
 		}
 		remainingComponents.remove(c.getId());
 		return issues.size();
@@ -271,5 +285,18 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		return r;
+	}
+	
+	protected boolean inScope (Component c) {
+		return inScope(c.getModuleId());
+	}
+	
+	protected boolean inScope (String moduleId) {
+		for (String moduleOfInterest : modulesOfInterest) {
+			if (moduleId.equals(moduleOfInterest)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
