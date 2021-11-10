@@ -1230,7 +1230,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					}
 				}
 				
-				if (project != null && !StringUtils.isEmpty(project.getKey())) {
+				if (jobRun != null && !StringUtils.isEmpty(jobRun.getTask())) {
+					reportName += "_" + jobRun.getTask();
+				} else if (project != null && !StringUtils.isEmpty(project.getKey())) {
 					reportName += "_" + project.getKey();
 				}
 				
