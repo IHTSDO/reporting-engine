@@ -95,8 +95,13 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	}
 	
 	public void runJob() throws TermServerScriptException {
+		Collection<Concept> conceptsOfInterest = gl.getAllConcepts();
+		if (subHierarchy != null) {
+			conceptsOfInterest = subHierarchy.getDescendents(NOT_SET);
+		}
+		
 		nextConcept:
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : conceptsOfInterest) {
 			if (c.isActive()) {
 				if (whiteListedConcepts.contains(c)) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
