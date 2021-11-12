@@ -41,13 +41,13 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	private Set<Concept> hasLostLanguageRefSets = new HashSet<>();
 	private Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
 	
-	TraceabilityService updateTraceability;
-	TraceabilityService createTraceability;
+	TraceabilityService traceabilityService;
 	
 	Map<String, SummaryCount> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		//params.put(ECL, "743521000");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
 	}
 	
@@ -84,8 +84,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				"TextDefns"
 		};
 		super.postInit(tabNames, columnHeadings, false);
-		updateTraceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
-		createTraceability = new TraceabilityService(jobRun, this, "reating concept");
+		traceabilityService = new TraceabilityService(jobRun, this);
 	}
 
 	@Override
@@ -109,14 +108,12 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		examineConcepts();
 		reportConceptsChanged();
 		determineUniqueCountAndTraceability();
-		updateTraceability.flush();
-		createTraceability.flush();
+		traceabilityService.flush();
 		report (PRIMARY_REPORT, "");
 		if (!StringUtils.isEmpty(subsetECL)) {
 			report (PRIMARY_REPORT, "Run against", subsetECL);
 		}
-		updateTraceability.tidyUp();
-		createTraceability.tidyUp();
+		traceabilityService.tidyUp();
 		info ("Job complete");
 	}
 	
@@ -368,14 +365,13 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(inactivatedConcepts);
 		debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport (SECONDARY_REPORT, c,
+			traceabilityService.populateTraceabilityAndReport(SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newConcepts.contains(c)?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N",
 				getLanguages(c));
 		}
-		updateTraceability.flush();
-		createTraceability.flush();
+		traceabilityService.flush();
 		superSet.clear();
 		
 		superSet.addAll(hasNewInferredRelationships);
@@ -383,7 +379,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			populateTraceabilityAndReport (TERTIARY_REPORT, c,
+			traceabilityService.populateTraceabilityAndReport(TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewInferredRelationships.contains(c)?"Y":"N",
@@ -397,7 +393,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating axiom report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			populateTraceabilityAndReport (QUATERNARY_REPORT, c,
+			traceabilityService.populateTraceabilityAndReport(QUATERNARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewAxioms.contains(c)?"Y":"N",
@@ -413,7 +409,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			populateTraceabilityAndReport (QUINARY_REPORT, c,
+			traceabilityService.populateTraceabilityAndReport(QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewDescriptions.contains(c)?"Y":"N",
@@ -430,7 +426,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasChangedInactivationIndicators);
 		debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport (SENARY_REPORT, c,
+			traceabilityService.populateTraceabilityAndReport(SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
 				hasChangedInactivationIndicators.contains(c)?"Y":"N");
@@ -454,7 +450,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasChangedAcceptabilityTextDefn);
 		debug ("Creating text defn report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport (DENARY_REPORT, c,
+			traceabilityService.populateTraceabilityAndReport(DENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewTextDefn.contains(c)?"Y":"N",
 				hasChangedTextDefn.contains(c)?"Y":"N",
@@ -466,8 +462,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
 		superSet.clear();
 		
-		updateTraceability.flush();
-		createTraceability.flush();
+		traceabilityService.flush();
 		
 		//Populate the summary numbers for each type of component
 		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
@@ -482,15 +477,6 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		}
 	}
 	
-	private void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details) throws TermServerScriptException {
-		//Are we recovering this information as an update or a creation?
-		if (newConcepts.contains(c)) {
-			createTraceability.populateTraceabilityAndReport(tabIdx, c, details);
-		} else {
-			updateTraceability.populateTraceabilityAndReport(tabIdx, c, details);
-		}
-	}
-
 	private String getLanguages(Concept c) {
 		Set<String> langs = new TreeSet<>();
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {

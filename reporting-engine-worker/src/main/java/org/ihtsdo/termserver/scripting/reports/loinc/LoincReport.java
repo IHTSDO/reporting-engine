@@ -52,7 +52,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		TraceabilityService traceability = new TraceabilityService(jobRun, this, "reating concept");
+		TraceabilityService traceability = new TraceabilityService(jobRun, this);
 		
 		for (Concept c : gl.getConcept("363787002 | Observable entity (observable entity)").getDescendents(NOT_SET)) {
 			if (!c.isReleased() && !isExcluded(c)) {

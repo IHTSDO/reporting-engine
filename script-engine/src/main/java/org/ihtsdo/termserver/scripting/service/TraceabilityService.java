@@ -23,14 +23,12 @@ public class TraceabilityService {
 	TraceabilityServiceClient client;
 	TermServerScript ts;
 	private static int BATCH_SIZE = 100;
-	Map<Long, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
-	String areaOfInterest;
-	Map<Long, Object[]> traceabilityInfoCache = new HashMap<>();
+	Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
+	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
 	
-	public TraceabilityService(JobRun jobRun, TermServerScript ts, String areaOfInterest) {
+	public TraceabilityService(JobRun jobRun, TermServerScript ts) {
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.ts = ts;
-		this.areaOfInterest = areaOfInterest;
 	}
 	
 	public void tidyUp() {
@@ -39,13 +37,11 @@ public class TraceabilityService {
 	
 	public void populateTraceabilityAndReport(int reportTabIdx, Concept c, Object... details) throws TermServerScriptException {
 		//We'll cache this row until we have enough to be worth making a call to traceability
-		Long conceptId = Long.parseLong(c.getConceptId());
-		
 		//Do we already have a row for this concept?
-		List<ReportRow> rows = batchedReportRowMap.get(conceptId);
+		List<ReportRow> rows = batchedReportRowMap.get(c.getConceptId());
 		if (rows == null) {
 			rows = new ArrayList<>();
-			batchedReportRowMap.put(conceptId, rows);
+			batchedReportRowMap.put(c.getConceptId(), rows);
 		}
 		rows.add(new ReportRow(reportTabIdx, c, details));
 		if (getRequiredRowCount() >= BATCH_SIZE) {
@@ -56,7 +52,7 @@ public class TraceabilityService {
 	private int getRequiredRowCount() {
 		//Of the batch rows, only count the number we don't have cached information for
 		int infoRequiredCount = 0;
-		for (Long conceptId : batchedReportRowMap.keySet()) {
+		for (String conceptId : batchedReportRowMap.keySet()) {
 			if (!traceabilityInfoCache.containsKey(conceptId)) {
 				infoRequiredCount++;
 			}
@@ -71,12 +67,12 @@ public class TraceabilityService {
 	}
 
 	private void populateReportRowsWithTraceabilityInfo(String branchFilter) {
-		List<Long> conceptIds = new ArrayList<>(batchedReportRowMap.keySet());
+		List<String> conceptIds = new ArrayList<>(batchedReportRowMap.keySet());
 		
 		//Firstly, what rows can we satisfy from the cache?
-		List<Long> populatedFromCache = new ArrayList<>();
-		for (Map.Entry<Long, List<ReportRow>> entry: batchedReportRowMap.entrySet()) {
-			Long conceptId = entry.getKey();
+		List<String> populatedFromCache = new ArrayList<>();
+		for (Map.Entry<String, List<ReportRow>> entry: batchedReportRowMap.entrySet()) {
+			String conceptId = entry.getKey();
 			//Do we have data for this concept Id?
 			if (traceabilityInfoCache.containsKey(conceptId)) {
 				populatedFromCache.add(conceptId);
@@ -91,7 +87,7 @@ public class TraceabilityService {
 		//Anything left, we'll make a call to traceability to return
 		if (conceptIds.size() > 0) {
 			branchFilter = "/" + branchFilter;
-			List<Activity> traceabilityInfo = client.getConceptActivity(conceptIds, areaOfInterest, ActivityType.CONTENT_CHANGE, null);
+			List<Activity> traceabilityInfo = client.getConceptActivity(conceptIds, ActivityType.CONTENT_CHANGE, null);
 			if (traceabilityInfo.size() == 0) {
 				logger.warn("Failed to recover any traceability information for {} concepts", conceptIds.size());
 			}
@@ -114,7 +110,7 @@ public class TraceabilityService {
 				}
 				
 				//Cache this info if we've not seen this
-				for (Long id : conceptIds) {
+				for (String id : conceptIds) {
 					if (traceabilityInfoCache.containsKey(id)) {
 						Object[] bestInfo = chooseBestInfo(branchFilter, traceabilityInfoCache.get(id), info);
 						traceabilityInfoCache.put(id, bestInfo);
@@ -147,16 +143,16 @@ public class TraceabilityService {
 		}
 	}
 
-	private List<ReportRow> getRelevantReportRows(Activity activity, List<Long> conceptIds) {
+	private List<ReportRow> getRelevantReportRows(Activity activity, List<String> conceptIds) {
 		List<ReportRow> reportRows = new ArrayList<>();
-		for (Long id : getConceptIds(activity, conceptIds)) {
+		for (String id : getConceptIds(activity, conceptIds)) {
 			reportRows.addAll(batchedReportRowMap.get(id));
 		}
 		return reportRows;
 	}
 	
-	private Set<Long> getConceptIds(Activity activity, List<Long> conceptsOfInterest) {
-		Set<Long> conceptIds = new HashSet<>();
+	private Set<String> getConceptIds(Activity activity, List<String> conceptsOfInterest) {
+		Set<String> conceptIds = new HashSet<>();
 		for (ConceptChange change : activity.getConceptChanges()) {
 			//If the data coming back wasn't about a concept we're interested in, ignore it
 			if (change.getConceptId() != null && conceptsOfInterest.contains(change.getConceptId())) {
