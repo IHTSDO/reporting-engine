@@ -34,6 +34,7 @@ public class GraphLoader implements ScriptConstants {
 	private AxiomRelationshipConversionService axiomService;
 	
 	private DescendantsCache descendantsCache = DescendantsCache.getDescendentsCache();
+	private DescendantsCache statedDescendantsCache = DescendantsCache.getStatedDescendentsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	private AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
 	
@@ -129,6 +130,7 @@ public class GraphLoader implements ScriptConstants {
 		fsnMap = null;
 		orphanetConcepts = null;
 		descendantsCache.reset();
+		statedDescendantsCache.reset();
 		ancestorsCache.reset();
 		statedAncestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
@@ -1308,6 +1310,10 @@ public class GraphLoader implements ScriptConstants {
 
 	public DescendantsCache getDescendantsCache() {
 		return descendantsCache;
+	}
+	
+	public DescendantsCache getStatedDescendantsCache() {
+		return statedDescendantsCache;
 	}
 
 	public AncestorsCache getAncestorsCache() {

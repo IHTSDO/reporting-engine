@@ -28,10 +28,8 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-//import us.monoid.web.Resty;
-
 public abstract class TermServerScript extends Script implements ScriptConstants {
-	
+
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
 	protected static Integer headlessEnvironment = null;
@@ -907,7 +905,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false, true);
+		return findConcepts(project.getBranchPath(), ecl, false, true, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 	
 	public Collection<RefsetMember> findRefsetMembers(List<Concept> refCompIds, String refsetFilter) throws TermServerScriptException {
@@ -925,7 +923,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public Collection<Concept> findConceptsSafely(String ecl, String info) {
 		try {
-			return findConcepts(project.getBranchPath(), ecl, true, true);
+			return findConcepts(ecl, true, true);
 		} catch (Exception e) {
 			error("Exception while recovering " + ecl + 
 			info == null ? "" : " in " + info +
@@ -934,15 +932,19 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return new HashSet<>();
 	}
 	
+	public Collection<Concept> findConcepts(String ecl, boolean quiet, CharacteristicType charType) throws TermServerScriptException {
+		return findConcepts(project.getBranchPath(), ecl, quiet, true, charType);
+	}
+	
 	public Collection<Concept> findConcepts(String ecl, boolean quiet) throws TermServerScriptException {
 		return findConcepts(ecl, quiet, true);
 	}
 	
 	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean useLocalStoreIfSimple) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, quiet, useLocalStoreIfSimple);
+		return findConcepts(project.getBranchPath(), ecl, quiet, useLocalStoreIfSimple, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 	
-	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
 		//If we're working from a zip file, then use MAIN instead
 		if (branch.endsWith(".zip")) {
 			String historicECLBranch = "MAIN";
@@ -959,14 +961,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			branch = historicECLBranch;
 		}
 		
-		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
+		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet, charType);
 		boolean wasCached = cache.isCached(ecl);
 		Collection<Concept> concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
 			debug("No concepts returned. Double checking that result...");
 			try { Thread.sleep(3*1000); } catch (Exception e) {}
-			concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 
+			concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple, charType); 
 		}
 		
 		//If this is the first time we've seen these results, check for duplicates

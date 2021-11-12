@@ -12,14 +12,24 @@ import com.google.common.collect.Iterables;
 public class DescendantsCache implements ScriptConstants {
 
 	private static DescendantsCache singleton = null;
+	private static DescendantsCache singletonStated = null;
 	
 	Map<Concept, Set<Concept>> descendentCache = new HashMap<>();
+	CharacteristicType charType = CharacteristicType.INFERRED_RELATIONSHIP;
 	
 	public static DescendantsCache getDescendentsCache() {
 		if (singleton == null) {
 			singleton = new DescendantsCache();
 		}
 		return singleton;
+	}
+	
+	public static DescendantsCache getStatedDescendentsCache() {
+		if (singletonStated == null) {
+			singletonStated = new DescendantsCache();
+		}
+		singletonStated.charType = CharacteristicType.STATED_RELATIONSHIP;
+		return singletonStated;
 	}
 	
 	private DescendantsCache() {

@@ -12,6 +12,7 @@ import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.authoringservices.RestyOverrideAccept;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
+import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -203,7 +204,12 @@ public class TermServerClient {
 	}
 	
 	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
-		String criteria = "ecl=" + SnomedUtils.makeMachineReadable(ecl);
+		return getConcepts(ecl, branchPath, CharacteristicType.INFERRED_RELATIONSHIP, searchAfter, limit);
+	}
+	
+	public ConceptCollection getConcepts(String ecl, String branchPath, CharacteristicType charType, String searchAfter, int limit) throws TermServerScriptException {
+		String eclType = charType.equals(charType.equals(CharacteristicType.INFERRED_RELATIONSHIP))?"ecl":"statedEcl";
+		String criteria = eclType + "=" + SnomedUtils.makeMachineReadable(ecl);
 		return getConceptsMatchingCriteria(criteria, branchPath, searchAfter, limit);
 	}
 	

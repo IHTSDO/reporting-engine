@@ -21,7 +21,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class NormaliseConcepts extends BatchFix {
 	
 	Concept ppp;
-	private String ecl = "<<66191007 |Transient arthropathy (disorder)|";
+	Boolean useStatedECL = true;
+	//private String ecl = "<<66191007 |Transient arthropathy (disorder)|";
+	private String ecl = "<! 267038008 |Edema (finding)|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
@@ -57,7 +59,8 @@ public class NormaliseConcepts extends BatchFix {
 				"Report Metadata, Detail, Detail"};
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata"};
-		ppp = gl.getConcept("64572001 |Disease (disorder)|");
+		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
+		ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -169,7 +172,7 @@ public class NormaliseConcepts extends BatchFix {
 		Set<Concept> noChangesRequired = new HashSet<>();
 		
 		setQuiet(true);
-		for (Concept alignedConcept : findConcepts(ecl)) {
+		for (Concept alignedConcept : findConcepts(ecl, useStatedECL)) {
 			//Make changes to a clone of the concept so we don't affect our local copy
 			Concept alignedClone = alignedConcept.cloneWithIds();
 			int changesMade = normaliseConcept(null, alignedClone);

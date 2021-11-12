@@ -25,16 +25,21 @@ public class EclCache implements ScriptConstants {
 	boolean quiet = false;
 	
 	Map <String, Collection<Concept>> expansionCache = new HashMap<>();
-	
 	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet) {
+		return getCache(branch, tsClient, gson, gl, quiet, CharacteristicType.INFERRED_RELATIONSHIP);
+	}
+	
+	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet, CharacteristicType charType) {
 		if (branchCaches == null) {
 			branchCaches  = new HashMap<>();
 		}
 		
-		EclCache branchCache = branchCaches.get(branch);
+		String cacheKey = branch + "_" + charType;
+		
+		EclCache branchCache = branchCaches.get(cacheKey);
 		if (branchCache == null) {
 			branchCache = new EclCache(tsClient, gson);
-			branchCaches.put(branch, branchCache);
+			branchCaches.put(cacheKey, branchCache);
 		}
 		branchCache.gl = gl;
 		branchCache.quiet = quiet;
@@ -59,6 +64,10 @@ public class EclCache implements ScriptConstants {
 	}
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		return findConcepts(branch, ecl, useLocalStoreIfSimple, CharacteristicType.INFERRED_RELATIONSHIP);
+	}
+	
+	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
 			TermServerScript.warn("EclCache asked to find concepts but not ecl specified.  Returning empty set");
 			return new ArrayList<>();
@@ -67,6 +76,7 @@ public class EclCache implements ScriptConstants {
 		ecl = ecl.trim();
 		String machineEcl = SnomedUtils.makeMachineReadable(ecl);
 		Collection<Concept> allConcepts;
+		DescendantsCache descendantsCache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getDescendantsCache() : gl.getStatedDescendantsCache();
 		
 		//Have we been passed some partial ecl that begins and ends with a bracket?
 		//However if we contain OR or MINUS then this is not safe to do
@@ -110,11 +120,11 @@ public class EclCache implements ScriptConstants {
 					if (subhierarchy.equals(ROOT_CONCEPT)) {
 						allConcepts = gl.getAllConcepts();
 					} else {
-						allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy, true);
+						allConcepts = descendantsCache.getDescendentsOrSelf(subhierarchy, true);
 					}
 				} else if (ecl.startsWith("<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
-					allConcepts = gl.getDescendantsCache().getDescendents(subhierarchy, true);
+					allConcepts = descendantsCache.getDescendents(subhierarchy, true);
 				} else {
 					//Could this be a single concept?
 					try {
@@ -127,7 +137,7 @@ public class EclCache implements ScriptConstants {
 				}
 				TermServerScript.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
 			} else {
-				allConcepts = recoverConceptsFromTS(branch, ecl);
+				allConcepts = recoverConceptsFromTS(branch, ecl, charType);
 			}
 		}
 		
@@ -151,7 +161,8 @@ public class EclCache implements ScriptConstants {
 		} else {
 			//Need to strip out all FSNs that might contain odd characters
 			ecl = SnomedUtils.makeMachineReadable(ecl);
-			if (ecl.contains("{") || ecl.contains(",") || ecl.contains("^") || ecl.contains("(") ||
+			if (ecl.contains("{") || ecl.contains(",") || ecl.contains("^") 
+					|| ecl.contains("(") ||  ecl.contains("!") ||
 					ecl.contains(" MINUS ") || ecl.contains(" AND ") || ecl.contains(":")) {
 				isSimple = false;
 			}
@@ -159,14 +170,14 @@ public class EclCache implements ScriptConstants {
 		return isSimple;
 	}
 
-	private Set<Concept> recoverConceptsFromTS(String branch, String ecl) throws TermServerScriptException {
+	private Set<Concept> recoverConceptsFromTS(String branch, String ecl, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> allConcepts = new HashSet<>();
 		boolean allRecovered = false;
 		String searchAfter = null;
 		int totalRecovered = 0;
 		while (!allRecovered) {
 			try {
-					ConceptCollection collection = tsClient.getConcepts(ecl, branch, searchAfter, PAGING_LIMIT);
+					ConceptCollection collection = tsClient.getConcepts(ecl, branch, charType, searchAfter, PAGING_LIMIT);
 					totalRecovered += collection.getItems().size();
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
