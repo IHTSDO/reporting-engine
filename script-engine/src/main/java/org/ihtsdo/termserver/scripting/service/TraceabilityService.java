@@ -61,12 +61,17 @@ public class TraceabilityService {
 	}
 
 	public void flush() throws TermServerScriptException {
-		populateReportRowsWithTraceabilityInfo(ts.getProject().getKey());
+		try {
+			populateReportRowsWithTraceabilityInfo(ts.getProject().getKey());
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
+		}
 		report();
 		batchedReportRowMap.clear();
+		System.gc();
 	}
 
-	private void populateReportRowsWithTraceabilityInfo(String branchFilter) {
+	private void populateReportRowsWithTraceabilityInfo(String branchFilter) throws InterruptedException {
 		List<String> conceptIds = new ArrayList<>(batchedReportRowMap.keySet());
 		
 		//Firstly, what rows can we satisfy from the cache?
@@ -82,7 +87,7 @@ public class TraceabilityService {
 			}
 		}
 		conceptIds.removeAll(populatedFromCache);
-		logger.info("Recovered cached information for " + populatedFromCache.size() + " concepts");
+		logger.info("Recovered cached information for " + populatedFromCache.size() + " concepts (cache size: " + traceabilityInfoCache.size() + ")");
 		
 		//Anything left, we'll make a call to traceability to return
 		if (conceptIds.size() > 0) {
