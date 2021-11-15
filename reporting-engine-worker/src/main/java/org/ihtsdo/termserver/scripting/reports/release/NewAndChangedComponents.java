@@ -62,7 +62,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
 				"Id, FSN, SemTag, Active, isNew, DefStatusChanged, Languages, Author, Task, Date",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships, Author, Task, Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
@@ -379,7 +379,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			traceabilityService.populateTraceabilityAndReport(TERTIARY_REPORT, c,
+			report(TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewInferredRelationships.contains(c)?"Y":"N",

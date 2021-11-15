@@ -23,6 +23,7 @@ public class TraceabilityService {
 	TraceabilityServiceClient client;
 	TermServerScript ts;
 	private static int BATCH_SIZE = 100;
+	private static int MAX_PENDING_SIZE  = 1000;
 	Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
 	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
 	
@@ -44,7 +45,8 @@ public class TraceabilityService {
 			batchedReportRowMap.put(c.getConceptId(), rows);
 		}
 		rows.add(new ReportRow(reportTabIdx, c, details));
-		if (getRequiredRowCount() >= BATCH_SIZE) {
+		if (getRequiredRowCount() >= BATCH_SIZE || 
+				batchedReportRowMap.size() >= MAX_PENDING_SIZE) {
 			flush();
 		}
 	}
@@ -59,6 +61,7 @@ public class TraceabilityService {
 		}
 		return infoRequiredCount;
 	}
+
 
 	public void flush() throws TermServerScriptException {
 		try {
