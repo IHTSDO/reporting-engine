@@ -14,8 +14,8 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.LocalProperties;
+import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
-import org.springframework.cloud.aws.core.io.s3.SimpleStorageResourceLoader;
 
 public class S3Manager {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Manager.class);
