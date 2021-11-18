@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.snomed.otf</groupId>
-	<version>5.5.0-SNAPSHOT</version>
+	<version>5.5.0</version>
 	<artifactId>reporting-engine</artifactId>
 	<packaging>pom</packaging>
 
@@ -26,7 +26,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
-		<otf.common.version>5.1.0-SNAPSHOT</otf.common.version>
+		<otf.common.version>5.1.0</otf.common.version>
 		<snomed-template-parser.version>2.0.0</snomed-template-parser.version>
 		<spring.activeMQ.version>5.15.0</spring.activeMQ.version>
 		<springfox-swagger.version>2.7.0</springfox-swagger.version>
