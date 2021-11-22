@@ -27,7 +27,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setPopulateReleasedFlag(true);
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
 		super.init(run);
 	}
 	

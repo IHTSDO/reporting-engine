@@ -21,7 +21,7 @@ import com.google.common.collect.HashBiMap;
 /**
  * LOINC-394 Inactivate LOINC concepts marked as deprecated
  */
-public class UpdateLOINC extends BatchFix {
+public class InactivateLOINC extends BatchFix {
 	
 	enum REL_PART {Type, Target};
 	
@@ -41,12 +41,12 @@ public class UpdateLOINC extends BatchFix {
 	private Map<String, String> deprecatedMap;
 	private Map<String, String> discouragedMap;
 	
-	protected UpdateLOINC(BatchFix clone) {
+	protected InactivateLOINC(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		UpdateLOINC fix = new UpdateLOINC(null);
+		InactivateLOINC fix = new InactivateLOINC(null);
 		try {
 			ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC
 			fix.populateEditPanel = false;
@@ -67,7 +67,7 @@ public class UpdateLOINC extends BatchFix {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"TaskId, TaskDesc,SCTID, FSN, SemTag, Severity, Action, Detail, Details, , , "};
+				"TaskId, TaskDesc,SCTID, FSN, Severity, Action, LOINC Num, Details, , , "};
 		String[] tabNames = new String[] {"LOINC2020 Inactivations"};
 		super.postInit(tabNames, columnHeadings, false);
 		loadFiles();
@@ -171,14 +171,15 @@ public class UpdateLOINC extends BatchFix {
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
 		try {
-			inactivateConcept(task, concept, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			String loincNum = getLoincNumFromDescription(c);
+			inactivateConcept(t, c, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, loincNum);
 		} catch (ValidationFailure v) {
-			report(task, concept, v);
+			report(t, c, v);
 		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changesMade;
 	}
@@ -201,10 +202,10 @@ public class UpdateLOINC extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			if (c.isActive() && c.getModuleId().equals(SCTID_LOINC_MODULE)) {
+			if (c.getModuleId().equals(SCTID_LOINC_MODULE)) {
 				String loincNum = getLoincNumFromDescription(c);
 				String thisStatus = get(loincFileMap, loincNum, LoincCol.STATUS.ordinal());
-				if (thisStatus.equals(DEPRECATED)) {
+				if (thisStatus.equals(DISCOURAGED)) {
 					componentsToProcess.add(c);
 				}
 			}

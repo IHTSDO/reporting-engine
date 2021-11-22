@@ -1174,9 +1174,18 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		updateConcept(t, original, "");
 	}
 	
-	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivateMe, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
+	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivateMe, Concept replacing, InactivationIndicator i) throws TermServerScriptException {
+		checkAndReplaceHistoricalAssociations(t, inactivateMe, Collections.singletonList(replacing), i);
+	}
+	
+	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivateMe, List<Concept> replacing, InactivationIndicator i) throws TermServerScriptException {
 		List<AssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivateMe);
 		if (histAssocs != null && histAssocs.size() > 0) {
+			if (replacing != null && replacing.size() > 1) {
+				throw new IllegalArgumentException("No code support for replacing multiple historical assocaitions");
+			}
+			Concept replacement = replacing.get(0);
+			
 			for (AssociationEntry histAssoc : histAssocs) {
 				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
 				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
@@ -1188,7 +1197,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					unpickHistoricalAssociation(t, source, inactivateMe);
 				} else {
 					report (t, inactivateMe, Severity.HIGH, ReportActionType.INFO, thisDetail);
-					replaceHistoricalAssociation(t, source, inactivateMe, replacing, inactivationIndicator);
+					replaceHistoricalAssociation(t, source, inactivateMe, replacement, i);
 				}
 			}
 		}
@@ -1210,16 +1219,57 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		updateConcept(t, source, null);
 		t.addBefore(sourceCached, target);
 	}
-
+	
 	protected int inactivateConcept(Task t, Concept c, Concept replacement, InactivationIndicator i) throws TermServerScriptException {
+		return inactivateConcept(t, c, Collections.singletonList(replacement), i, "");
+	}
+
+	protected int inactivateConcept(Task t, Concept c, List<Concept> replacements, InactivationIndicator i, String info) throws TermServerScriptException {
+		ReportActionType reportAction = ReportActionType.CONCEPT_INACTIVATED;
+		
+		//If concept is already inactivated, then we'll be modifying it's inactivation reason or hist assoc
+		if (!c.isActive()) {
+			//Only if the concept was inactivated as Outdated will we update the inactivation indicator
+			//This will need to become a list of acceptable existing inactivation indicators
+			if (c.getInactivationIndicator().equals(InactivationIndicator.OUTDATED)) {
+				reportAction = ReportActionType.INACT_IND_MODIFIED;
+			} else {
+				report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Already inactivated as: " + c.getInactivationIndicator());
+				return NO_CHANGES_MADE;
+			}
+		}
+		
 		//Check if the concept we're about to inactivate is used as the target of a historical association
 		//and rewire that to point to our new clone
-		checkAndReplaceHistoricalAssociations(t, c, replacement, i);
+		checkAndReplaceHistoricalAssociations(t, c, replacements, i);
 		
 		c.setActive(false);
 		c.setInactivationIndicator(i);
+		
+		if (replacements != null && replacements.size() > 1) {
+			throw new IllegalArgumentException("No code support for replacing multiple historical assocaitions");
+		}
+		Concept replacement = (replacements == null ? null : replacements.get(0));
+		
 		if (replacement != null) {
-			c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+			switch (i) {
+				case NONCONFORMANCE_TO_EDITORIAL_POLICY : throw new TermServerScriptException("Cannot specify historical association for NCEP");
+				case DUPLICATE : c.setAssociationTargets(AssociationTargets.sameAs(replacement));
+					break;
+				case OUTDATED : c.setAssociationTargets(AssociationTargets.replacedBy(replacement));
+					break;
+				case AMBIGUOUS : c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+					break;
+				default :
+					throw new IllegalArgumentException("No code support for inactivation indicator: " + i);
+			}
+			
+		} else {
+			//Remove any existing association targets
+			if (c.getAssociationTargets().size() > 0) {
+				report (t, c, Severity.MEDIUM, ReportActionType.ASSOCIATION_REMOVED, c.getAssociationTargets().toString(gl));
+			}
+			c.setAssociationTargets(new AssociationTargets());
 		}
 		//Inactivated concepts must necessarily be primitive
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
@@ -1231,7 +1281,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				c.removeRelationship(r);
 			}
 		}
-		report (t, c, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED);
+		report (t, c, Severity.LOW, reportAction, info);
 		return CHANGE_MADE;
 	}
 
