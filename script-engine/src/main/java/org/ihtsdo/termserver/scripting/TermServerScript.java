@@ -1345,7 +1345,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (detail instanceof Object[]) {
 				Object[] arr = (Object[]) detail;
 				for (Object obj : arr) {
-					sb.append(COMMA_QUOTE + obj + QUOTE);
+					sb.append(COMMA_QUOTE + (obj==null?"":obj) + QUOTE);
 				}
 			} else {
 				sb.append(COMMA_QUOTE + detail + QUOTE);

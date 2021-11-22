@@ -879,6 +879,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected int addRelationship(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
 		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, false, false);  //Don't allow other relationships of the same type
 	}
+	
+	protected int addRelationshipNonUnique(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, false, true); 
+	}
 
 	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
 		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), false, true); //Allow other relationships of the same type
