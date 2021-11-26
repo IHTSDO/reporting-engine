@@ -56,6 +56,7 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 	public void postInit() throws TermServerScriptException {
 		termTranslationPT.put("arteriogram", "arteriography");
 		termTranslationAll.put("MRI", "MR");
+		termTranslationAll.put("arteriography", "angiography");
 		removeWhenPresent.put("magnetic resonance", "imaging");
 		String[] columnHeadings = new String[] {
 				"Task, Desc, SCTID,FSN,ConceptType,Severity,Action, Detail,Details,Sites",
