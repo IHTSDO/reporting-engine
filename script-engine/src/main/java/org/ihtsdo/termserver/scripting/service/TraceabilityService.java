@@ -22,7 +22,6 @@ public class TraceabilityService {
 
 	TraceabilityServiceClient client;
 	TermServerScript ts;
-	private static int BATCH_SIZE = 100;
 	private static int MAX_PENDING_SIZE  = 1000;
 	Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
 	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
@@ -45,7 +44,7 @@ public class TraceabilityService {
 			batchedReportRowMap.put(c.getConceptId(), rows);
 		}
 		rows.add(new ReportRow(reportTabIdx, c, details));
-		if (getRequiredRowCount() >= BATCH_SIZE || 
+		if (getRequiredRowCount() >= TraceabilityServiceClient.BATCH_SIZE || 
 				batchedReportRowMap.size() >= MAX_PENDING_SIZE) {
 			flush();
 		}
@@ -76,7 +75,9 @@ public class TraceabilityService {
 
 	private void populateReportRowsWithTraceabilityInfo(String branchFilter) throws InterruptedException {
 		List<String> conceptIds = new ArrayList<>(batchedReportRowMap.keySet());
-		
+		if (conceptIds.size() == 0) {
+			return;
+		}
 		//Firstly, what rows can we satisfy from the cache?
 		List<String> populatedFromCache = new ArrayList<>();
 		for (Map.Entry<String, List<ReportRow>> entry: batchedReportRowMap.entrySet()) {
