@@ -55,10 +55,9 @@ public class InactivateLOINC extends BatchFix {
 		InactivateLOINC fix = new InactivateLOINC(null);
 		try {
 			ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC
-			fix.populateEditPanel = false;
 			fix.selfDetermining = false;
 			fix.populateEditPanel = false;
-			fix.reportNoChange = false;
+			fix.reportNoChange = true;
 			fix.selfDetermining = true;
 			fix.runStandAlone = false;
 			fix.stateComponentType = false;
@@ -180,8 +179,12 @@ public class InactivateLOINC extends BatchFix {
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
 		try {
+			Concept loadedConcept = loadConcept(c, t.getBranchPath());
 			String loincNum = getLoincNumFromDescription(c);
-			inactivateConcept(t, c, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, loincNum);
+			changesMade = inactivateConcept(t, loadedConcept, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, loincNum);
+			if (changesMade > 0) {
+				updateConcept(t, loadedConcept, info);
+			}
 		} catch (ValidationFailure v) {
 			report(t, c, v);
 		} catch (Exception e) {
