@@ -37,8 +37,12 @@ public class InactivateLOINC extends BatchLoincFix {
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
 		try {
+			Concept loadedConcept = loadConcept(c, t.getBranchPath());
 			String loincNum = getLoincNumFromDescription(c);
-			inactivateConcept(t, c, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, loincNum);
+			changesMade = inactivateConcept(t, loadedConcept, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, loincNum);
+			if (changesMade > 0) {
+				updateConcept(t, loadedConcept, info);
+			}
 		} catch (ValidationFailure v) {
 			report(t, c, v);
 		} catch (Exception e) {
