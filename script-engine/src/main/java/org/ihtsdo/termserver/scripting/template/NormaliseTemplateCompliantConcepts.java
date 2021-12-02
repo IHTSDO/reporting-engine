@@ -31,7 +31,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		NormaliseTemplateCompliantConcepts app = new NormaliseTemplateCompliantConcepts(null);
 		try {
 			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
-			app.classifyTasks = false;
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -48,7 +47,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
-		classifyTasks = true;
+		classifyTasks = false;
 		summaryTabIdx = SECONDARY_REPORT;
 		
 		if (exclusionWords == null) {
@@ -414,11 +413,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/procedures/Stoma.json" };
 		templateNames = new String[] { "templates/procedures/CT of Body Structure with contrast.json" };
 		templateNames = new String[] { "templates/procedures/CT of Body Structure.json" };
-		
+		templateNames = new String[] { "templates/Measurement.json" };
+		templateNames = new String[] { "templates/Muscular dystrophy.json" };
 		*/
 		
-		templateNames = new String[] { "templates/Measurement.json" };
-		
+		templateNames = new String[] { "templates/Craniofacial cleft.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
@@ -555,7 +554,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
-			
 			//Are we finding concepts to process, or are they stated in a file?
 			Collection<Concept> potentialMatches;
 			if (inputFile == null) {

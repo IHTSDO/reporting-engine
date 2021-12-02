@@ -1,0 +1,7 @@
+{
+  "name": "Muscular dystrophy (disorder)",
+  "domain": "<<  73297009 |Muscular dystrophy (disorder)| ",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Muscular+dystrophy+%28disorder%29+-+v1.0",
+  "version": 1,
+  "logicalTemplate": "782964007 |Genetic disease (disorder)|  : [[~1..*]] {[[~1..1]]    263502005 |Clinical course (attribute)|    =  255314001 |Progressive (qualifier value)| } , [[~1..* @rolegroup]]{ [[~1..1]]  116676008 |Associated morphology (attribute)|  = [[+id(<<  4720007 |Dystrophy (morphologic abnormality)|  ) @morphology ]], [[~1..1]]  363698007 |Finding site (attribute)|  = [[+id(<<  127954009 |Skeletal muscle structure (body structure)|  )]], [[~0..1]]  246454002 |Occurrence (attribute)|  = [[ +id(<  282032007 |Periods of life (qualifier value)|  ) @occur]], [[~1..1]]  370135005 |Pathological process (attribute)|  =  308490002 |Pathological developmental process (qualifier value)| }"
+}

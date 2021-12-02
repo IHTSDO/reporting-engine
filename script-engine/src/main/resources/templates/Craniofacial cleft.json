@@ -1,0 +1,7 @@
+{
+  "name": "Craniofacial cleft",
+  "domain": "<  764517009 |Craniofacial cleft (disorder)||",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Craniofacial+cleft+%28disorder%29+-+v1.0",
+  "version": 1,
+  "logicalTemplate": "764517009 |Craniofacial cleft (disorder)| : [[~0..1]] {[[~0..1]]  42752001 |Due to (attribute)|   = [[+id(<<  64572001 |Disease (disorder)| ) @dueto ]] },[[~1..* @rolegroup]]{ [[~1..1]]  116676008 |Associated morphology (attribute)|   = [[+id (<<  371520008 |Developmental failure of fusion (morphologic abnormality)| ) @morphology ]], [[~0..1]]  363698007 |Finding site (attribute)|  = [[+id (<<  123850002 |Head part (body structure)| )]], [[~1..1]]  246454002 |Occurrence (attribute)|  =  255399007 |Congenital (qualifier value)| , [[~1..1]]  370135005 |Pathological process (attribute)|  = [[ +id (<<  308490002 |Pathological developmental process (qualifier value)| ) @proc]] }"
+}
