@@ -228,6 +228,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		repeatedWordGroups();
 		reviewContractions();
 		wordsInReverse();
+		multipleLangRef();
 
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -660,6 +661,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							String detailStr = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
 							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
 							continue nextDescription;
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void multipleLangRef() throws TermServerScriptException {
+		String issueStr = "Multiple LangRef for a given refset";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			if (inScope(c)) {
+				nextDescription:
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					Set<String> activeInRefsets = new HashSet<>();
+					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						if (activeInRefsets.contains(l.getRefsetId())) {
+							String detailStr = "Description has multiple langrefset entries in same refset: " + l.getRefsetId();
+							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+							continue nextDescription;
+						} else {
+							activeInRefsets.add(l.getRefsetId());
 						}
 					}
 				}
