@@ -54,6 +54,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 				.withTag(INT)
 				.withTag(MS)
 				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withExpectedDuration(30)
 				.build();
 	}
 	

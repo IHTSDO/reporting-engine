@@ -76,6 +76,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				.withParameters(params)
 				.withTag(INT).withTag(MS)
 				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withExpectedDuration(30)
 				.build();
 	}
 	

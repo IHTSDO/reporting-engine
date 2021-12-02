@@ -43,6 +43,8 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	
 	TraceabilityService traceabilityService;
 	
+	public static int MAX_ROWS_FOR_TRACEABILITY = 10000;
+	
 	Map<String, SummaryCount> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -101,6 +103,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				.withParameters(params)
 				.withTag(INT)
 				.withTag(MS)
+				.withExpectedDuration(60)  //BE with large RF2 imports easily hitting this
 				.build();
 	}
 	
@@ -407,15 +410,29 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasLostDescriptions);
 		superSet.addAll(hasChangedAcceptabilityDesc);
 		debug ("Creating description report for " + superSet.size() + " concepts");
+		boolean includeTraceability = superSet.size() < MAX_ROWS_FOR_TRACEABILITY ? true : false;
+		if (!includeTraceability) {
+			report (QUINARY_REPORT, "", "", "", "", "", "", "", "Cannot report traceability for > 10K rows due to performance constraints");
+		}
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			traceabilityService.populateTraceabilityAndReport(QUINARY_REPORT, c,
-				c.isActive()?"Y":"N",
-				newWithNewConcept,
-				hasNewDescriptions.contains(c)?"Y":"N",
-				hasChangedDescriptions.contains(c)?"Y":"N",
-				hasLostDescriptions.contains(c)?"Y":"N",
-				hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
+			if (includeTraceability) {
+				traceabilityService.populateTraceabilityAndReport(QUINARY_REPORT, c,
+					c.isActive()?"Y":"N",
+					newWithNewConcept,
+					hasNewDescriptions.contains(c)?"Y":"N",
+					hasChangedDescriptions.contains(c)?"Y":"N",
+					hasLostDescriptions.contains(c)?"Y":"N",
+					hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
+			} else {
+				report(QUINARY_REPORT, c,
+					c.isActive()?"Y":"N",
+					newWithNewConcept,
+					hasNewDescriptions.contains(c)?"Y":"N",
+					hasChangedDescriptions.contains(c)?"Y":"N",
+					hasLostDescriptions.contains(c)?"Y":"N",
+					hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
+			}
 		}
 		getSummaryCount("Concepts with Descriptions").isNew = hasNewDescriptions.size();
 		getSummaryCount("Concepts with Descriptions").isChanged = hasChangedDescriptions.size();

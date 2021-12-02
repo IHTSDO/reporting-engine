@@ -27,6 +27,7 @@ public class TraceabilityService {
 	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
 	
 	public TraceabilityService(JobRun jobRun, TermServerScript ts) {
+		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.ts = ts;
 	}
