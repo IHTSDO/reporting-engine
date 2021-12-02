@@ -208,7 +208,7 @@ public class TermServerClient {
 	}
 	
 	public ConceptCollection getConcepts(String ecl, String branchPath, CharacteristicType charType, String searchAfter, int limit) throws TermServerScriptException {
-		String eclType = charType.equals(charType.equals(CharacteristicType.INFERRED_RELATIONSHIP))?"ecl":"statedEcl";
+		String eclType = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP)?"ecl":"statedEcl";
 		String criteria = eclType + "=" + SnomedUtils.makeMachineReadable(ecl);
 		return getConceptsMatchingCriteria(criteria, branchPath, searchAfter, limit);
 	}
