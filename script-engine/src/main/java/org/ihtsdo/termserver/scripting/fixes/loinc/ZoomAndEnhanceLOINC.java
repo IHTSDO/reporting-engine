@@ -16,12 +16,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.otf.script.utils.CVSUtils;
 
-import com.google.api.client.util.Charsets;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.io.CharSink;
-import com.google.common.io.FileWriteMode;
-import com.google.common.io.Files;
 
 /**
  * Look through all LOINC expressions and fix whatever needs worked on
@@ -29,16 +25,13 @@ import com.google.common.io.Files;
 public class ZoomAndEnhanceLOINC extends BatchFix {
 	
 	enum REL_PART {Type, Target};
-	private static String LOINC_CONTENT_FILESTR = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/LOINC_2020_CONTENT.tsv";
-	//private static String LOINC_CONTENT_FILESTR = "G:\\My Drive\\018_Loinc\\2021\\LOINC_2020_CONTENT.tsv";
 	
-	//private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
-	private static String publishedRefsetFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
+	private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
+	//private static String publishedRefsetFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
 	
-	//private static String loincFile = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
-	private static String loincFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/Loinc_2_70.csv";
+	private static String loincFile = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
+	//private static String loincFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/Loinc_2_70.csv";
 	
-	private static String TARGET_BRANCH = "MAIN/SNOMEDCT-LOINC/LOINC2022";
 	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	
 	private static enum LoincCol { LOINC_NUM,COMPONENT,PROPERTY,TIME_ASPCT,SYSTEM,SCALE_TYP,METHOD_TYP,CLASS,VersionLastChanged,CHNG_TYPE,DefinitionDescription,STATUS,CONSUMER_NAME,CLASSTYPE,FORMULA,EXMPL_ANSWERS,SURVEY_QUEST_TEXT,SURVEY_QUEST_SRC,UNITSREQUIRED,SUBMITTED_UNITS,RELATEDNAMES2,SHORTNAME,ORDER_OBS,CDISC_COMMON_TESTS,HL7_FIELD_SUBFIELD_ID,EXTERNAL_COPYRIGHT_NOTICE,EXAMPLE_UNITS,LONG_COMMON_NAME,UnitsAndRange,EXAMPLE_UCUM_UNITS,EXAMPLE_SI_UCUM_UNITS,STATUS_REASON,STATUS_TEXT,CHANGE_REASON_PUBLIC,COMMON_TEST_RANK,COMMON_ORDER_RANK,COMMON_SI_TEST_RANK,HL7_ATTACHMENT_STRUCTURE,EXTERNAL_COPYRIGHT_LINK,PanelType,AskAtOrderEntry,AssociatedObservations,VersionFirstReleased,ValidHL7AttachmentRequest,DisplayName }
@@ -51,11 +44,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	private BiMap<String, String> fsnBestLoincMap;
 	private Map<String, List<String>> fsnAllLoincMap;
 	private Map<String, List<String>> refsetFileMap;
-	private Map<String, Concept> loincConceptMap;
 	private Set<String> deprecated;
 	private Set<Concept> expectedTypeChanges = new HashSet<>();
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
-	private boolean createLoincConceptMap = false;
 	
 	protected ZoomAndEnhanceLOINC(BatchFix clone) {
 		super(clone);
@@ -105,35 +96,8 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		super.postInit(tabNames, columnHeadings, false);
 		
 		info("Mapping current LOINC content");
-		mapLoincContent();
-		
 		loadFiles();
 		expectedTypeChanges.add(gl.getConcept("704318007 |Property type (attribute)|"));
-	}
-
-	private void mapLoincContent() throws TermServerScriptException {
-		try {
-			//Load the LOINC file
-			File checkFile = new File(LOINC_CONTENT_FILESTR);
-			if (checkFile.canRead()) {
-				loincConceptMap = new HashMap<>();
-				info ("Loading " + LOINC_CONTENT_FILESTR);
-				try (BufferedReader br = new BufferedReader(new FileReader(LOINC_CONTENT_FILESTR))) {
-					String line;
-					while ((line = br.readLine()) != null) {
-						String[] items = line.split(TAB);
-						String[] conceptParts = SnomedUtils.deconstructSCTIDFsn(items[1]);
-						Concept loincConcept = new Concept(conceptParts[0], conceptParts[1]);
-						loincConceptMap.put(items[0], loincConcept);
-					}
-				}
-			} else {
-				createLoincConceptMap = true;
-				info (LOINC_CONTENT_FILESTR + " not yet available, will create for next time");
-			}
-		} catch (Exception e) {
-			throw new TermServerScriptException(e);
-		}
 	}
 
 	private void loadFiles() throws TermServerScriptException {
@@ -174,11 +138,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 						}
 						allLoincNums.add(loincNum);
 						
-						String usedHere = "Unknown";
-						if (loincConceptMap != null) {
-							usedHere = loincConceptMap.containsKey(loincNum) ? loincConceptMap.get(loincNum).toString() : "No";
-						}
-						
 						if (!fsnBestLoincMap.containsKey(fsn) && !fsnBestLoincMap.containsValue(loincNum)) {
 							fsnBestLoincMap.put(fsn, loincNum);
 						} else {
@@ -210,7 +169,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 									//In this case we want to replace the originally stored value
 									fsnBestLoincMap.replace(fsn, loincNum);
 								} else if (thisStatus.equals(ACTIVE) && origStatus.equals(ACTIVE)) {
-									report(QUATERNARY_REPORT, "Same FSN, both Active", fsn, getDetails(loincNum), getDetails(origLoincNum), usedHere);
+									report(QUATERNARY_REPORT, "Same FSN, both Active", fsn, getDetails(loincNum), getDetails(origLoincNum), "");
 								} else if (thisStatus.equals(DEPRECATED) && origStatus.equals(DEPRECATED)) {
 									//Store this FSN to see if we find a replacement before the end of the file
 									checkReplacementAvailable.add(fsn);
@@ -231,11 +190,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 				increment("Double deprecated loincNum subsequently replaced");
 			} else {
 				for (String loincNum : fsnAllLoincMap.get(fsn)) {
-					String usedHere = "Unknown";
-					if (loincConceptMap != null) {
-						usedHere = loincConceptMap.containsKey(loincNum) ? loincConceptMap.get(loincNum).toString() : "No";
-					}
-					report(QUATERNARY_REPORT, "No active replacements found", fsn, getDetails(loincNum), "", usedHere);
+					report(QUATERNARY_REPORT, "No active replacements found", fsn, getDetails(loincNum), "");
 				}
 			}
 		}
@@ -553,26 +508,8 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
-		File loincConceptFile = new File(LOINC_CONTENT_FILESTR);
-		CharSink chs = Files.asCharSink(loincConceptFile, Charsets.UTF_8, FileWriteMode.APPEND);
-		//Don't use local copies of concepts, they might not exist
-		Set<Concept> loincConcepts = findConceptsByCriteria("module=715515008", TARGET_BRANCH, false);
-		info ("Found " + loincConcepts.size() + " in " + TARGET_BRANCH);
 		setQuiet(true);
-		for (Concept c : loincConcepts) {
-			//Concepts found by criteria are concept mini.  Need to grab the full thing
-			//which we can NOW do from memory
-			c = gl.getConcept(c.getId());
-			if (createLoincConceptMap) {
-				Concept loadedConcept = loadConcept(c, TARGET_BRANCH);
-				String line = getLoincNumFromDescription(loadedConcept) 
-						+ "\t" + loadedConcept.toString() + "\r\n";
-				try {
-					chs.write(line);
-				} catch (IOException e) {
-					throw new TermServerScriptException("Unable to write to " + LOINC_CONTENT_FILESTR, e);
-				}
-			}
+		for (Concept c : getActiveLOINCconcepts()) {
 			//Only process component if we have changes to make
 			if (upgradeLOINCConcept(null, c.cloneWithIds()) > 0) {
 				componentsToProcess.add(c);
@@ -582,6 +519,15 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		return componentsToProcess;
 	}
 	
+	private List<Concept> getActiveLOINCconcepts() {
+		return SnomedUtils.sort(gl.getAllConcepts()
+				.stream()
+				.filter(c -> c.isActive())
+				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
+				.collect(Collectors.toList())
+				);
+	}
+
 	private void populateSummaryTab() throws TermServerScriptException {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
