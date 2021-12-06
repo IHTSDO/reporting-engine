@@ -740,16 +740,19 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	}
 	
 	public List<Description> getDescriptions(ActiveState a) {
-		List<Description> results = new ArrayList<Description>();
 		if (descriptions == null) {
 			throw new IllegalStateException("Concept " + this + " has no descriptions");
 		}
-		for (Description d : descriptions) {
-			if (SnomedUtils.descriptionHasActiveState(d, a)) {
-				results.add(d);
-			}
-		}
-		return results;
+		return descriptions.stream()
+				.filter(d -> SnomedUtils.descriptionHasActiveState(d, a))
+				.collect(Collectors.toList());
+	}
+	
+	public List<Description> getDescriptions(String lang, ActiveState a) {
+		return descriptions.stream()
+				.filter(d -> d.getLang().equals(lang))
+				.filter(d -> SnomedUtils.descriptionHasActiveState(d, a))
+				.collect(Collectors.toList());
 	}
 	
 	public List<Description> getDescriptions(ActiveState a, List<DescriptionType> types) {

@@ -1354,7 +1354,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		writeToReportFile (sb.toString());
 		incrementSummaryInformation("Report lines written");
 	}
-	
 
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
 		report (PRIMARY_REPORT, c, details);
