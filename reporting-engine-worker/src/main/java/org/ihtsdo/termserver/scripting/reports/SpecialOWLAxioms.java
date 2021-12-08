@@ -6,6 +6,7 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
@@ -58,7 +59,10 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
+			if (!c.isActive()) {
+				continue;
+			}
 			for (Axiom a : c.getAdditionalAxioms()) {
 				report (SECONDARY_REPORT, c, a);
 				countIssue(c);
