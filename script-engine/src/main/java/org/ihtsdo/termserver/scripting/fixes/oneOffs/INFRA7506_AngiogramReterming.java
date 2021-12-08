@@ -42,7 +42,7 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 			fix.reportNoChange = true;
 			fix.inputFileHasHeaderRow = true;
 			fix.expectNullConcepts = true;
-			fix.validateConceptOnUpdate = false;
+			fix.validateConceptOnUpdate = true;
 			fix.init(args);
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.loadProjectSnapshot(false);
@@ -74,6 +74,7 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = modifyDescriptions(task, loadedConcept);
 			if (changesMade > 0) {
+				checkSpaces(loadedConcept);
 				updateConcept(task, loadedConcept, info);
 			} 
 		} catch (ValidationFailure v) {
@@ -82,6 +83,12 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changesMade;
+	}
+
+	private void checkSpaces(Concept c) {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			d.setTerm(d.getTerm().trim().replaceAll("  ", " "));
+		}
 	}
 
 	private int modifyDescriptions(Task t, Concept c) throws TermServerScriptException {
@@ -97,6 +104,8 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 				.stream().map(d -> d.toString())
 				.collect(Collectors.joining(",\n"));
 		for (Concept findingSite : sites) {
+			//Need our local copy of this concept
+			findingSite = gl.getConcept(findingSite.getId());
 			if (identifiesAsArtery(findingSite.getFSNDescription())) {
 				hasArtery = true;
 				break;
@@ -217,7 +226,7 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 						String newTerm = term.replace(entry.getKey(), entry.getValue());
 						newTerm = sortMrAcronym(newTerm);
 						newTerm = StringUtils.capitalizeFirstLetter(newTerm);
-						
+						newTerm = newTerm.replaceAll("Ct ", "CT ");
 						if (t != null) {
 							replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, true, sitesStr);
 						}
