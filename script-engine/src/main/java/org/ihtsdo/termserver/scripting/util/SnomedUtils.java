@@ -1839,4 +1839,58 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return c.getModuleId().equals(SCTID_CORE_MODULE)
 				|| c.getModuleId().equals(SCTID_MODEL_MODULE);
 	}
+
+	public static boolean hasChangesSince(Concept c, String fromET) {
+		if (hasChangesSince((Component)c, fromET)) {
+			return true;
+		}
+		
+		for (Description d : c.getDescriptions()) {
+			if (hasChangesSince(d, fromET)) {
+				return true;
+			}
+			for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+				if (hasChangesSince(l, fromET)) {
+					return true;
+				}
+			}
+		}
+		
+		for (Relationship r : c.getRelationships()) {
+			if (hasChangesSince(r, fromET)) {
+				return true;
+			}
+		}
+		
+		for (AxiomEntry a : c.getAxiomEntries()) {
+			if (hasChangesSince(a, fromET)) {
+				return true;
+			}
+		}
+		
+		for (AssociationEntry h : c.getAssociationEntries()) {
+			if (hasChangesSince(h, fromET)) {
+				return true;
+			}
+		}
+		
+		for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
+			if (hasChangesSince(i, fromET)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	public static boolean hasChangesSince(Component c, String fromET) {
+		if (StringUtils.isEmpty(fromET)|| StringUtils.isEmpty(c.getEffectiveTime())) {
+			return true;
+		}
+		
+		if (c.getEffectiveTime().compareTo(fromET) >= 0) {
+			return true;
+		}
+		return false;
+	}
 }

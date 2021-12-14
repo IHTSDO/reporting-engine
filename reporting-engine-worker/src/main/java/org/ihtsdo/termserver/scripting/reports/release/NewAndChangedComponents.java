@@ -14,6 +14,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class NewAndChangedComponents extends TermServerReport implements ReportClass {
 	
@@ -41,6 +42,11 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	private Set<Concept> hasLostLanguageRefSets = new HashSet<>();
 	private Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
 	
+	private List<String> wordMatches;
+	private String changesFromET;
+	private static final String WORD_MATCHES = "Word Matches";
+	private static final String CHANGES_SINCE = "Changes From";
+	
 	TraceabilityService traceabilityService;
 	
 	public static int MAX_ROWS_FOR_TRACEABILITY = 10000;
@@ -49,7 +55,8 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "743521000");
+		params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
+		params.put(CHANGES_SINCE, "20210801");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
 	}
 	
@@ -57,6 +64,21 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		getArchiveManager().setPopulateReleasedFlag(true);
 		subsetECL = run.getParamValue(ECL);
+		
+		if (!StringUtils.isEmpty(run.getParamValue(WORD_MATCHES))) {
+			wordMatches = Arrays.asList(run.getParamValue(WORD_MATCHES).split("\\s*,\\s*"));
+			wordMatches = wordMatches.stream()
+					.map(String::toLowerCase)
+					.collect(Collectors.toList());
+		}
+		
+		if (!StringUtils.isEmpty(run.getParamValue(CHANGES_SINCE))) {
+			int dateCheck = Integer.parseInt(run.getParamValue(CHANGES_SINCE));
+			if (dateCheck < 19840101 || dateCheck > 30000101) {
+				throw new IllegalArgumentException("Invalid effective time: " + dateCheck);
+			}
+			changesFromET = run.getParamValue(CHANGES_SINCE);
+		}
 		super.init(run);
 	}
 	
@@ -71,7 +93,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				"Id, FSN, SemTag, Active, isTargetOfNewInferredRelationship, wasTargetOfLostInferredRelationship",
 				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
 				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
@@ -93,6 +115,8 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
+				.add(WORD_MATCHES).withType(JobParameter.Type.STRING)
+				.add(CHANGES_SINCE).withType(JobParameter.Type.STRING)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
@@ -116,21 +140,19 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		if (!StringUtils.isEmpty(subsetECL)) {
 			report (PRIMARY_REPORT, "Run against", subsetECL);
 		}
+		if (!StringUtils.isEmpty(changesFromET)) {
+			report (PRIMARY_REPORT, "Changes since", changesFromET);
+		}
+		if (!StringUtils.isEmpty(jobRun.getParamValue(WORD_MATCHES))) {
+			report (PRIMARY_REPORT, "Word matches", QUOTE + jobRun.getParamValue(WORD_MATCHES) + QUOTE);
+		}
 		traceabilityService.tidyUp();
 		info ("Job complete");
 	}
 	
 	public void examineConcepts() throws TermServerScriptException { 
 		int conceptsExamined = 0;
-		Collection<Concept> conceptsOfInterest;
-		
-		if (!StringUtils.isEmpty(subsetECL)) {
-			info("Running Concepts Changed report against subset: " + subsetECL);
-			conceptsOfInterest = findConcepts(subsetECL);
-		} else {
-			conceptsOfInterest = gl.getAllConcepts();
-		}
-		
+		Collection<Concept> conceptsOfInterest = determineConceptsOfInterest();
 		double lastPercentageReported = 0;
 		long notReleased = 0;
 		long notChanged = 0;
@@ -147,7 +169,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				notReleased++;
 				newConcepts.add(c);
 				summaryCount.isNew++;
-			} else if (inScope(c) && StringUtils.isEmpty(c.getEffectiveTime())) {
+			} else if (inScope(c) && SnomedUtils.hasChangesSince(c, changesFromET)) {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
 					defStatusChanged.add(c);
@@ -182,7 +204,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 						hasNew.add(c);
 						isNew = true;
 						summaryCount.isNew++;
-					} else if (StringUtils.isEmpty(d.getEffectiveTime())) {
+					} else if (SnomedUtils.hasChangesSince(d, changesFromET)) {
 						if (!d.isActive()) {
 							hasLost.add(c);
 							wasInactivated = true;
@@ -197,7 +219,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					//Has it changed acceptability?
 					if (!isNew) {
 						for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
-							if (StringUtils.isEmpty(l.getEffectiveTime())) {
+							if (SnomedUtils.hasChangesSince(l, changesFromET)) {
 								hasChangedAcceptability.add(c);
 								changedAcceptability = true;
 							}
@@ -207,7 +229,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					//Description inactivation indicators
 					summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Descriptions");
 					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
-						if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
+						if (SnomedUtils.hasChangesSince(i, changesFromET)) {
 							if (i.isReleased()) {
 								if (i.isActive()) {
 									summaryCount.isChanged++;
@@ -223,7 +245,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					//Description hist assocs
 					summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
 					for (AssociationEntry h : d.getAssociationEntries()) {
-						if (StringUtils.isEmpty(h.getEffectiveTime())) {
+						if (SnomedUtils.hasChangesSince(h, changesFromET)) {
 							if (h.isReleased()) {
 								if (h.isActive()) {
 									summaryCount.isChanged++;
@@ -241,7 +263,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					boolean langRefSetIsChanged = false;
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
 						if (inScope(l)) {
-							if (StringUtils.isEmpty(l.getEffectiveTime())) {
+							if (SnomedUtils.hasChangesSince(l, changesFromET)) {
 								if (l.isReleased()) {
 									if (l.isActive()) {
 										hasChangedLanguageRefSets.add(c);
@@ -274,7 +296,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			summaryCount = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
 				if (inScope(r)) {
-					if (StringUtils.isEmpty(r.getEffectiveTime())) {
+					if (SnomedUtils.hasChangesSince(r, changesFromET)) {
 						if (r.isActive()) {
 							hasNewInferredRelationships.add(c);
 							if (r.isNotConcrete()) {
@@ -295,7 +317,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			summaryCount = getSummaryCount(ComponentType.AXIOM.name());
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (inScope(a)) {
-					if (StringUtils.isEmpty(a.getEffectiveTime())) {
+					if (SnomedUtils.hasChangesSince(a, changesFromET)) {
 						if (a.isReleased()) {
 							if (a.isActive()) {
 								summaryCount.isChanged++;
@@ -315,7 +337,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			if (inScope(c)) {
 				summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Concepts");
 				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
-					if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
+					if (SnomedUtils.hasChangesSince(i, changesFromET)) {
 						hasChangedInactivationIndicators.add(c);
 						if (i.isReleased()) {
 							if (i.isActive()) {
@@ -331,7 +353,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				
 				summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Concepts");
 				for (AssociationEntry a : c.getAssociationEntries()) {
-					if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
+					if (SnomedUtils.hasChangesSince(a, changesFromET)) {
 						hasChangedAssociations.add(c);
 						if (a.isReleased()) {
 							if (a.isActive()) {
@@ -359,7 +381,41 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		info ("Not In Scope " +  notInScope);
 		info ("Total examined: " + conceptsOfInterest.size());
 	}
-	
+
+	private Collection<Concept> determineConceptsOfInterest() throws TermServerScriptException {
+		List<Concept> conceptsOfInterest;
+		if (!StringUtils.isEmpty(subsetECL)) {
+			info("Running Concepts Changed report against subset: " + subsetECL);
+			conceptsOfInterest = new ArrayList<>(findConcepts(subsetECL));
+		} else {
+			conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
+		}
+		
+		return conceptsOfInterest.stream()
+				.filter(c -> hasLexicalMatch(c, wordMatches))
+				.filter(c -> SnomedUtils.hasChangesSince(c, changesFromET))
+				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.collect(Collectors.toList());
+	}
+
+	private boolean hasLexicalMatch(Concept c, List<String> wordMatches) {
+		if (wordMatches == null || wordMatches.size() ==0) {
+			return true;
+		}
+		
+		for (Description d : c.getDescriptions()) {
+			if (!d.isActive() || d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+				continue;
+			}
+			for (String word : wordMatches) {
+				if (d.getTerm().toLowerCase().contains(word)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private void reportConceptsChanged() throws TermServerScriptException {
 		
 		HashSet<Concept> superSet = new HashSet<>();
