@@ -180,7 +180,11 @@ abstract public class TemplateFix extends BatchFix {
 					if (namedSlots.containsKey(a.getValueSlotName())) {
 						//TODO This comparison should be made without FSNs involved
 						if (!attributeClauseValue.equals(namedSlots.get(a.getValueSlotName()))) {
-							throw new IllegalArgumentException("Named slots sharing the same name must have identical slot definition: " + a.getValueSlotName() + " -> " + attributeClauseValue + " vs " + namedSlots.get(a.getValueSlotName()));
+							String first = attributeClauseValue;
+							String second = namedSlots.get(a.getValueSlotName());
+							String diff = StringUtils.difference(first, second);
+							String detail = a.getValueSlotName() + " -> " + first + " vs " + second + " difference is '" + diff + "'";
+							throw new IllegalArgumentException("Named slots sharing the same name must have identical slot definition: " + detail);
 						}
 					} else {
 						namedSlots.put(a.getValueSlotName(), attributeClauseValue);

@@ -180,13 +180,10 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("57640003"))) {	
+		//for (final Concept c : Collections.singleton(gl.getConcept("747087008"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
-				//Only do this for newly inactivated descriptions
-				if (!c.isActive() 
-						&& StringUtils.isEmpty(d.getEffectiveTime())
-						&& isMissingConceptInactiveIndicator(d)) {
+				if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 					debug("Missing CII: " + d);
 					processMe.add(c);
 					continue nextConcept;

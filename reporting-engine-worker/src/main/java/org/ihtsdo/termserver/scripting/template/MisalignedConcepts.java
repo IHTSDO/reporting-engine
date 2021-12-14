@@ -47,9 +47,9 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< 75506009 |Construction of stoma (procedure)| MINUS << 258174001 |Imaging guidance procedure (procedure)|");
-		params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..1 @rolegroup]] { [[~1..1]] 260686004 |Method (attribute)| = [[+id ( << 129376004 |Construction - action (qualifier value)| ) ]], [[~1..1]] 363700003 |Direct morphology (attribute)| = [[+id ( << 245857005 |Stoma (morphologic abnormality)| ) ]], [[~1..1]] 405814001 |Procedure site - Indirect (attribute)| = [[+id ( < 442083009 |Anatomical or acquired body structure (body structure)| ) ]] }");
-		params.put(INCLUDE_COMPLEX, "false");
+		params.put(ECL, "< 258176004 |Computerized tomography guidance (procedure)|");
+		params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  =  312251004 |Computed tomography imaging - action (qualifier value)| ,[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<< 442083009 |Anatomical or acquired body structure|) @bodyStructure]],[[~1..1]]  363703001 |Has intent (attribute)|  =  429892002 |Guidance intent (qualifier value)| ,[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  385420005 |Contrast media (substance)| ) @contrast]]}, [[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id(<  129264002 |Action (qualifier value)| ) @procedure ]],[[~0..1]] [[+id(<< 363704007 |Procedure site| )]] = [[+id(<< 442083009 |Anatomical or acquired body structure|) @bodyStructure ]],[[~0..1]]  363700003 |Direct morphology (attribute)|  = [[+id(<<  49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology]],[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  105590001 |Substance (substance)| ) @substance]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id(<<  105590001 |Substance (substance)| ) @directSubstance]]}");
+		params.put(INCLUDE_COMPLEX, "true");
 		params.put(INCLUDE_ORPHANET, "true");
 		params.put(KNOWN_COMPLETE, "true");
 		TermServerReport.run(MisalignedConcepts.class, args, params);
@@ -391,6 +391,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		templateNames = new String[] { "templates/drugs/MP only.json" };
 		*/
+		templateNames = new String[] { "templates/procedures/CT Guided.json" };
 		
 		super.init(args);
 	}
