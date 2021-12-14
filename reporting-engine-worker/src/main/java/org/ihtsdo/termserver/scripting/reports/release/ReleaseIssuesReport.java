@@ -229,6 +229,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		reviewContractions();
 		wordsInReverse();
 		multipleLangRef();
+		//suspectedProperNameCaseInsensitive();
 
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -667,6 +668,24 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
+	
+	/*private void suspectedProperNameCaseInsensitive() throws TermServerScriptException {
+		String issueStr = "Possible proper name set as case insensitive";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			if (inScope(c)) {
+				nextDescription:
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					String firstWord = d.getTerm().split(" ")[0];
+					if ((firstWord.endsWith("s'") || firstWord.endsWith("'s"))
+							&& d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
+							report(c, issueStr, isLegacy(d), isActive(c, d), "", d);
+							continue nextDescription;
+					}
+				}
+			}
+		}
+	}*/
 	
 	private void multipleLangRef() throws TermServerScriptException {
 		String issueStr = "Multiple LangRef for a given refset";
