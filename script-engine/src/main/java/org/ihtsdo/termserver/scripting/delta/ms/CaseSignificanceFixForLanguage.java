@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.delta;
+package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -65,6 +66,8 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 					report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, d, "","","Description manually listed as an exception");
 				} else {
 					changesMade += funnySymbolSwap(c, d);
+					
+					changesMade += checkForCaptitalizedEnglishWord(c, d);
 					//Requirement to align with English as first check
 					if (!alignWithEnglishIfSameFirstWord(c, d)) {
 						switch (d.getCaseSignificance()) {
@@ -99,6 +102,46 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		}
 		return NO_CHANGES_MADE;
 	}
+	
+
+	/**
+	 * During translation, it might be that some English words are retained and, if these
+	 * were the first word in the term might also retain a capital letter
+	 * eg 4190381000005117 [273311005] da: batteriet Behavior assessment [cI] 
+	 * Where an English word is found as NOT the first word, as long as the 
+	 * original Term is case insensitive, then we can decapitalize the translation.
+	 * @throws TermServerScriptException 
+	 */
+	private int checkForCaptitalizedEnglishWord(Concept c, Description d) throws TermServerScriptException {
+		String[] words = d.getTerm().split(" ");
+		boolean isFirst = true;
+		for (String word : words) {
+			if (isFirst) {
+				isFirst = false;
+				continue;
+			}
+			if (StringUtils.isCapitalized(word) && existsAsCaseInsitiveEnglishFirstWord(c, word)) {
+				String oldTerm = d.getTerm();
+				String newTerm = d.getTerm().replace(word, word.toLowerCase());
+				d.setTerm(newTerm);
+				d.setEffectiveTime(null);
+				d.setDirty();
+				report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Decapitalized non-first English word.  Was: " + oldTerm);
+				return CHANGE_MADE;
+			}
+		}
+		return NO_CHANGES_MADE;
+	}
+
+	private boolean existsAsCaseInsitiveEnglishFirstWord(Concept c, String word) {
+		for (Description d : c.getDescriptions("en", ActiveState.ACTIVE)) {
+			if (d.getTerm().startsWith(word) 
+					&& d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private boolean alignWithEnglishIfSameFirstWord(Concept c, Description d) throws TermServerScriptException {
 		String firstWord = StringUtils.getFirstWord(d.getTerm());
@@ -107,6 +150,21 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			if (!checkMe.equals(d) 
 					&& StringUtils.getFirstWord(checkMe.getTerm()).equalsIgnoreCase(firstWord) 
 					&& !d.getCaseSignificance().equals(checkMe.getCaseSignificance())) {
+				
+				//Now if the English was cI but the Danish has no capital letters, the we want to 
+				//keep the Danish as case insensitive
+				if (checkMe.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)
+						&& !expectFirstLetterCapitalization && !StringUtils.isCaseSensitive(d.getTerm(),expectFirstLetterCapitalization)) {
+					continue;
+				}
+				
+				//If the English was case insensitive but the Danish has ADDED capital letters, then we're
+				//thinking the first letter is the only one that's case insensitive.
+				if (checkMe.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)
+						&& !expectFirstLetterCapitalization && StringUtils.isCaseSensitive(d.getTerm(),expectFirstLetterCapitalization)) {
+					continue;
+				}
+				
 				String after = SnomedUtils.translateCaseSignificanceFromEnum(checkMe.getCaseSignificance());
 				d.setCaseSignificance(checkMe.getCaseSignificance());
 				d.setEffectiveTime(null);
@@ -126,8 +184,18 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		if (d.getType().equals(DescriptionType.FSN)) {
 			term = SnomedUtils.deconstructFSN(term)[0];
 		}
-		//First letter lower case should always be CS
-		if (StringUtils.initialLetterLowerCase(term)) {
+		
+		//Is this word just entirely lower case and that's expected?
+		if (!expectFirstLetterCapitalization && !StringUtils.isCaseSensitive(term,expectFirstLetterCapitalization)) {
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+			d.setEffectiveTime(null);
+			d.setDirty();
+			changesMade++;
+			c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
+			report(c, Severity.LOW,ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, "cI", "ci", d.getEffectiveTimeSafely());
+			incrementSummaryInformation("Descriptions modified", 1);
+		} else if (expectFirstLetterCapitalization && StringUtils.initialLetterLowerCase(term)) {
+			//First letter lower case should always be CS
 			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 			d.setEffectiveTime(null);
 			d.setDirty();
