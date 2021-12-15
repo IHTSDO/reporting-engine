@@ -43,7 +43,16 @@
 			<artifactId>jira-client</artifactId>
 			<version>0.6.3-IHTSDO</version>
 		</dependency>
-		
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-to-slf4j</artifactId>
+			<version>2.15.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.15.0</version>
+		</dependency>
 		<dependency>
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger2</artifactId>
@@ -75,9 +84,9 @@
 			<version>2.6</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.amazonaws</groupId>
-		    <artifactId>aws-java-sdk</artifactId>
-		    <version>1.12.110</version>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.12.110</version>
 		   <exclusions>
 				<exclusion>
 					<groupId>io.netty</groupId>
@@ -91,8 +100,8 @@
 			<version>3.0.2</version>
 			<exclusions>
 				<exclusion>
-				    <groupId>com.fasterxml.jackson.core</groupId>
-				    <artifactId>jackson-databind</artifactId>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-databind</artifactId>
 				</exclusion>
 			</exclusions> 
 		</dependency>
