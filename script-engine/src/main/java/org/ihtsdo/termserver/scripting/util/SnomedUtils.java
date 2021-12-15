@@ -1893,4 +1893,21 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return false;
 	}
+
+	//TODO Handle groups and multiple focus concepts
+	public static Set<Relationship> fromExpression(GraphLoader gl, String expression) throws TermServerScriptException {
+		Set<Relationship> rels = new HashSet<>();
+		//First the focus concept(s)
+		int cutPoint = expression.indexOf(":");
+		Concept parent = gl.getConcept(expression.substring(0, cutPoint));
+		rels.add(new Relationship(IS_A, parent));
+		String remainder = expression.substring(cutPoint + 1);
+		for (String attribute : remainder.split(COMMA)) {
+			cutPoint = attribute.indexOf("=");
+			Concept type = gl.getConcept(attribute.substring(0, cutPoint));
+			Concept target = gl.getConcept(attribute.substring(cutPoint + 1));
+			rels.add(new Relationship(type, target));
+		}
+		return rels;
+	}
 }

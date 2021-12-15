@@ -10,7 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * LOINC-382 List Primitive LOINC concepts
  */
-public class PrimitiveLoinc extends TermServerScript{
+public class PrimitiveLoinc extends TermServerScript {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		PrimitiveLoinc report = new PrimitiveLoinc();
