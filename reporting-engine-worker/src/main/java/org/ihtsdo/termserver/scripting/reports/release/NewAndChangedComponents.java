@@ -116,7 +116,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
 				.add(WORD_MATCHES).withType(JobParameter.Type.STRING)
-				.add(CHANGES_SINCE).withType(JobParameter.Type.STRING)
+				//.add(CHANGES_SINCE).withType(JobParameter.Type.STRING)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
