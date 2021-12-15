@@ -45,10 +45,12 @@ public class LOINCStats extends TermServerReport {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Item, Count"
+				"Item, Count",
+				"Item, Detail, Further Info"
 		};
 		String[] tabNames = new String[] {
-				"Summary Counts"
+				"Summary Counts",
+				"Details"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 		loadFiles();
@@ -66,7 +68,9 @@ public class LOINCStats extends TermServerReport {
 			String expression = entry.getValue().get(RefsetCol.EXPRESSION.ordinal());
 			//Do we still have this item
 			if (!currentContentMap.containsKey(loincNum)) {
-				increment("Published LOINCNum no longer represented");
+				String issue = "Published LOINCNum no longer represented";
+				increment(issue);
+				checkForInactiveLoincNumDescription(loincNum, issue);
 			} else {
 				Concept c = currentContentMap.get(loincNum);
 				Set<Relationship> publishedRels = SnomedUtils.fromExpression(gl, expression);
@@ -209,7 +213,7 @@ public class LOINCStats extends TermServerReport {
 	}
 	
 	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
-		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
+		return getLoincNumDescription(c, ActiveState.ACTIVE).getTerm().substring(LOINC_NUM_PREFIX.length());
 	}
 	
 	private String getLoincNumFromDescriptionSafely(Concept c) {
@@ -221,8 +225,15 @@ public class LOINCStats extends TermServerReport {
 		return "ERROR";
 	}
 	
-	private Description getLoincNumDescription(Concept c) throws TermServerScriptException {
-		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+	private String getLoincNumFromInactiveDescription(Concept c) {
+		try {
+			return getLoincNumDescription(c, ActiveState.INACTIVE).getTerm().substring(LOINC_NUM_PREFIX.length());
+		} catch (Exception e) {}
+		return "ERROR";
+	}
+	
+	private Description getLoincNumDescription(Concept c, ActiveState activeState) throws TermServerScriptException {
+		for (Description d : c.getDescriptions(activeState)) {
 			if (d.getTerm().startsWith(LOINC_NUM_PREFIX)) {
 				return d;
 			}
@@ -234,5 +245,15 @@ public class LOINCStats extends TermServerReport {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Map.Entry.comparingByKey())
 				.forEach(e -> reportSafely (PRIMARY_REPORT, (Component)null, e.getKey(), e.getValue()));
+	}
+	
+
+	private void checkForInactiveLoincNumDescription(String loincNum, String issue) throws TermServerScriptException {
+		Concept foundInactiveDesc = gl.getAllConcepts().stream()
+				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
+				.filter(c -> getLoincNumFromInactiveDescription(c).equals(loincNum))
+				.findAny().orElseGet( () -> { return null; });
+		String extraDetail = foundInactiveDesc == null ? "" : "Found as inactive description on " + foundInactiveDesc;
+		report (SECONDARY_REPORT, issue, loincNum, extraDetail);
 	}
 }
