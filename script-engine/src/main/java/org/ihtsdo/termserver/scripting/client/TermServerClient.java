@@ -621,6 +621,31 @@ public class TermServerClient {
 		}
 	}
 	
+	public Collection<RefsetMember> findRefsetMembers(String branchPath, String refsetId, Boolean isNullEffectiveTime) throws TermServerScriptException {
+		try {
+			Collection<RefsetMember> members = new ArrayList<>(); 
+			String url = getRefsetMemberUrl(branchPath) + "?";
+			if (refsetId != null) {
+				url += "&referenceSet=" + refsetId;
+			}
+			if (isNullEffectiveTime != null) {
+				url += "&isNullEffectiveTime=" + (isNullEffectiveTime?"true":"false");
+			}
+			RefsetMemberCollection memberCollection = restTemplate.getForObject(url, RefsetMemberCollection.class);
+			int totalExpected = memberCollection.getTotal();
+			members.addAll(memberCollection.getItems());
+			String searchAfter = memberCollection.getSearchAfter();
+			while (members.size() < totalExpected) {
+				memberCollection = restTemplate.getForObject(url + "&searchAfter=" + searchAfter, RefsetMemberCollection.class);
+				members.addAll(memberCollection.getItems());
+				searchAfter = memberCollection.getSearchAfter();
+			}
+			return members;
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
+		}
+	}
+	
 	public RefsetMember updateRefsetMember(RefsetMember rm, String branchPath) {
 		String url = getRefsetMemberUrl(rm.getId(), branchPath);
 		ResponseEntity<RefsetMember> response = restTemplate.exchange(

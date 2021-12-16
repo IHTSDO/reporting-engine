@@ -261,4 +261,8 @@ RefsetMember extends Component implements ScriptConstants {
 	private boolean matchesAdditionalFields(RefsetMember that) {
 		return this.getAdditionalFields().equals(that.getAdditionalFields());
 	}
+
+	public boolean hasAdditionalField(String key) {
+		return getAdditionalFields().containsKey(key);
+	}
 }
