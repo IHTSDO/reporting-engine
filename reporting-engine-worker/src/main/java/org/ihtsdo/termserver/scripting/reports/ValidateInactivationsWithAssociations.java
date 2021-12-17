@@ -33,6 +33,14 @@ import org.springframework.util.StringUtils;
  * A legacy issue is defined as one that existed in the previous release
  * So if EITHER the concept or the inactivation indicator OR the target has changed in this
  * release, then it's a new issue (we're saying).
+ * 
+ * RP-536
+ * Ambiguous concepts can now have [1..*] POSSIBLY_EQUIVALENT_TO associations
+ * Concepts "Moved To"  can now have [0..1] Alternative associations
+ * Concepts "Concept Unknown" is a new inactivation reason which will take [0..0] associations.
+ * NCEP concepts can now optionally feature [0..1] Replaced By  OR  [0..1] Alternative    have made comment in document asking for explicit confirmation of cardinality and cross validation.
+ * New "Classification derived concept" can take [0..1] Replaced by   OR [2..*] Partially Equivalent To associations
+ * Outdated Concepts can take [0..1] Replaced by   OR [2..*] Possibly Replaced By associations
  */
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 	
@@ -273,7 +281,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			}
 		} else {
 			if (c.getRelationships().size() > 0) {
-				warn ("Unable to determine histroical parent of " + c);
+				warn ("Unable to determine historical parent of " + c);
 			}
 		}
 	}*/
