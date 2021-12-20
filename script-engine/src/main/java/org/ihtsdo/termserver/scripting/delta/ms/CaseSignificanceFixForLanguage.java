@@ -97,6 +97,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			d.setTerm(newTerm);
 			d.setEffectiveTime(null);
 			d.setDirty();
+			c.setModified();
 			report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Mangled character replaced with '-', was " + oldTerm);
 			return CHANGE_MADE;
 		}
@@ -126,6 +127,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				d.setTerm(newTerm);
 				d.setEffectiveTime(null);
 				d.setDirty();
+				c.setModified();
 				report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Decapitalized non-first English word.  Was: " + oldTerm);
 				return CHANGE_MADE;
 			}
