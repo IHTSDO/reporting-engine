@@ -229,6 +229,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		reviewContractions();
 		wordsInReverse();
 		multipleLangRef();
+		multiplePTs();
 		//suspectedProperNameCaseInsensitive();
 
 		info("...duplicate semantic tags");
@@ -702,6 +703,32 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							continue nextDescription;
 						} else {
 							activeInRefsets.add(l.getRefsetId());
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void multiplePTs() throws TermServerScriptException {
+		String issueStr = "Multiple preferred synonyms in a single langrefset";
+		initialiseSummary(issueStr);
+		List<DescriptionType> typesOfInterest = Collections.singletonList(DescriptionType.SYNONYM);
+		Map<String, Description> ptMap = new HashMap<>();
+		for (Concept c : gl.getAllConcepts()) {
+			if (inScope(c)) {
+				ptMap.clear();
+				nextDescription:
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
+					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						if (l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+							if (ptMap.containsKey(l.getRefsetId())) {
+								String detailStr = d + " + " + ptMap.get(l.getRefsetId());
+								report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+								continue nextDescription;
+							} else {
+								ptMap.put(l.getRefsetId(), d);
+							}
 						}
 					}
 				}
