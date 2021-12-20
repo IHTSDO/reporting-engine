@@ -35,6 +35,8 @@ public class HistoricDataUser extends TermServerReport {
 	protected String prevDependency;
 	protected String thisDependency;
 	
+	protected String previousEffectiveTime;
+	
 	protected String projectKey;
 	protected String origProject;
 	protected Map<String, Datum> prevData;
@@ -74,6 +76,10 @@ public class HistoricDataUser extends TermServerReport {
 		ArchiveManager mgr = getArchiveManager(true);
 		mgr.setLoadEditionArchive(true);
 		mgr.loadSnapshot(fsnOnly);
+		
+		previousEffectiveTime = gl.getCurrentEffectiveTime();
+		info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
+		
 		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 		statsGenerator.setModuleFilter(moduleFilter);
 		statsGenerator.runJob();

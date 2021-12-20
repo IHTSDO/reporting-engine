@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -18,7 +19,6 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
-import org.springframework.util.StringUtils;
 
 /**
  * RP-288 
@@ -413,7 +413,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) component;
 						incrementInactivationReason (counts, inactivationIndicatorEntry.getInactivationReasonId());
 					}
-				} else if (StringUtils.isEmpty(component.getEffectiveTime()) || component.getEffectiveTime().equals(thisEffectiveTime)) {
+				} else if (isChangedSinceLastRelease(component)) {
 					//Did it change in this release?
 					incrementCounts(component, counts, IDX_CHANGED);
 					debugToFile(component, "Changed");
@@ -433,6 +433,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (conceptAffected) {
 			counts[IDX_CONCEPTS_AFFECTED]++;
 		}
+	}
+
+	private boolean isChangedSinceLastRelease(Component component) {
+		return StringUtils.isEmpty(component.getEffectiveTime()) 
+				|| component.getEffectiveTime().compareTo(previousEffectiveTime) > 0; 
 	}
 
 	private void incrementCounts(Component component, int[] counts, int idx) {
@@ -563,28 +568,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
 		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 		
 		Arrays.asList(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 		});
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
 				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
 		});
 		
 		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACT, IDX_TOTAL_ACTIVE)));
 
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_REACTIVATED, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_TOTAL, IDX_TOTAL_ACTIVE)));
 
 		return sheetFieldsByIndex;
 	}
