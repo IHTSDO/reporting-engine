@@ -48,7 +48,7 @@ public class SEP_Laterality_RefsetUpdates extends TermServerReport implements Re
 	public Job getJob() {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
-				.withName("SEP Laterality Refset Updates")
+				.withName("Updates to SEP and Lateralizable Refsets")
 				.withDescription("This report lists updates to the SEP and Lateralizable refsets.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
