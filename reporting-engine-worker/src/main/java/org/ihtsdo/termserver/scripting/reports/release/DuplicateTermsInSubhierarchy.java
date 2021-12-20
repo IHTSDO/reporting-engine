@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
 import java.util.*;
@@ -7,6 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -32,54 +33,6 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, SemTag, Legacy, Description, Matched Description, Matched Concept";
-		/*
-		whitelist.add("764498003");
-		whitelist.add("738993004");
-		whitelist.add("738991002");
-		whitelist.add("421532009");
-		whitelist.add("739007000");
-		whitelist.add("385087003");
-		whitelist.add("385286003");
-		whitelist.add("739000003");
-		whitelist.add("738998008");
-		whitelist.add("385064006");
-		whitelist.add("421079001");
-		whitelist.add("385049006");
-		whitelist.add("385055001");
-		whitelist.add("758679000");
-		whitelist.add("734821002");
-		whitelist.add("738945005");
-		whitelist.add("763825005");
-		whitelist.add("738985004");
-		whitelist.add("738948007");
-		whitelist.add("225770002");
-		whitelist.add("264255005");
-		whitelist.add("418283001");
-		whitelist.add("420317006");
-		whitelist.add("422145002");
-		whitelist.add("225780003");
-		whitelist.add("255582007");
-		whitelist.add("260548002");
-		whitelist.add("421257003");
-		whitelist.add("421521009");
-		whitelist.add("419747000");
-		whitelist.add("421134003");
-		whitelist.add("421538008");
-		whitelist.add("700477004");
-		whitelist.add("263887005");
-		whitelist.add("736678006");
-		whitelist.add("736680000");
-		whitelist.add("764462006");
-		whitelist.add("736853009");
-		whitelist.add("733005001");
-		whitelist.add("732995004");
-		whitelist.add("733022004");
-		whitelist.add("733007009");
-		whitelist.add("733019001");
-		whitelist.add("732987003");
-		whitelist.add("733001005");
-		whitelist.add("733014006");
-		*/
 	}
 
 	@Override
@@ -105,8 +58,8 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		newIssuesOnly = jobRun.getParameters().getMandatoryBoolean(NEW_ISSUES_ONLY);
 		
 		//Am I working through multiple subHierarchies, or targeting one?
-		if (subHierarchy.equals(ROOT_CONCEPT)) {
-			for (Concept majorHierarchy : subHierarchy.getDescendents(IMMEDIATE_CHILD)) {
+		if (subHierarchy == null || subHierarchy.equals(ROOT_CONCEPT)) {
+			for (Concept majorHierarchy : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
 				info ("Reporting " + majorHierarchy);
 				reportDuplicateDescriptions(majorHierarchy);
 			}
@@ -119,7 +72,8 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		//Create a map of all not-fsn terms and check for one already known
 		Map<String, Description> knownTerms = new HashMap<>();
 		Acceptability acceptability = ptOnly ? Acceptability.PREFERRED : Acceptability.BOTH;
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		Collection<Concept> concepts = subHierarchy == null ? gl.getAllConcepts() : subHierarchy.getDescendents(NOT_SET);
+		for (Concept c : concepts) {
 			//Have we white listed this concept?
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
