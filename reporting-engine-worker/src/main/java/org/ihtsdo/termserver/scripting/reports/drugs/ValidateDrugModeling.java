@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.ConcreteDrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
@@ -25,7 +26,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-public class ValidateConcreteDrugModeling extends TermServerReport implements ReportClass {
+public class ValidateDrugModeling extends TermServerReport implements ReportClass {
+	
+	private List<Concept> allDrugs;
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
@@ -48,9 +51,12 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	
 	TermGenerator termGenerator = new DrugTermGeneratorCD(this);
 	
+	private static String INJECTION = "injection";
+	private static String INFUSION = "infusion";
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(ValidateConcreteDrugModeling.class, args, params);
+		TermServerReport.run(ValidateDrugModeling.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -89,7 +95,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	public Job getJob() {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Drugs validation with Concrete Values")
+				.withName("Drugs Validation")
 				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
@@ -97,6 +103,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	}
 	
 	public void runJob() throws TermServerScriptException {
+		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT));
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
 		populateSummaryTab();
@@ -104,13 +111,17 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	}
 
 	private void validateDrugsModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT);
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
-		
+		double conceptsConsidered = 0;
 		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
-		for (Concept c : subHierarchy) {
+		for (Concept c : allDrugs) {
 			ConcreteDrugUtils.setConceptType(c);
+			
+			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
+			if (conceptsConsidered%4000==0) {
+				info("Percentage Complete " + (int)percComplete);
+			}
 			
 			/*if (c.getId().equals("714209004")) {
 				debug ("here");
@@ -200,9 +211,13 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 			//RP-175
 			validateAttributeRules(c);
 			
-			//RP-188
+			
 			if (isCD(c)) {
+				//RP-188
 				checkCdUnitConsistency(c);
+				
+				//RP-504
+				checkMissingDoseFormGrouper(c);
 			}
 		}
 		info ("Drugs validation complete");
@@ -1075,6 +1090,89 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 				}
 				incrementSummaryInformation("CD groups checked for presentation unit consistency");
 			}
+		}
+	}
+	
+
+	/** Identify Clinical drug concepts that have the same BoSS/PAI/strength but for which one the dose form contains 
+	 * "injection" and the other "infusion" and for which there is not an inferred parent that has the same BoSS/PAI/strength 
+	 * with a dose form that contains "infusion and/or injection".
+	 * @throws TermServerScriptException 
+	 */
+	private void checkMissingDoseFormGrouper(Concept c) throws TermServerScriptException {
+		//Does this CD's dose form contain the word injection?
+		Concept doseForm = getDoseForm(c);
+		if (doseForm.getFsn().toLowerCase().contains(INJECTION)) {
+			List<Concept> infusionSiblings = findInfusionSiblings(c);
+			if (infusionSiblings.size() > 0) {
+				validateDoseFormGrouperParent(c, infusionSiblings.get(0));
+			}
+			//Don't need to report the first one, already reported.
+			boolean isFirst = true;
+			for (Concept infusionSibling : infusionSiblings) {
+				if (isFirst) {
+					isFirst = false;
+				} else {
+					validateDoseFormGrouperParent(infusionSibling, c);
+				}
+			}
+		}
+	}
+
+	private Concept getDoseForm(Concept c) throws TermServerScriptException {
+		String issueStr1 = "Invalid count of dose form attributes";
+		initialiseSummary(issueStr1);
+		
+		Set<Concept> doseForms = SnomedUtils.getTargets(c, doseFormTypes, CharacteristicType.STATED_RELATIONSHIP);
+		if (doseForms.size() != 1) {
+			report (c, issueStr1, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			throw new TermServerScriptException("Please fix invalid dose form modelling on " + c + " unable to continue.");
+		}
+		return doseForms.iterator().next();
+	}
+
+	private List<Concept> findInfusionSiblings(Concept c) throws TermServerScriptException {
+		List<Concept> matchingSiblings = new ArrayList<>();
+		nextConcept:
+		for (Concept sibling : allDrugs) {
+			ConcreteDrugUtils.setConceptType(c);
+			if (!isCD(sibling)) {
+				continue nextConcept;
+			}
+			
+			if (!sibling.getFsn().toLowerCase().contains(INFUSION)) {
+				continue nextConcept;
+			}
+			
+			if (DrugUtils.matchesBossPAIStrength(c, sibling)) {
+				matchingSiblings.add(sibling);
+			}
+		}
+		return matchingSiblings;
+	}
+	
+
+
+	private void validateDoseFormGrouperParent(Concept c, Concept sibling) throws TermServerScriptException {
+		String issueStr = "CD Infusion/Injection pair missing grouper parent";
+		initialiseSummary(issueStr);
+		
+		boolean hasGrouperParent = false;
+		nextParent:
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (!DrugUtils.matchesBossPAIStrength(c, parent)) {
+				continue nextParent;
+			}
+			
+			String parentDoseFormFsn = getDoseForm(parent).getFsn().toLowerCase();
+			if (!parentDoseFormFsn.contains(INFUSION) || !parentDoseFormFsn.contains(INJECTION)) {
+				continue nextParent;
+			}
+			hasGrouperParent = true;
+			break;
+		}
+		if (!hasGrouperParent) {
+			report (c, issueStr, "Sibling: " + sibling);
 		}
 	}
 

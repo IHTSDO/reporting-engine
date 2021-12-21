@@ -935,6 +935,25 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return targets;
 	}
 	
+	public static int getConcreteIntValue(Concept c, Concept type, CharacteristicType charType) throws TermServerScriptException {
+		Integer value = null;
+		Set<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
+		for (Relationship rel : rels) {
+			if (rel.isConcrete() && value == null) {
+				try {
+					value = Integer.parseInt(rel.getValue().toString());
+				} catch (Exception e) {
+					throw new TermServerScriptException("Attempt to recover non-integer value " + rel.getValue() + " on type " + type + " for concept " + c);
+				}
+			} else if (!rel.isConcrete()) {
+				throw new TermServerScriptException("Attempt to recover concrete value from non-concrete type " + type + " for concept " + c);
+			} else if (value != null) {
+				throw new TermServerScriptException("Unexpected multiple " + type + " for concept " + c);
+			}
+		}
+		return value;
+	}
+	
 	public static String getModel(Expressable c, CharacteristicType charType) {
 		return getModel(c, charType, false);
 	}
@@ -1919,5 +1938,28 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 	public static boolean isInternational(Component c) {
 		return InternationalModules.contains(c.getModuleId());
+	}
+	
+	public static boolean isEqualValueInGroups(Concept type, RelationshipGroup lhsGroup, RelationshipGroup rhsGroup) {
+		Object lhsValue = getValueInGroup(type, lhsGroup);
+		Object rhsValue = getValueInGroup(type, rhsGroup);
+		
+		if (lhsValue == null && rhsValue == null) {
+			return true;
+		} else if (lhsValue == null && rhsValue != null) {
+			return false;
+		} else if (lhsValue != null && rhsValue == null) {
+			return false;
+		}
+		return lhsValue.equals(rhsValue);
+	}
+
+	private static Object getValueInGroup(Concept type, RelationshipGroup group) {
+		for (Relationship r : group.getRelationships()) {
+			if (r.getType().equals(type)) {
+				return r.isConcrete() ? r.getValue() : r.getTarget();
+			}
+		}
+		return null;
 	}
 }

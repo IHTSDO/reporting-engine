@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
@@ -406,5 +407,88 @@ public class DrugUtils implements ScriptConstants {
 		}
 		return substancesUsedInProducts;
 	}
+
+	public static int getCountOfBase(Concept c) throws TermServerScriptException {
+		return SnomedUtils.getConcreteIntValue(c, COUNT_BASE_ACTIVE_INGREDIENT, CharacteristicType.STATED_RELATIONSHIP);
+	}
+	
+
+
+	public static boolean matchesBossPAIStrength(Concept lhs, Concept rhs) throws TermServerScriptException {
+		int lhsCountOfBase = getCountOfBase(lhs);
+		int rhsCountOfBase = getCountOfBase(rhs);
+		if (lhsCountOfBase != rhsCountOfBase) {
+			return false;
+		}
+		
+		//Ingredients come back sorted on FSN so we safely compare the lists for equality
+		List<Concept> lhsIngreds = getIngredients(lhs, CharacteristicType.STATED_RELATIONSHIP);
+		List<Concept> rhsIngreds = getIngredients(rhs, CharacteristicType.STATED_RELATIONSHIP);
+	
+		//Do we have the same ingredients?
+		if (!lhsIngreds.equals(rhsIngreds)) {
+			return false;
+		}
+		
+		//Now work through each of those relationship groups for each ingredient
+		for (Concept ingred : lhsIngreds) {
+			RelationshipGroup lhsGroup = getGroupContainingIngredient(lhs, ingred);
+			RelationshipGroup rhsGroup = getGroupContainingIngredient(rhs, ingred);
+			if (!matchesBossPAIStrength(lhsGroup, rhsGroup)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static RelationshipGroup getGroupContainingIngredient(Concept c, Concept targetIngredient) throws TermServerScriptException {
+		for (Relationship r : getIngredientRelationships(c, CharacteristicType.STATED_RELATIONSHIP)) {
+			if (r.getTarget().equals(targetIngredient)) {
+				return c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, r.getGroupId());
+			}
+		}
+		return null;
+	}
+
+	public static boolean matchesBossPAIStrength(RelationshipGroup lhsGroup, RelationshipGroup rhsGroup) {
+		if (!SnomedUtils.isEqualValueInGroups(HAS_BOSS, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_VALUE, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_DENOM_VALUE, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_UNIT, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_DENOM_UNIT, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_VALUE, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_DENOM_VALUE, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_UNIT, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_DENOM_UNIT, lhsGroup, rhsGroup)) {
+			return false;
+		}
+		
+		return true;
+	}
+
 	
 }
