@@ -249,7 +249,6 @@ public class GraphLoader implements ScriptConstants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
@@ -265,10 +264,6 @@ public class GraphLoader implements ScriptConstants {
 				
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
-				
-				/*if (c.getId().equals("419188005")) {
-					TermServerScript.debug ("here");
-				}*/
 				
 				/*if (lineItems[IDX_ID].equals("a4271895-d420-4209-9487-57bb361905bd")) {
 					TermServerScript.debug ("here");
@@ -712,9 +707,6 @@ public class GraphLoader implements ScriptConstants {
 				}*/
 				
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
-					c.setFsn(lineItems[DES_IDX_TERM]);
-				}
 				
 				if (isRunIntegrityChecks()) {
 					SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.DESCRIPTION, true);

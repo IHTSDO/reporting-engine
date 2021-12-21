@@ -29,6 +29,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	
 	private static HashSet<String> missingFsnReport = new HashSet<>();
 	
+	private static List<String> InternationalModules = Arrays.asList(INTERNATIONAL_MODULES);
+	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		
@@ -1913,5 +1915,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			rels.add(new Relationship(type, target));
 		}
 		return rels;
+	}
+
+	public static boolean isInternational(Component c) {
+		return InternationalModules.contains(c.getModuleId());
 	}
 }

@@ -804,7 +804,8 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		}
 		
 		descriptions.add(d);
-		if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
+		if (d.isActive() && d.getType().equals(DescriptionType.FSN) 
+				&& (getFsn() == null || d.getLang().equals("en"))) {
 			this.setFsn(d.getTerm());
 		}
 	}
