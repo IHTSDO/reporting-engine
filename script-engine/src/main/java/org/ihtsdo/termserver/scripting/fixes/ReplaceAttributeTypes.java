@@ -2,9 +2,10 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -15,9 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * LOINC-387 A batch update is required for concepts/expressions on this tab as following:
  * - Change property from 118586006 |Ratio (property) (qualifier value)| to 784316008 |Arbitrary fraction (property) (qualifier value)|
  * - Add Attribute value 704325000 |Relative to (attribute)| 48583005 |Immunoglobulin E (substance)|
+ *
+ * INFRA-8111 for specified ECL selection map  
+ *  424361007 |Using substance (attribute)| -> 363701004 |Direct substance (attribute)
+ *  405814001 |Procedure site - Indirect (attribute)| -> 405813007 |Procedure site - Direct (attribute)|
  */
 public class ReplaceAttributeTypes extends BatchFix {
 	
+	String ecl = "<< 74799003 |Flap graft (procedure)| OR << 304039000 |Skin flap operation (procedure)|";
 	Map<Concept, Concept> replaceTypesMap;
 	RelationshipTemplate addAttribute;
 	
@@ -44,10 +50,14 @@ public class ReplaceAttributeTypes extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replaceTypesMap = new HashMap<>();
-		replaceTypesMap.put(gl.getConcept("118586006 |Ratio (property) (qualifier value)| "), 
+		/*replaceTypesMap.put(gl.getConcept("118586006 |Ratio (property) (qualifier value)| "), 
 				gl.getConcept("784316008 |Arbitrary fraction (property) (qualifier value)|"));
 		addAttribute = new RelationshipTemplate(gl.getConcept("704325000 |Relative to (attribute)| "),
-				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));
+				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));*/
+		replaceTypesMap.put(gl.getConcept("424361007 |Using substance (attribute)|"), 
+				gl.getConcept("363701004 |Direct substance (attribute)|"));
+		replaceTypesMap.put(gl.getConcept("405814001 |Procedure site - Indirect (attribute)|"), 
+				gl.getConcept("405813007 |Procedure site - Direct (attribute)|"));
 		super.postInit();
 	}
 
@@ -78,8 +88,29 @@ public class ReplaceAttributeTypes extends BatchFix {
 			}
 		}
 		
-		changesMade += addRelationship(t, c, addAttribute, SnomedUtils.getFirstFreeGroup(c));
+		if (addAttribute != null) {
+			changesMade += addRelationship(t, c, addAttribute, SnomedUtils.getFirstFreeGroup(c));
+		}
 		return changesMade;
+	}
+	
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		info("Identifying concepts to process");
+		return findConcepts(ecl).stream()
+			.filter(c -> hasTargetType(c))
+			.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+			.collect(Collectors.toList());
+	}
+
+	private boolean hasTargetType(Concept c) {
+		for (Concept targetType : replaceTypesMap.keySet()) {
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (r.getType().equals(targetType)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 }
