@@ -635,12 +635,16 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	public static Association translateAssociation(String assocSctId) {
 		switch (assocSctId) {
 			case SCTID_ASSOC_WAS_A_REFSETID: return Association.WAS_A;
+			case SCTID_ASSOC_POSS_REPLACED_BY_REFSETID : return Association.POSS_REPLACED_BY;
 			case SCTID_ASSOC_REPLACED_BY_REFSETID : return Association.REPLACED_BY;
 			case SCTID_ASSOC_SAME_AS_REFSETID : return Association.SAME_AS;
 			case SCTID_ASSOC_MOVED_TO_REFSETID : return Association.MOVED_TO;
 			case SCTID_ASSOC_POSS_EQUIV_REFSETID : return Association.POSS_EQUIV_TO;
+			case SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID : return Association.PARTIALLY_EQUIV_TO;
 			case SCTID_ASSOC_ALTERNATIVE_REFSETID : return Association.ALTERNATIVE;
+			
 			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID : return Association.ANATOMY_STRUC_ENTIRE;
+			case SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID : return Association.ANATOMY_STRUC_PART;
 			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
 		}
 	}

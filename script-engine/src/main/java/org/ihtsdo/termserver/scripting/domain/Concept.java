@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
+import org.snomed.otf.script.Script;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -1009,29 +1010,18 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		return getAssociations(activeState, false); //All associations by default
 	}
 	
+	public List<AssociationEntry> getAssociations(ActiveState activeState, String refsetId) {
+		return getAssociationEntries().stream()
+				.filter(a -> a.hasActiveState(activeState))
+				.filter(a -> a.getRefsetId().contentEquals(refsetId))
+				.collect(Collectors.toList());
+	}
 
 	public List<AssociationEntry> getAssociations(ActiveState activeState, boolean historicalAssociationsOnly) {
-		if (activeState.equals(ActiveState.BOTH)) {
-			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
-			for (AssociationEntry h : getAssociationEntries()) {
-				//TODO Find a better way of working out if an association is a historical association
-				if ((!historicalAssociationsOnly ||	h.getRefsetId().startsWith("9000000"))) {
-					selectedAssociations.add(h);
-				}
-			}
-			return selectedAssociations;
-		} else {
-			boolean isActive = activeState.equals(ActiveState.ACTIVE);
-			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
-			for (AssociationEntry h : getAssociationEntries()) {
-				//TODO Find a better way of working out if an association is a historical association
-				if (h.isActive() == isActive && (!historicalAssociationsOnly ||
-					(h.getRefsetId().startsWith("9000000")))) {
-					selectedAssociations.add(h);
-				}
-			}
-			return selectedAssociations;
-		}
+		return getAssociationEntries().stream()
+				.filter(a -> a.hasActiveState(activeState))
+				.filter(a -> !historicalAssociationsOnly || Script.HISTORICAL_REFSETS.contains(a.getRefsetId()))
+				.collect(Collectors.toList());
 	}
 	
 	public List<AxiomEntry> getAxiomEntries() {

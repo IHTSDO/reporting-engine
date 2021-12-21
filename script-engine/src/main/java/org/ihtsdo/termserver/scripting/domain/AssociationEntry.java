@@ -121,4 +121,11 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		}
 		return differences;
 	}
+
+	public boolean hasActiveState(ActiveState activeState) {
+		if (activeState.equals(ActiveState.BOTH)) {
+			return true;
+		}
+		return active == (activeState.equals(ActiveState.ACTIVE));
+	}
 }

@@ -1,7 +1,9 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -10,6 +12,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -46,6 +49,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	
 	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;
+	public static final String CARDINALITY_ISSUE = "Cardinality constraint breached.  Expected: ";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -102,8 +106,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					if (target == null) {
 						incrementSummaryInformation("Inactive concept association target not a concept");
 					} else if (!target.isActive()) {
+						String targetStr = c.getInactivationIndicator().toString() + " " + target.toString();
 						incrementSummaryInformation("Inactive concept association target is inactive");
-						report (c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, target, a);
+						report (c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, targetStr, a);
 						countIssue(c);
 					}
 				}
@@ -119,25 +124,44 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					countIssue(c);
 				} else {
 					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
-					switch (i.getInactivationReasonId()) {
+					List<AssociationCardinality> associationsWithCardinality = new ArrayList<>();
+ 					switch (i.getInactivationReasonId()) {
 						case SCTID_INACT_AMBIGUOUS : 
-							validate(c, i, "1..*", SCTID_ASSOC_POSS_EQUIV_REFSETID, isLegacy);
+							associationsWithCardinality.add(new AssociationCardinality("1..*", SCTID_ASSOC_POSS_EQUIV_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_NON_CONFORMANCE :
-							validate(c, i, "0..0", null, isLegacy);
+							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
+							break;
+						case SCTID_INACT_COMPONENT_MEANING_UNKNOWN :
+							associationsWithCardinality.add(new AssociationCardinality("0..0", null, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
+							break;
+						case SCTID_INACT_CLASS_DERIVED_COMPONENT :
+							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+							associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_MOVED_ELSEWHERE :
-							validate(c, i, "1..1", SCTID_ASSOC_MOVED_TO_REFSETID, isLegacy);
+							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_MOVED_TO_REFSETID, false));
+							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
+							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_DUPLICATE :
-							validate(c, i, "1..1", SCTID_ASSOC_SAME_AS_REFSETID, isLegacy);
+							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_SAME_AS_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_LIMITED : 
-							validate(c, i, "1..1", SCTID_ASSOC_WAS_A_REFSETID, isLegacy);
+							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_WAS_A_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_ERRONEOUS :
 						case SCTID_INACT_OUTDATED :
-							validate(c, i, "1..1", SCTID_ASSOC_REPLACED_BY_REFSETID, isLegacy);
+							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+							associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_POSS_REPLACED_BY_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						default :
 							report (c, c.getEffectiveTime(), "Unrecognised concept inactivation indicator", isLegacy, i);
@@ -148,7 +172,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			
 			//In all cases, run a check on the descriptions as well
 			//Inactivation indicators should have an inactivation indicator
-			//Active descriptions might have one if the concept is inactive
+			//Active descriptions must have one if the concept is inactive
 			
 			nextDescription:
 			for (Description d : c.getDescriptions()) {
@@ -204,17 +228,43 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			}
 		}
 	}
-
-	private void validate(Concept c, InactivationIndicatorEntry i, String cardinality, String requiredAssociation, Boolean legacy) throws TermServerScriptException {
-		int minAssocs = Character.getNumericValue(cardinality.charAt(0));
-		char maxStr = cardinality.charAt(cardinality.length() - 1);
-		int maxAssocs = maxStr == '*' ? Integer.MAX_VALUE : Character.getNumericValue(maxStr);
-		
+	
+	private void validate(Concept c, InactivationIndicatorEntry i, List<AssociationCardinality> associationsWithCardinality, Boolean legacy) throws TermServerScriptException {
 		String data = c.getAssociations(ActiveState.ACTIVE).stream()
 				.map(h->h.toString())
 				.collect(Collectors.joining(",\n"));
+		
+		String targets = c.getAssociations(ActiveState.ACTIVE).stream()
+				.map(h-> SnomedUtils.translateAssociation(h.getRefsetId()).toString() + " " + gl.getConceptSafely(h.getTargetComponentId()).toString())
+				.collect(Collectors.joining(",\n"));
+		
+		//Loop through all possible associations.  Don't report issue unless all fail
+		String lastIssue = "";
+		boolean onePassed = false;
+		for (AssociationCardinality associationWithCardinality : associationsWithCardinality) {
+			lastIssue = validate(c, i, associationWithCardinality.cardinality, associationWithCardinality.association, legacy, associationWithCardinality.mutuallyExclusive);
+			if (lastIssue.isEmpty()) {
+				onePassed = true;
+			}
+		}
+		if (!onePassed && !lastIssue.isEmpty()) {
+			if (lastIssue.equals(CARDINALITY_ISSUE)) {
+				String separator = associationsWithCardinality.get(0).mutuallyExclusive == true ? " OR \n" : " AND/OR \n";
+				lastIssue += associationsWithCardinality.stream()
+						.map(ac -> ac.toString())
+						.collect(Collectors.joining(", \n"));
+			}
+			report (c, c.getEffectiveTime(), lastIssue, legacy, targets, data);
+			countIssue(c);
+		}
+	}
+
+	private String validate(Concept c, InactivationIndicatorEntry i, String cardinality, String assocId, Boolean legacy, boolean mutuallyExclusive) throws TermServerScriptException {
+		int minAssocs = Character.getNumericValue(cardinality.charAt(0));
+		char maxStr = cardinality.charAt(cardinality.length() - 1);
+		int maxAssocs = maxStr == '*' ? Integer.MAX_VALUE : Character.getNumericValue(maxStr);
 		String inactStr = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()).toString();
-		String reqAssocStr = requiredAssociation == null? "None" : SnomedUtils.translateAssociation(requiredAssociation).toString();
+		String reqAssocStr = assocId == null? "None" : SnomedUtils.translateAssociation(assocId).toString();
 		
 		//Special case, we're getting limited inactivations with both SameAs and Was A attributes.  Record stats, but skip
 		if (i.getInactivationReasonId().equals(SCTID_INACT_LIMITED) || i.getInactivationReasonId().equals(SCTID_INACT_MOVED_ELSEWHERE)) {
@@ -223,17 +273,23 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					.collect(Collectors.joining(", "));
 			typesOfAssoc = typesOfAssoc.isEmpty()? "No associations" : typesOfAssoc;
 			incrementSummaryInformation(inactStr +" inactivation with " + typesOfAssoc);
-			return;
+			return "";
 		}
 		
 		//First check cardinality
-		int assocCount = c.getAssociations(ActiveState.ACTIVE, true).size();
+		int assocCount = c.getAssociations(ActiveState.ACTIVE, assocId).size();
+		int allAssocCount = c.getAssociations(ActiveState.ACTIVE, true).size();
+		
+		if (assocCount > 0 && assocCount != allAssocCount && mutuallyExclusive) {
+			return inactStr + " inactivation's " + reqAssocStr + " association is mutually exclusive with other associations types.";
+		}
+		
 		if (assocCount > maxAssocs) {
-			report (c, c.getEffectiveTime(), inactStr + " inactivation must have no more than " + maxStr + " historical associations.", legacy,  data);
-			countIssue(c);
-		} else if  (assocCount < minAssocs) {
-			report (c, c.getEffectiveTime(), inactStr + " inactivation must have at least " + minAssocs + " historical associations.", legacy, data);
-			countIssue(c);
+			//return inactStr + " inactivation must have no more than " + maxStr + " historical associations of type " + reqAssocStr;
+			return CARDINALITY_ISSUE;
+		} else if (assocCount < minAssocs) {
+			//return inactStr + " inactivation must have at least " + minAssocs + " historical associations of type " + reqAssocStr;
+			return CARDINALITY_ISSUE;
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
 			for (AssociationEntry h : c.getAssociations(ActiveState.ACTIVE, true)) {
@@ -242,16 +298,14 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				//Only the "MovedTo" historical association should point to a Namespace Concept
 				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID) && namespaceConcepts.contains(target)) {
 					String msg = assocStr + " should not point to namespace concept: " + target;
-					report (c, c.getEffectiveTime(), msg, legacy, data);
-					countIssue(c);
-				} else if (!h.getRefsetId().equals(requiredAssociation)) {
+					return msg;
+				} else if (!h.getRefsetId().equals(assocId)) {
 					//If we found a "WAS_A" then just record the stat for that
 					String msg = inactStr + " inactivation requires " + reqAssocStr + " historical association.  Found: " + assocStr;
 					if (assocStr.equals(Association.WAS_A.toString()) && !inactStr.equals(InactivationIndicator.AMBIGUOUS.toString())) {
 						incrementSummaryInformation(msg);
 					} else {
-						report (c, c.getEffectiveTime(), msg, legacy, data);
-						countIssue(c);
+						return msg;
 					}
 				}
 				
@@ -262,6 +316,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				}
 			}
 		}
+		return "";
 	}
 	
 /*	private void validateTargetAppropriate(Concept c, String assocStr, Concept target, AssociationEntry h) throws TermServerScriptException {
@@ -326,6 +381,22 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			}
 		}
 		return true;
+	}
+	
+	class AssociationCardinality {
+		String cardinality;
+		String association;
+		boolean mutuallyExclusive;
+		
+		AssociationCardinality(String cardinality, String association, boolean mutuallyExclusive) {
+			this.cardinality = cardinality;
+			this.association = association;
+			this.mutuallyExclusive = mutuallyExclusive;
+		}
+		
+		public String toString() {
+			return "[" + cardinality + "] " + gl.getConceptSafely(association).getPreferredSynonym(); 
+		}
 	}
 
 }
