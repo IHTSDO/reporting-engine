@@ -16,7 +16,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class ConceptsMissingTranslations extends TermServerReport implements ReportClass {
 	
-	private static final String INCLUDE_INT_CONCEPTS = "Include INT concepts";
+	private static final String INCLUDE_INT_CONCEPTS = "Include international concepts";
 	private static final String INCLUDE_UNTRANSLATED_CONCEPTS = "Include untranslated concepts";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
 	Set<String> expectedLanguages = new HashSet<>();
@@ -49,7 +49,10 @@ public class ConceptsMissingTranslations extends TermServerReport implements Rep
 		if (project.getMetadata() != null && project.getMetadata().getRequiredLanguageRefsets() != null) {
 			expectedLanguages = project.getMetadata().getLangLangRefsetMapping().keySet();
 		} else {
-			throw new TermServerScriptException ("MS Project expected. " + project.getKey() + " is not configured with a required language reference sets.");
+			//It might be that we have a single language entry eg "requiredLanguageRefset.da": "554461000005103"
+			//Which the Metadata object just can't handle.  Fall back to examining all descriptions
+			expectedLanguages = getLanguagesFromDescriptions();
+			expectedLanguages.remove("en");
 		}
 		
 		String[] columnHeadings = new String[] {
@@ -59,6 +62,13 @@ public class ConceptsMissingTranslations extends TermServerReport implements Rep
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
+	private Set<String> getLanguagesFromDescriptions() {
+		return gl.getAllConcepts().parallelStream()
+		.flatMap(c -> c.getDescriptions().stream())
+		.map(d -> d.getLang())
+		.collect(Collectors.toSet());
+	}
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
@@ -70,7 +80,7 @@ public class ConceptsMissingTranslations extends TermServerReport implements Rep
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Concepts Missing Translations")
-				.withDescription("This report lists concepts which are missing translations.  Optionally including international concepts, and optionally those that have not been translated at all.")
+				.withDescription("This report lists concepts which are missing translations.  Optionally including: international concepts ie those in the core or model modules ('Include INT Concepts'), those that have not been translated from English at all ('Include untranslated concepts'), and inactive concepts ('Include inactive concepts')")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
@@ -90,7 +100,7 @@ public class ConceptsMissingTranslations extends TermServerReport implements Rep
 			missingLanguages.removeAll(getLanguages(c, false));
 			if (missingLanguages.size() > 0) {
 				String missLangStr = String.join(", ", missingLanguages);
-				report (c, missLangStr, c.getModuleId());
+				report (c, missLangStr, gl.getConcept(c.getModuleId()).toStringPref());
 				countIssue(c);
 			}
 		}
