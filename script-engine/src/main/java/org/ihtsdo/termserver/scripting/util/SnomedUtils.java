@@ -1909,11 +1909,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	public static boolean hasChangesSince(Component c, String fromET) {
-		if (StringUtils.isEmpty(fromET)|| StringUtils.isEmpty(c.getEffectiveTime())) {
+		if (StringUtils.isEmpty(c.getEffectiveTime())) {
 			return true;
 		}
 		
-		if (c.getEffectiveTime().compareTo(fromET) >= 0) {
+		if (!StringUtils.isEmpty(fromET) && c.getEffectiveTime().compareTo(fromET) >= 0) {
 			return true;
 		}
 		return false;

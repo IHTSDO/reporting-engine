@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TraceabilityService {
 	
@@ -97,7 +98,7 @@ public class TraceabilityService {
 		//Anything left, we'll make a call to traceability to return
 		if (conceptIds.size() > 0) {
 			branchFilter = "/" + branchFilter;
-			List<Activity> traceabilityInfo = client.getConceptActivity(conceptIds, ActivityType.CONTENT_CHANGE, null);
+			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(conceptIds);
 			if (traceabilityInfo.size() == 0) {
 				logger.warn("Failed to recover any traceability information for {} concepts", conceptIds.size());
 			}
@@ -105,7 +106,11 @@ public class TraceabilityService {
 				Object[] info = new Object[3];
 				info[0] = activity.getUsername();
 				info[1] = activity.getBranch();
-				info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
+				if (activity.getCommitDate() == null) {
+					info[2] = null;
+				} else {
+					info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
+				}
 				
 				if (StringUtils.isEmpty(info[1])) {
 					continue;  //Skip blanks
@@ -132,6 +137,25 @@ public class TraceabilityService {
 		}
 	}
 	
+	private List<Activity> robustlyRecoverTraceabilityInfo(List<String> conceptIds) {
+		try {
+			return client.getConceptActivity(conceptIds, ActivityType.CONTENT_CHANGE, null);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return conceptIds.stream()
+					.map(c -> createDummyActivity(c, e))
+					.collect(Collectors.toList());
+		}
+	}
+	
+	private Activity createDummyActivity(String conceptId, Exception e) {
+		Activity activity = new Activity();
+		activity.setCommitDate(null);
+		activity.setBranch("N/A");
+		activity.setUsername("Error recovering traceinformation : " + e.getMessage());
+		return activity;
+	}
+
 	private Object[] chooseBestInfo(String branchFilter, Object[] origInfo, Object[] newInfo) {
 		if (origInfo[1].toString().contains(branchFilter) &&
 				!newInfo[1].toString().contains(branchFilter)) {
