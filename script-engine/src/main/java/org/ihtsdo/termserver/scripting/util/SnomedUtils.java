@@ -282,10 +282,17 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	public static File createArchive(File dirToZip) throws TermServerScriptException {
+		if (dirToZip == null) {
+			throw new TermServerScriptException ("Create archive asked to zip null folder");
+		}
 		File outputFile;
 		try {
 			// The zip filename will be the name of the first thing in the zip location
 			// ie in this case the directory SnomedCT_RF1Release_INT_20150731
+			if (dirToZip.listFiles() == null || dirToZip.listFiles().length == 0) {
+				throw new TermServerScriptException ("No files found to zip in " + dirToZip);
+			}
+			
 			String zipFileName = dirToZip.listFiles()[0].getName() + ".zip";
 			int fileNameModifier = 1;
 			while (new File(zipFileName).exists()) {
