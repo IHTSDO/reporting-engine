@@ -47,8 +47,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "< 258176004 |Computerized tomography guidance (procedure)|");
-		params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  =  312251004 |Computed tomography imaging - action (qualifier value)| ,[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<< 442083009 |Anatomical or acquired body structure|) @bodyStructure]],[[~1..1]]  363703001 |Has intent (attribute)|  =  429892002 |Guidance intent (qualifier value)| ,[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  385420005 |Contrast media (substance)| ) @contrast]]}, [[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id(<  129264002 |Action (qualifier value)| ) @procedure ]],[[~0..1]] [[+id(<< 363704007 |Procedure site| )]] = [[+id(<< 442083009 |Anatomical or acquired body structure|) @bodyStructure ]],[[~0..1]]  363700003 |Direct morphology (attribute)|  = [[+id(<<  49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology]],[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  105590001 |Substance (substance)| ) @substance]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id(<<  105590001 |Substance (substance)| ) @directSubstance]]}");
+		//params.put(ECL, "< 258176004 |Computerized tomography guidance (procedure)|");
+		//params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  =  312251004 |Computed tomography imaging - action (qualifier value)| ,[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<< 442083009 |Anatomical or acquired body structure|) @bodyStructure]],[[~1..1]]  363703001 |Has intent (attribute)|  =  429892002 |Guidance intent (qualifier value)| ,[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  385420005 |Contrast media (substance)| ) @contrast]]}, [[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id(<  129264002 |Action (qualifier value)| ) @procedure ]],[[~0..1]] [[+id(<< 363704007 |Procedure site| )]] = [[+id(<< 442083009 |Anatomical or acquired body structure|) @bodyStructure ]],[[~0..1]]  363700003 |Direct morphology (attribute)|  = [[+id(<<  49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology]],[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  105590001 |Substance (substance)| ) @substance]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id(<<  105590001 |Substance (substance)| ) @directSubstance]]}");
 		params.put(INCLUDE_COMPLEX, "true");
 		params.put(INCLUDE_ORPHANET, "true");
 		params.put(KNOWN_COMPLETE, "true");
@@ -109,9 +109,12 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			exclusionWords = new ArrayList<>();
 		}
 		
+		super.init(jobRun);
+		
 		//Have we been called via the reporting platform?
-		if (jobRun != null) {
-			super.init(jobRun);
+		if (appContext == null) {
+			localRunInit();
+		} else {
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
 			includeOrphanet = jobRun.getParameters().getMandatoryBoolean(INCLUDE_ORPHANET);
 			subsetECL = jobRun.getMandatoryParamValue(ECL);
@@ -182,8 +185,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		info ("Loaded user specified template: " + template);
 	}
 
-	protected void init(String[] args, JobRun jobRun) throws TermServerScriptException {
-		init(jobRun);
+	protected void localRunInit() throws TermServerScriptException {
 		/*
 		subHierarchyECL = "<<125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -393,7 +395,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		*/
 		templateNames = new String[] { "templates/procedures/CT Guided.json" };
 		
-		super.init(args);
+		super.init((String[])null);
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -467,7 +469,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		if (potentiallyMisaligned == null || potentiallyMisaligned.size() == 0) {
 			throw new TermServerScriptException("Failed to find any concepts matching ECL: '" + subsetECL + "' (in target module)");
 		}
-		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
+		//potentiallyMisaligned = Collections.singleton(gl.getConcept("717688006"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		//Remove all exclusions before we look for matches

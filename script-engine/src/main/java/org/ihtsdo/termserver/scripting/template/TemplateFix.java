@@ -42,13 +42,16 @@ abstract public class TemplateFix extends BatchFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
-		super.init(args);
+		if (args != null) {
+			super.init(args);
+		}
 		
 		AttributeGroup.useDefaultValues = true;
 		//We'll check these now so we know if there's some parsing error
 		char id = 'A';
 		for (int x = 0; x < templateNames.length; x++, id++) {
 			Template t = loadLocalTemplate(id, templateNames[x]);
+			subsetECL = t.getDomain();
 			validateTemplate(t);
 			info ("Validated template: " + templateNames[x]);
 		}
