@@ -23,7 +23,9 @@ public class NormaliseConcepts extends BatchFix {
 	Concept ppp;
 	Boolean useStatedECL = true;
 	//private String ecl = "<<66191007 |Transient arthropathy (disorder)|";
-	private String ecl = "<! 267038008 |Edema (finding)|";
+	//private String ecl = "<! 267038008 |Edema (finding)|";
+	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
+	private String ecl = "<! 409063005 |Counseling (procedure)|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
@@ -60,7 +62,9 @@ public class NormaliseConcepts extends BatchFix {
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata"};
 		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
-		ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
+		//ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
+		//ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
+		ppp = gl.getConcept("71388002 |Procedure (procedure)|");
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
