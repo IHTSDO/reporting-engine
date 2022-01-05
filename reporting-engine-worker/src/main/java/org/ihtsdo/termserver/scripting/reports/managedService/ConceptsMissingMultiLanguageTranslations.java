@@ -14,7 +14,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-public class ConceptsMissingTranslations extends TermServerReport implements ReportClass {
+public class ConceptsMissingMultiLanguageTranslations extends TermServerReport implements ReportClass {
 	
 	private static final String INCLUDE_INT_CONCEPTS = "Include international concepts";
 	private static final String INCLUDE_UNTRANSLATED_CONCEPTS = "Include untranslated concepts";
@@ -29,7 +29,7 @@ public class ConceptsMissingTranslations extends TermServerReport implements Rep
 		params.put(INCLUDE_INT_CONCEPTS, "true");
 		params.put(INCLUDE_UNTRANSLATED_CONCEPTS, "false");
 		params.put(INCLUDE_INACTIVE_CONCEPTS, "false");
-		TermServerReport.run(ConceptsMissingTranslations.class, args, params);
+		TermServerReport.run(ConceptsMissingMultiLanguageTranslations.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -79,8 +79,8 @@ public class ConceptsMissingTranslations extends TermServerReport implements Rep
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
-				.withName("Concepts Missing Translations")
-				.withDescription("This report lists concepts which are missing translations.  Optionally including: international concepts ie those in the core or model modules ('Include INT Concepts'), those that have not been translated from English at all ('Include untranslated concepts'), and inactive concepts ('Include inactive concepts')")
+				.withName("Concepts Missing Multi-Language Translations")
+				.withDescription("This reports is for extensions that use multiple languages. It allows finding concepts that are missing a translation in at least one of the extension languages. To see a list of concepts without any translation, please refer to the untranslated concepts report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
