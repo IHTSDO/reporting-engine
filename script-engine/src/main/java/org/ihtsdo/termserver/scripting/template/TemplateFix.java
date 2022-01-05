@@ -49,11 +49,13 @@ abstract public class TemplateFix extends BatchFix {
 		AttributeGroup.useDefaultValues = true;
 		//We'll check these now so we know if there's some parsing error
 		char id = 'A';
-		for (int x = 0; x < templateNames.length; x++, id++) {
-			Template t = loadLocalTemplate(id, templateNames[x]);
-			subsetECL = t.getDomain();
-			validateTemplate(t);
-			info ("Validated template: " + templateNames[x]);
+		if (templateNames != null) {
+			for (int x = 0; x < templateNames.length; x++, id++) {
+				Template t = loadLocalTemplate(id, templateNames[x]);
+				subsetECL = t.getDomain();
+				validateTemplate(t);
+				info ("Validated template: " + templateNames[x]);
+			}
 		}
 	}
 	
