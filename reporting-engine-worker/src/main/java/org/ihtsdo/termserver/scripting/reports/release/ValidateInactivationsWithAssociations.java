@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -49,7 +45,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	
 	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;
-	public static final String CARDINALITY_ISSUE = "Cardinality constraint breached.  Expected: ";
+	public static final String CARDINALITY_ISSUE = "Cardinality constraint breached.  Expected ";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -61,8 +57,17 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	public void init (JobRun run) throws TermServerScriptException {
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
-		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data, Data";
+		this.summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {
+				"Issue, Count",
+				"SCTID, FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data, Data"};
+		String[] tabNames = new String[] {	
+				"Summary", "Issues"};
+		super.postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override
@@ -108,7 +113,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					} else if (!target.isActive()) {
 						String targetStr = c.getInactivationIndicator().toString() + " " + target.toString();
 						incrementSummaryInformation("Inactive concept association target is inactive");
-						report (c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, targetStr, a);
+						report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, targetStr, a);
 						countIssue(c);
 					}
 				}
@@ -120,7 +125,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
 							.map(i->i.toString())
 							.collect(Collectors.joining(",\n"));
-					report (c, c.getEffectiveTime(), "Concept has multiple inactivation indicators", isLegacy, data);
+					String issue = "Concept has multiple inactivation indicators";
+					incrementSummaryInformation(issue);
+					report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, isLegacy, data);
 					countIssue(c);
 				} else {
 					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
@@ -145,17 +152,29 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_MOVED_ELSEWHERE :
-							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_MOVED_TO_REFSETID, false));
-							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
-							validate(c, i, associationsWithCardinality, isLegacy);
+							if (isLegacy) {
+								associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_MOVED_TO_REFSETID, false));
+								associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
+								validate(c, i, associationsWithCardinality, isLegacy);
+							} else {
+								associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
+								validate(c, i, associationsWithCardinality, isLegacy);
+							}
 							break;
 						case SCTID_INACT_DUPLICATE :
 							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_SAME_AS_REFSETID, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
-						case SCTID_INACT_LIMITED : 
-							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_WAS_A_REFSETID, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
+						case SCTID_INACT_LIMITED :
+							if (isLegacy) {
+								associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_WAS_A_REFSETID, true));
+								validate(c, i, associationsWithCardinality, isLegacy);
+							} else {
+								String issue = "Limited indicator no longer used";
+								incrementSummaryInformation(issue);
+								report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, "N");
+								countIssue(c);
+							}
 							break;
 						case SCTID_INACT_ERRONEOUS :
 						case SCTID_INACT_OUTDATED :
@@ -164,7 +183,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						default :
-							report (c, c.getEffectiveTime(), "Unrecognised concept inactivation indicator", isLegacy, i);
+							String issue = "Unrecognised concept inactivation indicator";
+							incrementSummaryInformation(issue);
+							report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, isLegacy, i);
 							countIssue(c);
 					}
 				}
@@ -185,7 +206,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				//First check that any indicators are only in the appropriate refset
 				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 					if (!i.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
-						report (c, c.getEffectiveTime(), d, "Description has something other than a description inactivation indicator", cdLegacy, d, i);
+						String issue = "Description has something other than a description inactivation indicator";
+						incrementSummaryInformation(issue);
+						report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, issue, cdLegacy, d, i);
 						countIssue(c);
 					}
 					continue nextDescription;
@@ -193,23 +216,27 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				
 				// Now check for duplicates, followed by acceptable entries
 				if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1) {
-					report (c, c.getEffectiveTime(), "Description has multiple inactivation indicators", cdLegacy, d, data);
+					String issue = "Description has multiple inactivation indicators";
+					incrementSummaryInformation(issue);
+					report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, data);
 				} else if (d.isActive() && !c.isActive()) {
 					//Expect a single "Concept not current" indicator
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
-						report (c, c.getEffectiveTime(), "Active description of inactive concept is missing 'Concept non-current' indicator", cdLegacy, d);
+						String issue = "Active description of inactive concept is missing 'Concept non-current' indicator";
+						incrementSummaryInformation(issue);
+						report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d);
 						countIssue(c);
 					} else {
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 						if (!i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-							report (c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
+							report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
 							countIssue(c);
 						}
 					}
 				} else if (d.isActive() && c.isActive()) {
 					//Expect NO inactivation indicator here
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
-						report (c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
+						report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
 						countIssue(c);
 					}
 				} else if (!d.isActive() && !c.isActive()) {
@@ -220,7 +247,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					} else {
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-							report (c, c.getEffectiveTime(), d, "Inactive description of an active concept should not have a 'Concept non-current' indicator", cdLegacy, d, i);
+							String issue = "Inactive description of an active concept should not have a 'Concept non-current' indicator";
+							incrementSummaryInformation(issue);
+							report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, issue, cdLegacy, d, i);
 							countIssue(c);
 						}
 					}
@@ -252,9 +281,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				String separator = associationsWithCardinality.get(0).mutuallyExclusive == true ? " OR \n" : " AND/OR \n";
 				lastIssue += associationsWithCardinality.stream()
 						.map(ac -> ac.toString())
-						.collect(Collectors.joining(", \n"));
+						.collect(Collectors.joining(separator));
 			}
-			report (c, c.getEffectiveTime(), lastIssue, legacy, targets, data);
+			incrementSummaryInformation(lastIssue);
+			report(SECONDARY_REPORT, c, c.getEffectiveTime(), lastIssue, legacy, targets, data);
 			countIssue(c);
 		}
 	}
