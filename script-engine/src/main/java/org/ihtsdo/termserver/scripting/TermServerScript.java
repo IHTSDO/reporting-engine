@@ -334,9 +334,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		init();
 		
-		if (projectName.equals("MAIN")) {
+		if (projectName.equals("MAIN") || projectName.startsWith("MAIN/")) {
 			//MAIN is not a project.  Recover Main metadata from branch
-			project.setMetadata(tsClient.getBranch("MAIN").getMetadata());
+			project.setMetadata(tsClient.getBranch(projectName).getMetadata());
 		} else if (!StringUtils.isNumeric(projectName) && !projectName.endsWith(".zip")) {
 			//Not if we're loading a release or extension
 			try {
