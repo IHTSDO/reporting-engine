@@ -24,6 +24,7 @@ public class AccessControlService {
 	public Set<String> getProjects(String username, String serverUrl, String authToken) {
 		if (!cache.containsKey(username) || cache.get(username).isExpired()) {
 			UserProjects userProjects = getUserProjects(username, serverUrl, authToken);
+			userProjects.addCodeSystems();
 			logger.info("Caching {}'s access to projects {}", username, userProjects.getProjects());
 			cache.put(username, userProjects);
 			//If the list of projects is only 1 long (ie MAIN) then we've probably a problem with 
@@ -65,6 +66,15 @@ public class AccessControlService {
 			created = new Date();
 		}
 		
+		//Add any two letter project as a code system eg DK -> MAIN/SNOMEDCT-DK
+		public void addCodeSystems() {
+			Set<String> codeSystems = projects.stream()
+					.filter(p -> p.length() == 2)
+					.map(p -> "MAIN/SNOMEDCT-" + p)
+					.collect(Collectors.toSet());
+			projects.addAll(codeSystems);
+		}
+
 		public int size() {
 			return projects == null ? 0 : projects.size();
 		}
