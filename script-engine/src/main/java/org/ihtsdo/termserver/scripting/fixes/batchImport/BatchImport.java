@@ -67,6 +67,10 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	
 	@Override
 	public List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		if (inputFile == null) {
+			throw new TermServerScriptException("Unable to identify components to process, no input file specified.");
+		}
+		
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(inputFile));
 			//SIRS files contain duplicate headers (eg multiple Notes columns) 
