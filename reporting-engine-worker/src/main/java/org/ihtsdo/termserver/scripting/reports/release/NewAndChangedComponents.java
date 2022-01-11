@@ -55,7 +55,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
+		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
 	}

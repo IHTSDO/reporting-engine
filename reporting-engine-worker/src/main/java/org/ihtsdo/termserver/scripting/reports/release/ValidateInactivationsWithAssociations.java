@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -13,7 +14,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
 /**
  * INFRA-2454, INFRA-2723
@@ -86,19 +86,21 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {
 		namespaceConcepts = gl.getDescendantsCache().getDescendentsOrSelf(NAMESPACE_CONCEPT);
-		for (Concept c : gl.getAllConcepts()) {
+		List<Concept> concepts = SnomedUtils.sort(gl.getAllConcepts());
+		for (Concept c : concepts) {
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
 			
 			boolean isLegacy = isLegacy(c);
-			if (!c.isActive()) {
+			if (!c.isActive() && inScope(c)) {
 				//Are we only interested in concepts that have any new inactivation indicator?
 				if (!includeLegacyIssues && isLegacy) {
 					continue;
@@ -197,60 +199,62 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			
 			nextDescription:
 			for (Description d : c.getDescriptions()) {
-				String cdLegacy = (isLegacy?"Y":"N") + "/" + (isLegacy(d)?"Y":"N"); 
-				//What are we looking at here?
-				String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
-						.map(i->i.toString())
-						.collect(Collectors.joining(",\n"));
-				
-				//First check that any indicators are only in the appropriate refset
-				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-					if (!i.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
-						String issue = "Description has something other than a description inactivation indicator";
-						incrementSummaryInformation(issue);
-						report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, issue, cdLegacy, d, i);
-						countIssue(c);
-					}
-					continue nextDescription;
-				}
-				
-				// Now check for duplicates, followed by acceptable entries
-				if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1) {
-					String issue = "Description has multiple inactivation indicators";
-					incrementSummaryInformation(issue);
-					report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, data);
-				} else if (d.isActive() && !c.isActive()) {
-					//Expect a single "Concept not current" indicator
-					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
-						String issue = "Active description of inactive concept is missing 'Concept non-current' indicator";
-						incrementSummaryInformation(issue);
-						report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d);
-						countIssue(c);
-					} else {
-						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
-						if (!i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-							report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
-							countIssue(c);
-						}
-					}
-				} else if (d.isActive() && c.isActive()) {
-					//Expect NO inactivation indicator here
-					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
-						report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
-						countIssue(c);
-					}
-				} else if (!d.isActive() && !c.isActive()) {
-					//Expect inactivation indicator here, but not Concept-non-current
-					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
-						//report (c, c.getEffectiveTime(), d, "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
-						incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
-					} else {
-						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
-						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-							String issue = "Inactive description of an active concept should not have a 'Concept non-current' indicator";
+				if (inScope(d)) {
+					String cdLegacy = (isLegacy?"Y":"N") + "/" + (isLegacy(d)?"Y":"N"); 
+					//What are we looking at here?
+					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
+							.map(i->i.toString())
+							.collect(Collectors.joining(",\n"));
+					
+					//First check that any indicators are only in the appropriate refset
+					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+						if (!i.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
+							String issue = "Description has something other than a description inactivation indicator";
 							incrementSummaryInformation(issue);
 							report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, issue, cdLegacy, d, i);
 							countIssue(c);
+						}
+						continue nextDescription;
+					}
+					
+					// Now check for duplicates, followed by acceptable entries
+					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1) {
+						String issue = "Description has multiple inactivation indicators";
+						incrementSummaryInformation(issue);
+						report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, data);
+					} else if (d.isActive() && !c.isActive()) {
+						//Expect a single "Concept not current" indicator
+						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
+							String issue = "Active description of inactive concept is missing 'Concept non-current' indicator";
+							incrementSummaryInformation(issue);
+							report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d);
+							countIssue(c);
+						} else {
+							InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
+							if (!i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+								report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
+								countIssue(c);
+							}
+						}
+					} else if (d.isActive() && c.isActive()) {
+						//Expect NO inactivation indicator here
+						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
+							report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
+							countIssue(c);
+						}
+					} else if (!d.isActive() && !c.isActive()) {
+						//Expect inactivation indicator here, but not Concept-non-current
+						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
+							//report (c, c.getEffectiveTime(), d, "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
+							incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
+						} else {
+							InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
+							if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+								String issue = "Inactive description of an active concept should not have a 'Concept non-current' indicator";
+								incrementSummaryInformation(issue);
+								report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, issue, cdLegacy, d, i);
+								countIssue(c);
+							}
 						}
 					}
 				}
@@ -263,9 +267,17 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				.map(h->h.toString())
 				.collect(Collectors.joining(",\n"));
 		
+		if (StringUtils.isEmpty(data)) {
+			data = "No historical associations defined";
+		}
+		
 		String targets = c.getAssociations(ActiveState.ACTIVE).stream()
 				.map(h-> SnomedUtils.translateAssociation(h.getRefsetId()).toString() + " " + gl.getConceptSafely(h.getTargetComponentId()).toString())
 				.collect(Collectors.joining(",\n"));
+		
+		if (StringUtils.isEmpty(targets)) {
+			targets = "No historical associations defined";
+		}
 		
 		//Loop through all possible associations.  Don't report issue unless all fail
 		String lastIssue = "";
