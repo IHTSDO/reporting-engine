@@ -474,10 +474,25 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/procedures/Stoma.json" };
 		populateTemplates(null, templateNames);
 		
-		templateNames = new String[] { "templates/procedures/CT of Body Structure with constrast.json" };
+		templateNames = new String[] { "templates/procedures/CT of Body Structure with contrast.json" };
 		populateTemplates(null, templateNames);
 		
 		templateNames = new String[] { "templates/procedures/CT of Body Structure.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/CT Guided.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Muscular dystrophy.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Craniofacial cleft.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Measurement.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/Anthrotomy.json" };
 		populateTemplates(null, templateNames);
 		
 		//Do this one last to pick up whatever is left under Disease

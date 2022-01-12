@@ -390,7 +390,6 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subsetECL = "<< 7895008 |Poisoning caused by drug AND/OR medicinal substance (disorder)| OR << 441952005 |Poisoning caused by chemical substance (disorder)|";
 		templateNames = new String[] { "templates/Poisoning.json"};
 		
-		
 		templateNames = new String[] { "templates/drugs/MP only.json" };
 		*/
 		//templateNames = new String[] { "templates/procedures/CT Guided.json" };
