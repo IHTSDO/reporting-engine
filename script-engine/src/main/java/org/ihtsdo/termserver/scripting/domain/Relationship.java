@@ -10,9 +10,7 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Relationship extends Component implements IRelationshipTemplate, ScriptConstants, Comparable<Relationship> {
 
@@ -60,12 +58,12 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	
 	private String deletionEffectiveTime;
 	
-	private CdType cdType;
-	
-	private Object value;
+	@SerializedName("concreteValue")
+	@Expose
+	private ConcreteValue concreteValue;
 	
 	public boolean isConcrete() {
-		return value != null;
+		return concreteValue != null;
 	}
 
 	public boolean isNotConcrete() {
@@ -80,8 +78,6 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	public Relationship() {
 	}
 	
-	public enum CdType { INTEGER, DECIMAL, STRING }
-
 	public Relationship(Concept source, Concept type, Concept target, int groupId) {
 		this.type = type;
 		this.target = target;
@@ -110,10 +106,9 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		this.moduleId = SCTID_CORE_MODULE;
 	}
 
-	public Relationship(Concept source, Concept type, Object value, int groupId, CdType cdType) {
+	public Relationship(Concept source, Concept type, String value, int groupId, ConcreteValue.ConcreteValueType cvType) {
 		this.type = type;
-		this.value = value;
-		this.cdType = cdType;
+		this.concreteValue = new ConcreteValue(cvType, value);
 		this.source = source;
 		
 		if (source != null) {
@@ -256,7 +251,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		}
 		
 		if (isConcrete()) {
-			return "[" + activeIndicator +  charType + groupId + relId + getAxiomIdPart() + "] " + type + " -> " + valueAsRF2();
+			return "[" + activeIndicator +  charType + groupId + relId + getAxiomIdPart() + "] " + type + " -> " + concreteValue.getValueWithPrefix();
 		}
 		return "[" + activeIndicator +  charType + groupId + relId + getAxiomIdPart() + "] " + type + " -> " + target;
 	}
@@ -279,8 +274,11 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 			//return toString(true, false).hashCode();
 			try {
 				if (isConcrete()) {
-					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), value);
+					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), concreteValue);
 				} else {
+					if (target == null) {
+						throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
+					}
 					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
 				}
 			} catch (NullPointerException e) {
@@ -342,8 +340,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		clone.relationshipId = newSCTID; 
 		clone.moduleId = this.moduleId;
 		clone.target = this.target;
-		clone.value = this.value;
-		clone.cdType = this.cdType;
+		clone.concreteValue = this.concreteValue;
 		clone.active = this.active;
 		clone.effectiveTime = null; //New relationship is unpublished
 		clone.type = this.type;
@@ -393,19 +390,12 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	public String[] toRF2() throws TermServerScriptException {
 		return new String[] {relationshipId, effectiveTime, (active?"1":"0"), 
 							moduleId, sourceId, 
-							isConcrete()?valueAsRF2() : target.getConceptId(),
+							isConcrete()? concreteValue.getValueWithPrefix() : target.getConceptId(),
 							Long.toString(groupId), type.getConceptId(), 
 							SnomedUtils.translateCharacteristicType(characteristicType), 
 							SnomedUtils.translateModifier(modifier)};
 	}
 	
-	public String valueAsRF2() {
-		switch (cdType) {
-			case STRING : return "\"" + value.toString() + "\"";
-			default : return "#" + value.toString();
-		}
-	}
-
 	public String[] toRF2Deletion() throws TermServerScriptException {
 		return new String[] {relationshipId, effectiveTime, deletionEffectiveTime,
 							(active?"1":"0"), 
@@ -479,7 +469,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	
 	public boolean equalsTargetOrValue(IRelationshipTemplate b) {
 		if (isConcrete() && b.isConcrete()) {
-			return getValue().toString().equals(b.getValue().toString());
+			return getConcreteValue().toString().equals(b.getConcreteValue().toString());
 		} else if (!isConcrete() && !b.isConcrete()) {
 			return getTarget().equals(b.getTarget());
 		} else {
@@ -510,20 +500,12 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		this.axiomIdPart = null;
 	}
 	
-	public CdType getCdType() {
-		return cdType;
+	public ConcreteValue getConcreteValue() {
+		return concreteValue;
 	}
 
-	public void setCdType(CdType cdType) {
-		this.cdType = cdType;
-	}
-
-	public Object getValue() {
-		return value;
-	}
-
-	public void setValue(Object value) {
-		this.value = value;
+	public void setConcreteValue(ConcreteValue value) {
+		this.concreteValue = value;
 	}
 
 	public boolean fromSameAxiom(Relationship r) {

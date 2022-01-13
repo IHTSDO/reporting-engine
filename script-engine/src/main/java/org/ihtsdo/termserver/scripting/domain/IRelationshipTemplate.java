@@ -11,8 +11,8 @@ public interface IRelationshipTemplate extends RF2Constants {
 	public Concept getTarget();
 	public void setTarget(Concept target);
 	
-	public Object getValue();
-	public void setValue(Object value);
+	public ConcreteValue getConcreteValue();
+	public void setConcreteValue(ConcreteValue value);
 	
 	public CharacteristicType getCharacteristicType();
 	public void setCharacteristicType(CharacteristicType characteristicType);

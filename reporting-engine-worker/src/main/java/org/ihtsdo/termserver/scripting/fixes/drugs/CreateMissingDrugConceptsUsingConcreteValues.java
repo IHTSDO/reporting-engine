@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.Relationship.CdType;
+import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
@@ -305,7 +305,8 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 		
 		//Only if we're creating an "Only", include the ingredient count
 		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
-			Relationship countRel = new Relationship (drug, COUNT_BASE_ACTIVE_INGREDIENT, baseIngredients.size(), UNGROUPED, CdType.INTEGER);
+			String count = Integer.toString(baseIngredients.size());
+			Relationship countRel = new Relationship (drug, COUNT_BASE_ACTIVE_INGREDIENT, count, UNGROUPED, ConcreteValue.ConcreteValueType.INTEGER);
 			drug.addRelationship(countRel);
 		}
 		

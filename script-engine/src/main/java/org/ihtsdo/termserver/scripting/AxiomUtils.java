@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.domain.Axiom;
 import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
-import org.ihtsdo.termserver.scripting.domain.Relationship.CdType;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
@@ -102,11 +101,11 @@ public class AxiomUtils implements ScriptConstants {
 		return relationships;
 	}
 	
-	private static CdType getConcreteType(ConcreteValue value) {
+	private static org.ihtsdo.termserver.scripting.domain.ConcreteValue.ConcreteValueType getConcreteType(ConcreteValue value) {
 		switch (value.getType()) {
-			case DECIMAL : return CdType.DECIMAL;
-			case INTEGER : return CdType.INTEGER;
-			case STRING : return CdType.STRING;
+			case DECIMAL : return org.ihtsdo.termserver.scripting.domain.ConcreteValue.ConcreteValueType.DECIMAL;
+			case INTEGER : return org.ihtsdo.termserver.scripting.domain.ConcreteValue.ConcreteValueType.INTEGER;
+			case STRING : return org.ihtsdo.termserver.scripting.domain.ConcreteValue.ConcreteValueType.STRING;
 			default : throw new IllegalArgumentException("Unexpected concrete value type: " + value);
 		}
 	}

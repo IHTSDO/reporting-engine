@@ -459,11 +459,11 @@ public class GraphLoader implements ScriptConstants {
 		if (lineItems[REL_IDX_VALUE].startsWith("#")) {
 			//Trim leading hash symbol. Leave as string to preserve DPs
 			String value = lineItems[REL_IDX_VALUE].substring(1);
-			r = new Relationship(source, type, value, groupNum, Relationship.CdType.DECIMAL);
+			r = new Relationship(source, type, value, groupNum, ConcreteValue.ConcreteValueType.DECIMAL);
 		} else if (lineItems[REL_IDX_VALUE].startsWith("\"")) {
 			//Trim of start and ending quote
 			String value = lineItems[REL_IDX_VALUE].substring(1, lineItems[REL_IDX_VALUE].length()-1);
-			r = new Relationship(source, type, value, groupNum, Relationship.CdType.STRING);
+			r = new Relationship(source, type, value, groupNum, ConcreteValue.ConcreteValueType.STRING);
 		} else {
 			String destId = lineItems[REL_IDX_DESTINATIONID];
 			if (destId.length() < 4 ) {

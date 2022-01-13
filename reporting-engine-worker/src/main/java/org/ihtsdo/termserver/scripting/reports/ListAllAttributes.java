@@ -148,7 +148,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 			report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtils.deconstructFSN(fsn)[1]);
 			countIssue(c);
 		} else {
-			report(c, defStatus, r.getType().getPreferredSynonym(), "N/A", characteristicStr, r.valueAsRF2(), "", "");
+			report(c, defStatus, r.getType().getPreferredSynonym(), "N/A", characteristicStr, r.getConcreteValue().valueAsRF2(), "", "");
 			countIssue(c);
 		}
 	}

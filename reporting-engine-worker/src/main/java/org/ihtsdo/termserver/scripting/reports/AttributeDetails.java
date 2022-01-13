@@ -143,7 +143,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 	private void report(Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
 		String typePT = r.getType().getPreferredSynonym();
 		if (r.isConcrete()) {
-			report(c, defStatus, typePT, characteristicStr, "-", "-", "-", r.getValue());
+			report(c, defStatus, typePT, characteristicStr, "-", "-", "-", r.getConcreteValue());
 		} else {
 			report(c, defStatus, typePT, characteristicStr, r.getTarget().getConceptId(), r.getTarget().getFsn(), SnomedUtils.deconstructFSN(r.getTarget().getFsn())[1], "-");
 		}

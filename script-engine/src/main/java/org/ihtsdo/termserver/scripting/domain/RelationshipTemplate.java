@@ -4,7 +4,7 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	private Concept type;
 	private Concept target;
 	private CharacteristicType characteristicType;
-	private Object value;
+	private ConcreteValue concreteValue;
 
 	public RelationshipTemplate (Concept type, Concept target, CharacteristicType characteristicType) {
 		this.type = type;
@@ -41,12 +41,12 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 		this.characteristicType = characteristicType;
 	}
 
-	public Object getValue() {
-		return value;
+	public ConcreteValue getConcreteValue() {
+		return concreteValue;
 	}
 
-	public void setValue(Object value) {
-		this.value = value;
+	public void setConcreteValue(ConcreteValue concreteValue) {
+		this.concreteValue = concreteValue;
 	}
 
 	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rel) {
@@ -81,6 +81,6 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 
 	@Override
 	public boolean isConcrete() {
-		return value != null;
+		return concreteValue != null;
 	}
 }

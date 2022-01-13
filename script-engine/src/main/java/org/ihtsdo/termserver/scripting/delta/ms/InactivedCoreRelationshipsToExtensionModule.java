@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -18,10 +20,16 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Ah.  In fact I can't construct a valid snapshot here because this is post versioned core
  * content that won't be in the International Edition.  So I need to feed in a list of concepts 
  * affected and load them one by one.
+ * 
+ * MSSP-1288 Norway again
  */
 public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator implements ScriptConstants {
 
-	String effectiveTime = "20211015";
+	//String effectiveTime = "20211015";
+	String targetEffectiveTime = null;
+	
+	Map<String, String> semTagModuleMap = new HashMap<>();
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivedCoreRelationshipsToExtensionModule delta = new InactivedCoreRelationshipsToExtensionModule();
 		try {
@@ -44,29 +52,57 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 		}
 	}
 	
+	public void init(String[] args) throws TermServerScriptException {
+		semTagModuleMap.put("medicinal", "57091000202101");
+		semTagModuleMap.put("drug", "57091000202101");
+		super.init(args);
+	}
+	
 	public void process() throws TermServerScriptException {
-		for (Component component : processFile()) {
-			Concept c = loadConcept(component.getId(), project.getBranchPath());
-			for (Relationship rExt : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
-				//Where the relationship is core and modified as part of the latest release, shift it to the target module
-				if (rExt.getModuleId().equals(SCTID_CORE_MODULE) && rExt.getEffectiveTime().equals(effectiveTime)) {
-					rExt.setModuleId(moduleId);
-					c.setModified();
-					rExt.setEffectiveTime(effectiveTime);
-					String msg = "Shifted " + rExt + " to module " + rExt.getModuleId();
-					report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, msg, rExt.getId());
-				} else if (rExt.getModuleId().equals(SCTID_CORE_MODULE) && 
-						( !rExt.getEffectiveTime().endsWith("0731") && !rExt.getEffectiveTime().endsWith("0131"))) {
-					String msg = "Core relationship " + rExt + " has an odd effective time: " + rExt.getEffectiveTime();
-					report (c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
-				}
+		if (inputFile != null) {
+			for (Component component : processFile()) {
+				Concept c = loadConcept(component.getId(), project.getBranchPath());
+				processConcept(c);
 			}
-			
-			if (c.isModified()) {
-				incrementSummaryInformation("Concepts modified");
-				outputRF2(c, true);  //Will only output dirty fields.
+		} else {
+			for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
+				processConcept(c);
 			}
 		}
+	}
+
+	private void processConcept(Concept c) throws TermServerScriptException {
+		for (Relationship rExt : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
+			//Where the relationship is core and modified as part of the latest release, shift it to the target module
+			if (rExt.getModuleId().equals(SCTID_CORE_MODULE) && 
+					(rExt.getEffectiveTime() == null || rExt.getEffectiveTime().equals(targetEffectiveTime))) {
+				rExt.setModuleId(determineTargetModuleId(c));
+				c.setModified();
+				rExt.setEffectiveTime(targetEffectiveTime);
+				String msg = "Shifted " + rExt + " to module " + rExt.getModuleId();
+				report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, msg, rExt.getId());
+			} else if (rExt.getModuleId().equals(SCTID_CORE_MODULE) && 
+					( !rExt.getEffectiveTime().endsWith("0731") && !rExt.getEffectiveTime().endsWith("0131"))) {
+				String msg = "Core relationship " + rExt + " has an odd effective time: " + rExt.getEffectiveTime();
+				report (c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			}
+		}
+		
+		if (c.isModified()) {
+			incrementSummaryInformation("Concepts modified");
+			outputRF2(c, true);  //Will only output dirty fields.
+		}
+	}
+
+	private String determineTargetModuleId(Concept c) {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		//Do we have a known map for this semantic tag
+		for (String key : semTagModuleMap.keySet()) {
+			if (semTag.contains(key)) {
+				return semTagModuleMap.get(key);
+			}
+		}
+		return moduleId;
 	}
 
 }

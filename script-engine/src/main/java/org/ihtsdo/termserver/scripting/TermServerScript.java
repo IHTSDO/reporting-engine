@@ -608,7 +608,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						r.setActive(axiom.isActive());
 						r.setAxiom(axiom);
 						r.setSource(gl.getConcept(c.getConceptId()));
-						r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
+						if (!r.isConcrete()) {
+							r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
+						}
 						c.addRelationship(r);
 						r.setReleased(axiom.getReleased());
 					}

@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -77,11 +78,12 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 				targetAttribute.setTarget(gl.getConcept(attribStr));
 			} catch (final IllegalArgumentException e) {
 				//Presumed to be concrete value.
-				targetAttribute.setValue(attribStr);
+				targetAttribute.setConcreteValue(new ConcreteValue(attribStr));
 			}
 		}
 	}
 	
+
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions, Model",
 				"SCTID, FSN, SemTag, Model",};

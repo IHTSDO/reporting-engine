@@ -929,7 +929,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				if (!r.isConcrete()) {
 					throw new IllegalArgumentException("Attempt to recover concrete value from non-concrete relationship: " + r);
 				}
-				return r.getValue().toString();
+				return r.getConcreteValue().toString();
 			}
 		}
 		return null;
@@ -950,9 +950,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (Relationship rel : rels) {
 			if (rel.isConcrete() && value == null) {
 				try {
-					value = Integer.parseInt(rel.getValue().toString());
+					value = Integer.parseInt(rel.getConcreteValue().toString());
 				} catch (Exception e) {
-					throw new TermServerScriptException("Attempt to recover non-integer value " + rel.getValue() + " on type " + type + " for concept " + c);
+					throw new TermServerScriptException("Attempt to recover non-integer value " + rel.getConcreteValue() + " on type " + type + " for concept " + c);
 				}
 			} else if (!rel.isConcrete()) {
 				throw new TermServerScriptException("Attempt to recover concrete value from non-concrete type " + type + " for concept " + c);
@@ -1122,7 +1122,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		boolean sameValue = false;
 		boolean moreSpecificValue = false;
 		if (a.isConcrete() && b.isConcrete()) {
-			if (a.getValue().equals(b.getValue())) {
+			if (a.getConcreteValue().equals(b.getConcreteValue())) {
 				sameValue = true;
 			}
 		} else {
@@ -1166,7 +1166,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		boolean sameValue = false;
 		boolean subsumptionRelationshipValue = false;
 		if (a.isConcrete() && b.isConcrete()) {
-			if (a.getValue().equals(b.getValue())) {
+			if (a.getConcreteValue().equals(b.getConcreteValue())) {
 				sameValue = true;
 			}
 		} else {
@@ -1508,7 +1508,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 					for (Relationship r2 : g.getRelationships()) {
 						if (r1.getType().equals(r2.getType())) {
 							if (r1.isConcrete() && r2.isConcrete()) {
-								if (r1.getValue().equals(r2.getValue())) {
+								if (r1.getConcreteValue().equals(r2.getConcreteValue())) {
 									continue nextRelationship;
 								}
 							} else {
@@ -1607,7 +1607,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 					if (r.isNotConcrete()) {
 						return values == null || values.contains(r.getTarget());
 					} else {
-						return r.getValue().equals(targetAttribute.getValue());
+						return r.getConcreteValue().equals(targetAttribute.getConcreteValue());
 					}
 				})
 				.collect(Collectors.toList()).size() > 0;
@@ -1966,7 +1966,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	private static Object getValueInGroup(Concept type, RelationshipGroup group) {
 		for (Relationship r : group.getRelationships()) {
 			if (r.getType().equals(type)) {
-				return r.isConcrete() ? r.getValue() : r.getTarget();
+				return r.isConcrete() ? r.getConcreteValue() : r.getTarget();
 			}
 		}
 		return null;

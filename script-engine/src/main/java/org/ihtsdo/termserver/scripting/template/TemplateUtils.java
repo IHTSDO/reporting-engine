@@ -236,7 +236,7 @@ public class TemplateUtils implements ScriptConstants {
 			//Is the value within the allowable ECL, or do we have a fixed value?
 			if (a.getValueAllowableRangeECL() != null) {
 				if (r.isConcrete()) {
-					matchesAttributeValue = matchesAttributeConcreteValue(r.getValue(), a.getValueAllowableRangeECL().trim(), ts);
+					matchesAttributeValue = matchesAttributeConcreteValue(r.getConcreteValue(), a.getValueAllowableRangeECL().trim(), ts);
 				} else {
 					matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getValueAllowableRangeECL().trim(), ts);
 				}
