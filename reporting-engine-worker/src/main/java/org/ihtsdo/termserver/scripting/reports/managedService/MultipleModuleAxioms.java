@@ -30,7 +30,7 @@ public class MultipleModuleAxioms extends TermServerReport implements ReportClas
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
+		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 		
