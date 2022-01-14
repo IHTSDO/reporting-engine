@@ -56,7 +56,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL)
-				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))

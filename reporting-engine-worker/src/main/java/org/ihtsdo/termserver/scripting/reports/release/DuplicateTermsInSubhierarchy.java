@@ -38,14 +38,14 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
+				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT)
 				.add(NEW_ISSUES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
-				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).build();
+				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false).build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Duplicate Terms")
-				.withDescription("This report lists concepts that have the same preferred term (or optionally, synonyms) within the same sub-hierarchy. " +
+				.withDescription("This report lists concepts that have the same term within the same sub-hierarchy. " +
 						"The 'Issues' count here reflects the number of rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
