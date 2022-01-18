@@ -107,6 +107,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		cache = gl.getDescendantsCache();
 		getArchiveManager().setPopulateReleasedFlag(true);
 		
+		//ignoreWhiteList = true;
+		
 		stopWords.add("of");
 		stopWords.add("Product");
 		stopWords.add("the");

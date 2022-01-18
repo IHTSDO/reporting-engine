@@ -60,6 +60,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String subsetECL;
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
+	protected boolean ignoreWhiteList = false;
 	
 	protected Set<Concept> whiteListedConcepts = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
@@ -67,9 +68,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected ApplicationContext appContext;
 	protected String headers = "Concept SCTID,";
-	protected String additionalReportColumns = "ActionDetail, AdditionalDetail";
-	protected String secondaryReportColumns = "ActionDetail";
-	protected String tertiaryReportColumns = "ActionDetail";
+	protected String additionalReportColumns = "ActionDetail, AdditionalDetail, ";
+	protected String secondaryReportColumns = "ActionDetail, ";
+	protected String tertiaryReportColumns = "ActionDetail, ";
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	public Scanner STDIN = new Scanner(System.in);
 	
@@ -1366,7 +1367,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return;
 		}
 		//Have we whiteListed this concept?
-		if (whiteListedConcepts.contains(c)) {
+		if (!ignoreWhiteList && whiteListedConcepts.contains(c)) {
 			String detailsStr = writeToString(details);
 			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
