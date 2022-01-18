@@ -20,10 +20,12 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * INFRA-8111 for specified ECL selection map  
  *  424361007 |Using substance (attribute)| -> 363701004 |Direct substance (attribute)
  *  405814001 |Procedure site - Indirect (attribute)| -> 405813007 |Procedure site - Direct (attribute)|
+ *  
+ *  INFRA-8193  704324001 |Process output (attribute)| -> 1003735000 |Process acts on (attribute)| 
  */
 public class ReplaceAttributeTypes extends BatchFix {
 	
-	String ecl = "<< 74799003 |Flap graft (procedure)| OR << 304039000 |Skin flap operation (procedure)|";
+	String ecl = "<< 226321006 |Amino acid intake (observable entity)| OR << 788472008 |Carbohydrate intake (observable entity)| OR << 792882006 |Estimated intake of protein and protein derivative in 24 hours (observable entity)| OR << 226354008 |Water intake (observable entity)| OR 788662004 |Estimated intake of niacin in 24 hours (observable entity)| OR << 870372004 |Fat and oil intake (observable entity)| OR << 226352007 |Mineral intake (observable entity)| OR << 226349004 |Vitamin intake (observable entity)|";
 	Map<Concept, Concept> replaceTypesMap;
 	RelationshipTemplate addAttribute;
 	
@@ -53,11 +55,13 @@ public class ReplaceAttributeTypes extends BatchFix {
 		/*replaceTypesMap.put(gl.getConcept("118586006 |Ratio (property) (qualifier value)| "), 
 				gl.getConcept("784316008 |Arbitrary fraction (property) (qualifier value)|"));
 		addAttribute = new RelationshipTemplate(gl.getConcept("704325000 |Relative to (attribute)| "),
-				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));*/
+				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));
 		replaceTypesMap.put(gl.getConcept("424361007 |Using substance (attribute)|"), 
 				gl.getConcept("363701004 |Direct substance (attribute)|"));
 		replaceTypesMap.put(gl.getConcept("405814001 |Procedure site - Indirect (attribute)|"), 
-				gl.getConcept("405813007 |Procedure site - Direct (attribute)|"));
+				gl.getConcept("405813007 |Procedure site - Direct (attribute)|"));*/
+		replaceTypesMap.put(gl.getConcept("704324001 |Process output (attribute)| "), 
+				gl.getConcept("1003735000 |Process acts on (attribute)| "));
 		super.postInit();
 	}
 
