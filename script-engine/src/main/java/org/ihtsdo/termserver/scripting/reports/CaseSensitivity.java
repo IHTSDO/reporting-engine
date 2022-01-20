@@ -41,6 +41,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
+		getArchiveManager().setPopulateReleasedFlag(true);
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, Semtag, Description, isPreferred, CaseSignificance, Issue";

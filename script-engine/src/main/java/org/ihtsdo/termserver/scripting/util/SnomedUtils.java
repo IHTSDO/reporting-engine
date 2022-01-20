@@ -637,6 +637,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_INACT_PENDING_MOVE : return InactivationIndicator.PENDING_MOVE;
 			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 			case SCTID_INACT_NOT_EQUIVALENT : return InactivationIndicator.NOT_EQUIVALENT;
+			case SCTID_INACT_COMPONENT_MEANING_UNKNOWN : return InactivationIndicator.COMPONENT_MEANING_UNKNOWN;
+			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASS_DERIVED_COMPONENT;
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
 		}
 	}

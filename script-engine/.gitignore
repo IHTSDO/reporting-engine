@@ -2,7 +2,7 @@ secure/*
 application-local.properties
 historic-data
 reports/*
-resources/*
+resources
 *.txt
 releases/*
 csr.txt
