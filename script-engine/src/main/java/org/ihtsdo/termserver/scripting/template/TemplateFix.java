@@ -23,6 +23,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> exclusions;
 	protected List<String> exclusionWords;
+	protected boolean checkAllDescriptionsForExclusions = false;
 	protected List<String> inclusionWords;
 	protected boolean includeComplexTemplates = true;
 	protected boolean includeOrphanet = true;
@@ -319,7 +320,7 @@ abstract public class TemplateFix extends BatchFix {
 		String fsn = " " + c.getFsn().toLowerCase();
 		String pt = " " + c.getPreferredSynonym().toLowerCase();
 		for (String word : exclusionWords) {
-			if (fsn.contains(word) || pt.contains(word)) {
+			if (fsn.contains(word) || pt.contains(word) || (checkAllDescriptionsForExclusions && descriptionsContainWord(c, word))) {
 				if (exclusionReport != null) {
 					incrementSummaryInformation("Concepts excluded due to lexical match ");
 					incrementSummaryInformation("Concepts excluded due to lexical match (" + word + ")");
@@ -346,6 +347,12 @@ abstract public class TemplateFix extends BatchFix {
 		return false;
 	}
 	
+	private boolean descriptionsContainWord(Concept c, String word) {
+		return c.getDescriptions(ActiveState.ACTIVE).stream()
+				.map(d -> " " + d.getTerm().toLowerCase() + " ")
+				.anyMatch(s -> s.contains(word));
+	}
+
 	protected boolean isComplex(Concept c) {
 		for (Concept excludedType : complexTemplateAttributes) {
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
