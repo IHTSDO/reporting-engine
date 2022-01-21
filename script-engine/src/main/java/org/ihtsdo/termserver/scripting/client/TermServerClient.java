@@ -594,6 +594,18 @@ public class TermServerClient {
 		}
 	}
 	
+	public LangRefsetEntry getLangRefsetMember(String uuid, String branchPath) {
+		try {
+			String url = getRefsetMemberUrl(uuid, branchPath);
+			return restTemplate.getForObject(url, LangRefsetEntry.class);
+		} catch (Exception e) {
+			if (e.getMessage().contains("Member not found")) {
+				return null;
+			}
+			throw e;
+		}
+	}
+	
 	public Collection<RefsetMember> findRefsetMembers(String branchPath, Concept c, String refsetFilter) throws TermServerScriptException {
 		return findRefsetMembers(branchPath, Collections.singletonList(c), refsetFilter);
 	}

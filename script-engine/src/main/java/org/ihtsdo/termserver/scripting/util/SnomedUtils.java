@@ -1821,6 +1821,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return parts;
 	}
 	
+	public static List<Concept> sortFSN(Collection<Concept> superSet) {
+		//We're going to sort on top level hierarchy, then alphabetically
+		return superSet.stream()
+		.sorted((c1, c2) -> c1.getFsn().compareTo(c2.getFsn()))
+		.collect(Collectors.toList());
+	}
 	
 	public static List<Concept> sort(Collection<Concept> superSet) {
 		//We're going to sort on top level hierarchy, then alphabetically

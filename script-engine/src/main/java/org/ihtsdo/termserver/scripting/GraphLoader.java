@@ -855,7 +855,7 @@ public class GraphLoader implements ScriptConstants {
 						}
 					} else {
 						//New entry is later or same effective time as one we already know about
-						if (existing.isReleased() && !existing.getId().equals(langRefsetEntry.getId())) {
+						if (!SnomedUtils.isEmpty(existing.getEffectiveTime()) && !existing.getId().equals(langRefsetEntry.getId())) {
 							attemptPublishedRemovals++;
 							if (attemptPublishedRemovals < 5) {
 								System.err.println ("Attempt to remove published entry: " + existing.toStringWithModule() + " by " + langRefsetEntry.toStringWithModule());

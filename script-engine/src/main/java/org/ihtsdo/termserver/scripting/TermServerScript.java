@@ -582,6 +582,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return tsClient.getRefsetMember(uuid, branch);
 	}
 	
+	protected LangRefsetEntry loadLangRefsetMember(String uuid, String branch) throws TermServerScriptException {
+		debug ("Loading refset member " + uuid + " from " +branch);
+		return tsClient.getLangRefsetMember(uuid, branch);
+	}
+	
 	protected RefsetMember loadPreviousRefsetMember(String uuid) throws TermServerScriptException {
 		if (project.getPreviousBranchPath() == null) {
 			String previousBranchPath = getArchiveManager(true).getPreviousBranch(project);

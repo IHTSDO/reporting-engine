@@ -804,9 +804,22 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		}
 		
 		descriptions.add(d);
-		if (d.isActive() && d.getType().equals(DescriptionType.FSN) 
-				&& (getFsn() == null || d.getLang().equals("en"))) {
-			this.setFsn(d.getTerm());
+		if (d.getType().equals(DescriptionType.FSN)) {
+			if (d.isActive() && (getFsn() == null || d.getLang().equals("en"))) {
+				this.setFsn(d.getTerm());
+			} else if (!d.isActive() && (getFsn() == null || d.getLang().equals("en"))) {
+				List<Description> fsns = getDescriptions(ActiveState.ACTIVE, Collections.singletonList(DescriptionType.FSN));
+				if (fsns.size() == 1) {
+					this.setFsn(fsns.get(0).getTerm());
+				} else {
+					//Set en if we have one otherwise any
+					for (Description fsn : fsns) {
+						if (fsn.getLang().equals("en")) {
+							this.setFsn(fsn.getTerm());
+						}
+					}
+				}
+			}
 		}
 	}
 	

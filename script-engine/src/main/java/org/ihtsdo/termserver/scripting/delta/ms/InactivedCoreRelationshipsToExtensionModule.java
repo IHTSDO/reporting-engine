@@ -23,7 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * 
  * MSSP-1288 Norway again
  */
-public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator implements ScriptConstants {
+public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator {
 
 	//String effectiveTime = "20211015";
 	String targetEffectiveTime = null;
@@ -39,7 +39,7 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
 			delta.additionalReportColumns = "FSN,SemTag,Severity,Action,Detail,Rel Id,";
 			delta.init(args);
-			delta.loadProjectSnapshot(true);  //Just FSN, not working with all descriptions here
+			delta.loadProjectSnapshot(false);
 			delta.postInit();
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close

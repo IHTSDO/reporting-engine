@@ -161,6 +161,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		getArchiveManager(true).setLoadDependencyPlusExtensionArchive(getDependencyArchive() != null);
 	}
 	
+	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException
+	{
+		super.postInit(tabNames, columnHeadings, false);
+		initialiseFileHeaders();
+	}
+	
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		initialiseFileHeaders();
