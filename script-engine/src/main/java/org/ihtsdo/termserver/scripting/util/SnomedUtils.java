@@ -1971,4 +1971,23 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return null;
 	}
+
+	public static boolean hasModule(Component c, String[] targetModules) {
+		for (String targetModule : targetModules) {
+			if (c.getModuleId().equals(targetModule)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public static boolean hasNotModule(Component c, String[] targetModules) {
+		boolean hasModule = false;
+		for (String targetModule : targetModules) {
+			if (c.getModuleId().equals(targetModule)) {
+				hasModule = true;
+			}
+		}
+		return !hasModule;
+	}
 }

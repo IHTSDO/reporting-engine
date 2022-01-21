@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
 /*
  * INFRA-2480 Finding concept and description inactivation indicators that are duplicated
@@ -255,13 +256,28 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 					continue;
 				}
 				if (thisEntry.duplicates(thatEntry)) {
-					// Delete the unpublished one
-					if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-						if (thisEntry.getReleased() && !thatEntry.getReleased()) {
+					//Are they both published?  If INT is active and EXT is inactive with no effective time then that's as good as we'll get
+					if (thisEntry.isReleased() && thatEntry.isReleased()) {
+						RefsetMember intRM = hasModule(INTERNATIONAL_MODULES, true, thisEntry, thatEntry);
+						RefsetMember extRM = hasModule(INTERNATIONAL_MODULES, false, thisEntry, thatEntry);
+						
+						if (intRM != null && extRM != null) {
+							if (intRM.isActive() && !extRM.isActive() && StringUtils.isEmpty(extRM.getEffectiveTime())) {
+								warn("Inactivated refsetmember in extension.  As good as it gets: " + extRM);
+							}
+						}
+						
+						// Only a problem historically if they're both active
+						if (thisEntry.isActive() && thatEntry.isActive()) {
+							warn("Both entries are released and active! " + thisEntry.getEffectiveTime());
+						}
+					} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+						// Delete the unpublished one
+						if (thisEntry.isReleased() && !thatEntry.isReleased()) {
 							duplicatePair = new DuplicatePair(thisEntry, thatEntry);
-						} else if (!thisEntry.getReleased() && thatEntry.getReleased()) {
+						} else if (!thisEntry.isReleased() && thatEntry.isReleased()) {
 							duplicatePair = new DuplicatePair(thatEntry,thisEntry);
-						} else if (!thisEntry.getReleased() && !thatEntry.getReleased()) {
+						} else if (!thisEntry.isReleased() && !thatEntry.isReleased()) {
 							//Neither released.   Delete the inactive one, or randomly otherwise
 							if (!thisEntry.isActive()) {
 								duplicatePair = new DuplicatePair(thatEntry,thisEntry);
@@ -276,7 +292,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 					} else {
 						// Only a problem historically if they're both active
 						if (thisEntry.isActive() && thatEntry.isActive()) {
-							warn("Both entries look published! " + thisEntry.getEffectiveTime());
+							warn("Both entries look published and active! " + thisEntry.getEffectiveTime());
 						}
 					}
 				}
@@ -287,6 +303,17 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			}
 		}
 		return duplicatePairs;
+	}
+
+	private RefsetMember hasModule(String[] targetModules, boolean matchLogic, RefsetMember... refsetMembers) {
+		for (RefsetMember rm : refsetMembers) {
+			if (matchLogic && SnomedUtils.hasModule(rm, targetModules)) {
+				return rm;
+			} else if (!matchLogic && SnomedUtils.hasNotModule(rm, targetModules)) {
+				return rm;
+			}
+		}
+		return null;
 	}
 
 	private boolean mentioned(List<DuplicatePair> duplicatePairs, RefsetMember rm) {
