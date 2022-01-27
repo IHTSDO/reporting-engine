@@ -31,6 +31,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	
 	private static List<String> InternationalModules = Arrays.asList(INTERNATIONAL_MODULES);
 	
+	//Although MS Windows use backslashes in their file paths, the standard for zip archive states
+	//that file separators should always be the backslash
+	private static final String BWD_SLASH = "\\\\";
+	private static final String FWD_SLASH = "/";
+	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		
@@ -326,7 +331,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				continue;
 			}
 			FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
-			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length());
+			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length()).replaceAll(BWD_SLASH,FWD_SLASH);
 			TermServerScript.debug(" Adding: " + relativePath);
 			out.putNextEntry(new ZipEntry(relativePath));
 			int len;
@@ -1995,5 +2000,42 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			}
 		}
 		return !hasModule;
+	}
+
+	public static Collection<Component> getAllComponents(Concept c) {
+		List<Component> components = new ArrayList<>();
+		
+		components.add(c);
+		
+		c.getInactivationIndicatorEntries().stream()
+			.forEach(components::add);
+		
+		c.getAssociationEntries().stream()
+			.forEach(components::add);
+		
+		c.getAxiomEntries().stream()
+			.forEach(components::add);
+		
+		c.getRelationships().stream()
+			.filter(r -> r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP))
+			.forEach(components::add);
+		
+		c.getDescriptions().stream()
+			.flatMap(d ->  d.getLangRefsetEntries().stream())
+			.forEach(components::add);
+		
+		//Descriptions and their associated indicators
+		c.getDescriptions().stream()
+		.forEach(components::add);
+		
+		c.getDescriptions().stream()
+			.flatMap(d ->  d.getInactivationIndicatorEntries().stream())
+			.forEach(components::add);
+		
+		c.getDescriptions().stream()
+			.flatMap(d ->  d.getAssociationEntries().stream())
+			.forEach(components::add);
+		
+		return components;
 	}
 }

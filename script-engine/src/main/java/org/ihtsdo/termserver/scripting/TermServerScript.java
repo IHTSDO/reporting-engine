@@ -214,7 +214,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else {
 				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
 			}
-		} else if (StringUtils.isNumeric(projectName)) {
+		} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
 			info ("Loading release: " + projectName); 
 			loadingRelease = true;
 			project.setKey(projectName);
