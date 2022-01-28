@@ -25,7 +25,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class ReplaceAttributeTypes extends BatchFix {
 	
-	String ecl = "<< 226321006 |Amino acid intake (observable entity)| OR << 788472008 |Carbohydrate intake (observable entity)| OR << 792882006 |Estimated intake of protein and protein derivative in 24 hours (observable entity)| OR << 226354008 |Water intake (observable entity)| OR 788662004 |Estimated intake of niacin in 24 hours (observable entity)| OR << 870372004 |Fat and oil intake (observable entity)| OR << 226352007 |Mineral intake (observable entity)| OR << 226349004 |Vitamin intake (observable entity)|";
+	String ecl = "<< 226321006 |Amino acid intake (observable entity)| OR << 788472008 |Carbohydrate intake (observable entity)| OR << 792882006 |Estimated intake of protein and protein derivative in 24 hours (observable entity)| OR << 226354008 |Water intake (observable entity)| OR 788662004 |Estimated intake of niacin in 24 hours (observable entity)| OR << 870372004 |Fat and oil intake (observable entity)| OR << 226352007 |Mineral intake (observable entity)| OR << 226349004 |Vitamin intake (observable entity)| OR <<226320007 |Nutrient intake (observable entity)| ";
 	Map<Concept, Concept> replaceTypesMap;
 	RelationshipTemplate addAttribute;
 	
