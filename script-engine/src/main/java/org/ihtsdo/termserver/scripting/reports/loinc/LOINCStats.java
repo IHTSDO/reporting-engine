@@ -23,6 +23,8 @@ public class LOINCStats extends TermServerReport {
 	
 	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	
+	private static String ERROR = "ERROR";
+	
 	private static enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
 	
 	private Map<String, List<String>> refsetFileMap;
@@ -61,6 +63,10 @@ public class LOINCStats extends TermServerReport {
 		Map<String, Concept> currentContentMap =  gl.getAllConcepts().stream()
 				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
 				.collect(Collectors.toMap(c -> getLoincNumFromDescriptionSafely(c), c -> c));
+		
+		if (currentContentMap.containsKey(ERROR)) {
+			error("One or more concepts did not specify a LOINCNum", null);
+		}
 		
 		//First work through the published map to see what's changed
 		for (Map.Entry<String, List<String>> entry : refsetFileMap.entrySet()) {
@@ -222,14 +228,14 @@ public class LOINCStats extends TermServerReport {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return "ERROR";
+		return ERROR;
 	}
 	
 	private String getLoincNumFromInactiveDescription(Concept c) {
 		try {
 			return getLoincNumDescription(c, ActiveState.INACTIVE).getTerm().substring(LOINC_NUM_PREFIX.length());
 		} catch (Exception e) {}
-		return "ERROR";
+		return ERROR;
 	}
 	
 	private Description getLoincNumDescription(Concept c, ActiveState activeState) throws TermServerScriptException {
