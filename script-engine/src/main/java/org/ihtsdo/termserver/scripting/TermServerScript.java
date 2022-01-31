@@ -315,6 +315,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
 		}
 		
+		if (!StringUtils.isEmpty(jobRun.getParamValue(ECL))) {
+			subsetECL =jobRun.getParamValue(ECL);
+		}
+		
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
