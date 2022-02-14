@@ -156,10 +156,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						case SCTID_INACT_MOVED_ELSEWHERE :
 							if (isLegacy) {
 								associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_MOVED_TO_REFSETID, false));
-								associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
+								associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
 								validate(c, i, associationsWithCardinality, isLegacy);
 							} else {
-								associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
+								associationsWithCardinality.add(new AssociationCardinality("1..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
 								validate(c, i, associationsWithCardinality, isLegacy);
 							}
 							break;
