@@ -20,8 +20,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 	
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
-	private static final String VERBOSE_OUTPUT = "Verbose Output";
-	
+	//private static final String VERBOSE_OUTPUT = "Verbose Output";
 	
 	Set<String> expectedLanguages = new HashSet<>();
 	boolean includeIntConcepts = true;
@@ -32,7 +31,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		Map<String, String> params = new HashMap<>();
 		params.put(EXTENSION_CONCEPTS_ONLY, "false");
 		params.put(INCLUDE_INACTIVE_CONCEPTS, "true");
-		params.put(VERBOSE_OUTPUT, "true");
+		//params.put(VERBOSE_OUTPUT, "true");
 		TermServerReport.run(TranslatedConceptsReport.class, args, params);
 	}
 	
@@ -42,7 +41,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		subsetECL = run.getParamValue(ECL);
 		includeIntConcepts = !run.getParamBoolean(EXTENSION_CONCEPTS_ONLY);
 		includeInactiveConcepts = run.getParamBoolean(INCLUDE_INACTIVE_CONCEPTS);
-		verboseOutput = run.getParameters().getMandatoryBoolean(VERBOSE_OUTPUT);
+		//verboseOutput = run.getParameters().getMandatoryBoolean(VERBOSE_OUTPUT);
 		super.init(run);
 		if (project.getKey().equals("MAIN")) {
 			throw new TermServerScriptException("Translated Concepts report cannot be run against MAIN");
@@ -59,9 +58,9 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			expectedLanguages.remove("en");
 		}
 		
-		String[] columnHeadings = new String[] {"Id, FSN, SemTag, Descriptions"};
+		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions"};
 		if (verboseOutput) {
-			columnHeadings = new String[] {"Id, FSN, SemTag, language, id, term"};
+			columnHeadings = new String[] {"SCTID, FSN, SemTag, language, DescriptionId, term"};
 		}
 		String[] tabNames = new String[] {	
 				"Translated Concepts"};
@@ -81,7 +80,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 				.add(ECL).withType(Type.ECL)
 				.add(EXTENSION_CONCEPTS_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.add(INCLUDE_INACTIVE_CONCEPTS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
-				.add(VERBOSE_OUTPUT).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				//.add(VERBOSE_OUTPUT).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
