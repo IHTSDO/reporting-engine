@@ -56,6 +56,7 @@ import com.google.common.io.Files;
  CDI-52 Update to run successfully against projects with concrete values
  RP-465 Add check for regime/theraphy semtag not under 243120004|Regimes and therapies (regime/therapy)|
  INFRA-6817 Check MRCM for term discrepancies
+ RP-553 Add check for zero sized space
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -68,6 +69,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	List<String> wordsOftenTypedTwice = new ArrayList<>();
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
+	String ZEROSP = "\u200B";
 	String LONG_DASH = "—";
 	String RIGHT_APOS = "\u2019";
 	String LEFT_APOS = "\u2018";
@@ -92,7 +94,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
 		/*params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
 		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		params.put(REPORT_TYPE, ReportConfiguration.ReportType.USER.toString());*/
@@ -887,6 +889,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//ISRS-414 Descriptions which contain a non-breaking space
 	private void unexpectedCharacters () throws TermServerScriptException {
 		String [][] unwantedChars = new String[][] {
+			{ ZEROSP , "Zero-sized space" },
 			{ NBSPSTR , "Non-breaking space" },
 			{ LONG_DASH , "MsWord style dash" },
 			{ "--" , "Double dash" },
