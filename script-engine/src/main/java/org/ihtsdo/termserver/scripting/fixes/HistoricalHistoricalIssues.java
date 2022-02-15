@@ -31,15 +31,23 @@ public class HistoricalHistoricalIssues extends BatchFix implements ScriptConsta
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
 			fix.runStandAlone = true;
-			fix.additionalReportColumns = "HistAssocId, HistAssoc ET, Details, , , , ,";
+			fix.summaryTabIdx = SECONDARY_REPORT;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProjectSnapshot(true); 
+			fix.loadProjectSnapshot(false); 
 			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
 		}
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] { "Task, TaskDesc, SCTID, FSN, SemTag, ConceptType, Severity, Action, HistAssocId, HistAssoc ET, Details, , , , ,",
+				"Item, Count"};
+		String[] tabNames = new String[] {	"Changes",
+				"Summary"};
+		super.postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override
@@ -55,6 +63,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements ScriptConsta
 				updateConcept(task, loadedConcept, "");
 				String beforeStr = "Before: " + origIndicator + "\n" + assocsBeforeStr;
 				String afterStr = "After: " + loadedConcept.getInactivationIndicator()+ "\n" + assocsAfterStr;
+				incrementSummaryInformation("Date inactivated = " + c.getEffectiveTime());
 				report (task, c, Severity.NONE, ReportActionType.INFO, null, beforeStr, afterStr);
 			} catch (Exception e) {
 				report(task, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));

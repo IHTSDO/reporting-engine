@@ -1191,7 +1191,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					//Split the colon into it's own column (unless it's a time stamp!)
 					if (msg.contains(":") 
 							&& !msg.contains("at: ")
-							&& !msg.contains("\"")) {
+							&& !msg.contains("\"")
+							&& !msg.contains("Completed processing in")) {
 						msg = QUOTE + msg.replaceAll(": ", QUOTE_COMMA_QUOTE).replaceAll(":", QUOTE_COMMA_QUOTE) + QUOTE;
 					}
 					writeToReportFile (summaryTabIdx, msg);
