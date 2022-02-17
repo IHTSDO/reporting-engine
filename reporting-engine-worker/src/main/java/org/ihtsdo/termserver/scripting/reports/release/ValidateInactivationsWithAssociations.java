@@ -124,6 +124,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
 					incrementSummaryInformation("Inactive concept missing inactivation indicator");
 					report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive concept missing inactivation indicator", isLegacy);
+					countIssue(c);
 				} else if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1) {
 					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
 							.map(i->i.toString())
@@ -223,6 +224,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						String issue = "Description has multiple inactivation indicators";
 						incrementSummaryInformation(issue);
 						report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, data);
+						countIssue(c);
 					} else if (d.isActive() && !c.isActive()) {
 						//Expect a single "Concept not current" indicator
 						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
@@ -249,6 +251,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
 								report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
 								incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
+								countIssue(c);
 							} else {
 								InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 								if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
