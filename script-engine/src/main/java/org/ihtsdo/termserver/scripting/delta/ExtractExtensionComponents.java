@@ -592,7 +592,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET)) {
 				//Only move if there's a difference
 				//Note we cannot get LangRefsetEntries from TS because browser format only uses AcceptabilityMap
-				if (StringUtils.isEmpty(usEntry.getEffectiveTime())) {
+				if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
 					usEntry.setModuleId(targetModuleId);
 					usEntry.setDirty();
 					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET).size() ==0) {
