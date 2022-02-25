@@ -114,9 +114,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					if (target == null) {
 						incrementSummaryInformation("Inactive concept association target not a concept");
 					} else if (!target.isActive()) {
-						String targetStr = c.getInactivationIndicator().toString() + " " + target.toString();
+						String targetStr = SnomedUtils.translateAssociation(a.getRefsetId()) + " " + target.toString();
 						incrementSummaryInformation("Inactive concept association target is inactive");
-						report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, targetStr, a);
+						report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, targetStr, c.getInactivationIndicator().toString() + "\n" + a);
 						countIssue(c);
 					}
 				}
@@ -143,7 +143,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							break;
 						case SCTID_INACT_NON_CONFORMANCE :
 							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
-							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
+							associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_COMPONENT_MEANING_UNKNOWN :
@@ -161,7 +161,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 								associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
 								validate(c, i, associationsWithCardinality, isLegacy);
 							} else {
-								associationsWithCardinality.add(new AssociationCardinality("1..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
+								associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
 								validate(c, i, associationsWithCardinality, isLegacy);
 							}
 							break;
@@ -181,8 +181,11 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							}
 							break;
 						case SCTID_INACT_ERRONEOUS :
-						case SCTID_INACT_OUTDATED :
 							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+							validate(c, i, associationsWithCardinality, isLegacy);
+							break;
+						case SCTID_INACT_OUTDATED :
+							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
 							associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_POSS_REPLACED_BY_REFSETID, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
@@ -275,6 +278,11 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		
 		if (StringUtils.isEmpty(data)) {
 			data = "No historical associations defined";
+		}
+		
+		//Add in the inactivation indicator
+		if (i != null) {
+			data = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()) + "\n" + data;
 		}
 		
 		String targets = c.getAssociations(ActiveState.ACTIVE).stream()
