@@ -59,4 +59,8 @@ public class ConcreteValue {
 	public String valueAsRF2() {
 		return valueWithPrefix;
 	}
+	
+	public String toString() {
+		return valueWithPrefix;
+	}
 }

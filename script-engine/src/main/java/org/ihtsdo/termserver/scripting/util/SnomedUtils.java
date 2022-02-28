@@ -934,7 +934,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				if (!r.isConcrete()) {
 					throw new IllegalArgumentException("Attempt to recover concrete value from non-concrete relationship: " + r);
 				}
-				return r.getConcreteValue().toString();
+				return r.getConcreteValue().getValue();
 			}
 		}
 		return null;
@@ -955,7 +955,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (Relationship rel : rels) {
 			if (rel.isConcrete() && value == null) {
 				try {
-					value = Integer.parseInt(rel.getConcreteValue().toString());
+					value = Integer.parseInt(rel.getConcreteValue().getValue());
 				} catch (Exception e) {
 					throw new TermServerScriptException("Attempt to recover non-integer value " + rel.getConcreteValue() + " on type " + type + " for concept " + c);
 				}
