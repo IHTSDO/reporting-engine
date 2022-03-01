@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -8,13 +9,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * RP-276 
@@ -30,21 +27,34 @@ import java.util.Map;
 public class ListAllAttributes extends TermServerReport implements ReportClass {
 		public static final String COMPACT = "Compact Report Format";
 		public static final String TARGET_VALUE_PROPERTY = "Target Value Property";
+		public static final String SPOTLIGHT_ATTRIBUTE_TYPE = "Spotlight Attribute Type";
 		public static final String INCLUDE_IS_A = "Include Is A";
 		boolean compactReport = true;
 		boolean includeIsA = true;
 		Concept targetValueProperty = null;
+		Concept spotlightAttributeType = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<<  " + SUBSTANCE);
-		//params.put(ECL, "<< 419199007 |Allergy to substance (finding)|");
-		//params.put(ECL, "<< 282100009 |Adverse reaction caused by substance (disorder)|");
-		params.put(ECL, "< 404684003 |Clinical finding| : { 363698007 |Finding site| = << 39057004 |Pulmonary valve structure| , 116676008 |Associated morphology| = << 415582006 |Stenosis| }");
-		params.put(COMPACT, "true");
+		params.put(ECL, "<< 243796009 |Situation with explicit context (situation)|");
+		params.put(COMPACT, "false");
 		params.put(INCLUDE_IS_A, "false");
-		params.put(TARGET_VALUE_PROPERTY, IS_MODIFICATION_OF.toString());
+		//params.put(TARGET_VALUE_PROPERTY, IS_MODIFICATION_OF.toString());
+		//params.put(SPOTLIGHT_ATTRIBUTE_TYPE, "408732007 |Subject relationship context (attribute)|");
 		TermServerReport.run(ListAllAttributes.class, args, params);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String primaryColumns = "SCTID,FSN,SemTag,DefStatus,RelType,Target Value's Property is Present,Stated/Inferred,Target SCTID / Value,Target FSN,Target SemTag";
+		if (compactReport) {
+			primaryColumns = "SCTID,FSN,SemTag,DefStatus,SCT Expression,Target Value's Property is Present, Spotlight Attribute";
+		} 
+		String[] columnHeadings = new String[] {primaryColumns, "Spotlighted Attribute Value, Count"};
+		String[] tabNames = new String[] {
+				"Attribute Details",
+				"Spotlight Attribute SummaryCounts"};
+		summaryTabIdx = SECONDARY_REPORT;
+		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -52,15 +62,20 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		subsetECL = run.getMandatoryParamValue(ECL);
 		compactReport = run.getParameters().getMandatoryBoolean(COMPACT);
 		includeIsA = run.getParameters().getMandatoryBoolean(INCLUDE_IS_A);
+		
 		String targetValuePropertyStr = run.getParamValue(TARGET_VALUE_PROPERTY);
 		if (!StringUtils.isEmpty(targetValuePropertyStr)) {
 			targetValueProperty = gl.getConcept(targetValuePropertyStr);
 		}
-		if (compactReport) {
-			additionalReportColumns = "FSN,SemTag,DefStatus,SCT Expression,Target Property Present";
-		} else {
-			additionalReportColumns = "FSN,SemTag,DefStatus,RelType,Target Property Present,Stated/Inferred,Target SCTID / Value,Target FSN,Target SemTag";
+		
+		String spotlightAttributeTypeStr = run.getParamValue(SPOTLIGHT_ATTRIBUTE_TYPE);
+		if (!StringUtils.isEmpty(spotlightAttributeTypeStr)) {
+			spotlightAttributeType = gl.getConcept(spotlightAttributeTypeStr);
+			if (!compactReport) {
+				throw new TermServerScriptException("No need to specify a spotlight attribute in verbose mode, just filter the report on the attribute type you're interested in");
+			}
 		}
+		
 		super.init(run);
 	}
 	
@@ -71,6 +86,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				.add(COMPACT).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(true)
 				.add(INCLUDE_IS_A).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(TARGET_VALUE_PROPERTY).withType(JobParameter.Type.CONCEPT)
+				.add(SPOTLIGHT_ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT)
 				.build();
 		
 		return new Job()
@@ -79,7 +95,9 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				.withDescription("This report lists all concepts matching the specified ECL, along with their attributes" + 
 				" in a compact or expanded report format. The target value property can be specified to determine something additional " +
 				" about the target value - the primary use case for this is detecting the presence of the modification attribute on a substance " +
-				" used as a product ingredient or causative agent. The issue count shows the number of data rows in the report.")
+				" used as a product ingredient or causative agent. " +
+				" A 'spotlight' attribute type can be specified (only in compact mode), and in this case the value for that attribute type if present will be indicated and counted in a summary tab." +
+				"The issue count shows the number of data rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -95,18 +113,28 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 			}
 			
 			boolean targetValuePropertyPresent = false;
+			if (targetValueProperty != null) {
+				targetValuePropertyPresent = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+						.filter(Relationship::isNotConcrete)
+						.map(r -> checkTargetValuePropertyPresent(r.getTarget()))
+						.filter(b -> (b == true))
+						.count() > 0;
+			}
+			
+			String spotlightTypeValue = getSpotlightTypeValue(c);
+			if (!StringUtils.isEmpty(spotlightTypeValue)) {
+				incrementSummaryInformation(spotlightTypeValue);
+			}
+			
 			String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			//Are we working in verbose or compact mode?
 			if (compactReport) {
 				String expression = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
+				String targetValuePropertyPresentStr = "N/A";
 				if (targetValueProperty != null) {
-					targetValuePropertyPresent = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).stream()
-							.filter(Relationship::isNotConcrete)
-							.map(r -> checkTargetValuePropertyPresent(r.getTarget()))
-							.filter(b -> (b == true))
-							.count() > 0;
+					targetValuePropertyPresentStr = targetValuePropertyPresent?"Y":"N";
 				}
-				report (c, defStatus, expression, targetValuePropertyPresent?"Y":"N");
+				report (c, defStatus, expression, targetValuePropertyPresentStr, spotlightTypeValue);
 				countIssue(c);
 			} else {
 				String characteristicStr = "";
@@ -153,15 +181,26 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		}
 	}
 
-	private boolean checkTargetValuePropertyPresent(Concept v) {
+	private boolean checkTargetValuePropertyPresent(Concept attributeValue) {
 		if (targetValueProperty != null) {
-			for (Relationship vR : v.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			for (Relationship vR : attributeValue.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (vR.getType().equals(targetValueProperty)) {
 					return true;
 				}
 			}
 		}
 		return false;
+	}
+	
+	private String getSpotlightTypeValue(Concept v) {
+		if (spotlightAttributeType != null) {
+			for (Relationship vR : v.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (vR.getType().equals(spotlightAttributeType)) {
+					return vR.getTarget().toString();
+				}
+			}
+		}
+		return "";
 	}
 
 }
