@@ -89,6 +89,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
+				.withExpectedDuration(30)
 				.build();
 	}
 	
