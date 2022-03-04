@@ -550,7 +550,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private void validateStrengthNormalization(Concept c, Concept unit, String strengthStr) throws TermServerScriptException {
 		String issueStr = "Strength Normalization Issue";
 		initialiseSummary(issueStr);
-		String issueStr2 = "Strength Normalization Issue > 100000 unit";
+		String issueStr2 = "Strength Normalization Issue >= 1000000 unit";
 		initialiseSummary(issueStr2);
 		
 		//Are we working with a known solid or liquid unit?
@@ -569,7 +569,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//767525000 |Unit (qualifier value)|
 		if (unit.getConceptId().equals("767525000")) {
 			Double strength = Double.parseDouble(strengthStr);
-			if (strength > 100000) {
+			if (strength >= 1000000) {
 				report(c, issueStr2, strengthStr + " " + unit.getPreferredSynonym());
 			}
 		}
