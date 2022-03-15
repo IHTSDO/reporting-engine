@@ -40,6 +40,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * NCEP concepts can now optionally feature [0..1] Replaced By  OR  [0..1] Alternative    have made comment in document asking for explicit confirmation of cardinality and cross validation.
  * New "Classification derived concept" can take [0..1] Replaced by   OR [2..*] Partially Equivalent To associations
  * Outdated Concepts can take [0..1] Replaced by   OR [2..*] Possibly Replaced By associations
+ *
+ * RP-568 Inactivation reason "Concept Moved Elsewhere" will no longer be used, neither will association "Moved To"
  */
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 	
@@ -161,6 +163,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 								associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, false));
 								validate(c, i, associationsWithCardinality, isLegacy);
 							} else {
+								String issue = "Moved Elsewhere indicator no longer used";
+								incrementSummaryInformation(issue);
+								report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, "N");
+								countIssue(c);
 								associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
 								validate(c, i, associationsWithCardinality, isLegacy);
 							}
