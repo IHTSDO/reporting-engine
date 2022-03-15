@@ -116,6 +116,8 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		JobParameters params = new JobParameters()
 				.add(CONCEPT_INACTIVATIONS).withType(Type.STRING).withMandatory()
 					.withDescription("List of concept ids to inactivated, comma separated")
+				.add("Notes").withType(Type.STRING)
+					.withDescription("Any notes the Author might want to make about why they're running this report.  Has no functional impact")
 				.add(INCLUDE_INFERRED).withType(Type.BOOLEAN).withDefaultValue(false).withMandatory()
 				.build();
 		return new Job()
