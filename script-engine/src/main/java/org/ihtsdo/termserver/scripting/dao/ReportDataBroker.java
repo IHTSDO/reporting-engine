@@ -1,25 +1,28 @@
 package org.ihtsdo.termserver.scripting.dao;
 
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.DataUploader;
+import org.snomed.otf.script.Script;
+import org.snomed.otf.script.dao.DataBroker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import com.google.gson.Gson;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 @Service
-public class ReportDataUploader implements DataUploader {
+public class ReportDataBroker implements DataBroker {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReportDataUploader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReportDataBroker.class);
 
-    private ReportDataUploaderConfig reportDataUploaderConfig;
+    private ReportDataBrokerConfig reportDataBrokerConfig;
 
     @Value("${cloud.aws.region.static}")
     private String region;
@@ -33,16 +36,18 @@ public class ReportDataUploader implements DataUploader {
     @Value("${archives.useCloud}")
     private String useCloudStr;
 
-    private static S3Manager s3Manager;
+    private S3Manager s3Manager;
+    
+    private Gson gson;
 
     @Autowired
-    public void setReportDataUploaderConfig(ReportDataUploaderConfig reportDataUploaderConfig) {
-        this.reportDataUploaderConfig = reportDataUploaderConfig;
-        s3Manager = new S3Manager(reportDataUploaderConfig, region, awsKey, awsSecretKey);
+    public void setReportDataBrokerConfig(ReportDataBrokerConfig reportDataBrokerConfig) {
+        this.reportDataBrokerConfig = reportDataBrokerConfig;
+        s3Manager = new S3Manager(reportDataBrokerConfig, region, awsKey, awsSecretKey);
     }
 
     public String getUploadLocation(String protocol, String domain) {
-        ResourceConfiguration.Cloud cloud  = reportDataUploaderConfig.getCloud();
+        ResourceConfiguration.Cloud cloud  = reportDataBrokerConfig.getCloud();
         return protocol + cloud.getBucketName() + domain + cloud.getPath();
     }
 
@@ -56,23 +61,63 @@ public class ReportDataUploader implements DataUploader {
             throw new TermServerScriptException(e);
         }
     }
-
-    public void setReportDataUploaderConfig(ReportDataUploaderConfig reportDataUploaderConfig, S3Manager s3Manager) {
-        this.reportDataUploaderConfig = reportDataUploaderConfig;
-        this.s3Manager = s3Manager;
+    
+	public void upload(File outputFile, String data) throws TermServerScriptException {
+        try {
+            //In case we're running on a PC we need to convert backslashes to forward
+            String filePath = outputFile.getPath().replaceAll("\\\\", "/");
+            InputStream is = IOUtils.toInputStream(data, StandardCharsets.UTF_8);
+            LOGGER.info("Uploading to S3: " + outputFile);
+            s3Manager.getResourceManager().writeResource(filePath, is);
+        } catch (Exception e) {
+            throw new TermServerScriptException(e);
+        }
+	}
+    
+    public InputStream download(File file) throws TermServerScriptException {
+        try {
+            //In case we're running on a PC we need to convert backslashes to forward
+            String filePath = file.getPath().replaceAll("\\\\", "/");
+            return s3Manager.getResourceManager().readResourceStream(filePath);
+        } catch (Exception e) {
+            throw new TermServerScriptException(e);
+        }
     }
 
-    public static ReportDataUploader create() throws TermServerScriptException {
-        LOGGER.info("Creating ReportDataUploader based on local properties");
-        ReportDataUploader uploader = new ReportDataUploader();
+ /*   public void setReportDataBrokerConfig(ReportDataBrokerConfig reportDataUploaderConfig, S3Manager s3Manager) {
+        this.reportDataBrokerConfig = reportDataUploaderConfig;
+        this.s3Manager = s3Manager;
+    }*/
 
-        ReportDataUploaderConfig reportDataUploaderConfig = new ReportDataUploaderConfig();
-        s3Manager = new S3Manager(reportDataUploaderConfig, getConfigurationPrefix());
-        uploader.setReportDataUploaderConfig(reportDataUploaderConfig, s3Manager);
-        return uploader;
+    public static ReportDataBroker create() throws TermServerScriptException {
+        LOGGER.info("Creating ReportDataBroker based on local properties");
+        
+        ReportDataBroker broker = new ReportDataBroker();
+        broker.reportDataBrokerConfig = new ReportDataBrokerConfig();
+        broker.s3Manager = new S3Manager(broker.reportDataBrokerConfig, getConfigurationPrefix());
+        //broker.setReportDataBrokerConfig(reportDataBrokerConfig, s3Manager);
+        return broker;
     }
 
     private static String getConfigurationPrefix() {
-        return ReportDataUploaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
+        return ReportDataBrokerConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
     }
+
+	public boolean exists(File file) throws IOException, TermServerScriptException {
+		boolean exists = s3Manager.getResourceManager().doesObjectExist(file);
+		if (!exists) {
+			Script.debug(file + " not found in S3.");
+		}
+		return exists;
+	}
+
+	public void setGson(Gson gson) {
+		this.gson = gson;
+	}
+	
+	public Gson getGson() {
+		return this.gson;
+	}
+
+
 }

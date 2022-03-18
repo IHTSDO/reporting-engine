@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.scripting.dao.ReportDataUploader;
+import org.ihtsdo.termserver.scripting.dao.ReportDataBroker;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.otf.rest.client.RestClientException;
@@ -104,7 +104,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static final String SERVER_URL = "ServerUrl";
 
 	@Autowired
-	protected ReportDataUploader reportDataUploader;
+	protected ReportDataBroker reportDataBroker;
 
 	private static int PAGING_LIMIT = 1000;
 
@@ -1544,16 +1544,18 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		getArchiveManager(true).setLoadDependencyPlusExtensionArchive(true);
 	}
 
-	public ReportDataUploader getReportDataUploader() throws TermServerScriptException {
-		if (reportDataUploader == null) {
+	public ReportDataBroker getReportDataUploader() throws TermServerScriptException {
+		if (reportDataBroker == null) {
 			if (appContext == null) {
 				TermServerScript.info("No ReportDataUploader loader configured, creating one locally...");
-				reportDataUploader = ReportDataUploader.create();
+				reportDataBroker = ReportDataBroker.create();
 			} else {
-				reportDataUploader = appContext.getBean(ReportDataUploader.class);
+				reportDataBroker = appContext.getBean(ReportDataBroker.class);
 			}
 		}
-		return reportDataUploader;
+		//Share our gson - they're expensive
+		reportDataBroker.setGson(gson);
+		return reportDataBroker;
 	}
 
 	// This is used for reports that might want to return a complex name

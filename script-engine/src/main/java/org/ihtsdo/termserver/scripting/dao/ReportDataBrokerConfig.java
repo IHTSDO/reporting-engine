@@ -8,5 +8,5 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix="reports.s3")
 @EnableAutoConfiguration
-public class ReportDataUploaderConfig extends StandAloneResourceConfig {
+public class ReportDataBrokerConfig extends StandAloneResourceConfig {
 }

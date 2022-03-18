@@ -7,7 +7,12 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.Configurator;
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -18,7 +23,8 @@ import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
 
 public class S3Manager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(S3Manager.class);
+	
+	Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private String region;
     private String awsKey;
@@ -69,6 +75,8 @@ public class S3Manager {
                     AWSCredentials awsCreds = new BasicAWSCredentials(awsKey, awsSecretKey);
                     awsCredProv = new AWSStaticCredentialsProvider(awsCreds);
                     TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
+                    //AWS will still attempt to connect locally to discover its credentials, so let's only
+                    //do debugging at "WARN"   See logback.xml file for configuration
                 }
 
                 AmazonS3 s3Client = AmazonS3ClientBuilder.standard()

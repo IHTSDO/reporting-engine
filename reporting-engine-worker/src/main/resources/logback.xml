@@ -4,4 +4,6 @@
 	<logger name="ch.qos.logback.classic.jora" level="WARN"/>
 	<logger name="org.ihtsdo" level="DEBUG"/>
 	<logger name="org.snomed.otf.script" level="DEBUG"/>
+	<logger name="com.amazonaws.util.EC2MetadataUtils" level="WARN"/>
+	<logger name="com.amazonaws.internal" level="ERROR"/>
 </configuration>

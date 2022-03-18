@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,6 +43,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	List<Concept> topLevelHierarchies;
 	File debugFile;
 	
+	private int[][] totals;
+	
 	Concept[] QIScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
 			PHARM_BIO_PRODUCT, PROCEDURE,
 			SITN_WITH_EXP_CONTXT, SPECIMEN,
@@ -50,11 +53,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
-		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		//params.put(REPORT_OUTPUT_TYPES, "S3");
-		//params.put(REPORT_FORMAT_TYPE, "JSON");
-		params.put(MODULES, "731000124108");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		params.put(REPORT_OUTPUT_TYPES, "S3");
+		params.put(REPORT_FORMAT_TYPE, "JSON");
+		//params.put(MODULES, "731000124108");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -143,6 +146,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		analyzeConcepts();
 		info ("Outputting Results");
 		outputResults();
+		
+		//Do we need to also produce a release summary file in S3?
+		if (getReportManager().isWriteToS3() && isPublishedReleaseAnalysis) {
+			try {
+				generateReleaseSummaryFile();
+			} catch (Exception e) {
+				error("Failed to generate Release Summary File", e);
+			}
+		}
 		info ("Cleaning Up");
 		prevData = null;
 		summaryDataMap = null;
@@ -519,7 +531,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void outputResults() throws TermServerScriptException {
 		Concept totalConcept = new Concept("","Total");
-		int[][] totals = new int[MAX_REPORT_TABS][DATA_WIDTH];
+		totals = new int[MAX_REPORT_TABS][DATA_WIDTH];
 		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
 			if (summaryData != null) {
@@ -608,6 +620,82 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			currentIndex++;
 		}
 		return data;
+	}
+	
+
+	private void generateReleaseSummaryFile() throws FileNotFoundException, IOException, TermServerScriptException {
+		//What package are we reporting on here? eg SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip
+		//Pull out "InternationalRF2"
+		String packageName = projectKey.split("_")[1];
+		
+		//Can we find this file in S3?
+		String releaseSummaryFilePath =  "jobs/SummaryComponentStats/ReleaseSummaries/" + packageName + "/" + packageName + "_ReleaseSummaries.json";
+		File releaseSummaryFile = new File(releaseSummaryFilePath);
+		
+		ReleaseSummary rs = null;
+		if (reportDataBroker.exists(releaseSummaryFile)) {
+			rs = ReleaseSummary.loadFromS3(releaseSummaryFile, reportDataBroker);
+			//Save a copy of the data with current timestamp
+			String timeStamp = new SimpleDateFormat("_yyyyMMdd_HHmmss").format(new Date());
+			File stampedCopy = new File(releaseSummaryFile.getPath().replace(".json",timeStamp + ".json"));
+			rs.uploadToS3(stampedCopy, reportDataBroker);
+		} else {
+			rs = ReleaseSummary.loadFromLocal(new File("resources/legacy_int_release_summary.json"));
+		}
+		
+		//Now add the data obtained in our most recent analysis
+		rs.addDetail(compileReleaseSummaryDetail());
+		rs.uploadToS3(releaseSummaryFile, reportDataBroker);
+	}
+
+	private ReleaseSummaryDetail compileReleaseSummaryDetail() {
+		ReleaseSummaryDetail rs =  new ReleaseSummaryDetail();
+		rs.setEffectiveTime(thisEffectiveTime);
+		rs.setPreviousEffectiveTime(previousEffectiveTime);
+		
+		String[] data = new String[21];
+		data[0]  = sum(TAB_CONCEPTS, IDX_NEW);
+		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[2]  = sum(TAB_CONCEPTS, IDX_TOTAL);
+		data[3]  = sum(TAB_DESCS, IDX_NEW_NEW);
+		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[5]  = sum(TAB_DESCS, IDX_TOTAL);
+		data[6]  = sum(TAB_TEXT_DEFN, IDX_NEW_NEW);
+		data[7]  = minusPlus(TAB_TEXT_DEFN, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[8]  = sum(TAB_TEXT_DEFN, IDX_TOTAL);
+		data[9]  = sum(TAB_LANG, IDX_NEW_NEW);
+		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[11] = sum(TAB_LANG, IDX_TOTAL);
+		data[12]  = sum(TAB_AXIOMS, IDX_NEW_NEW);
+		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[14] = sum(TAB_AXIOMS, IDX_TOTAL);
+		data[15] = "0";
+		data[16] = "0";
+		data[17] = "1024719";
+		data[18]  = sum(TAB_RELS, IDX_NEW_NEW);
+		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[20] = sum(TAB_RELS, IDX_TOTAL);
+		
+		rs.setData(data);
+		return rs;
+	}
+
+	private String sum(int tabIdx, int... columns) {
+		long sumTotal = 0;
+		for (int columnIdx : columns) {
+			sumTotal += totals[tabIdx][columnIdx];
+		}
+		return Long.toString(sumTotal);
+	}
+	
+	private String minusPlus(int tabIdx, int addIdx, int subtractIdx, int... columns) {
+		long sumTotal = 0;
+		sumTotal += totals[tabIdx][addIdx];
+		sumTotal -= totals[tabIdx][subtractIdx];
+		for (int columnIdx : columns) {
+			sumTotal += totals[tabIdx][columnIdx];
+		}
+		return Long.toString(sumTotal);
 	}
 
 }

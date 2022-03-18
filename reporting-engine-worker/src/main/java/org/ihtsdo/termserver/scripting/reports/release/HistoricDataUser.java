@@ -36,6 +36,7 @@ public class HistoricDataUser extends TermServerReport {
 	protected String thisDependency;
 	
 	protected String previousEffectiveTime;
+	boolean isPublishedReleaseAnalysis = false;
 	
 	protected String projectKey;
 	protected String origProject;
@@ -63,6 +64,10 @@ public class HistoricDataUser extends TermServerReport {
 			//If this release has been specified, the previous must also be, explicitly
 			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
 				throw new TermServerScriptException("Previous release must be specified if current release is.");
+			}
+			
+			if (projectKey.endsWith(".zip")) {
+				isPublishedReleaseAnalysis = true;
 			}
 		}
 		
