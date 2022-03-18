@@ -9,6 +9,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -17,6 +18,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class ReplaceAttributeValues extends BatchFix {
 	
 	Map<Concept, Concept> replacementMap;
+	String ecl = "< 71388002 |Procedure (procedure)| : << 363700003 |Direct morphology (attribute)| = 128306009 |Cataract (morphologic abnormality)|";
 	
 	protected ReplaceAttributeValues(BatchFix clone) {
 		super(clone);
@@ -41,8 +43,8 @@ public class ReplaceAttributeValues extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replacementMap = new HashMap<>();
-		replacementMap.put(gl.getConcept("257867005 |Insertion - action (qualifier value)|"), 
-				gl.getConcept("129336009 |Implantation - action (qualifier value)|"));
+		replacementMap.put(gl.getConcept("128306009 |Cataract (morphologic abnormality)|"), 
+				gl.getConcept("128305008 |Abnormally opaque structure (morphologic abnormality)|"));
 		super.postInit();
 	}
 
@@ -80,8 +82,11 @@ public class ReplaceAttributeValues extends BatchFix {
 		List<Concept> allAffected = new ArrayList<>();
 		info("Identifying concepts to process");
 		
+		List<Concept> concepts = SnomedUtils.sort(findConcepts(ecl));
+		
 		nextConcept:
-		for (Concept c : gl.getAllConcepts()) {
+		//for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : concepts) {
 			for (Concept targetTarget : replacementMap.keySet()) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (!r.isConcrete() && r.getTarget().equals(targetTarget)) {
