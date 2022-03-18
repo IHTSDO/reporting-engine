@@ -2038,4 +2038,20 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		
 		return components;
 	}
+
+	public static boolean hasExtensionSCTID(Component c) {
+		//3rd to last character tells us if we're using a namespace or not
+		String sctId = c.getId();
+		int idx = sctId.length() - 3;
+		return sctId.charAt(idx) == '1';
+	}
+	
+	public static boolean isEnglishDialect(RefsetMember rm) {
+		for (String englishRefset : ENGLISH_DIALECTS) {
+			if (rm.getRefsetId().contentEquals(englishRefset)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
