@@ -486,6 +486,7 @@ public class ArchiveManager implements ScriptConstants {
 		//If the project specifies its a .zip file, that's another way to know we're loading an edition
 		String fileExt = ".zip";
 		String projectTaskKey = ts.getProject().getKey();
+		
 		if (ts.getJobRun() != null && !StringUtils.isEmpty(ts.getJobRun().getTask())) {
 			projectTaskKey += "_" + ts.getJobRun().getTask();
 		}

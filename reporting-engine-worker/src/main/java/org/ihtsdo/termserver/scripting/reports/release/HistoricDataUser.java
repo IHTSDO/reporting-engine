@@ -78,6 +78,10 @@ public class HistoricDataUser extends TermServerReport {
 
 		
 		getProject().setKey(prevRelease);
+		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
+		String task = getJobRun().getTask();
+		getJobRun().setTask(null);
+		
 		ArchiveManager mgr = getArchiveManager(true);
 		mgr.setLoadEditionArchive(true);
 		mgr.loadSnapshot(fsnOnly);
@@ -89,6 +93,7 @@ public class HistoricDataUser extends TermServerReport {
 		statsGenerator.setModuleFilter(moduleFilter);
 		statsGenerator.runJob();
 		mgr.reset();
+		getJobRun().setTask(task);
 		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	};
 	

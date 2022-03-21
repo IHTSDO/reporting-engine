@@ -464,7 +464,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static JobRun createJobRunFromArgs(String jobName, String[] args) {
 		JobRun jobRun = JobRun.create(jobName, null);
 		if (args.length < 3) {
-			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-task <taskKey>] -f <batch file Location>");
 			info(" d - dry run");
 			System.exit(-1);
 		}
@@ -487,6 +487,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				jobRun.setParameter(RESTART_FROM_TASK, args[i+1]);
 			} else if (args[i].equals("-c")) {
 				jobRun.setAuthToken(args[i+1]);
+			} else if (args[i].equals("-task")) {
+				jobRun.setTask(args[i+1]);
 			}
 		}
 		
