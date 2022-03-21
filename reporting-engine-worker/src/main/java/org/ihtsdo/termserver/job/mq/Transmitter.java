@@ -20,9 +20,6 @@ public class Transmitter {
 	@Autowired
 	private JmsTemplate jmsTemplate;
 	
-	@Autowired
-	private JobManager jobManager;
-	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	
 	@Value("${schedule.manager.queue.response}")
@@ -41,7 +38,7 @@ public class Transmitter {
 		executorService = Executors.newCachedThreadPool();
 	}
 	
-	public void send (JobRun run) {
+	public void send (JobManager jobManager, JobRun run) {
 		//We'll take out the authentication since it's not required by the client
 		//Modify a clone as the original is still needed elsewhere!
 		JobRun clone = run.clone();

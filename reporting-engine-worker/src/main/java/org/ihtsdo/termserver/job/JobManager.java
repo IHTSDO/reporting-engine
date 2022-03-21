@@ -108,7 +108,7 @@ public class JobManager {
 						if (ensureJobValid(jobRun, jobClass.newInstance().getJob())) {
 							JobClass thisJob = jobClass.newInstance();
 							jobRun.setStatus(JobStatus.Running);
-							transmitter.send(jobRun);
+							transmitter.send(this, jobRun);
 							
 							JobWatcher watcher = new JobWatcher(expectedDurations.get(jobRun.getJobName()), jobRun, transmitter);
 							watcherThread = new Thread(watcher, jobRun.getJobName() + " watcher thread");
@@ -127,7 +127,7 @@ public class JobManager {
 		} finally {
 			if (!metadataRequest) {
 				jobRun.setResultTime(new Date());
-				transmitter.send(jobRun);
+				transmitter.send(this, jobRun);
 			}
 			try {
 				watcherThread.interrupt();
