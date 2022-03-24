@@ -167,11 +167,19 @@ RefsetMember extends Component implements ScriptConstants {
 
 	@Override
 	public ComponentType getComponentType() {
-		throw new NotImplementedException();
+		if (additionalFields.containsKey("targetComponentId")) {
+			return ComponentType.HISTORICAL_ASSOCIATION;
+		} else if (additionalFields.containsKey("acceptabilityId")) {
+			return ComponentType.LANGREFSET;
+		} else if (additionalFields.containsKey("valueId")) {
+			return ComponentType.ATTRIBUTE_VALUE;
+		}
+		
+		return null;
 	}
 
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other) throws TermServerScriptException {
 		//TODO Add generic field comparison based off field names
 		throw new NotImplementedException();
 	}
@@ -223,7 +231,16 @@ RefsetMember extends Component implements ScriptConstants {
 
 	@Override
 	public String[] toRF2() throws Exception {
-		throw new NotImplementedException();
+		if (additionalFields.size() != 1) {
+			throw new IllegalStateException("Cannot yet determine column order for: " + this);
+		}
+		return new String[] { id, 
+				(effectiveTime==null?"":effectiveTime), 
+				(active?"1":"0"),
+				moduleId, refsetId,
+				referencedComponentId,
+				additionalFields.values().iterator().next()
+		};
 	}
 	
 	@Override 

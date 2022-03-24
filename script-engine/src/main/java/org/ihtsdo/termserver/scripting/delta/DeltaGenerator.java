@@ -261,6 +261,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 				writeToRF2File(attribValDeltaFilename, i.toRF2());
 			}
 		}
+		for (AssociationEntry a : d.getAssociationEntries()) {
+			if (a.isDirty()) {
+				writeToRF2File(assocDeltaFilename, a.toRF2());
+			}
+		}
 	}
 
 	protected void outputRF2(Relationship r) throws TermServerScriptException {
@@ -300,7 +305,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);  //Will output langrefset and inactivation indicator in turn
+			outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
 		}
 		
 		//Do we have Stated Relationships that need to be converted to axioms?

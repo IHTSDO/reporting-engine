@@ -170,7 +170,7 @@ public class SnapshotGenerator extends TermServerScript {
 		writeToRF2File(conSnapshotFilename, c.toRF2());
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);  //Will output langrefset and inactivation indicators in turn
+			outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
 		}
 		
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
@@ -203,6 +203,10 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		for (InactivationIndicatorEntry inact : d.getInactivationIndicatorEntries()) {
 			writeToRF2File(attribValSnapshotFilename, inact.toRF2());
+		}
+		
+		for (AssociationEntry assoc : d.getAssociationEntries()) {
+			writeToRF2File(assocSnapshotFilename, assoc.toRF2());
 		}
 	}
 

@@ -16,6 +16,7 @@ import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -2038,6 +2039,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		
 		return components;
 	}
+	
+	public static Map<String, Component> getAllComponentsMap(Concept c) {
+		return getAllComponents(c).stream()
+				.collect(Collectors.toMap(Component::getId, Function.identity()));
+	}
 
 	public static boolean hasExtensionSCTID(Component c) {
 		//3rd to last character tells us if we're using a namespace or not
@@ -2054,4 +2060,5 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return false;
 	}
+
 }

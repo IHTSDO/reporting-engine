@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -114,8 +115,19 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	}
 	
 	@Override
-	public List<String> fieldComparison(Component other) {
-		LangRefsetEntry otherL = (LangRefsetEntry)other;
+	public List<String> fieldComparison(Component other) throws TermServerScriptException {
+		LangRefsetEntry otherL;
+		if (other instanceof LangRefsetEntry) {
+			otherL = (LangRefsetEntry)other;
+		} else if (other instanceof RefsetMember) {
+			try {
+				otherL = LangRefsetEntry.fromRf2(other.toRF2());
+			} catch (Exception e) {
+				throw new TermServerScriptException(e);
+			}
+		} else {
+			throw new IllegalArgumentException("Unable to compare LangRefsetEntry to " + other);
+		}
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 
 		commonFieldComparison(otherL, differences);
