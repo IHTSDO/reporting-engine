@@ -15,7 +15,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * Input file format: sctid, active, defStatus, hierarchy, isIP, hasSdDescendant, hasSdAncestor
  * 
  * Analysis: For each major hierarchy:
- * How many concepts have been inactivate
+ * How many concepts have been inactivated
  * How many concepts have been added
  * How many IPs have been inactivated
  * How many IPs are still there, but no longer in the position of being an IP
@@ -25,14 +25,13 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * How many P concepts have gained SD descendants, thereby becoming IP
  * How many SD concepts have become P, thereby becoming IP
  * How many brand new immediately IPs have been added
- * 
   * */
 public class HistoricStatsAnalyzer extends TermServerReport implements ReportClass {
 	
 	//String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
 	//											"20190731", "MAIN" };
-	
-	String[] releasesToAnalyse = new String[] { "20190131", "20210731" };
+	private static String packageTemplate = "SnomedCT_InternationalRF2_PRODUCTION_#DATE#T120000Z.zip";
+	String[] releasesToAnalyse = new String[] { "20180731", "20220131" };
 	
 	Map<String, Map<Long, Datum>> prevData;
 	Map<String, Map<Long, Datum>> thisData;
@@ -60,24 +59,30 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				"IPs made SD, IPs No Longer - lost SD ancestor, IPs No Longer - lost SD descendant," +
 				"IPs No Longer - lost either, CHECK_ALIGNMENT, " +
 				"New IPs gained SD descendant, New IPs gained SD ancestor, New IPs gained SD either, New IP SD->P";
-		String[] columnHeadings = new String[releasesToAnalyse.length - 1]; 
-		String[] tabNames = new String[releasesToAnalyse.length - 1];
-		for (int i=1; i<releasesToAnalyse.length; i++) {
+		int tabCount = (releasesToAnalyse.length - 1) * 2;
+		String percHeading = "Hierarchy, FSN, SemTag, SD Start, SD Finish, P Start, P Finish";
+		String[] columnHeadings = new String[tabCount]; 
+		String[] tabNames = new String[tabCount];
+		for (int i=1; i < tabCount; i = i + 2) {
 			columnHeadings[i-1] = standardHeading;
-			if (i < releasesToAnalyse.length) {
-				tabNames[i-1] = releasesToAnalyse[i-1] + " - " + releasesToAnalyse[i];
-			}
+			columnHeadings[i] = percHeading;
+			tabNames[i-1] = releasesToAnalyse[i-1] + " - " + releasesToAnalyse[i];
+			tabNames[i] = releasesToAnalyse[i-1] + " - " + releasesToAnalyse[i] + " Perc";
 		}
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		for (int i = 0; i < releasesToAnalyse.length; i++) {
+		for (int i = 0; i < releasesToAnalyse.length ; i++) {
 			loadData(releasesToAnalyse[i]);
 			if (prevData != null) {
 				for (String hierarchyStr : thisData.keySet()) {
+					if (!StringUtils.isNumeric(hierarchyStr)) {
+						debug("here");
+					}
 					info ("Analysing data from " + releasesToAnalyse[i] + " hierarchy " + gl.getConcept(hierarchyStr));
-					runAnalysis(i - 1, hierarchyStr);
+					runAnalysis((i - 1) * 2, hierarchyStr);
+					runPercAnalysis(((i -1) * 2) + 1, hierarchyStr);
 				}
 			}
 			prevData = thisData;
@@ -90,7 +95,12 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		try {
 			dataFile = new File("historic-data/" + release + ".tsv");
 			if (!dataFile.exists() || !dataFile.canRead()) {
-				throw new TermServerScriptException("Unable to load historic data: " + dataFile);
+				//Try using the date
+				String fileName = dataFile.getPath().replace(release, packageTemplate).replace("#DATE#", release); 
+				dataFile = new File(fileName);
+				if (!dataFile.exists() || !dataFile.canRead()) {
+					throw new TermServerScriptException("Unable to load historic data: " + dataFile + " nor " + release + ".tsv");
+				}
 			}
 			info ("Loading " + dataFile);
 			BufferedReader br = new BufferedReader(new FileReader(dataFile));
@@ -326,6 +336,44 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		debug ("Outputting data");
 		report (tabIdx, hierarchy, results);
 	}
+	
+	private void runPercAnalysis(int tabIdx, final String hierarchyStr) throws TermServerScriptException {
+		Map<Long, Datum> thisHierarchy = thisData.get(hierarchyStr);
+		Map<Long, Datum> prevHierarchy = prevData.get(hierarchyStr);
+		Object[] results = new Object[4];
+		int column = 0;
+
+		//What's our active counts?
+		long prevActiveCount = prevHierarchy.values().stream().filter(d -> d.isActive).count();
+		long thisActiveCount = thisHierarchy.values().stream().filter(d -> d.isActive).count();
+		
+		if (prevActiveCount == 0 || thisActiveCount == 0) {
+			Arrays.fill(results, "N/A");
+		} else {
+			//Percentage of SD 
+			long prevSDCount = prevHierarchy.values().stream().filter(d -> d.isSD && d.isActive).count();
+			results[column++] = String.format("%.1f%%", (prevSDCount / (double)prevActiveCount) * 100);
+		
+			long thisSDCount = thisHierarchy.values().stream().filter(d -> d.isSD && d.isActive).count();
+			results[column++] = String.format("%.1f%%", (thisSDCount / (double)thisActiveCount) * 100);
+			
+			//Percentage of P
+			long prevPCount = prevHierarchy.values().stream().filter(d -> !d.isSD && d.isActive).count();
+			results[column++] = String.format("%.1f%%", (prevPCount / (double)prevActiveCount) * 100);
+		
+			long thisPCount = thisHierarchy.values().stream().filter(d -> !d.isSD && d.isActive).count();
+			results[column++] = String.format("%.1f%%", (thisPCount / (double)thisActiveCount) * 100);
+		}
+		
+		Concept hierarchy;
+		if (StringUtils.isNumeric(hierarchyStr) && hierarchyStr.length() > 6) {
+			hierarchy = gl.getConcept(hierarchyStr);
+		} else {
+			hierarchy = new Concept(hierarchyStr);
+		}
+		debug ("Outputting data");
+		report (tabIdx, hierarchy, results);
+	}
 
 	private Datum getConcept(long conceptId, Map<String, Map<Long, Datum>> Data) {
 		for (Map<Long, Datum> thisHierarchy : Data.values()) {
@@ -398,13 +446,15 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 	Datum fromLine (String line) {
 		Datum datum = new Datum();
 		String[] lineItems = line.split(TAB);
-		datum.conceptId = Long.parseLong(lineItems[0]);
-		datum.isActive = lineItems[1].equals("Y");
-		datum.isSD = lineItems[2].equals("SD");
-		datum.hierarchy = lineItems[3];
-		datum.isIP = lineItems[4].equals("Y");
-		datum.hasSdAncestor = lineItems[5].equals("Y");
-		datum.hasSdDescendant = lineItems[6].equals("Y");
+		int idx = 0;
+		datum.conceptId = Long.parseLong(lineItems[idx]);
+		++idx; //Don't need the FSN
+		datum.isActive = lineItems[++idx].equals("Y");
+		datum.isSD = lineItems[++idx].equals("SD");
+		datum.hierarchy = lineItems[++idx];
+		datum.isIP = lineItems[++idx].equals("Y");
+		datum.hasSdAncestor = lineItems[++idx].equals("Y");
+		datum.hasSdDescendant = lineItems[++idx].equals("Y");
 		datum.hashCode = Long.hashCode(datum.conceptId);
 		return datum;
 	}
