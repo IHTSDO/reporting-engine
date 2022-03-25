@@ -2,7 +2,9 @@ package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +28,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
 	
 	String intReleaseBranch="MAIN/2022-01-31";
+	List<String> intReleaseDates = new ArrayList<>();
 	
 	Map<String, Concept> publishedConceptCache = new HashMap<>();
 	Map<String, RefsetMember> publishedMemberCache = new HashMap<>();
@@ -233,6 +236,27 @@ public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
 			}
 		}
 		
+		if (c.getId().equals("56582000")) {
+			debug("here");
+		}
+		
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
+			if (!SnomedUtils.hasExtensionSCTID(r) 
+					&& !SnomedUtils.isCore(r)) {
+				if (r.isActive() && StringUtils.isEmpty(r.getEffectiveTime())) {
+					report(c, ReportActionType.VALIDATION_CHECK, "Active Rel with Core SCTID in Extension");
+				} else if (!r.isActive()) {
+					Concept published = loadConceptPriorTo(c, r.getEffectiveTime());
+					Relationship pubRel = published.getRelationship(r.getId());
+					if (!pubRel.isActive()) {
+						report(c, ReportActionType.VALIDATION_CHECK, "Inactive Rel moved without reason");
+					} else {
+						report(c, ReportActionType.INFO, "Active core rel inactivated by extension.  All Good.", r);
+					}
+				}
+			}
+		}
+		
 		for (Description d : c.getDescriptions()) {
 			if (StringUtils.isEmpty(d.getEffectiveTime())
 					&& !SnomedUtils.hasExtensionSCTID(d) 
@@ -267,6 +291,34 @@ public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
 			}
 		}
 		return false;
+	}
+
+	private Concept loadConceptPriorTo(Concept c, String effectiveTime) throws TermServerScriptException {
+		if (intReleaseDates.isEmpty()) {
+			generateReleaseDates();
+		}
+		String branch = getIntBranchPriorTo(effectiveTime);
+		return loadConcept(c.getId(), branch);
+	}
+
+	private String getIntBranchPriorTo(String effectiveTime) {
+		if (StringUtils.isEmpty(effectiveTime)) {
+			return intReleaseBranch;
+		}
+		for (int i=0; i < intReleaseDates.size(); i++) {
+			if (effectiveTime.compareTo(intReleaseDates.get(i+1)) < 0) {
+				String intRelease = intReleaseDates.get(i);
+				return "MAIN/" + intRelease.substring(0, 4) + "-" + intRelease.substring(4, 6) + "-" + intRelease.substring(6, 8);
+			}
+		}
+		throw new RuntimeException("Could not find the release prior to " + effectiveTime);
+	}
+
+	private void generateReleaseDates() {
+		for (int i = 2002; i <= 2022; i++) {
+			intReleaseDates.add("" + i + "0131");
+			intReleaseDates.add("" + i + "0731");
+		}
 	}
 
 }
