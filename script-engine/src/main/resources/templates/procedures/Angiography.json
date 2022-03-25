@@ -1,0 +1,8 @@
+{
+  "name": "Angiography",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Angiography+%28procedure%29+-+v1.0",
+  "version": 1.0,
+  "domain": "<< 77343006 |Angiography (procedure)| MINUS (<< 363679005 |Imaging (procedure)| : 363703001 |Has intent (attribute)| = 429892002 |Guidance intent (qualifier value)| )",
+  "logicalTemplate": "71388002 |Procedure (procedure)|  : [[~1..* @AngioRoleGroup]]{ [[~1..1]]  260686004 |Method (attribute)|  = [[ +id ( <<  360037004 |Imaging - action (qualifier value)|  ) @Imagingaction ]] , [[~1..1]]  405813007 |Procedure site - Direct (attribute)|  = [[ +id ( <<  59820001 |Blood vessel structure (body structure)|  ) @Bloodvessel ]] , [[~0..1]]  424361007 |Using substance (attribute)|  = [[ +id ( <<  385420005 |Contrast media (substance)|  OR <<  89457008 |Radioactive isotope (substance)|  ) @Substance ]] , [[~0..1]]  363700003 |Direct morphology (attribute)|  = [[ +id ( <  49755003 |Morphologically abnormal structure (morphologic abnormality)|  ) @Morphology ]] } "
+}
+
