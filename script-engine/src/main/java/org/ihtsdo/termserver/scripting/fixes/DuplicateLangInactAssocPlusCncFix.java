@@ -181,9 +181,12 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("747087008"))) {	
+		//for (final Concept c : Collections.singleton(gl.getConcept("50968003"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
+				/*if (d.getId().equals("1197486005")) {
+						debug("here");
+				}*/
 				if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 					debug("Missing CII: " + d);
 					processMe.add(c);
@@ -241,7 +244,6 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 
 	private List<DuplicatePair> getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) {
 		List<DuplicatePair> duplicatePairs = new ArrayList<>();
-		
 		for (final RefsetMember thisEntry : refsetMembers) {
 			/*if (thisEntry.getId().equals("7816cc67-b074-4bb3-993d-ce8487e23e0a")) {
 				debug("here");
@@ -269,7 +271,13 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 						
 						// Only a problem historically if they're both active
 						if (thisEntry.isActive() && thatEntry.isActive()) {
-							warn("Both entries are released and active! " + thisEntry.getEffectiveTime());
+							warn("Both entries are released and active! " + thisEntry + " + " + thatEntry);
+						}
+						
+						//That said, if they both have a null effective time, then it LOOKS like we 
+						//created something redudnant in the last authoring cycle.
+						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+							warn("Previously released entries have lost their effective time: " + thisEntry + " + " + thatEntry);
 						}
 					} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
 						// Delete the unpublished one
