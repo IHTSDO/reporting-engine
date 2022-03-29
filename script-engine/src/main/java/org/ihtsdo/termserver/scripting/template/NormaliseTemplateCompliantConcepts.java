@@ -59,7 +59,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		exclusionWords.add("present");
 		exclusionWords.add("absent");
 		exclusionWords.add("detected");
-		exclusionWords.add("(disorder)");
+		//exclusionWords.add("(disorder)");
 		checkAllDescriptionsForExclusions = true;
 		
 		if (inclusionWords == null) {

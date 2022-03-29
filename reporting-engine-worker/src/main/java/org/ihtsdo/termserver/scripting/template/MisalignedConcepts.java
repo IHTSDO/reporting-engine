@@ -395,9 +395,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] { "templates/procedures/CT Guided.json" };
 		
 		templateNames = new String[] { "templates/procedures/Imaging Guided Biopsy.json" };
-		*/
-		templateNames = new String[] { "templates/procedures/Needle Biopsy.json" };
 		
+		templateNames = new String[] { "templates/procedures/Needle Biopsy.json" };
+		*/
+		templateNames = new String[] { "templates/Allergic Disease.json" };
 		super.init((String[])null);
 	}
 	
