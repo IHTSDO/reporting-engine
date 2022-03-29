@@ -25,16 +25,25 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * effective time.  So we need a snapshot export to fix it, because the delta won't give
  * you any component that still has an effective tim
  */
-public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
+public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	
 	String intReleaseBranch="MAIN/2022-01-31";
+	String extReleaseBranch="MAIN/SNOMEDCT-SE/2021-11-30";
 	List<String> intReleaseDates = new ArrayList<>();
 	
-	Map<String, Concept> publishedConceptCache = new HashMap<>();
+	static List<String> checkNoChangeDelta = new ArrayList<>();
+	{
+		checkNoChangeDelta.add("1296141000052113");
+		checkNoChangeDelta.add("5058001000052112");
+		checkNoChangeDelta.add("1624511000052119");
+	}
+	
+	Map<String, Concept> publishedIntConceptCache = new HashMap<>();
+	Map<String, Concept> publishedExtConceptCache = new HashMap<>();
 	Map<String, RefsetMember> publishedMemberCache = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		RevertStolenAndIllegallyModifiedComponents delta = new RevertStolenAndIllegallyModifiedComponents();
+		RevertUnexpectedModuleIssues delta = new RevertUnexpectedModuleIssues();
 		try {
 			//delta.getArchiveManager().setPopulateReleasedFlag(true);
 			delta.runStandAlone = false;
@@ -73,33 +82,51 @@ public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
 	
 	public void process() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
-			/*if (c.getId().equals("22247000")) {
+			boolean doOutputRF2 = false;
+			/*if (c.getId().equals("65391000052100")) {
 				debug("here");
 			}*/
 			Concept published = null;
 			if (hasModifiedCoreComponent(c)) {
-				published = loadConcept(c);
-				revertCoreComponents(c, published);
+				published = loadIntConcept(c);
+				if (published == null) {
+					report(c, ReportActionType.VALIDATION_CHECK, "Extension concept has core components");
+				}
+				doOutputRF2 = revertCoreComponents(c, published);
+			}
+			
+			//Is this one of the components we're to manually check for no change delta?
+			if (revertNoChangeDeltaIfRequired(c)) {
+				doOutputRF2 = true;
 			}
 			
 			if (hasStolenComponent(c)) {
 				if (published == null) {
-					published = loadConcept(c);
+					published = loadIntConcept(c);
 				}
 				revertDescriptionsIfRequired(c, published);
 			}
 			
-			if (published != null) {
+			if (published != null || doOutputRF2) {
 				outputRF2(c, true);  //Will only output dirty fields.
 			}
 		}
 	}
-	
-	Concept loadConcept(Concept c) throws TermServerScriptException {
-		Concept published = publishedConceptCache.get(c.getId());
+
+	Concept loadIntConcept(Concept c) throws TermServerScriptException {
+		Concept published = publishedIntConceptCache.get(c.getId());
 		if (published == null) {
 			published = loadConcept(c, intReleaseBranch);
-			publishedConceptCache.put(c.getId(), published);
+			publishedIntConceptCache.put(c.getId(), published);
+		}
+		return published;
+	}
+	
+	Concept loadExtConcept(Concept c) throws TermServerScriptException {
+		Concept published = publishedExtConceptCache.get(c.getId());
+		if (published == null) {
+			published = loadConcept(c, extReleaseBranch);
+			publishedExtConceptCache.put(c.getId(), published);
 		}
 		return published;
 	}
@@ -122,31 +149,70 @@ public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
 		return false;
 	}
 	
-	private void revertCoreComponents(Concept c, Concept published) throws TermServerScriptException {
-		Map<String, Component> publishedMap = SnomedUtils.getAllComponentsMap(published);
+	
+	private boolean revertNoChangeDeltaIfRequired(Concept c) throws TermServerScriptException {
+		for (Map.Entry<String, Component> entry : SnomedUtils.getAllComponentsMap(c).entrySet()) {
+			if (checkNoChangeDelta.contains(entry.getKey())) {
+				Concept published = loadExtConcept(c);
+				Component comp = entry.getValue();
+				Map<String, Component> publishedMap = SnomedUtils.getAllComponentsMap(published);
+				Component publishedComp = publishedMap.get(entry.getKey());
+				if (comp.fieldComparison(publishedComp, true).isEmpty()) {
+					comp.setEffectiveTime(publishedComp.getEffectiveTime());
+					comp.setDirty();
+					report(c, ReportActionType.EFFECTIVE_TIME_REVERTED, comp.getComponentType(), comp);
+					return true;
+				} else {
+					report(c, ReportActionType.VALIDATION_CHECK, "No change delta shows change", comp, publishedComp);
+				}
+			}
+		}
+		return false;
+	}
+	
+	private boolean revertCoreComponents(Concept c, Concept published) throws TermServerScriptException {
+		Map<String, Component> publishedMap = new HashMap<>();
+		boolean componentModified = false;
+		if (published != null) {
+			publishedMap = SnomedUtils.getAllComponentsMap(published);
+		}
+		
 		for (Component component : SnomedUtils.getAllComponents(c)) {
 			if (SnomedUtils.isCore(component) && StringUtils.isEmpty(component.getEffectiveTime())) {
 				//Do we have this already or do we need to load it specially?
 				Component publishedComponent = publishedMap.get(component.getId());
-				if (publishedComponent == null) {
+				if (published != null && publishedComponent == null) {
 					debug("Recovering published version of " + component);
 					publishedComponent = loadMember(component.getId());
 				}
 				
+				//If this is a refset member and it doesn't exist in the International Edition
+				//Then it should probably belong to the extension
 				if (publishedComponent == null) {
-					warn("Unable to obtain published version of " + component);
-					continue;
+					if (component.getId().contains("-")) {
+						component.setDirty();
+						component.setModuleId(moduleId);
+						report(c, ReportActionType.INFO, "Apparently modified Core component doesn't exist in " + intReleaseBranch);
+						report(c, ReportActionType.MODULE_CHANGE_MADE, component.getComponentType(), component);
+						componentModified = true;
+						continue;
+					} else {
+						warn("Unable to obtain published version of " + component);
+						continue;
+					}
 				}
 				
 				component.setDirty();
 				component.setActive(publishedComponent.isActive());
 				component.setEffectiveTime(publishedComponent.getEffectiveTime());
+				componentModified = true;
 				report(c, ReportActionType.EFFECTIVE_TIME_REVERTED, component.getComponentType(), component);
-				if (component.fieldComparison(publishedComponent).size() > 0) {
+				if (component.fieldComparison(publishedComponent, true).size() > 0) {
 					debug("Check Me: " + component + " vs " + publishedComponent);
 				}
 			}
 		}
+		return componentModified;
 	}
 
 	private void revertDescriptionsIfRequired(Concept c, Concept published) throws TermServerScriptException {
@@ -236,22 +302,25 @@ public class RevertStolenAndIllegallyModifiedComponents extends DeltaGenerator {
 			}
 		}
 		
-		if (c.getId().equals("56582000")) {
-			debug("here");
-		}
-		
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
 			if (!SnomedUtils.hasExtensionSCTID(r) 
 					&& !SnomedUtils.isCore(r)) {
 				if (r.isActive() && StringUtils.isEmpty(r.getEffectiveTime())) {
-					report(c, ReportActionType.VALIDATION_CHECK, "Active Rel with Core SCTID in Extension");
+					report(c, ReportActionType.VALIDATION_CHECK, "Active Modified Rel with Core SCTID in Extension", r);
 				} else if (!r.isActive()) {
 					Concept published = loadConceptPriorTo(c, r.getEffectiveTime());
 					Relationship pubRel = published.getRelationship(r.getId());
-					if (!pubRel.isActive()) {
-						report(c, ReportActionType.VALIDATION_CHECK, "Inactive Rel moved without reason");
+					if (pubRel == null) {
+						report(c, ReportActionType.VALIDATION_CHECK, "Core SCTID not found in " + intReleaseBranch, r);
+					} else if (!pubRel.isActive()) {
+						if (StringUtils.isEmpty(r.getEffectiveTime())) {
+							report(c, ReportActionType.VALIDATION_CHECK, "Inactive Rel moved without reason. Fresh.", r);
+						} else {
+							report(c, ReportActionType.VALIDATION_CHECK, "Inactive Rel moved without reason. Historic.", r);
+						}
 					} else {
 						report(c, ReportActionType.INFO, "Active core rel inactivated by extension.  All Good.", r);
+						break;
 					}
 				}
 			}

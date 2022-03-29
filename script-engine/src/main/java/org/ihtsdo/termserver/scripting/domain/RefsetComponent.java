@@ -12,8 +12,8 @@ public abstract class RefsetComponent extends Component {
 	
 	protected String deletionEffectiveTime;
 	
-	protected void commonFieldComparison(RefsetComponent other, List<String> differences) {
-		super.commonFieldComparison(other, differences);
+	protected void commonFieldComparison(RefsetComponent other, List<String> differences, boolean ignoreEffectiveTime) {
+		super.commonFieldComparison(other, differences, ignoreEffectiveTime);
 		String name = this.getClass().getSimpleName(); 
 		
 		if (!this.getRefsetId().equals(other.getRefsetId())) {

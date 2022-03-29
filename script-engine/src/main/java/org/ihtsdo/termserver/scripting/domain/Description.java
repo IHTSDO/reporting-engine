@@ -672,11 +672,11 @@ public class Description extends Component implements ScriptConstants {
 	}
 
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		Description otherD = (Description)other;
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 
-		commonFieldComparison(other, differences);
+		commonFieldComparison(other, differences, ignoreEffectiveTime);
 		
 		if (!this.getConceptId().equals(otherD.getConceptId())) {
 			differences.add("Concept Id is different in " + name + ": " + this.getConceptId() + " vs " + otherD.getConceptId());

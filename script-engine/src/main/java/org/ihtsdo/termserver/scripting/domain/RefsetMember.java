@@ -179,7 +179,7 @@ RefsetMember extends Component implements ScriptConstants {
 	}
 
 	@Override
-	public List<String> fieldComparison(Component other) throws TermServerScriptException {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
 		//TODO Add generic field comparison based off field names
 		throw new NotImplementedException();
 	}

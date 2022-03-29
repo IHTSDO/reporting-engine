@@ -110,7 +110,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	}
 
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		AssociationEntry otherA = (AssociationEntry)other;
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 

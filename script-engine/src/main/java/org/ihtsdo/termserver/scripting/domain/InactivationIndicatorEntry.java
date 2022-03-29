@@ -103,7 +103,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		return false;
 	}
 	
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		InactivationIndicatorEntry otherI = (InactivationIndicatorEntry)other;
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 

@@ -115,7 +115,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	}
 	
 	@Override
-	public List<String> fieldComparison(Component other) throws TermServerScriptException {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
 		LangRefsetEntry otherL;
 		if (other instanceof LangRefsetEntry) {
 			otherL = (LangRefsetEntry)other;

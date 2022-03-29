@@ -1464,14 +1464,14 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	}
 
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		if (!(other instanceof Concept)) {
 			throw new IllegalStateException("Comparison of " + other + " failed.  It's not a concept");
 		}
 		Concept otherConcept = (Concept)other;
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 
-		commonFieldComparison(other, differences);
+		commonFieldComparison(other, differences, ignoreEffectiveTime);
 		
 		if (!this.getDefinitionStatus().equals(otherConcept.getDefinitionStatus())) {
 			differences.add("Definition Status is different in " + name + ": " + this.getDefinitionStatus() + " vs " + otherConcept.getDefinitionStatus());

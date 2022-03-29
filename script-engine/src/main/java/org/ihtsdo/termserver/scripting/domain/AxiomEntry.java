@@ -161,11 +161,11 @@ public class AxiomEntry extends Component implements ScriptConstants {
 	}
 	
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		AxiomEntry otherA = (AxiomEntry)other;
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 
-		commonFieldComparison(other, differences);
+		commonFieldComparison(other, differences, ignoreEffectiveTime);
 		
 		if (!this.getRefsetId().equals(otherA.getRefsetId())) {
 			differences.add("RefsetId is different in " + name + ": " + this.getRefsetId() + " vs " + otherA.getRefsetId());

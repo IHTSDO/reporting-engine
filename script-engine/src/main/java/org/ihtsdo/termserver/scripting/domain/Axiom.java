@@ -155,7 +155,7 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	}
 	
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		//Actually not expecting to see this called since an RF2 comparison
 		//Would examine axionEntry objects;
 		throw new IllegalStateException("Unexpected comparison of axiom");

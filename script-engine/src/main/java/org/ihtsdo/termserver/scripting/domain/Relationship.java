@@ -520,11 +520,11 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	}
 	
 	@Override
-	public List<String> fieldComparison(Component other) {
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) {
 		Relationship otherR = (Relationship)other;
 		List<String> differences = new ArrayList<>();
 		String name = this.getClass().getSimpleName(); 
-		commonFieldComparison(otherR, differences);
+		commonFieldComparison(otherR, differences, ignoreEffectiveTime);
 		
 		if (!this.getSource().equals(otherR.getSource())) {
 			differences.add("Source is different in " + name + ": " + this.getSource() + " vs " + otherR.getSource());
