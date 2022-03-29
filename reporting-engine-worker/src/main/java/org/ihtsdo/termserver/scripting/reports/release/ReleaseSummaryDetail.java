@@ -45,7 +45,7 @@ public class ReleaseSummaryDetail implements Comparable<ReleaseSummaryDetail> {
 			if (this.getEffectiveTime() == null || other.getEffectiveTime() == null) {
 				throw new IllegalStateException("ReleaseSummaryDetail encountered with null EffectiveTime");
 			}
-			this.getEffectiveTime().equals(((ReleaseSummaryDetail)o).getEffectiveTime());
+			return this.getEffectiveTime().equals(((ReleaseSummaryDetail)o).getEffectiveTime());
 		}
 		return false;
 	}

@@ -53,8 +53,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, "S3");
 		params.put(REPORT_FORMAT_TYPE, "JSON");
 		//params.put(MODULES, "731000124108");
