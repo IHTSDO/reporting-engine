@@ -341,6 +341,12 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 			return "";  //Hopefully the previous release will know
 		}
+		
+		Set<Long> allAncestors = tc.getAncestors(c);
+		//We're going to separate out Diseases from Clinical Findings
+		if (allAncestors.contains(64572001L)) {
+			return DISEASE.getConceptId();
+		}
 
 		for (Long sctId : tc.getAncestors(c)) {
 			Concept a = gl.getConcept(sctId);
