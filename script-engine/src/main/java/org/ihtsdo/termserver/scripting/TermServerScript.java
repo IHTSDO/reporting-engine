@@ -1006,14 +1006,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return concepts; 
 	}
 	
-	protected Set<Concept> findConceptsByCriteria(String criteria, String branch, boolean useLocalCopies) throws TermServerScriptException {
+	/*protected Set<Concept> findConceptsByCriteria(String eclType, String criteria, String branch, boolean useLocalCopies) throws TermServerScriptException {
 		Set<Concept> allConcepts = new HashSet<>();
 		boolean allRecovered = false;
 		String searchAfter = null;
 		int totalRecovered = 0;
 		while (!allRecovered) {
 			try {
-					ConceptCollection collection = tsClient.getConceptsMatchingCriteria(criteria, branch, searchAfter, PAGING_LIMIT);
+					ConceptCollection collection = tsClient.getConceptsMatchingCriteria(eclType, criteria, branch, searchAfter, PAGING_LIMIT);
 					totalRecovered += collection.getItems().size();
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
@@ -1051,7 +1051,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		return allConcepts;
 	}
-
+*/
 	protected List<Component> processFile() throws TermServerScriptException {
 		return processFile(inputFile);
 	}

@@ -199,6 +199,9 @@ public class EclCache implements ScriptConstants {
 					//Did we get all the concepts that there are?
 					if (totalRecovered < collection.getTotal()) {
 						searchAfter = collection.getSearchAfter();
+						if (StringUtils.isEmpty(searchAfter)) {
+							throw new TermServerScriptException("SearchAfter field required but not populated.");
+						}
 					} else {
 						allRecovered = true;
 					}

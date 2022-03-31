@@ -209,20 +209,21 @@ public class TermServerClient {
 	
 	public ConceptCollection getConcepts(String ecl, String branchPath, CharacteristicType charType, String searchAfter, int limit) throws TermServerScriptException {
 		String eclType = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP)?"ecl":"statedEcl";
-		String criteria = eclType + "=" + SnomedUtils.makeMachineReadable(ecl);
-		return getConceptsMatchingCriteria(criteria, branchPath, searchAfter, limit);
+		String criteria = SnomedUtils.makeMachineReadable(ecl);
+		return getConceptsMatchingCriteria(eclType, criteria, branchPath, searchAfter, limit);
 	}
 	
-	public ConceptCollection getConceptsMatchingCriteria(String criteria, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
+	public ConceptCollection getConceptsMatchingCriteria(String eclType, String criteria, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
+		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
+		//because RestTemplate does that for us.  So use curly braces to substitute in our criteria
 		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit;
 		if (!StringUtils.isEmpty(searchAfter)) {
 			url += "&searchAfter=" + searchAfter;
 		}
-		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
-		//because RestTemplate does that for us.  So use curly braces to substitute in our criteria
-		url += "&" + criteria;
-		System.out.println("Calling: " + url);
-		return restTemplate.getForObject(url, ConceptCollection.class);
+
+		url += "&" + eclType + "={criteria}";
+		System.out.println("Calling: " + url + " with criteria = '" + criteria + "'");
+		return restTemplate.getForObject(url, ConceptCollection.class, criteria);
 	}
 	
 	public int getConceptsCount(String ecl, String branchPath) throws TermServerScriptException {
