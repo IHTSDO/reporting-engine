@@ -1536,6 +1536,22 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		job.instantiate(jobRun, (ApplicationContext)null);
 	}
+	
+	public static void run(Class<? extends JobClass> jobClazz, Map<String, Object> parameters, String[] args) throws TermServerScriptException {
+		JobRun jobRun = createJobRunFromArgs(jobClazz.getSimpleName(), args);
+		if (parameters != null) {
+			for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+				jobRun.setParameter(entry.getKey(), entry.getValue());
+			}
+		}
+		JobClass job = null;
+		try {
+			job = jobClazz.newInstance();
+		} catch ( InstantiationException | IllegalAccessException e) {
+			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
+		}
+		job.instantiate(jobRun, (ApplicationContext)null);
+	}
 
 	protected  String getDependencyArchive() {
 		return dependencyArchive;

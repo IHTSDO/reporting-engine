@@ -31,19 +31,26 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public static final String WORDS = "Words";
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	public static final String WITHOUT = "Without";
+	public static final String TERM_TYPES = "Term Type";
 	Concept attributeDetail;
 	boolean startsWith = false;
 	boolean wholeWord = false;
 	
+	private List<String> targetTypes;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
-		Map<String, String> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(WORDS, "angiography, angiogram, arteriography, arteriogram");
 		params.put(WITHOUT, "fluoroscopic, fluoroscopy, computed tomography, CT, magnetic resonance, MR, MRA, MRI");
 		params.put(WHOLE_WORD, "false");
 		params.put(ATTRIBUTE_TYPE, null);
-		TermServerReport.run(TermContainsXReport.class, args, params);
+		List<String> descTypes = new ArrayList<>();
+		descTypes.add("FSN");
+		descTypes.add("DEFN");
+		params.put(TERM_TYPES, descTypes);
+		TermServerReport.run(TermContainsXReport.class, params, args);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -71,6 +78,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		
 		startsWith = run.getParameters().getMandatoryBoolean(STARTS_WITH);
 		wholeWord = run.getParameters().getMandatoryBoolean(WHOLE_WORD);
+		targetTypes = run.getParameters().getValues(TERM_TYPES);
 	}
 	
 	@Override
@@ -81,6 +89,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(WHOLE_WORD).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory().withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(WITHOUT).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
+				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues("FSN","PT")
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		
@@ -110,6 +119,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				
 				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (!isTargetDescriptionType(d)) {
+						continue;
+					}
 					boolean reported = false;
 					String term = d.getTerm().toLowerCase();
 					String altTerm = term;
@@ -157,6 +169,26 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	}
 	
+	private boolean isTargetDescriptionType(Description d) {
+		if (d.getType().equals(DescriptionType.FSN) && targetTypes.contains("FSN")) {
+			return true;
+		}
+		
+		if (d.getType().equals(DescriptionType.SYNONYM) && d.isPreferred() && targetTypes.contains("PT")) {
+			return true;
+		}
+		
+		if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred() && targetTypes.contains("SYN")) {
+			return true;
+		}
+		
+		if (d.getType().equals(DescriptionType.TEXT_DEFINITION) && targetTypes.contains("DEFN")) {
+			return true;
+		}
+		
+		return false;
+	}
+
 	private String getAttributeDetail(Concept c) throws TermServerScriptException {
 		if (attributeDetail != null) {
 			return SnomedUtils.getTargets(c, new Concept[] {attributeDetail}, CharacteristicType.INFERRED_RELATIONSHIP)

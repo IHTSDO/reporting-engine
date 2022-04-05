@@ -4,11 +4,12 @@ import java.io.*;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportConfiguration.*;
-import org.springframework.util.StringUtils;
+
 
 /**
  * RP-390 Summary Component Stats for Extensions
