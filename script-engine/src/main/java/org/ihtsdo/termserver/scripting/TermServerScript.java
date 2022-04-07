@@ -98,6 +98,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static final String HIERARCHIES = "Hierarchies";
 	protected static final String INCLUDE_ALL_LEGACY_ISSUES = "Include All Legacy Issues";
 	protected static final String ECL = "ECL";
+	protected static final String MODULES = "Modules";
 	protected static final String TEMPLATE = "Template";
 	protected static final String TEMPLATE2 = "Template 2";
 	protected static final String TEMPLATE_NAME = "TemplateName";
@@ -483,6 +484,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				jobRun.setUser(args[i+1]);
 			} else if (args[i].equals("-n")) {
 				jobRun.setParameter(CONCEPTS_PER_TASK, args[i+1]);
+			} else if (args[i].equals("-m")) {
+				jobRun.setParameter(MODULES, args[i+1]);
 			} else if (args[i].equals("-r2")) {
 				jobRun.setParameter(RESTART_FROM_TASK, args[i+1]);
 			} else if (args[i].equals("-c")) {

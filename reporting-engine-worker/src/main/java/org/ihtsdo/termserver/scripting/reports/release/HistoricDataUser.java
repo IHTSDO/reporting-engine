@@ -1,21 +1,15 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.springframework.util.StringUtils;
 
 public class HistoricDataUser extends TermServerReport {
 
@@ -24,7 +18,6 @@ public class HistoricDataUser extends TermServerReport {
 	
 	public static final String PREV_DEPENDENCY = "Previous Dependency";
 	public static final String THIS_DEPENDENCY = "This Dependency";
-	public static final String MODULES = "Modules";
 
 	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown");
 
