@@ -33,9 +33,14 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	
 	static List<String> checkNoChangeDelta = new ArrayList<>();
 	{
-		checkNoChangeDelta.add("1296141000052113");
-		checkNoChangeDelta.add("5058001000052112");
-		checkNoChangeDelta.add("1624511000052119");
+		checkNoChangeDelta.add("5153801000052117");
+		checkNoChangeDelta.add("5151601000052115");
+		checkNoChangeDelta.add("4576981000052112");
+		checkNoChangeDelta.add("4666761000052115");
+		checkNoChangeDelta.add("4038241000052113");
+		checkNoChangeDelta.add("1553131000052110");
+		checkNoChangeDelta.add("4978681000052111");
+
 	}
 	
 	Map<String, Concept> publishedIntConceptCache = new HashMap<>();
