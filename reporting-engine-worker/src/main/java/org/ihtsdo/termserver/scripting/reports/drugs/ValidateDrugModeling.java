@@ -16,7 +16,6 @@ import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.ConcreteDrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
 import org.snomed.otf.scheduler.domain.*;
@@ -41,7 +40,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
+	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
 	private List<Concept> bannedMpParents;
+	//private Set<RelationshipGroup> reportedForBoSSPAIViolation = new HashSet<>();
+	private Set<BaseMDF> reportedBaseMDFCombos = new HashSet<>();
 	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
@@ -66,12 +68,15 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details",
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
+		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT));
 		populateAcceptableDoseFormMaps();
 		populateGrouperSubstances();
+		populateBaseMDFMap();
+		
 		super.postInit(tabNames, columnHeadings, false);
 		
 		presAttributes.add(HAS_PRES_STRENGTH_VALUE);
@@ -103,7 +108,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT));
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
 		populateSummaryTab();
@@ -116,7 +120,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		double conceptsConsidered = 0;
 		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
 		for (Concept c : allDrugs) {
-			ConcreteDrugUtils.setConceptType(c);
+			DrugUtils.setConceptType(c);
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
@@ -156,6 +160,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			
 			//DRUGS-267
 			validateIngredientsAgainstBoSS(c);
+			//DRUGS-1021
+			if (isCD(c)) {
+				checkBossPaiPdfCombinations(c);
+			}
 			
 			//DRUGS-793
 			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
@@ -289,9 +297,9 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
 		//considered 'grouper substances' that should not be used as BoSS 
 		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
-			ConcreteDrugUtils.setConceptType(c);
+			DrugUtils.setConceptType(c);
 			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
-				for (Concept substance : ConcreteDrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				for (Concept substance : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 					if (!grouperSubstanceUsage.containsKey(substance)) {
 						grouperSubstanceUsage.put(substance, c);
 					}
@@ -299,7 +307,30 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 		}
 	}
-
+	
+	private void populateBaseMDFMap() throws TermServerScriptException {
+		baseMDFMap = new HashMap<>();
+		for (Concept c : allDrugs) {
+			DrugUtils.setConceptType(c);
+			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+				Concept mdf = getMDF(c);
+				for (RelationshipGroup rg : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+					//Skip the ungrouped concepts, we're only interested in groups featuring an ingredient
+					if (!rg.isGrouped()) {
+						continue;
+					}
+					BaseMDF baseMDF = getBaseMDF(rg, mdf);
+					Set<RelationshipGroup> groups = baseMDFMap.get(baseMDF);
+					if (groups == null) {
+						groups = new HashSet<RelationshipGroup>();
+						baseMDFMap.put(baseMDF, groups);
+					}
+					groups.add(rg);
+				}
+			}
+		}
+	}
+	
 	private void checkForBossGroupers(Concept c) throws TermServerScriptException {
 		String issueStr = "Grouper substance used as BoSS";
 		initialiseSummary(issueStr);
@@ -467,7 +498,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr);
 		//For each group, do we have both a concentration and a presentation?
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			ConcreteIngredient i = ConcreteDrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			ConcreteIngredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
 			if (i.presStrength != null && i.concStrength != null) {
 				boolean unitsChange = false;
 				boolean issueDetected = false;
@@ -533,7 +564,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private void validateStrengthNormalization(Concept c) throws TermServerScriptException {
 		//For each group, validate any relevant units
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			ConcreteIngredient i = ConcreteDrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			ConcreteIngredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
 			if (i.presStrength != null) {
 				validateStrengthNormalization(c, i.presNumeratorUnit, i.presStrength);
 				validateStrengthNormalization(c, i.presDenomUnit, i.presDenomQuantity);
@@ -677,7 +708,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				if (bRel.getGroupId() == iRel.getGroupId()) {
 					boolean isSelf = boSS.equals(ingred);
 					boolean isSubType = gl.getDescendantsCache().getDescendents(boSS).contains(ingred);
-					boolean isModificationOf = ConcreteDrugUtils.isModificationOf(ingred, boSS);
+					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
 					
 					if (isSelf || isSubType || isModificationOf) {
 						matchFound = true;
@@ -696,6 +727,86 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				report (concept, issue2Str, boSS);
 			}
 		}
+	}
+	
+	private BaseMDF getBaseMDF(RelationshipGroup rg, Concept mdf) {
+		Concept boSS = rg.getValueForType(HAS_BOSS);
+		Concept pai =  rg.getValueForType(HAS_PRECISE_INGRED);
+		//What is the base of the ingredient
+		Set<Concept> ingredBases = Collections.singleton(pai);
+		if (!boSS.equals(pai)) {
+			ingredBases = DrugUtils.getSubstanceBase(pai, boSS);
+		}
+		
+		if (ingredBases.size() != 1) {
+			debug("Unable to obtain single BoSS from " + rg.toString());
+			return null;
+		} else {
+			Concept base = ingredBases.iterator().next();
+			return new BaseMDF(base, mdf);
+		}
+	}
+	
+	private void checkBossPaiPdfCombinations(Concept concept) throws TermServerScriptException {
+		String issueStr  = "BoSS-PAI combination differs";
+		initialiseSummary(issueStr);
+		
+		for (RelationshipGroup rg : concept.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			//Have we already reported this role group for a BossPAI violation?
+			if (!rg.isGrouped() /*|| reportedForBoSSPAIViolation.contains(rg)*/) {
+				continue;
+			}
+			//What is this BaseMDF?  Find all other RelGroups that have that save base and pharm dose form
+			Concept mdf = getMDF(concept);
+			BaseMDF baseMDF = getBaseMDF(rg, mdf);
+			
+			if (baseMDF == null) {
+				debug("Failed to obtain baseMDF in " + concept);
+				continue;
+			}
+			
+			if (reportedBaseMDFCombos.contains(baseMDF)) {
+				continue;
+			}
+			
+			Concept boSS = rg.getValueForType(HAS_BOSS);
+			Concept pai =  rg.getValueForType(HAS_PRECISE_INGRED);
+			BoSSPAI boSSPAI = new BoSSPAI(boSS, pai);
+			Set<RelationshipGroup> relGroups = baseMDFMap.get(baseMDF);
+			if (relGroups == null) {
+				debug("Unable to find stored relGroups against " + baseMDF + " from " + concept);
+			} else {
+				String mismatchingDetails = "";
+				Set<BoSSPAI> bossPAIcombosReported = new HashSet<>();
+				for (RelationshipGroup rg2 : relGroups) {
+					//Now do we also match on Boss & PAI?
+					Concept boSS2 = rg2.getValueForType(HAS_BOSS);
+					Concept pai2 =  rg2.getValueForType(HAS_PRECISE_INGRED);
+					BoSSPAI boSSPAI2 = new BoSSPAI(boSS2, pai2);
+					if (bossPAIcombosReported.contains(boSSPAI2)) {
+						continue;
+					}
+					if (!boSS.equals(boSS2) || !pai.equals(pai2)) {
+						if (mismatchingDetails.length() > 0) {
+							mismatchingDetails += "\n";
+						} else {
+							//First time through, add the original boSSPAI as well as the matching one
+							mismatchingDetails += boSSPAI + "\n";
+						}
+						mismatchingDetails += boSSPAI2 + " eg " + rg2.getSourceConcept().toStringPref();
+						bossPAIcombosReported.add(boSSPAI2);
+					}
+				}
+				if (mismatchingDetails.length() > 0) {
+					report(concept, issueStr, baseMDF, mismatchingDetails);
+					reportedBaseMDFCombos.add(baseMDF);
+				}
+			}
+		}
+	}
+	
+	private Concept getMDF(Concept concept) {
+		return concept.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getValueForType(HAS_MANUFACTURED_DOSE_FORM);
 	}
 
 	private void validateTerming(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
@@ -1146,7 +1257,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		List<Concept> matchingSiblings = new ArrayList<>();
 		nextConcept:
 		for (Concept sibling : allDrugs) {
-			ConcreteDrugUtils.setConceptType(c);
+			DrugUtils.setConceptType(c);
 			if (!isCD(sibling)) {
 				continue nextConcept;
 			}
@@ -1270,4 +1381,65 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		}
 	}
 	
+	class BaseMDF {
+		Concept baseSubstance;
+		Concept pharmDoseForm;
+		int hashCode;
+		
+		public BaseMDF (Concept baseSubstance, Concept pharmDoseForm) {
+			this.baseSubstance = baseSubstance;
+			this.pharmDoseForm = pharmDoseForm;
+			hashCode = (baseSubstance.toString() + pharmDoseForm.toString()).hashCode();
+		}
+		
+		@Override
+		public boolean equals (Object other) {
+			if (other instanceof BaseMDF) {
+				BaseMDF otherBaseMDF = (BaseMDF)other;
+				return this.baseSubstance.equals(otherBaseMDF.baseSubstance) && this.pharmDoseForm.equals(otherBaseMDF.pharmDoseForm);
+			}
+			return false;
+		}
+		
+		@Override
+		public int hashCode() {
+			return hashCode;
+		}
+		
+		@Override
+		public String toString() {
+			return baseSubstance.toStringPref() + " as " + pharmDoseForm.toStringPref();
+		}
+	}
+	
+	class BoSSPAI {
+		Concept boSS;
+		Concept pai;
+		int hashCode;
+		
+		public BoSSPAI (Concept boSS, Concept pai) {
+			this.boSS = boSS;
+			this.pai = pai;
+			hashCode = (boSS.toString() + pai.toString()).hashCode();
+		}
+		
+		@Override
+		public boolean equals (Object other) {
+			if (other instanceof BoSSPAI) {
+				BoSSPAI otherBoSSPAI = (BoSSPAI)other;
+				return this.boSS.equals(otherBoSSPAI.boSS) && this.pai.equals(otherBoSSPAI.pai);
+			}
+			return false;
+		}
+		
+		@Override
+		public int hashCode() {
+			return hashCode;
+		}
+		
+		@Override
+		public String toString() {
+			return  boSS.toStringPref() + " / " + pai.toStringPref();
+		}
+	}
 }

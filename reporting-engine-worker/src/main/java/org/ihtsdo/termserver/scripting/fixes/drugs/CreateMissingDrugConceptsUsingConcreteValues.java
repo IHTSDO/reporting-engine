@@ -294,9 +294,9 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 			drug.addRelationship(formRel);
 		}
 		
-		Set<Concept> baseIngredients = ConcreteDrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)
+		Set<Concept> baseIngredients = DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)
 									.stream()
-									.map(i -> ConcreteDrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
+									.map(i -> DrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
 									.collect(Collectors.toSet());
 		
 		if (baseIngredients.size() == 0) {
@@ -452,7 +452,7 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 	}
 
 	private boolean containsExceptionSubstance(Concept c) throws TermServerScriptException {
-		for (Concept ingred : ConcreteDrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+		for (Concept ingred : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			for (String exceptionStr: substanceExceptions) {
 				if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
 					report ((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);

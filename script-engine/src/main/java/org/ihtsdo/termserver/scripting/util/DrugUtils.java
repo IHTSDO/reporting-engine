@@ -6,13 +6,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-
-import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
+import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 
 public class DrugUtils implements ScriptConstants {
 	
@@ -28,6 +26,7 @@ public class DrugUtils implements ScriptConstants {
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormFSNConceptMap;
 	static Map<String, Concept> doseFormSynonymConceptMap;
+	static Map<String, Concept> doseFormConceptMap;
 	static Map<String, Concept> unitOfPresentationConceptMap;
 	static Map<String, Concept> unitOfMeasureConceptMap;
 	static Map<String, Concept> substanceMap;
@@ -54,84 +53,22 @@ public class DrugUtils implements ScriptConstants {
 		}
 	}
 
-	public static Concept getNumberAsConcept(Object number) throws TermServerScriptException {
-		String numberStr = number.toString();
-		if (numberConceptMap == null) {
-			populateNumberConceptMap();
-		}
-		if (!numberConceptMap.containsKey(numberStr)) {
-			TermServerScript.warn("Check and possibly need to create concept to represent number: " + numberStr);
-		}
-		return numberConceptMap.get(numberStr);
-	}
 	
-	public static void registerNewNumber(String numberStr, Concept number) {
-		numberConceptMap.put(numberStr, number);
-	}
-	
-	public static double getConceptAsNumber(Concept number) throws TermServerScriptException {
-		String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0];
-		return Double.parseDouble(numStr);
-	}
-	
-	public static String getConceptAsNumberStr(Concept number) throws TermServerScriptException {
-		String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0];
-		double d = Double.parseDouble(numStr);
-		return toString(d);
-	}
-
-	private static void populateNumberConceptMap() throws TermServerScriptException {
-		numberConceptMap = new HashMap<>();
-		Concept numberSubHierarchy = GraphLoader.getGraphLoader().getConcept("260299005", false, true); // |Number (qualifier value)|
-		for (Concept number : numberSubHierarchy.getDescendents(NOT_SET)) {
-			String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0].trim();
-			try {
-				Double.parseDouble(numStr);
-				numberConceptMap.put(numStr, number);
-			} catch (Exception e) {}
-		}
-	}
-	
-	public static Concept findDoseFormFromFSN(String fsn) throws TermServerScriptException {
-		if (doseFormFSNConceptMap == null) {
+	public static Concept findDoseForm(String fsn) throws TermServerScriptException {
+		if (doseFormConceptMap == null) {
 			populateDoseFormConceptMap();
 		}
-		if (!doseFormFSNConceptMap.containsKey(fsn)) {
+		if (!doseFormConceptMap.containsKey(fsn)) {
 			throw new TermServerScriptException("Unable to identify dose form : " + fsn);
 		}
-		return doseFormFSNConceptMap.get(fsn);
+		return doseFormConceptMap.get(fsn);
 	}
 
 	private static void populateDoseFormConceptMap() throws TermServerScriptException {
-		doseFormFSNConceptMap = new HashMap<>();
+		doseFormConceptMap = new HashMap<>();
 		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
 		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
-			doseFormFSNConceptMap.put(doseForm.getFsn(), doseForm);
-		}
-	}
-	
-	public static Concept findDoseFormFromSynonym(String term) throws TermServerScriptException {
-		if (doseFormSynonymConceptMap == null) {
-			populateDoseFormSynonymMap();
-		}
-		if (!doseFormSynonymConceptMap.containsKey(term)) {
-			throw new TermServerScriptException("Unable to identify dose form : " + term);
-		}
-		return doseFormSynonymConceptMap.get(term);
-	}
-
-	private static void populateDoseFormSynonymMap() throws TermServerScriptException {
-		doseFormSynonymConceptMap = new HashMap<>();
-		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
-		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
-			for (Description d : doseForm.getDescriptions(ActiveState.ACTIVE, Collections.singletonList(DescriptionType.SYNONYM))) {
-				String term = d.getTerm().toLowerCase();
-				if (!doseFormSynonymConceptMap.containsKey(term)) {
-					doseFormSynonymConceptMap.put(term, doseForm);
-				} else {
-					TermServerScript.warn("Dose form map contains two concepts with term " + term + ": " + doseForm + " and " + doseFormSynonymConceptMap.get(term));
-				}
-			}
+			doseFormConceptMap.put(doseForm.getFsn(), doseForm);
 		}
 	}
 	
@@ -181,6 +118,31 @@ public class DrugUtils implements ScriptConstants {
 		
 		//We can also measure just 'unit' of a substance
 		unitOfMeasureConceptMap.put(UNIT.getFsn(), UNIT);
+	}
+	
+	public static Concept findDoseFormFromSynonym(String term) throws TermServerScriptException {
+		if (doseFormSynonymConceptMap == null) {
+			populateDoseFormSynonymMap();
+		}
+		if (!doseFormSynonymConceptMap.containsKey(term)) {
+			throw new TermServerScriptException("Unable to identify dose form : " + term);
+		}
+		return doseFormSynonymConceptMap.get(term);
+	}
+	
+	private static void populateDoseFormSynonymMap() throws TermServerScriptException {
+		doseFormSynonymConceptMap = new HashMap<>();
+		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
+		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
+			for (Description d : doseForm.getDescriptions(ActiveState.ACTIVE, Collections.singletonList(DescriptionType.SYNONYM))) {
+				String term = d.getTerm().toLowerCase();
+				if (!doseFormSynonymConceptMap.containsKey(term)) {
+					doseFormSynonymConceptMap.put(term, doseForm);
+				} else {
+					TermServerScript.warn("Dose form map contains two concepts with term " + term + ": " + doseForm + " and " + doseFormSynonymConceptMap.get(term));
+				}
+			}
+		}
 	}
 	
 	public static Concept findSubstance(String substanceName) throws TermServerScriptException {
@@ -292,6 +254,36 @@ public class DrugUtils implements ScriptConstants {
 		return false;
 	}
 	
+	public static Set<Concept> getSubstanceBase(Concept substance, Concept possibleBoss) {
+		if (substance.equals(possibleBoss)) {
+			return Collections.singleton(possibleBoss);
+		}
+		//Work through all the modification relationship and find the ultimate ancestors
+		Set<Relationship> modifications = substance.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
+		
+		if (modifications.size() == 0) {
+			//No modification attributes, this is the base
+			return Collections.singleton(substance);
+		}
+		Set<Concept> bases = new HashSet<>();
+		for (Relationship modification : modifications) {
+			Concept base = modification.getTarget();
+			if (base.equals(possibleBoss)) {
+				//If we've got a particular BoSS in mind, return that
+				return Collections.singleton(base);
+			}
+			
+			//Otherwise, does this base itself have a base?
+			Set<Concept> furtherBases = getSubstanceBase(base, possibleBoss);
+			if (furtherBases.contains(possibleBoss)) {
+				return Collections.singleton(possibleBoss);
+			} else {
+				bases.addAll(furtherBases);
+			}
+		}
+		return bases;
+	}
+	
 	public static Set<Relationship> getIngredientRelationships (Concept c, CharacteristicType charType) throws TermServerScriptException {
 		Set<Relationship> ingredientRels = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
@@ -316,19 +308,19 @@ public class DrugUtils implements ScriptConstants {
 				.collect(Collectors.toList());
 	}
 
-	public static Ingredient getIngredientDetails(Concept c, int groupId, CharacteristicType charType) throws TermServerScriptException {
+	public static ConcreteIngredient getIngredientDetails(Concept c, int groupId, CharacteristicType charType) throws TermServerScriptException {
 		//Populate as much data as can be found in this group.
-		Ingredient i = new Ingredient();
+		ConcreteIngredient i = new ConcreteIngredient();
 		i.substance = SnomedUtils.getTarget(c, new Concept[] { HAS_ACTIVE_INGRED,  HAS_PRECISE_INGRED}, groupId, charType);
 		
-		i.presStrength = SnomedUtils.getTarget(c, new Concept[] { HAS_PRES_STRENGTH_VALUE }, groupId, charType);
+		i.presStrength = SnomedUtils.getConcreteValue(c, new Concept[] { HAS_PRES_STRENGTH_VALUE }, groupId, charType);
 		i.presNumeratorUnit = SnomedUtils.getTarget(c, new Concept[] { HAS_PRES_STRENGTH_UNIT }, groupId, charType);
-		i.presDenomQuantity = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE }, groupId, charType);
+		i.presDenomQuantity = SnomedUtils.getConcreteValue(c, new Concept[] { HAS_PRES_STRENGTH_DENOM_VALUE }, groupId, charType);
 		i.presDenomUnit = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_UNIT }, groupId, charType);
 		
-		i.concStrength = SnomedUtils.getTarget(c, new Concept[] { HAS_CONC_STRENGTH_VALUE }, groupId, charType);
+		i.concStrength = SnomedUtils.getConcreteValue(c, new Concept[] { HAS_CONC_STRENGTH_VALUE }, groupId, charType);
 		i.concNumeratorUnit = SnomedUtils.getTarget(c, new Concept[] { HAS_CONC_STRENGTH_UNIT }, groupId, charType);
-		i.concDenomQuantity = SnomedUtils.getTarget(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_VALUE }, groupId, charType);
+		i.concDenomQuantity = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_VALUE }, groupId, charType);
 		i.concDenomUnit = SnomedUtils.getTarget(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_UNIT }, groupId, charType);
 		
 		return i;
@@ -407,13 +399,11 @@ public class DrugUtils implements ScriptConstants {
 		}
 		return substancesUsedInProducts;
 	}
-
+	
 	public static int getCountOfBase(Concept c) throws TermServerScriptException {
 		return SnomedUtils.getConcreteIntValue(c, COUNT_BASE_ACTIVE_INGREDIENT, CharacteristicType.STATED_RELATIONSHIP);
 	}
 	
-
-
 	public static boolean matchesBossPAIStrength(Concept lhs, Concept rhs) throws TermServerScriptException {
 		int lhsCountOfBase = getCountOfBase(lhs);
 		int rhsCountOfBase = getCountOfBase(rhs);
@@ -490,5 +480,29 @@ public class DrugUtils implements ScriptConstants {
 		return true;
 	}
 
+	public static Concept findDoseFormFromFSN(String fsn) throws TermServerScriptException {
+		if (doseFormFSNConceptMap == null) {
+			populateDoseFormConceptMap();
+		}
+		if (!doseFormFSNConceptMap.containsKey(fsn)) {
+			throw new TermServerScriptException("Unable to identify dose form : " + fsn);
+		}
+		return doseFormFSNConceptMap.get(fsn);
+	}
 	
+	public static Concept getNumberAsConcept(String strengthStr) {
+		throw new IllegalStateException("Strength no longer represented by a concept.  Developer intervention required");
+	}
+
+	public static String getConceptAsNumberStr(Concept presStrength) {
+		throw new IllegalStateException("Strength no longer represented by a concept.  Developer intervention required");
+	}
+	
+	public static void registerNewNumber(String newStrengthStr, Concept newStrength) {
+		throw new IllegalStateException("Strength no longer represented by a concept.  Developer intervention required");
+	}
+
+	public static double getConceptAsNumber(Concept target) {
+		throw new IllegalStateException("Strength no longer represented by a concept.  Developer intervention required");
+	}
 }

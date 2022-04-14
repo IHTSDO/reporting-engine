@@ -155,6 +155,17 @@ public class RelationshipGroup {
 		.collect(Collectors.toSet());
 	}
 	
+	public Concept getValueForType(Concept type) {
+		List<Relationship> rels = relationships.stream()
+		.filter(r -> r.getType().equals(type))
+		.collect(Collectors.toList());
+		
+		if (rels.size() != 1) {
+			throw new IllegalArgumentException("Expected 1 attribute of type " + type + " found " + rels.size() + " in " + this.toString());
+		}
+		return rels.get(0).getTarget();
+	}
+	
 	public Relationship getTypeValue(Relationship r1) {
 		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r2 : relationships) {
@@ -228,6 +239,11 @@ public class RelationshipGroup {
 			toolkitRels.add(toolKitRel);
 		}
 		return toolkitRels;
+	}
+
+	public Concept getSourceConcept() {
+		//Can return any relationship's source concept - they will all be the same
+		return relationships.iterator().next().getSource();
 	}
 
 

@@ -7,7 +7,9 @@ import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.ConcreteValue.ConcreteValueType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -158,8 +160,8 @@ public class DrugSheetsAnalysis extends TermServerReport {
 				parseIngredient(drugLine, ingredientSource);
 			}
 			//What's our count of active ingredient here?
-			Concept count = DrugUtils.getNumberAsConcept(ingredientSources.length);
-			Relationship r = new Relationship(drugLine.concept, COUNT_BASE_ACTIVE_INGREDIENT, count, UNGROUPED);
+			int count = ingredientSources.length;
+			Relationship r = new Relationship(drugLine.concept, COUNT_BASE_ACTIVE_INGREDIENT, Integer.toString(count), UNGROUPED, ConcreteValueType.INTEGER);
 			drugLine.concept.addRelationship(r);
 			report(currentTab, drugLine.sourceText, drugLine.concept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 		} catch (IllegalStateException e) {
@@ -381,7 +383,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 			case "substance" : 
 			case "boss" : return DrugUtils.findSubstance(text.replace("(", "").replace(")", ""));
 			case "conc" :
-			case "strength" : return DrugUtils.getNumberAsConcept(text);
+			case "strength" : throw new IllegalArgumentException("Strength is no longer represented by a concept");
 			case "concUnit" : 
 			case "unit" : return DrugUtils.findUnitOfMeasure(text);
 			default : throw new IllegalArgumentException("Unrecognised match name: " + matchName);

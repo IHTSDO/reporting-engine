@@ -63,4 +63,13 @@ public class ConcreteValue {
 	public String toString() {
 		return valueWithPrefix;
 	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (other instanceof ConcreteValue) {
+			ConcreteValue otherCV = (ConcreteValue)other;
+			return this.valueWithPrefix.equals(otherCV.valueWithPrefix);
+		}
+		return false;
+	}
 }

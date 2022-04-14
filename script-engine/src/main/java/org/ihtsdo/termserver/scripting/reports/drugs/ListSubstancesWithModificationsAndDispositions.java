@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 
 /**
  * SUBST-246 list all substances with parents, modifications, dispositions and say if it's used 

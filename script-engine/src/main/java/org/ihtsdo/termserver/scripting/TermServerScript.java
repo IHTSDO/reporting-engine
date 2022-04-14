@@ -107,8 +107,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	@Autowired
 	protected ReportDataBroker reportDataBroker;
 
-	private static int PAGING_LIMIT = 1000;
-
 	public static Gson gson;
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
