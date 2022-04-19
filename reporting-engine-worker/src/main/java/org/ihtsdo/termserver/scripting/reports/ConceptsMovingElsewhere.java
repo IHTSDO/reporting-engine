@@ -55,7 +55,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 				"Concepts Moved"
 		};
 		super.postInit(tabNames, columnHeadings, false);
-		knownNamespaceExtensionMap.put(gl.getConcept("416516009 |Extension Namespace {1000009}"), "Vetinary Extension");
+		knownNamespaceExtensionMap.put(gl.getConcept("416516009 |Extension Namespace {1000009}"), "Veterinary Extension");
 		knownNamespaceExtensionMap.put(gl.getConcept("370137002 |Extension Namespace {1000000}"), "UK Extension");
 		if (loadPublishedPackage) {
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
