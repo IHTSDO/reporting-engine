@@ -1,0 +1,105 @@
+package org.ihtsdo.termserver.scripting.reports.qi;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.service.TraceabilityService;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetManager;
+
+/**
+ * QI-1019 List inactivated concepts from 20180131 to current
+ */
+public class InactivatedConceptsByRelease extends TermServerReport implements ReportClass {
+	
+	List<String> releaseETs;
+	private static int startYear = 2018;
+	private static String startET = "20180131";
+	TraceabilityService traceabilityService;
+	
+	public static void main(String[] args) throws TermServerScriptException, IOException {
+		Map<String, String> params = new HashMap<>();
+		TermServerReport.run(InactivatedConceptsByRelease.class, args, params);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		getArchiveManager().setPopulateReleasedFlag(true);
+		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; //QI / Misc Analysis
+		super.init(run);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		populateReleaseEffectiveTimes();
+		int releases = releaseETs.size();
+		String[] columnHeadings = new String[releases];
+		Arrays.fill(columnHeadings,"Id, FSN, SemTag, Indicators, Associations, Author, Branch, Date, Spare");
+		String[] tabNames = releaseETs.toArray(new String[releases]);
+		tabNames[0] = "Current";
+		super.postInit(tabNames, columnHeadings, false);
+		traceabilityService = new TraceabilityService(jobRun, this);
+	}
+	
+	private void populateReleaseEffectiveTimes() {
+		releaseETs = new ArrayList<>();
+		int year = Calendar.getInstance().get(Calendar.YEAR);
+		int month = Calendar.getInstance().get(Calendar.MONTH);
+		releaseETs.add("");
+		for (int i=year; i >= startYear; i--) {
+			//Are we in the 2nd half of the year?
+			if (i != year || month > 6) {
+				releaseETs.add(i + "0731");
+			}
+			releaseETs.add(i + "0131");
+		}
+	}
+
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters();
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Inactivated Concepts By Release")
+				.withDescription("This report lists concept inactivations broken down by release with author attribution.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
+	}
+	
+	public void runJob() throws TermServerScriptException {
+		List<Concept> recentlyInactiveConcepts = gl.getAllConcepts().stream()
+				.filter(c -> !c.isActive())
+				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()) ||
+						c.getEffectiveTime().compareTo(startET) > 0)
+				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.collect(Collectors.toList());
+		for (Concept c : recentlyInactiveConcepts) {
+			int tab = determineRelease(c);
+			traceabilityService.populateTraceabilityAndReport(tab, c,
+					c.getInactivationIndicator(),
+					SnomedUtils.prettyPrintHistoricalAssociations(c, gl));
+		}
+	}
+
+	private int determineRelease(Concept c) {
+		String et = c.getEffectiveTime();
+		if (StringUtils.isEmpty(et)) {
+			return 0;
+		}
+		for (int i=1; i < releaseETs.size(); i++) {
+			if (et.compareTo(releaseETs.get(i)) > 0) {
+				return i;
+			}
+		}
+		throw new IllegalArgumentException("Could not determine release of " + et);
+	}
+
+}
