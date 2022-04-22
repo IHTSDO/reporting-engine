@@ -10,6 +10,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -33,14 +34,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	
 	static List<String> checkNoChangeDelta = new ArrayList<>();
 	{
-		checkNoChangeDelta.add("5153801000052117");
-		checkNoChangeDelta.add("5151601000052115");
-		checkNoChangeDelta.add("4576981000052112");
-		checkNoChangeDelta.add("4666761000052115");
-		checkNoChangeDelta.add("4038241000052113");
-		checkNoChangeDelta.add("1553131000052110");
-		checkNoChangeDelta.add("4978681000052111");
-
+		//checkNoChangeDelta.add("5153801000052117");
 	}
 	
 	Map<String, Concept> publishedIntConceptCache = new HashMap<>();
@@ -207,14 +201,22 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 					}
 				}
 				
-				component.setDirty();
-				component.setActive(publishedComponent.isActive());
-				component.setEffectiveTime(publishedComponent.getEffectiveTime());
-				componentModified = true;
-				report(c, ReportActionType.EFFECTIVE_TIME_REVERTED, component.getComponentType(), component);
-				if (component.fieldComparison(publishedComponent, true).size() > 0) {
-					debug("Check Me: " + component + " vs " + publishedComponent);
+				//If the component is a relationship and it has been inactivated, then that should have happened in the extension module
+				//otherwise, revert the core component
+				if (component.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP) &&
+						publishedComponent.isActive() != component.isActive()) {
+					component.setModuleId(moduleId);
+					report(c, ReportActionType.MODULE_CHANGE_MADE, component.getComponentType(), component);
+				} else {
+					component.setActive(publishedComponent.isActive());
+					component.setEffectiveTime(publishedComponent.getEffectiveTime());
+					report(c, ReportActionType.EFFECTIVE_TIME_REVERTED, component.getComponentType(), component);
+					if (component.fieldComparison(publishedComponent, true).size() > 0) {
+						debug("Check Me: " + component + " vs " + publishedComponent);
+					}
 				}
+				component.setDirty();
+				componentModified = true;
 			}
 		}
 		return componentModified;
