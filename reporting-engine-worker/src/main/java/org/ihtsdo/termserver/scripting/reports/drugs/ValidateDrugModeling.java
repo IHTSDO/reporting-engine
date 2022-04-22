@@ -1222,9 +1222,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	 * @throws TermServerScriptException 
 	 */
 	private void checkMissingDoseFormGrouper(Concept c) throws TermServerScriptException {
-		//Does this CD's dose form contain the word injection?
+		//Does this CD's dose form contain the word injection or infusion?
 		Concept doseForm = getDoseForm(c);
-		if (doseForm.getFsn().toLowerCase().contains(INJECTION)) {
+		if (doseForm.getFsn().toLowerCase().contains(INJECTION) && 
+				!doseForm.getFsn().toLowerCase().contains(INFUSION)) {
 			List<Concept> infusionSiblings = findInfusionSiblings(c);
 			if (infusionSiblings.size() > 0) {
 				validateDoseFormGrouperParent(c, infusionSiblings.get(0));
@@ -1262,7 +1263,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				continue nextConcept;
 			}
 			
-			if (!sibling.getFsn().toLowerCase().contains(INFUSION)) {
+			if (!sibling.getFsn().toLowerCase().contains(INFUSION) ||
+				sibling.getFsn().toLowerCase().contains(INJECTION)) {
 				continue nextConcept;
 			}
 			
