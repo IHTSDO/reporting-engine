@@ -1,13 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.Collections;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.dao.ReportDataBroker;
@@ -25,6 +19,20 @@ public class ReleaseSummary {
 	
 	@Expose
 	private List<ReleaseSummaryDetail> releases;
+	
+	public ReleaseSummary() {
+		releases = new ArrayList<>();
+		columnHeadings = new String[] {
+				"Release Date|", "Concept|Concepts added","Concept|Modified per release","Concept|Total unique",
+				"Description|Added for new concepts","Description|Updated for existing concepts","Description|Total unique",
+				"Text Definition|Added for new concepts","Text Definition|Updated for existing concepts",
+				"Text Definition|Total unique","Language Refset|Added for new concepts","Language Refset|Updated for existing concepts",
+				"Language Refset|Total unique","Axiom|Added for new concepts","Axiom|Updated for existing concepts","Axiom|Total unique",
+				"Stated Relationship|Added for new concepts","Stated Relationship|Updated for existing concepts",
+				"Stated Relationship|Total unique","Inferred Relationship|Added for new concepts",
+				"Inferred Relationship|Updated for existing concepts","Inferred Relationship|Total unique" 
+		};
+	}
 	
 	public static void main(String[] args) throws FileNotFoundException {
 		ReleaseSummary rs = ReleaseSummary.loadFromLocal(new File("resources/legacy_int_release_summary.json"));

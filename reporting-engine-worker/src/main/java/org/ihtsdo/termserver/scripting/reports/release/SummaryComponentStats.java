@@ -53,8 +53,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, "S3");
 		params.put(REPORT_FORMAT_TYPE, "JSON");
 		//params.put(MODULES, "731000124108");
@@ -629,7 +629,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		String packageName = projectKey.split("_")[1];
 		
 		//Can we find this file in S3?
-		String releaseSummaryFilePath =  "jobs/SummaryComponentStats/ReleaseSummaries/" + packageName + "/" + packageName + "_ReleaseSummaries.json";
+		String classShortName = this.getClass().getSimpleName();
+		String releaseSummaryFilePath =  "jobs/" + classShortName + "/ReleaseSummaries/" + packageName + "/" + packageName + "_ReleaseSummaries.json";
 		File releaseSummaryFile = new File(releaseSummaryFilePath);
 		
 		ReleaseSummary rs = null;
@@ -639,8 +640,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			String timeStamp = new SimpleDateFormat("_yyyyMMdd_HHmmss").format(new Date());
 			File stampedCopy = new File(releaseSummaryFile.getPath().replace(".json",timeStamp + ".json"));
 			rs.uploadToS3(stampedCopy, reportDataBroker);
-		} else {
+		} else if (releaseSummaryFilePath.contains("International")){
 			rs = ReleaseSummary.loadFromLocal(new File("resources/legacy_int_release_summary.json"));
+		} else {
+			rs = new ReleaseSummary();
 		}
 		
 		//Now add the data obtained in our most recent analysis

@@ -18,14 +18,15 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-		/*params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		params.put(THIS_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20200915T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+
 		params.put(PREV_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20200315T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		params.put(MODULES, "11000172109");*/
-		//params.put(REPORT_OUTPUT_TYPES, "S3");
-		//params.put(REPORT_FORMAT_TYPE, "JSON");
+		
+		params.put(MODULES, "11000172109");
+		params.put(REPORT_OUTPUT_TYPES, "S3");
+		params.put(REPORT_FORMAT_TYPE, "JSON");
 		
 		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
@@ -65,12 +66,13 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		if (XOR(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
 			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");
 		}
+		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 		
-		if (project.getKey().equals("MAIN")) {
+		if (project.getKey().equals("MAIN") && StringUtils.isEmpty(prevDependency)) {
 			throw new TermServerScriptException ("This report cannot be run on MAIN.  Use 'Summary Component Stats for Editions' instead.");
 		}
 		
-		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
+		
 		if (StringUtils.isEmpty(prevDependency)) {
 			prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
 			if (StringUtils.isEmpty(prevDependency)) {

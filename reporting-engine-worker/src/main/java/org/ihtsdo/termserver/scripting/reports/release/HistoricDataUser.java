@@ -95,6 +95,9 @@ public class HistoricDataUser extends TermServerReport {
 		ArchiveManager mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
 			mgr.setLoadEditionArchive(true);
+			if (!StringUtils.isEmpty(thisDependency)) {
+				mgr.setLoadDependencyPlusExtensionArchive(true);
+			}
 			setProject(new Project(projectKey));
 			mgr.loadSnapshot(false);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
