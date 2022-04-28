@@ -32,6 +32,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
   * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
+	private boolean splitOutDisease = false;
+	
 	private static final String dataDir = "historic-data/";
 	private static int ACTIVE = 1;
 	private static int INACTIVE = 0;
@@ -343,9 +345,12 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		}
 		
 		Set<Long> allAncestors = tc.getAncestors(c);
-		//We're going to separate out Diseases from Clinical Findings
-		if (allAncestors.contains(64572001L)) {
-			return DISEASE.getConceptId();
+		
+		if (splitOutDisease) {
+			//We're going to separate out Diseases from Clinical Findings
+			if (allAncestors.contains(64572001L)) {
+				return DISEASE.getConceptId();
+			}
 		}
 
 		for (Long sctId : tc.getAncestors(c)) {
@@ -436,5 +441,9 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 		}
 		return false;
+	}
+	
+	public void splitOutDisease(boolean split) {
+		splitOutDisease = split;
 	}
 }
