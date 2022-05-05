@@ -71,6 +71,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withExpectedDuration(60)
 				.build();
 	}
 	
