@@ -9,7 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.service.TraceabilityService;
+import org.ihtsdo.termserver.scripting.service.TraceabilityServiceImpl;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -23,7 +23,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 	List<String> releaseETs;
 	private static int startYear = 2018;
 	private static String startET = "20180131";
-	TraceabilityService traceabilityService;
+	TraceabilityServiceImpl traceabilityService;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -44,7 +44,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 		String[] tabNames = releaseETs.toArray(new String[releases]);
 		tabNames[0] = "Current";
 		super.postInit(tabNames, columnHeadings, false);
-		traceabilityService = new TraceabilityService(jobRun, this);
+		traceabilityService = new TraceabilityServiceImpl(jobRun, this);
 	}
 	
 	private void populateReleaseEffectiveTimes() {

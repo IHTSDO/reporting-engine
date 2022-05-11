@@ -659,7 +659,7 @@ public class GraphLoader implements ScriptConstants {
 				//If we've already received a newer version of this component, say
 				//by loading INT first and a published MS 2nd, then skip
 				if (!StringUtils.isEmpty(c.getEffectiveTime()) 
-						&& isReleased
+						&& (isReleased != null && isReleased)
 						&& (c.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 					//System.out.println("Skipping incoming published concept row, older than that held");
 					continue;

@@ -41,6 +41,10 @@ public class HistoricDataUser extends TermServerReport {
 	protected int topLevelHierarchyCount = 0;
 	protected String complexName;
 	
+	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+		super.loadProjectSnapshot(fsnOnly);
+	}
+	
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		boolean compareTwoSnapshots = false; 
@@ -261,4 +265,5 @@ public class HistoricDataUser extends TermServerReport {
 		}
 		return reportName;
 	}
+
 }

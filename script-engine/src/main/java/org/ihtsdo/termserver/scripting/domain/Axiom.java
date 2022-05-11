@@ -198,4 +198,9 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 				.map(r -> r.getTarget())
 				.collect(Collectors.toList());
 	}
+
+	@Override
+	public Boolean isReleased() {
+		return released;
+	}
 }

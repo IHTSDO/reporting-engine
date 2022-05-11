@@ -1,12 +1,15 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
+import org.ihtsdo.termserver.scripting.service.TraceabilityServiceImpl;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -16,7 +19,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class NewAndChangedComponents extends TermServerReport implements ReportClass {
+public class NewAndChangedComponents extends HistoricDataUser implements ReportClass {
 	
 	private Set<Concept> newConcepts = new HashSet<>();
 	private Set<Concept> inactivatedConcepts = new HashSet<>();
@@ -50,11 +53,14 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	TraceabilityService traceabilityService;
 	
 	public static int MAX_ROWS_FOR_TRACEABILITY = 10000;
+	private boolean loadHistoricallyGeneratedData = false;
 	
 	Map<String, SummaryCount> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip");
 		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
@@ -78,8 +84,21 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				throw new IllegalArgumentException("Invalid effective time: " + dateCheck);
 			}
 			changesFromET = run.getParamValue(CHANGES_SINCE);
-		}
+		} 
 		super.init(run);
+	}
+	
+	@Override
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+		//If we're working with zip packages, we'll use the HistoricDataGenerator
+		//Otherwise we'll use the default behaviour
+		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
+		if (prevRelease == null) {
+			super.doDefaultProjectSnapshotLoad(fsnOnly);
+		} else {
+			loadHistoricallyGeneratedData = true;
+			super.loadProjectSnapshot(fsnOnly);
+		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -107,8 +126,19 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				"Language Refset Details",
 				"TextDefns"
 		};
+		
+		if (loadHistoricallyGeneratedData) {
+			changesFromET = previousEffectiveTime;
+			traceabilityService = new PassThroughTraceability(this);
+			for (int i=0; i<columnHeadings.length; i++) {
+				//We're not going to populate traceability for published releases
+				columnHeadings[i] = columnHeadings[i].replace(", Author, Task, Date", "");
+			}
+		} else {
+			traceabilityService = new TraceabilityServiceImpl(jobRun, this);
+		}
+		
 		super.postInit(tabNames, columnHeadings, false);
-		traceabilityService = new TraceabilityService(jobRun, this);
 	}
 
 	@Override
@@ -116,7 +146,9 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
 				.add(WORD_MATCHES).withType(JobParameter.Type.STRING)
-				//.add(CHANGES_SINCE).withType(JobParameter.Type.STRING)
+				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
+				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
@@ -132,6 +164,10 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	}
 	
 	public void runJob() throws TermServerScriptException {
+		if (loadHistoricallyGeneratedData) {
+			info ("Loading Previous Data");
+			loadData(prevRelease);
+		}
 		examineConcepts();
 		reportConceptsChanged();
 		determineUniqueCountAndTraceability();
@@ -163,9 +199,9 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				debug("here");
 			}*/
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
-			if (c.isReleased() == null) {
+			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
-			} else if (!c.isReleased()) {
+			} else if (!isReleased(c, c, ComponentType.CONCEPT)) {
 				notReleased++;
 				newConcepts.add(c);
 				summaryCount.isNew++;
@@ -200,7 +236,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				boolean wasInactivated = false;
 				boolean changedAcceptability = false;
 				if (inScope(d)) {
-					if (!d.isReleased()) {
+					if (!isReleased(c, d, ComponentType.DESCRIPTION)) {
 						hasNew.add(c);
 						isNew = true;
 						summaryCount.isNew++;
@@ -230,7 +266,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Descriptions");
 					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 						if (SnomedUtils.hasChangesSince(i, changesFromET)) {
-							if (i.isReleased()) {
+							if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
 								if (i.isActive()) {
 									summaryCount.isChanged++;
 								} else {
@@ -246,7 +282,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
 					for (AssociationEntry h : d.getAssociationEntries()) {
 						if (SnomedUtils.hasChangesSince(h, changesFromET)) {
-							if (h.isReleased()) {
+							if (isReleased(c, h, ComponentType.HISTORICAL_ASSOCIATION)) {
 								if (h.isActive()) {
 									summaryCount.isChanged++;
 								} else {
@@ -264,7 +300,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
 						if (inScope(l)) {
 							if (SnomedUtils.hasChangesSince(l, changesFromET)) {
-								if (l.isReleased()) {
+								if (isReleased(c, l, ComponentType.LANGREFSET)) {
 									if (l.isActive()) {
 										hasChangedLanguageRefSets.add(c);
 										langRefSetIsChanged = true;
@@ -318,7 +354,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (inScope(a)) {
 					if (SnomedUtils.hasChangesSince(a, changesFromET)) {
-						if (a.isReleased()) {
+						if (isReleased(c, a, ComponentType.AXIOM)) {
 							if (a.isActive()) {
 								summaryCount.isChanged++;
 								hasChangedAxioms.add(c);
@@ -339,7 +375,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
 					if (SnomedUtils.hasChangesSince(i, changesFromET)) {
 						hasChangedInactivationIndicators.add(c);
-						if (i.isReleased()) {
+						if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
 							if (i.isActive()) {
 								summaryCount.isChanged++;
 							} else {
@@ -355,7 +391,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				for (AssociationEntry a : c.getAssociationEntries()) {
 					if (SnomedUtils.hasChangesSince(a, changesFromET)) {
 						hasChangedAssociations.add(c);
-						if (a.isReleased()) {
+						if (isReleased(c, a, ComponentType.HISTORICAL_ASSOCIATION)) {
 							if (a.isActive()) {
 								summaryCount.isChanged++;
 							} else {
@@ -382,6 +418,44 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		info ("Total examined: " + conceptsOfInterest.size());
 	}
 
+	private Boolean isReleased(Concept c, Component comp, ComponentType type) throws TermServerScriptException {
+		//If we're working off a previous release + delta, we'll know this directly
+		//otherwise we'll need to lookup the historic data
+		if (loadHistoricallyGeneratedData) {
+			Collection<String> idsActive = getHistoricData(c, comp, type, true);
+			//If either active or inactive ids exist, then this component has been previously published
+			if (idsActive.contains(comp.getId())) {
+				return true;
+			}
+			Collection<String> idsInactive = getHistoricData(c, comp, type, false);
+			//If either active or inactive ids exist, then this component has been previously published
+			if (idsInactive.contains(comp.getId())) {
+				return true;
+			}
+			return false;
+		} else {
+			return comp.isReleased();
+		}
+	}
+
+	private Collection<String> getHistoricData(Concept c, Component comp, ComponentType type, boolean active) throws TermServerScriptException {
+		Datum datum = prevData.get(c.getConceptId());
+		if (datum == null) {
+			return Collections.<String>emptySet();
+		}
+		switch (type) {
+			case CONCEPT : return Collections.singleton(c.getConceptId());
+			case DESCRIPTION : 
+			case TEXT_DEFINITION : return active? datum.descIds : datum.descIdsInact;
+			case INFERRED_RELATIONSHIP : return active ? datum.relIds : datum.relIdsInact;
+			case AXIOM : return active ? datum.axiomIds : datum.axiomIdsInact;
+			case HISTORICAL_ASSOCIATION : return active ? datum.histAssocIds : datum.descHistAssocIdsInact;
+			case ATTRIBUTE_VALUE : return active ? datum.inactivationIds : datum.inactivationIdsInact;
+			case LANGREFSET : return active ? datum.langRefsetIds : datum.langRefsetIdsInact;
+			default : throw new TermServerScriptException("Unexpected component type : " + type);
+		}
+	}
+
 	private Collection<Concept> determineConceptsOfInterest() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest;
 		if (!StringUtils.isEmpty(subsetECL)) {
@@ -399,7 +473,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	}
 
 	private boolean hasLexicalMatch(Concept c, List<String> wordMatches) {
-		if (wordMatches == null || wordMatches.size() ==0) {
+		if (wordMatches == null || wordMatches.size() == 0) {
 			return true;
 		}
 		
@@ -598,6 +672,31 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			summaryCounts.put(type, summaryCount);
 		}
 		return summaryCounts.get(type);
+	}
+	
+	class PassThroughTraceability implements TraceabilityService {
+		
+		TermServerScript ts;
+		
+		PassThroughTraceability (TermServerScript ts) {
+			this.ts = ts;
+		}
+
+		@Override
+		public void flush() throws TermServerScriptException {
+			ts.getReportManager().flushFilesSoft();
+		}
+
+		@Override
+		public void populateTraceabilityAndReport(int reportIdx, Concept c, Object... details)
+				throws TermServerScriptException {
+			ts.report(reportIdx, c , details);
+		}
+
+		@Override
+		public void tidyUp() throws TermServerScriptException {
+			ts.getReportManager().flushFilesSoft();
+		}
 	}
 	
 }
