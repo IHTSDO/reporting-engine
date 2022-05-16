@@ -656,7 +656,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		rs.setEffectiveTime(thisEffectiveTime);
 		rs.setPreviousEffectiveTime(previousEffectiveTime);
 		
-		String[] data = new String[21];
+		String[] data = new String[24];
 		data[0]  = sum(TAB_CONCEPTS, IDX_NEW);
 		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[2]  = sum(TAB_CONCEPTS, IDX_TOTAL);
@@ -669,15 +669,18 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		data[9]  = sum(TAB_LANG, IDX_NEW_NEW);
 		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[11] = sum(TAB_LANG, IDX_TOTAL);
-		data[12]  = sum(TAB_AXIOMS, IDX_NEW_NEW);
+		data[12] = sum(TAB_AXIOMS, IDX_NEW_NEW);
 		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[14] = sum(TAB_AXIOMS, IDX_TOTAL);
 		data[15] = "0";
 		data[16] = "0";
 		data[17] = "1024719";
-		data[18]  = sum(TAB_RELS, IDX_NEW_NEW);
+		data[18] = sum(TAB_RELS, IDX_NEW_NEW);
 		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[20] = sum(TAB_RELS, IDX_TOTAL);
+		data[21] = sum(TAB_CD, IDX_NEW_NEW);
+		data[22] = minusPlus(TAB_CD, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[23] = sum(TAB_CD, IDX_TOTAL);
 		
 		rs.setData(data);
 		return rs;
