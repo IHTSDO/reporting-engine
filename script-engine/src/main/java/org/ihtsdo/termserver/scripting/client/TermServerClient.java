@@ -194,6 +194,11 @@ public class TermServerClient {
 			return restTemplate.getForObject(url, Concept.class);
 	}
 
+	public Description getDescription(String descriptionId, String branchPath) {
+		String url = getDescriptionsPath(branchPath, descriptionId);
+		return restTemplate.getForObject(url, Description.class);
+	}
+
 	public void deleteConcept(String sctId, String branchPath) throws TermServerScriptException {
 		try {
 			restTemplate.delete(getConceptsPath(sctId, branchPath));
