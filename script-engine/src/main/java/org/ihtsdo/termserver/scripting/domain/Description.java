@@ -187,6 +187,14 @@ public class Description extends Component implements ScriptConstants {
 		this.active = newActiveState;
 	}
 
+	public boolean getReleased() {
+		return this.released;
+	}
+
+	public void setReleased(boolean released) {
+		this.released = released;
+	}
+
 	public String getDescriptionId() {
 		return descriptionId;
 	}
