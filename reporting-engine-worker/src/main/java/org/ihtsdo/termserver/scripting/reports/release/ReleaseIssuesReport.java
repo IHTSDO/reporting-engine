@@ -189,6 +189,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				.add(REPORT_FORMAT_TYPE)
 					.withType(JobParameter.Type.HIDDEN)
 					.withDefaultValue(false)
+				.add(UNPROMOTED_CHANGES_ONLY)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
 				.build();
 
 		return new Job()

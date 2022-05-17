@@ -20,11 +20,8 @@ import com.google.common.util.concurrent.AtomicLongMap;
  */
 public class NewDescriptions extends TermServerReport implements ReportClass {
 	
-	private static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted changes only";
-	
 	Logger logger = LoggerFactory.getLogger(this.getClass());
 	AtomicLongMap<String> componentCounts = AtomicLongMap.create();
-	boolean unpromotedChangesOnly = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();

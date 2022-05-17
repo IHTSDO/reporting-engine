@@ -69,12 +69,16 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("KPI Patterns Report")
 				.withDescription("This report identifies a number of potentially problematic patterns, many of which are tracked as KPIs ")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
+				.withParameters(params)
 				.build();
 	}
 

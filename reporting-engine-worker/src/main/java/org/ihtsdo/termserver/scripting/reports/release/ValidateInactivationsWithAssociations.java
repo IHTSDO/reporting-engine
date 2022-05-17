@@ -79,6 +79,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
+				.add(UNPROMOTED_CHANGES_ONLY)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
 				.build();
 
 		return new Job()

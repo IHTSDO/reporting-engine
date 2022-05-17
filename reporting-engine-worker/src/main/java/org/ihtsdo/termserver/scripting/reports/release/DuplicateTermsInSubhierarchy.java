@@ -40,7 +40,9 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT)
 				.add(NEW_ISSUES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
-				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false).build();
+				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))

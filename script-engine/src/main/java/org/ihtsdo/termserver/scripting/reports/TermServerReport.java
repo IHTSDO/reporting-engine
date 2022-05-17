@@ -14,6 +14,9 @@ import org.ihtsdo.termserver.scripting.domain.*;
 public abstract class TermServerReport extends TermServerScript {
 	
 	public static final String IP = "IP";
+	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted changes only";
+	
+	boolean unpromotedChangesOnly = false;
 	
 	@Override
 	protected List<Component> loadLine(String[] lineItems)

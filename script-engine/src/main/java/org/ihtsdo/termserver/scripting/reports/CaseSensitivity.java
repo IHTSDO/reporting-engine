@@ -81,12 +81,16 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Case Significance")
 				.withDescription("This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'. " +
 									"The 'Issues' count here reflects the number of rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
 				.withTag(INT)
 				.build();
 	}
