@@ -396,9 +396,9 @@ public class TermServerClient {
 		}
 	}
 
-	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation)
+	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation, boolean unpromotedChangesOnly)
 			throws TermServerScriptException {
-		Map<String, Object> exportRequest = prepareExportRequest(branchPath, effectiveDate, exportType, extractType);
+		Map<String, Object> exportRequest = prepareExportRequest(branchPath, effectiveDate, exportType, extractType, unpromotedChangesOnly);
 		logger.info ("Initiating export with {}", exportRequest);
 		String exportLocationURL = initiateExport(exportRequest);
 		//INFRA-1489 Workaround
@@ -417,11 +417,12 @@ public class TermServerClient {
 		return recoveredArchive;
 	}
 	
-	private Map<String, Object> prepareExportRequest(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+	private Map<String, Object> prepareExportRequest(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, boolean unpromotedChangesOnly)
 			throws TermServerScriptException {
 		Map<String, Object> exportRequest = new HashMap<>();
 		exportRequest.put("type", extractType);
 		exportRequest.put("branchPath", branchPath);
+		exportRequest.put("unpromotedChangesOnly", unpromotedChangesOnly);
 		switch (exportType) {
 			case MIXED:  //Snapshot allows for both published and unpublished, where unpublished
 				//content would get the transient effective Date

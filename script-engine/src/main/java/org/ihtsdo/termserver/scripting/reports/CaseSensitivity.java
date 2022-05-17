@@ -37,7 +37,9 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	Set<String>wilcardWords = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
-		TermServerReport.run(CaseSensitivity.class, args);
+		Map<String, Object> params = new HashMap<>();
+		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
+		TermServerReport.run(CaseSensitivity.class, params, args);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -184,6 +186,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					continue;
 				}
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					//Are we checking only unpromoted changes?
+					if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(d)) {
+						continue;
+					}
 					incrementSummaryInformation("Descriptions checked");
 					if (whiteList.contains(d.getDescriptionId())) {
 						continue;

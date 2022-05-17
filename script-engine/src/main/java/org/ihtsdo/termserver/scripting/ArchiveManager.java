@@ -453,11 +453,15 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		return archiveDataLoader;
 	}
-
+	
 	public File generateDelta(Project project) throws IOException, TermServerScriptException {
+		return generateDelta(project, false);
+	}
+
+	public File generateDelta(Project project, boolean unpromotedChangesOnly) throws IOException, TermServerScriptException {
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();
-		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
+		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta, unpromotedChangesOnly);
 		return delta;
 	}
 
@@ -606,7 +610,7 @@ public class ArchiveManager implements ScriptConstants {
 			paths.filter(Files::isRegularFile)
 			.forEach( path ->  {
 				try {
-					InputStream is =  toInputStream(path);
+					InputStream is = toInputStream(path);
 					loadFile(path, is , fileType, isDelta, fsnOnly, isReleased);
 					is.close();
 				} catch (Exception e) {

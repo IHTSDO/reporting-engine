@@ -101,7 +101,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			snapshot = File.createTempFile("snapshot_export-", ".zip");
 			//snapshot.deleteOnExit();
 			warn("Downloading Snapshot to: " + snapshot.getCanonicalPath());
-			getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.SNAPSHOT, snapshot);
+			getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.SNAPSHOT, snapshot, false);
 		} catch (TermServerScriptException |IOException e) {
 			throw new TermServerScriptException("Unable to obtain " + project.getKey() + " snapshot",e);
 		}

@@ -10,13 +10,33 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
+import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
 	
 	public static final String IP = "IP";
-	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted changes only";
+	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
 	
-	boolean unpromotedChangesOnly = false;
+	protected boolean unpromotedChangesOnly = false;
+	
+	protected UnpromotedChangesHelper unpromotedChangesHelper;
+	
+	protected void init (JobRun jobRun) throws TermServerScriptException {
+		if (!StringUtils.isEmpty(jobRun.getParamValue(UNPROMOTED_CHANGES_ONLY))) {
+			unpromotedChangesOnly = jobRun.getParamBoolean(UNPROMOTED_CHANGES_ONLY);
+		}
+		super.init(jobRun);
+	}
+	
+	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+		if (unpromotedChangesOnly) {
+			unpromotedChangesHelper = new UnpromotedChangesHelper(this);
+			info("Populating map of unpromoted change components");
+			unpromotedChangesHelper.populateUnpromotedChangesMap(project);
+		}
+		super.postInit(tabNames, columnHeadings, csvOutput);
+	}
 	
 	@Override
 	protected List<Component> loadLine(String[] lineItems)
