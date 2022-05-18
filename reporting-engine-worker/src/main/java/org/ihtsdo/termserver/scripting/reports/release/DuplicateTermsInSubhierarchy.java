@@ -24,8 +24,9 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(NEW_ISSUES_ONLY, "Y");
-		params.put(PT_ONLY, "Y");
+		params.put(NEW_ISSUES_ONLY, "N");
+		params.put(PT_ONLY, "N");
+		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		TermServerReport.run(DuplicateTermsInSubhierarchy.class, args, params);
 	}
 	
@@ -84,8 +85,18 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 			for (Description d : c.getDescriptions(acceptability, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				//Do we already know about this term?
 				Description alreadyKnown = knownTerms.get(d.getTerm());
+				
 				//We will flag this even if it's for the same concept
 				if (alreadyKnown != null) {
+					
+					//Are we checking only unpromoted changes?  Either d or the already known
+					//term can be unpromted to quality
+					if (unpromotedChangesOnly 
+							&& !unpromotedChangesHelper.hasUnpromotedChange(d)
+							&& !unpromotedChangesHelper.hasUnpromotedChange(alreadyKnown)) {
+						continue;
+					}
+					
 					String legacyIssue = "N";
 					if (isLegacy(d).equals("Y") && newIssuesOnly) {
 						continue;
