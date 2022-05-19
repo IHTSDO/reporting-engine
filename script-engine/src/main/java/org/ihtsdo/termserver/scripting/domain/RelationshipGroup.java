@@ -156,11 +156,18 @@ public class RelationshipGroup {
 	}
 	
 	public Concept getValueForType(Concept type) {
+		return getValueForType(type, false);
+	}
+	
+	public Concept getValueForType(Concept type, boolean allowNull) {
 		List<Relationship> rels = relationships.stream()
 		.filter(r -> r.getType().equals(type))
 		.collect(Collectors.toList());
 		
 		if (rels.size() != 1) {
+			if (rels.size() == 0 && allowNull) {
+				return null;
+			}
 			throw new IllegalArgumentException("Expected 1 attribute of type " + type + " found " + rels.size() + " in " + this.toString());
 		}
 		return rels.get(0).getTarget();

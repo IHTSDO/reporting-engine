@@ -806,7 +806,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 	
 	private Concept getMDF(Concept concept) {
-		return concept.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getValueForType(HAS_MANUFACTURED_DOSE_FORM);
+		return getMDF(concept, false);
+	}
+	
+	private Concept getMDF(Concept concept, boolean allowNull) {
+		RelationshipGroup ungrouped = concept.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED);
+		return ungrouped == null ? null : ungrouped.getValueForType(HAS_MANUFACTURED_DOSE_FORM, allowNull);
 	}
 
 	private void validateTerming(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
@@ -1035,6 +1040,17 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private void validateParentSemTags(Concept c, String requiredTag, String issueStr) throws TermServerScriptException {
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			String semTag = SnomedUtils.deconstructFSN(parent.getFsn())[1];
+			
+			//RP-587 There is a case where a CD grouper exists eg for infusion and/or injection
+			//Look for and/or in the parent's dose form
+			Concept parentDoseForm = getMDF(parent, true);
+			
+			//This can fail where a concept might have an extra unwanted "product" parent
+			//eg 1172826001 |Product containing precisely ambroxol acefyllinate 100 milligram/1 each conventional release oral capsule (clinical drug)|
+			if (parentDoseForm != null && parentDoseForm.getFsn().contains("and/or")) {
+				continue;
+			}
+			
 			if (!semTag.equals(requiredTag)) {
 				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
 			}
