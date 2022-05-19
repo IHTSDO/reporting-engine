@@ -37,6 +37,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		TermServerReport.run(KPIPatternsReport.class, args, params);
 	}
 	
@@ -96,16 +97,16 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			info ("Building current Transitive Closure");
 			tc = gl.generateTransativeClosure();
 			
-			info("Checking for historical patterns");
+			info("Checking for historical patterns 11 & 21");
 			if (previousPreviousRelease != null) {
 				checkCreatedButDuplicate();
 				checkPattern11();  //...a very specific situation
 			} else {
-				report (null, "Skipping Patterns 11 & 21", "No previous previous release available");
+				report(null, "Skipping Patterns 11 & 21", "No previous previous release available");
 			}
 			
 		} else {
-			report (null, "Structural integrity test failed.  Report execution terminated early");
+			report(null, "Structural integrity test failed.  Report execution terminated early");
 		}
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -153,15 +154,15 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 						}
 					}
 				}
-				report (c, issueStr, detail);
+				report(c, issueStr, detail);
 				isOK = false;
 			} else if (c.getFsn() == null || c.getFsn().isEmpty()) {
-				report (c, issueStr2);
+				report(c, issueStr2);
 				isOK = false;
 			} else if (c.isActive() && c.getAxiomEntries().size() == 0) {
 				//The Root concept can get away with this
 				if (!c.equals(ROOT_CONCEPT)) {
-					report (c, issueStr3);
+					report(c, issueStr3);
 					isOK = false;
 				} 
 			}
@@ -193,7 +194,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				for (Concept a : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 					for (Concept b :c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 						if (!a.equals(b) && cache.getAncestorsOrSelf(a).contains(b)) {
-							report (c, issueStr, a, b);
+							report(c, issueStr, a, b);
 						}
 					}
 				}
@@ -212,7 +213,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 					for (Relationship b : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
 						if (!a.equals(b) && cache.getAncestorsOrSelf(a.getType()).contains(b.getType())) {
 							if (cache.getAncestorsOrSelf(a.getTarget()).contains(b.getTarget())) {
-								report (c, issueStr, a, b);
+								report(c, issueStr, a, b);
 							}
 						}
 					}
@@ -234,7 +235,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 							continue;
 						} else {
 							if (SnomedUtils.covers(a, b, cache)) {
-								report (c, issueStr, a, b);
+								report(c, issueStr, a, b);
 							}
 						}
 					}
@@ -254,19 +255,19 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			if (!c.isActive() && 
 				(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty())) {
 				if (c.getInactivationIndicator() == null) {
-					report (c, issue2Str);
+					report(c, issue2Str);
 				} else if (c.getInactivationIndicator().equals(InactivationIndicator.DUPLICATE)) {
 					//Did this concept exist in the previous previous release?
 					//If not, then it was created in the previous release and immediately retired
 					try {
 						Concept loadedConcept = loadConcept(c, previousPreviousRelease);
 						if (loadedConcept == null) {
-							report (c, issueStr);
+							report(c, issueStr);
 						}
 					} catch (Exception e) {
-						report (c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
+						report(c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
 						if (++errorCount == 5) {
-							report (c, "API ERROR", "Maximum failures reached, giving up on Pattern 21");
+							report(c, "API ERROR", "Maximum failures reached, giving up on Pattern 21");
 							break;
 						}
 					}
@@ -283,7 +284,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr);
 		
 		if (gl.getPreviousTC() == null) {
-			report (null, "Previous Transative Closure is not available.  Unable to check Pattern 11");
+			report(null, "Previous Transative Closure is not available.  Unable to check Pattern 11");
 			return;
 		}
 		
@@ -316,10 +317,12 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 							.collect (Collectors.toList());
 					if (lostActive.size() > 0) {
 						String stats = previousCount + " -> " + newCount + " (-" + lostActive.size() + ")";
-						report (c, issueStr, toString(newPrimitiveParents), "inferred descendants", 
+						boolean reported = report(c, issueStr, toString(newPrimitiveParents), "inferred descendants", 
 								stats, "eg", lostActive.get(0));
-						for (Concept lostConcept : lostActive) {
-							report(TERTIARY_REPORT, c, lostConcept.getConceptId(), lostConcept.getFsn());
+						if (reported) {
+							for (Concept lostConcept : lostActive) {
+								report(TERTIARY_REPORT, c, lostConcept.getConceptId(), lostConcept.getFsn());
+							}
 						}
 					}
 				}
@@ -345,11 +348,15 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected void report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+		//Are we filtering this report to only concepts with unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return false;
+		}
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 	
 	class GroupPair {

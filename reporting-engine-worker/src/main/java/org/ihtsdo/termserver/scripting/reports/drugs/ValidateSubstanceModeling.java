@@ -192,11 +192,11 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected void report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		super.report (PRIMARY_REPORT, c, details);
+		return super.report (PRIMARY_REPORT, c, details);
 	}
 	
 }

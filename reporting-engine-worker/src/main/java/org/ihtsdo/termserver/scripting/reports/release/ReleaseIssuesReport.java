@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
@@ -20,7 +21,6 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -1464,11 +1464,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected void report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		super.report (PRIMARY_REPORT, c, details);
+		return super.report (PRIMARY_REPORT, c, details);
 	}
 
 	private Object isActive(Component c1, Component c2) {

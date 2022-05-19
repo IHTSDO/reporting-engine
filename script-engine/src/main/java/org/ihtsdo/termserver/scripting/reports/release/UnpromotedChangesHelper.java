@@ -12,7 +12,9 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class UnpromotedChangesHelper implements ScriptConstants {
 	
@@ -54,7 +56,7 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 		}
 	}
 	
-	private void loadFile(Path path, InputStream is)  {
+	private void loadFile(Path path, InputStream is) throws TermServerScriptException  {
 		try {
 			String fileName = path.getFileName().toString();
 			
@@ -105,7 +107,7 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 		}
 	}
 
-	private void loadFile(InputStream is, int conceptIdx) throws IOException {
+	private void loadFile(InputStream is, int conceptIdx) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeaderLine = true;
@@ -113,11 +115,17 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				String componentId = lineItems[IDX_ID];
-				String owningConcept = null;
+				String parentComponentId = null;
 				if (conceptIdx != NOT_SET) {
-					owningConcept = lineItems[conceptIdx];
+					parentComponentId = lineItems[conceptIdx];
 				}
-				unpromotedChangesMap.put(componentId, owningConcept);
+				unpromotedChangesMap.put(componentId, parentComponentId);
+				
+				//If the parent component is a description, then also add that as a component in it's own right.
+				if (SnomedUtils.isDescriptionSctid(parentComponentId)) {
+					Description d = ts.getGraphLoader().getDescription(parentComponentId);
+					unpromotedChangesMap.put(parentComponentId, d.getConceptId());
+				}
 			} else {
 				isHeaderLine = false;
 			}
@@ -125,7 +133,7 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 	}
 
 	public boolean hasUnpromotedChange(Component c) {
-		return unpromotedChangesMap.containsKey(c.getId());
+		return unpromotedChangesMap.containsKey(c.getId()) || unpromotedChangesMap.containsValue(c.getId());
 	}
 
 }

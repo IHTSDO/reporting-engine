@@ -227,9 +227,9 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		}
 	}
 	
-	protected void report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		countIssue(c);
-		super.report (PRIMARY_REPORT, c, details);
+		return super.report (PRIMARY_REPORT, c, details);
 	}
 
 }

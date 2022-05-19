@@ -1654,6 +1654,15 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return componentId.charAt(componentId.length()-2) == '0';
 	}
+	
+	public static boolean isDescriptionSctid(String componentId) {
+		//A 1 in the penultimate character indicates a description SCTID
+		if (StringUtils.isEmpty(componentId)) {
+			return false;
+		}
+		return componentId.charAt(componentId.length()-2) == '1';
+	}
+
 
 	public static Component getParentComponent(RefsetMember rm, GraphLoader gl) throws TermServerScriptException {
 		if (rm == null || StringUtils.isEmpty(rm.getReferencedComponentId())) {

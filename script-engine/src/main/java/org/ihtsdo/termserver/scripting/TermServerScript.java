@@ -1371,19 +1371,20 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		incrementSummaryInformation("Report lines written");
 	}
 
-	protected void report (Concept c, Object...details) throws TermServerScriptException {
-		report (PRIMARY_REPORT, c, details);
+	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+		return report (PRIMARY_REPORT, c, details);
 	}
 	
-	public void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
+	public boolean report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		if (quiet) {
-			return;
+			return false;
 		}
 		//Have we whiteListed this concept?
 		if (!ignoreWhiteList && whiteListedConcepts.contains(c)) {
 			String detailsStr = writeToString(details);
 			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
+			return false;
 		} else {
 			String[] conceptFields = new String[3];
 			if (reportNullConcept || c != null) {
@@ -1399,6 +1400,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			report (reportIdx, conceptFields, details);
 		}
+		return true;
 	}
 	
 	protected void countIssue(Concept c) {
