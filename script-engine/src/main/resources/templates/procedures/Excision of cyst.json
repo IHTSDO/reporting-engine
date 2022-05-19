@@ -1,0 +1,8 @@
+{
+  "name": "Excision of cyst",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Excision+of+cyst+of+%5Bbody+structure%5D+%28procedure%29+-+v1.0",
+  "version": 0.1,
+  "domain": "< 428297005 |Excision of cyst (procedure)|",
+  "logicalTemplate": "71388002 |Procedure (procedure)|  : [[~1..1 @rolegroup]] { [[~1..1]]  260686004 |Method (attribute)|  =  129304002 |Excision - action (qualifier value)| , [[~1..1]]  363700003 |Direct morphology (attribute)|  = [[+id ( <<  367643001 |Cyst (morphologic abnormality)|  ) ]], [[~1..1]]  405813007 |Procedure site - Direct (attribute)| = [[+id ( < 442083009 |Anatomical or acquired body structure (body structure)| )]]  },[[~0..1]] { [[~0..1]]  363702006 |Has focus (attribute)| = [[+id ( <  404684003 |Clinical finding (finding)|  ) ]] }"
+}
+
