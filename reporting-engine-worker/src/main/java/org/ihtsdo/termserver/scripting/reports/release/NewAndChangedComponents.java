@@ -9,7 +9,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
-import org.ihtsdo.termserver.scripting.service.TraceabilityServiceImpl;
+import org.ihtsdo.termserver.scripting.service.BulkTraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -135,7 +135,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				columnHeadings[i] = columnHeadings[i].replace(", Author, Task, Date", "");
 			}
 		} else {
-			traceabilityService = new TraceabilityServiceImpl(jobRun, this);
+			traceabilityService = new BulkTraceabilityService(jobRun, this);
 		}
 		
 		super.postInit(tabNames, columnHeadings, false);
@@ -688,14 +688,20 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 
 		@Override
-		public void populateTraceabilityAndReport(int reportIdx, Concept c, Object... details)
+		public void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details)
 				throws TermServerScriptException {
-			ts.report(reportIdx, c , details);
+			ts.report(tabIdx, c , details);
 		}
 
 		@Override
 		public void tidyUp() throws TermServerScriptException {
 			ts.getReportManager().flushFilesSoft();
+		}
+
+		@Override
+		public void populateTraceabilityAndReport(String fromDate, String toDate, int tabIdx, Concept c, Object... details)
+				throws TermServerScriptException {
+			ts.report(tabIdx, c , details);
 		}
 	}
 	

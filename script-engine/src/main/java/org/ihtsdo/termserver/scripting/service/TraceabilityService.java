@@ -9,6 +9,8 @@ public interface TraceabilityService {
 
 	void populateTraceabilityAndReport(int quaternaryReport, Concept c, Object... details) throws TermServerScriptException;
 
+	void populateTraceabilityAndReport(String fromDate, String toDate, int tab, Concept c, Object... details) throws TermServerScriptException;
+
 	void tidyUp() throws TermServerScriptException;
 
 }

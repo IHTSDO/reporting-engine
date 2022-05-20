@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.service;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -17,9 +18,9 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TraceabilityServiceImpl implements TraceabilityService {
+public class BulkTraceabilityService implements TraceabilityService {
 	
-	static Logger logger = LoggerFactory.getLogger(TraceabilityServiceImpl.class);
+	static Logger logger = LoggerFactory.getLogger(BulkTraceabilityService.class);
 
 	TraceabilityServiceClient client;
 	TermServerScript ts;
@@ -27,7 +28,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 	Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
 	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
 	
-	public TraceabilityServiceImpl(JobRun jobRun, TermServerScript ts) {
+	public BulkTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.ts = ts;
@@ -219,5 +220,10 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 			this.c = c;
 			this.details = details;
 		}
+	}
+
+	@Override
+	public void populateTraceabilityAndReport(String fromDate, String toDate, int tab, Concept c, Object... details) {
+		throw new NotImplementedException("This class uses bulk method, not single concept lookup");
 	}
 }

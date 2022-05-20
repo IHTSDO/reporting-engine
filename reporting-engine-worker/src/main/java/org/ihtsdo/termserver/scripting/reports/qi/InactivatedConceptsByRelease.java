@@ -9,7 +9,8 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.service.TraceabilityServiceImpl;
+import org.ihtsdo.termserver.scripting.service.TraceabilityService;
+import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -23,7 +24,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 	List<String> releaseETs;
 	private static int startYear = 2018;
 	private static String startET = "20180131";
-	TraceabilityServiceImpl traceabilityService;
+	TraceabilityService traceabilityService;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -44,7 +45,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 		String[] tabNames = releaseETs.toArray(new String[releases]);
 		tabNames[0] = "Current";
 		super.postInit(tabNames, columnHeadings, false);
-		traceabilityService = new TraceabilityServiceImpl(jobRun, this);
+		traceabilityService = new SingleTraceabilityService(jobRun, this);
 	}
 	
 	private void populateReleaseEffectiveTimes() {
@@ -82,11 +83,17 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 						c.getEffectiveTime().compareTo(startET) > 0)
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
-		for (Concept c : recentlyInactiveConcepts) {
-			int tab = determineRelease(c);
-			traceabilityService.populateTraceabilityAndReport(tab, c,
-					c.getInactivationIndicator(),
-					SnomedUtils.prettyPrintHistoricalAssociations(c, gl));
+		try {
+			for (Concept c : recentlyInactiveConcepts) {
+				int tab = determineRelease(c);
+				String toDate = tab > 0 ?releaseETs.get(tab-1) : null;
+				String fromDate = releaseETs.get(tab);
+				traceabilityService.populateTraceabilityAndReport(fromDate, toDate, tab, c,
+						c.getInactivationIndicator(),
+						SnomedUtils.prettyPrintHistoricalAssociations(c, gl));
+			}
+		} finally {
+			traceabilityService.flush();
 		}
 	}
 
