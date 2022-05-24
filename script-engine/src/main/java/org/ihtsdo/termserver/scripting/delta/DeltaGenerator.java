@@ -58,7 +58,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
 	
 	protected void init (String[] args) throws TermServerScriptException {
-		
 		for (int x=0; x<args.length; x++) {
 			if (args[x].equals("-m")) {
 				moduleId = args[++x];

@@ -1215,6 +1215,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		getRF2Manager().writeToRF2File(fileName, columns);
 	}
 	
+	protected void writeToRF2File(String fileName, String line) throws TermServerScriptException {
+		if (StringUtils.isEmpty(fileName)) {
+			throw new TermServerScriptException("Request to write to RF2 file with no filename specified");
+		}
+		getRF2Manager().writeToRF2File(fileName, line);
+	}
+	
 	public String getReportName() {
 		if (reportName == null) {
 			String fileName = SnomedUtils.deconstructFilename(inputFile)[1];

@@ -90,7 +90,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 				if (alreadyKnown != null) {
 					
 					//Are we checking only unpromoted changes?  Either d or the already known
-					//term can be unpromted to quality
+					//term can be unpromoted to qualify
 					if (unpromotedChangesOnly 
 							&& !unpromotedChangesHelper.hasUnpromotedChange(d)
 							&& !unpromotedChangesHelper.hasUnpromotedChange(alreadyKnown)) {
