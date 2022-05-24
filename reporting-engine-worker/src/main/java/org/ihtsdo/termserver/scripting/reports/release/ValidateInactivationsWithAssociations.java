@@ -54,6 +54,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "true");
+		params.put(UNPROMOTED_CHANGES_ONLY, "true");
 		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 	
@@ -100,6 +101,12 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		namespaceConcepts = gl.getDescendantsCache().getDescendentsOrSelf(NAMESPACE_CONCEPT);
 		List<Concept> concepts = SnomedUtils.sort(gl.getAllConcepts());
 		for (Concept c : concepts) {
+			//Are we checking only unpromoted changes?  Either d or the already known
+			//term can be unpromoted to qualify
+			if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+				continue;
+			}
+			
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
