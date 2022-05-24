@@ -12,13 +12,16 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import com.amazonaws.services.ssooidc.model.InvalidScopeException;
+
 /*
  * INFRA-2480 Finding concept and description inactivation indicators that are duplicated
  * and remove the unpublished version
  * INFRA-5156 Add ability to delete duplicated historic associations at the same time
  * Also we'll add/re-active any missing concept inactivation indicators on active descriptions
  * INFRA-5274 Also fix up multiple language reference set entries for the same description/dialect
-*/
+ * ISRS-1257 Detect CNC indicators on descriptions that have been made inactive and remove
+ */
 public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 	
 	protected DuplicateLangInactAssocPlusCncFix(final BatchFix clone) {
@@ -57,14 +60,14 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		// the full array of inactivation indicators
 		int changesMade = 0;
 		try {
-			changesMade = fixDuplicates(task, concept, false);
+			changesMade = fixIssues(task, concept, false);
 		} catch (final TermServerScriptException e) {
 			throw new TermServerScriptException("Failed to remove duplicate inactivation indicator on " + concept, e);
 		}
 		return changesMade;
 	}
 
-	private int fixDuplicates(final Task t, final Concept c, final boolean trialRun)
+	private int fixIssues(final Task t, final Concept c, final boolean trialRun)
 			throws TermServerScriptException {
 		int changesMade = 0;
 		
@@ -102,6 +105,9 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		}
 		
 		for (final Description d : c.getDescriptions()) {
+			if (!inScope(d)) {
+				continue;
+			}
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
@@ -137,6 +143,28 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 					dLoaded.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
 					report(t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "ConceptNonCurrent", dLoaded);
 					changesMade++;
+				}
+			}
+			
+			//ISRS-1257 However if the description is inactive, then we don't want any CNC indicators!
+			if (!d.isActive() && hasConceptInactiveIndicator(d)) {
+				for (InactivationIndicatorEntry entry : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+					if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+						//Are we inactivating or deleting?
+						if (entry.isReleased()) {
+							entry.setActive(false);
+							report(t, c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, entry);
+							if (!dryRun) {
+								tsClient.updateRefsetMember(t.getBranchPath(), entry, false);
+							}
+						} else {
+							report(t, c, Severity.LOW, ReportActionType.INACT_IND_DELETED, entry);
+							if (!dryRun) {
+								tsClient.deleteRefsetMember(entry.getId(), t.getBranchPath(), false);
+							}
+						}
+						changesMade++;
+					}
 				}
 			}
 		}
@@ -193,6 +221,13 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 					continue nextConcept;
 				}
 				
+				if (!d.isActive() && hasConceptInactiveIndicator(d)) {
+					if (inScope(d)) {
+						processMe.add(c);
+						continue nextConcept;
+					}
+				}
+				
 				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
 					processMe.add(c);
 					continue nextConcept;
@@ -240,6 +275,10 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			}
 		}
 		return !hasConceptInactiveIndicator;
+	}
+	
+	private boolean hasConceptInactiveIndicator(Description d) {
+		return !isMissingConceptInactiveIndicator(d);
 	}
 
 	private List<DuplicatePair> getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) {
