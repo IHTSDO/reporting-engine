@@ -159,8 +159,8 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 		}
 		
 		//Now do we have any rows to add from the delta?
-		if (fileNameShort.contains("Lang")) {
-			warn("Suppressing LangRefset from Delta: " + fileNameShort);
+		if (fileNameShort.contains("Lang") && !fileNameShort.contains("-fr_")) {
+			warn(fileType + " processing, suppressing LangRefset from Delta: " + fileNameShort);
 		} else if (deltaArchiveMap.containsKey(fileNameShort)) {
 			for (String deltaLine : deltaArchiveMap.get(fileNameShort).values()) {
 				writeToRF2File(targetFileName, deltaLine);
@@ -208,15 +208,23 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 		String fileNameShort = getFileNameShort(fileName, "Snapshot");
 		//Did we get one of these files in our delta?
 		Map<String, String> deltaFileContent = deltaArchiveMap.get(fileNameShort);
+		Map<String, String> suppressContent = null;
 		if (deltaFileContent == null) {
-			warn("No content found to merge for " + fileNameShort);
+			//If we have langrefset entries from fr-ch that have been modified in the CF
+			//Then we're going to not include those in the Snapshot
+			if (fileNameShort.equals("der2_cRefset_Language-fr-ch_")) {
+				suppressContent = deltaArchiveMap.get("der2_cRefset_Language-fr_");
+				warn("Skipping CF content in fr-ch where same id modified in fr ");
+			} else {
+				warn("No content found to merge for " + fileNameShort);
+			}
 		} else {
-			//WARNING WORKAROUND - Not including common french langrefset 
-			if (fileNameShort.contains("Lang")) {
-				warn("Suppressing LangRefset from Delta: " + fileNameShort);
+			//WARNING WORKAROUND - Not including other langrefsets 
+			if (fileNameShort.contains("Lang") && !fileNameShort.contains("-fr_")) {
+				warn("Snapshot processing, suppressing LangRefset from Delta: " + fileNameShort);
 				deltaFileContent = null;
 			} else {
-				info("Merging delta from " + fileNameShort);
+				info("Merging delta from " + fileNameShort + " to " + fileName);
 			}
 		}
 		String line;
@@ -227,7 +235,9 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				String id = lineItems[IDX_ID];
-				if (deltaFileContent != null && deltaFileContent.containsKey(id)) {
+				if (suppressContent != null && suppressContent.containsKey(id)) {
+					info("Switching fr-ch line back to ch : " + line);
+				} else if (deltaFileContent != null && deltaFileContent.containsKey(id)) {
 					writeToRF2File(targetFileName, deltaFileContent.get(id));
 				} else {
 					writeToRF2File(targetFileName, line);
