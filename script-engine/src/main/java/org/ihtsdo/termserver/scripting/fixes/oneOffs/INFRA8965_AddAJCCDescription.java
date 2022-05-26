@@ -18,6 +18,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class INFRA8965_AddAJCCDescription extends BatchFix {
 
 	private Set<String> exclusionTexts;
+	private CaseSignificance defaultCaseSig = CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 	
 	String prefix = "AJCC (American Joint Committee on Cancer) ";
 	
@@ -75,6 +76,8 @@ public class INFRA8965_AddAJCCDescription extends BatchFix {
 		}
 		String newTerm = prefix + pt;
 		Description d = Description.withDefaults(newTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		//TODO For this run we know all the terms need to be CS.  Other runs might need more discerning 
+		d.setCaseSignificance(defaultCaseSig);
 		addDescription(t, c, d);
 		return CHANGE_MADE;
 	}
