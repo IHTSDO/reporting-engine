@@ -215,10 +215,14 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				/*if (d.getId().equals("1197486005")) {
 						debug("here");
 				}*/
-				if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
-					debug("Missing CII: " + d);
-					processMe.add(c);
-					continue nextConcept;
+				
+				//Too many of these in the international edition - discuss elsewhere
+				if (project.getBranchPath().contains("SNOMEDCT-")) {
+					if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
+						debug("Missing CNC CII: " + d);
+						processMe.add(c);
+						continue nextConcept;
+					}
 				}
 				
 				if (!d.isActive() && hasConceptInactiveIndicator(d)) {
