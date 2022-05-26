@@ -12,8 +12,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.amazonaws.services.ssooidc.model.InvalidScopeException;
-
 /*
  * INFRA-2480 Finding concept and description inactivation indicators that are duplicated
  * and remove the unpublished version
@@ -77,25 +75,42 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		
 		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
-			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete);
-			if (!dryRun) {
-				tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+			if (duplicatePair.isDeleting()) {
+				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete);
+				if (!dryRun) {
+					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+				}
+				changesMade++;
+				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getInactivationIndicatorEntries(), t);
+			} else {
+				for (RefsetMember modify : duplicatePair.modify) {
+					RefsetMember original = c.getInactivationIndicatorEntry(modify.getId());
+					report(t, c, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, "Was " + original, "Now " + modify);
+					updateRefsetMember(t, modify, "");
+					changesMade++;
+				}
 			}
-			changesMade++;
-			reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getInactivationIndicatorEntries(), t);
-			
 		}
 		
 		duplicatePairs = getDuplicateRefsetMembers(c, c.getAssociationEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
-			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
-			if (!dryRun) {
-				tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+			if (duplicatePair.isDeleting()) {
+				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
+				if (!dryRun) {
+					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+				}
+				changesMade++;
+				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getAssociationEntries(), t);
+			} else {
+				for (RefsetMember modify : duplicatePair.modify) {
+					RefsetMember original = c.getAssociationEntry(modify.getId());
+					report(t, c, Severity.MEDIUM, ReportActionType.ASSOCIATION_CHANGED, original, modify);
+					updateRefsetMember(t, modify, "");
+					changesMade++;
+				}
 			}
-			changesMade++;
-			reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getAssociationEntries(), t);
 		}
 		
 		//Do we need to load and save the concept?
@@ -209,7 +224,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("50968003"))) {	
+		//for (final Concept c : Collections.singleton(gl.getConcept("199074000"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
 				/*if (d.getId().equals("1197486005")) {
@@ -223,12 +238,12 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 						processMe.add(c);
 						continue nextConcept;
 					}
-				}
 				
-				if (!d.isActive() && hasConceptInactiveIndicator(d)) {
-					if (inScope(d)) {
-						processMe.add(c);
-						continue nextConcept;
+					if (!d.isActive() && hasConceptInactiveIndicator(d)) {
+						if (inScope(d)) {
+							processMe.add(c);
+							continue nextConcept;
+						}
 					}
 				}
 				
@@ -285,7 +300,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		return !isMissingConceptInactiveIndicator(d);
 	}
 
-	private List<DuplicatePair> getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) {
+	private List<DuplicatePair> getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		List<DuplicatePair> duplicatePairs = new ArrayList<>();
 		for (final RefsetMember thisEntry : refsetMembers) {
 			/*if (thisEntry.getId().equals("7816cc67-b074-4bb3-993d-ce8487e23e0a")) {
@@ -298,7 +313,9 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				if (thisEntry.getId().equals(thatEntry.getId()) || 
 						mentioned(duplicatePairs, thisEntry) ||
 						mentioned(duplicatePairs, thatEntry)) {
+					if (true) {}
 					continue;
+					
 				}
 				if (thisEntry.duplicates(thatEntry)) {
 					//Are they both published?  If INT is active and EXT is inactive with no effective time then that's as good as we'll get
@@ -317,10 +334,33 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 							warn("Both entries are released and active! " + thisEntry + " + " + thatEntry);
 						}
 						
-						//That said, if they both have a null effective time, then it LOOKS like we 
-						//created something redudnant in the last authoring cycle.
-						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-							warn("Previously released entries have lost their effective time: " + thisEntry + " + " + thatEntry);
+						//That said, if one or both of them have a null effective time, then it LOOKS like we 
+						//created something redundant in the last authoring cycle.
+						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) || StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+							warn("Previously released entry have lost it's effective time: " + thisEntry + " + " + thatEntry);
+							//Have we modified a previously active refset member such that it's now a duplicate with a previously inactive one?
+							//In this case we need to revert the active one back to it's previous value, inactive it
+							//and resurrect the previously inactive value instead
+							RefsetMember previousThis = loadPreviousRefsetMember(thisEntry.getId());
+							RefsetMember previousThat = loadPreviousRefsetMember(thatEntry.getId());
+							//We want to look for the previous entry that has the value which is on our current active member and keep that
+							RefsetMember active = chooseActive(thisEntry, thatEntry, true);
+							String additionalFieldName = active.getOnlyAdditionalFieldName();
+							String targetOrValue = active.getField(additionalFieldName);
+							RefsetMember previouslyMatching = choose(previousThis, previousThat, targetOrValue, additionalFieldName, true);
+							if (previouslyMatching == null) {
+								//If _neither_ refset member used this target value and they're now duplicate, then
+								//the one that is currently inactive should be reset to its previous state
+								RefsetMember inactive = chooseActive(thisEntry, thatEntry, false);
+								RefsetMember revert = pickByID(inactive.getId(), previousThis, previousThat);
+								revert.setActive(false);
+								duplicatePair = new DuplicatePair().modify(revert);
+							} else {
+								RefsetMember inactivate = choose(previousThis, previousThat, targetOrValue, additionalFieldName, false);
+								previouslyMatching.setActive(true);
+								inactivate.setActive(false);
+								duplicatePair = new DuplicatePair().modify(previouslyMatching, inactivate);
+							}
 						}
 					} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
 						// Delete the unpublished one
@@ -356,6 +396,45 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		return duplicatePairs;
 	}
 
+	private RefsetMember pickByID(String id, RefsetMember... refsetMembers) {
+		for (RefsetMember rm : refsetMembers) {
+			if (rm.getId().equals(id)) {
+				return rm;
+			}
+		}
+		throw new IllegalStateException(id + " was not found in provided set " + refsetMembers);
+	}
+
+	private RefsetMember choose(RefsetMember lhs, RefsetMember rhs, String targetOrValue,
+			String additionalFieldName, boolean matching) {
+		boolean lhsMatches = lhs.getField(additionalFieldName).equals(targetOrValue);
+		boolean rhsMatches = rhs.getField(additionalFieldName).equals(targetOrValue);
+		if (lhsMatches && rhsMatches) {
+			throw new IllegalStateException("Both refset members featured target or value " + lhs + " vs " + rhs);
+		}
+		if (!lhsMatches && !rhsMatches) {
+			warn ("Neither refset members featured target or value " + lhs + " vs " + rhs);
+			return null;
+		}
+		if (matching) {
+			return lhsMatches ? lhs : rhs;
+		}
+		return lhsMatches ? rhs : lhs;
+	}
+
+	private RefsetMember chooseActive(RefsetMember thisEntry, RefsetMember thatEntry, boolean active) {
+		if ((thisEntry.isActive() && thatEntry.isActive()) ||
+			(!thisEntry.isActive() && !thatEntry.isActive())) {
+			throw new IllegalStateException("Unable to find one active member of pair " + thisEntry + " vs " + thatEntry);
+		}
+		
+		if (active) {
+			return thisEntry.isActive() ? thisEntry : thatEntry;
+		} else {
+			return thisEntry.isActive() ? thatEntry : thisEntry;
+		}
+	}
+
 	private RefsetMember hasModule(String[] targetModules, boolean matchLogic, RefsetMember... refsetMembers) {
 		for (RefsetMember rm : refsetMembers) {
 			if (matchLogic && SnomedUtils.hasModule(rm, targetModules)) {
@@ -369,8 +448,19 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 
 	private boolean mentioned(List<DuplicatePair> duplicatePairs, RefsetMember rm) {
 		for (DuplicatePair pair : duplicatePairs) {
-			if (pair.keep.equals(rm) || pair.delete.equals(rm)) {
-				return true;
+			if (pair.isDeleting()) {
+				if (pair.keep.equals(rm) || pair.delete.equals(rm)) {
+					return true;
+				}
+			} else {
+				//Not sure why this fails to find our rm, it does implement hashCode
+				//Perhaps because its array based?
+				//return pair.modify.contains(rm);
+				for (RefsetMember modifyItem : pair.modify) {
+					if (modifyItem.getId().equals(rm.getId())) {
+						return true;
+					}
+				}
 			}
 		}
 		return false;
@@ -379,13 +469,30 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 	class DuplicatePair {
 		RefsetMember keep;
 		RefsetMember delete;
+		Set<RefsetMember> modify;
+		
 		DuplicatePair (RefsetMember keep, RefsetMember delete) {
 			this.keep = keep;
 			this.delete = delete;
 		}
 		
+		DuplicatePair () {
+		}
+		
+		public DuplicatePair modify(RefsetMember... modify) {
+			this.modify = new HashSet<RefsetMember>(Arrays.asList(modify));
+			return this;
+		}
+		
+		public boolean isDeleting() {
+			return delete != null;
+		}
+		
 		public String toString() {
-			return "Delete: " + delete + " vs Keep: " + keep;
+			if (isDeleting()) {
+				return "Delete: " + delete + " vs Keep: " + keep;
+			}
+			return "Modify: " + modify.toString();
 		}
 	}
 }

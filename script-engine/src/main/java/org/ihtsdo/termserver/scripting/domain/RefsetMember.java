@@ -251,6 +251,10 @@ RefsetMember extends Component implements ScriptConstants {
 		return false;
 	}
 	
+	@Override
+	public int hashCode() {
+		return this.getId().hashCode();
+	}
 	
 	public String toString() {
 		String additionalStr = "";
@@ -281,5 +285,12 @@ RefsetMember extends Component implements ScriptConstants {
 
 	public boolean hasAdditionalField(String key) {
 		return getAdditionalFields().containsKey(key);
+	}
+
+	public String getOnlyAdditionalFieldName() {
+		if (additionalFields.size() != 1) {
+			throw new IllegalArgumentException(this + " did not return only one additional field");
+		}
+		return additionalFields.keySet().iterator().next();
 	}
 }
