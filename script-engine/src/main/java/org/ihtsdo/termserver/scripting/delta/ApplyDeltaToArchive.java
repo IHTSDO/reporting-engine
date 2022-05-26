@@ -55,15 +55,19 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 							newEffectiveTime = extractEffectiveTime(fileName);
 						}
 						if (fileName.contains("Delta")) {
-							String fileNameShort = getFileNameShort(fileName, "Delta");
-							ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
-							if (componentType != null && !fileName.startsWith("._")) {
-								info ("Processing " + fileName);
-								Map<String, String> fileMap = processFixDeltaFile(zis, componentType);
-								deltaArchiveMap.put(fileNameShort, fileMap);
-								originalFileNames.put(fileNameShort, fileName);
+							if (fileName.contains("Language")) {
+								info("Skipping all Language files eg " + fileName);
 							} else {
-								info ("Skipping unrecognised file: " + fileName);
+								String fileNameShort = getFileNameShort(fileName, "Delta");
+								ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
+								if (componentType != null && !fileName.startsWith("._")) {
+									info ("Processing " + fileName);
+									Map<String, String> fileMap = processFixDeltaFile(zis, componentType);
+									deltaArchiveMap.put(fileNameShort, fileMap);
+									originalFileNames.put(fileNameShort, fileName);
+								} else {
+									info ("Skipping unrecognised file: " + fileName);
+								}
 							}
 						}
 					}
