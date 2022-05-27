@@ -544,4 +544,9 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		return differences;
 	}
 
+	@Override
+	public void setId(String id) {
+		setRelationshipId(id);
+	}
+
 }

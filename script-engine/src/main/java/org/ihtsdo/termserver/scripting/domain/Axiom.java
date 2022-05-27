@@ -203,4 +203,9 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	public Boolean isReleased() {
 		return released;
 	}
+
+	@Override
+	public void setId(String id) {
+		setAxiomId(id);
+	}
 }

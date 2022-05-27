@@ -257,6 +257,9 @@ public class Description extends Component implements ScriptConstants {
 	}
 
 	public Map<String, Acceptability> getAcceptabilityMap() {
+		if (acceptabilityMap == null) {
+			acceptabilityMap = new HashMap<>();
+		}
 		return acceptabilityMap;
 	}
 
@@ -768,6 +771,10 @@ public class Description extends Component implements ScriptConstants {
 				l.setEffectiveTime(null);
 			}
 		}
+	}
+	
+	public void setTypeId (String typeId) throws TermServerScriptException {
+		setType(SnomedUtils.translateDescType(typeId));
 	}
 
 }

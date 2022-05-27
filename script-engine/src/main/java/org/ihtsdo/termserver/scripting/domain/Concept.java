@@ -1586,5 +1586,9 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	public boolean isPrimitive() {
 		return definitionStatus.equals(DefinitionStatus.PRIMITIVE);
 	}
+	
+	public void setDefinitionStatusId(String definitionStatusId) {
+		definitionStatus = SnomedUtils.translateDefnStatus(definitionStatusId);
+	}
 
 }

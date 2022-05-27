@@ -62,7 +62,7 @@ public class TermServerClient {
 	private final HttpHeaders headers;
 	private final String url;
 	private static final String ALL_CONTENT_TYPE = "*/*";
-	private static final String SNOWOWL_CONTENT_TYPE = "application/json";
+	private static final String JSON_CONTENT_TYPE = "application/json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	public static boolean supportsIncludeUnpublished = true;
@@ -76,7 +76,7 @@ public class TermServerClient {
 		
 		headers = new HttpHeaders();
 		headers.add("Cookie", cookie);
-		headers.add("Accept", SNOWOWL_CONTENT_TYPE);
+		headers.add("Accept", JSON_CONTENT_TYPE);
 		
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(this.url)
@@ -270,7 +270,7 @@ public class TermServerClient {
 			JSONObject jsonObject = new JSONObject();
 			jsonObject.put("parent", parent);
 			jsonObject.put("name", branchName);
-			resty.json(url + "/branches", RestyHelper.content(jsonObject, SNOWOWL_CONTENT_TYPE));
+			resty.json(url + "/branches", RestyHelper.content(jsonObject, JSON_CONTENT_TYPE));
 			final String branchPath = parent + "/" + branchName;
 			logger.info("Created branch {}", branchPath);
 			for (SnowOwlClientEventListener eventListener : eventListeners) {
@@ -290,7 +290,7 @@ public class TermServerClient {
 			final String message = "Merging " + source + " to " + target;
 			json.put("commitComment", message);
 			logger.info(message);
-			resty.json(url + "/merges", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+			resty.json(url + "/merges", RestyHelper.content(json, JSON_CONTENT_TYPE));
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
@@ -340,7 +340,7 @@ public class TermServerClient {
 			String url = this.url + "/" + branchPath + "/classifications";
 			System.out.println(url);
 			System.out.println(json.toString(3));
-			final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+			final JSONResource resource = resty.json(url, RestyHelper.content(json, JSON_CONTENT_TYPE));
 			final String location = resource.getUrlConnection().getHeaderField("Location");
 			System.out.println("location " + location);
 
@@ -390,7 +390,7 @@ public class TermServerClient {
 		try {
 			String id = ConceptHelper.getConceptId(mergedConcept);
 			logger.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
-			resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, SNOWOWL_CONTENT_TYPE));
+			resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, JSON_CONTENT_TYPE));
 		} catch (JSONException | IOException e) {
 			throw new TermServerScriptException(e);
 		}
@@ -499,7 +499,7 @@ public class TermServerClient {
 	public JSONResource updateDescription(String descId, JSONObject descObj, String branchPath) throws TermServerScriptException {
 		try {
 			Preconditions.checkNotNull(descId);
-			JSONResource response =  resty.json(getDescriptionsPath(branchPath,descId) + "/updates", RestyHelper.content(descObj, SNOWOWL_CONTENT_TYPE));
+			JSONResource response =  resty.json(getDescriptionsPath(branchPath,descId) + "/updates", RestyHelper.content(descObj, JSON_CONTENT_TYPE));
 			logger.info("Updated description " + descId);
 			return response;
 		} catch (Exception e) {
