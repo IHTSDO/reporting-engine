@@ -1436,7 +1436,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 				//which throws this calculation out
 				if (!r.getType().equals(PLAYS_ROLE) && !r.getType().equals(IS_A)) {
 					if (r.isConcrete()) {
-						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getConcreteValue().toString());
+						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getConcreteValue().getValue().toString());
 					} else {
 						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getTarget().getId());
 					}

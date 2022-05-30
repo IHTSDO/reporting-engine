@@ -36,7 +36,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * 
  * 
  */
-public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix implements ScriptConstants, ReportClass {
+public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 	
 	DrugTermGeneratorCD termGenerator = new DrugTermGeneratorCD(this);
 	
@@ -59,16 +59,16 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 	
 	Set<String> suppress = new HashSet<>();
 	
-	public CreateMissingDrugConceptsUsingConcreteValues() {
+	public CreateMissingDrugConcepts() {
 		super(null);
 	}
 	
-	protected CreateMissingDrugConceptsUsingConcreteValues(BatchFix clone) {
+	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		TermServerReport.run(CreateMissingDrugConceptsUsingConcreteValues.class, args, new HashMap<>());
+		TermServerReport.run(CreateMissingDrugConcepts.class, args, new HashMap<>());
 	}
 	
 	public void runJob() throws TermServerScriptException {
