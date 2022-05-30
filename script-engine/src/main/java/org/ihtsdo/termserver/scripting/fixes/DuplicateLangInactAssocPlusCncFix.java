@@ -232,7 +232,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				}*/
 				
 				//Too many of these in the international edition - discuss elsewhere
-				if (project.getBranchPath().contains("SNOMEDCT-")) {
+				/*if (project.getBranchPath().contains("SNOMEDCT-")) {
 					if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 						debug("Missing CNC CII: " + d);
 						processMe.add(c);
@@ -245,7 +245,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 							continue nextConcept;
 						}
 					}
-				}
+				}*/
 				
 				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
 					processMe.add(c);

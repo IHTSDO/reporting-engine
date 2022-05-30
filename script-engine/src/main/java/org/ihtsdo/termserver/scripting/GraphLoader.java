@@ -322,7 +322,11 @@ public class GraphLoader implements ScriptConstants {
 							c.getGciAxioms().add(AxiomUtils.toAxiom(c, axiomEntry, axiom));
 							axiomEntry.setGCI(true);
 						} else if (!conceptId.equals(LHS)) {
-							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
+							//Have we got these weird NL axioms that exist on a different concept?
+							log.append("Encountered " + (axiomEntry.isActive()?"active":"inactive") + " axiom on different concept to LHS argument");
+							continue;
+							//TODO
+							//throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
 						Set<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
