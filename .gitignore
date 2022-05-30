@@ -11,4 +11,5 @@ bin
 *.csv
 *.pem
 *.zip
+*.zip_*
 *.old
