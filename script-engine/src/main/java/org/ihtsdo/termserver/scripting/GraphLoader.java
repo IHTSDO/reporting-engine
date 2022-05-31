@@ -184,7 +184,7 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				
-				/*if (lineItems[REL_IDX_ID].equals("14004406025")) {
+				/*if (lineItems[REL_IDX_ID].equals("4675343027")) {
 					TermServerScript.debug("here");
 				}*/
 				
@@ -198,6 +198,11 @@ public class GraphLoader implements ScriptConstants {
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					TermServerScript.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
+				}
+				//Dutch extension has phantom concept referenced in an inactive stated relationship
+				if (lineItems[REL_IDX_DESTINATIONID].equals("39451000146106")) {
+					log.append("Skipping reference to phantom concept - 39451000146106");
+					continue;
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				
@@ -217,9 +222,20 @@ public class GraphLoader implements ScriptConstants {
 				if (existing != null &&
 						!StringUtils.isEmpty(existing.getEffectiveTime()) 
 						&& (isReleased != null && isReleased)
-						&& (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-					//System.out.println("Skipping incoming published relationship row, older than that held");
-					continue;
+						&& (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 0)) {
+					//If we get a subsequent import with the SAME date, then we'll keep the active one
+					//TODO IF an extension and the international edition end up making a chance to a component on the same 
+					//date, then we should take the international state to be the final state because the extension cannot
+					//have known about the International changes at the time it was published ie it was based on an earlier 
+					//edition of International. We would then upgrade that extension with our new component version.
+					if (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) == 0) {
+						if (existing.isActive() && lineItems[IDX_ACTIVE].equals("0")) {
+							System.out.println("Skipping incoming published relationship row with same date as cuurently held, but inactive.");
+							continue;
+						}
+					} else {
+						continue;
+					}
 				}
 				
 				if (addRelationshipsToConcepts) {
