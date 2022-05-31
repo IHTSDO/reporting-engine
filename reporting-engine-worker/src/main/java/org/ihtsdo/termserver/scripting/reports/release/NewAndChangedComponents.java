@@ -153,7 +153,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("New And Changed Components")
-				.withDescription("This report lists all components new and changed in the current release cycle, optionally restricted to a subset defined by an ECL expression." +
+				.withDescription("This report lists all components new and changed in the current release cycle or, by specifying published zip files following a pattern of SnomedCT_InternationalRF2_PRODUCTION_YYYYMMDDT120000Z.zip, between two previous releases.  Optionally, restrict the report to a subset defined by an ECL expression." +
 				"The issue count here is the total number of concepts featuring one change or another.  Note that specifying ECL means that inactive concepts will not be included, on account of them having no hierarchial position.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
