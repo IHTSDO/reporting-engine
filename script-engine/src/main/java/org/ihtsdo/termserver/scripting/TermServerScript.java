@@ -47,7 +47,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
 	protected boolean inputFileHasHeaderRow = false;
-	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
+	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
 	private String dependencyArchive;

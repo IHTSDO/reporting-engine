@@ -278,7 +278,7 @@ public class Description extends Component implements ScriptConstants {
 		if (descriptionId == null && (term == null || term.isEmpty())) {
 			return "";
 		}
-		String caseSig = caseSignificance.toString();
+		String caseSig = caseSignificance == null ? "?" : caseSignificance.toString();
 		try {
 			caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance); 
 		} catch (Exception e) {}
@@ -570,7 +570,12 @@ public class Description extends Component implements ScriptConstants {
 		}
 		//We only need one refset entry per description for a given refsetId
 		//Remove any entries with the same id first
-		langRefsetEntries.remove(lang);
+		if (langRefsetEntries != null) {
+			langRefsetEntries.remove(lang);
+		} else {
+			langRefsetEntries = new ArrayList<>();
+		}
+		
 		if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
 			langRefsetEntries.stream()
 				.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {

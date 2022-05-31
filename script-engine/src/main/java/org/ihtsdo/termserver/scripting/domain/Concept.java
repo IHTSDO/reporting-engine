@@ -215,7 +215,13 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 			if (fsn instanceof String) {
 				return fsn.toString();
 			} else if (fsn instanceof Map){
-				return ((Map<?,?>)fsn).get("term").toString();
+				Map<?,?> fsnMap = (Map<?,?>)fsn;
+				if (!fsnMap.containsKey("term")) {
+					System.out.println("Check unexpected map here: " + fsn.toString());
+					return fsnMap.toString();
+				} else {
+					return ((Map<?,?>)fsn).get("term").toString();
+				}
 			}else {
 				return fsn.toString();
 			}
