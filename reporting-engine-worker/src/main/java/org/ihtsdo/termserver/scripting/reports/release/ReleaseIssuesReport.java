@@ -95,7 +95,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
-		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
+		//params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		/*params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
 		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		params.put(REPORT_TYPE, ReportConfiguration.ReportType.USER.toString());*/
@@ -1444,10 +1444,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	//RP-180
 	private void domainMustNotUseType() throws TermServerScriptException {
+		//FORMAT 0 - Domain 1 - Disallowed Attribute 2 - Unless also a member of domain
 		Concept[][] domainTypeIncompatibilities = new Concept[][] 
 				{
-					{ gl.getConcept("413350009 |Finding with explicit context|"), gl.getConcept("363589002 |Associated procedure|")},
-					{ gl.getConcept("129125009 |Procedure with explicit context|"), gl.getConcept("408729009 |Finding context|")}
+					{ gl.getConcept("413350009 |Finding with explicit context|"), gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("129125009 |Procedure with explicit context|")},
+					{ gl.getConcept("129125009 |Procedure with explicit context|"), gl.getConcept("408729009 |Finding context|"),  gl.getConcept("413350009 |Finding with explicit context|")}
 				};
 		for (Concept[] domainType : domainTypeIncompatibilities) {
 			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
@@ -1455,7 +1456,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Concept c : domainType[0].getDescendents(NOT_SET)) {
 				if (c.isActive() && inScope(c)) {
 					if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, domainType[1])) {
-						report (c, issueStr, isLegacy(c), isActive(c, null));
+						//RP-574 But is this concept also a type of a domain that would allow this attribute?
+						Set<Concept> ancestors = c.getAncestors(NOT_SET);
+						if (!ancestors.contains(domainType[2])) {
+							report (c, issueStr, isLegacy(c), isActive(c, null));
+						}
 					}
 				}
 			}
