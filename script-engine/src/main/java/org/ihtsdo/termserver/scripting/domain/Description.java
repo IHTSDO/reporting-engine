@@ -339,7 +339,7 @@ public class Description extends Component implements ScriptConstants {
 		clone.effectiveTime = keepIds ? this.effectiveTime : null; 
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
-		clone.descriptionId = newSCTID;
+		clone.descriptionId = keepIds? this.descriptionId : newSCTID;
 		clone.conceptId = this.conceptId;
 		clone.type = this.type;
 		clone.lang = this.lang;

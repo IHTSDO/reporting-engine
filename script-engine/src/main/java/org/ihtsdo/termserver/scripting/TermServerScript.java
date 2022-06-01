@@ -538,6 +538,38 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return loadedConcept;
 	}
 	
+	protected Description loadDescription(String sctId, String branchPath) throws TermServerScriptException {
+		if (dryRun) {
+			//In a dry run situation, the task branch is not created so use the Project instead
+			//But we'll clone it, so the object isn't confused with any local changes
+			
+			//If we're already working at project level, don't modify branchPath
+			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
+			if (branchPath.contains("SNOMEDCT-") && CharMatcher.is('/').countIn(branchPath) == 2) {
+				//debug ("MS Project detected as branch path: " + branchPath);
+			} else if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
+				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
+			}
+			if (runStandAlone) {
+				debug ("Loading: " + gl.getDescription(sctId) + " from local store");
+				return gl.getDescription(sctId).clone(null, true);
+			}
+		}
+		try {
+			return tsClient.getDescription(sctId, branchPath);
+		} catch (Exception e) {
+			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
+				|| e.getMessage().contains("404 Not Found")
+				|| e.getMessage().contains("NOT_FOUND")) {
+				debug ("Unable to find description " + sctId + " on branch " + branchPath);
+				return null;
+			}
+			e.printStackTrace();
+			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			throw new TermServerScriptException("Failed to recover description " + sctId + " from TS branch " + branchPath + ", due to: " + msg,e);
+		}
+	}
+	
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
 		//Detect attempt to load a deleted concept
