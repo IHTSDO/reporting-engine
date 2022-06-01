@@ -19,6 +19,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class MSSP1532_MissingTranslations extends BatchFix {
 	
+	private static String previousReleaseBranch = "MAIN/SNOMEDCT-NL/2022-03-31";
+	
 	private Map<Concept, List<Description>> importedFileConceptMap = new HashMap<>();
 	private Map<String, Description> importedFileDescriptionMap = new HashMap<>();
 	private boolean langRefsetLoaded =  false;
@@ -109,9 +111,27 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 			importedFileConceptMap.put(c, descriptions);
 		}
 		descriptions.add(d);
-		return Collections.singletonList(c);
+		//return Collections.singletonList(c);
+		if (!d.isActive()) {
+			checkPreviousStateOfComponent(c, d);
+		}
+		return null;
 	}
 	
+
+	private void checkPreviousStateOfComponent(Concept c, Description d) throws TermServerScriptException {
+		Description loadedDescription = loadDescription(d.getId(), previousReleaseBranch);
+		if (loadedDescription == null) {
+			report((Task)null,c, Severity.MEDIUM, ReportActionType.INFO, "Description inactive in Delta was not found in previous release", d);
+		} else {
+			//Now if the description was previously active and is now inactive, that's fine
+			if (loadedDescription.isActive()) {
+				report((Task)null,c, Severity.NONE, ReportActionType.INFO, "Description previously active now inactive.  All Good", loadedDescription);
+			} else {
+				report((Task)null,c, Severity.HIGH, ReportActionType.INFO, "System anomaly", loadedDescription);
+			}
+		}
+	}
 
 	private void loadLangRefsetFile() throws TermServerScriptException {
 		String langRefFilePath = "G:\\My Drive\\036_ManagedService\\2022\\NL\\MSSP-1532_Missing_Translations\\Delta\\Refset\\Language\\der2_cRefset_LanguageDelta_NL_20220511.txt";
