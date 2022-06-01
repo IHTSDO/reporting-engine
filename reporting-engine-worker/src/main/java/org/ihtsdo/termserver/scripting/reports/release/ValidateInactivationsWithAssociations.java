@@ -268,9 +268,12 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						if (!isLegacy(d) || includeLegacyIssues) {
 							//Expect inactivation indicator here, but not Concept-non-current
 							if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
-								report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
-								incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
-								countIssue(c);
+								//FRI-272 Agreed with Maria that we're not going to put time into these when they're legacy
+								if (!isLegacy(d)) {
+									report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
+									incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
+									countIssue(c);
+								}
 							} else {
 								InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 								if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
