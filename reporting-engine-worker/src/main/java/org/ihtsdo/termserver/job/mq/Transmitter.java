@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class Transmitter {
 	
+	public static int MAX_TEXT_LENGTH = 65000;
+	
 	@Autowired
 	private JmsTemplate jmsTemplate;
 	
@@ -44,6 +46,14 @@ public class Transmitter {
 		JobRun clone = run.clone();
 		clone.setAuthToken(null);
 		
+		//RP-594 We might have more information than we can digest in the debugInfo
+		String debugInfo = run.getDebugInfo();
+		if (debugInfo != null) {
+			logger.warn("Full debug message truncated to 65K characters\n {}", debugInfo);
+			debugInfo = debugInfo.substring(0, Math.min(debugInfo.length(), MAX_TEXT_LENGTH)) + "...[truncated at source]";
+			run.setDebugInfo(debugInfo);
+		}
+		
 		//We also need to only return parameters that the job indicated it can handle
 		//Can only do this for jobs we know about however!
 		//We'll also re-assert the specified parameter order at this time, in case it's been lost
@@ -64,7 +74,7 @@ public class Transmitter {
 		//Transmit in a new thread so that we receive a separate transaction.   Otherwise the 'running' status
 		//won't be sent until the job is complete
 		executorService.execute(() -> {
-				logger.info("Transmitting response:" + run);
+				logger.info("Transmitting response: {}", run);
 				jmsTemplate.convertAndSend(responseQueueName, clone);
 		});
 	}
