@@ -1,10 +1,13 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -25,6 +28,8 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 	private static int startYear = 2018;
 	private static String startET = "20180131";
 	TraceabilityService traceabilityService;
+	
+	SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -88,6 +93,13 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 				int tab = determineRelease(c);
 				String toDate = tab > 0 ?releaseETs.get(tab-1) : null;
 				String fromDate = releaseETs.get(tab);
+				//Work 2 months earlier, as changes could have been sitting in a task
+				try {
+					Date fromDateDate = DateUtils.addDays(DateUtils.parseDate(fromDate, "yyyyMMdd"),-60);
+					fromDate = dateFormat.format(fromDateDate);
+				} catch (ParseException e) {
+					throw new TermServerScriptException("Unable to parse date '" + fromDate + "'");
+				}
 				traceabilityService.populateTraceabilityAndReport(fromDate, toDate, tab, c,
 						c.getInactivationIndicator(),
 						SnomedUtils.prettyPrintHistoricalAssociations(c, gl));

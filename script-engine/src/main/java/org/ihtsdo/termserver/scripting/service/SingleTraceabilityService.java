@@ -20,13 +20,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class SingleTraceabilityService implements TraceabilityService {
 	
 	static Logger logger = LoggerFactory.getLogger(SingleTraceabilityService.class);
-
+	private static int WORKER_COUNT = 3;
+	
 	private TraceabilityServiceClient client;
 	private TermServerScript ts;
 	private static int MAX_PENDING_SIZE  = 100;
 	private static int MIN_PENDING_SIZE  = 50;
 	
-	private Worker worker;
+	private int requestCount = 0;
+	
+	private Worker[] workers;
 	
 	public SingleTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
@@ -35,20 +38,27 @@ public class SingleTraceabilityService implements TraceabilityService {
 	}
 	
 	public void tidyUp() {
-		worker.shutdown();
+		for (Worker worker : workers) {
+			worker.shutdown();
+		}
 	}
 	
 	public void populateTraceabilityAndReport(String fromDate, String toDate, int reportTabIdx, Concept c, Object... details) throws TermServerScriptException {
 		ReportRow row = new ReportRow(fromDate, toDate, reportTabIdx, c, details);
 		//Do we have a work thread running?
-		if (worker == null) {
-			worker = new Worker();
-			Thread t = new Thread(worker);
-			t.start();
+		if (workers == null) {
+			workers = new Worker[WORKER_COUNT];
+			for (int i=0;i<WORKER_COUNT; i++) {
+				workers[i] = new Worker(i);
+				Thread t = new Thread(workers[i]);
+				t.start();
+			}
 		}
 		
 		//Pop this row in our queue and we'll get to it when we get to it.
-		worker.addToQueue(row);
+		//Pick a new worker to add to each request
+		workers[requestCount%WORKER_COUNT].addToQueue(row);
+		requestCount++;
 	}
 	
 	private void populateReportRowWithTraceabilityInfo(ReportRow row) {
@@ -124,33 +134,38 @@ public class SingleTraceabilityService implements TraceabilityService {
 		private Queue<ReportRow> queue = new LinkedBlockingQueue<>();
 		boolean shutdownPending = false;
 		boolean isRunning = false;
+		int workerId;
+
+		public Worker(int id) {
+			this.workerId = id;
+		}
 
 		@Override
 		public void run() {
 			isRunning = true;
-			logger.debug("Worker is running");
+			logger.debug("Worker {} is running", workerId);
 			while (true) {
 				if (shutdownPending) {
-					logger.debug("Worker shutting down");
+					logger.debug("Worker {} shutting down", workerId);
 					System.gc();
 					isRunning = false;
 					break;
 				} else if (queue.isEmpty()) {
-					logger.debug("Processing queue is empty, worker sleeping for 5 seconds");
+					logger.debug("Processing queue is empty, worker {} sleeping for 5 seconds", workerId);
 					try {
 						Thread.sleep(1000 * 5);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				} else {
-					logger.debug("Worker's queue contains " + queue.size() + " rows to process");
+					logger.debug("Worker {}'s queue contains " + queue.size() + " rows to process", workerId);
 				}
 				while(queue.size() > 0) {
 					ReportRow row = queue.remove();
 					try {
 						process(row);
 					} catch (TermServerScriptException e) {
-						logger.error("Failed to process row " + row, e);
+						logger.error("Worker {} Failed to process row {} ", workerId,  row, e);
 					}
 				}
 			}
@@ -194,17 +209,19 @@ public class SingleTraceabilityService implements TraceabilityService {
 
 	@Override
 	public void flush() throws TermServerScriptException {
-		worker.shutdown();
-		if (worker.isRunning()) {
-			logger.debug("Waiting for worker to shut down");
-			while (worker.isRunning()) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		for (Worker worker : workers) {
+			worker.shutdown();
+			if (worker.isRunning()) {
+				logger.debug("Waiting for worker to shut down");
+				while (worker.isRunning()) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
+				logger.debug("Worker confirmed shutdown");
 			}
-			logger.debug("Worker confirmed shutdown");
 		}
 	}
 
