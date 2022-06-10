@@ -120,9 +120,14 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		}
 		
 		for (final Description d : c.getDescriptions()) {
+			if (d.getId().equals("61401000195115")) {
+				debug("here");
+			}
+			
 			if (!inScope(d)) {
 				continue;
 			}
+			
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
@@ -227,9 +232,9 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		//for (final Concept c : Collections.singleton(gl.getConcept("199074000"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
-				/*if (d.getId().equals("1197486005")) {
+				if (d.getId().equals("61401000195115")) {
 						debug("here");
-				}*/
+				}
 				
 				//Too many of these in the international edition - discuss elsewhere
 				/*if (project.getBranchPath().contains("SNOMEDCT-")) {
