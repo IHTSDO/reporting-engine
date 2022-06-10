@@ -39,10 +39,11 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Object Property Axioms")
-				.withDescription("This report lists all concepts which have special OWL axioms like GCIs")
+				.withDescription("This report lists all concepts which have special OWL axioms like GCIs. For extensions, only additional axioms and GCIs in the appropriate module will be listed, but all special object axioms (like role-chains) will be given.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 	
@@ -64,13 +65,17 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 				continue;
 			}
 			for (Axiom a : c.getAdditionalAxioms()) {
-				report (SECONDARY_REPORT, c, a);
-				countIssue(c);
+				if (inScope(a)) {
+					report (SECONDARY_REPORT, c, a);
+					countIssue(c);
+				}
 			}
 			
 			for (Axiom a : c.getGciAxioms()) {
-				report (TERTIARY_REPORT, c, a);
-				countIssue(c);
+				if (inScope(a)) {
+					report (TERTIARY_REPORT, c, a);
+					countIssue(c);
+				}
 			}
 			
 			if (c.getObjectPropertyAxiomRepresentation() != null) {
