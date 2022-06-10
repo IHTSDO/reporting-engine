@@ -19,11 +19,11 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class MSSP1532_MissingTranslations extends BatchFix {
 	
-	private static String previousReleaseBranch = "MAIN/SNOMEDCT-NL/2022-03-31";
+	//private static String previousReleaseBranch = "MAIN/SNOMEDCT-NL/2022-03-31";
 	
 	private Map<Concept, List<Description>> importedFileConceptMap = new HashMap<>();
 	private Map<String, Description> importedFileDescriptionMap = new HashMap<>();
-	private boolean langRefsetLoaded =  false;
+	//private boolean langRefsetLoaded =  false;
 	
 	protected MSSP1532_MissingTranslations(BatchFix clone) {
 		super(clone);
@@ -52,10 +52,10 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		if (!langRefsetLoaded) {
+		/*if (!langRefsetLoaded) {
 			loadLangRefsetFile();
 			langRefsetLoaded = true;
-		}
+		}*/
 		int changesMade = 0;
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
@@ -78,7 +78,7 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 			Description loadedDesc = c.getDescription(d.getId());
 			if (loadedDesc == null) {
 				//Well is it known anywhere to the system?
-				Description foundDesc = gl.getDescription(d.getId());
+				Description foundDesc = gl.getDescription(d.getId(), false, false);  //Don't create if not found.  Don't validate exists.
 				if (foundDesc != null) {
 					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Expected: " + d, "Found " + foundDesc);
 				} else {
@@ -104,15 +104,21 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 		Description.fillFromRf2(d, lineItems);
 		importedFileDescriptionMap.put(lineItems[IDX_ID], d);
 		
-		Concept c = gl.getConcept(lineItems[DES_IDX_CONCEPTID]);
-		List<Description> descriptions = importedFileConceptMap.get(c);
-		if (descriptions == null) {
-			descriptions = new ArrayList<>();
-			importedFileConceptMap.put(c, descriptions);
+		Concept c = gl.getConcept(lineItems[DES_IDX_CONCEPTID], false, false);  //Don't create concept if we don't have it
+		if (c == null) {
+			report ((Task)null, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Description offered for concept not found in project", d);
+			return null;
+		} else {
+			List<Description> descriptions = importedFileConceptMap.get(c);
+			if (descriptions == null) {
+				descriptions = new ArrayList<>();
+				importedFileConceptMap.put(c, descriptions);
+			}
+			descriptions.add(d);
+			return Collections.singletonList(c);
 		}
-		descriptions.add(d);
-		//return Collections.singletonList(c);
-		if (!d.isActive()) {
+		
+		/*if (!d.isActive()) {
 			checkPreviousStateOfComponent(c, d);
 		}
 		return null;
@@ -130,7 +136,7 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 			} else {
 				report((Task)null,c, Severity.HIGH, ReportActionType.INFO, "System anomaly", loadedDescription);
 			}
-		}
+		}*/
 	}
 
 	private void loadLangRefsetFile() throws TermServerScriptException {
