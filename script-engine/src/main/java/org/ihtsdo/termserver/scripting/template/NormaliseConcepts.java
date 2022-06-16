@@ -26,7 +26,8 @@ public class NormaliseConcepts extends BatchFix {
 	//private String ecl = "<! 267038008 |Edema (finding)|";
 	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
 	//private String ecl = "<! 409063005 |Counseling (procedure)|";
-	private String ecl = "<< 10942006 |Plication (procedure)|  ";
+	//private String ecl = "<< 10942006 |Plication (procedure)|  ";
+	private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
