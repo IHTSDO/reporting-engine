@@ -128,9 +128,9 @@ public class TermServerClient {
 		}
 	}
 	
-	public List<CodeSystemVersion> getCodeSystemVersions() throws TermServerScriptException {
+	public List<CodeSystemVersion> getCodeSystemVersions(String codeSystem) throws TermServerScriptException {
 		try {
-			String url = this.url + "/codesystems/SNOMEDCT/versions?showFutureVersions=true";
+			String url = this.url + "/codesystems/" + codeSystem + "/versions?showFutureVersions=true";
 			logger.debug("Recovering codesystem versions from " + url);
 			return restTemplate.getForObject(url, CodeSystemVersionCollection.class).getItems();
 		} catch (RestClientException e) {

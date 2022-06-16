@@ -157,6 +157,7 @@ public class OAuthCredentials implements ICredentials {
 		if (startIndex != -1) {
 			int endIndex = privateKeyString.indexOf(END_PRIVATE_KEY);
 			privateKeyString = privateKeyString.substring(startIndex + BEGIN_PRIVATE_KEY.length(), endIndex).trim();
+			privateKeyString = privateKeyString.replace("\n", "");
 			// decode private key
 			PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyString));
 			return KeyFactory.getInstance(RSA).generatePrivate(privSpec);

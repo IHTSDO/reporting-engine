@@ -5,12 +5,15 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.client.JiraHelper;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
+
+import net.rcarz.jiraclient.Issue;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -23,9 +26,16 @@ public class SingleTraceabilityService implements TraceabilityService {
 	private static int WORKER_COUNT = 3;
 	
 	private TraceabilityServiceClient client;
+	private JiraHelper jiraHelper;
 	private TermServerScript ts;
 	private static int MAX_PENDING_SIZE  = 100;
 	private static int MIN_PENDING_SIZE  = 50;
+	
+	private Map<String, Issue> jiraIssueMap = new HashMap<>();
+	
+	private static int IDX_USERNAME = 0;
+	private static int IDX_BRANCH = 1;
+	private static int IDX_COMMIT_DATE = 2;
 	
 	private int requestCount = 0;
 	
@@ -34,6 +44,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 	public SingleTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
+		this.jiraHelper = new JiraHelper();
 		this.ts = ts;
 	}
 	
@@ -69,25 +80,52 @@ public class SingleTraceabilityService implements TraceabilityService {
 		
 		for (Activity activity : traceabilityInfo) {
 			Object[] info = new Object[3];
-			info[0] = activity.getUsername();
-			info[1] = activity.getBranch();
+			info[IDX_USERNAME] = activity.getUsername();
+			info[IDX_BRANCH] = activity.getBranch();
 			if (activity.getCommitDate() == null) {
-				info[2] = null;
+				info[IDX_COMMIT_DATE] = null;
 			} else {
-				info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
+				info[IDX_COMMIT_DATE] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
 			}
 			
 			if (StringUtils.isEmpty((String)info[1])) {
 				continue;  //Skip blanks
 			}
 			
-			if (row.traceabilityInfo != null && !StringUtils.isEmpty((String) row.traceabilityInfo[1])) {
+			if (row.traceabilityInfo != null && !StringUtils.isEmpty((String) row.traceabilityInfo[IDX_BRANCH])) {
 				//Keep the latest commit date in the set
-				if (((ZonedDateTime)info[2]).isAfter((ZonedDateTime)row.traceabilityInfo[2])) {
+				if (((ZonedDateTime)info[IDX_COMMIT_DATE]).isAfter((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE])) {
 					row.traceabilityInfo = info;
 				}
 			} else {
 				row.traceabilityInfo = info;
+			}
+			
+			if (row.traceabilityInfo[IDX_USERNAME].equals("System")) {
+				recoverTaskAuthor(row.traceabilityInfo);
+			}
+		}
+	}
+
+	private void recoverTaskAuthor(Object[] info) {
+		if (info[IDX_BRANCH] != null) {
+			String branch = info[IDX_BRANCH].toString();
+			//Have we seen this branch before?
+			Issue jiraIssue = jiraIssueMap.get(info[IDX_BRANCH]);
+			try {
+				if (jiraIssue == null) {
+					String taskKey = branch.substring(branch.lastIndexOf("/")+1);
+					jiraIssue = jiraHelper.getJiraTicket(taskKey);
+				}
+				
+				if (jiraIssue != null) {
+					info[IDX_USERNAME] = jiraIssue.getAssignee().getId();
+					jiraIssueMap.put(branch, jiraIssue);
+				}
+			} catch (Exception e) {
+				logger.error("Unable to recover task information related to " + info[IDX_BRANCH],e);
+				//Store this failure so that we don't try to recover it again.
+				jiraIssueMap.put(branch, null);
 			}
 		}
 	}

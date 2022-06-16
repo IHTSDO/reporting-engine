@@ -124,19 +124,29 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				debug("here");
 			}
 			
-			if (!inScope(d)) {
-				continue;
-			}
-			
+			//Langrefset entries should be checked, regardless if the description is inScope or not
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
-				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
-				if (!dryRun) {
-					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+				if (duplicatePair.isDeleting()) {
+					debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
+					if (!dryRun) {
+						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+					}
+					changesMade++;
+					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
+				} else {
+					for (RefsetMember modify : duplicatePair.modify) {
+						RefsetMember original = c.getAssociationEntry(modify.getId());
+						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original, modify);
+						updateRefsetMember(t, modify, "");
+						changesMade++;
+					}
 				}
-				changesMade++;
-				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
+			}
+			
+			if (!inScope(d)) {
+				continue;
 			}
 			
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
@@ -415,7 +425,15 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		boolean lhsMatches = lhs.getField(additionalFieldName).equals(targetOrValue);
 		boolean rhsMatches = rhs.getField(additionalFieldName).equals(targetOrValue);
 		if (lhsMatches && rhsMatches) {
-			throw new IllegalStateException("Both refset members featured target or value " + lhs + " vs " + rhs);
+			//throw new IllegalStateException("Both refset members featured target or value " + lhs + " vs " + rhs);
+			//In this case, we should pick the one that was active in the the last release
+			if (lhs.isActive() && !rhs.isActive()) {
+				return matching?lhs:rhs;
+			} else if (rhs.isActive() && !lhs.isActive()) {
+				return matching?rhs:lhs;
+			} else {
+				throw new IllegalStateException("Both refset members featured target or value and have same state: " + lhs + " vs " + rhs);
+			}
 		}
 		if (!lhsMatches && !rhsMatches) {
 			warn ("Neither refset members featured target or value " + lhs + " vs " + rhs);

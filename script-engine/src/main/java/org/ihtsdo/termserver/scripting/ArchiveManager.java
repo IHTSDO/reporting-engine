@@ -147,8 +147,9 @@ public class ArchiveManager implements ScriptConstants {
 	public String getPreviousPreviousBranch(Project project) throws TermServerScriptException {
 		Branch branch = loadBranch(project);
 		String previousRelease = branch.getMetadata().getPreviousRelease();
+		String codeSystem = extractCodeSystemFromBranch(branch);
 		try {
-			List<CodeSystemVersion> codeSystems = ts.getTSClient().getCodeSystemVersions();
+			List<CodeSystemVersion> codeSystems = ts.getTSClient().getCodeSystemVersions(codeSystem);
 			//Filter out anything that's not a release date, then sort descending
 			List<CodeSystemVersion> releases = codeSystems.stream()
 			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
@@ -169,8 +170,9 @@ public class ArchiveManager implements ScriptConstants {
 	public String getPreviousBranch(Project project) throws TermServerScriptException {
 		Branch branch = loadBranch(project);
 		String previousRelease = branch.getMetadata().getPreviousRelease();
+		String codeSystem = extractCodeSystemFromBranch(branch);
 		try {
-			List<CodeSystemVersion> codeSystems = ts.getTSClient().getCodeSystemVersions();
+			List<CodeSystemVersion> codeSystems = ts.getTSClient().getCodeSystemVersions(codeSystem);
 			//Filter out anything that's not a release date, then sort descending
 			List<CodeSystemVersion> releases = codeSystems.stream()
 			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
@@ -184,8 +186,19 @@ public class ArchiveManager implements ScriptConstants {
 			}
 			return releases.get(0).getBranchPath();
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to recover child branches due to " + e.getMessage(),e);
+			throw new TermServerScriptException("Failed to recover previous branch due to " + e.getMessage(),e);
 		}
+	}
+
+	private String extractCodeSystemFromBranch(Branch branch) {
+		String codeSystem = "SNOMEDCT";
+		if (branch.getPath().contains(codeSystem)) {
+			String[] branchParts = branch.getPath().split("/");
+			if (branchParts[1].startsWith(codeSystem)) {
+				codeSystem = branchParts[1];
+			}
+		}
+		return codeSystem;
 	}
 
 	public void loadSnapshot(boolean fsnOnly) throws TermServerScriptException {

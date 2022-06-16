@@ -34,6 +34,14 @@ public class JiraHelper {
 		}
 		return jiraIssue;
 	}
+	
+	public Issue getJiraTicket(String taskKey) throws TermServerScriptException {
+		try {
+			return getJiraClient().getIssue(taskKey);
+		} catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException | JiraException e) {
+			throw new TermServerScriptException("Failed to recover Jira task", e);
+		}
+	}
 
 	/**
 	 * Get an instance of JiraClient that will make signed OAuth requests as the specified username.
