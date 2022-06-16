@@ -281,9 +281,10 @@ public class GraphLoader implements ScriptConstants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
-				/*if (lineItems[IDX_ID].equals("a4271895-d420-4209-9487-57bb361905bd")) {
+				if (isDelta == true && (lineItems[IDX_ID].equals("41aa7a1e-edd2-8d69-ae64-5459fbb15755") ||
+						lineItems[IDX_ID].equals("4deeaba6-865b-639b-ff3b-e2b0a1e34a57"))) {
 					TermServerScript.debug ("here");
-				}*/
+				}
 				
 				try {
 					//Also save data in RF2 form so we can build Snapshot
@@ -330,12 +331,12 @@ public class GraphLoader implements ScriptConstants {
 					if (axiom != null) {
 						Long LHS = axiom.getLeftHandSideNamedConcept();
 						if (LHS == null) {
-							//Is this a CGI?
+							//Is this a GCI?
 							Long RHS = axiom.getRightHandSideNamedConcept();
 							if (!conceptId.equals(RHS)) {
 								throw new IllegalArgumentException("GCI Axiom RHS != RefCompId: " + line);
 							}
-							c.getGciAxioms().add(AxiomUtils.toAxiom(c, axiomEntry, axiom));
+							c.addGciAxiom(AxiomUtils.toAxiom(c, axiomEntry, axiom));
 							axiomEntry.setGCI(true);
 						} else if (!conceptId.equals(LHS)) {
 							//Have we got these weird NL axioms that exist on a different concept?

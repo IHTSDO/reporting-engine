@@ -79,7 +79,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	
 	@SerializedName("gciAxioms")
 	@Expose
-	private List<Axiom> gciAxioms;
+	private Set<Axiom> gciAxioms;
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
@@ -1408,14 +1408,14 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		this.additionalAxioms = additionalAxioms;
 	}
 
-	public List<Axiom> getGciAxioms() {
+	public Set<Axiom> getGciAxioms() {
 		if (gciAxioms == null) {
-			gciAxioms = new ArrayList<>();
+			gciAxioms = new HashSet<>();
 		}
 		return gciAxioms;
 	}
 
-	public void setGciAxioms(List<Axiom> gciAxioms) {
+	public void setGciAxioms(Set<Axiom> gciAxioms) {
 		this.gciAxioms = gciAxioms;
 	}
 
@@ -1595,6 +1595,11 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	
 	public void setDefinitionStatusId(String definitionStatusId) {
 		definitionStatus = SnomedUtils.translateDefnStatus(definitionStatusId);
+	}
+
+	public void addGciAxiom(Axiom axiom) {
+		//Watch that this is a set, so we will replace any existing axiom with the same id
+		getGciAxioms().add(axiom);
 	}
 
 }

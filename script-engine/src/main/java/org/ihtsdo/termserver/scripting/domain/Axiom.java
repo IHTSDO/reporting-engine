@@ -108,6 +108,12 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 		//If neither has an Id, are they the same object?
 		return this == o;
 	}
+	
+	@Override
+	public int hashCode() {
+		return this.getId().hashCode();
+	}
+	
 	@Override
 	public String getId() {
 		return axiomId;

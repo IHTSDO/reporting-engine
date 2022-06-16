@@ -65,14 +65,14 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 				continue;
 			}
 			for (Axiom a : c.getAdditionalAxioms()) {
-				if (inScope(a)) {
+				if (inScope(a) && a.isActive()) {
 					report (SECONDARY_REPORT, c, a);
 					countIssue(c);
 				}
 			}
 			
 			for (Axiom a : c.getGciAxioms()) {
-				if (inScope(a)) {
+				if (inScope(a) && a.isActive()) {
 					report (TERTIARY_REPORT, c, a);
 					countIssue(c);
 				}

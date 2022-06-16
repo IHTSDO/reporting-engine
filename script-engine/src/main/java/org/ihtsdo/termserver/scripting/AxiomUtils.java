@@ -47,6 +47,7 @@ public class AxiomUtils implements ScriptConstants {
 
 	public static Axiom toAxiom(Concept c, AxiomEntry axiomEntry, AxiomRepresentation axiomRepresentation) throws TermServerScriptException {
 		Axiom axiom = new Axiom(c);
+		axiom.setAxiomId(axiomEntry.getId());
 		axiom.setActive(axiomEntry.isActive());
 		axiom.setModuleId(axiomEntry.getModuleId());
 		axiom.setRelationships(extractRelationships(c, axiomRepresentation));
