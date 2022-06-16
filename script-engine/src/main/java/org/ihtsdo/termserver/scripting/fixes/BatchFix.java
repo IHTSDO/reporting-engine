@@ -810,6 +810,14 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT, String info) throws TermServerScriptException {
 		Description replacement = null;
 		Description reuseMe = c.findTerm(newTerm);
+		
+		//We'll recover an original copy of the description so that we see the original name in the report
+		Concept origConcept = gl.getConcept(c.getId());
+		
+		if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(newTerm)) {
+			debug ("Check case sensitivity here");
+		}
+
 		if (reuseMe != null) {
 			if (reuseMe.isActive()) {
 				//If d is preferred then if we're demoting the PT then just swap the acceptability
@@ -817,17 +825,17 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					Map<String, Acceptability> ptAcceptMap = d.getAcceptabilityMap();
 					d.setAcceptabilityMap(reuseMe.getAcceptabilityMap());
 					reuseMe.setAcceptabilityMap(ptAcceptMap);
-					report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe, info);
+					report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe, info);
 					return reuseMe;
 				} else {
-					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active", reuseMe, info);
+					report(t, origConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active", reuseMe, info);
 					//Have we in fact asked for no change? Return unchanged if so
 					if (d.equals(reuseMe)) {
 						return reuseMe;
 					}
 				}
 			} else {
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating", reuseMe, info);
+				report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating", reuseMe, info);
 				reuseMe.setActive(true);
 				reuseMe.setInactivationIndicator(null);
 			}
@@ -843,8 +851,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		if (d != null) {
 			if (d.isPreferred() && demotePT && d.getType().equals(DescriptionType.SYNONYM)) {
 				SnomedUtils.demoteAcceptabilityMap(d);
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, replacement, info);
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d, info);
+				report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, replacement, info);
+				report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d, info);
 			} else {
 				removeDescription(t, c, d, newTerm, indicator);
 			}
