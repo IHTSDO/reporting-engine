@@ -2071,4 +2071,18 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return false;
 	}
 
+	public static int downgradeTermToAcceptable(Description d) {
+		//Get a list of all refsets that we have acceptability for and ensure
+		//that it's acceptable
+		int changesMade = 0;
+		Map<String, Acceptability> acceptablityMap = d.getAcceptabilityMap();
+		for (String refsetId : acceptablityMap.keySet()) {
+			if (acceptablityMap.get(refsetId).equals(Acceptability.PREFERRED)) {
+				changesMade++;
+				acceptablityMap.put(refsetId, Acceptability.ACCEPTABLE);
+			}
+		}
+		return changesMade;
+	}
+
 }
