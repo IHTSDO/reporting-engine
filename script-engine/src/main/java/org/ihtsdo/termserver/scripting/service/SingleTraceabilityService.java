@@ -15,7 +15,6 @@ import org.snomed.otf.traceability.domain.ActivityType;
 
 import net.rcarz.jiraclient.Issue;
 
-import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -149,6 +148,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 				
 				if (jiraIssue != null) {
 					info[IDX_USERNAME] = jiraIssue.getAssignee().getId();
+
 					//It might be that we have a 'name' and id is null
 					if (StringUtils.isEmpty(info[IDX_USERNAME])) {
 						info[IDX_USERNAME] = jiraIssue.getAssignee().getName();
