@@ -70,7 +70,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		super.init(args);
 		info ("Select an environment for live secondary checking ");
 		for (int i=0; i < environments.length; i++) {
-			println ("  " + i + ": " + environments[i]);
+			println("  " + i + ": " + environments[i]);
 		}
 		print ("Choice: ");
 		String choice = STDIN.nextLine().trim();
@@ -78,11 +78,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		String secondaryURL = environments[envChoice];
 		
 		if (!secondaryURL.equals(url)) {
-			print ("Please enter your authenticated cookie for connection to " + url + " : ");
+			print("Please enter your authenticated cookie for connection to " + url + " : ");
 			String secondaryCookie = STDIN.nextLine().trim();
 			secondaryConnection = createTSClient(url, secondaryCookie);
 		} else {
-			println ("Existing authentication cookie will be used for secondary connection");
+			println("Existing authentication cookie will be used for secondary connection");
 			secondaryConnection = createTSClient(url, authenticatedCookie);
 		}
 	}
@@ -101,18 +101,18 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {
-				report (thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
+				report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
 				continue;
 			}
 			
 			if (!thisConcept.isActive()) {
-				report (thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
+				report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 				continue;
 			}
 			
 			//Have we already processed this concept because it was a dependency of another concept?
 			if (allModifiedConcepts.contains(thisConcept)) {
-				report (thisConcept, Severity.LOW, ReportActionType.INFO, "Concept specified for transfer but already processed as a dependency (or is duplicate).");
+				report(thisConcept, Severity.LOW, ReportActionType.INFO, "Concept specified for transfer but already processed as a dependency (or is duplicate).");
 				continue;
 			}
 			try {
@@ -122,10 +122,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				} else if (thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) &&
 							SnomedUtils.countAttributes(thisConcept, CharacteristicType.STATED_RELATIONSHIP) == 0) {
 					//Check we're not ending up with a Fully Defined concept with only ISAs
-					report (thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept FD with only ISAs ", thisConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+					report(thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept FD with only ISAs ", thisConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 				}
 			} catch (TermServerScriptException e) {
-				report (thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report(thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return allIdentifiedConcepts;
@@ -144,7 +144,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		if (c.getModuleId() ==  null) {
-			report (c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept does not specify a module!  Unable to switch.");
+			report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept does not specify a module!  Unable to switch.");
 			return false;
 		}
 		//It's possible that this concept has already been transferred by an earlier run if it was identified as a dependency, so 
@@ -156,19 +156,19 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//And even then we might do it, if it's missing from the target server (eg NEBCSR)
 		if (conceptOnTS.equals(NULL_CONCEPT)) {
 			if (!c.getModuleId().equals(moduleId)) {
-				report (c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
+				report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
 			}
 			//Was this concept originally specified, or picked up as a dependency?
 			String parents = parentsToString(c);
 			
 			if (!conceptOnTS.equals(NULL_CONCEPT)) {
 				conceptAlreadyTransferred = true;
-				report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept has already been moved to " + targetModuleId + " (possibly as a dependency).   Checking descriptions and relationships", c.getDefinitionStatus().toString(), parents);
+				report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept has already been moved to " + targetModuleId + " (possibly as a dependency).   Checking descriptions and relationships", c.getDefinitionStatus().toString(), parents);
 			} else {
 				if (allIdentifiedConcepts.contains(c)) {
-					report (c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, "Specified concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
+					report(c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, "Specified concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
 				} else {
-					report (c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
+					report(c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
 				}
 				c.setModuleId(targetModuleId);
 				//mark it as dirty explicitly, just incase it already had this module!
@@ -190,11 +190,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				c.setModuleId(targetModuleId);
 				if (allIdentifiedConcepts.contains(c)) {
 					if (c.getModuleId().equals(targetModuleId)) {
-						report (c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
+						report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
 					} else {
 						String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
 						warn(msg);
-						report (c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
+						report(c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
 					}
 				}
 			}
@@ -232,7 +232,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					String existingFsnId = conceptOnTS.getFSNDescription().getId();
 					Description loadedFSN = c.getDescription(existingFsnId);
 					if (loadedFSN != null) {
-						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
+						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
 						setDescriptionAndLangRefModule(loadedFSN);
 						loadedFSN.setActive(false, true); //Force dirty flag
 						subComponentsMoved = true;
@@ -241,7 +241,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
 					Description loadedPT = c.getDescription(existingPtId);
 					if (loadedPT != null) {
-						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
+						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
 						setDescriptionAndLangRefModule(loadedPT);
 						loadedPT.setActive(true); //Will only mark dirty if not already active
 						//Only demote to US acceptable if currently preferred in US
@@ -286,7 +286,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		//Did we move some of the modeling but not all of it?  Warn about that if so
 		if (relationshipMoved && relationshipAlreadyMoved) {
-			report (c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Partial move on the modeling.  Exported axiom may be incomplete.");
+			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Partial move on the modeling.  Exported axiom may be incomplete.");
 		}
 		
 		/* Policy is not to moved inferred modeling
@@ -380,7 +380,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| (a.getEffectiveTime() != null && a.getEffectiveTime().equals(axiomOnTS.getEffectiveTime())))) {
 					//Only need to say something if we originally thought we were supposed to move this concept
 					if (allIdentifiedConcepts.contains(c)) {
-						report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Axiom already on server with same (or no) effective time", a.getId());
+						report(conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Axiom already on server with same (or no) effective time", a.getId());
 					}
 					return false;
 				}
@@ -430,7 +430,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Because axiom relationships don't have IDs we need to search for type/value
 			//Relationship relOnTS = conceptOnTS.getRelationship(r.getId());
 			if (conceptOnTS.getRelationships(r).size() > 0) {
-				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already on target server", r);
+				report(conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already on target server", r);
 				return false;
 			}
 		} 
@@ -471,7 +471,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						Concept replacement = getReplacement(loadedTarget);
 						String msg = "Target of " + r + " is inactive in MAIN due to " + reason;
 						msg += ". Replacing with " + replacement;
-						report (r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
+						report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 						target = replacement;
 						Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
 						//Ensure it gets allocated to the same Axiom
@@ -492,7 +492,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					if (!allIdentifiedConcepts.contains(target)) {
 						incrementSummaryInformation("Unexpected dependencies included");
 						addSummaryInformation("Unexpected target dependency: " + target, "");
-						report (r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in Stated Modeling", target);
+						report(r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in Stated Modeling", target);
 					}
 				} else {
 					//No need to try to switch this concept again
@@ -503,7 +503,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
-			report (r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
+			report(r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
 		}
 		return true;
 	}
@@ -558,7 +558,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)) {
 					doShiftDescription = false;
 				} else {
-					report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Description already on server, identical even down to LangRefset", d);
+					report(conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Description already on server, identical even down to LangRefset", d);
 					return false;
 				}
 			}
@@ -624,11 +624,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			if (doShiftDescription) {
-				report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, d, d.getId());
+				report(c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, d, d.getId());
 			} else {
 				for (LangRefsetEntry l : d.getLangRefsetEntries()) {
 					if (l.isDirty()) {
-						report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, l, d);
+						report(c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, l, d);
 					}
 				}
 			}

@@ -1271,7 +1271,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (StringUtils.isEmpty(fileName)) {
 			throw new TermServerScriptException("Request to write to RF2 file with no filename specified");
 		}
-		getRF2Manager().writeToRF2File(fileName, columns);
+		if (dryRun) {
+			debug("Dry run. Live run would write to " + fileName + " : " + columns);
+		} else {
+			getRF2Manager().writeToRF2File(fileName, columns);
+		}
 	}
 	
 	protected void writeToRF2File(String fileName, String line) throws TermServerScriptException {

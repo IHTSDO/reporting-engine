@@ -296,7 +296,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			// The zip filename will be the name of the first thing in the zip location
 			// ie in this case the directory SnomedCT_RF1Release_INT_20150731
 			if (dirToZip.listFiles() == null || dirToZip.listFiles().length == 0) {
-				throw new TermServerScriptException ("No files found to zip in " + dirToZip);
+				throw new TermServerScriptException ("No files found to zip in '" + dirToZip + "'");
 			}
 			
 			String zipFileName = dirToZip.listFiles()[0].getName() + ".zip";
