@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
+import org.apache.commons.lang3.time.DateUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -9,13 +10,14 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
-import org.ihtsdo.termserver.scripting.service.BulkTraceabilityService;
+import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,6 +52,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	private static final String WORD_MATCHES = "Word Matches";
 	private static final String CHANGES_SINCE = "Changes From";
 	
+	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
+	
 	TraceabilityService traceabilityService;
 	
 	public static int MAX_ROWS_FOR_TRACEABILITY = 10000;
@@ -59,8 +63,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
+		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip");
 		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
@@ -135,7 +139,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				columnHeadings[i] = columnHeadings[i].replace(", Author, Task, Date", "");
 			}
 		} else {
-			traceabilityService = new BulkTraceabilityService(jobRun, this);
+			traceabilityService = new SingleTraceabilityService(jobRun, this);
 		}
 		
 		super.postInit(tabNames, columnHeadings, false);
@@ -498,13 +502,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(inactivatedConcepts);
 		debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			traceabilityService.populateTraceabilityAndReport(SECONDARY_REPORT, c,
+			populateTraceabilityAndReport(SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newConcepts.contains(c)?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N",
 				getLanguages(c));
 		}
-		traceabilityService.flush();
 		superSet.clear();
 		
 		superSet.addAll(hasNewInferredRelationships);
@@ -526,7 +529,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		debug ("Creating axiom report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			traceabilityService.populateTraceabilityAndReport(QUATERNARY_REPORT, c,
+			populateTraceabilityAndReport(QUATERNARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewAxioms.contains(c)?"Y":"N",
@@ -547,7 +550,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			if (includeTraceability) {
-				traceabilityService.populateTraceabilityAndReport(QUINARY_REPORT, c,
+				populateTraceabilityAndReport(QUINARY_REPORT, c,
 					c.isActive()?"Y":"N",
 					newWithNewConcept,
 					hasNewDescriptions.contains(c)?"Y":"N",
@@ -573,7 +576,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasChangedInactivationIndicators);
 		debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			traceabilityService.populateTraceabilityAndReport(SENARY_REPORT, c,
+			populateTraceabilityAndReport(SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
 				hasChangedInactivationIndicators.contains(c)?"Y":"N");
@@ -597,7 +600,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasChangedAcceptabilityTextDefn);
 		debug ("Creating text defn report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			traceabilityService.populateTraceabilityAndReport(DENARY_REPORT, c,
+			populateTraceabilityAndReport(DENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewTextDefn.contains(c)?"Y":"N",
 				hasChangedTextDefn.contains(c)?"Y":"N",
@@ -608,8 +611,6 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
 		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
 		superSet.clear();
-		
-		traceabilityService.flush();
 		
 		//Populate the summary numbers for each type of component
 		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
@@ -624,6 +625,13 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 	}
 	
+	private void populateTraceabilityAndReport(int tabIdx, Concept c, Object... data) throws TermServerScriptException {
+		//We're now working on monthly releases, so it could be anything in the last 3 months tops
+		Date fromDateDate = DateUtils.addDays(new Date(),-180);
+		String fromDate = dateFormat.format(fromDateDate);
+		traceabilityService.populateTraceabilityAndReport(fromDate, null, tabIdx, c, data);
+	}
+
 	private String getLanguages(Concept c) {
 		Set<String> langs = new TreeSet<>();
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {

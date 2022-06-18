@@ -7,7 +7,7 @@ public interface TraceabilityService {
 
 	void flush() throws TermServerScriptException;
 
-	void populateTraceabilityAndReport(int quaternaryReport, Concept c, Object... details) throws TermServerScriptException;
+	void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details) throws TermServerScriptException;
 
 	void populateTraceabilityAndReport(String fromDate, String toDate, int tab, Concept c, Object... details) throws TermServerScriptException;
 

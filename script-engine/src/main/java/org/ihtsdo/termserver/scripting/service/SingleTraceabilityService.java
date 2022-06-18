@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.service;
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
+import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.JiraHelper;
@@ -55,6 +56,8 @@ public class SingleTraceabilityService implements TraceabilityService {
 	
 	static private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	
+	private Map<String, Map<String, Object[]>> cachePerTimeSlot = new HashMap<>();
+	
 	public SingleTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
@@ -93,39 +96,61 @@ public class SingleTraceabilityService implements TraceabilityService {
 		}
 	}
 	
-	private void populateReportRowWithTraceabilityInfo(ReportRow row) {
-		List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row);
-		if (traceabilityInfo.size() == 0) {
-			logger.warn("Failed to recover any traceability information for concept {}", row.c.getConceptId());
+	private void populateReportRowWithTraceabilityInfo(ReportRow row) throws TermServerScriptException {
+		if (row == null) {
+			throw new TermServerScriptException("Request to populate row with traceability information, but row was not supplied");
+		}
+		//Do we have a traceability cache for this particular time slot?
+		String timeSlotKey = row.toDate == null? "NULL" : row.toDate;
+		Map<String, Object[]> traceabilityCache = cachePerTimeSlot.get(timeSlotKey);
+		if (traceabilityCache == null) {
+			traceabilityCache = new HashMap<>();
+			cachePerTimeSlot.put(timeSlotKey, traceabilityCache);
 		}
 		
-		for (Activity activity : traceabilityInfo) {
-			Object[] info = new Object[3];
-			info[IDX_USERNAME] = activity.getUsername();
-			info[IDX_BRANCH] = activity.getBranch();
-			if (activity.getCommitDate() == null) {
-				info[IDX_COMMIT_DATE] = null;
-			} else {
-				info[IDX_COMMIT_DATE] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
+		//Do we already have cached information for this row?
+		if (traceabilityCache.containsKey(row.c.getId())) {
+			row.traceabilityInfo = traceabilityCache.get(row.c.getId());
+		} else {
+			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row);
+			if (traceabilityInfo.size() == 0) {
+				logger.warn("Failed to recover any traceability information for concept {}", row.c.getConceptId());
 			}
 			
-			if (StringUtils.isEmpty((String)info[1])) {
-				continue;  //Skip blanks
-			}
-			
-			if (row.traceabilityInfo != null && !StringUtils.isEmpty((String) row.traceabilityInfo[IDX_BRANCH])) {
-				//Keep the latest commit date in the set
-				if (((ZonedDateTime)info[IDX_COMMIT_DATE]).isAfter((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE])) {
+			for (Activity activity : traceabilityInfo) {
+				Object[] info = new Object[3];
+				info[IDX_USERNAME] = activity.getUsername();
+				info[IDX_BRANCH] = activity.getBranch();
+				if (activity.getCommitDate() == null) {
+					info[IDX_COMMIT_DATE] = null;
+				} else {
+					info[IDX_COMMIT_DATE] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
+				}
+				
+				if (StringUtils.isEmpty((String)info[1])) {
+					continue;  //Skip blanks
+				}
+				
+				if (row.traceabilityInfo != null && !StringUtils.isEmpty((String) row.traceabilityInfo[IDX_BRANCH])) {
+					//Keep the latest commit date in the set
+					if (((ZonedDateTime)info[IDX_COMMIT_DATE]).isAfter((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE])) {
+						row.traceabilityInfo = info;
+					}
+				} else {
 					row.traceabilityInfo = info;
 				}
-			} else {
-				row.traceabilityInfo = info;
 			}
 			
-			if (row.traceabilityInfo[IDX_USERNAME] == null
-					|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME].toString().trim())
-					|| unacceptableUsernames.contains(row.traceabilityInfo[IDX_USERNAME].toString())) {
-				recoverTaskAuthor(row.traceabilityInfo);
+			if (row.traceabilityInfo == null) {
+				logger.warn("Failed to find any traceability information for {} can't even look up task", row.c);
+			} else {
+				if (row.traceabilityInfo[IDX_USERNAME] == null
+						|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME])
+						|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME].toString().trim())
+						|| unacceptableUsernames.contains(row.traceabilityInfo[IDX_USERNAME].toString())) {
+					recoverTaskAuthor(row.traceabilityInfo);
+				}
+				traceabilityCache.put(row.c.getId(), row.traceabilityInfo);
 			}
 		}
 	}
@@ -241,10 +266,13 @@ public class SingleTraceabilityService implements TraceabilityService {
 						try {
 							process(row);
 						} catch (TermServerScriptException e) {
-							logger.error("Worker {} Failed to process row {} ", workerId,  row, e);
+							logger.error("Worker {} Failed to process row {} ", workerId, row, e);
 						}
 					}
 				}
+			} catch (Exception e) {
+				logger.error("Unexpected worker {} termination: " + ExceptionUtils.getExceptionCause("", e), workerId);
+				logger.error(ExceptionUtils.getStackTrace(e));
 			} finally {
 				isRunning = false;
 			}
@@ -260,7 +288,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 			//back down below our limit
 			queue.add(row);
 			if (queue.size() > SingleTraceabilityService.MAX_PENDING_SIZE) {
-				logger.debug("Worker queue now " + queue.size() + " holding caller until reduced ...");
+				logger.debug("Worker {} queue now {} holding caller until reduced ...", this.workerId, queue.size());
 				while (queue.size() > SingleTraceabilityService.MIN_PENDING_SIZE) {
 					try {
 						Thread.sleep(1000 * 5);
@@ -272,7 +300,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 						throw new TermServerScriptException("Worker queue size is " + queue.size() +", but worker is not running");
 					}
 				}
-				logger.debug("Worker queue now " + queue.size() + " resuming processing ...");
+				logger.debug("Worker {} queue now {} resuming processing ...", this.workerId, queue.size());
 			}
 			return true;
 		}
@@ -289,8 +317,15 @@ public class SingleTraceabilityService implements TraceabilityService {
 			SingleTraceabilityService.this.populateReportRowWithTraceabilityInfo(row);
 			
 			//Snip the processing date a bit if it has been populated
-			if (row.traceabilityInfo[IDX_COMMIT_DATE] != null) {
-				row.traceabilityInfo[IDX_COMMIT_DATE] = ((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE]).format(dateFormatter);
+			if (row.traceabilityInfo != null && row.traceabilityInfo[IDX_COMMIT_DATE] != null) {
+				if (!(row.traceabilityInfo[IDX_COMMIT_DATE] instanceof String)) {
+					try {
+						row.traceabilityInfo[IDX_COMMIT_DATE] = ((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE]).format(dateFormatter);
+					} catch (Exception e) {
+						logger.error("Formatting error on '" + row.traceabilityInfo[IDX_COMMIT_DATE] + "' " + ExceptionUtils.getExceptionCause("", e), workerId);
+						logger.error(ExceptionUtils.getStackTrace(e));
+					}
+				}
 			}
 			
 			if (row.details == null) {
