@@ -68,8 +68,15 @@ public class SingleTraceabilityService implements TraceabilityService {
 		
 		//Pop this row in our queue and we'll get to it when we get to it.
 		//Pick a new worker to add to each request
-		workers[requestCount%WORKER_COUNT].addToQueue(row);
-		requestCount++;
+		int failedWorkerCount = 0;
+		boolean successfulAdd = false;
+		while (successfulAdd == false) {
+			successfulAdd = workers[requestCount%WORKER_COUNT].addToQueue(row);
+			requestCount++;
+			if (++failedWorkerCount > WORKER_COUNT) {
+				throw new TermServerScriptException("All Workers Failed");
+			}
+		}
 	}
 	
 	private void populateReportRowWithTraceabilityInfo(ReportRow row) {
@@ -101,7 +108,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 				row.traceabilityInfo = info;
 			}
 			
-			if (row.traceabilityInfo[IDX_USERNAME].equals("System")) {
+			if (row.traceabilityInfo[IDX_USERNAME] == null || row.traceabilityInfo[IDX_USERNAME].equals("System")) {
 				recoverTaskAuthor(row.traceabilityInfo);
 			}
 		}
@@ -182,35 +189,43 @@ public class SingleTraceabilityService implements TraceabilityService {
 		public void run() {
 			isRunning = true;
 			logger.debug("Worker {} is running", workerId);
-			while (true) {
-				if (shutdownPending) {
-					logger.debug("Worker {} shutting down", workerId);
-					System.gc();
-					isRunning = false;
-					break;
-				} else if (queue.isEmpty()) {
-					logger.debug("Processing queue is empty, worker {} sleeping for 5 seconds", workerId);
-					try {
-						Thread.sleep(1000 * 5);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+			try {
+				while (true) {
+					if (shutdownPending) {
+						logger.debug("Worker {} shutting down", workerId);
+						System.gc();
+						isRunning = false;
+						break;
+					} else if (queue.isEmpty()) {
+						logger.debug("Processing queue is empty, worker {} sleeping for 5 seconds", workerId);
+						try {
+							Thread.sleep(1000 * 5);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					} else {
+						logger.debug("Worker {}'s queue contains " + queue.size() + " rows to process", workerId);
 					}
-				} else {
-					logger.debug("Worker {}'s queue contains " + queue.size() + " rows to process", workerId);
-				}
-				while(queue.size() > 0) {
-					ReportRow row = queue.remove();
-					try {
-						process(row);
-					} catch (TermServerScriptException e) {
-						logger.error("Worker {} Failed to process row {} ", workerId,  row, e);
+					while(queue.size() > 0) {
+						ReportRow row = queue.remove();
+						try {
+							process(row);
+						} catch (TermServerScriptException e) {
+							logger.error("Worker {} Failed to process row {} ", workerId,  row, e);
+						}
 					}
 				}
+			} finally {
+				isRunning = false;
 			}
-			
 		}
 		
-		public void addToQueue(ReportRow row) {
+		public boolean addToQueue(ReportRow row) throws TermServerScriptException {
+			//If we're not running, don't accept any row
+			if (!isRunning) {
+				return false;
+			}
+			
 			//If our queue is excessively large, we'll hold the caller thread here until we're
 			//back down below our limit
 			queue.add(row);
@@ -222,9 +237,14 @@ public class SingleTraceabilityService implements TraceabilityService {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+					
+					if (!isRunning) {
+						throw new TermServerScriptException("Worker queue size is " + queue.size() +", but worker is not running");
+					}
 				}
 				logger.debug("Worker queue now " + queue.size() + " resuming processing ...");
 			}
+			return true;
 		}
 
 		public void shutdown() {
