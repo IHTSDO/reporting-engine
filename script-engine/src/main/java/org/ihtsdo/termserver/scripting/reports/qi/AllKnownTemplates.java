@@ -497,6 +497,28 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		
 		templateNames = new String[] { "templates/procedures/Angiography.json" };
 		populateTemplates(null, templateNames);
+
+		templateNames = new String[] { "templates/Allergic Disease.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/Needle Biopsy.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/Imaging Guided Biopsy.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/Excision of cyst.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Substance abuse.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Malposition.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Drug dependence.json" };
+		populateTemplates(null, templateNames);
+		
 		
 		//Do this one last to pick up whatever is left under Disease
 		subsetECL = "<< 64572001 |Disease (disorder)|"; 
