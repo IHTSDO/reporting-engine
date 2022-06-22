@@ -22,12 +22,17 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  *  405814001 |Procedure site - Indirect (attribute)| -> 405813007 |Procedure site - Direct (attribute)|
  *  
  *  INFRA-8193  704324001 |Process output (attribute)| -> 1003735000 |Process acts on (attribute)| 
+ *  
+ *  INFRA-9154  405813007 |Procedure site - Direct|  ->  405814001 |Procedure site - Indirect|
+ *  			363699004 |Direct device| -> 363710007 |Indirect device|
+ *  			424361007 |Using substance| -> 363701004 |Direct substance|
+ *  			Only where 260686004 |Method| = 129332006 |Irrigation - action|
  */
 public class ReplaceAttributeTypes extends BatchFix {
-	
-	String ecl = "<< 226321006 |Amino acid intake (observable entity)| OR << 788472008 |Carbohydrate intake (observable entity)| OR << 792882006 |Estimated intake of protein and protein derivative in 24 hours (observable entity)| OR << 226354008 |Water intake (observable entity)| OR 788662004 |Estimated intake of niacin in 24 hours (observable entity)| OR << 870372004 |Fat and oil intake (observable entity)| OR << 226352007 |Mineral intake (observable entity)| OR << 226349004 |Vitamin intake (observable entity)| OR <<226320007 |Nutrient intake (observable entity)| ";
+	String ecl = "<<  67889009 |Irrigation (procedure)| ";
 	Map<Concept, Concept> replaceTypesMap;
-	RelationshipTemplate addAttribute;
+	RelationshipTemplate addAttribute = null;
+	RelationshipTemplate whereAttributePresent = null;
 	
 	protected ReplaceAttributeTypes(BatchFix clone) {
 		super(clone);
@@ -59,9 +64,21 @@ public class ReplaceAttributeTypes extends BatchFix {
 		replaceTypesMap.put(gl.getConcept("424361007 |Using substance (attribute)|"), 
 				gl.getConcept("363701004 |Direct substance (attribute)|"));
 		replaceTypesMap.put(gl.getConcept("405814001 |Procedure site - Indirect (attribute)|"), 
-				gl.getConcept("405813007 |Procedure site - Direct (attribute)|"));*/
+				gl.getConcept("405813007 |Procedure site - Direct (attribute)|"));
 		replaceTypesMap.put(gl.getConcept("704324001 |Process output (attribute)| "), 
-				gl.getConcept("1003735000 |Process acts on (attribute)| "));
+				gl.getConcept("1003735000 |Process acts on (attribute)| "));*/
+		
+		replaceTypesMap.put(gl.getConcept("405813007 |Procedure site - Direct|"), 
+				gl.getConcept("405814001 |Procedure site - Indirect|"));
+		
+		replaceTypesMap.put(gl.getConcept("363699004 |Direct device|"), 
+				gl.getConcept("363710007 |Indirect device|"));
+		
+		replaceTypesMap.put(gl.getConcept("424361007 |Using substance|"), 
+				gl.getConcept("363701004 |Direct substance|"));
+		
+		whereAttributePresent = new RelationshipTemplate(gl.getConcept("260686004 |Method|"), 
+				gl.getConcept("129332006 |Irrigation - action|"));
 		super.postInit();
 	}
 
@@ -70,7 +87,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 		int changesMade = 0;
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-			changesMade = switchValues(task, loadedConcept);
+			changesMade = replaceAttributeTypes(task, loadedConcept);
 			updateConcept(task, loadedConcept, info);
 		} catch (ValidationFailure v) {
 			report(task, concept, v);
@@ -80,14 +97,20 @@ public class ReplaceAttributeTypes extends BatchFix {
 		return changesMade;
 	}
 	
-	private int switchValues(Task t, Concept c) throws TermServerScriptException, ValidationFailure {
+	private int replaceAttributeTypes(Task t, Concept c) throws TermServerScriptException, ValidationFailure {
 		int changesMade = 0;
-		for (Concept targetType : replaceTypesMap.keySet()) {
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				if (r.getType().equals(targetType)) {
-					Relationship replacement = r.clone();
-					replacement.setType(replaceTypesMap.get(targetType));
-					changesMade += replaceRelationship(t, c, r, replacement);
+		
+		//Work group at a time and ensure the group contains the required attribute - if specified
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (g.containsTypeValue(whereAttributePresent)) {
+				for (Concept targetType : replaceTypesMap.keySet()) {
+					for (Relationship r : g.getRelationships(ActiveState.ACTIVE)) {
+						if (r.getType().equals(targetType)) {
+							Relationship replacement = r.clone();
+							replacement.setType(replaceTypesMap.get(targetType));
+							changesMade += replaceRelationship(t, c, r, replacement);
+						}
+					}
 				}
 			}
 		}
@@ -100,17 +123,33 @@ public class ReplaceAttributeTypes extends BatchFix {
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		info("Identifying concepts to process");
+		
+		//First report those which we are NOT going to process
+		findConcepts(ecl).stream()
+				.filter(c -> !meetsProcessingCriteria(c))
+				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.forEach(c -> { 
+					try {
+						report((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept did not meeting processing criteria", c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+					} catch (TermServerScriptException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				});
+		
 		return findConcepts(ecl).stream()
-			.filter(c -> hasTargetType(c))
+			.filter(c -> meetsProcessingCriteria(c))
 			.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 			.collect(Collectors.toList());
 	}
 
-	private boolean hasTargetType(Concept c) {
-		for (Concept targetType : replaceTypesMap.keySet()) {
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				if (r.getType().equals(targetType)) {
-					return true;
+	private boolean meetsProcessingCriteria(Concept c) {
+		if (whereAttributePresent == null || c.getRelationships(whereAttributePresent, ActiveState.ACTIVE).size() > 0) {
+			for (Concept targetType : replaceTypesMap.keySet()) {
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (r.getType().equals(targetType)) {
+						return true;
+					}
 				}
 			}
 		}

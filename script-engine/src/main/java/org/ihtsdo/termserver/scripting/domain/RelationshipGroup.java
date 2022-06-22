@@ -3,6 +3,8 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.otf.RF2Constants.ActiveState;
+
 public class RelationshipGroup {
 	Set<Relationship> relationships = new HashSet<>();
 	int groupId;
@@ -48,6 +50,12 @@ public class RelationshipGroup {
 			}
 		}
 		return matching;
+	}
+	
+	public Set<Relationship> getRelationships(ActiveState activeState) {
+		return relationships.stream()
+				.filter(r -> r.hasActiveState(activeState))
+				.collect(Collectors.toSet());
 	}
 	
 	public void setRelationships(Set<Relationship> relationships) {

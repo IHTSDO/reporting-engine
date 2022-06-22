@@ -304,13 +304,12 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		return relationships;
 	}
 	
-	public Set<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state, String effectiveTime) {
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState activeState, String effectiveTime) {
 		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : relationships) {
 			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
 				if (characteristicType.equals(CharacteristicType.ALL) || r.getCharacteristicType().equals(characteristicType)) {
-					if (state.equals(ActiveState.BOTH) || (state.equals(ActiveState.ACTIVE) && r.isActive()) ||
-							(state.equals(ActiveState.INACTIVE) && !r.isActive())) {
+					if (r.hasActiveState(activeState)) {
 						matches.add(r);
 					}
 				}

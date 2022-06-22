@@ -549,4 +549,10 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		setRelationshipId(id);
 	}
 
+	public boolean hasActiveState(ActiveState activeState) {
+		return (activeState.equals(ActiveState.BOTH) ||
+			(active && activeState.equals(ActiveState.ACTIVE)) ||
+			(!active && activeState.equals(ActiveState.INACTIVE)));
+	}
+
 }
