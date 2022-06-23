@@ -1238,13 +1238,13 @@ public class GraphLoader implements ScriptConstants {
 	}
 
 	private void populateAllComponents() {
-		System.out.println("Populating map of all components...");
+		System.out.println("Populating maps of all components...");
 		allComponents = new HashMap<String, Component>();
 		componentOwnerMap = new HashMap<Component, Concept>();
 		
 		for (Concept c : getAllConcepts()) {
 			
-			/*if (c.getId().equals("773986009") || c.getId().equals("762566005")) {
+			/*if (c.getId().equals("128559007")) {
 				TermServerScript.debug("here");
 			}*/
 			allComponents.put(c.getId(), c);
@@ -1266,16 +1266,18 @@ public class GraphLoader implements ScriptConstants {
 				//Have we historically swapped ID from stated to inferred
 				if (allComponents.containsKey(r.getRelationshipId())) {
 					if (r.isActive()) {
-						System.out.println("CMap replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
+						System.out.println("All Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
 						allComponents.put(r.getRelationshipId(), r);
 					} else if (allComponents.get(r.getRelationshipId()).isActive()) {
 						System.out.println("Ignoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
 					} else {
-						System.out.println("Two inactive components share the same id " + r);
+						System.out.println("Two inactive components share the same id of " + r.getId() + ": " + r + " and " + allComponents.get(r.getId()));
 					}
 				} else {
 					allComponents.put(r.getRelationshipId(), r);
 				}
+				
+				componentOwnerMap.put(r,  c);
 			}
 
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {

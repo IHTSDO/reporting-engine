@@ -1384,6 +1384,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		report (t, c, v.severity, v.reportActionType, v.getMessage());
 	}
 
+	public void reportLoud(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
+		setQuiet(false);
+		report(task, component, severity, actionType, details);
+		setQuiet(true);
+	}
+	
 	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		if (quiet) {
 			return;
@@ -1626,7 +1632,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		job.instantiate(jobRun, (ApplicationContext)null);
 	}
 
-	protected  String getDependencyArchive() {
+	protected String getDependencyArchive() {
 		return dependencyArchive;
 	}
 	

@@ -17,14 +17,18 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 	
 	private String[] componentIds = new String[] 
 	{
-		"2573280016","2576552011","2579706018", "3013784017",
-		"071a1f98-3d6f-52e2-b58f-1cf2704c9cab",
-		"437fbd1b-a203-59f1-9a99-7e17f368a848",
-		"b5e2d3b1-66b1-51ac-8e97-4ba57ff6f2ca",
-		"c7e25721-c5ac-5eef-866d-5aeeabfd92a6",
-		"d0bbd6c1-1d0d-53f6-af2c-4cbe872ad0d0",
-		"ea89068e-06e1-5508-b816-77b52b4125d8",
-		"f0dc60d0-b122-5b9b-8406-a259f92aae67",
+			 "1104071000146111",
+			 "834111000146117",
+			 "9265561000146118",
+			 "1678911000146117",
+			 "1678881000146117",
+			 "1840671000146114",
+			 "1678891000146115",
+			 "67970631000146123",
+			 "68014291000146124",
+			 "68006301000146129",
+			 "67996161000146129",
+			 "68052521000146123"
 	};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -54,6 +58,9 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 			} else {
 				c.setDirty();
 				Concept concept = gl.getComponentOwner(componentId);
+				if (concept == null) {
+					logger.warn("No concept could be found as the ower of " + c + " : id=" + componentId);
+				}
 				concept.setModified();
 				report(concept, Severity.LOW, ReportActionType.COMPONENT_REVERTED,c.getEffectiveTime(), c);
 			}

@@ -9,7 +9,7 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
-public class AxiomEntry extends Component implements ScriptConstants {
+public class AxiomEntry extends RefsetMember implements ScriptConstants {
 
 	private String id;
 	private String effectiveTime;

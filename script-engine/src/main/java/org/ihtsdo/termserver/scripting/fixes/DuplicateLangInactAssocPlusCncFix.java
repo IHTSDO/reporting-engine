@@ -19,15 +19,18 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Also we'll add/re-active any missing concept inactivation indicators on active descriptions
  * INFRA-5274 Also fix up multiple language reference set entries for the same description/dialect
  * ISRS-1257 Detect CNC indicators on descriptions that have been made inactive and remove
+ * MSSP-1571 Detect refset members that apply to extension components but have been created in the core module
  */
-public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
+public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	
-	protected DuplicateLangInactAssocPlusCncFix(final BatchFix clone) {
+	String defaultModuleId = null;
+	
+	protected DuplicateLangInactAssocPlusCncFixPlusModFix(final BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		final DuplicateLangInactAssocPlusCncFix fix = new DuplicateLangInactAssocPlusCncFix(null);
+		final DuplicateLangInactAssocPlusCncFixPlusModFix fix = new DuplicateLangInactAssocPlusCncFixPlusModFix(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.runStandAlone = false;  //We need to look up the project path for MS projects
@@ -49,6 +52,12 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		mgr.setPopulateReleasedFlag(true);
 		//mgr.setRunIntegrityChecks(false);  //MSSP-1087
 		super.init(args);
+	}
+	
+	@Override
+	public void postInit() throws TermServerScriptException {
+		defaultModuleId = project.getMetadata().getDefaultModuleId();
+		super.postInit();
 	}
 
 	@Override
@@ -199,10 +208,22 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 			}
 		}
 		
+		int directRefsetChanges = 0;
+		for (RefsetMember rm : SnomedUtils.getAllRefsetMembers(c)) {
+			if (!rm.isReleased() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
+				RefsetMember rmLoaded = loadRefsetMember(rm.getId(), project.getBranchPath());
+				rmLoaded.setModuleId(defaultModuleId);
+				String msg = "Module " + rm.getModuleId() + " -> " + rmLoaded.getModuleId();
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_MODIFIED, msg, rm);
+				updateRefsetMember(t, rmLoaded, msg);
+				directRefsetChanges++;
+			}
+		}
+		
 		if (loaded != null && changesMade > 0) {
 			updateConcept(t, loaded, "");
 		}
-		return changesMade;
+		return changesMade + directRefsetChanges;
 	}
 
 	private int reactivateRemainingMemberIfRequired(Concept c, RefsetMember r,
@@ -239,7 +260,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("199074000"))) {	
+		//for (final Concept c : Collections.singleton(gl.getConcept("19421000146107"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
 				if (d.getId().equals("61401000195115")) {
@@ -282,6 +303,15 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 				if (getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries()).size() > 0) {
 					processMe.add(c);
 					continue nextConcept;	
+				}
+				
+				//Do we have refset members newly created, but not in the default module?
+				
+				for (RefsetMember rm : SnomedUtils.getAllRefsetMembers(c)) {
+					if (!rm.isReleased() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
+						processMe.add(c);
+						continue nextConcept;	
+					}
 				}
 			}
 		}

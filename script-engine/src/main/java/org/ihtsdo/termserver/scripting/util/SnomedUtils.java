@@ -2050,6 +2050,33 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return components;
 	}
 	
+	public static Collection<RefsetMember> getAllRefsetMembers(Concept c) {
+		List<RefsetMember> refsetMembers = new ArrayList<>();
+		
+		c.getInactivationIndicatorEntries().stream()
+			.forEach(refsetMembers::add);
+		
+		c.getAssociationEntries().stream()
+			.forEach(refsetMembers::add);
+		
+		c.getAxiomEntries().stream()
+			.forEach(refsetMembers::add);
+		
+		c.getDescriptions().stream()
+			.flatMap(d ->  d.getLangRefsetEntries().stream())
+			.forEach(refsetMembers::add);
+		
+		c.getDescriptions().stream()
+			.flatMap(d ->  d.getInactivationIndicatorEntries().stream())
+			.forEach(refsetMembers::add);
+		
+		c.getDescriptions().stream()
+			.flatMap(d ->  d.getAssociationEntries().stream())
+			.forEach(refsetMembers::add);
+		
+		return refsetMembers;
+	}
+	
 	public static Map<String, Component> getAllComponentsMap(Concept c) {
 		return getAllComponents(c).stream()
 				.collect(Collectors.toMap(Component::getId, Function.identity()));
