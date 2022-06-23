@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -21,19 +22,34 @@ public class INFRA9106_RetermSecondaryTumour extends BatchFix {
 	String ecl = "< 128462008 |Secondary malignant neoplastic disease (disorder)| ";
 	InactivationIndicator inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 	
-	enum Pattern { SECONDARY_MN_OF_X, SECONDARY_X }
-	Map<Pattern, String> fromPrefixMap = new HashMap<>();
+	enum Pattern { SECONDARY_MN_TO_X, SECONDARY_X }
+	
+	//The order we check in is important because we check for the most specific pattern first.  So use LinkedHashMap, rather than HashMap
+	Map<Pattern, String> fromPrefixMap = new LinkedHashMap<>();
 	{
-		fromPrefixMap.put(Pattern.SECONDARY_MN_OF_X, "Secondary malignant neoplasm of");
+		fromPrefixMap.put(Pattern.SECONDARY_MN_TO_X, "Secondary malignant neoplasm of");
 		fromPrefixMap.put(Pattern.SECONDARY_X, "Secondary");
 	}
 	
 	Map<Pattern, String> toTemplateMap = new HashMap<>();
 	{
-		toTemplateMap.put(Pattern.SECONDARY_MN_OF_X, "Metastatic malignant neoplasm to #x#");
+		toTemplateMap.put(Pattern.SECONDARY_MN_TO_X, "Metastatic malignant neoplasm to #x#");
 		toTemplateMap.put(Pattern.SECONDARY_X, "Metastatic #x#");
 	}
 
+	Map<Pattern, String> additionalAcceptableSynonyms = new HashMap<>();
+	{
+		additionalAcceptableSynonyms.put(Pattern.SECONDARY_MN_TO_X, "Metastatic malignant neoplasm of #x#");
+	}
+	
+	Set<String> exclusions = new HashSet<>();
+	{
+		exclusions.add("carcinoma");
+		exclusions.add("melanoma");
+		exclusions.add("from");
+		exclusions.add("bilateral");
+	}
+	
 	protected INFRA9106_RetermSecondaryTumour(BatchFix clone) {
 		super(clone);
 	}
@@ -86,6 +102,17 @@ public class INFRA9106_RetermSecondaryTumour extends BatchFix {
 				changesMade++;
 			}
 		}
+		
+		//Are we adding any additional synonyms
+		String additionalTemplate = additionalAcceptableSynonyms.get(patternOfX.pattern);
+		if (additionalTemplate != null) {
+			String additionalSynonym = additionalTemplate.replace("#x#", patternOfX.x);
+			Description d = Description.withDefaults(additionalSynonym, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			Description added = addDescription(t, c, d);
+			if (StringUtils.isEmpty(added.getEffectiveTime())) {
+				changesMade++;
+			}
+		}
 		return changesMade;
 	}
 
@@ -122,18 +149,34 @@ public class INFRA9106_RetermSecondaryTumour extends BatchFix {
 		List<Component> process = new ArrayList<>();
 		setQuiet(true);
 		for (Concept c : SnomedUtils.sort(findConcepts(ecl))) {
-			try {
-				if (modifyDescriptions(null, c.cloneWithIds()) > 0) {
-					process.add(c);
+			if (isExcluded(c)) {
+				if (c.getFsn().startsWith("Secondary")) {
+					reportLoud((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
 				}
-			} catch (Exception e) {
-				report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
+			} else {
+				try {
+					if (modifyDescriptions(null, c.cloneWithIds()) > 0) {
+						process.add(c);
+					}
+				} catch (Exception e) {
+					//reportLoud((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
+					info(e.getMessage() + " : " + c);
+				}
 			}
 		}
 		setQuiet(false);
 		return process;
 	}
 	
+	private boolean isExcluded(Concept c) {
+		for (String exclusion : exclusions) {
+			if (c.getFsn().contains(exclusion)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	class PatternOfX {
 		String x;
 		Pattern pattern;
