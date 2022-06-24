@@ -1678,4 +1678,5 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	synchronized public void asyncSnapshotCacheInProgress(boolean asyncSnapshotCacheInProgress) {
 		this.asyncSnapshotCacheInProgress  = asyncSnapshotCacheInProgress;
 	}
+
 }
