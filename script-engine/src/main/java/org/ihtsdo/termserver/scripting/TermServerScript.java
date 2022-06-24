@@ -117,6 +117,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
+	
+	private boolean asyncSnapshotCacheInProgress = false;
 
 	public String detectReleaseBranch() {
 		return getArchiveManager(true).detectReleaseBranch(project.getKey());
@@ -448,6 +450,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 			} catch (Exception e2) {
 				error("Failed to set result URL in final block", e2);
+			}
+			
+			//Are we still writing our snapshot to disk?  Don't move on to anything else while we are
+			while (asyncSnapshotCacheInProgress) {
+				warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
+				try {
+					Thread.sleep(5 * 1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
@@ -1643,6 +1655,18 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public ReportConfiguration getReportConfiguration() {
 		return reportConfiguration;
+	}
+
+	public AuthoringServicesClient getAuthoringServicesClient() {
+		return scaClient;
+	}
+
+	public String getServerUrl() {
+		return url;
+	}
+
+	synchronized public void asyncSnapshotCacheInProgress(boolean asyncSnapshotCacheInProgress) {
+		this.asyncSnapshotCacheInProgress  = asyncSnapshotCacheInProgress;
 	}
 
 }

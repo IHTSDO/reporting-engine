@@ -441,7 +441,7 @@ public class ArchiveManager implements ScriptConstants {
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
-		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
+		snapshotGenerator.generateSnapshot(ts, dependency, previous, delta, snapshot);
 	}
 	
 	private ArchiveDataLoader getArchiveDataLoader() throws TermServerScriptException {

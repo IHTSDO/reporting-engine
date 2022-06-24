@@ -68,7 +68,7 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public void generateSnapshot (File dependencySnapshot, File previousSnapshot, File delta, File newLocation) throws TermServerScriptException {
+	public void generateSnapshot (TermServerScript ts, File dependencySnapshot, File previousSnapshot, File delta, File newLocation) throws TermServerScriptException {
 		setQuiet(true);
 		init(newLocation, false);
 		if (dependencySnapshot != null) {
@@ -88,9 +88,9 @@ public class SnapshotGenerator extends TermServerScript {
 		//in some process. 
 		if (!skipSave) {
 			if (runAsynchronously) {
-				new Thread(new ArchiveWriter()).start();
+				new Thread(new ArchiveWriter(ts)).start();
 			} else {
-				new ArchiveWriter().run();
+				new ArchiveWriter(ts).run();
 			}
 		}
 		setQuiet(false);
@@ -250,9 +250,17 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 	
 	public class ArchiveWriter implements Runnable {
+		TermServerScript ts;
+		
+		ArchiveWriter (TermServerScript ts) {
+			this.ts = ts;
+		}
 		public void run() {
 			debug("Writing RF2 Snapshot to disk" + (leaveArchiveUncompressed?".":" and compressing."));
 			try {
+				//Tell our parent that a child is working so it doesn't try and
+				//start processing something else.
+				ts.asyncSnapshotCacheInProgress(true);
 				outputRF2();
 				getRF2Manager().flushFiles(true);
 				if (!leaveArchiveUncompressed) {	
@@ -261,6 +269,8 @@ public class SnapshotGenerator extends TermServerScript {
 				debug("Completed writing RF2 Snapshot to disk");
 			} catch (Exception e) {
 				error ("Failed to write archive to disk",e);
+			} finally {
+				ts.asyncSnapshotCacheInProgress(false);
 			}
 		}
 	}
