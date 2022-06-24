@@ -26,7 +26,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(NEW_ISSUES_ONLY, "N");
 		params.put(PT_ONLY, "N");
-		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		TermServerReport.run(DuplicateTermsInSubhierarchy.class, args, params);
 	}
 	
@@ -88,7 +88,6 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 				
 				//We will flag this even if it's for the same concept
 				if (alreadyKnown != null) {
-					
 					//Are we checking only unpromoted changes?  Either d or the already known
 					//term can be unpromoted to qualify
 					if (unpromotedChangesOnly 
@@ -98,7 +97,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 					}
 					
 					String legacyIssue = "N";
-					if (isLegacy(d).equals("Y") && newIssuesOnly) {
+					if (isLegacy(d).equals("Y") && isLegacy(alreadyKnown).equals("Y") && newIssuesOnly) {
 						continue;
 					}
 					
