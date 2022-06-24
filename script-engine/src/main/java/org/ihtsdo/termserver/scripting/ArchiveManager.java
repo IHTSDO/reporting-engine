@@ -23,6 +23,8 @@ import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
@@ -33,6 +35,8 @@ import org.springframework.stereotype.Service;
 public class ArchiveManager implements ScriptConstants {
 	
 	static ArchiveManager singleton;
+	
+	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;
@@ -178,12 +182,13 @@ public class ArchiveManager implements ScriptConstants {
 			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
 			.collect(Collectors.toList());
 			
-			if (releases.size() < 2) {
-				throw new TermServerScriptException("Less than 2 previous releases detected");
+			if (releases.size() < 1) {
+				throw new TermServerScriptException("Less than 1 previous releases detected");
 			}
 			if (!releases.get(0).getEffectiveDate().toString().equals(previousRelease)) {
 				throw new TermServerScriptException("Check here - unexpected previous release: " +  releases.get(0).getEffectiveDate() + " expected " + previousRelease);
 			}
+			logger.info("Detected previous branch: {}", releases.get(0).getBranchPath());
 			return releases.get(0).getBranchPath();
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to recover previous branch due to " + e.getMessage(),e);

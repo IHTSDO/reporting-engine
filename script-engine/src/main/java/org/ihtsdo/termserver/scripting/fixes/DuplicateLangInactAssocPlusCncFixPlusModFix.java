@@ -129,9 +129,9 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		}
 		
 		for (final Description d : c.getDescriptions()) {
-			if (d.getId().equals("61401000195115")) {
+			/*if (d.getId().equals("61401000195115")) {
 				debug("here");
-			}
+			}*/
 			
 			//Langrefset entries should be checked, regardless if the description is inScope or not
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
@@ -268,9 +268,9 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				}
 				
 				//Too many of these in the international edition - discuss elsewhere
-				/*if (project.getBranchPath().contains("SNOMEDCT-")) {
-					if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
-						debug("Missing CNC CII: " + d);
+				if (project.getBranchPath().contains("SNOMEDCT-")) {
+					//Switch to just process those 
+					if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 						processMe.add(c);
 						continue nextConcept;
 					}
@@ -281,7 +281,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							continue nextConcept;
 						}
 					}
-				}*/
+				}
 				
 				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
 					processMe.add(c);
@@ -388,6 +388,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							//and resurrect the previously inactive value instead
 							RefsetMember previousThis = loadPreviousRefsetMember(thisEntry.getId());
 							RefsetMember previousThat = loadPreviousRefsetMember(thatEntry.getId());
+							
+							//If both have been released, and we've recently made one inactive, then that's as good as it gets.  Skip
+							if (duplicationRecentlyResolved(thisEntry, thatEntry)) {
+								warn("Previous duplication appears to have been resolved (recent inactivation) between " + thisEntry + " and " + thatEntry);
+								continue;
+							}
+							
 							//We want to look for the previous entry that has the value which is on our current active member and keep that
 							RefsetMember active = chooseActive(thisEntry, thatEntry, true);
 							String additionalFieldName = active.getOnlyAdditionalFieldName();
@@ -439,6 +446,28 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			}
 		}
 		return duplicatePairs;
+	}
+
+	private boolean duplicationRecentlyResolved(RefsetMember thisEntry, RefsetMember thatEntry) throws TermServerScriptException {
+		if (!thisEntry.isReleased() || !thatEntry.isReleased()) {
+			throw new TermServerScriptException("Check code, expected released members");
+		}
+		//Is 'this' unchanged and 'that' recently inactivated?
+		if (thisEntry.isActive()  && 
+				!StringUtils.isEmpty(thisEntry.getEffectiveTime()) &&
+				!thatEntry.isActive() && 
+				StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+			return true;
+		}
+		//Or the other way around
+		if (!thisEntry.isActive()  && 
+				StringUtils.isEmpty(thisEntry.getEffectiveTime()) &&
+				thatEntry.isActive() && 
+				!StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+			return true;
+		}
+		
+		return false;
 	}
 
 	private RefsetMember pickByID(String id, RefsetMember... refsetMembers) {
