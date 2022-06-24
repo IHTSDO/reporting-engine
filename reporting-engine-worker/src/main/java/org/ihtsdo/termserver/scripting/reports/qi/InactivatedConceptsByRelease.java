@@ -92,9 +92,14 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 			for (Concept c : recentlyInactiveConcepts) {
 				int tab = determineRelease(c);
 				String toDate = tab > 0 ?releaseETs.get(tab-1) : null;
-				String fromDate = releaseETs.get(tab);
+				String fromDate = releaseETs.get(tab == 0 ? 1 : tab);
 				//Work 2 months earlier, as changes could have been sitting in a task
 				try {
+					if (StringUtils.isEmpty(fromDate) || fromDate.length() < 5) {
+						logger.warn("What's the story here?");
+						//If we 're running to the current time, work back 
+						fromDate = dateFormat.format(new Date());
+					}
 					Date fromDateDate = DateUtils.addDays(DateUtils.parseDate(fromDate, "yyyyMMdd"),-60);
 					fromDate = dateFormat.format(fromDateDate);
 				} catch (ParseException e) {

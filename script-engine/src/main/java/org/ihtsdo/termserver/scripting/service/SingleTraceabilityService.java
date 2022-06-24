@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class SingleTraceabilityService implements TraceabilityService {
 	
 	static Logger logger = LoggerFactory.getLogger(SingleTraceabilityService.class);
-	private static int WORKER_COUNT = 3;
+	private static int WORKER_COUNT = 4;
 	
 	private TraceabilityServiceClient client;
 	private JiraHelper jiraHelper;
@@ -122,6 +122,11 @@ public class SingleTraceabilityService implements TraceabilityService {
 			try {
 				if (jiraIssue == null) {
 					String taskKey = branch.substring(branch.lastIndexOf("/")+1);
+					//Do we infact have a project here?
+					if (!taskKey.contains("-")) {
+						logger.warn("Cannot retrieve author details from project: " + branch);
+						return;
+					}
 					jiraIssue = jiraHelper.getJiraTicket(taskKey);
 				}
 				
