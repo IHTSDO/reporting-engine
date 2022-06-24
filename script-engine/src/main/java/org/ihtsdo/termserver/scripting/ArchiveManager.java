@@ -76,6 +76,7 @@ public class ArchiveManager implements ScriptConstants {
 			singleton.loadEditionArchive = false;
 			singleton.loadDependencyPlusExtensionArchive = false;
 			singleton.populatePreviousTransativeClosure = false;
+			singleton.populateReleasedFlag = false;
 		}
 		singleton.ts = ts;
 		return singleton;
@@ -277,13 +278,14 @@ public class ArchiveManager implements ScriptConstants {
 				//We don't need to load the snapshot if we've just generated it
 			} else {
 				//We might already have this project in memory
-				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject())) {
+				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject()) && 
+						(populateReleasedFlag == false || (populateReleasedFlag && releasedFlagPopulated))) {
 					info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
 					gl.makeReady();
 				} else {
 					if (currentlyHeldInMemory != null) {
 						//Make sure the Graph Loader is clean if we're loading a different project
-						info (currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
+						info(currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
 						gl.reset();
 						System.gc();
 						releasedFlagPopulated = false;
@@ -760,6 +762,7 @@ public class ArchiveManager implements ScriptConstants {
 			this.currentlyHeldInMemory = null;
 		}
 		
+		singleton.releasedFlagPopulated = false;
 		singleton.loadEditionArchive = false;
 		singleton.loadDependencyPlusExtensionArchive = false;
 		singleton.populatePreviousTransativeClosure = false;

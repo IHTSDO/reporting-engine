@@ -111,6 +111,9 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		
 		for (Concept c : conceptsOfInterest) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.isReleased() == null) {
+					throw new TermServerScriptException("Released flag not populated. Code issues - should not use cached project snapshot when released flag is required");
+				}
 				if (!d.isReleased() && inScope(d) && 
 						(unpromotedDescriptions == null || unpromotedDescriptions.contains(d))) {
 					int tabIdx = d.getType().equals(DescriptionType.TEXT_DEFINITION) ? SECONDARY_REPORT : PRIMARY_REPORT;

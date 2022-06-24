@@ -104,6 +104,7 @@ public class SnapshotGenerator extends TermServerScript {
 	
 	protected void init (File newLocation, boolean addTodaysDate) throws TermServerScriptException {
 		//Make sure the Graph Loader is clean
+		info("Snapshot Generator ensuring Graph Loader is clean");
 		gl.reset();
 		if (!skipSave) {
 			File outputDir = new File (outputDirName);
@@ -120,7 +121,7 @@ public class SnapshotGenerator extends TermServerScript {
 				packageRoot = outputDirName + File.separator + newLocation;
 				packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
 			}
-			info ("Outputting data to " + packageDir);
+			info("Outputting data to " + packageDir);
 			initialiseFileHeaders();
 		}
 	}
