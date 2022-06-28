@@ -80,6 +80,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	@SerializedName("gciAxioms")
 	@Expose
 	private Set<Axiom> gciAxioms;
+	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
@@ -1599,6 +1600,11 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	public void addGciAxiom(Axiom axiom) {
 		//Watch that this is a set, so we will replace any existing axiom with the same id
 		getGciAxioms().add(axiom);
+	}
+
+	@Override
+	public String getMutableFields() {
+		return super.getMutableFields() + this.definitionStatus;
 	}
 
 }

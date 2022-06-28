@@ -10,13 +10,13 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
-import org.springframework.util.StringUtils;
 
 public class GraphLoader implements ScriptConstants {
 
@@ -50,6 +50,7 @@ public class GraphLoader implements ScriptConstants {
 	private boolean detectNoChangeDelta = false;
 	private boolean runIntegrityChecks = true;
 	private boolean checkForExcludedModules = false;
+	private boolean recordPreviousState = false;
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -219,6 +220,12 @@ public class GraphLoader implements ScriptConstants {
 				//If we've already received a newer version of this component, say
 				//by loading published INT first and a previously published MS 2nd, then skip
 				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
+				
+				String previousState = null;
+				if (existing != null && recordPreviousState) {
+					previousState = existing.getMutableFields();
+				}
+				
 				if (existing != null &&
 						!StringUtils.isEmpty(existing.getEffectiveTime()) 
 						&& (isReleased != null && isReleased)
@@ -239,7 +246,7 @@ public class GraphLoader implements ScriptConstants {
 				}
 				
 				if (addRelationshipsToConcepts) {
-					addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased);
+					addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased, previousState);
 				}
 				concepts.add(thisConcept);
 				relationshipsLoaded++;
@@ -293,6 +300,10 @@ public class GraphLoader implements ScriptConstants {
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
 						
+						if (recordPreviousState) {
+							String previousState = replacedAxiomEntry.getMutableFields();
+							axiomEntry.addIssue(previousState);
+						}
 						//It might be that depending on the point in the release cycle,
 						//we might try to load an extension on top of a more recent dependency
 						//if the core has recently been released.  Don't allow an overwrite in this case.
@@ -506,14 +517,22 @@ public class GraphLoader implements ScriptConstants {
 		r.setClean();
 		return r;
 	}
+	
+	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
+		addRelationshipToConcept(charType, lineItems,isDelta, isReleased, null);
+	}
 
 	/**
 	 * @param isReleased 
 	 * @throws TermServerScriptException
 	 */
-	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
+	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased, String issue) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
 		r.setReleased(isReleased);
+		
+		if (issue != null) {
+			r.addIssue(issue);
+		}
 		
 		String revertEffectiveTime = null;
 		if (detectNoChangeDelta && isReleased != null && !isReleased && r.getId() != null) {
@@ -671,6 +690,12 @@ public class GraphLoader implements ScriptConstants {
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				
+				//If moduleId is null, then this concept has no prior state
+				if (!isReleased && recordPreviousState && c.getModuleId() != null) {
+					String previousState = c.getMutableFields();
+					c.addIssue(previousState);
+				}
+				
 				//If the concept's module isn't known, then it wasn't loaded in the snapshot
 				String revertEffectiveTime = null;
 				if (detectNoChangeDelta && !isReleased && c.getModuleId() != null) {
@@ -741,6 +766,13 @@ public class GraphLoader implements ScriptConstants {
 				if (!fsnOnly) {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription(lineItems[DES_IDX_ID]);
+					
+					//If the term is null, then this is the first we've seen of this description, so no
+					//need to record its previous state.
+					if (!isReleased && isRecordPreviousState() && d.getTerm() != null) {
+						String previousState = d.getMutableFields();
+						d.addIssue(previousState);
+					}
 					
 					//If we've already received a newer version of this component, say
 					//by loading INT first and a published MS 2nd, then skip
@@ -817,6 +849,11 @@ public class GraphLoader implements ScriptConstants {
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
+					
+					if (original != null && !isReleased && isRecordPreviousState()) {
+						String previousState = original.getMutableFields();
+						langRefsetEntry.addIssue(previousState);
+					}
 					
 					//If we've already received a newer version of this component, say
 					//by loading INT first and a published MS 2nd, then skip
@@ -1015,7 +1052,12 @@ public class GraphLoader implements ScriptConstants {
 					InactivationIndicatorEntry existing = c.getInactivationIndicatorEntry(id);
 					if (existing != null) {
 						inactivation.setReleased(existing.getReleased());
+						if (!isReleased && isRecordPreviousState()) {
+							String previousState = existing.getMutableFields();
+							inactivation.addIssue(previousState);
+						}
 					}
+					
 					c.addInactivationIndicator(inactivation);
 				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
@@ -1026,7 +1068,12 @@ public class GraphLoader implements ScriptConstants {
 					InactivationIndicatorEntry existing = d.getInactivationIndicatorEntry(id);
 					if (existing != null) {
 						inactivation.setReleased(existing.getReleased());
+						if (!isReleased && isRecordPreviousState()) {
+							String previousState = existing.getMutableFields();
+							inactivation.addIssue(previousState);
+						}
 					}
+					
 					d.addInactivationIndicator(inactivation);
 				}
 			} else {
@@ -1095,6 +1142,10 @@ public class GraphLoader implements ScriptConstants {
 					AssociationEntry existing = c.getAssociationEntry(id);
 					if (existing != null) {
 						association.setReleased(existing.getReleased());
+						if (!isReleased && isRecordPreviousState()) {
+							String previousState = existing.getMutableFields();
+							association.addIssue(previousState);
+						}
 					}
 					
 					//Remove first in case we're replacing
@@ -1117,6 +1168,10 @@ public class GraphLoader implements ScriptConstants {
 					AssociationEntry existing = d.getAssociationEntry(id);
 					if (existing != null) {
 						association.setReleased(existing.getReleased());
+						if (!isReleased && isRecordPreviousState()) {
+							String previousState = existing.getMutableFields();
+							association.addIssue(previousState);
+						}
 					}
 					
 					//Remove first in case we're replacing
@@ -1574,6 +1629,14 @@ public class GraphLoader implements ScriptConstants {
 
 	public void setRunIntegrityChecks(boolean runIntegrityChecks) {
 		this.runIntegrityChecks = runIntegrityChecks;
+	}
+
+	public boolean isRecordPreviousState() {
+		return recordPreviousState;
+	}
+
+	public void setRecordPreviousState(boolean recordPreviousState) {
+		this.recordPreviousState = recordPreviousState;
 	}
 	
 }

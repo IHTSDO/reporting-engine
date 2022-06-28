@@ -108,6 +108,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
+		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 		getArchiveManager().setPopulateReleasedFlag(true);
 		
 		//ignoreWhiteList = true;
@@ -220,6 +221,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			unexpectedDescriptionModulesMS();
 			unexpectedRelationshipModulesMS();
 			unexpectedAxiomModulesMS();
+			unnecessaryModuleJumping();
 		} else {
 			unexpectedDescriptionModules();
 			unexpectedRelationshipModules();
@@ -278,6 +280,55 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		populateSummaryTab();
 		
 		info("Summary tab complete, all done.");
+	}
+
+	private void unnecessaryModuleJumping() throws TermServerScriptException {
+		String issueStr = "Component module jumped, otherwise unchanged.";
+		initialiseSummary(issueStr);
+		for (Concept concept : SnomedUtils.sort(gl.getAllConcepts())) {
+			nextComponent:
+			for (Component c : SnomedUtils.getAllComponents(concept)) {
+				//Did it change in the current delta?
+				
+				if (StringUtils.isEmpty(c.getIssues())) {
+					continue;
+				}
+				String[] previousState = c.getIssues().split(",");
+				String[] currentState = c.getMutableFields().split(",");
+				if (previousState.length != currentState.length) {
+					throw new TermServerScriptException("Investigate: component's state has changed length! " + c.getIssues() + " vs " + c);
+				}
+				//Check what fields are different.  It's a problem if ONLY the moduleId has changed
+				boolean differenceFound = false;
+				for (int idx=0; idx < previousState.length; idx++) {
+					if (idx == 1) {
+						//If the module hasn't changed, no need to check fields any further
+						if (previousState[idx].equals(currentState[idx])) {
+							continue nextComponent;
+						} else if (previousState[idx].equals("15561000146104") && currentState[idx].equals("11000146104")) {
+							//All components from the NL Patient Friendly module have moved to the main NL module
+							continue nextComponent;
+						}
+					} else if (!previousState[idx].equals(currentState[idx])) {
+						differenceFound = true;
+						break;
+					}
+				}
+				
+				if (!differenceFound) {
+					String msg = c.getIssues() + " vs " + c.getMutableFields();
+					boolean reported = report(concept, issueStr, isLegacy(c), isActive(concept,c), msg, c, c.getId());
+					if (reported) {
+						if (isLegacy(c).equals("Y")) {
+							incrementSummaryInformation("Legacy Issues Reported");
+						}	else {
+							incrementSummaryInformation("Fresh Issues Reported");
+						}
+					}
+				}
+			}
+		}
+		
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {

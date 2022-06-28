@@ -555,4 +555,14 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 			(!active && activeState.equals(ActiveState.INACTIVE)));
 	}
 
+	@Override
+	public String getMutableFields() {
+		return super.getMutableFields() + this.sourceId + "," 
+			+ this.type.getId() + "," + this.target.getId() + "," + this.characteristicType;
+	}
+	
+	public String toStringWithId() {
+		return getId() + ": " + toString();
+	}
+
 }

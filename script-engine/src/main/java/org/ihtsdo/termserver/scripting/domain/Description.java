@@ -783,4 +783,10 @@ public class Description extends Component implements ScriptConstants {
 		setType(SnomedUtils.translateDescType(typeId));
 	}
 
+	@Override
+	public String getMutableFields() {
+		return super.getMutableFields() + this.type + "," 
+				+ this.term + "," + this.caseSignificance;
+	}
+
 }

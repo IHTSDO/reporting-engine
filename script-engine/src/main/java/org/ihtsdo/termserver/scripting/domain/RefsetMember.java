@@ -293,4 +293,19 @@ RefsetMember extends Component implements ScriptConstants {
 		}
 		return additionalFields.keySet().iterator().next();
 	}
+
+	@Override
+	public String getMutableFields() {
+		String mutableFields = super.getMutableFields() + this.refsetId + "," 
+				+ this.referencedComponentId;
+		
+		for (String additionalField : additionalFields.values()) {
+			mutableFields += "," + additionalField;
+		}
+		return mutableFields;
+	}
+	
+	public String toStringWithId() {
+		return id + ": " + toString();
+	}
 }

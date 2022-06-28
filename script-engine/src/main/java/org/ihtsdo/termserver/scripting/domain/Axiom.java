@@ -214,4 +214,9 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	public void setId(String id) {
 		setAxiomId(id);
 	}
+
+	@Override
+	public String getMutableFields() {
+		throw new NotImplementedException("Expecting getMutableFields to be called on AxiomEntry rather than Axiom");
+	}
 }
