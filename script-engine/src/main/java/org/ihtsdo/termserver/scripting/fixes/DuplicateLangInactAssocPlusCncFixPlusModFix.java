@@ -192,12 +192,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						//Are we inactivating or deleting?
 						if (entry.isReleased()) {
 							entry.setActive(false);
-							report(t, c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, entry);
+							report(t, c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, "ConceptNonCurrent", entry);
 							if (!dryRun) {
 								tsClient.updateRefsetMember(t.getBranchPath(), entry, false);
 							}
 						} else {
-							report(t, c, Severity.LOW, ReportActionType.INACT_IND_DELETED, entry);
+							report(t, c, Severity.LOW, ReportActionType.INACT_IND_DELETED, "ConceptNonCurrent", entry);
 							if (!dryRun) {
 								tsClient.deleteRefsetMember(entry.getId(), t.getBranchPath(), false);
 							}
