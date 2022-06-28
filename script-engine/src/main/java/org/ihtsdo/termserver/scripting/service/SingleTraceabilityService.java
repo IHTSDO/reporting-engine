@@ -22,6 +22,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class SingleTraceabilityService implements TraceabilityService {
 	
+	Set<String> unacceptableUsernames = new HashSet<>();
+	{
+		unacceptableUsernames.add("System");
+		unacceptableUsernames.add("mapping-prod");
+		unacceptableUsernames.add("mchu");
+		unacceptableUsernames.add("kkewley");
+		unacceptableUsernames.add("eilyukhina");
+		unacceptableUsernames.add("dmcgaw");
+		unacceptableUsernames.add("pwilliams");
+	}
+	
 	static Logger logger = LoggerFactory.getLogger(SingleTraceabilityService.class);
 	private static int WORKER_COUNT = 4;
 	
@@ -108,7 +119,9 @@ public class SingleTraceabilityService implements TraceabilityService {
 				row.traceabilityInfo = info;
 			}
 			
-			if (row.traceabilityInfo[IDX_USERNAME] == null || row.traceabilityInfo[IDX_USERNAME].equals("System")) {
+			if (row.traceabilityInfo[IDX_USERNAME] == null
+					|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME].toString().trim())
+					|| unacceptableUsernames.contains(row.traceabilityInfo[IDX_USERNAME].toString())) {
 				recoverTaskAuthor(row.traceabilityInfo);
 			}
 		}
@@ -132,6 +145,14 @@ public class SingleTraceabilityService implements TraceabilityService {
 				
 				if (jiraIssue != null) {
 					info[IDX_USERNAME] = jiraIssue.getAssignee().getId();
+					//It might be that we have a 'name' and id is null
+					if (StringUtils.isEmpty(info[IDX_USERNAME])) {
+						info[IDX_USERNAME] = jiraIssue.getAssignee().getName();
+					}
+					//If the username is still unacceptable, try the reporter
+					if (unacceptableUsernames.contains(info[IDX_USERNAME].toString())) {
+						info[IDX_USERNAME] = "*" + jiraIssue.getReporter().getName();
+					}
 					jiraIssueMap.put(branch, jiraIssue);
 				}
 			} catch (Exception e) {
