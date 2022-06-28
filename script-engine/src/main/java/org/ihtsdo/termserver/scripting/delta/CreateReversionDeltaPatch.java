@@ -2,11 +2,15 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
 /**
  * ISRS-1267 Based on some known component ids, I want to create a delta with the 
@@ -15,7 +19,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class CreateReversionDeltaPatch extends DeltaGenerator {
 	
-	private String[] componentIds = new String[] 
+	//If this array is empty, we'll attempt to load from file specified in -f parameter
+	private String[] componentIds; /* = new String[] 
 	{
 			 "1104071000146111",
 			 "834111000146117",
@@ -29,7 +34,7 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 			 "68006301000146129",
 			 "67996161000146129",
 			 "68052521000146123"
-	};
+	};*/
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CreateReversionDeltaPatch delta = new CreateReversionDeltaPatch();
@@ -49,6 +54,9 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 	}
 	
 	private void createReversionDeltaPatch() throws TermServerScriptException {
+		if (componentIds == null) {
+			loadComponentsToProcess();
+		}
 		//Work through all components before outputting incase we make multiple changes
 		//to the same concept.  Don't want duplicate rows output
 		for (String componentId : componentIds) {
@@ -71,6 +79,16 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 				outputRF2(c);
 			}
 		}
+	}
+
+	private void loadComponentsToProcess() throws TermServerScriptException {
+		debug ("Loading " + inputFile );
+		try {
+			componentIds = Files.readLines(inputFile, Charsets.UTF_8).toArray(new String[0]);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read " + inputFile, e);
+		}
+		
 	}
 
 }
