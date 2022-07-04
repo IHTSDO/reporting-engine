@@ -480,7 +480,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		//Remove all exclusions before we look for matches
 		for (Concept c : potentiallyMisaligned) {
-			if (whiteListedConcepts.contains(c) && !alreadyReportedExcluded.contains(c)) {
+			if (whiteListedConceptIds.contains(c.getId()) && !alreadyReportedExcluded.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				report (QUINARY_REPORT, c, "White listed");
 				ignoredConcepts.add(c);

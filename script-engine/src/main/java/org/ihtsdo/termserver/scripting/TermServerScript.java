@@ -62,7 +62,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String[] excludeHierarchies;
 	protected boolean ignoreWhiteList = false;
 	
-	protected Set<Concept> whiteListedConcepts = new HashSet<>();
+	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
@@ -329,8 +329,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (jobRun.getWhiteList() != null) {
-			whiteListedConcepts = jobRun.getWhiteList().stream()
-					.map( w -> gl.getConceptSafely(w.getSctId()))
+			whiteListedConceptIds = jobRun.getWhiteList().stream()
+					.map( w -> SnomedUtils.makeMachineReadable(w.getSctId()))
 					.collect(Collectors.toSet());
 		}
 		
@@ -1456,7 +1456,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return false;
 		}
 		//Have we whiteListed this concept?
-		if (!ignoreWhiteList && whiteListedConcepts.contains(c)) {
+		if (!ignoreWhiteList && whiteListedConceptIds.contains(c.getId())) {
 			String detailsStr = writeToString(details);
 			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
@@ -1480,7 +1480,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void countIssue(Concept c) {
-		if (c==null || !whiteListedConcepts.contains(c)) {
+		if (c==null || !whiteListedConceptIds.contains(c.getId())) {
 			incrementSummaryInformation(ISSUE_COUNT);
 		}
 	}

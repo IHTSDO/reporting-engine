@@ -198,7 +198,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 
 	public void reportConceptsAffectedByIntermediatePrimitives() throws TermServerScriptException {
 		for (Concept c : this.conceptsToAnalyse) {
-			if (whiteListedConcepts.contains(c)) {
+			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}

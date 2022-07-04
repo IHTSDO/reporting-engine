@@ -171,7 +171,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			int count = 0;
 			nextConcept:
 			for (Concept c : hiearchyDescendants) {
-				if (whiteListedConcepts.contains(c)) {
+				if (whiteListedConceptIds.contains(c.getId())) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;
 				}

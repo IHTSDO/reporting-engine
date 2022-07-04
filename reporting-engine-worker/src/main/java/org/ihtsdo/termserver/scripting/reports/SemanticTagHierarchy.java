@@ -57,7 +57,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		
 		info ("Examining all concepts to determine tag hierarchy");
 		for (Concept c : concepts) {
-			if (whiteListedConcepts.contains(c)) {
+			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
@@ -75,7 +75,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			
 			//Record all the child semtags if not seen before
 			for (Concept child : c.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
-				if (whiteListedConcepts.contains(child)) {
+				if (whiteListedConceptIds.contains(child)) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;
 				}

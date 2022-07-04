@@ -51,7 +51,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 		}
 		
 		for (Concept c : conceptsOfInterest) {
-			if (whiteListedConcepts.contains(c)) {
+			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
