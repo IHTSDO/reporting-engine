@@ -15,8 +15,10 @@ import org.snomed.otf.traceability.domain.ActivityType;
 
 import net.rcarz.jiraclient.Issue;
 
+import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -51,6 +53,8 @@ public class SingleTraceabilityService implements TraceabilityService {
 	private int requestCount = 0;
 	
 	private Worker[] workers;
+	
+	static private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	
 	public SingleTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
@@ -283,10 +287,16 @@ public class SingleTraceabilityService implements TraceabilityService {
 		
 		public void process(ReportRow row) throws TermServerScriptException {
 			SingleTraceabilityService.this.populateReportRowWithTraceabilityInfo(row);
+			
+			//Snip the processing date a bit if it has been populated
+			if (row.traceabilityInfo[IDX_COMMIT_DATE] != null) {
+				row.traceabilityInfo[IDX_COMMIT_DATE] = ((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE]).format(dateFormatter);
+			}
+			
 			if (row.details == null) {
-				ts.report(row.reportTabIdx, row.c, row.traceabilityInfo);
+				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.traceabilityInfo);
 			} else {
-				ts.report(row.reportTabIdx, row.c, row.details, row.traceabilityInfo);
+				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.details, row.traceabilityInfo);
 			}
 		}
 	}

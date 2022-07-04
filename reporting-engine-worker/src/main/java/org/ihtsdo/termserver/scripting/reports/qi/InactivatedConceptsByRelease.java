@@ -46,7 +46,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 		populateReleaseEffectiveTimes();
 		int releases = releaseETs.size();
 		String[] columnHeadings = new String[releases];
-		Arrays.fill(columnHeadings,"Id, FSN, SemTag, Indicators, Associations, Author, Branch, Date, Spare");
+		Arrays.fill(columnHeadings,"Id, FSN, SemTag, EffectiveTime, Indicators, Associations, Author, Branch, Date, Spare");
 		String[] tabNames = releaseETs.toArray(new String[releases]);
 		tabNames[0] = "Current";
 		super.postInit(tabNames, columnHeadings, false);
@@ -88,11 +88,12 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 						c.getEffectiveTime().compareTo(startET) > 0)
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
+		//recentlyInactiveConcepts = Collections.singletonList(gl.getConcept("371283006"));
 		try {
 			for (Concept c : recentlyInactiveConcepts) {
 				int tab = determineRelease(c);
-				String toDate = tab > 0 ?releaseETs.get(tab-1) : null;
-				String fromDate = releaseETs.get(tab == 0 ? 1 : tab);
+				String toDate = tab > 0 ? releaseETs.get(tab-1) : null;
+				String fromDate = releaseETs.get(tab);
 				//Work 2 months earlier, as changes could have been sitting in a task
 				try {
 					if (StringUtils.isEmpty(fromDate) || fromDate.length() < 5) {
@@ -100,7 +101,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 						//If we 're running to the current time, work back 
 						fromDate = dateFormat.format(new Date());
 					}
-					Date fromDateDate = DateUtils.addDays(DateUtils.parseDate(fromDate, "yyyyMMdd"),-60);
+					Date fromDateDate = DateUtils.addDays(DateUtils.parseDate(fromDate, "yyyyMMdd"),-180);
 					fromDate = dateFormat.format(fromDateDate);
 				} catch (ParseException e) {
 					throw new TermServerScriptException("Unable to parse date '" + fromDate + "'");
