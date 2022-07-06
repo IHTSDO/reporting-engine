@@ -4,6 +4,8 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.snomed.otf.scheduler.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,7 +17,7 @@ public interface ScheduleService {
 
 	public Job getJob(String jobName);
 	
-	List<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects);
+	Page<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects, Pageable pageable);
 
 	public JobRun runJob(String jobType, String jobName, JobRun jobRun) throws BusinessServiceException;
 

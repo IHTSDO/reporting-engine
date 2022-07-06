@@ -11,6 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -74,12 +78,15 @@ public class SchedulerController {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.GET)
-	public List<JobRun> listJobsRun(HttpServletRequest request,
+	public Page<JobRun> listJobsRun(HttpServletRequest request,
 			@PathVariable final String typeName,
 			@PathVariable final String jobName,
+			@RequestParam(required=false, defaultValue="0") final Integer page,
+			@RequestParam(required=false, defaultValue="20") final Integer size,
 			@RequestParam(required=false) final String user) throws BusinessServiceException {
 		
-		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request));
+		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
+		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable);
 	}
 	
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
@@ -117,7 +124,7 @@ public class SchedulerController {
 			@ApiResponse(code = 204, message = "Deleted")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/delete", method= RequestMethod.POST)
-	public List<JobRun> deleteJobRuns(
+	public Page<JobRun> deleteJobRuns(
 			HttpServletRequest request,
 			@PathVariable final String typeName, 
 			@PathVariable final String jobName,
@@ -126,7 +133,7 @@ public class SchedulerController {
 		for (UUID uuid : uuids) {
 			scheduleService.deleteJobRun(null, null, uuid);
 		}
-		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request));
+		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), null);
 	}
 	
 	@ApiOperation(value="Schedule job")

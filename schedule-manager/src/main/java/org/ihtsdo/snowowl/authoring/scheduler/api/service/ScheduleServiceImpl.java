@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
@@ -91,11 +93,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 	}
 
 	@Override
-	public List<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects) {
+	public Page<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects, Pageable pageable) {
 		if (user != null && !user.isEmpty()) {
-			return jobRunRepository.findByJobNameAndUserAndProjectIn(jobName, user, projects);
+			return jobRunRepository.findByJobNameAndUserAndProjectIn(jobName, user, projects, pageable);
 		} else {
-			return jobRunRepository.findByJobNameAndProjectInOrderByRequestTimeDesc(jobName, projects);
+			return jobRunRepository.findByJobNameAndProjectInOrderByRequestTimeDesc(jobName, projects, pageable);
 		}
 	}
 
