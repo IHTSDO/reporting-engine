@@ -401,7 +401,14 @@ public class DrugUtils implements ScriptConstants {
 	}
 	
 	public static int getCountOfBase(Concept c) throws TermServerScriptException {
-		return SnomedUtils.getConcreteIntValue(c, COUNT_BASE_ACTIVE_INGREDIENT, CharacteristicType.STATED_RELATIONSHIP);
+		Integer countOfBase = SnomedUtils.getConcreteIntValue(c, COUNT_BASE_ACTIVE_INGREDIENT, CharacteristicType.STATED_RELATIONSHIP, UNGROUPED);
+		if (countOfBase == null) {
+			countOfBase = SnomedUtils.getConcreteIntValue(c, COUNT_OF_BASE_AND_MODIFICATION, CharacteristicType.STATED_RELATIONSHIP, UNGROUPED);
+		}
+		if (countOfBase == null) {
+			throw new TermServerScriptException("Failed to find Count of Base (or base/modification pair) in " + c);
+		}
+		return countOfBase;
 	}
 	
 	public static boolean matchesBossPAIStrength(Concept lhs, Concept rhs) throws TermServerScriptException {

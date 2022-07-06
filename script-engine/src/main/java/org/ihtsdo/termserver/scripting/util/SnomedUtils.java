@@ -951,9 +951,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return targets;
 	}
 	
-	public static int getConcreteIntValue(Concept c, Concept type, CharacteristicType charType) throws TermServerScriptException {
+	public static Integer getConcreteIntValue(Concept c, Concept type, CharacteristicType charType, int groupId) throws TermServerScriptException {
 		Integer value = null;
-		Set<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
+		Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 		for (Relationship rel : rels) {
 			if (rel.isConcrete() && value == null) {
 				try {
