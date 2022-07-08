@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -57,6 +58,7 @@ import com.google.common.io.Files;
  RP-465 Add check for regime/theraphy semtag not under 243120004|Regimes and therapies (regime/therapy)|
  INFRA-6817 Check MRCM for term discrepancies
  RP-553 Add check for zero sized space
+ RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -91,6 +93,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private List<Concept> allActiveConcepts;
 	private Set<Concept> recentlyTouched;
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
+	List<Concept> allConceptsSorted;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -168,10 +171,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		deprecatedHierarchies = new HashSet<>();
 		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
 	
-		allActiveConcepts = gl.getAllConcepts().stream()
-				.filter(c -> c.isActive())
-				.collect(Collectors.toList());
-		
 		if (isMS()) {
 			defaultModule = project.getMetadata().getDefaultModuleId();
 		}
@@ -211,6 +210,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	public void runJob() throws TermServerScriptException {
 		info("Checking...");
+		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
+		allActiveConcepts = allConceptsSorted.stream()
+				.filter(c -> c.isActive())
+				.collect(Collectors.toList());
 		
 		info("Detecting recently touched concepts");
 		populateRecentlyTouched();
@@ -241,6 +244,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		multipleLangRef();
 		multiplePTs();
 		//suspectedProperNameCaseInsensitive();
+		if (isMS()) {
+			unexpectedLangCodeMS();
+		}
 
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -285,7 +291,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unnecessaryModuleJumping() throws TermServerScriptException {
 		String issueStr = "Component module jumped, otherwise unchanged.";
 		initialiseSummary(issueStr);
-		for (Concept concept : SnomedUtils.sort(gl.getAllConcepts())) {
+		for (Concept concept : allConceptsSorted) {
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
 				if (c.getId().equals("7b28c61b-b9cc-4406-8672-86d872c2f9d5")) {
@@ -561,7 +567,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : allConceptsSorted) {
 			if (inScope(c) && isInternational(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
@@ -592,7 +598,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void missingSemanticTag() throws TermServerScriptException {
 		String issueStr = "Concept (recently touched) with invalid FSN";
 		initialiseSummary(issueStr);
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : allConceptsSorted) {
 			if (inScope(c) && recentlyTouched.contains(c) && c.getFsn() != null) {
 				if (SnomedUtils.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
 					report(c, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
@@ -625,7 +631,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(wordGroupIssueStr);
 		initialiseSummary(wordIssueStr);
 
-		final Collection<Concept> concepts = includeLegacyIssues ? gl.getAllConcepts() : allActiveConcepts;
+		final Collection<Concept> concepts = includeLegacyIssues ? allConceptsSorted : allActiveConcepts;
 		nextConcept:
 		for (Concept c : concepts) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
@@ -767,7 +773,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void multipleLangRef() throws TermServerScriptException {
 		String issueStr = "Multiple LangRef for a given refset";
 		initialiseSummary(issueStr);
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : allConceptsSorted) {
 			if (inScope(c)) {
 				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -786,12 +792,53 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+	private void unexpectedLangCodeMS() throws TermServerScriptException {
+		//We need a branch to be able to run this query
+		if (getArchiveManager().isLoadDependencyPlusExtensionArchive()) {
+			info("Unable to determine appropriate langCode for LangRefsets when working with archive package");
+			return;
+		}
+		String issueStr = "Langrefset's description has unexpected langCode";
+		initialiseSummary(issueStr);
+		Map<String, String> refsetLangCodeMap = generateRefsetLangCodeMap();
+		for (Concept c : allConceptsSorted) {
+			for (Description d : c.getDescriptions()) {
+				//It's OK - for example - to have an English term in the Dutch LangRefset
+				//So skip 'en' terms, unless it's the FSN
+				if (d.getType().equals(DescriptionType.FSN) || !d.getLang().equals("en")) {
+					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						String expectedLangCode = refsetLangCodeMap.get(l.getRefsetId());
+						if (expectedLangCode == null) {
+							throw new TermServerScriptException("Unable to determine appropriate langCode for Langrefset: " + gl.getConcept(l.getRefsetId()));
+						}
+						if (!d.getLang().equals(expectedLangCode)) {
+							String detailStr = "Expected '" + expectedLangCode + "'";
+							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d, l);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private Map<String, String> generateRefsetLangCodeMap() {
+		Map<String, String> refsetLangCodeMap = new HashMap();
+		//First populate en-gb and en-us since we always know about those
+		refsetLangCodeMap.put(US_ENG_LANG_REFSET, "en");
+		refsetLangCodeMap.put(GB_ENG_LANG_REFSET, "en");
+		
+		//Now the optionalLanguageRefsets are laid out nicely
+		Metadata metadata = project.getMetadata();
+		refsetLangCodeMap.putAll(metadata.getLangRefsetLangMapping());
+		return refsetLangCodeMap;
+	}
+
 	private void multiplePTs() throws TermServerScriptException {
 		String issueStr = "Multiple preferred synonyms in a single langrefset";
 		initialiseSummary(issueStr);
 		List<DescriptionType> typesOfInterest = Collections.singletonList(DescriptionType.SYNONYM);
 		Map<String, Description> ptMap = new HashMap<>();
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : allConceptsSorted) {
 			if (inScope(c)) {
 				ptMap.clear();
 				nextDescription:
@@ -842,7 +889,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (recentlyTouched == null) {
 			recentlyTouched = new HashSet<>();
 			nextConcept:
-			for (Concept c : gl.getAllConcepts()) {
+			for (Concept c : allConceptsSorted) {
 				if (StringUtils.isEmpty(c.getEffectiveTime())) {
 					recentlyTouched.add(c);
 					continue nextConcept;
