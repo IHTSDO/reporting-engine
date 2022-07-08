@@ -30,7 +30,7 @@ public class GraphLoader implements ScriptConstants {
 	private Map<String, Concept> gbptMap = null;
 	private Set<String> excludedModules;
 	public static int MAX_DEPTH = 1000;
-	private Set<Concept> orphanetConcepts;
+	private Set<String> orphanetConceptIds;
 	private AxiomRelationshipConversionService axiomService;
 	
 	private DescendantsCache descendantsCache = DescendantsCache.getDescendentsCache();
@@ -129,7 +129,7 @@ public class GraphLoader implements ScriptConstants {
 		allComponents = null;
 		componentOwnerMap = null;
 		fsnMap = null;
-		orphanetConcepts = null;
+		orphanetConceptIds = null;
 		descendantsCache.reset();
 		statedDescendantsCache.reset();
 		ancestorsCache.reset();
@@ -145,7 +145,6 @@ public class GraphLoader implements ScriptConstants {
 		fsnMap = null;
 		usptMap = null;
 		gbptMap = null;
-		orphanetConcepts= null;
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap= null;
 		duplicateLangRefsetIdsReported = new HashSet<>();
@@ -1435,27 +1434,27 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 	
-	public Collection<Concept> getOrphanetConcepts() {
-		if (orphanetConcepts == null) {
+	public Collection<String> getOrphanetConceptIds() {
+		if (orphanetConceptIds == null) {
 			TermServerScript.print("Loading list of Orphanet Concepts...");
 			try {
 				InputStream is = GraphLoader.class.getResourceAsStream("/data/orphanet_concepts.txt");
 				if (is == null) {
 					throw new RuntimeException ("Failed to load Orphanet data file - not found.");
 				}
-				orphanetConcepts = IOUtils.readLines(is, "UTF-8").stream()
-						.map( s -> getConceptSafely(s))
+				orphanetConceptIds = IOUtils.readLines(is, "UTF-8").stream()
+						.map(s -> s.trim())
 						.collect(Collectors.toSet());
 			} catch (Exception e) {
 				throw new RuntimeException ("Failed to load list of Orphanet Concepts",e);
 			}
 			TermServerScript.println("complete.");
 		}
-		return Collections.unmodifiableCollection(orphanetConcepts);
+		return Collections.unmodifiableCollection(orphanetConceptIds);
 	}
 
 	public boolean isOrphanetConcept (Concept c) {
-		return getOrphanetConcepts().contains(c);
+		return getOrphanetConceptIds().contains(c.getId());
 	}
 
 	public void makeReady() {

@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.Charsets;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -126,7 +127,10 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			}
 			
 			int orphanetCount = subset.size();
-			subset.removeAll(gl.getOrphanetConcepts());
+			Set<Concept> orphanetToRemove = subset.stream()
+					.filter(o -> gl.getOrphanetConceptIds().contains(o.getId()))
+					.collect(Collectors.toSet());
+			subset.removeAll(orphanetToRemove);
 			int total = subset.size();
 			orphanetCount = orphanetCount - total;
 			

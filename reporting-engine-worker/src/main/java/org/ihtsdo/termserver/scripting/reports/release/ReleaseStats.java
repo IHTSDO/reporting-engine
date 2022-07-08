@@ -243,8 +243,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	public void countIPs (CharacteristicType charType, int reportIdx) throws TermServerScriptException {
 		int ipCount = 0;
 		int orphanetIPs = 0;
-		//Pre-load Orphanet concepts in case in case it causes another concept to be created
-		gl.getOrphanetConcepts();
 		Set<Concept> intermediatePrimitives = identifyIntermediatePrimitives(gl.getAllConcepts(), charType);
 		if (charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
 			statedIntermediatePrimitives = intermediatePrimitives;
