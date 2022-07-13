@@ -287,10 +287,14 @@ public class GraphLoader implements ScriptConstants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
+				/*if (conceptId == 1148749005L) {
+					TermServerScript.debug("Here");
+				}
+				
 				if (isDelta == true && (lineItems[IDX_ID].equals("41aa7a1e-edd2-8d69-ae64-5459fbb15755") ||
 						lineItems[IDX_ID].equals("4deeaba6-865b-639b-ff3b-e2b0a1e34a57"))) {
 					TermServerScript.debug ("here");
-				}
+				}*/
 				
 				try {
 					//Also save data in RF2 form so we can build Snapshot
@@ -346,6 +350,7 @@ public class GraphLoader implements ScriptConstants {
 							if (!conceptId.equals(RHS)) {
 								throw new IllegalArgumentException("GCI Axiom RHS != RefCompId: " + line);
 							}
+							//This will replace any existing axiom with the same UUID
 							c.addGciAxiom(AxiomUtils.toAxiom(c, axiomEntry, axiom));
 							axiomEntry.setGCI(true);
 						} else if (!conceptId.equals(LHS)) {

@@ -1599,6 +1599,10 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 
 	public void addGciAxiom(Axiom axiom) {
 		//Watch that this is a set, so we will replace any existing axiom with the same id
+		//Ah, but we have to explicitly remove it first, otherwise it doesn't consider the 
+		//updated object to be any different (since only the ID is checked for equality), 
+		//and so doesn't see the need to make any changes to the set.
+		getGciAxioms().remove(axiom);
 		getGciAxioms().add(axiom);
 	}
 

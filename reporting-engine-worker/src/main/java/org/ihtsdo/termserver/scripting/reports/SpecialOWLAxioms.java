@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
@@ -64,6 +65,11 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 			if (!c.isActive()) {
 				continue;
 			}
+			
+			/*if (c.getId().equals("1148749005")) {
+				debug("Here");
+			}*/
+			
 			for (Axiom a : c.getAdditionalAxioms()) {
 				if (inScope(a) && a.isActive()) {
 					report (SECONDARY_REPORT, c, a);
