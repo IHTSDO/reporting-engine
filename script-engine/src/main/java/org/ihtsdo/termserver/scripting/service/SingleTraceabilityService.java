@@ -88,11 +88,12 @@ public class SingleTraceabilityService implements TraceabilityService {
 		int failedWorkerCount = 0;
 		boolean successfulAdd = false;
 		while (successfulAdd == false) {
-			successfulAdd = workers[requestCount%WORKER_COUNT].addToQueue(row);
-			requestCount++;
+			int thisWorker = requestCount%WORKER_COUNT;
+			successfulAdd = workers[thisWorker].addToQueue(row);
 			if (++failedWorkerCount > WORKER_COUNT) {
-				throw new TermServerScriptException("All Workers Failed");
+				throw new TermServerScriptException("All Workers Failed.  Last failure: " + workers[thisWorker].getFailureReaason());
 			}
+			requestCount++;
 		}
 	}
 	
@@ -234,6 +235,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		private Queue<ReportRow> queue = new LinkedBlockingQueue<>();
 		boolean shutdownPending = false;
 		boolean isRunning = false;
+		private String failureReaason;
 		int workerId;
 
 		public Worker(int id) {
@@ -271,8 +273,9 @@ public class SingleTraceabilityService implements TraceabilityService {
 					}
 				}
 			} catch (Exception e) {
-				logger.error("Unexpected worker {} termination: " + ExceptionUtils.getExceptionCause("", e), workerId);
-				logger.error(ExceptionUtils.getStackTrace(e));
+				String msg = "Unexpected worker " + workerId + " termination: " + ExceptionUtils.getExceptionCause("", e);
+				String stack = ExceptionUtils.getStackTrace(e);
+				setFailureReaason(msg + "\n" + stack);
 			} finally {
 				isRunning = false;
 			}
@@ -333,6 +336,15 @@ public class SingleTraceabilityService implements TraceabilityService {
 			} else {
 				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.details, row.traceabilityInfo);
 			}
+		}
+
+		public String getFailureReaason() {
+			return failureReaason;
+		}
+
+		public void setFailureReaason(String failureReaason) {
+			logger.error(failureReaason);
+			this.failureReaason = failureReaason;
 		}
 	}
 
