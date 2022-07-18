@@ -78,7 +78,7 @@ public class SchedulerController {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.GET)
-	public Page<JobRun> listJobsRun(HttpServletRequest request,
+	public List<JobRun> listJobsRun(HttpServletRequest request,
 			@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@RequestParam(required=false, defaultValue="0") final Integer page,
@@ -86,7 +86,7 @@ public class SchedulerController {
 			@RequestParam(required=false) final String user) throws BusinessServiceException {
 		
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
-		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable);
+		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable).getContent();
 	}
 	
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
