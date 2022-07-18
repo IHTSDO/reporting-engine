@@ -56,7 +56,12 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		defaultLangRefset = project.getMetadata().getDefaultLangRefset();
+		try {
+			defaultLangRefset = project.getMetadata().getDefaultLangRefset();
+		} catch (IllegalStateException e) {
+			error("Failed to determine default LangRefset.  Assuming en-us.",e);
+			defaultLangRefset = US_ENG_LANG_REFSET;
+		}
 		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions"};
 		String[] tabNames = new String[] {	"Missing LangRefset Entry"};
 		super.postInit(tabNames, columnHeadings, false);
