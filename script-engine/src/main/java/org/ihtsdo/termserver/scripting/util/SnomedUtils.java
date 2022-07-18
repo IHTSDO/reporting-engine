@@ -2031,12 +2031,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			.filter(r -> r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP))
 			.forEach(components::add);
 		
+		//Descriptions and their associated indicators, associations and langrefstes
 		c.getDescriptions().stream()
-			.flatMap(d ->  d.getLangRefsetEntries().stream())
-			.forEach(components::add);
+		.forEach(components::add);
 		
-		//Descriptions and their associated indicators
 		c.getDescriptions().stream()
+		.flatMap(d ->  d.getLangRefsetEntries().stream())
 		.forEach(components::add);
 		
 		c.getDescriptions().stream()
@@ -2047,6 +2047,14 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			.flatMap(d ->  d.getAssociationEntries().stream())
 			.forEach(components::add);
 		
+		return components;
+	}
+	
+	public static Collection<Component> getAllComponents(Description d) {
+		List<Component> components = new ArrayList<>();
+		components.addAll(d.getLangRefsetEntries());
+		components.addAll(d.getInactivationIndicatorEntries());
+		components.addAll(d.getAssociationEntries());
 		return components;
 	}
 	

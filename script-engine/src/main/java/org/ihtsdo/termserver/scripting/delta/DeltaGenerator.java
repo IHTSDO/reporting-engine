@@ -144,20 +144,23 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		boolean dependencySpecified = (getDependencyArchive() != null);
-		String choice = dependencySpecified? "Y":"N";
-		if (!dependencySpecified) {
-			info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");
-			print ("Choice Y/N: ");
-			choice = STDIN.nextLine().trim();
-		}
-		if (choice.toUpperCase().equals("Y")) {
-			print ("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
-			response = STDIN.nextLine().trim();
-			if (!response.isEmpty()) {
-				setDependencyArchive(response);
+		
+		if (projectName.endsWith(".zip")) {
+			String choice = dependencySpecified? "Y":"N";
+			if (!dependencySpecified) {
+				info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");
+				print ("Choice Y/N: ");
+				choice = STDIN.nextLine().trim();
 			}
+			if (choice.toUpperCase().equals("Y")) {
+				print ("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
+				response = STDIN.nextLine().trim();
+				if (!response.isEmpty()) {
+					setDependencyArchive(response);
+				}
+			}
+			getArchiveManager(true).setLoadDependencyPlusExtensionArchive(getDependencyArchive() != null);
 		}
-		getArchiveManager(true).setLoadDependencyPlusExtensionArchive(getDependencyArchive() != null);
 	}
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {

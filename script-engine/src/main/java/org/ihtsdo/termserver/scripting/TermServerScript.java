@@ -188,6 +188,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
 				dependencyArchive = args[x+1];
+			} else if (thisArg.equals("-task")) {
+				taskKey = args[x+1];
 			}
 		}
 		checkSettingsWithUser(null);
@@ -232,6 +234,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 			}
 			project.setKey(projectName);
+		}
+		
+		if (taskKey != null) {
+			project.setBranchPath(project.getBranchPath() + "/" + taskKey);
 		}
 		
 		if (!loadingRelease) {
@@ -356,6 +362,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						//Are we in fact running against a task?
 						if (jobRun != null && !StringUtils.isEmpty(jobRun.getTask())) {
 							String taskBranchPath = project.getBranchPath() + "/" + jobRun.getTask();
+							project.setBranchPath(taskBranchPath);
+						} else if (taskKey != null) {
+							String taskBranchPath = project.getBranchPath() + "/" + taskKey;
 							project.setBranchPath(taskBranchPath);
 						}
 					} catch (Exception e) {

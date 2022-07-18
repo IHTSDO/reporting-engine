@@ -513,6 +513,8 @@ public class ArchiveManager implements ScriptConstants {
 		
 		if (ts.getJobRun() != null && !StringUtils.isEmpty(ts.getJobRun().getTask())) {
 			projectTaskKey += "_" + ts.getJobRun().getTask();
+		} else if (ts.getTaskKey() != null) {
+			projectTaskKey += "_" + ts.getTaskKey();
 		}
 		
 		if (loadEditionArchive || 

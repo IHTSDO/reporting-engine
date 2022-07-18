@@ -5,21 +5,12 @@ import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
 public class AxiomEntry extends RefsetMember implements ScriptConstants {
 
-	private String id;
-	private String effectiveTime;
-	private String moduleId;
-	private Boolean active;
-	private String refsetId;
-	private String referencedComponentId;
 	private String owlExpression;
 	private boolean isGCI = false;
-	private Boolean released = null;
 	
 	public AxiomEntry clone(String newComponentSctId, boolean keepIds) {
 		AxiomEntry clone = new AxiomEntry();
@@ -59,62 +50,6 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 		};
 	}
 	
-	public String getId() {
-		return id;
-	}
-	public void setId(String id) {
-		this.id = id;
-	}
-	public String getEffectiveTime() {
-		return effectiveTime;
-	}
-	public void setEffectiveTime(String effectiveTime) {
-		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
-			//Are we resetting this component to mark a change?
-			setDirty();
-		}
-		
-		if (StringUtils.isEmpty(effectiveTime)) {
-			this.effectiveTime = null;
-		} else {
-			this.effectiveTime = effectiveTime;
-		}
-	}
-	public String getModuleId() {
-		return moduleId;
-	}
-	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && !moduleId.equals("900000000000207008")) {
-			TermServerScript.debug("here");
-		}
-		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
-			setDirty();
-			this.effectiveTime = null;
-		}
-		this.moduleId = moduleId;
-	}
-	public boolean isActive() {
-		return active;
-	}
-	public void setActive(boolean newActiveState) {
-		if (this.active != null && this.active != newActiveState) {
-			setDirty();
-			setEffectiveTime(null);
-		}
-		this.active = newActiveState;
-	}
-	public String getRefsetId() {
-		return refsetId;
-	}
-	public void setRefsetId(String refsetId) {
-		this.refsetId = refsetId;
-	}
-	public String getReferencedComponentId() {
-		return referencedComponentId;
-	}
-	public void setReferencedComponentId(String referencedComponentId) {
-		this.referencedComponentId = referencedComponentId;
-	}
 	public String getOwlExpression() {
 		return owlExpression;
 	}
@@ -189,14 +124,4 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 		this.isGCI = isGCI;
 	}
 	
-	public Boolean isReleased() {
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
-		return released;
-	}
-
-	public void setReleased(Boolean released) {
-		this.released = released;
-	}
 }

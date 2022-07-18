@@ -291,8 +291,7 @@ public class GraphLoader implements ScriptConstants {
 					TermServerScript.debug("Here");
 				}
 				
-				if (isDelta == true && (lineItems[IDX_ID].equals("41aa7a1e-edd2-8d69-ae64-5459fbb15755") ||
-						lineItems[IDX_ID].equals("4deeaba6-865b-639b-ff3b-e2b0a1e34a57"))) {
+				if (lineItems[IDX_ID].equals("74825332-420b-71be-c477-e8dc574323c5")) {
 					TermServerScript.debug ("here");
 				}*/
 				
@@ -302,7 +301,7 @@ public class GraphLoader implements ScriptConstants {
 					//Are we overwriting an existing axiom?
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
-						
+						axiomEntry.setReleased(replacedAxiomEntry.isReleased());
 						if (recordPreviousState) {
 							String previousState = replacedAxiomEntry.getMutableFields();
 							axiomEntry.addIssue(previousState);
