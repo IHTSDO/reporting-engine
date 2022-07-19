@@ -53,11 +53,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, "S3");
 		params.put(REPORT_FORMAT_TYPE, "JSON");
-		//params.put(MODULES, "731000124108");
+		params.put(MODULES, "731000124108");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -86,6 +86,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		//Reset this flag for Editions as we might run against the same project so not reset as expected.
+		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
 		summaryDataMap = new HashMap<>();
 		refsetDataMap = new HashMap<>();
 		
