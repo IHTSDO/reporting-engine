@@ -13,6 +13,6 @@ public interface JobRunRepository extends CrudRepository<JobRun, UUID> {
 	
 	Page<JobRun> findByJobNameAndProjectInOrderByRequestTimeDesc(String jobName, Set<String> projects, Pageable pageable);
 	
-	Page<JobRun> findByJobNameAndUserAndProjectIn(String jobName, String user, Set<String> projects, Pageable pageable);
+	Page<JobRun> findByJobNameAndUserAndProjectInOrderByRequestTimeDesc(String jobName, String user, Set<String> projects, Pageable pageable);
 
 }

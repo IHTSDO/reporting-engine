@@ -95,7 +95,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 	@Override
 	public Page<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects, Pageable pageable) {
 		if (user != null && !user.isEmpty()) {
-			return jobRunRepository.findByJobNameAndUserAndProjectIn(jobName, user, projects, pageable);
+			return jobRunRepository.findByJobNameAndUserAndProjectInOrderByRequestTimeDesc(jobName, user, projects, pageable);
 		} else {
 			return jobRunRepository.findByJobNameAndProjectInOrderByRequestTimeDesc(jobName, projects, pageable);
 		}
