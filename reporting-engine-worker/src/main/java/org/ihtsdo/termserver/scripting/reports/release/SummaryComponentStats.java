@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -169,8 +170,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	@Override
 	public String getReportComplexName() {
 		if (projectKey != null && prevRelease != null) {
-			complexName = projectKey + "---" + prevRelease;
-			complexName = complexName.replaceAll("\\.zip", ""); // remove the zip extension
+			complexName = removeTimeCode(removeZipExtension(projectKey)) + "---" + removeTimeCode(removeZipExtension(prevRelease));
 		} else {
 			complexName = super.getReportComplexName();
 		}
@@ -704,6 +704,32 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			sumTotal += totals[tabIdx][columnIdx];
 		}
 		return Long.toString(sumTotal);
+	}
+
+	private String removeZipExtension(String input) {
+		return input.replaceAll("\\.zip", "");
+	}
+
+	private String removeTimeCode(String input) {
+		// Grab date, i.e. 20210901T120000Z
+		String dateBefore = input.substring(input.lastIndexOf("_") + 1);
+
+		// Change date to new format (i.e. remove time code)
+		try {
+			String dateAfter = dateBefore;
+			SimpleDateFormat sourceSDF = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+			SimpleDateFormat targetSDF = new SimpleDateFormat("yyyyMMdd");
+			sourceSDF.setTimeZone(TimeZone.getTimeZone("UTC"));
+			dateAfter = targetSDF.format(sourceSDF.parse(dateAfter));
+
+			// i.e. SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z => SnomedCT_InternationalRF2_PRODUCTION_20220731
+			return input.replaceAll(dateBefore, dateAfter);
+		} catch (ParseException e) {
+			warn(String.format("Cannot remove time code from %s", input));
+		}
+
+		// Return original as default
+		return input;
 	}
 
 }
