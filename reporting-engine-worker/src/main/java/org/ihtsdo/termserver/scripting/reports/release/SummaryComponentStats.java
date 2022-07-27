@@ -103,6 +103,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
 					.collect(Collectors.toList());
 		}
+
+		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
+		info(String.format("Running report with runIntegrityChecks set to %b", runIntegrityChecks));
+		getArchiveManager().setRunIntegrityChecks(runIntegrityChecks);
 		super.init(run);
 	}
 
