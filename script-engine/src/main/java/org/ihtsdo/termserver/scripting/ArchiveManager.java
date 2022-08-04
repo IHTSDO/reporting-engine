@@ -54,7 +54,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean releasedFlagPopulated = false;
 	private boolean runIntegrityChecks = true;
 	private final List<String> integrityCheckIgnoreList = List.of(
-
+			"21000241105" // |Common French language reference set|
 	);
 	
 	private Project currentlyHeldInMemory;
