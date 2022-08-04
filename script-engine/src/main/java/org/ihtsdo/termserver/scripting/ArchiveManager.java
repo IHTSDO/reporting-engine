@@ -53,6 +53,9 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean populatePreviousTransativeClosure = false;
 	private boolean releasedFlagPopulated = false;
 	private boolean runIntegrityChecks = true;
+	private final List<String> integrityCheckIgnoreList = List.of(
+
+	);
 	
 	private Project currentlyHeldInMemory;
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
@@ -377,6 +380,9 @@ public class ArchiveManager implements ScriptConstants {
 				/*if (c.getId().equals("15747361000119104")) {
 					debug("here");
 				}*/
+				if (integrityCheckIgnoreList.contains(c.getId())) {
+					continue;
+				}
 				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
 					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
 					checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
