@@ -14,6 +14,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.fixes.batchImport.BatchImport;
 import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobParameters;
@@ -372,7 +373,12 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	
 	private void updateTask(Task task) throws Exception {
 		
-		String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+		String taskDescription;
+		if (this instanceof BatchImport) {
+			taskDescription = ((BatchImport)this).getAllNotes(task);
+		} else {
+			taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+		}
 		
 		//Reassign the task to the intended author.  Set at task or processing level
 		String taskAuthor = task.getAssignedAuthor();

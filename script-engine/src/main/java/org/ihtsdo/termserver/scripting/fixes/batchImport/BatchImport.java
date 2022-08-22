@@ -193,7 +193,8 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 				origRef = concept.get(format.getIndex(BatchImportFormat.FIELD.ORIG_REF));
 			}
 			report (t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, origRef, statedForm);
-			conceptsLoaded.put(c.getId(),createdConcept);
+			conceptsLoaded.put(createdConcept.getId(), createdConcept);
+			c.setId(createdConcept.getId());
 			countIssue(createdConcept);
 		} catch (Exception e) {
 			throw new TermServerScriptException(concept.getRow().getRecordNumber() + ": " + concept.getRow(),e);
@@ -201,17 +202,17 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		return CHANGE_MADE;
 	}
 
-	// Temporary version using html formatting until WRP-2372 gets done
-	protected String getAllNotes(Task task, Map<String, Concept> conceptsLoaded) throws TermServerScriptException {
+	public String getAllNotes(Task task) throws TermServerScriptException {
 		StringBuilder str = new StringBuilder();
-		for (Map.Entry<String, Concept> thisEntry: conceptsLoaded.entrySet()) {
-			String thisOriginalSCTID = thisEntry.getKey();
-			BatchImportConcept biConcept = getConcept(thisOriginalSCTID);
-			Concept thisConcept = thisEntry.getValue();
+		for (Component thisComponent : task.getComponents()) {
+			BatchImportConcept biConcept = (BatchImportConcept)thisComponent;
+			if (thisComponent.getId() == null) {
+				warn(biConcept + " did not get assigned an SCTID - load failed?");
+				continue;
+			}
+			Concept thisConcept = conceptsLoaded.get(thisComponent.getId());
 			str.append("<h5>")
-			.append(thisConcept.getConceptId())
-			.append(" - ")
-			.append(thisConcept.getFsn())
+			.append(thisConcept)
 			.append(":</h5>")
 			.append("<ul>");
 			
