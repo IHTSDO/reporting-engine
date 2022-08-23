@@ -30,7 +30,9 @@ public class ReleaseSummary {
 				"Language Refset|Total unique","Axiom|Added for new concepts","Axiom|Updated for existing concepts","Axiom|Total unique",
 				"Stated Relationship|Added for new concepts","Stated Relationship|Updated for existing concepts",
 				"Stated Relationship|Total unique","Inferred Relationship|Added for new concepts",
-				"Inferred Relationship|Updated for existing concepts","Inferred Relationship|Total unique" 
+				"Inferred Relationship|Updated for existing concepts","Inferred Relationship|Total unique",
+				"Concrete Relationship|Added for new concepts", "Concrete Relationship|Updated for existing concepts",
+				"Concrete Relationship|Total unique"
 		};
 	}
 	
