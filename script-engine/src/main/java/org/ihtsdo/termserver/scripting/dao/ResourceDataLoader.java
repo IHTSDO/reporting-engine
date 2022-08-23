@@ -27,10 +27,11 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
 @Service
 public class ResourceDataLoader {
-	private static final String[] fileNames = new String[] { 	"cs_words.tsv",
+	private static final String[] fileNames = new String[] {	"cs_words.tsv",
 																"acceptable_dose_forms.tsv",
 																"us-to-gb-terms-map.txt",
-																"HighVolumeSCTIDs.txt"};
+																"HighVolumeSCTIDs.txt",
+																"legacy_int_release_summary.json"};
 	
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;
