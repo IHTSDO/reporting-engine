@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
@@ -52,13 +53,22 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			OBSERVABLE_ENTITY, EVENT, 
 			PHARM_DOSE_FORM};
 	
+	public static final EnumSet<ComponentType> typesToDebugToFile = EnumSet.of(ComponentType.ATTRIBUTE_VALUE);
+	
+	public static Set<String> refsetsToDebugToFile = new HashSet<>();
+	/*static {
+		refsetsToDebugToFile.add(SCTID_OWL_AXIOM_REFSET);
+	}*/
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
-		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");
-		params.put(MODULES, "731000124108");
+		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
+		//params.put(REPORT_OUTPUT_TYPES, "S3");
+		//params.put(REPORT_FORMAT_TYPE, "JSON");
+		//params.put(MODULES, "731000124108");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -342,6 +352,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
 						//If previously inactive and now active, then it's reactivated
 						incrementCounts(a, counts, IDX_REACTIVATED);
+					} else if (isChangedSinceLastRelease(a)) {
+						//Did it change in this release?
+						incrementCounts(a, counts, IDX_CHANGED);
+						debugToFile(a, "Changed");
 					}
 				} else {
 					//If we saw this previously active, then it's been inactivated
@@ -363,10 +377,16 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					//Have we see this Id before?  If not, it's new
 					if (datum != null && !datum.descInactivationIds.contains(i.getId())) {
 						incrementCounts(i, thisInactTab, IDX_NEW);
+						debugToFile(i, "New");
 					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
 						//If previously inactive and now active, then it's reactivated
 						incrementCounts(i, thisInactTab, IDX_REACTIVATED);
-					}
+						debugToFile(i, "Reactivated");
+					} else if (isChangedSinceLastRelease(i)) {
+						//Did it change in this release?
+						incrementCounts(i, thisInactTab, IDX_CHANGED);
+						debugToFile(i, "Changed");
+					} 
 				} else {
 					//If we saw this previously active, then it's been inactivated
 					if (datum != null && datum.descInactivationIds.contains(i.getId())) {
@@ -393,6 +413,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		boolean conceptIsNew = (ids == null && idsInactive == null);
 		boolean conceptAffected = false;
 		for (Component component : components) {
+			/*if (component.getId().equals("8f7a882f-b4e7-43d1-81e8-d2cfae503000") ||
+					component.getId().equals("b6507605-25fa-4a0b-88d1-26327247da86")) {
+				debug("here");
+			}*/
 			if (moduleFilter != null && !moduleFilter.contains(component.getModuleId())) {
 				continue;
 			}
@@ -447,7 +471,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				incrementCounts(component, counts, IDX_NEW_INACTIVE);
 			}
 			incrementCounts(component, counts, IDX_TOTAL);
-			//debugToFile(component, "Total");
+			debugToFile(component, "Total");
 		}
 		if (conceptAffected) {
 			counts[IDX_CONCEPTS_AFFECTED]++;
@@ -470,15 +494,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
 		// Only debug if we enable it (for testing really).
-		if (!debugToFile) {
+		if (!debugToFile || !typesToDebugToFile.contains(c.getComponentType())) {
 			return;
 		}
-
-		if (!(c instanceof Description)) {
-			return;
-		} else {
-			Description d =  (Description)c;
-			if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+		
+		if (refsetsToDebugToFile.size() > 0 && c instanceof RefsetMember) {
+			RefsetMember rm = (RefsetMember)c;
+			if (!refsetsToDebugToFile.contains(rm.getRefsetId())) {
 				return;
 			}
 		}
