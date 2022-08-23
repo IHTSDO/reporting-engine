@@ -179,14 +179,18 @@ public class NormaliseConcepts extends BatchFix {
 		Set<Concept> noChangesRequired = new HashSet<>();
 		
 		setQuiet(true);
-		for (Concept alignedConcept : findConcepts(ecl, useStatedECL)) {
+		CharacteristicType charType = useStatedECL ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
+		for (Concept concept : findConcepts(ecl, true, charType)) {
+			/*if (concept.getId().equals("428979007")) {
+				debug("here");
+			}*/
 			//Make changes to a clone of the concept so we don't affect our local copy
-			Concept alignedClone = alignedConcept.cloneWithIds();
-			int changesMade = normaliseConcept(null, alignedClone);
+			Concept clone = concept.cloneWithIds();
+			int changesMade = normaliseConcept(null, clone);
 			if (changesMade > 0) {
-				changesRequired.add(alignedConcept);
+				changesRequired.add(concept);
 			} else {
-				noChangesRequired.add(alignedConcept);
+				noChangesRequired.add(concept);
 			}
 		}
 		setQuiet(false);

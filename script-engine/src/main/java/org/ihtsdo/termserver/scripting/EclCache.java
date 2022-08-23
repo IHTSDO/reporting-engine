@@ -23,6 +23,7 @@ public class EclCache implements ScriptConstants {
 	private TermServerClient tsClient;
 	private GraphLoader gl;
 	boolean quiet = false;
+	CharacteristicType charType;
 	
 	Map <String, Collection<Concept>> expansionCache = new HashMap<>();
 	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet) {
@@ -43,6 +44,7 @@ public class EclCache implements ScriptConstants {
 		}
 		branchCache.gl = gl;
 		branchCache.quiet = quiet;
+		branchCache.charType = charType;
 		return branchCache;
 	}
 	
@@ -64,13 +66,17 @@ public class EclCache implements ScriptConstants {
 	}
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
-		return findConcepts(branch, ecl, useLocalStoreIfSimple, CharacteristicType.INFERRED_RELATIONSHIP);
+		return findConcepts(branch, ecl, useLocalStoreIfSimple, charType);
 	}
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
 			TermServerScript.warn("EclCache asked to find concepts but not ecl specified.  Returning empty set");
 			return new ArrayList<>();
+		}
+		
+		if (!this.charType.equals(charType)) {
+			throw new IllegalArgumentException("Characteristic Type " + charType + " used with " + this.charType + " cache");
 		}
 		
 		ecl = ecl.trim();
