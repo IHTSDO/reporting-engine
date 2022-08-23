@@ -27,7 +27,8 @@ public class NormaliseConcepts extends BatchFix {
 	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
 	//private String ecl = "<! 409063005 |Counseling (procedure)|";
 	//private String ecl = "<< 10942006 |Plication (procedure)|  ";
-	private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
+	//private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
+	private String ecl = "<! 416940007 |Past history of procedure (situation)|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
@@ -65,8 +66,8 @@ public class NormaliseConcepts extends BatchFix {
 				"Metadata"};
 		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
 		//ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
-		//ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
-		ppp = gl.getConcept("71388002 |Procedure (procedure)|");
+		ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
+		//ppp = gl.getConcept("71388002 |Procedure (procedure)|");
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
