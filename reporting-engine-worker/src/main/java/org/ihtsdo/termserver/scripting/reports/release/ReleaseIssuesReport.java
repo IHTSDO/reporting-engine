@@ -294,9 +294,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept concept : allConceptsSorted) {
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				if (c.getId().equals("7b28c61b-b9cc-4406-8672-86d872c2f9d5")) {
+				/*if (c.getId().equals("7b28c61b-b9cc-4406-8672-86d872c2f9d5")) {
 					logger.debug("here");
-				}
+				}*/
 				//Did it change in the current delta?
 				if (StringUtils.isEmpty(c.getIssues())) {
 					continue;
