@@ -15,6 +15,7 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
@@ -241,7 +242,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (!loadingRelease) {
-			info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath() );
+			info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath());
+			//If we're loading a CodeSystem eg MAIN/SNOMEDCT-SE then we will have to recover the metadata from the branch instead
+			if (project.getMetadata() == null) {
+				Branch branch = tsClient.getBranch(project.getBranchPath());
+				project.setMetadata(branch.getMetadata());
+			}
 		}
 		
 		// Configure the type(s) and locations(s) for processing report output.

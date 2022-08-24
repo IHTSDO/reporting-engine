@@ -2,14 +2,17 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MetadataDeserializer;
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 
 public class Branch {
 
 	@SerializedName("metadata")
 	@Expose
+	@JsonAdapter(MetadataDeserializer.class)
 	private Metadata metadata;
 	@SerializedName("baseTimestamp")
 	@Expose
