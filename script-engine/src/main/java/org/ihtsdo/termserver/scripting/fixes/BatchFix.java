@@ -902,10 +902,15 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), false, true); //Allow other relationships of the same type
 	}
 	
-	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
-		return replaceRelationship(t, c, type, value, groupId, false, false); //don't allow other relationships of the same type
+	protected int addRelationship(Task t, Concept c, Relationship r, boolean ensureTypeUnique) throws TermServerScriptException {
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), ensureTypeUnique, ensureTypeUnique);
 	}
 	
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
+		return replaceRelationship(t, c, type, value, groupId, ensureTypeUnique, false); //don't allow other relationships of the same type
+	}
+	
+	//TODO Get clarity about the difference between ensureTypeUnique and allowSameType
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique, boolean allowSameType) throws TermServerScriptException {
 		int changesMade = 0;
 		

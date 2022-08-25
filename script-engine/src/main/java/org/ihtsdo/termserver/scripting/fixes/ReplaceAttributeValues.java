@@ -14,11 +14,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * INFRA-7531 Replace 257867005 |Insertion - action (qualifier value)| with 129336009 |Implantation - action (qualifier value)|
+ * QI-1143 Replace 86049000 |Malignant neoplasm, primary| with 1240414004 |Malignant neoplasm morphology|
  */
 public class ReplaceAttributeValues extends BatchFix {
 	
 	Map<Concept, Concept> replacementMap;
-	String ecl = "< 71388002 |Procedure (procedure)| : << 363700003 |Direct morphology (attribute)| = 128306009 |Cataract (morphologic abnormality)|";
+	String ecl = "< 363787002 |Observable entity| : * = 86049000 |Malignant neoplasm, primary (morphologic abnormality)|";
+	RelationshipTemplate addRelationship; 
 	
 	protected ReplaceAttributeValues(BatchFix clone) {
 		super(clone);
@@ -43,8 +45,12 @@ public class ReplaceAttributeValues extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replacementMap = new HashMap<>();
-		replacementMap.put(gl.getConcept("128306009 |Cataract (morphologic abnormality)|"), 
-				gl.getConcept("128305008 |Abnormally opaque structure (morphologic abnormality)|"));
+		replacementMap.put(gl.getConcept("86049000 |Malignant neoplasm, primary|"), 
+							gl.getConcept("1240414004 |Malignant neoplasm morphology|"));
+		
+		Concept addType = gl.getConcept(" 704321009 |Characterizes (attribute)|");
+		Concept addTarget = gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|");
+		addRelationship = new RelationshipTemplate(addType, addTarget);
 		super.postInit();
 	}
 
@@ -74,6 +80,12 @@ public class ReplaceAttributeValues extends BatchFix {
 					changesMade += replaceRelationship(t, c, r, replacement);
 				}
 			}
+		}
+		
+		if (addRelationship != null) {
+			int groupId = SnomedUtils.getFirstFreeGroup(c);
+			Relationship r = addRelationship.createRelationship(c, groupId, null);
+			addRelationship(t, c, r, true);
 		}
 		return changesMade;
 	}
