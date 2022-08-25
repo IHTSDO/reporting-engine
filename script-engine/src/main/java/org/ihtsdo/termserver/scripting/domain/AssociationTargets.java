@@ -38,6 +38,10 @@ public class AssociationTargets {
 	@SerializedName("ALTERNATIVE")
 	@Expose
 	private Set<String> alternative = new HashSet<>();
+	
+	@SerializedName("REFERS_TO")
+	@Expose
+	private Set<String> refersTo = new HashSet<>();
 
 	public Set<String> getReplacedBy() {
 		return replacedBy;
@@ -202,6 +206,7 @@ public class AssociationTargets {
 		str += toString("ReplacedBy: ", replacedBy, gl, (str.isEmpty()));
 		str += toString("Moved To: ", movedTo, gl, (str.isEmpty()));
 		str += toString("Alternative: ", alternative, gl, (str.isEmpty()));
+		str += toString("Refers To: ", refersTo, gl, (str.isEmpty()));
 		return str;
 	}
 
@@ -242,6 +247,14 @@ public class AssociationTargets {
 
 	public void addPossEquivTo(Set<String> equivs) {
 		possEquivTo.addAll(equivs);
+	}
+
+	public Set<String> getRefersTo() {
+		return refersTo;
+	}
+
+	public void setRefersTo(Set<String> refersTo) {
+		this.refersTo = refersTo;
 	}
 
 }

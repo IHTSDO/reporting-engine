@@ -642,7 +642,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_INACT_OUTDATED : return InactivationIndicator.OUTDATED; 
 			case SCTID_INACT_PENDING_MOVE : return InactivationIndicator.PENDING_MOVE;
 			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
-			case SCTID_INACT_NOT_EQUIVALENT : return InactivationIndicator.NOT_EQUIVALENT;
+			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT : return InactivationIndicator.NOT_SEMANTICALLY_EQUIVALENT;
 			case SCTID_INACT_COMPONENT_MEANING_UNKNOWN : return InactivationIndicator.COMPONENT_MEANING_UNKNOWN;
 			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASS_DERIVED_COMPONENT;
 			case SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR : return InactivationIndicator.GRAMMATICAL_DESCRIPTION_ERROR;
@@ -660,6 +660,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_ASSOC_POSS_EQUIV_REFSETID : return Association.POSS_EQUIV_TO;
 			case SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID : return Association.PARTIALLY_EQUIV_TO;
 			case SCTID_ASSOC_ALTERNATIVE_REFSETID : return Association.ALTERNATIVE;
+			case SCTID_ASSOC_REFERS_TO_REFSETID : return Association.REFERS_TO;
 			
 			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID : return Association.ANATOMY_STRUC_ENTIRE;
 			case SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID : return Association.ANATOMY_STRUC_PART;
@@ -677,9 +678,39 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				} else {
 					isFirst = false;
 				}
+				associations += translateAssociation(assoc.getRefsetId()) + ": " + gl.getConcept(assoc.getTargetComponentId());
+			}
+		}
+		
+		String targets = c.getAssociationTargets().toString(gl);
+		if (targets.length() > 0 && associations.length() > 0) {
+			associations += "\n";
+		}
+		associations += targets;
+		
+		return associations;
+	}
+	
+	public static String prettyPrintHistoricalAssociations(Description d, GraphLoader gl) throws TermServerScriptException {
+		String associations = "";
+		boolean isFirst = true;
+		for (AssociationEntry assoc : d.getAssociationEntries())  {
+			if (assoc.isActive()) {
+				if (!isFirst) {
+					associations += "\n";
+				} else {
+					isFirst = false;
+				}
 				associations += translateAssociation(assoc.getRefsetId()) + " " + gl.getConcept(assoc.getTargetComponentId());
 			}
 		}
+		
+		String targets = d.getAssociationTargets().toString(gl);
+		if (targets.length() > 0 && associations.length() > 0) {
+			associations += "\n";
+		}
+		associations += targets;
+
 		return associations;
 	}
 	

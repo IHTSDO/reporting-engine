@@ -64,6 +64,11 @@ public class Description extends Component implements ScriptConstants {
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
+	
+	@SerializedName("associationTargets")
+	@Expose
+	private AssociationTargets associationTargets;
+	
 	private transient List<LangRefsetEntry> langRefsetEntries;
 	private transient boolean isDeleted = false;
 	private transient String deletionEffectiveTime;
@@ -787,6 +792,17 @@ public class Description extends Component implements ScriptConstants {
 	public String getMutableFields() {
 		return super.getMutableFields() + this.type + "," 
 				+ this.term + "," + this.caseSignificance;
+	}
+	
+	public AssociationTargets getAssociationTargets() {
+		if (associationTargets == null) {
+			associationTargets = new AssociationTargets();
+		}
+		return associationTargets;
+	}
+
+	public void setAssociationTargets(AssociationTargets associationTargets) {
+		this.associationTargets = associationTargets;
 	}
 
 }

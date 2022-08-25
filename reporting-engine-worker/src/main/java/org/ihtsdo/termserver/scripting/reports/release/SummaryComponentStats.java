@@ -551,7 +551,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			case SCTID_INACT_NON_CONFORMANCE:
 				counts[IDX_INACT_NON_CONFORMANCE]++;
 				break;
-			case SCTID_INACT_NOT_EQUIVALENT:
+			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT:
 				counts[IDX_INACT_NOT_EQUIVALENT]++;
 				break;
 		}
