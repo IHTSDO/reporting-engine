@@ -137,6 +137,7 @@ public class GraphLoader implements ScriptConstants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
+		recordPreviousState = false;
 		
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();

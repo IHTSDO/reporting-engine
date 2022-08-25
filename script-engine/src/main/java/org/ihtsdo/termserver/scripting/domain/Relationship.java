@@ -534,8 +534,15 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 			differences.add("Type is different in " + name + ": " + this.getType() + " vs " + otherR.getType());
 		}
 		
-		if (!this.getTarget().equals(otherR.getTarget())) {
-			differences.add("Target is different in " + name + ": " + this.getTarget() + " vs " + otherR.getTarget());
+		if ((this.isConcrete() && !otherR.isConcrete()) ||
+				(!this.isConcrete() && otherR.isConcrete())) {
+			differences.add("Target is different in " + name + ": " + (this.isConcrete()?"is concrete":"is not concrete") + " vs " + (otherR.isConcrete()?"is concrete":"is not concrete"));
+		} else if (isConcrete()) {
+			if (!this.getConcreteValue().equals(otherR.getConcreteValue())) {
+				differences.add("Target is different in " + name + ": " + this.getConcreteValue() + " vs " + otherR.getConcreteValue());
+			}
+		} else if (!this.getTarget().equals(otherR.getTarget())) {
+				differences.add("Target is different in " + name + ": " + this.getTarget() + " vs " + otherR.getTarget());
 		}
 		
 		if (!this.getCharacteristicType().equals(otherR.getCharacteristicType())) {
@@ -557,8 +564,9 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 
 	@Override
 	public String getMutableFields() {
+		String targetOrCValue = isConcrete() ? this.getConcreteValue().getValueWithPrefix() : this.target.getId();
 		return super.getMutableFields() + this.sourceId + "," 
-			+ this.type.getId() + "," + this.target.getId() + "," + this.characteristicType;
+			+ this.type.getId() + "," + targetOrCValue + "," + this.characteristicType;
 	}
 	
 	public String toStringWithId() {
