@@ -216,6 +216,7 @@ public class ArchiveManager implements ScriptConstants {
 					throw new TermServerScriptException("Told to load dependency + extension but no dependency package specified");
 				} else {
 					TermServerScript.info("Loading dependency plus extension archives");
+					gl.reset();
 					File dependency = new File ("releases/" + ts.getDependencyArchive());
 					if (dependency.exists()) {
 						loadArchive(dependency, fsnOnly, "Snapshot", true);

@@ -49,6 +49,8 @@ public class HistoricDataUser extends TermServerReport {
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		boolean compareTwoSnapshots = false; 
 		projectKey = getProject().getKey();
+		info("Historic data being imported, wiping Graph Loader for safety.");
+		gl.reset();
 		
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
 			StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
