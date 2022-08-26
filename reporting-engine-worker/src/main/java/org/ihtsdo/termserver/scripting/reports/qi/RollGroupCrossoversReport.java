@@ -1,0 +1,130 @@
+package org.ihtsdo.termserver.scripting.reports.qi;
+
+import java.io.IOException;
+import java.util.*;
+
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetManager;
+
+/**
+ * RP-233 Role group crossovers
+ * RP-632 Bring into own report and add ECL filtering.
+ */
+public class RollGroupCrossoversReport extends TermServerReport implements ReportClass {
+	
+	public static void main(String[] args) throws TermServerScriptException, IOException {
+		Map<String, String> params = new HashMap<>();
+		params.put(ECL, "< 404684003 |Clinical finding|");
+		TermServerReport.run(RollGroupCrossoversReport.class, args, params);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; //QI / Misc Analysis
+		super.init(run);
+		runStandAlone = false; //We need to load previous previous for real
+		getArchiveManager().setPopulateReleasedFlag(true);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Groups"};
+		String[] tabNames = new String[] {	"Issues"};
+		super.postInit(tabNames, columnHeadings, false);
+	}
+
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(ECL).withType(JobParameter.Type.ECL)
+				.build();
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Rollgroup Crossover Report")
+				.withDescription("This report identifies where two groups in a concept have mismatched specificity which prevents either one from subsuming the other, although subsumption relationships do exist.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
+	}
+
+	public void runJob() throws TermServerScriptException {
+		
+		List<Concept> subset;
+		if (subsetECL != null) {
+			subset = new ArrayList<>(findConcepts(subsetECL));
+		} else {
+			subset = new ArrayList<>(gl.getAllConcepts());
+		}
+		subset.sort(Comparator.comparing(Concept::getFsn));
+		
+		Set<GroupPair> processedPairs = new HashSet<>();
+		for (Concept c : gl.getAllConcepts()) {
+			/*if (c.getConceptId().equals("10311005")) {
+				debug("here");
+			}*/
+			Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+			//We only need to worry about concepts with >1 role group
+			if (c.isActive() && groups.size() > 1) {
+				processedPairs.clear();
+				//Test every group against every other group
+				for (RelationshipGroup left : groups) {
+					if (!left.isGrouped()) {
+						continue;
+					}
+					for (RelationshipGroup right : groups) {
+						if (left.getGroupId()==right.getGroupId() || !right.isGrouped()) {
+							continue;
+						}
+						//Have we already processed this combination in the opposite order?
+						if (processedPairs.contains(new GroupPair(right, left))) {
+							continue;
+						}
+						switch (CrossoverUtils.subsumptionRoleGroupTest(left, right)) {
+							case ROLEGROUPS_CROSSOVER :
+							case ROLES_CROSSOVER:
+									String issueStr = "Crossover between group " + left.getGroupId() + " and " + right.getGroupId();
+									report (c, issueStr, left + "\n" + right);
+									countIssue(c);
+									break;
+							default:
+						}
+						processedPairs.add(new GroupPair(left, right));
+					}
+				}
+			}
+		}
+	}
+
+	class GroupPair {
+		RelationshipGroup one;
+		RelationshipGroup two;
+		int hash;
+		
+		GroupPair (RelationshipGroup one, RelationshipGroup two) {
+			this.one = one;
+			this.two = two;
+			hash = (one.toString() + two.toString()).hashCode();
+		}
+		
+		public boolean equals(Object other) {
+			if (other instanceof GroupPair) {
+				GroupPair otherPair = (GroupPair)other;
+				if (this.one.getGroupId() == otherPair.one.getGroupId()) {
+					return this.two.getGroupId() == otherPair.two.getGroupId();
+				}
+			}
+			return false;
+		}
+		
+		public int hashCode() {
+			return hash;
+		}
+	}
+
+}
