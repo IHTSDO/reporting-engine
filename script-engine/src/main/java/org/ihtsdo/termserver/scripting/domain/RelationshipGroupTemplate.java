@@ -46,4 +46,9 @@ public class RelationshipGroupTemplate {
 		return rgt;
 	}
 
+	public void addRelationshipTemplate(Concept type, Concept value) {
+		RelationshipTemplate rt = new RelationshipTemplate(type,value);
+		addRelationship(rt);
+	}
+
 }
