@@ -1128,6 +1128,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 */
 	protected List<Component> processFile() throws TermServerScriptException {
+		if (inputFile == null) {
+			throw new TermServerScriptException("Unable to process file as no file specified!  Check -f parameter has been supplied, or alternatively, an ECL selection.");
+		}
 		return processFile(inputFile);
 	}
 	

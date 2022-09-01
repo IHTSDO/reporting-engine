@@ -439,6 +439,19 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 			TermServerScript.debug("Failed to remove relationship: " + r);
 		}
 		
+		removeParentIfRequired(r);
+		recalculateGroups();
+	}
+	
+	public void inactivateRelationship(Relationship r) {
+		r.setEffectiveTime(null);
+		r.setActive(false);
+		removeParentIfRequired(r);
+		recalculateGroups();
+	}
+	
+	private void removeParentIfRequired(Relationship r) {
+		CharacteristicType charType = r.getCharacteristicType();
 		//Do I need to adjust parent/child?  Might still exist in another axiom
 		if (r.getType().equals(IS_A) && 
 				getRelationships(charType, IS_A, r.getTarget(), ActiveState.ACTIVE).size() == 0) {
@@ -446,8 +459,6 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 			parent.removeChild(charType, this);
 			removeParent(charType, parent);
 		}
-		
-		recalculateGroups();
 	}
 
 	public boolean isIsLeafStated() {

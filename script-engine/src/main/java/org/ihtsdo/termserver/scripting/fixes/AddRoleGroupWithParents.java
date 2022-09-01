@@ -15,18 +15,20 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * INFRA-9382 Add Interprets/Has Interpretation pair and also set PPP if required
  */
-public class AddRoleGroupWithPPP extends BatchFix {
+public class AddRoleGroupWithParents extends BatchFix {
 	
 	private Set<String> exclusions;
 	private Concept ppp = null;
+	private Set<Concept> parentsToRemove = new HashSet<>();
+	private Set<Concept> parentsToAdd = new HashSet<>();
 	private List<RelationshipGroupTemplate> groupsToAdd = new ArrayList<>();
 	
-	protected AddRoleGroupWithPPP(BatchFix clone) {
+	protected AddRoleGroupWithParents(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		AddRoleGroupWithPPP fix = new AddRoleGroupWithPPP(null);
+		AddRoleGroupWithParents fix = new AddRoleGroupWithParents(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
@@ -45,7 +47,7 @@ public class AddRoleGroupWithPPP extends BatchFix {
 
 	private void postLoadInit() throws TermServerScriptException {
 		//INFRA-9382
-		ppp = gl.getConcept("110359009 |Intellectual disability (disorder)|");
+		//ppp = gl.getConcept("110359009 |Intellectual disability (disorder)|");
 		subsetECL = "<< 110359009 |Intellectual disability (disorder)| : * =  308490002 |Pathological developmental process (qualifier value)| ";
 		
 		RelationshipGroupTemplate groupToAdd1 = new RelationshipGroupTemplate();
@@ -58,7 +60,16 @@ public class AddRoleGroupWithPPP extends BatchFix {
 		groupToAdd2.addRelationshipTemplate(gl.getConcept("363713009|Has Interpretation|"), gl.getConcept("260379002|Impaired|"));
 		groupsToAdd.add(groupToAdd2);
 		
+		RelationshipGroupTemplate groupToAdd3 = new RelationshipGroupTemplate();
+		groupToAdd3.addRelationshipTemplate(gl.getConcept("370135005 |Pathological process|"), gl.getConcept("308490002 |Pathological developmental process (qualifier value)| "));
+		groupsToAdd.add(groupToAdd3);
+		
 		exclusions = new HashSet<>();
+		
+		parentsToRemove.add(gl.getConcept("110359009 |Intellectual disability (disorder)|"));
+		
+		parentsToAdd.add(gl.getConcept("106137004 |Intelligence Finding (finding)|"));
+		parentsToAdd.add(gl.getConcept("700364009 |Neurodevelopmental Disorder (disorder)|"));
 		super.postInit();
 	}
 
@@ -69,6 +80,10 @@ public class AddRoleGroupWithPPP extends BatchFix {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			if (ppp != null) {
 				changesMade += checkAndSetProximalPrimitiveParent(task, loadedConcept, ppp, false, false);
+			}
+			
+			if (parentsToRemove.size() > 0 || parentsToAdd.size() > 0) {
+				changesMade += replaceParents(task, concept, parentsToRemove, parentsToAdd);
 			}
 			
 			changesMade += addRoleGroups(task, loadedConcept);

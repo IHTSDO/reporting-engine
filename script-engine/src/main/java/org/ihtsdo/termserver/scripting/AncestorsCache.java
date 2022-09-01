@@ -39,6 +39,14 @@ public class AncestorsCache implements ScriptConstants {
 		return getAncestors(c, false);
 	}
 	
+	public Set<Concept> getAncestorsSafely (Concept c) {
+		try {
+			return getAncestors(c, false);
+		} catch (TermServerScriptException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+	
 	private Set<Concept> getAncestors (Concept c, boolean mutable) throws TermServerScriptException {
 		Set<Concept> ancestors = ancestorsCache.get(c);
 		if (ancestors == null) {

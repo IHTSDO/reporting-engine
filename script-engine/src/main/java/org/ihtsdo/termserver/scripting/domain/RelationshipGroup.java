@@ -261,5 +261,11 @@ public class RelationshipGroup {
 		return relationships.iterator().next().getSource();
 	}
 
+	public void setReleased(Boolean isReleased) {
+		for (Relationship r : relationships) {
+			r.setReleased(isReleased);
+		}
+	}
+
 
 }

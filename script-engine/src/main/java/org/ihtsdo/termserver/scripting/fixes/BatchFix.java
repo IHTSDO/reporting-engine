@@ -8,6 +8,7 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.ihtsdo.otf.RF2Constants.ActiveState;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -668,6 +669,56 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 	
+	//This method is similar to the previous one but we'll be explicit about which parents we'll remove and 
+	//also check to see if a more specific version of the parents to add might already exist, 
+	//or remove one that is less specific.
+	protected int replaceParents(Task t, Concept c, Set<Concept> removeParents, Set<Concept> addParents) throws TermServerScriptException {
+		int changesMade = 0;
+		AncestorsCache aCache = gl.getAncestorsCache();
+		Set<Concept> newParentAncestors = addParents.stream()
+				.map(p -> aCache.getAncestorsSafely(p))
+				.flatMap(Collection::stream)
+				.collect(Collectors.toSet());
+		
+		Set<Relationship> newParentRels = addParents.stream()
+				.map(p -> new Relationship (c, IS_A, p, UNGROUPED))
+				.collect(Collectors.toSet());
+		
+		Set<Relationship> currentParentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		
+		for (Relationship currentParentRel : currentParentRels) {
+			//If this relationships is on our list of removals
+			//OR if it's less specific than one we're going to add
+			//then remove it.
+			Concept currentParent = currentParentRel.getTarget();
+			if (removeParents.contains(currentParent) || newParentAncestors.contains(currentParent)) {
+				removeRelationship(t, c, currentParentRel);
+				changesMade++;
+			}
+		}
+		
+		//Re-recover this list in case it has been modified
+		currentParentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		
+		nextNewParentRel:
+		for (Relationship newParentRel : newParentRels) {
+			//Don't add new parent if we already have this parent, or something more specific 
+			//ie a descendant.  Check if our row is in the list of ancestors (or self) of an existing parent
+			Concept newParent = newParentRel.getTarget();
+			for (Relationship currentParentRel : currentParentRels) {
+				Concept currentParent = currentParentRel.getTarget();
+				Set<Concept> skipList = aCache.getAncestorsOrSelf(currentParent);
+				if (skipList.contains(newParent)) {
+					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipped addition of " + newParent + " due to existing " + currentParent);
+					continue nextNewParentRel;
+				}
+			}
+			addRelationship(t, c, newParentRel);
+			changesMade++;
+		}
+		return changesMade;
+	}
+	
 	protected int replaceParents(Task t, Concept c, Concept newParent) throws TermServerScriptException {
 		Relationship oldParentRel = null;
 		Relationship newParentRel = new Relationship (c, IS_A, newParent, UNGROUPED);
@@ -758,11 +809,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			c.removeRelationship(r);
 			action = ReportActionType.RELATIONSHIP_DELETED;
 		} else {
-			r.setEffectiveTime(null);
-			r.setActive(false);
+			c.inactivateRelationship(r);
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
 		}
-		c.recalculateGroups();
 		report (t, c, Severity.LOW, action, reasonPrefix + r);
 		return CHANGE_MADE;
 	}

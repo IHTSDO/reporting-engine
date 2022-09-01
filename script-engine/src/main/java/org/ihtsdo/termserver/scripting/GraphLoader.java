@@ -427,6 +427,8 @@ public class GraphLoader implements ScriptConstants {
 			g.setActive(active);
 			g.setAxiom(axiomEntry);
 			g.setModule(axiomEntry.getModuleId());
+			g.setReleased(axiomEntry.isReleased());
+			
 			//Set the effectiveTime last as changing the other attributes will blank it
 			g.setEffectiveTime(axiomEntry.getEffectiveTime());
 		}
