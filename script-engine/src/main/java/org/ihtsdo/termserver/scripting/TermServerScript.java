@@ -1034,15 +1034,20 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
+		
 		//If we're working from a zip file, then use MAIN instead
-		if (branch.endsWith(".zip")) {
+		//unless the ECL is simple, in which case we can use that directly from memory
+		if (!EclCache.isSimple(ecl) && (branch == null || branch.endsWith(".zip"))) {
 			String historicECLBranch = "MAIN";
-			//TODO Better regex to work out the correct branch for historic ECL
-			if (branch.contains("20200731")) {
-				historicECLBranch = "MAIN/2020-07-31";
-			} else if (branch.contains("2021-01-31") || branch.contains("20210131")) {
-				historicECLBranch = "MAIN/2021-01-31";
+			if (branch != null) {
+				//TODO Better regex to work out the correct branch for historic ECL
+				if (branch.contains("20200731")) {
+					historicECLBranch = "MAIN/2020-07-31";
+				} else if (branch.contains("2021-01-31") || branch.contains("20210131")) {
+					historicECLBranch = "MAIN/2021-01-31";
+				}
 			}
+			
 			if (!archiveEclWarningGiven.contains(branch)) {
 				warn ("Not using " + branch + " to recover ECL.  Using " + historicECLBranch + " instead.");
 				archiveEclWarningGiven.add(branch);

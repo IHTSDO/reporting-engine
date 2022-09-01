@@ -259,8 +259,8 @@ public class HistoricDataUser extends TermServerReport {
 	@Override
 	public String getReportName() {
 		String reportName = super.getReportName();
-		if (jobRun != null && jobRun.getParamValue(THIS_RELEASE) != null) {
-			reportName += "_" + jobRun.getParamValue(THIS_RELEASE);
+		if (jobRun != null && jobRun.getParamValue(PREV_RELEASE) != null) {
+			reportName += "_" + jobRun.getParamValue(PREV_RELEASE);
 		}
 		if (jobRun != null && jobRun.getParamValue(MODULES) != null) {
 			reportName += "_" + jobRun.getParamValue(MODULES);

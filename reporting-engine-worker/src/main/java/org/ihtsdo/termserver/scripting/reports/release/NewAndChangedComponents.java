@@ -63,8 +63,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220228T120000Z.zip");
-		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip");
+		params.put(ECL, "<<118245000 |Measurement finding (finding)|");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
@@ -192,12 +193,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	
 	public void examineConcepts() throws TermServerScriptException { 
 		int conceptsExamined = 0;
-		Collection<Concept> conceptsOfInterest = determineConceptsOfInterest();
 		double lastPercentageReported = 0;
 		long notReleased = 0;
 		long notChanged = 0;
 		long notInScope = 0;
-		
+		Collection<Concept> conceptsOfInterest = determineConceptsOfInterest();
+		info("Examining " +  conceptsOfInterest.size() + " concepts of interest");
 		for (Concept c : conceptsOfInterest) {
 			/*if (c.getId().equals("3641486008")) {
 				debug("here");

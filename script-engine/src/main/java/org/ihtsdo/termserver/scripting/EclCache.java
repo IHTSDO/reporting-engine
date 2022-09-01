@@ -159,7 +159,7 @@ public class EclCache implements ScriptConstants {
 		return allConcepts;
 	}
 	
-	private boolean isSimple(String ecl) {
+	public static boolean isSimple(String ecl) {
 		//Any braces, commas, more than two pipes, hats, colons mark this ecl as not being simple
 		boolean isSimple = true;
 		if (StringUtils.countOccurrencesOf(ecl, "|") > 2) {
