@@ -16,12 +16,12 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-233 Role group crossovers
  * RP-632 Bring into own report and add ECL filtering.
  */
-public class RollGroupCrossoversReport extends TermServerReport implements ReportClass {
+public class RoleGroupCrossoversReport extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "< 404684003 |Clinical finding|");
-		TermServerReport.run(RollGroupCrossoversReport.class, args, params);
+		TermServerReport.run(RoleGroupCrossoversReport.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -45,8 +45,8 @@ public class RollGroupCrossoversReport extends TermServerReport implements Repor
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
-				.withName("Rollgroup Crossover Report")
-				.withDescription("This report identifies where two groups in a concept have mismatched specificity which prevents either one from subsuming the other, although subsumption relationships do exist.")
+				.withName("Role Group Crossover Report")
+				.withDescription("This report identifies where two or more groups contain mismatching level of specificity in attributes that share subsumption relationships between the groups.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
