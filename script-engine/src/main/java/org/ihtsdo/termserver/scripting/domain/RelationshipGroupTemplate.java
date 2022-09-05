@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 public class RelationshipGroupTemplate {
@@ -49,6 +50,18 @@ public class RelationshipGroupTemplate {
 	public void addRelationshipTemplate(Concept type, Concept value) {
 		RelationshipTemplate rt = new RelationshipTemplate(type,value);
 		addRelationship(rt);
+	}
+	
+	public void addRelationshipTemplate(Concept type, Concept value, RelationshipTemplate.Mode mode) {
+		RelationshipTemplate rt = new RelationshipTemplate(type,value);
+		rt.setMode(mode);
+		addRelationship(rt);
+	}
+
+	public void setMode(Mode mode) {
+		for (RelationshipTemplate rt : relationships) {
+			rt.setMode(mode);
+		}
 	}
 
 }

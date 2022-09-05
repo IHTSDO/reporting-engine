@@ -15,6 +15,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.batchImport.BatchImport;
 import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -940,35 +941,31 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 	
 	protected int addRelationship(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
-		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, false, false);  //Don't allow other relationships of the same type
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS);  //Allow other relationships of the same type, but not value
 	}
 	
-	protected int addRelationshipNonUnique(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
-		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, false, true); 
-	}
-	
-	protected int addRelationshipGroup(Task t, Concept c, RelationshipGroupTemplate group, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
+	protected int addRelationshipGroup(Task t, Concept c, RelationshipGroupTemplate group, int groupId) throws TermServerScriptException {
 		int changesMade = 0;
 		for (RelationshipTemplate r : group.getRelationships()) {
-			changesMade += replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, ensureTypeUnique, ensureTypeUnique); 
+			changesMade += replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, r.getMode()); 
 		}
 		return changesMade;
 	}
+	
+	protected int addRelationship(Task t, Concept c, Relationship r, RelationshipTemplate.Mode mode) throws TermServerScriptException {
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), mode); 
+	}
 
 	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
-		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), false, true); //Allow other relationships of the same type
-	}
-	
-	protected int addRelationship(Task t, Concept c, Relationship r, boolean ensureTypeUnique) throws TermServerScriptException {
-		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), ensureTypeUnique, ensureTypeUnique);
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS); //Allow other relationships of the same type, but not typeValue
 	}
 	
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
-		return replaceRelationship(t, c, type, value, groupId, ensureTypeUnique, false); //don't allow other relationships of the same type
+		RelationshipTemplate.Mode mode = ensureTypeUnique ? Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS : Mode.PERMISSIVE;
+		return replaceRelationship(t, c, type, value, groupId, mode); 
 	}
 	
-	//TODO Get clarity about the difference between ensureTypeUnique and allowSameType
-	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique, boolean allowSameType) throws TermServerScriptException {
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, RelationshipTemplate.Mode mode) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		if (type == null || value == null) {
@@ -1024,18 +1021,21 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 		
 		//Or do we need to create and add?
-		//Is this type unique for the concept?  Inactivate any others if so
-		//Unless we're allowing multiple rels of the same type
-		//Otherwise just remove other relationships of this type in the target group
-		if (!allowSameType) {
+		//Is this type (or type/value) unique for the concept
+		if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS) {
 			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					type,
 					ActiveState.ACTIVE);
-			for (Relationship rel : rels) {
-				if (ensureTypeUnique || rel.getGroupId() == groupId) {
-					removeRelationship(t,c,rel);
-					changesMade++;
-				}
+			if (rels.size() > 0) {
+				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, type + " attribute type already exists: " + rels.iterator().next());
+				return changesMade;
+			}
+		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS) {
+			RelationshipTemplate rt = new RelationshipTemplate(type,value);
+			rels = c.getRelationships(rt, ActiveState.ACTIVE);
+			if (rels.size() > 0) {
+				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
+				return changesMade;
 			}
 		}
 		

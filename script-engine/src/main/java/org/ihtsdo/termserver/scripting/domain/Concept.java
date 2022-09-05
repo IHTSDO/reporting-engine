@@ -502,8 +502,12 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	public String toExpression(CharacteristicType charType) {
 		String expression = getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
 		
-		expression += getParents(charType).stream().map(p -> p.toString())
-							.collect(Collectors.joining (" + \n"));
+		//Parents may not be maintained if we're working with a loaded concept.
+		//Work with active IS_A relationships instead
+		expression += getRelationships(charType, IS_A, ActiveState.ACTIVE).stream()
+				.map(r -> r.getTarget())
+				.map(p -> p.toString())
+				.collect(Collectors.joining (" + \n"));
 		
 		if (getRelationships(charType, ActiveState.ACTIVE).size() > 0) {
 			expression += " : \n";

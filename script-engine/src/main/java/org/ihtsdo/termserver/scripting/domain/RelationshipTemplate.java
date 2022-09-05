@@ -1,10 +1,14 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 public class RelationshipTemplate implements IRelationshipTemplate {
+	
+	public enum Mode { PERMISSIVE, UNIQUE_TYPE_ACROSS_ALL_GROUPS, UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS}
+	
 	private Concept type;
 	private Concept target;
 	private CharacteristicType characteristicType;
 	private ConcreteValue concreteValue;
+	private Mode mode;
 
 	public RelationshipTemplate (Concept type, Concept target, CharacteristicType characteristicType) {
 		this.type = type;
@@ -16,6 +20,11 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 		this.type = type;
 		this.target = target;
 		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
+	}
+	
+	public RelationshipTemplate (Concept type, Concept target, Mode mode) {
+		this(type, target);
+		this.mode = mode;
 	}
 	
 	public RelationshipTemplate(CharacteristicType characteristicType) {
@@ -82,5 +91,13 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	@Override
 	public boolean isConcrete() {
 		return concreteValue != null;
+	}
+
+	public Mode getMode() {
+		return mode;
+	}
+
+	public void setMode(Mode mode) {
+		this.mode = mode;
 	}
 }

@@ -34,6 +34,7 @@ public class AddRoleGroupWithParents extends BatchFix {
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
+			fix.classifyTasks = true;
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);
@@ -51,17 +52,18 @@ public class AddRoleGroupWithParents extends BatchFix {
 		subsetECL = "<< 110359009 |Intellectual disability (disorder)| : * =  308490002 |Pathological developmental process (qualifier value)| ";
 		
 		RelationshipGroupTemplate groupToAdd1 = new RelationshipGroupTemplate();
-		groupToAdd1.addRelationshipTemplate(gl.getConcept("363714003|Interprets|"), gl.getConcept("247573007|Intellectual Ability|"));
-		groupToAdd1.addRelationshipTemplate(gl.getConcept("363713009|Has Interpretation|"), gl.getConcept("260379002|Impaired|"));
+		groupToAdd1.addRelationshipTemplate(gl.getConcept("363714003|Interprets|"), gl.getConcept("247573007|Intellectual Ability|"), RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS);
+		groupToAdd1.addRelationshipTemplate(gl.getConcept("363713009|Has Interpretation|"), gl.getConcept("260379002|Impaired|"), RelationshipTemplate.Mode.PERMISSIVE);
 		groupsToAdd.add(groupToAdd1);
 		
 		RelationshipGroupTemplate groupToAdd2 = new RelationshipGroupTemplate();
-		groupToAdd2.addRelationshipTemplate(gl.getConcept("363714003|Interprets|"), gl.getConcept("406208005|Adaption Behaviour|"));
-		groupToAdd2.addRelationshipTemplate(gl.getConcept("363713009|Has Interpretation|"), gl.getConcept("260379002|Impaired|"));
+		groupToAdd2.addRelationshipTemplate(gl.getConcept("363714003|Interprets|"), gl.getConcept("406208005|Adaption Behaviour|"), RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS);
+		groupToAdd2.addRelationshipTemplate(gl.getConcept("363713009|Has Interpretation|"), gl.getConcept("260379002|Impaired|"), RelationshipTemplate.Mode.PERMISSIVE);
 		groupsToAdd.add(groupToAdd2);
 		
 		RelationshipGroupTemplate groupToAdd3 = new RelationshipGroupTemplate();
 		groupToAdd3.addRelationshipTemplate(gl.getConcept("370135005 |Pathological process|"), gl.getConcept("308490002 |Pathological developmental process (qualifier value)| "));
+		groupToAdd3.setMode(RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS);
 		groupsToAdd.add(groupToAdd3);
 		
 		exclusions = new HashSet<>();
@@ -83,7 +85,7 @@ public class AddRoleGroupWithParents extends BatchFix {
 			}
 			
 			if (parentsToRemove.size() > 0 || parentsToAdd.size() > 0) {
-				changesMade += replaceParents(task, concept, parentsToRemove, parentsToAdd);
+				changesMade += replaceParents(task, loadedConcept, parentsToRemove, parentsToAdd);
 			}
 			
 			changesMade += addRoleGroups(task, loadedConcept);
@@ -107,7 +109,7 @@ public class AddRoleGroupWithParents extends BatchFix {
 		} else {
 			for (RelationshipGroupTemplate groupToAdd : groupsToAdd) {
 				int nextFreeGroup = SnomedUtils.getFirstFreeGroup(c);
-				changesMade += addRelationshipGroup(t, c, groupToAdd, nextFreeGroup, false); //For interprets/has interpretation we'll have more than one of those.
+				changesMade += addRelationshipGroup(t, c, groupToAdd, nextFreeGroup); //For interprets/has interpretation we'll have more than one of those.
 			}
 		}
 		return changesMade;

@@ -50,7 +50,7 @@ public class ReplaceAttributeValues extends BatchFix {
 		
 		Concept addType = gl.getConcept(" 704321009 |Characterizes (attribute)|");
 		Concept addTarget = gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|");
-		addRelationship = new RelationshipTemplate(addType, addTarget);
+		addRelationship = new RelationshipTemplate(addType, addTarget, RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS);
 		super.postInit();
 	}
 
@@ -85,7 +85,7 @@ public class ReplaceAttributeValues extends BatchFix {
 		if (addRelationship != null) {
 			int groupId = SnomedUtils.getFirstFreeGroup(c);
 			Relationship r = addRelationship.createRelationship(c, groupId, null);
-			addRelationship(t, c, r, true);
+			addRelationship(t, c, r, addRelationship.getMode());
 		}
 		return changesMade;
 	}
