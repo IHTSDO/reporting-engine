@@ -322,7 +322,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 						hasNew.add(c);
 						isNew = true;
 						summaryCount.isNew++;
-					} else if (SnomedUtils.hasChangesSince(d, changesFromET)) {
+					} else if (SnomedUtils.hasChangesSince(d, changesFromET, false)) {
 						if (!d.isActive()) {
 							hasLost.add(c);
 							wasInactivated = true;
@@ -337,7 +337,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					//Has it changed acceptability?
 					if (!isNew) {
 						for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
-							if (SnomedUtils.hasChangesSince(l, changesFromET)) {
+							if (SnomedUtils.hasChangesSince(l, changesFromET, false)) {
 								hasChangedAcceptability.add(c);
 								changedAcceptability = true;
 							}
@@ -347,7 +347,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					//Description inactivation indicators
 					summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Descriptions");
 					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
-						if (SnomedUtils.hasChangesSince(i, changesFromET)) {
+						if (SnomedUtils.hasChangesSince(i, changesFromET, false)) {
 							if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
 								if (i.isActive()) {
 									summaryCount.isChanged++;
@@ -363,7 +363,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					//Description hist assocs
 					summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
 					for (AssociationEntry h : d.getAssociationEntries()) {
-						if (SnomedUtils.hasChangesSince(h, changesFromET)) {
+						if (SnomedUtils.hasChangesSince(h, changesFromET, false)) {
 							if (isReleased(c, h, ComponentType.HISTORICAL_ASSOCIATION)) {
 								if (h.isActive()) {
 									summaryCount.isChanged++;
@@ -381,7 +381,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					boolean langRefSetIsChanged = false;
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
 						if (inScope(l)) {
-							if (SnomedUtils.hasChangesSince(l, changesFromET)) {
+							if (SnomedUtils.hasChangesSince(l, changesFromET, false)) {
 								if (isReleased(c, l, ComponentType.LANGREFSET)) {
 									if (l.isActive()) {
 										hasChangedLanguageRefSets.add(c);
@@ -414,7 +414,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			summaryCount = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
 				if (inScope(r)) {
-					if (SnomedUtils.hasChangesSince(r, changesFromET)) {
+					if (SnomedUtils.hasChangesSince(r, changesFromET, false)) {
 						if (r.isActive()) {
 							hasNewInferredRelationships.add(c);
 							if (r.isNotConcrete()) {
@@ -435,7 +435,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			summaryCount = getSummaryCount(ComponentType.AXIOM.name());
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (inScope(a)) {
-					if (SnomedUtils.hasChangesSince(a, changesFromET)) {
+					if (SnomedUtils.hasChangesSince(a, changesFromET, false)) {
 						if (isReleased(c, a, ComponentType.AXIOM)) {
 							if (a.isActive()) {
 								summaryCount.isChanged++;
@@ -455,7 +455,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			if (inScope(c)) {
 				summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Concepts");
 				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
-					if (SnomedUtils.hasChangesSince(i, changesFromET)) {
+					if (SnomedUtils.hasChangesSince(i, changesFromET, false)) {
 						hasChangedInactivationIndicators.add(c);
 						if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
 							if (i.isActive()) {
@@ -471,7 +471,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				
 				summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Concepts");
 				for (AssociationEntry a : c.getAssociationEntries()) {
-					if (SnomedUtils.hasChangesSince(a, changesFromET)) {
+					if (SnomedUtils.hasChangesSince(a, changesFromET, false)) {
 						hasChangedAssociations.add(c);
 						if (isReleased(c, a, ComponentType.HISTORICAL_ASSOCIATION)) {
 							if (a.isActive()) {

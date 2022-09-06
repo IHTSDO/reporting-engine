@@ -1971,11 +1971,17 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	public static boolean hasChangesSince(Component c, String fromET) {
+		return hasChangesSince(c, fromET, true);
+	}
+	
+	public static boolean hasChangesSince(Component c, String fromET, boolean inclusiveDate) {
 		if (StringUtils.isEmpty(c.getEffectiveTime())) {
 			return true;
 		}
 		
-		if (!StringUtils.isEmpty(fromET) && c.getEffectiveTime().compareTo(fromET) >= 0) {
+		if (!StringUtils.isEmpty(fromET) && 
+				((inclusiveDate && c.getEffectiveTime().compareTo(fromET) >= 0) ||
+				 (!inclusiveDate && c.getEffectiveTime().compareTo(fromET) > 0))){
 			return true;
 		}
 		return false;
