@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
@@ -268,4 +269,23 @@ public class HistoricDataUser extends TermServerReport {
 		return reportName;
 	}
 
+	@Override
+	protected boolean inScope(Component c) {
+		//If we've specified some modules explicitly, then allow those to 
+		//take precidence
+		if (moduleFilter != null && moduleFilter.size() > 0) {
+			return moduleFilter.contains(c.getModuleId());
+		}
+		//RP-349 Allow MS customers to run reports against MAIN.
+		//In this case all concepts are "in scope" to allow MS customers to see
+		//what changes to international concepts might affect them
+		if (project.getKey().equals("MAIN")) {
+			return true;
+		}
+		//Do we have a default module id ie for a managed service project?
+		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
+			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+		}
+		return true;
+	}
 }
