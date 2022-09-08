@@ -222,7 +222,7 @@ public class GraphLoader implements ScriptConstants {
 				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
 				
 				String previousState = null;
-				if (existing != null && recordPreviousState) {
+				if (isRecordPreviousState() && existing != null) {
 					previousState = existing.getMutableFields();
 				}
 				
@@ -303,7 +303,7 @@ public class GraphLoader implements ScriptConstants {
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
 						axiomEntry.setReleased(replacedAxiomEntry.isReleased());
-						if (recordPreviousState) {
+						if (isRecordPreviousState()) {
 							String previousState = replacedAxiomEntry.getMutableFields();
 							axiomEntry.addIssue(previousState);
 						}
@@ -697,9 +697,15 @@ public class GraphLoader implements ScriptConstants {
 				Concept c = getConcept(lineItems[IDX_ID]);
 				
 				//If moduleId is null, then this concept has no prior state
-				if (!isReleased && recordPreviousState && c.getModuleId() != null) {
-					String previousState = c.getMutableFields();
-					c.addIssue(previousState);
+				if (isRecordPreviousState()) {
+					if (isReleased == null) {
+						throw new IllegalStateException("Unable to record previous state from existing archive");
+					}
+					
+					if (!isReleased  && c.getModuleId() != null) {
+						String previousState = c.getMutableFields();
+						c.addIssue(previousState);
+					}
 				}
 				
 				//If the concept's module isn't known, then it wasn't loaded in the snapshot
@@ -775,7 +781,7 @@ public class GraphLoader implements ScriptConstants {
 					
 					//If the term is null, then this is the first we've seen of this description, so no
 					//need to record its previous state.
-					if (!isReleased && isRecordPreviousState() && d.getTerm() != null) {
+					if (isRecordPreviousState() && !isReleased && d.getTerm() != null) {
 						String previousState = d.getMutableFields();
 						d.addIssue(previousState);
 					}
@@ -856,7 +862,7 @@ public class GraphLoader implements ScriptConstants {
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
 					
-					if (original != null && !isReleased && isRecordPreviousState()) {
+					if (isRecordPreviousState() && original != null && !isReleased) {
 						String previousState = original.getMutableFields();
 						langRefsetEntry.addIssue(previousState);
 					}
@@ -1055,7 +1061,7 @@ public class GraphLoader implements ScriptConstants {
 					InactivationIndicatorEntry existing = c.getInactivationIndicatorEntry(id);
 					if (existing != null) {
 						inactivation.setReleased(existing.getReleased());
-						if (!isReleased && isRecordPreviousState()) {
+						if (isRecordPreviousState() && !isReleased) {
 							String previousState = existing.getMutableFields();
 							inactivation.addIssue(previousState);
 						}
@@ -1071,7 +1077,7 @@ public class GraphLoader implements ScriptConstants {
 					InactivationIndicatorEntry existing = d.getInactivationIndicatorEntry(id);
 					if (existing != null) {
 						inactivation.setReleased(existing.getReleased());
-						if (!isReleased && isRecordPreviousState()) {
+						if (isRecordPreviousState() && !isReleased) {
 							String previousState = existing.getMutableFields();
 							inactivation.addIssue(previousState);
 						}
@@ -1145,7 +1151,7 @@ public class GraphLoader implements ScriptConstants {
 					AssociationEntry existing = c.getAssociationEntry(id);
 					if (existing != null) {
 						association.setReleased(existing.getReleased());
-						if (!isReleased && isRecordPreviousState()) {
+						if (isRecordPreviousState() && !isReleased) {
 							String previousState = existing.getMutableFields();
 							association.addIssue(previousState);
 						}
@@ -1171,7 +1177,7 @@ public class GraphLoader implements ScriptConstants {
 					AssociationEntry existing = d.getAssociationEntry(id);
 					if (existing != null) {
 						association.setReleased(existing.getReleased());
-						if (!isReleased && isRecordPreviousState()) {
+						if (isRecordPreviousState() && !isReleased) {
 							String previousState = existing.getMutableFields();
 							association.addIssue(previousState);
 						}

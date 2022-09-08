@@ -63,7 +63,8 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 			TermServerReport.run(InitialAnalysis.class, args, params);
 		} */
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< " + ROOT_CONCEPT);
+		//params.put(ECL, "<< " + ROOT_CONCEPT);
+		params.put(SUB_HIERARCHY, "75258004 |Food poisoning (disorder)|");
 		TermServerReport.run(InitialAnalysis.class, args, params);
 	}
 	
