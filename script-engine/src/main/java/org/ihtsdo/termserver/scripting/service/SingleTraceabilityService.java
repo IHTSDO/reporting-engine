@@ -51,6 +51,8 @@ public class SingleTraceabilityService implements TraceabilityService {
 	private static int IDX_COMMIT_DATE = 2;
 	
 	private int requestCount = 0;
+	private boolean intOnly = false;
+	String onBranch = null;
 	
 	private Worker[] workers;
 	
@@ -77,7 +79,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		if (workers == null) {
 			workers = new Worker[WORKER_COUNT];
 			for (int i=0;i<WORKER_COUNT; i++) {
-				workers[i] = new Worker(i);
+				workers[i] = new Worker(i, onBranch);
 				Thread t = new Thread(workers[i]);
 				t.start();
 			}
@@ -97,7 +99,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		}
 	}
 	
-	private void populateReportRowWithTraceabilityInfo(ReportRow row) throws TermServerScriptException {
+	private void populateReportRowWithTraceabilityInfo(ReportRow row, boolean intOnly, String onBranch2) throws TermServerScriptException {
 		if (row == null) {
 			throw new TermServerScriptException("Request to populate row with traceability information, but row was not supplied");
 		}
@@ -113,7 +115,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		if (traceabilityCache.containsKey(row.c.getId())) {
 			row.traceabilityInfo = traceabilityCache.get(row.c.getId());
 		} else {
-			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row);
+			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row, intOnly, onBranch);
 			if (traceabilityInfo.size() == 0) {
 				logger.warn("Failed to recover any traceability information for concept {}", row.c.getConceptId());
 			}
@@ -201,11 +203,11 @@ public class SingleTraceabilityService implements TraceabilityService {
 		return activity;
 	}
 	
-	private List<Activity> robustlyRecoverTraceabilityInfo(ReportRow row) {
+	private List<Activity> robustlyRecoverTraceabilityInfo(ReportRow row, boolean intOnly, String onBranch2) {
 		String sctId = row.c.getConceptId();
 		try {
-			//IntOnly and SummaryOnly
-			return client.getConceptActivity(sctId, ActivityType.CONTENT_CHANGE, row.fromDate, row.toDate, true, true);
+			boolean summaryOnly = true;
+			return client.getConceptActivity(sctId, ActivityType.CONTENT_CHANGE, row.fromDate, row.toDate, summaryOnly, intOnly, onBranch);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Collections.singletonList(createDummyActivity(sctId, e));
@@ -237,9 +239,15 @@ public class SingleTraceabilityService implements TraceabilityService {
 		boolean isRunning = false;
 		private String failureReaason;
 		int workerId;
+		//boolean intOnly = true;
+		String onBranch = null;
 
-		public Worker(int id) {
+		public Worker(int id, String onBranch) {
 			this.workerId = id;
+			if (onBranch != null) {
+				intOnly = false;
+				this.onBranch = onBranch;
+			}
 		}
 
 		@Override
@@ -317,7 +325,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		}
 		
 		public void process(ReportRow row) throws TermServerScriptException {
-			SingleTraceabilityService.this.populateReportRowWithTraceabilityInfo(row);
+			SingleTraceabilityService.this.populateReportRowWithTraceabilityInfo(row, intOnly, onBranch);
 			
 			//Snip the processing date a bit if it has been populated
 			if (row.traceabilityInfo != null && row.traceabilityInfo[IDX_COMMIT_DATE] != null) {
@@ -370,6 +378,11 @@ public class SingleTraceabilityService implements TraceabilityService {
 	public void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details)
 			throws TermServerScriptException {
 		throw new NotImplementedException("This class uses variant that takes date range");
+	}
+
+	@Override
+	public void setBranchFilter(String onBranch) {
+		this.onBranch = onBranch;
 	}
 	
 }

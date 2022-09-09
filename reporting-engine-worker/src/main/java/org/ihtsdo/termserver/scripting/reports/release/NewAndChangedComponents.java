@@ -52,9 +52,11 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	private String changesFromET;
 	private static final String WORD_MATCHES = "Word Matches";
 	private static final String CHANGES_SINCE = "Changes From";
+	private static final String INCLUDE_DETAIL = "Include Detail";
 	
 	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
 	private boolean forceTraceabilityPopulation = true;
+	private boolean includeDescriptionDetail = false;
 	
 	TraceabilityService traceabilityService;
 	
@@ -80,6 +82,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		getArchiveManager().setPopulateReleasedFlag(true);
 		subsetECL = run.getParamValue(ECL);
+		
+		if (!StringUtils.isEmpty(run.getParamValue(INCLUDE_DETAIL))) {
+			includeDescriptionDetail = jobRun.getParamBoolean(INCLUDE_DETAIL);
+		}
 		
 		if (!StringUtils.isEmpty(run.getParamValue(WORD_MATCHES))) {
 			wordMatches = Arrays.asList(run.getParamValue(WORD_MATCHES).split("\\s*,\\s*"));
@@ -114,16 +120,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			super.doDefaultProjectSnapshotLoad(fsnOnly);
 		} else {
 			loadHistoricallyGeneratedData = true;
-		
-			//Either specify all values or none of them.   Use the XOR indicator
-			if (XOR(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
-				throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");
-			}
 			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-			
-			if (project.getKey().equals("MAIN") && StringUtils.isEmpty(prevDependency)) {
-				throw new TermServerScriptException ("This report cannot be run on MAIN.  Use 'Summary Component Stats for Editions' instead.");
-			}
 			
 			if (StringUtils.isEmpty(prevDependency)) {
 				prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
@@ -154,21 +151,6 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			
 			super.loadProjectSnapshot(fsnOnly);
 		}
-	}
-	
-	private boolean XOR(String... paramValues) {
-		Boolean lastValueSeenPresent = null;
-		for (String paramValue : paramValues) {
-			if (lastValueSeenPresent == null) {
-				lastValueSeenPresent = !StringUtils.isEmpty(jobRun.getParamValue(paramValue));
-			} else {
-				Boolean thisValueSeenPresent = !StringUtils.isEmpty(jobRun.getParamValue(paramValue));
-				if (lastValueSeenPresent != thisValueSeenPresent) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	@Override
@@ -204,6 +186,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				"TextDefns"
 		};
 		
+		if (!includeDescriptionDetail) {
+			tabNames[7] = "N/A 1";
+			tabNames[8] = "N/A 2";
+		}
 		if (loadHistoricallyGeneratedData) {
 			changesFromET = previousEffectiveTime;
 		}
@@ -216,6 +202,24 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			}
 		} else {
 			traceabilityService = new SingleTraceabilityService(jobRun, this);
+		}
+		
+		if (thisDependency != null || 
+				(project.getBranchPath() != null && project.getBranchPath().contains("SNOMEDCT-"))) {
+			//If we have a dependency then we're loading an extension so tell traceability
+			//that specific CodeSystem branch
+			String onBranch = null;
+			if (project.getKey().endsWith(".zip")) {
+				if (project.getKey().startsWith("SnomedCT_ManagedService")) {
+					onBranch = "MAIN/SNOMEDCT-" + project.getKey().substring(22, 24);
+				} else {
+					throw new TermServerScriptException("Cannot determine CodeSystem from " + project.getKey());
+				}
+			} else {
+				onBranch = project.getBranchPath();
+			}
+			traceabilityService.setBranchFilter(onBranch);
+			
 		}
 		
 		super.postInit(tabNames, columnHeadings, false);
@@ -231,6 +235,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
+				.add(INCLUDE_DETAIL).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
@@ -399,14 +404,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 								}
 							}
 
-							if (langRefSetIsNew || langRefSetIsLost || langRefSetIsChanged) {
+							if (includeDescriptionDetail && (langRefSetIsNew || langRefSetIsLost || langRefSetIsChanged)) {
 								report(NONARY_REPORT, c, d, l, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
 							}
 						}
 					}
 				}
 				
-				if (isNew || isChanged || wasInactivated || changedAcceptability) {
+				if (includeDescriptionDetail && (isNew || isChanged || wasInactivated || changedAcceptability)) {
 					report (OCTONARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability, d.getType());
 				}
 			}
@@ -788,6 +793,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		public void populateTraceabilityAndReport(String fromDate, String toDate, int tabIdx, Concept c, Object... details)
 				throws TermServerScriptException {
 			ts.report(tabIdx, c , details);
+		}
+
+		@Override
+		public void setBranchFilter(String onBranch) {
 		}
 	}
 	

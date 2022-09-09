@@ -27,6 +27,7 @@ public class BulkTraceabilityService implements TraceabilityService {
 	private static int MAX_PENDING_SIZE  = 1000;
 	Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
 	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
+	String onBranch = null;
 	
 	public BulkTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
@@ -226,4 +227,10 @@ public class BulkTraceabilityService implements TraceabilityService {
 	public void populateTraceabilityAndReport(String fromDate, String toDate, int tab, Concept c, Object... details) {
 		throw new NotImplementedException("This class uses bulk method, not single concept lookup");
 	}
+
+	@Override
+	public void setBranchFilter(String onBranch) {
+		this.onBranch = onBranch;
+	}
+
 }
