@@ -51,8 +51,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 	private static int IDX_COMMIT_DATE = 2;
 	
 	private int requestCount = 0;
-	private boolean intOnly = false;
-	String onBranch = null;
+	String branchPrefix = null;
 	
 	private Worker[] workers;
 	
@@ -79,7 +78,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		if (workers == null) {
 			workers = new Worker[WORKER_COUNT];
 			for (int i=0;i<WORKER_COUNT; i++) {
-				workers[i] = new Worker(i, onBranch);
+				workers[i] = new Worker(i, branchPrefix);
 				Thread t = new Thread(workers[i]);
 				t.start();
 			}
@@ -115,7 +114,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		if (traceabilityCache.containsKey(row.c.getId())) {
 			row.traceabilityInfo = traceabilityCache.get(row.c.getId());
 		} else {
-			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row, intOnly, onBranch);
+			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row, intOnly, branchPrefix);
 			if (traceabilityInfo.size() == 0) {
 				logger.warn("Failed to recover any traceability information for concept {}", row.c.getConceptId());
 			}
@@ -203,11 +202,11 @@ public class SingleTraceabilityService implements TraceabilityService {
 		return activity;
 	}
 	
-	private List<Activity> robustlyRecoverTraceabilityInfo(ReportRow row, boolean intOnly, String onBranch2) {
+	private List<Activity> robustlyRecoverTraceabilityInfo(ReportRow row, boolean intOnly, String branchPrefix) {
 		String sctId = row.c.getConceptId();
 		try {
 			boolean summaryOnly = true;
-			return client.getConceptActivity(sctId, ActivityType.CONTENT_CHANGE, row.fromDate, row.toDate, summaryOnly, intOnly, onBranch);
+			return client.getConceptActivity(sctId, ActivityType.CONTENT_CHANGE, row.fromDate, row.toDate, summaryOnly, intOnly, branchPrefix);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Collections.singletonList(createDummyActivity(sctId, e));
@@ -239,14 +238,14 @@ public class SingleTraceabilityService implements TraceabilityService {
 		boolean isRunning = false;
 		private String failureReaason;
 		int workerId;
-		//boolean intOnly = true;
-		String onBranch = null;
+		boolean intOnly = true;
+		String branchPrefix = null;
 
-		public Worker(int id, String onBranch) {
+		public Worker(int id, String branchPrefix) {
 			this.workerId = id;
-			if (onBranch != null) {
+			if (branchPrefix != null) {
 				intOnly = false;
-				this.onBranch = onBranch;
+				this.branchPrefix = branchPrefix;
 			}
 		}
 
@@ -325,7 +324,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		}
 		
 		public void process(ReportRow row) throws TermServerScriptException {
-			SingleTraceabilityService.this.populateReportRowWithTraceabilityInfo(row, intOnly, onBranch);
+			SingleTraceabilityService.this.populateReportRowWithTraceabilityInfo(row, intOnly, branchPrefix);
 			
 			//Snip the processing date a bit if it has been populated
 			if (row.traceabilityInfo != null && row.traceabilityInfo[IDX_COMMIT_DATE] != null) {
@@ -381,8 +380,8 @@ public class SingleTraceabilityService implements TraceabilityService {
 	}
 
 	@Override
-	public void setBranchFilter(String onBranch) {
-		this.onBranch = onBranch;
+	public void setBranchPrefixFilter(String onBranch) {
+		this.branchPrefix = onBranch;
 	}
 	
 }

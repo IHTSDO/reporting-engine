@@ -47,7 +47,7 @@ public class AncestorsCache implements ScriptConstants {
 		}
 	}
 	
-	private Set<Concept> getAncestors (Concept c, boolean mutable) throws TermServerScriptException {
+	public Set<Concept> getAncestors (Concept c, boolean mutable) throws TermServerScriptException {
 		Set<Concept> ancestors = ancestorsCache.get(c);
 		if (ancestors == null) {
 			//Ensure we're working with the local copy rather than TS JSON

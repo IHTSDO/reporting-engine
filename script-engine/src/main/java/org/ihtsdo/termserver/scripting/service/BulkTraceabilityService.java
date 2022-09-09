@@ -229,7 +229,7 @@ public class BulkTraceabilityService implements TraceabilityService {
 	}
 
 	@Override
-	public void setBranchFilter(String onBranch) {
+	public void setBranchPrefixFilter(String onBranch) {
 		this.onBranch = onBranch;
 	}
 

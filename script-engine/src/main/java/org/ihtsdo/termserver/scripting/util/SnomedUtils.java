@@ -1927,42 +1927,42 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				|| c.getModuleId().equals(SCTID_MODEL_MODULE);
 	}
 
-	public static boolean hasChangesSince(Concept c, String fromET) {
-		if (hasChangesSince((Component)c, fromET)) {
+	public static boolean hasChangesSinceIncludingSubComponents(Concept c, String fromET,  boolean inclusiveDate) {
+		if (hasChangesSince((Component)c, fromET, inclusiveDate)) {
 			return true;
 		}
 		
 		for (Description d : c.getDescriptions()) {
-			if (hasChangesSince(d, fromET)) {
+			if (hasChangesSince(d, fromET, inclusiveDate)) {
 				return true;
 			}
 			for (LangRefsetEntry l : d.getLangRefsetEntries()) {
-				if (hasChangesSince(l, fromET)) {
+				if (hasChangesSince(l, fromET, inclusiveDate)) {
 					return true;
 				}
 			}
 		}
 		
 		for (Relationship r : c.getRelationships()) {
-			if (hasChangesSince(r, fromET)) {
+			if (hasChangesSince(r, fromET, inclusiveDate)) {
 				return true;
 			}
 		}
 		
 		for (AxiomEntry a : c.getAxiomEntries()) {
-			if (hasChangesSince(a, fromET)) {
+			if (hasChangesSince(a, fromET, inclusiveDate)) {
 				return true;
 			}
 		}
 		
 		for (AssociationEntry h : c.getAssociationEntries()) {
-			if (hasChangesSince(h, fromET)) {
+			if (hasChangesSince(h, fromET, inclusiveDate)) {
 				return true;
 			}
 		}
 		
 		for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
-			if (hasChangesSince(i, fromET)) {
+			if (hasChangesSince(i, fromET, inclusiveDate)) {
 				return true;
 			}
 		}

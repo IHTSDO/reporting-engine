@@ -163,7 +163,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
-				"Id, FSN, SemTag, Active, isNew, DefStatusChanged, Languages, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, isNew, DefStatusChanged, Languages, Author, Task, Date",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
@@ -211,14 +211,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			String onBranch = null;
 			if (project.getKey().endsWith(".zip")) {
 				if (project.getKey().startsWith("SnomedCT_ManagedService")) {
-					onBranch = "MAIN/SNOMEDCT-" + project.getKey().substring(22, 24);
+					onBranch = "MAIN/SNOMEDCT-" + project.getKey().substring(23, 25);
 				} else {
 					throw new TermServerScriptException("Cannot determine CodeSystem from " + project.getKey());
 				}
 			} else {
 				onBranch = project.getBranchPath();
 			}
-			traceabilityService.setBranchFilter(onBranch);
+			traceabilityService.setBranchPrefixFilter(onBranch);
 			
 		}
 		
@@ -279,30 +279,35 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		long notReleased = 0;
 		long notChanged = 0;
 		long notInScope = 0;
+		
+		info("Determining concepts of interest");
 		Collection<Concept> conceptsOfInterest = determineConceptsOfInterest();
+		
 		info("Examining " +  conceptsOfInterest.size() + " concepts of interest");
 		for (Concept c : conceptsOfInterest) {
-			/*if (c.getId().equals("3641486008")) {
+			if (c.getId().equals("1144752009")) {
 				debug("here");
-			}*/
+			}
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
-			} else if (!isReleased(c, c, ComponentType.CONCEPT)) {
-				notReleased++;
-				newConcepts.add(c);
-				summaryCount.isNew++;
-			} else if (inScope(c) && SnomedUtils.hasChangesSince(c, changesFromET)) {
-				//Only want to log def status change if the concept has not been made inactive
-				if (c.isActive()) {
-					defStatusChanged.add(c);
-					summaryCount.isChanged++;
-				} else {
-					inactivatedConcepts.add(c);
-					summaryCount.isInactivated++;
-				}
 			} else if (inScope(c)) {
-				notChanged++;
+				if (!isReleased(c, c, ComponentType.CONCEPT)) {
+					notReleased++;
+					newConcepts.add(c);
+					summaryCount.isNew++;
+				} else if (SnomedUtils.hasChangesSince(c, changesFromET, false)) {
+					//Only want to log def status change if the concept has not been made inactive
+					if (c.isActive()) {
+						defStatusChanged.add(c);
+						summaryCount.isChanged++;
+					} else {
+						inactivatedConcepts.add(c);
+						summaryCount.isInactivated++;
+					}
+				} else {
+					notChanged++;
+				}
 			} else {
 				notInScope++;
 			}
@@ -554,7 +559,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		return conceptsOfInterest.stream()
 				.filter(c -> hasLexicalMatch(c, wordMatches))
-				.filter(c -> SnomedUtils.hasChangesSince(c, changesFromET))
+				.filter(c -> SnomedUtils.hasChangesSinceIncludingSubComponents(c, changesFromET, false))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
 	}
@@ -709,9 +714,15 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	}
 	
 	private void populateTraceabilityAndReport(int tabIdx, Concept c, Object... data) throws TermServerScriptException {
-		//We're now working on monthly releases, so it could be anything in the last 3 months tops
-		Date fromDateDate = DateUtils.addDays(new Date(),-180);
-		String fromDate = dateFormat.format(fromDateDate);
+		//Are we working on a published release, or "in-flight" project?
+		String fromDate = null;
+		if (project.getKey().endsWith(".zip")) {
+			fromDate = changesFromET;
+		} else {
+			//We're now working on monthly releases, so it could be anything in the last 3 months tops
+			Date fromDateDate = DateUtils.addDays(new Date(),-180);
+			fromDate = dateFormat.format(fromDateDate);
+		}
 		traceabilityService.populateTraceabilityAndReport(fromDate, null, tabIdx, c, data);
 	}
 
@@ -796,7 +807,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 
 		@Override
-		public void setBranchFilter(String onBranch) {
+		public void setBranchPrefixFilter(String onBranch) {
 		}
 	}
 	
