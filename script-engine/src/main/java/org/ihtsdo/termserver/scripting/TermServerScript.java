@@ -1471,7 +1471,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
-		return report (PRIMARY_REPORT, c, details);
+		return report(PRIMARY_REPORT, c, details);
 	}
 	
 	public boolean report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
@@ -1481,7 +1481,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//Have we whiteListed this concept?
 		if (!ignoreWhiteList && c != null && whiteListedConceptIds.contains(c.getId())) {
 			String detailsStr = writeToString(details);
-			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
+			warn("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 			return false;
 		} else {
@@ -1495,9 +1495,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					if (conceptFields[2] == null) {
 						conceptFields[2] = " ";
 					}
-				} 
+				} else {
+					conceptFields[2] = "";
+				}
 			}
-			report (reportIdx, conceptFields, details);
+			report(reportIdx, conceptFields, details);
 		}
 		return true;
 	}

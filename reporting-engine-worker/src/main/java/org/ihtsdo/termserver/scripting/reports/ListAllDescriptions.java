@@ -21,7 +21,8 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		Map<String, String> params = new HashMap<>();
 		//params.put(SUB_HIERARCHY, "43959009 |Cataract of eye due to diabetes mellitus (disorder)|");
 		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
-		params.put(SUB_HIERARCHY, "25093002 |Disorder of eye due to diabetes mellitus (disorder)|");
+		//params.put(SUB_HIERARCHY, "25093002 |Disorder of eye due to diabetes mellitus (disorder)|");
+		params.put(SUB_HIERARCHY, "19598007 |Generalized epilepsy (disorder)|");
 		TermServerReport.run(ListAllDescriptions.class, args, params);
 	}
 	
@@ -69,7 +70,7 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		List<Description> descriptions = c.getDescriptions(ActiveState.ACTIVE);
 		SnomedUtils.prioritise(descriptions);
 		for (Description d : descriptions) {
-			report ((Concept)null, "", "", "", d);
+			report((Concept)null, "", "", "", d);
 		}
 		
 		//Now recurse down into all children
