@@ -33,6 +33,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		unacceptableUsernames.add("eilyukhina");
 		unacceptableUsernames.add("dmcgaw");
 		unacceptableUsernames.add("pwilliams");
+		unacceptableUsernames.add("tcooksey");
 	}
 	
 	static Logger logger = LoggerFactory.getLogger(SingleTraceabilityService.class);

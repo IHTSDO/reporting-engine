@@ -55,8 +55,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	private static final String INCLUDE_DETAIL = "Include Detail";
 	
 	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
-	private boolean forceTraceabilityPopulation = true;
-	private boolean includeDescriptionDetail = false;
+	private boolean forceTraceabilityPopulation = false;
+	private boolean includeDescriptionDetail = true;
 	
 	TraceabilityService traceabilityService;
 	
@@ -164,14 +164,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
 				"Id, FSN, SemTag, EffectiveTime, Active, isNew, DefStatusChanged, Languages, Author, Task, Date",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
-				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
-				"Id, FSN, SemTag, Active, isTargetOfNewInferredRelationship, wasTargetOfLostInferredRelationship",
-				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
-				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships",
+				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, isTargetOfNewInferredRelationship, wasTargetOfLostInferredRelationship",
+				"Id, FSN, SemTag, EffectiveTime, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
+				"Id, FSN, SemTag, EffectiveTime, Description, LangRefset, isNew, isChanged, wasInactivated",
+				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
@@ -285,9 +285,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		info("Examining " +  conceptsOfInterest.size() + " concepts of interest");
 		for (Concept c : conceptsOfInterest) {
-			if (c.getId().equals("1144752009")) {
+			/*if (c.getId().equals("58851000052104")) {
 				debug("here");
-			}
+			}*/
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
@@ -632,11 +632,15 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasChangedAcceptabilityDesc);
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		boolean includeTraceability = superSet.size() < MAX_ROWS_FOR_TRACEABILITY ? true : false;
+		
+		if (forceTraceabilityPopulation) {
+			includeTraceability = true;
+		}
 		if (!includeTraceability) {
 			report (QUINARY_REPORT, "", "", "", "", "", "", "", "Cannot report traceability for > 10K rows due to performance constraints");
 		}
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
+			String newWithNewConcept = (hasNewDescriptions.contains(c) && newConcepts.contains(c)) ? "Y":"N";
 			if (includeTraceability) {
 				populateTraceabilityAndReport(QUINARY_REPORT, c,
 					c.isActive()?"Y":"N",
