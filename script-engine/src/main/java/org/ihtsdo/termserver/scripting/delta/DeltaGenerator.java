@@ -84,22 +84,26 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		super.init(args);
 		if (!dryRun) {
-			//Don't add to previously exported data
-			File outputDir = new File (outputDirName);
-			int increment = 0;
-			while (outputDir.exists()) {
-				String proposedOutputDirName = outputDirName + "_" + (++increment) ;
-				outputDir = new File(proposedOutputDirName);
-			}
-			outputDirName = outputDir.getName();
-			packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
-			packageDir = packageRoot + today + File.separator;
-			info ("Outputting data to " + packageDir);
+			initialiseOutputDirectory();
 		} else {
 			info("Dry run, no output expected");
 		}
 	}
 	
+	protected void initialiseOutputDirectory() {
+		//Don't add to previously exported data
+		File outputDir = new File (outputDirName);
+		int increment = 0;
+		while (outputDir.exists()) {
+			String proposedOutputDirName = outputDirName + "_" + (++increment) ;
+			outputDir = new File(proposedOutputDirName);
+		}
+		outputDirName = outputDir.getName();
+		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
+		packageDir = packageRoot + today + File.separator;
+		info ("Outputting data to " + packageDir);
+	}
+
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		super.checkSettingsWithUser(jobRun);
 		

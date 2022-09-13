@@ -1647,5 +1647,13 @@ public class GraphLoader implements ScriptConstants {
 	public void setRecordPreviousState(boolean recordPreviousState) {
 		this.recordPreviousState = recordPreviousState;
 	}
+
+	public void setAllComponentsClean() {
+		for (Concept concept : getAllConcepts()) {
+			for (Component c : SnomedUtils.getAllComponents(concept)) {
+				c.setClean();
+			}
+		}
+	}
 	
 }

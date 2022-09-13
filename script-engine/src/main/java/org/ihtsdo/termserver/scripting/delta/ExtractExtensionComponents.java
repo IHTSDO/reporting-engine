@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
@@ -15,7 +16,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
-import org.springframework.util.StringUtils;
 
 /**
  * Class form a delta of specified concepts from some edition and 
@@ -36,14 +36,19 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
+	private Integer conceptsPerArchive = 10;
+	Queue<List<Component>> archiveBatches = null;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
-			delta.runStandAlone = true;
-			delta.moduleId = "1145237009"; //NEBCSR
+			delta.runStandAlone = false;
+			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			//delta.moduleId = "1145237009"; //NEBCSR
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
+			delta.moduleId = "11000181102"; //Estonia
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -53,19 +58,22 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.additionalReportColumns = "FSN, SemTag, Severity, ChangeType, Detail, Additional Detail, , ";
 			delta.postInit();
 			delta.startTimer();
+			delta.preProcessFile();
 			delta.processFile();
-			delta.outputModifiedComponents(true);
-			delta.flushFiles(false, true); //Need to flush files before zipping
-			if (dryRun) {
-				info("Skipping archive creation due to dry run.");
-			} else {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
+			if (delta.archiveBatches == null) {
+				delta.outputModifiedComponents(true);
+				delta.flushFiles(false, true); //Need to flush files before zipping
+				if (dryRun) {
+					info("Skipping archive creation due to dry run.");
+				} else {
+					SnomedUtils.createArchive(new File(delta.outputDirName));
+				}
 			}
 		} finally {
 			delta.finish();
 		}
 	}
-	
+
 	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		info ("Select an environment for live secondary checking ");
@@ -86,17 +94,202 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			secondaryConnection = createTSClient(url, authenticatedCookie);
 		}
 	}
+	
+	
+	private void preProcessFile() throws TermServerScriptException {
+		archiveBatches = new ArrayDeque<>();
+		List<Component> componentsOfInterest = super.processFile();
+		//Work through these and group parents with children.
+		//However if a parent has more children than we have concepts in a task, 
+		//then we have a problem.
+		Map<Concept, Set<Concept>> parentChildMap = new HashMap<>();
+		Set<Concept> allocatedConcepts = new HashSet<>();
+		
+		//Concepts that have no ancestors to group in with can be placed in any set
+		Queue<Concept> footlooseConcepts = new ArrayDeque<>();
+		Set<Concept> requiresFirstPassLoad = new HashSet<>();
+		
+		for (Component component : componentsOfInterest) {
+			boolean alsoImportingAncestors = false;
+			boolean alsoImportingDescendants = false;
+			
+			Concept c = (Concept)component;
+			
+			if (!c.isReleased()) {
+				throw new IllegalStateException(c + " has not been released");
+			}
+			
+			Set<Concept> ancestorsToImport = gl.getAncestorsCache().getAncestors(c, true);  //Need a mutable set
+			//If no ancestors in common with what we're loading, then concept is free
+			ancestorsToImport.retainAll(componentsOfInterest);
+			if (ancestorsToImport.size() > 0) {
+				alsoImportingAncestors = true;
+				//We'll stop here and allow that ancestor to pick up its descendants when its turn comes
+				continue;
+			} 
+			
+			//Does concept have descendants that we want to group with it?
+			//We need the parents to be imported before any children, so rework any set as one that maintains the order input
+			Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendents(c, true);
+			descendantsToImport.retainAll(componentsOfInterest);
+			if (descendantsToImport.size() > 0) {
+				alsoImportingDescendants = true;
+				info(c + " has " + descendantsToImport.size() + " descendants to import");
+				if (descendantsToImport.size() >= conceptsPerArchive) {
+					//We'll need to load this concept in it's own import and promote to the project 
+					//so it's available as a parent for subsequent loads
+					requiresFirstPassLoad.add(c);
+					continue;
+				}
+				//Don't want to import a concept twice, but if we do, we have a problem
+				int origSize = descendantsToImport.size();
+				descendantsToImport.removeAll(allocatedConcepts);
+				if (origSize != descendantsToImport.size()) {
+					throw new TermServerScriptException(c + " has descendants already being imported by another concept - investigate");
+				}
+				
+				allocatedConcepts.addAll(descendantsToImport);
+				parentChildMap.put(c, descendantsToImport);
+			}
+			
+			if (!alsoImportingAncestors && !alsoImportingDescendants) {
+				footlooseConcepts.add(c);
+			}
+		}
+		
+		//Now work through the list and see if we can fit any together
+		Set<Concept> batchesAvailableToMerge = new HashSet<>(parentChildMap.keySet());
+		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
+			//Have we already merged this batch?
+			if (!batchesAvailableToMerge.contains(batchParent)) {
+				continue;
+			}
+			batchesAvailableToMerge.remove(batchParent);
+			
+			Concept bestMerge = null;
+			do {
+				//How many concepts are in this batch, +1 for the parent itself
+				Set<Concept> batchContents = parentChildMap.get(batchParent);
+				int thisBatchSize = batchContents.size() + 1;
+				int topUpSize = conceptsPerArchive - thisBatchSize;
+				bestMerge = findBestMerge(parentChildMap, batchesAvailableToMerge, topUpSize);
+				if (bestMerge != null) {
+					batchesAvailableToMerge.remove(bestMerge);
+					Set<Concept> thisBatch = parentChildMap.get(batchParent);
+					thisBatch.add(bestMerge);
+					thisBatch.addAll(parentChildMap.get(bestMerge));
+					info ("Adding " + bestMerge + "(" + (parentChildMap.get(bestMerge).size() + 1) + ") to batch with parent " + batchParent);
+					parentChildMap.remove(bestMerge);
+				}
+			} while (bestMerge != null);
+		}
+		
+		//Now allocate the footloose concepts to fill up existing or new batches
+		info("Allocating " + footlooseConcepts.size() + " loose concepts to " + parentChildMap.size() + " existing batches");
+		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
+			int thisBatchSize = parentChildMap.get(batchParent).size() + 1;
+			if (thisBatchSize >= conceptsPerArchive) {
+				continue;
+			}
+			do {
+				Concept topUp = footlooseConcepts.remove();
+				parentChildMap.get(batchParent).add(topUp);
+				thisBatchSize = parentChildMap.get(batchParent).size() + 1;
+			} while (thisBatchSize < conceptsPerArchive && !footlooseConcepts.isEmpty());
+		}
+		
+		//The number of concepts in the map plus the footloose concepts should add up to our total
+		long mapCount = parentChildMap.values().stream()
+				.flatMap(l -> l.stream())
+				.count();
+		mapCount += parentChildMap.size();  //Also add 1 for each parent 
+		if (((int)mapCount + footlooseConcepts.size()) != componentsOfInterest.size()) {
+			throw new TermServerScriptException("Expected " + mapCount + " + " +  footlooseConcepts.size() + " to equals expected " + componentsOfInterest.size() + " concepts.");
+		}
+		
+		//Add these batches into our queue, as we log the size of each one
+		info("Batches Formed:");
+		int batchNo = 0;
+		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
+			List<Component> thisBatch = new ArrayList<>();
+			thisBatch.add(batchParent);
+			thisBatch.addAll(parentChildMap.get(batchParent));
+			info(++batchNo + ": " + batchParent + " - " +  thisBatch.size());
+			archiveBatches.add(thisBatch);
+		}
+		
+		//Any concepts left footloose can now be added into additional batches
+		List<Component> thisBatch = new ArrayList<>();
+		while (!footlooseConcepts.isEmpty()) {
+			thisBatch.add(footlooseConcepts.remove());
+			if (thisBatch.size() == conceptsPerArchive) {
+				archiveBatches.add(thisBatch);
+				info(++batchNo + ": No Hierarchy - " + thisBatch.size());
+				thisBatch = new ArrayList<>();
+			}
+		}
+		
+		if (thisBatch.size() > 0) {
+			archiveBatches.add(thisBatch);
+			info(++batchNo + ": No Hierarchy - " + thisBatch.size());
+		}
+		
+		long totalConceptsInBatches = archiveBatches.stream()
+				.flatMap(l -> l.stream())
+				.count();
+		info("Total concepts pre-processed into batches: " + totalConceptsInBatches);
+		
+		if ((int)totalConceptsInBatches != componentsOfInterest.size()) {
+			throw new TermServerScriptException("Expected to allocated " + componentsOfInterest.size() + " concepts.");
+		}
+	}
+
+	private Concept findBestMerge(Map<Concept, Set<Concept>> parentChildMap, Set<Concept> batchesAvailableToMerge,
+			int maxTopUpSize) {
+		Concept closestToIdealTopUp = null;
+		int closestTopUpSize = 0;
+		for (Concept thisTopUpBatch : batchesAvailableToMerge) {
+			int thisTopUpSize = parentChildMap.get(thisTopUpBatch).size() + 1; //The parent itself getsIncluded
+			if (thisTopUpSize > closestTopUpSize && thisTopUpSize <= maxTopUpSize) {
+				closestToIdealTopUp = thisTopUpBatch;
+				closestTopUpSize = thisTopUpSize;
+			}
+		}
+		return closestToIdealTopUp;
+	}
 
 	protected List<Component> processFile() throws TermServerScriptException {
-		if (StringUtils.isEmpty(eclSubset)) {
-			allIdentifiedConcepts = super.processFile();
+		if (archiveBatches != null) {
+			int batchNum = 1;
+			while (!archiveBatches.isEmpty()) {
+				info ("Processing archive batch " + batchNum++);
+				process(archiveBatches.remove());
+				outputModifiedComponents(true);
+				flushFiles(false, true); //Need to flush files before zipping
+				SnomedUtils.createArchive(new File(outputDirName));
+				gl.setAllComponentsClean();
+				if (!archiveBatches.isEmpty()) {
+					outputDirName = "output"; //Reset so we don't end up with _1_1_1
+					initialiseOutputDirectory();
+					initialiseFileHeaders();
+				}
+			}
 		} else {
-			allIdentifiedConcepts = new ArrayList<>(findConcepts(eclSubset));
+			if (StringUtils.isEmpty(eclSubset)) {
+				allIdentifiedConcepts = super.processFile();
+			} else {
+				allIdentifiedConcepts = new ArrayList<>(findConcepts(eclSubset));
+			}
+			return process(allIdentifiedConcepts);
 		}
-		addSummaryInformation("Concepts specified", allIdentifiedConcepts.size());
+		return null;
+	}
+	
+	private List<Component> process(List<Component> componentsToProcess) throws TermServerScriptException {
+		addSummaryInformation("Concepts specified", componentsToProcess.size());
 		initialiseSummaryInformation("Unexpected dependencies included");
 		info ("Extracting specified concepts");
-		for (Component thisComponent : allIdentifiedConcepts) {
+		for (Component thisComponent : componentsToProcess) {
 			Concept thisConcept = (Concept)thisComponent;
 
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
@@ -116,7 +309,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				continue;
 			}
 			try {
-				if (!switchModule(thisConcept)) {
+				if (!switchModule(thisConcept, componentsToProcess)) {
 					addSummaryInformation("Specified but no movement: " + thisConcept, null);
 					incrementSummaryInformation("Concepts no movement required");
 				} else if (thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) &&
@@ -128,10 +321,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				report(thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
-		return allIdentifiedConcepts;
+		return componentsToProcess;
+		
 	}
-	
-	private boolean switchModule(Concept c) throws TermServerScriptException {
+
+	private boolean switchModule(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 		
 		/*if (c.getConceptId().equals("10200004")) {
@@ -165,7 +359,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				conceptAlreadyTransferred = true;
 				report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept has already been moved to " + targetModuleId + " (possibly as a dependency).   Checking descriptions and relationships", c.getDefinitionStatus().toString(), parents);
 			} else {
-				if (allIdentifiedConcepts.contains(c)) {
+				if (componentsToProcess.contains(c)) {
 					report(c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, "Specified concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
 				} else {
 					report(c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
@@ -188,7 +382,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Don't move any concepts already in the model module
 			if (!c.getModuleId().equals(SCTID_MODEL_MODULE)) {
 				c.setModuleId(targetModuleId);
-				if (allIdentifiedConcepts.contains(c)) {
+				if (componentsToProcess.contains(c)) {
 					if (c.getModuleId().equals(targetModuleId)) {
 						report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
 					} else {
@@ -202,6 +396,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		boolean subComponentsMoved = false;
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
+			//We're going to skip any non-English Descriptions
+			if (!d.getLang().equals("en")) {
+				continue;
+			}
 			boolean thisDescMoved = false;
 			//Move descriptions if concept doesn't exist in target location, or module id is not target
 			//OR if the concept in the target location doesn't know about this description id.
@@ -277,7 +475,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (r.isActive() && !r.fromAxiom()) {
 					info ("Unexpected active stated relationship not from axiom: "+ r);
 				}
-				if (moveRelationshipToTargetModule(r, conceptOnTS)) {
+				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
 					subComponentsMoved = true;
 					relationshipMoved = true;
 				} 
@@ -301,7 +499,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//We have an issue with concepts in the examined space already
 			//having the target module but needing to move anyway.  So
 			//attempt move and see what we're missing.
-			if (moveAxiomToTargetModule(c, a, conceptOnTS)) {
+			if (moveAxiomToTargetModule(c, a, conceptOnTS, componentsToProcess)) {
 				subComponentsMoved = true;
 			}
 		}
@@ -363,7 +561,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return parentsStr.toString();
 	}
 	
-	private boolean moveAxiomToTargetModule(Concept c, AxiomEntry a, Concept conceptOnTS) throws TermServerScriptException {
+	private boolean moveAxiomToTargetModule(Concept c, AxiomEntry a, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
 		boolean axiomRelationshipMoved = false;
 		try {
 			//Don't trust the local module, we might need to copy the data over anyway
@@ -379,7 +577,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (axiomOnTS != null && (axiomOnTS.getEffectiveTime() == null 
 					|| (a.getEffectiveTime() != null && a.getEffectiveTime().equals(axiomOnTS.getEffectiveTime())))) {
 					//Only need to say something if we originally thought we were supposed to move this concept
-					if (allIdentifiedConcepts.contains(c)) {
+					if (componentsToProcess.contains(c)) {
 						report(conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Axiom already on server with same (or no) effective time", a.getId());
 					}
 					return false;
@@ -396,7 +594,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					r.setAxiomEntry(a);
 					//This is only needed to include dependencies. 
 					//The relationship itself is not attached to the concept
-					if (moveRelationshipToTargetModule(r, conceptOnTS)) {
+					if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
 						axiomRelationshipMoved = true;
 						a.setDirty();
 					}
@@ -423,7 +621,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return axiomRelationshipMoved;
 	}
 
-	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS) throws TermServerScriptException {
+	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component>componentsToProcess) throws TermServerScriptException {
 		//If we already have the concept on the Terminology Server, perhaps we already have the relationship too,
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
@@ -440,7 +638,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		r.setDirty();
 		
 		if (includeDependencies && !allModifiedConcepts.contains(r.getType())) {
-			if (switchModule(r.getType())) {
+			if (switchModule(r.getType(), componentsToProcess)) {
 				//Is this an unexpected dependency
 				if (!allIdentifiedConcepts.contains(r.getType())) {
 					incrementSummaryInformation("Unexpected dependencies included");
@@ -459,7 +657,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		Concept target = r.getTarget();
 		if (includeDependencies && !allModifiedConcepts.contains(target)) {
 			//Don't worry about the target if it's on our to-do list anyway.
-			if (!allIdentifiedConcepts.contains(target)) {
+			if (!componentsToProcess.contains(target)) {
 				//If our dependency is in the core module, then check - live - if it is active
 				//because if not, we can't take this relationship.  Check we haven't just moved it there.
 				if (target.getModuleId().equals(targetModuleId) && ! allModifiedConcepts.contains(target)) {
@@ -487,9 +685,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					}
 				}
 				//Again will recursively switch all dependencies as we're switching a concept here
-				if (switchModule(target)) {
+				if (switchModule(target, componentsToProcess)) {
 					//Is this an unexpected dependency
-					if (!allIdentifiedConcepts.contains(target)) {
+					if (!componentsToProcess.contains(target)) {
 						incrementSummaryInformation("Unexpected dependencies included");
 						addSummaryInformation("Unexpected target dependency: " + target, "");
 						report(r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in Stated Modeling", target);
