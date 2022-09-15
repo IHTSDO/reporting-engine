@@ -12,6 +12,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.NounHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
@@ -31,15 +32,11 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 	
 	boolean unpublishedContentOnly = false;
 	Concept subHierarchy = SUBSTANCE;
-	List<String> properNouns = new ArrayList<>();
-	Map<String, List<String>> properNounPhrases = new HashMap<>();
-	List<String> knownLowerCase = new ArrayList<>();
-	
-	String[] greekLettersUpper = new String[] { "Alpha", "Beta", "Delta", "Gamma", "Epsilon", "Tau" };
-	String[] greekLettersLower = new String[] { "alpha", "beta", "delta", "gamma", "epsilon", "tau" };
-	
+
 	String[] exceptions = new String[] {"86622001", "710898000", "116559002"};
 	String[] exceptionStr = new String[] {"Alphavirus", "Taur"};
+	
+	NounHelper nounHelper;
 	
 	protected CaseSignificanceFix(BatchFix clone) {
 		super(clone);
@@ -51,7 +48,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d"; //SUBSTANCES
 			fix.selfDetermining = true;
 			fix.init(args);
-			fix.loadCSWords();
+			fix.nounHelper = NounHelper.instance();
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.postInit();
@@ -73,39 +70,6 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 		return changesMade;
 	}
 	
-	public void loadCSWords() throws IOException, TermServerScriptException {
-		info("Loading " + inputFile);
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException("Cannot read: " + inputFile);
-		}
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		for (String line : lines) {
-			if (line.startsWith("milliunit/")) {
-				debug("Check here");
-			}
-			//Split the line up on tabs
-			String[] items = line.split(TAB);
-			String phrase = items[0];
-			//Does the word contain a capital letter (ie not the same as it's all lower case variant)
-			if (!phrase.equals(phrase.toLowerCase())) {
-				//Is this a phrase?
-				String[] words = phrase.split(" ");
-				if (words.length == 1) {
-					properNouns.add(phrase);
-				} else {
-					List<String> phrases = properNounPhrases.get(words[0]);
-					if (phrases == null) {
-						phrases = new ArrayList<>();
-						properNounPhrases.put(words[0], phrases);
-					}
-					phrases.add(phrase);
-				}
-			} else {
-				knownLowerCase.add(phrase);
-			}
-		}
-	}
-
 	private int fixCaseSignifianceIssues(Task task, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -152,8 +116,8 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 				if (caseSig.equals(CS)) {
 					//If we start with a small letter, single letter or a proper noun, that's fine
 					if (!firstLetter.equals(firstLetter.toLowerCase()) 
-							&& !properNouns.contains(firstWord)
-							&& !startsWithProperNounPhrase(firstWord, d.getTerm())
+							&& !nounHelper.isProperNoun(firstWord)
+							&& !nounHelper.startsWithProperNounPhrase(firstWord, d.getTerm())
 							&& !firstLetterSingle(d.getTerm())) {
 						report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
@@ -169,18 +133,6 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 		return changesMade;
 	}
 	
-	private boolean startsWithProperNounPhrase(String firstWord, String term) {
-		//Do we have any phrases that start with this word
-		if (properNounPhrases.containsKey(firstWord)) {
-			for (String phrase : properNounPhrases.get(firstWord)) {
-				if (term.startsWith(phrase)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 	private boolean firstLetterSingle(String term) {
 		return Character.isLetter(term.charAt(0)) && (term.length() == 1 || !Character.isLetter(term.charAt(1)));
 	}
@@ -194,8 +146,8 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 		boolean greekLetterFound = false;
 		
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			String matchedGreekUpper = StringUtils.containsAny(d.getTerm(), greekLettersUpper);
-			String matchedGreekLower = StringUtils.containsAny(d.getTerm(), greekLettersLower);
+			String matchedGreekUpper = StringUtils.containsAny(d.getTerm(), NounHelper.greekLettersUpper);
+			String matchedGreekLower = StringUtils.containsAny(d.getTerm(), NounHelper.greekLettersLower);
 			if ( (matchedGreekUpper != null || matchedGreekLower != null) && 
 				//d.getTerm().contains("Product containing") && d.getTerm().contains("milliliter")) {
 				(!unpublishedContentOnly || !d.isReleased())) {
@@ -244,13 +196,13 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 						//Not dealing with this situation right now
 						//report (c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 					} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-						if (chopped.equals(chopped.toLowerCase()) && !properNouns.contains(firstWord)) {
+						if (chopped.equals(chopped.toLowerCase()) && !nounHelper.isProperNoun(firstWord)) {
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> ci" );
 							checkTerm.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							changesMade++;
 						} else if (caseSig.equals(CS)){
 							//Might be CS when doesn't need to be
-							if (!properNouns.contains(firstWord)) {
+							if (!nounHelper.isProperNoun(firstWord)) {
 								report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> cI" );
 								checkTerm.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 								changesMade++;

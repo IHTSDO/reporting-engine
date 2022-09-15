@@ -907,8 +907,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		if (d != null) {
 			if (d.isPreferred() && demotePT && d.getType().equals(DescriptionType.SYNONYM)) {
 				SnomedUtils.demoteAcceptabilityMap(d);
-				report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, replacement, info);
-				report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d, info);
+				report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement, info);
+				report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d, info);
 			} else {
 				removeDescription(t, c, d, newTerm, indicator);
 			}
@@ -937,7 +937,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 		String msg = change + " " + before;
 		String msg2 = (newTerm == null? "" : "Replaced with: " + newTerm);
-		report(t, c, Severity.MEDIUM, action, msg, msg2, info);
+		report(t, c, Severity.LOW, action, msg, msg2, info);
 	}
 	
 	protected int addRelationship(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
