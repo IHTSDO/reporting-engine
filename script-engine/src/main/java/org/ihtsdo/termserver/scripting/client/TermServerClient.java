@@ -20,9 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.http.client.*;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.*;
 
@@ -38,6 +42,10 @@ public class TermServerClient {
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
 	};
+	
+	public enum ImportType {
+		DELTA, SNAPSHOT, FULL;
+	};
 
 	public enum ExportType {
 		PUBLISHED, UNPUBLISHED, MIXED;
@@ -45,7 +53,7 @@ public class TermServerClient {
 	
 	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
 	public static final int MAX_TRIES = 3;
-	public static final int retry = 15;
+	public static final int retry = 10;
 	public static final int MAX_PAGE_SIZE = 10000; 
 	
 	protected static Gson gson;
@@ -81,6 +89,7 @@ public class TermServerClient {
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(this.url)
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
+				.additionalMessageConverters(new FormHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
 		
@@ -493,6 +502,66 @@ public class TermServerClient {
 			return saveLocation;
 		} catch (RestClientException e) {
 			throw new TermServerScriptException("Unable to recover exported archive from " + exportLocationURL, e);
+		}
+	}
+	
+	public void importArchive(String branchPath, ImportType importType, File archive)
+			throws TermServerScriptException {
+		Map<String, Object> importRequest = new HashMap<>();
+		importRequest.put("type", importType);
+		importRequest.put("branchPath", branchPath);
+		logger.info ("Creating import job with {}", importRequest);
+		String importJobLocation = initiateImport(importRequest);
+		try {
+			importArchive(importJobLocation, archive);
+		} catch (JSONException|InterruptedException e) {
+			throw new TermServerScriptException("Failure importing to" + importJobLocation, e);
+		}
+	}
+
+
+	private void importArchive(String importJobLocation, File archive) throws JSONException, InterruptedException, TermServerScriptException {
+		logger.info("Importing " + archive + " in import job " + importJobLocation);
+		String url = importJobLocation + "/archive";
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+		MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+		
+		//No HttpMessageConverter for File directly.
+		//FormHttpMessageConverter uses ResourceHttpMessageConverter which can handle this
+		form.add("file", new FileSystemResource(archive)); 
+		HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(form, headers);
+		ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+		
+		//Now wait for the import to complete
+		while(true) {
+			Thread.sleep(5 * 1000);
+			Map<String, String> responseJson = restTemplate.getForObject(importJobLocation, Map.class);
+			String responseJsonStr = new JSONObject(responseJson).toString(2);
+			//Have we either completed or failed?
+			String status = responseJson.get("status");
+			if (status == null) {
+				throw new IllegalArgumentException("Failed to recover meaningful status from import: " + responseJsonStr); 
+			} else if (status.equals("COMPLETED")) {
+				return;
+			} else if (status.equals("FAILED")) {
+				throw new TermServerScriptException("Import " + importJobLocation + " failed: " + responseJsonStr);
+			} else if (status.equals("RUNNING")) {
+				//Repeat loop with sleep
+			} else {
+				throw new IllegalStateException("Failed to recover meaningful status from import: " + responseJsonStr); 
+			}
+		}
+	}
+
+	private String initiateImport(Map<String, Object> importRequest) throws TermServerScriptException {
+		try {
+			HttpEntity<?> entity = new HttpEntity<>(importRequest, headers ); // for request
+			HttpEntity<String> response = restTemplate.exchange(url + "/imports", HttpMethod.POST, entity, String.class);
+			return response.getHeaders().get("Location").get(0);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to initiate import", e);
 		}
 	}
 

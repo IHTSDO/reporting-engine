@@ -274,7 +274,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		// Override to do some processing for each new task;
 	}
 
-	private void createTask(Task task) throws TermServerScriptException, InterruptedException {
+	protected void createTask(Task task) throws TermServerScriptException, InterruptedException {
 		if (!dryRun) {
 			if (firstTaskCreated) {
 				debug ("Letting TS catch up - " + taskThrottle + "s nap.");
@@ -318,6 +318,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			task.setKey(project + "-" + getNextDryRunNum());
 			//If we're running in debug mode, the task path will not exist so use the project instead
 			task.setBranchPath(project.getBranchPath());
+			info("Dry run task creation: " + task.getKey());
 		}
 	}
 
@@ -373,8 +374,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 	}
 	
-	private void updateTask(Task task) throws Exception {
-		
+	protected void updateTask(Task task) throws Exception {
 		String taskDescription;
 		if (this instanceof BatchImport) {
 			taskDescription = ((BatchImport)this).getAllNotes(task);
