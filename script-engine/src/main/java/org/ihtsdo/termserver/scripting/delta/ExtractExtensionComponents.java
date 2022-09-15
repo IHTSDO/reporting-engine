@@ -49,7 +49,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			delta.moduleId = "11000181102"; //Estonia
-			delta.getArchiveManager().setRunIntegrityChecks(false);
+			//delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -61,13 +61,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.preProcessFile();
 			delta.processFile();
 			if (delta.archiveBatches == null) {
-				delta.outputModifiedComponents(true);
-				delta.flushFiles(false, true); //Need to flush files before zipping
-				if (dryRun) {
-					info("Skipping archive creation due to dry run.");
-				} else {
-					SnomedUtils.createArchive(new File(delta.outputDirName));
-				}
+				delta.createOutputArchive();
 			}
 		} finally {
 			delta.finish();
@@ -264,9 +258,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			while (!archiveBatches.isEmpty()) {
 				info ("Processing archive batch " + batchNum++);
 				process(archiveBatches.remove());
-				outputModifiedComponents(true);
-				flushFiles(false, true); //Need to flush files before zipping
-				SnomedUtils.createArchive(new File(outputDirName));
+				createOutputArchive();
 				gl.setAllComponentsClean();
 				if (!archiveBatches.isEmpty()) {
 					outputDirName = "output"; //Reset so we don't end up with _1_1_1
@@ -285,6 +277,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return null;
 	}
 	
+	private void createOutputArchive() throws TermServerScriptException {
+		outputModifiedComponents(true);
+		flushFiles(false, true); //Need to flush files before zipping
+		File archive = SnomedUtils.createArchive(new File(outputDirName));
+		report((Concept)null, Severity.NONE, ReportActionType.INFO, "Created " + archive.getName());
+	}
+
 	private List<Component> process(List<Component> componentsToProcess) throws TermServerScriptException {
 		addSummaryInformation("Concepts specified", componentsToProcess.size());
 		initialiseSummaryInformation("Unexpected dependencies included");
