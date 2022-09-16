@@ -32,7 +32,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
   * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
-	private boolean splitOutDisease = false;
+	private boolean splitOutDisease = true;
 	
 	private static final String dataDir = "historic-data/";
 	private static int ACTIVE = 1;

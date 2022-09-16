@@ -31,7 +31,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 	//String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
 	//											"20190731", "MAIN" };
 	private static String packageTemplate = "SnomedCT_InternationalRF2_PRODUCTION_#DATE#T120000Z.zip";
-	String[] releasesToAnalyse = new String[] { "20180731", "20220131" };
+	String[] releasesToAnalyse = new String[] { "20180731", "20220930" };
 	
 	Map<String, Map<Long, Datum>> prevData;
 	Map<String, Map<Long, Datum>> thisData;
@@ -60,7 +60,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				"IPs No Longer - lost either, CHECK_ALIGNMENT, " +
 				"New IPs gained SD descendant, New IPs gained SD ancestor, New IPs gained SD either, New IP SD->P";
 		int tabCount = (releasesToAnalyse.length - 1) * 2;
-		String percHeading = "Hierarchy, FSN, SemTag, SD Start, SD Finish, P Start, P Finish";
+		String percHeading = "Hierarchy, FSN, SemTag, SD Start, SD Finish, P Start, P Finish, IPs Start, IPs Finish";
 		String[] columnHeadings = new String[tabCount]; 
 		String[] tabNames = new String[tabCount];
 		for (int i=1; i < tabCount; i = i + 2) {
@@ -340,7 +340,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 	private void runPercAnalysis(int tabIdx, final String hierarchyStr) throws TermServerScriptException {
 		Map<Long, Datum> thisHierarchy = thisData.get(hierarchyStr);
 		Map<Long, Datum> prevHierarchy = prevData.get(hierarchyStr);
-		Object[] results = new Object[4];
+		Object[] results = new Object[6];
 		int column = 0;
 
 		//What's our active counts?
@@ -363,6 +363,14 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		
 			long thisPCount = thisHierarchy.values().stream().filter(d -> !d.isSD && d.isActive).count();
 			results[column++] = String.format("%.1f%%", (thisPCount / (double)thisActiveCount) * 100);
+			
+			//Percentage of IPs
+			long prevIPCount = prevHierarchy.values().stream().filter(d -> d.isIP && d.isActive).count();
+			results[column++] = String.format("%.1f%%", (prevIPCount / (double)prevActiveCount) * 100);
+		
+			long thisIPCount = thisHierarchy.values().stream().filter(d -> d.isIP && d.isActive).count();
+			results[column++] = String.format("%.1f%%", (thisIPCount / (double)thisActiveCount) * 100);
+
 		}
 		
 		Concept hierarchy;
