@@ -149,8 +149,12 @@ public class RelationshipGroup {
 	}
 	
 	public boolean containsType(RelationshipTemplate rt) {
+		return containsType(rt.getType());
+	}
+
+	public boolean containsType(Concept type) {
 		for (Relationship r2 : relationships) {
-			if (r2.getType().equals(rt.getType())) {
+			if (r2.getType().equals(type)) {
 				return true;
 			}
 		}
@@ -266,6 +270,7 @@ public class RelationshipGroup {
 			r.setReleased(isReleased);
 		}
 	}
+
 
 
 }

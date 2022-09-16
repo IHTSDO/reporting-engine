@@ -802,6 +802,14 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return removeRelationship(t, c, r, "");
 	}
 	
+	protected int removeRelationshipGroup(Task t, Concept c, RelationshipGroup g) throws TermServerScriptException {
+		int changesMade = 0;
+		for (Relationship r : g.getRelationships()) {
+			changesMade += removeRelationship(t, c, r, "");
+		}
+		return changesMade;
+	}
+	
 	protected int removeRelationship(Task t, Concept c, Relationship r, String reasonPrefix) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
 		ReportActionType action = ReportActionType.UNKNOWN;

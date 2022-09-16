@@ -2157,4 +2157,16 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return changesMade;
 	}
 
+	/**
+	 * @return true if the specific attribute can be found in a group OTHER than the one specified
+	 */
+	public static boolean hasAttributeInAnotherGroup(Concept c, RelationshipTemplate findMe, int notInGroupId) {
+		for (RelationshipGroup g : c.getRelationshipGroups(findMe.getCharacteristicType())) {
+			if (g.getGroupId() != notInGroupId && g.containsTypeValue(findMe)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }

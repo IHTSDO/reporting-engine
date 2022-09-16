@@ -212,7 +212,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	}
 
 	public String getFsn() {
-		if (fsn != null)
+		if (fsn != null) {
 			if (fsn instanceof String) {
 				return fsn.toString();
 			} else if (fsn instanceof Map){
@@ -226,6 +226,12 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 			}else {
 				return fsn.toString();
 			}
+		} else {
+			Description d = getFSNDescription();
+			if (d != null) {
+				return d.getTerm();
+			}
+		}
 		return null;
 	}
 	
@@ -1624,6 +1630,13 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	@Override
 	public String getMutableFields() {
 		return super.getMutableFields() + this.definitionStatus;
+	}
+
+	//Return any relationship groups that contain an attribute with the targetType
+	public List<RelationshipGroup> getRelationshipGroups(CharacteristicType charType, Concept type) {
+		return getRelationshipGroups(charType).stream()
+				.filter(g -> g.containsType(type))
+				.collect(Collectors.toList());
 	}
 
 }
