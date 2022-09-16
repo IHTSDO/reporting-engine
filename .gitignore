@@ -5,6 +5,7 @@ snapshots/
 secure/*.*
 target
 bin
+resources/
 .*
 *.iml
 *.sh
