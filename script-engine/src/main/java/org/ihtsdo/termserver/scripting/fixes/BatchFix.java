@@ -969,7 +969,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 	
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
-		RelationshipTemplate.Mode mode = ensureTypeUnique ? Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS : Mode.PERMISSIVE;
+		RelationshipTemplate.Mode mode = ensureTypeUnique ? Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS : Mode.UNIQUE_TYPE_IN_THIS_GROUP;
 		return replaceRelationship(t, c, type, value, groupId, mode); 
 	}
 	
@@ -1043,6 +1043,14 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			rels = c.getRelationships(rt, ActiveState.ACTIVE);
 			if (rels.size() > 0) {
 				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
+				return changesMade;
+			}
+		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP) {
+			RelationshipTemplate rt = new RelationshipTemplate(type,value);
+			RelationshipGroup g = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
+			rels = g.getRelationships(rt.getType());
+			if (rels.size() > 0) {
+				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
 				return changesMade;
 			}
 		}
@@ -1715,7 +1723,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 
-	private void shuffleDown(Task t, Concept c) throws TermServerScriptException {
+	protected void shuffleDown(Task t, Concept c) throws TermServerScriptException {
 		List<RelationshipGroup> newGroups = new ArrayList<>();
 		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 			//Have we missed out the ungrouped group? fill in if so

@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 public class RelationshipTemplate implements IRelationshipTemplate {
 	
-	public enum Mode { PERMISSIVE, UNIQUE_TYPE_ACROSS_ALL_GROUPS, UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS}
+	public enum Mode { PERMISSIVE, UNIQUE_TYPE_IN_THIS_GROUP, UNIQUE_TYPE_ACROSS_ALL_GROUPS, UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS}
 	
 	private Concept type;
 	private Concept target;

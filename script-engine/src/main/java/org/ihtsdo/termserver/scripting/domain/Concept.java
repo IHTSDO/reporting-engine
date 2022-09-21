@@ -1638,5 +1638,12 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 				.filter(g -> g.containsType(type))
 				.collect(Collectors.toList());
 	}
+	
+	//Return any relationship groups that contain an attribute with the targetType
+	public List<RelationshipGroup> getRelationshipGroups(CharacteristicType charType, RelationshipTemplate rt) {
+		return getRelationshipGroups(charType).stream()
+				.filter(g -> g.containsTypeValue(rt))
+				.collect(Collectors.toList());
+	}
 
 }
