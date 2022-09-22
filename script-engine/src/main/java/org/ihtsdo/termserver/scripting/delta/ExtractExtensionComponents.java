@@ -44,11 +44,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		try {
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = "1145237009"; //NEBCSR
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
-			delta.moduleId = "11000181102"; //Estonia
+			//delta.moduleId = "11000181102"; //Estonia
+			delta.moduleId = "83821000000107"; //UK
 			//delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -620,7 +622,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return axiomRelationshipMoved;
 	}
 
-	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component>componentsToProcess) throws TermServerScriptException {
+	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
 		//If we already have the concept on the Terminology Server, perhaps we already have the relationship too,
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
@@ -639,7 +641,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (includeDependencies && !allModifiedConcepts.contains(r.getType())) {
 			if (switchModule(r.getType(), componentsToProcess)) {
 				//Is this an unexpected dependency
-				if (!allIdentifiedConcepts.contains(r.getType())) {
+				if (!componentsToProcess.contains(r.getType())) {
 					incrementSummaryInformation("Unexpected dependencies included");
 					addSummaryInformation("Unexpected type dependency: " + r.getType(), "");
 				}

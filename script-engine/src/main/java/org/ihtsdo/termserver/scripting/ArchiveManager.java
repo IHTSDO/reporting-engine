@@ -51,6 +51,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean populateHierarchyDepth = true;  //Term contains X needs this
 	private boolean populateReleasedFlag = false;
 	private boolean populatePreviousTransativeClosure = false;
+	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
 	private boolean releasedFlagPopulated = false;
 	private boolean runIntegrityChecks = true;
 	private final List<String> integrityCheckIgnoreList = List.of(
@@ -387,7 +388,9 @@ public class ArchiveManager implements ScriptConstants {
 				}
 				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
 					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
-					checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
+					if (expectStatedParents) {
+						checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
+					}
 				}
 				
 				if (populateHierarchyDepth && c.isActive() && c.getDepth() == NOT_SET) {
@@ -806,5 +809,13 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		this.runIntegrityChecks = runIntegrityChecks;
 		this.gl.setRunIntegrityChecks(runIntegrityChecks);
+	}
+
+	public boolean isExpectStatedParents() {
+		return expectStatedParents;
+	}
+
+	public void setExpectStatedParents(boolean expectStatedParents) {
+		this.expectStatedParents = expectStatedParents;
 	}
 }
