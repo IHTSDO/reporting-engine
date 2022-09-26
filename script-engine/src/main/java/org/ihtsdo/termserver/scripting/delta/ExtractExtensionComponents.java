@@ -39,6 +39,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Integer conceptsPerArchive = 10;
 	Queue<List<Component>> archiveBatches = null;
 	
+	Map<Concept, Concept> knownReplacements = new HashMap<>();
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
@@ -47,10 +49,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = "1145237009"; //NEBCSR
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.moduleId = "731000124108";  //US Module
+			delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
-			delta.moduleId = "83821000000107"; //UK
+			//delta.moduleId = "83821000000107"; //UK
+			//delta.moduleId = "999000011000000103"; //UK
 			//delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -91,6 +94,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 	}
 	
+	public void postInit() throws TermServerScriptException {
+		knownReplacements.put(gl.getConcept("261231004|Local flap|"), gl.getConcept("256683004|Flap|"));
+
+		super.postInit();
+	}
 	
 	private void preProcessFile() throws TermServerScriptException {
 		archiveBatches = new ArrayDeque<>();
@@ -281,7 +289,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private void createOutputArchive() throws TermServerScriptException {
 		outputModifiedComponents(true);
-		flushFiles(false, true); //Need to flush files before zipping
+		getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to kee the report going
 		File archive = SnomedUtils.createArchive(new File(outputDirName));
 		report((Concept)null, Severity.NONE, ReportActionType.INFO, "Created " + archive.getName());
 	}
@@ -381,9 +389,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			conceptAlreadyTransferred = true;
 			//Changing the moduleId won't mark concept dirty unless it really does change
 			//Don't move any concepts already in the model module
-			if (!c.getModuleId().equals(SCTID_MODEL_MODULE)) {
-				c.setModuleId(targetModuleId);
-				if (componentsToProcess.contains(c)) {
+			if (componentsToProcess.contains(c)) {
+				if (!c.getModuleId().equals(SCTID_MODEL_MODULE)) {
+					c.setModuleId(targetModuleId);
 					if (c.getModuleId().equals(targetModuleId)) {
 						report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
 					} else {
@@ -392,6 +400,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						report(c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
 					}
 				}
+			} else {
+				//If this _isn't_ a concept that was originally listed for transfer and it does exist on the target server, then
+				//we won't look any closer at it.
+				return false;
 			}
 		}
 		
@@ -653,6 +665,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 		
+		boolean isIsA = r.getType().equals(IS_A);
+		
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
 		Concept target = r.getTarget();
@@ -667,22 +681,30 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					//TODO in the stated form, we'll need to re-write the axiom if we see this!
 					if (!loadedTarget.isActive()) {
 						String reason = loadedTarget.getInactivationIndicator().toString();
-						Concept replacement = getReplacement(loadedTarget);
-						String msg = "Target of " + r + " is inactive in MAIN due to " + reason;
-						msg += ". Replacing with " + replacement;
-						report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
-						target = replacement;
-						Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
-						//Ensure it gets allocated to the same Axiom
-						newRel.setAxiomEntry(r.getAxiomEntry());
-						newRel.setModuleId(targetModuleId);
-						newRel.setDirty();
-						//Don't need IDs for axiom based relationships
-						if (!r.fromAxiom()) {
-							newRel.setRelationshipId(relIdGenerator.getSCTID());
+						Concept replacement = knownReplacements.get(loadedTarget);
+						if (replacement == null) {
+							replacement = getReplacement(loadedTarget, isIsA);
+						}
+						
+						if (replacement == null && isIsA) {
+							report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Unable to find safe replacement for parent: " + loadedTarget + " doing without.");
+						} else {
+							String msg = "Target of " + r + " is inactive in MAIN due to " + reason;
+							msg += ". Replacing with " + replacement;
+							report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
+							target = replacement;
+							Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
+							//Ensure it gets allocated to the same Axiom
+							newRel.setAxiomEntry(r.getAxiomEntry());
+							newRel.setModuleId(targetModuleId);
+							newRel.setDirty();
+							//Don't need IDs for axiom based relationships
+							if (!r.fromAxiom()) {
+								newRel.setRelationshipId(relIdGenerator.getSCTID());
+							}
+							r.getSource().addRelationship(newRel);
 						}
 						r.getSource().removeRelationship(r, r.fromAxiom());
-						r.getSource().addRelationship(newRel);
 					}
 				}
 				//Again will recursively switch all dependencies as we're switching a concept here
@@ -707,7 +729,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return true;
 	}
 
-	private Concept getReplacement(Concept inactiveConcept) throws TermServerScriptException {
+	private Concept getReplacement(Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
 		/*List<HistoricalAssociation> assocs =  inactiveConcept.getHistorialAssociations(ActiveState.ACTIVE);
 		if (assocs.size() == 1) {
 			HistoricalAssociation assoc = assocs.iterator().next();
@@ -720,6 +742,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}*/
 		Set<String> assocs = inactiveConcept.getAssociationTargets().getReplacedBy();
 		if (assocs.size() != 1) {
+			if (isIsA) {
+				//We'll try and carry on without this parent.
+				return null;
+			}
 			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
 		} else {
 			//We will probably not have loaded this concept via RF2 if the target has been replaced, so load from secondary source
