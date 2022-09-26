@@ -22,7 +22,8 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		//params.put(SUB_HIERARCHY, "43959009 |Cataract of eye due to diabetes mellitus (disorder)|");
 		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
 		//params.put(SUB_HIERARCHY, "25093002 |Disorder of eye due to diabetes mellitus (disorder)|");
-		params.put(SUB_HIERARCHY, "19598007 |Generalized epilepsy (disorder)|");
+		//params.put(SUB_HIERARCHY, "19598007 |Generalized epilepsy (disorder)|");
+		params.put(SUB_HIERARCHY, "84757009 |Epilepsy (disorder)|"); 
 		TermServerReport.run(ListAllDescriptions.class, args, params);
 	}
 	
