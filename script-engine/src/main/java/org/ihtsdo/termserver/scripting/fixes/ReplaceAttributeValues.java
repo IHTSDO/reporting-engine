@@ -50,7 +50,7 @@ public class ReplaceAttributeValues extends BatchFix {
 		
 		Concept addType = gl.getConcept(" 704321009 |Characterizes (attribute)|");
 		Concept addTarget = gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|");
-		addRelationship = new RelationshipTemplate(addType, addTarget, RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS);
+		addRelationship = new RelationshipTemplate(addType, addTarget, RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS);
 		super.postInit();
 	}
 
