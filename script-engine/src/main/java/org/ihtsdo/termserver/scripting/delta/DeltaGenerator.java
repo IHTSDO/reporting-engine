@@ -238,7 +238,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	protected void outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
-		info ("Outputting to RF2...");
+		info ("Outputting to RF2 in " + outputDirName + "...");
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {
 				outputRF2((Concept)thisConcept, alwaysCheckSubComponents);

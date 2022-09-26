@@ -6,7 +6,6 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -23,7 +22,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class MultiArchiveImporter extends BatchFix {
 	
-	private final static String taskPrefix = "INFRA-9532 ";
+	private final static String taskPrefix = "INFRA-9531 ";
 
 	protected MultiArchiveImporter(BatchFix clone) {
 		super(clone);
@@ -38,6 +37,7 @@ public class MultiArchiveImporter extends BatchFix {
 			importer.postInit(null, new String[] {"Task, Archive, Result"}, false);
 			importer.importArchives();
 		} finally {
+			importer.finish();
 		}
 	}
 
