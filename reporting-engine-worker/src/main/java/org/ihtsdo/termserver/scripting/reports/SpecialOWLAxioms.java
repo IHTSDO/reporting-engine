@@ -5,7 +5,6 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
@@ -51,8 +50,8 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 
 		String[] columnHeadings = new String[] {"Concept, FSN, SemTag, ConceptActive, isTransitive, isReflexive, isRoleChain, OWL",
-				"Concept, Type, OWL, Axiom",
-				"Concept, Type, OWL, Axiom"};
+				"Concept, FSN, SemTag, DefnStat, OWL, Axiom",
+				"Concept, FSN, SemTag, DefnStat, OWL, Axiom"};
 
 		String[] tabNames = new String[] {"Special Axioms",
 				"Additional Axioms",
@@ -69,17 +68,18 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 			/*if (c.getId().equals("1148749005")) {
 				debug("Here");
 			}*/
+			String defnStat = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			
 			for (Axiom a : c.getAdditionalAxioms()) {
 				if (inScope(a) && a.isActive()) {
-					report (SECONDARY_REPORT, c, a);
+					report (SECONDARY_REPORT, c, defnStat, a);
 					countIssue(c);
 				}
 			}
 			
 			for (Axiom a : c.getGciAxioms()) {
 				if (inScope(a) && a.isActive()) {
-					report (TERTIARY_REPORT, c, a);
+					report (TERTIARY_REPORT, c, defnStat, a);
 					countIssue(c);
 				}
 			}
