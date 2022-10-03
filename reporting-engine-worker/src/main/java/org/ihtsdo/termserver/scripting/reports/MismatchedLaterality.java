@@ -3,199 +3,126 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
- * RP-403 Report concepts that have laterality in their attributes but not in their
- * FSN or visa versa
- * CDI-52 Update report to successfully run against projects with concrete values.
+ * RP-585 Report lateralisable Concepts that have missing lateralised counterparts. For example,
+ * report if there is a Left arm concept but there is no Right arm concept.
  */
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
-	Set<String> hierarchies = new HashSet<>();
-	Set<Concept> reportedSuspect = new HashSet<>();
-	Map<String, Concept> fsnMap = new HashMap<>();
-	
-	public static String STR_LEFT = "left";
-	public static String STR_RIGHT = "right";
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(MismatchedLaterality.class, args, params);
-	}
-	
-	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		super.init(run);
-	}
-	
-	@Override
-	public Job getJob() {
-		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
-				.withName("Laterality Mismatch")
-				.withDescription("This report lists concepts that have laterality indicated in their attributes but not in their " + 
-						"FSN or visa versa")
-				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withParameters(new JobParameters())
-				.withTag(INT)
-				.build();
-	}
-	
-	public void postInit() throws TermServerScriptException {
-		String[] tabNames = new String[] {
-				"Missing Concepts",
-				"Lateralized FSN No Model",
-				"Lateralized Model No FSN", 
-				"Suspect Lateralization",
-				"Bilateralized FSN No Model",
-				"Bilateralized Model No FSN"};
-		String[] columnHeadings = new String[] {
-			"Concept, FSN, SemTag, Missing Concept",
-			"Concept, FSN, SemTag, Expression",
-			"Concept, FSN, SemTag, Expression",
-			"Concept, FSN, SemTag, Expression",
-			"Concept, FSN, SemTag, Expression",
-			"Concept, FSN, SemTag, Expression"};
-		super.postInit(tabNames, columnHeadings, false);
-		hierarchies.add("< 71388002 |Procedure (procedure)|");
-		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
-		hierarchies.add("< 123037004 |Body structure (body structure)|");
-		
-		info("Populating FSN map for all concepts");
-		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
-				fsnMap.put(c.getFsn().toLowerCase(), c);
-			}
-		}
-	}
-	
-	public void runJob() throws TermServerScriptException {
-		for (String hierarchy : hierarchies) {
-			for (Concept c : findConcepts(hierarchy)) {
-				boolean hasLateralizedFSN = hasLateralizedFSN(c);
-				boolean hasBilateralFSN = hasBilateralFSN(c);
-				boolean hasLateralizedModel = hasLateralizedModel(c, 0);  //Only check 1 level downs
-				boolean hasBilaterlizedModel = hasBilateralizedModel(c, 0);
-				if (hasBilateralFSN && !hasBilaterlizedModel) {
-					report (QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				} else if (!hasBilateralFSN && hasBilaterlizedModel) {
-					report (SENARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				} else if (hasBilateralFSN && hasBilaterlizedModel) {
-					//All good here
-				} else if (hasLateralizedFSN && !hasLateralizedModel) {
-					report (SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				} else if (!hasLateralizedFSN && hasLateralizedModel) {
-					report (TERTIARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				}
-				
-				if (hasLateralizedFSN && !hasBilateralFSN) {
-					checkForCounterpartLaterality(c);
-				}
-			}
-		}
-	}
+    private final Map<String, Concept> fsnMap = new HashMap<>();
 
-	private void checkForCounterpartLaterality(Concept c) throws TermServerScriptException {
-		if (hasLateralizedFSN(c, STR_LEFT)) {
-			checkForCounterpartLaterality(c, STR_LEFT, STR_RIGHT);
-		} else {
-			checkForCounterpartLaterality(c, STR_RIGHT, STR_LEFT);
-		}
-	}
+    public static void main(String[] args) throws TermServerScriptException, IOException {
+        Map<String, String> params = new HashMap<>();
+        params.put("legacy", "false"); // Toggle whether to process all Concepts or only those that are new/modified.
+        params.put("notYetMembers", "true"); // Toggle whether to process Concepts not yet in the lateralisable reference set.
+        params.put("alreadyMembers", "true"); // Toggle whether to process Concepts already in the lateralisable reference set.
+        TermServerReport.run(MismatchedLaterality.class, args, params);
+    }
 
-	private void checkForCounterpartLaterality(Concept c, String current, String siblingLaterality) throws TermServerScriptException {
-		//What would the name of the sibling concept be?
-		String origFSN = " " + c.getFsn().toLowerCase();
-		String targetFSN = origFSN.replace(" " + current + " ", " " + siblingLaterality + " ").trim();
-		Concept sibling = fsnMap.get(targetFSN);
-		if (sibling == null) {
-			report (PRIMARY_REPORT, c, targetFSN);
-		}
-	}
+    public void init(JobRun run) throws TermServerScriptException {
+        getArchiveManager().setPopulateReleasedFlag(true);
+        ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+        super.init(run);
+    }
 
-	private boolean hasLateralizedFSN(Concept c) {
-		return hasLateralizedFSN(c, STR_LEFT) || hasLateralizedFSN(c, STR_RIGHT);
-	}
-	
-	private boolean hasLateralizedFSN(Concept c, String laterality) {
-		String fsn = " " + c.getFsn().toLowerCase();
-		return fsn.contains(" " + laterality + " ");
-	}
-	
-	private boolean hasBilateralFSN(Concept c) {
-		String fsn = " " + c.getFsn().toLowerCase();
-		return fsn.contains(" bilateral ");
-	}
+    @Override
+    public Job getJob() {
+        return new Job()
+                .withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+                .withName("Missing lateralised counterparts")
+                .withDescription("This report lists lateralised concepts that have an odd number of lateralised children. Having an odd number of lateralised children suggests there may be missing content.")
+                .withProductionStatus(ProductionStatus.PROD_READY)
+                .withParameters(
+                        new JobParameters()
+                                .add("legacy").withDefaultValue(false)
+                                .add("notYetMembers").withDefaultValue(true)
+                                .add("alreadyMembers").withDefaultValue(true)
+                                .build()
+                )
+                .withTag(INT)
+                .build();
+    }
 
+    public void postInit() throws TermServerScriptException {
+        String[] tabNames = new String[]{
+                "Result",
+        };
+        String[] columnHeadings = new String[]{
+                "Identifier, FSN, SemTag, Member, Action, Comment"
+        };
+        super.postInit(tabNames, columnHeadings, false);
 
-	private boolean hasLateralizedModel(Concept c, int level) throws TermServerScriptException {
-		//So either a target value is a type of laterality or it is itself 
-		//lateralized - but we're only expecting that in a body structure
-		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if ((r.isNotConcrete()) && (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT))) {
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
-					report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					reportedSuspect.add(c);
-				}
-				return true;
-			} else if (level == 0 && r.isNotConcrete() && hasLateralizedModel(r.getTarget(), 1)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	private boolean hasBilateralizedModel(Concept c, int level) throws TermServerScriptException {
-		//So either a target value is a type of laterality or it is itself 
-		//lateralized - but we're only expecting that in a body structure
-		//Both must be present
-		boolean leftPresent = false;
-		boolean rightPresent = false;
-		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.isConcrete()) {
-				continue;
-			}
-			if (r.getTarget().equals(LEFT)) {
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
-					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					reportedSuspect.add(c);
-				}
-				leftPresent = true;
-			} if (r.getTarget().equals(RIGHT)) {
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
-					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					reportedSuspect.add(c);
-				}
-				rightPresent = true;
-			} else if (level == 0 && hasLaterality(r.getTarget(), LEFT)) {
-				leftPresent = true;
-			} else if (level == 0 && hasLaterality(r.getTarget(), RIGHT)) {
-				rightPresent = true;
-			}
-		}
-		return leftPresent && rightPresent;
-	}
+        info("Populating FSN map for all concepts");
+        for (Concept c : gl.getAllConcepts()) {
+            if (c.isActive()) {
+                fsnMap.put(c.getFsn().toLowerCase(), c);
+            }
+        }
+    }
 
-	private boolean hasLaterality(Concept c, Concept laterality) {
-		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.isNotConcrete() && r.getTarget().equals(laterality)) {
-				return true;
-			}
-		}
-		return false;
-	}
+    public void runJob() throws TermServerScriptException {
+        if (jobRun.getParamBoolean("notYetMembers")) {
+            // Process lateralisable Concepts not yet added to 723264001 |Lateralisable body structure reference set|.
+            String byLaterality = "( (<< 91723000 |Anatomical structure (body structure)| : 272741003 | Laterality (attribute) | = 182353008 |Side (qualifier value)|) MINUS ( * : 272741003 | Laterality (attribute) | = (7771000 |Left (qualifier value)| OR 24028007 |Right (qualifier value)| OR 51440002 |Right and left (qualifier value)|) ) )  MINUS (^ 723264001)";
+            String byHierarchy = "(( << 91723000 |Anatomical structure (body structure)| MINUS (* : 272741003 | Laterality (attribute) | = (7771000 |Left (qualifier value)| OR 24028007 |Right (qualifier value)| OR 51440002 |Right and left (qualifier value)|)))  AND (<  (^ 723264001)))   MINUS (^ 723264001)";
+            Set<Concept> notYetMembers = getConceptsByECL(byLaterality, byHierarchy);
+
+            reportOddNumberOfLateralisedChildren(notYetMembers, false);
+        }
+
+        if (jobRun.getParamBoolean("alreadyMembers")) {
+            // Process lateralisable Concepts already added to 723264001 |Lateralisable body structure reference set|.
+            String byMembership = "^ 723264001";
+            Set<Concept> alreadyMembers = getConceptsByECL(byMembership);
+
+            reportOddNumberOfLateralisedChildren(alreadyMembers, true);
+        }
+    }
+
+    private Set<Concept> getConceptsByECL(String... eclStatements) throws TermServerScriptException {
+        Set<Concept> concepts = new HashSet<>();
+        for (String eclStatement : eclStatements) {
+            if (jobRun.getParamBoolean("legacy")) {
+                concepts.addAll(findConcepts(eclStatement));
+            } else {
+                concepts.addAll(findConceptsWithoutEffectiveTime(eclStatement));
+            }
+        }
+
+        return concepts;
+    }
+
+    private void reportOddNumberOfLateralisedChildren(Set<Concept> lateralisableConcepts, boolean memberOfLateralisableReferenceSet) throws TermServerScriptException {
+        int counter = 0;
+        int size = lateralisableConcepts.size();
+        String isMember = memberOfLateralisableReferenceSet ? "Y" : "N";
+        info(String.format("%d lateralisable Concepts will be checked they do not have an odd number of children.", size));
+        for (Concept lateralisableConcept : lateralisableConcepts) {
+            counter++;
+            info(String.format("Processing %d/%d lateralisable Concepts with membership of 723264001 being %s.", counter, size, isMember));
+            if (!lateralisableConcept.isActive()) {
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", "Concept is inactive and should be removed from reference set.");
+                continue;
+            }
+
+            Collection<Concept> lateralisedChildren = findConcepts(String.format("<! %s : 272741003 |Laterality| = (7771000 |left| OR 24028007 |right| OR 51440002 |right and left|)", lateralisableConcept.getConceptId()));
+            if (lateralisedChildren.isEmpty()) {
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Not required", "No lateralisable children.");
+                continue;
+            }
+
+            int lateralised = lateralisedChildren.size();
+            if (lateralised == 1) {
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", "Possibly missing content as only 1 lateralised child.");
+            } else if (lateralised % 2 != 0) {
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", String.format("Possibly missing content as only %d lateralised children.", lateralised));
+            }
+        }
+    }
 }
