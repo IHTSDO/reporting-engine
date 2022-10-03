@@ -996,6 +996,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
 		return findConcepts(project.getBranchPath(), ecl, false, true, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
+
+	public Collection<Concept> findConceptsWithoutEffectiveTime(String ecl) throws TermServerScriptException {
+		Collection<Concept> concepts = findConcepts(ecl);
+		concepts.removeIf(Concept::hasEffectiveTime);
+
+		return concepts;
+	}
 	
 	public Collection<RefsetMember> findRefsetMembers(List<Concept> refCompIds, String refsetFilter) throws TermServerScriptException {
 		return tsClient.findRefsetMembers(project.getBranchPath(), refCompIds, refsetFilter);
