@@ -12,6 +12,8 @@ import com.google.gson.annotations.SerializedName;
 public class 
 
 RefsetMember extends Component implements ScriptConstants {
+	
+	protected static String[] additionalFieldNames = new String[0];
 
 	@SerializedName("active")
 	@Expose
@@ -230,8 +232,8 @@ RefsetMember extends Component implements ScriptConstants {
 	}
 
 	@Override
-	public String[] toRF2() throws Exception {
-		if (additionalFields.size() != 1) {
+	public String[] toRF2() {
+		/*if (additionalFields.size() != 1) {
 			throw new IllegalStateException("Cannot yet determine column order for: " + this);
 		}
 		return new String[] { id, 
@@ -240,7 +242,36 @@ RefsetMember extends Component implements ScriptConstants {
 				moduleId, refsetId,
 				referencedComponentId,
 				additionalFields.values().iterator().next()
-		};
+		};*/
+		
+		String[] row = new String[6 + additionalFields.size()];
+		int col = 0;
+		row[col++] = id;
+		row[col++] = effectiveTime==null?"":effectiveTime;
+		row[col++] = active?"1":"0";
+		row[col++] = moduleId;
+		row[col++] = refsetId;
+		row[col++] = referencedComponentId;
+		
+		for (String additionalFieldName : additionalFieldNames) {
+			row[col++] = getField(additionalFieldName);
+		}
+		return row;
+	}
+	
+	public String[] getAdditionalFieldsArray() {
+		String[] fields = new String[getAdditionalFieldNames().length];
+		int col = 0;
+		for (String additionalFieldName : getAdditionalFieldNames()) {
+			fields[col++] = getField(additionalFieldName);
+		}
+		return fields;
+	}
+	
+	//Note that because Java does not support polymorphism of variables, only methods,
+	//we need to call this method to pick up the field names of descendant types.
+	public String[] getAdditionalFieldNames() {
+		return additionalFieldNames;
 	}
 	
 	@Override 
