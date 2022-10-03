@@ -51,7 +51,7 @@ public class HistoricDataUser extends TermServerReport {
 		boolean compareTwoSnapshots = false; 
 		projectKey = getProject().getKey();
 		info("Historic data being imported, wiping Graph Loader for safety.");
-		gl.reset();
+		getArchiveManager().reset();
 		
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
 			StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
