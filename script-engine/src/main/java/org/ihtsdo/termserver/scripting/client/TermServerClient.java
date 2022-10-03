@@ -235,7 +235,7 @@ public class TermServerClient {
 			url += "&searchAfter=" + searchAfter;
 		}
 
-		url += "&" + eclType + "={criteria}";
+		url += "&" + eclType + "=" + criteria;
 		System.out.println("Calling: " + url + " with criteria = '" + criteria + "'");
 		return restTemplate.getForObject(url, ConceptCollection.class, criteria);
 	}
