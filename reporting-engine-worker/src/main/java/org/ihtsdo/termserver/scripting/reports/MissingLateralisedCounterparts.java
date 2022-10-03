@@ -39,9 +39,9 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
                 .withProductionStatus(ProductionStatus.PROD_READY)
                 .withParameters(
                         new JobParameters()
-                                .add("legacy").withDefaultValue(false)
-                                .add("notYetMembers").withDefaultValue(true)
-                                .add("alreadyMembers").withDefaultValue(true)
+                                .add("legacy").withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+                                .add("notYetMembers").withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+                                .add("alreadyMembers").withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
                                 .build()
                 )
                 .withTag(INT)
