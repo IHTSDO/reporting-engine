@@ -170,6 +170,10 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		this.effectiveTime = effectiveTime;
 	}
 
+	public boolean hasEffectiveTime() {
+		return effectiveTime != null && !effectiveTime.isEmpty();
+	}
+
 	public String getModuleId() {
 		return moduleId;
 	}
