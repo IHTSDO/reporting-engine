@@ -3,17 +3,16 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
- * FRI-353 List changes made in the current authoring cycle to SEP and Laterality Refsets
- */
 public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -29,8 +28,9 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"RefsetId, Active, isNew, Mapping, UUID",
-				"RefsetId, Active, isNew, Concept, UUID"};
+				"UUID, RefsetId, Active, ReferencedComponentId, DOMAIN_CONSTRAINT, PARENT_DOMAIN, PROXIMAL_PRIMITIVE_CONSTRAINT," + 
+				"			PROXIMAL_PRIMITIVE_REFINEMENT, DOMAIN_TEMPLATE_FOR_PRECOORDINATION, DOMAIN_TEMPLATE_FOR_POSTCOORDINATION, GUIDE_URL",
+				"UUID, RefsetId, Active, ReferencedComponentId, RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID"};
 		String[] tabNames = new String[] {
 				"MRCM Domain",
 				"MRCM Attribute"};
@@ -41,8 +41,8 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
-				.withName("Updates to SEP and Lateralizable Refsets")
-				.withDescription("This report lists updates to the SEP and Lateralizable refsets.")
+				.withName("New and Changes MRCM")
+				.withDescription("This report lists updates to the MRCM refsets.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
@@ -51,29 +51,15 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		reportRefsetUpdates(SECONDARY_REPORT, null, "SE Refset");
+		reportRefsetUpdates(PRIMARY_REPORT, gl.getMrcmDomainMap());
+		reportRefsetUpdates(SECONDARY_REPORT, gl.getMrcmAttributeRangeMap());
 	}
 
-	private void reportRefsetUpdates(int tabIdx, String refsetId, String infoPrefix) throws TermServerScriptException {
-		Collection<RefsetMember> refsetMembers = tsClient.findRefsetMembers(project.getBranchPath(), refsetId, true);
-		for (RefsetMember rm : refsetMembers) {
-			countIssue(null);
-			String detail = gl.getConcept(rm.getReferencedComponentId()).toString();
-			if (rm.isActive()) {
-				if (rm.isReleased()) {
-					incrementSummaryInformation(infoPrefix + " modified");
-				} else {
-					incrementSummaryInformation(infoPrefix + " created");
-				}
-			} else {
-				incrementSummaryInformation(infoPrefix + " inactivated");
+	private void reportRefsetUpdates(int tabIdx, Map<Concept,? extends RefsetMember> mrcmMap) throws TermServerScriptException {
+		for (RefsetMember rm : mrcmMap.values()) {
+			if (StringUtils.isEmpty(rm.getEffectiveTime())) {
+				report(tabIdx, rm.getId(), rm.getRefsetId(), rm.isActive()?"1":"0", rm.getReferencedComponentId(), rm.getAdditionalFieldsArray());
 			}
-			if (rm.hasAdditionalField("targetComponentId")) {
-				detail += " --> ";
-				String targetId = rm.getAdditionalFields().get("targetComponentId");
-				detail += gl.getConcept(targetId).toString();
-			}
-			report(tabIdx, refsetId, rm.isActive(), !rm.getReleased(), detail, rm.getId());
 		}
 	}
 	

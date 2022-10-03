@@ -40,4 +40,10 @@ public class MRCMDomain extends RefsetMember implements ScriptConstants {
 		return r;
 	}
 	
+	//Note that because Java does not support polymorphism of variables, only methods,
+	//we need to call this method to pick up the field names of descendant types.
+	public String[] getAdditionalFieldNames() {
+		return additionalFieldNames;
+	}
+	
 }
