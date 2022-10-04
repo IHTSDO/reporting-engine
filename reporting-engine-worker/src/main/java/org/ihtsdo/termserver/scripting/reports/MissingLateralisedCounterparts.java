@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -14,7 +15,10 @@ import java.util.*;
  * RP-585 Report for finding missing lateralised counterparts. For example, report if there is a 'Left' Concept with no corresponding 'Right' Concept.
  */
 public class MissingLateralisedCounterparts extends TermServerReport implements ReportClass {
-    private final Map<String, Concept> fsnMap = new HashMap<>();
+    private static final String LATERALITY = "272741003";
+    private static final String LEFT = "7771000";
+    private static final String RIGHT = "24028007";
+    private static final String RIGHT_AND_LEFT = "51440002";
 
     public static void main(String[] args) throws TermServerScriptException, IOException {
         Map<String, String> params = new HashMap<>();
@@ -104,7 +108,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
                 continue;
             }
 
-            Collection<Concept> lateralisedChildren = findConcepts(String.format("<! %s : 272741003 |Laterality| = (7771000 |left| OR 24028007 |right| OR 51440002 |right and left|)", lateralisableConcept.getConceptId()));
+            Set<Concept> lateralisedChildren = getLateralisedChildren(lateralisableConcept.getConceptId());
             if (lateralisedChildren.isEmpty()) {
                 report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Not required", "No lateralisable children.");
                 continue;
@@ -119,5 +123,23 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
                 report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", String.format("Possibly missing content as only %d lateralised children.", lateralised));
             }
         }
+    }
+
+    private Set<Concept> getLateralisedChildren(String conceptId) throws TermServerScriptException {
+        Set<Concept> children = gl.getConcept(conceptId).getChildren(CharacteristicType.INFERRED_RELATIONSHIP);
+        children.removeIf(c -> {
+            for (Relationship relationship : c.getRelationships()) {
+                String typeId = relationship.getType().getId();
+                String targetId = relationship.getTarget().getId();
+
+                if (LATERALITY.equals(typeId) && (LEFT.equals(targetId) || RIGHT.equals(targetId) || RIGHT_AND_LEFT.equals(targetId))) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        return children;
     }
 }
