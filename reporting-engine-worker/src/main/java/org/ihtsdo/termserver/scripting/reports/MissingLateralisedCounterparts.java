@@ -107,6 +107,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
             info(String.format("Processing %d/%d lateralisable Concepts with membership of 723264001 being %s.", counter, size, isMember));
             if (!lateralisableConcept.isActive()) {
                 report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", "Concept is inactive and should be removed from reference set.");
+                countIssue(lateralisableConcept);
                 continue;
             }
 
@@ -118,8 +119,10 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
 
             int lateralised = lateralisedChildren.size();
             if (lateralised == 1) {
+                countIssue(lateralisableConcept);
                 report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", "Possibly missing content as only 1 lateralised child.");
             } else if (lateralised % 2 != 0) {
+                countIssue(lateralisableConcept);
                 report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", String.format("Possibly missing content as only %d lateralised children.", lateralised));
             }
         }
