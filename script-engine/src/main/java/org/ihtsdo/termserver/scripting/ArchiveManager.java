@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -366,8 +367,13 @@ public class ArchiveManager implements ScriptConstants {
 			String msg = ExceptionUtils.getExceptionCause("Unable to load " + ts.getProject(), e);
 			throw new TermServerScriptException (msg, e);
 		}
-		info ("Snapshot loading complete, checking integrity");
+		info("Snapshot loading complete, checking integrity");
 		checkIntegrity(fsnOnly);
+		
+		info("Setting all components to be clean");
+		gl.getAllConcepts().stream()
+			.flatMap(c -> SnomedUtils.getAllComponents(c).stream())
+			.forEach(Component::setClean);
 	}
 	
 	private void checkIntegrity(boolean fsnOnly) throws TermServerScriptException {
