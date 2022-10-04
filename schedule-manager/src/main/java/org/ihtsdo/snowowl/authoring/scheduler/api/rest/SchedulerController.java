@@ -37,7 +37,7 @@ public class SchedulerController {
 	@Autowired
 	WebSecurityConfig config;
 	
-	@Value("${schedule.manager.terminoloy.server.uri}")
+	@Value("${schedule.manager.terminology.server.uri}")
 	String terminologyServerUrl;
 	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());

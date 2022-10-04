@@ -51,7 +51,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 	@Autowired
 	AuthenticationService authenticationService;
 	
-	@Value("${schedule.manager.terminoloy.server.uri}")
+	@Value("${schedule.manager.terminology.server.uri}")
 	String terminologyServerUrl;
 	
 	static final JobRun metadataRequest = JobRun.create("METADATA", null);

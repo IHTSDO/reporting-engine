@@ -13,7 +13,7 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
-			<dependency>
+		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
 			<version>${otf.common.version}</version>
@@ -130,7 +130,7 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<finalName>scripting-tools-${version}</finalName>
+							<finalName>scripting-tools-${project.version}</finalName>
 						</configuration>
 					</execution>
 				</executions>
