@@ -56,13 +56,6 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
                 "Identifier, FSN, SemTag, Member, Action, Comment"
         };
         super.postInit(tabNames, columnHeadings, false);
-
-        info("Populating FSN map for all concepts");
-        for (Concept c : gl.getAllConcepts()) {
-            if (c.isActive()) {
-                fsnMap.put(c.getFsn().toLowerCase(), c);
-            }
-        }
     }
 
     public void runJob() throws TermServerScriptException {
