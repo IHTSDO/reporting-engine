@@ -21,7 +21,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
         params.put("legacy", "false"); // Toggle whether to process all Concepts or only those that are new/modified.
         params.put("notYetMembers", "true"); // Toggle whether to process Concepts not yet in the lateralisable reference set.
         params.put("alreadyMembers", "true"); // Toggle whether to process Concepts already in the lateralisable reference set.
-        TermServerReport.run(MismatchedLaterality.class, args, params);
+        TermServerReport.run(MissingLateralisedCounterparts.class, args, params);
     }
 
     public void init(JobRun run) throws TermServerScriptException {
