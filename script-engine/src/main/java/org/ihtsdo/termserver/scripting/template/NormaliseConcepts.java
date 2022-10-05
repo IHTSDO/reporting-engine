@@ -28,7 +28,8 @@ public class NormaliseConcepts extends BatchFix {
 	//private String ecl = "<! 409063005 |Counseling (procedure)|";
 	//private String ecl = "<< 10942006 |Plication (procedure)|  ";
 	//private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
-	private String ecl = "<! 416940007 |Past history of procedure (situation)|";
+	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
+	private String ecl = "<3253007 |Discoloration of skin (finding)|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
@@ -65,8 +66,8 @@ public class NormaliseConcepts extends BatchFix {
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata"};
 		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
-		//ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
-		ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
+		ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
+		//ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
 		//ppp = gl.getConcept("71388002 |Procedure (procedure)|");
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -167,7 +168,7 @@ public class NormaliseConcepts extends BatchFix {
 			Relationship newRel = r.clone(null);
 			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 			newRel.setGroupId(freeGroup);
-			changesMade += addRelationship(t, c, newRel);
+			changesMade += addRelationship(t, c, newRel, RelationshipTemplate.Mode.PERMISSIVE);
 		}
 		return changesMade;
 	}
