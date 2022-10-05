@@ -785,18 +785,24 @@ public class ArchiveManager implements ScriptConstants {
 	public void setReleasedFlagPopulated(boolean releasedFlagPopulated) {
 		this.releasedFlagPopulated = releasedFlagPopulated;
 	}
-
+	
 	public void reset() {
+		reset(true);
+	}
+
+	public void reset(boolean fullReset) {
 		//Do we need to reset?
 		if (this.gl.getAllConcepts().size() > 100) {
 			this.gl.reset();
 			this.currentlyHeldInMemory = null;
 		}
 		
-		singleton.releasedFlagPopulated = false;
-		singleton.loadEditionArchive = false;
-		singleton.loadDependencyPlusExtensionArchive = false;
-		singleton.populatePreviousTransativeClosure = false;
+		if (fullReset) {
+			singleton.releasedFlagPopulated = false;
+			singleton.loadEditionArchive = false;
+			singleton.loadDependencyPlusExtensionArchive = false;
+			singleton.populatePreviousTransativeClosure = false;
+		}
 	}
 	
 	public boolean isRunIntegrityChecks() {
