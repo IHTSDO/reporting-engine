@@ -3,6 +3,7 @@ output/
 releases/
 snapshots/
 secure/*.*
+resources/
 target
 bin
 resources/application-*.properties
