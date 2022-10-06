@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.UnknownComponent;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
@@ -35,8 +37,8 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 				"4257621000202113,2177271000202117,3773321000202117,3766611000202115," +
 				"4251151000202119,3910121000202111,3992221000202119,4204801000202116," +
 				"3700231000202113,4257611000202117");*/
-		params.put(COMPONENT_IDS, "85197d34-bcc9-44b7-b024-b8cfda2c4bfa,86592bf0-bac6-4ea1-824f-b61cc5a065f9" +
-				"6f33c8d8-b280-48a0-9574-eb2489db77df,95ccfa99-173d-4908-bde4-107cb778b9e6"+
+		params.put(COMPONENT_IDS, "85197d34-bcc9-44b7-b024-b8cfda2c4bfa,86592bf0-bac6-4ea1-824f-b61cc5a065f9," +
+				"6f33c8d8-b280-48a0-9574-eb2489db77df,95ccfa99-173d-4908-bde4-107cb778b9e6,"+
 				"6c733651-1956-49ed-a2f2-ee7627290695");
 		TermServerReport.run(ComponentTraceability.class, args, params);
 	}
@@ -86,9 +88,11 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 			Component c = gl.getComponent(componentId);
 			if (c == null) {
 				report(PRIMARY_REPORT, componentId, "Not found at " + project.getKey());
-			} else {
-				traceabilityService.populateTraceabilityAndReport(PRIMARY_REPORT, c, (Object)null);
+				c = new UnknownComponent(componentId, ComponentType.UNKNOWN);
 			}
+			
+			traceabilityService.populateTraceabilityAndReport(PRIMARY_REPORT, c, (Object)null);
+			
 		}
 		traceabilityService.tidyUp();
 		info ("Job complete");
