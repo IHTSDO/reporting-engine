@@ -813,6 +813,11 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		@Override
 		public void setBranchPrefixFilter(String onBranch) {
 		}
+
+		@Override
+		public void populateTraceabilityAndReport(int tabIdx, Component c, Object... details)
+				throws TermServerScriptException {
+		}
 	}
 	
 }
