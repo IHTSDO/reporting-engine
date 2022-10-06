@@ -15,6 +15,9 @@ import java.util.*;
  * RP-585 Report for finding missing lateralised counterparts. For example, report if there is a 'Left' Concept with no corresponding 'Right' Concept.
  */
 public class MissingLateralisedCounterparts extends TermServerReport implements ReportClass {
+    private static final String CURRENT_CYCLE = "Concepts new/modified"; // Toggle whether to process all Concepts or only those that are new/modified.
+    private static final String NOT_YET_MEMBERS = "Concepts not in lateralisable reference set"; // Toggle whether to process Concepts not yet in the lateralisable reference set.
+    private static final String ALREADY_MEMBERS = "Concepts in lateralisable reference set"; // Toggle whether to process Concepts already in the lateralisable reference set.
     private static final String LATERALITY = "272741003";
     private static final String LEFT = "7771000";
     private static final String RIGHT = "24028007";
@@ -22,9 +25,9 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
 
     public static void main(String[] args) throws TermServerScriptException, IOException {
         Map<String, String> params = new HashMap<>();
-        params.put("legacy", "false"); // Toggle whether to process all Concepts or only those that are new/modified.
-        params.put("notYetMembers", "true"); // Toggle whether to process Concepts not yet in the lateralisable reference set.
-        params.put("alreadyMembers", "true"); // Toggle whether to process Concepts already in the lateralisable reference set.
+        params.put(CURRENT_CYCLE, "true");
+        params.put(NOT_YET_MEMBERS, "true");
+        params.put(ALREADY_MEMBERS, "true");
         TermServerReport.run(MissingLateralisedCounterparts.class, args, params);
     }
 
@@ -43,9 +46,9 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
                 .withProductionStatus(ProductionStatus.PROD_READY)
                 .withParameters(
                         new JobParameters()
-                                .add("legacy").withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
-                                .add("notYetMembers").withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
-                                .add("alreadyMembers").withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+                                .add(CURRENT_CYCLE).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+                                .add(NOT_YET_MEMBERS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+                                .add(ALREADY_MEMBERS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
                                 .build()
                 )
                 .withTag(INT)
@@ -63,7 +66,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
     }
 
     public void runJob() throws TermServerScriptException {
-        if (jobRun.getParamBoolean("notYetMembers")) {
+        if (jobRun.getParamBoolean(NOT_YET_MEMBERS)) {
             // Process lateralisable Concepts not yet added to 723264001 |Lateralisable body structure reference set|.
             String byLaterality = "( (<< 91723000 |Anatomical structure (body structure)| : 272741003 | Laterality (attribute) | = 182353008 |Side (qualifier value)|) MINUS ( * : 272741003 | Laterality (attribute) | = (7771000 |Left (qualifier value)| OR 24028007 |Right (qualifier value)| OR 51440002 |Right and left (qualifier value)|) ) )  MINUS (^ 723264001)";
             String byHierarchy = "(( << 91723000 |Anatomical structure (body structure)| MINUS (* : 272741003 | Laterality (attribute) | = (7771000 |Left (qualifier value)| OR 24028007 |Right (qualifier value)| OR 51440002 |Right and left (qualifier value)|)))  AND (<  (^ 723264001)))   MINUS (^ 723264001)";
@@ -72,7 +75,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
             reportOddNumberOfLateralisedChildren(notYetMembers, false);
         }
 
-        if (jobRun.getParamBoolean("alreadyMembers")) {
+        if (jobRun.getParamBoolean(ALREADY_MEMBERS)) {
             // Process lateralisable Concepts already added to 723264001 |Lateralisable body structure reference set|.
             String byMembership = "^ 723264001";
             Set<Concept> alreadyMembers = getConceptsByECL(byMembership);
@@ -84,10 +87,10 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
     private Set<Concept> getConceptsByECL(String... eclStatements) throws TermServerScriptException {
         Set<Concept> concepts = new HashSet<>();
         for (String eclStatement : eclStatements) {
-            if (jobRun.getParamBoolean("legacy")) {
-                concepts.addAll(findConcepts(eclStatement));
-            } else {
+            if (jobRun.getParamBoolean(CURRENT_CYCLE)) {
                 concepts.addAll(findConceptsWithoutEffectiveTime(eclStatement));
+            } else {
+                concepts.addAll(findConcepts(eclStatement));
             }
         }
 
