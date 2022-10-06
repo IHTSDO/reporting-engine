@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.service;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -383,6 +384,13 @@ public class SingleTraceabilityService implements TraceabilityService {
 	@Override
 	public void setBranchPrefixFilter(String onBranch) {
 		this.branchPrefix = onBranch;
+	}
+
+	@Override
+	public void populateTraceabilityAndReport(int tabIdx, Component c, Object... details)
+			throws TermServerScriptException {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -1641,10 +1642,15 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		JobClass job = null;
 		try {
-			job = jobClazz.newInstance();
-		} catch ( InstantiationException | IllegalAccessException e) {
+			job = jobClazz.getDeclaredConstructor((Class<?>[])null).newInstance((Object[])null);
+		} catch ( InstantiationException |
+				IllegalArgumentException |
+				SecurityException |
+				NoSuchMethodException |
+				InvocationTargetException |
+				IllegalAccessException e) {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
-		}
+		} 
 		job.instantiate(jobRun, (ApplicationContext)null);
 	}
 	
