@@ -57,7 +57,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
                 "Result",
         };
         String[] columnHeadings = new String[]{
-                "Identifier, FSN, SemTag, Member, Action, Comment"
+                "Identifier, FSN, SemTag, Member, Comment"
         };
         super.postInit(tabNames, columnHeadings, false);
     }
@@ -103,24 +103,23 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
             counter++;
             info(String.format("Processing %d/%d lateralisable Concepts with membership of 723264001 being %s.", counter, size, isMember));
             if (!lateralisableConcept.isActive()) {
-                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", "Concept is inactive and should be removed from reference set.");
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Concept is inactive and should be removed from reference set.");
                 countIssue(lateralisableConcept);
                 continue;
             }
 
             Set<Concept> lateralisedChildren = getLateralisedChildren(lateralisableConcept.getConceptId());
             if (lateralisedChildren.isEmpty()) {
-                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Not required", "No lateralisable children.");
                 continue;
             }
 
             int lateralised = lateralisedChildren.size();
             if (lateralised == 1) {
                 countIssue(lateralisableConcept);
-                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", "Possibly missing content as only 1 lateralised child.");
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Possibly missing content as only 1 lateralised child.");
             } else if (lateralised % 2 != 0) {
                 countIssue(lateralisableConcept);
-                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, "Required", String.format("Possibly missing content as only %d lateralised children.", lateralised));
+                report(PRIMARY_REPORT, lateralisableConcept.getConceptId(), lateralisableConcept.getFsn(), lateralisableConcept.getSemTag(), isMember, String.format("Possibly missing content as only %d lateralised children.", lateralised));
             }
         }
     }
