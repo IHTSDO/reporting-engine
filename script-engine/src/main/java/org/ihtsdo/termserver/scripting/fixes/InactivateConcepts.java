@@ -6,7 +6,6 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -17,13 +16,16 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Inactivate concepts where a replacement exists - driven by list.
  * 
  * DEVICES-92 Straight inactivation, driven by list, no replacement
+ * 
+ * TMO-66 Inactivate numbers.
  */
 public class InactivateConcepts extends BatchFix implements ScriptConstants {
+	
+	private InactivationIndicator defaultInactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
 	Map<Concept, InactivationIndicator> inactivationIndicators = new HashMap<>();
 	Map<Concept, Task> inactivations = new HashMap<>();
-	Set<Concept> allScheduledInactivations = new HashSet<>();
 	boolean expectReplacements = false;
 	boolean autoInactivateChildren = false;
 	boolean rewireChildrenToGrandparents = false;
@@ -40,6 +42,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			fix.expectNullConcepts = false;
 			fix.groupByIssue = true;
 			fix.reportNoChange = false;
+			fix.selfDetermining = true;
+			fix.subsetECL = "< 260299005 |Number (qualifier value)|";
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -88,12 +92,17 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
 		//With the same inactivation reasons
 		InactivationIndicator inactivationIndicator = inactivationIndicators.get(c);
+		
+		if (inactivationIndicator == null) {
+			inactivationIndicator = defaultInactivationIndicator;
+		}
+		
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
 		
 		//How many children do we have to do something different with?
 		//Use locally held concept when traversing transitive closure
 		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
-		descendants.removeAll(allScheduledInactivations);
+		descendants.removeAll(allComponentsToProcess);
 		if (descendants.size() > 0) {
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
 		}
@@ -106,14 +115,14 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 				t.addAfter(child, c);
 				removeFromLaterTasks(t, child);
 				//Is this a concept we have to inactivate?  Go through whole process if so
-				if (replacements.containsKey(child) || autoInactivateChildren || allScheduledInactivations.contains(child)) {
-					String extraInfo = " as per file";
+				if (replacements.containsKey(child) || autoInactivateChildren || allComponentsToProcess.contains(child)) {
+					String extraInfo = " as per selection";
 					Severity severity = Severity.LOW;
-					if (!replacements.containsKey(child) && !allScheduledInactivations.contains(child)) {
+					if (!replacements.containsKey(child) && !allComponentsToProcess.contains(child)) {
 						//In this case, we should inactivate the child with the same details as the parent
 						inactivationIndicators.put(child, inactivationIndicator);
 						replacements.put(child, replacement);
-						extraInfo = " NOT SPECIFIED IN FILE";
+						extraInfo = " NOT SPECIFIED FOR INACTIVATION";
 						severity = Severity.HIGH;
 					}
 					report(t, child, severity, ReportActionType.INFO, "Inactivating child of " + c + extraInfo + ", prior to parent inactivation");
@@ -318,7 +327,6 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//Specific to IHTSDO-175
 		//inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
 		//replacement = gl.getConcept(" 782902008 |Implantation procedure (procedure)|");
-		allScheduledInactivations.add(c);
 		inactivationIndicators.put(c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 		
 		//Give C an issue of one of it's parents to try to batch sibling concepts together

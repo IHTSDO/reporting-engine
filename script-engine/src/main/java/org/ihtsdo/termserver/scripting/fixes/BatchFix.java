@@ -8,7 +8,6 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.ihtsdo.otf.RF2Constants.ActiveState;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -93,8 +92,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure;
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		//Default implementation identifies no concepts.  Override if required.
-		return new ArrayList<Component>();
+		//Default implementation uses any specified ECL
+		return new ArrayList<>(SnomedUtils.sortFSN(findConcepts(subsetECL)));
 	}
 	
 	protected Batch formIntoBatch (List<Component> allComponents) throws TermServerScriptException {

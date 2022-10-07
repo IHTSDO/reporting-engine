@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
-import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -68,10 +67,5 @@ public class InactivateAttributes extends BatchFix {
 			changesMade += removeRelationship(t, c, r);
 		}
 		return changesMade;
-	}
-
-	@Override
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return new ArrayList<>(findConcepts(subsetECL));
 	}
 }
