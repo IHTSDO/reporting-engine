@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.RF2Constants.ActiveState;
+import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -830,7 +832,8 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	
 	public void addDescription(Description d, boolean allowDuplicateTerms) {
 		//Do we already have a description with this SCTID?
-		if (!allowDuplicateTerms && descriptions.contains(d)) {
+		//But don't check if description id is null otherwise we can only have one
+		if (d.getId() != null && !allowDuplicateTerms && descriptions.contains(d)) {
 			descriptions.remove(d);
 		}
 		
@@ -1648,6 +1651,46 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		return getRelationshipGroups(charType).stream()
 				.filter(g -> g.containsTypeValue(rt))
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Create a clone that can be used as a new concept.  So only stated modelling and 
+	 * no references back to the original axioms
+	 */
+	public Concept cloneAsNewConcept() {
+		Concept clone = this.clone();  //Will not copy inferred rels unless keepIds = true;
+
+		//remove any inactive components
+		clone.removeInactiveComponents();
+		
+		//Strip axiom data from relationships
+		for (Relationship r : clone.getRelationships()) {
+			r.setAxiom(null);
+			r.setAxiomEntry(null);
+		}
+		return clone;
+	}
+
+	private void removeInactiveComponents() {
+		descriptions.removeIf(c -> !c.isActive());
+		relationships.removeIf(c -> !c.isActive());
+		if (inactivationIndicatorEntries != null) {
+			inactivationIndicatorEntries.removeIf(c -> !c.isActive());
+		}
+		
+		if (associationEntries != null) {
+			associationEntries.removeIf(c -> !c.isActive());
+		}
+		
+		if (axiomEntries != null) {
+			axiomEntries.removeIf(c -> !c.isActive());
+		}
+		
+		for (Description d : descriptions) {
+			d.getLangRefsetEntries().removeIf(c -> !c.isActive());
+			d.getInactivationIndicatorEntries().removeIf(c -> !c.isActive());
+			d.getAssociationEntries().removeIf(c -> !c.isActive());
+		}
 	}
 
 }
