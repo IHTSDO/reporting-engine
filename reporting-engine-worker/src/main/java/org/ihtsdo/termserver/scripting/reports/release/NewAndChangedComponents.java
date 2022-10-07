@@ -68,11 +68,11 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<<118245000 |Measurement finding (finding)|");
-		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		params.put(MODULES, "45991000052106");
+		//params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
+		//params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
+		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
+		//params.put(MODULES, "45991000052106");
 		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
@@ -84,7 +84,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		subsetECL = run.getParamValue(ECL);
 		
 		if (!StringUtils.isEmpty(run.getParamValue(INCLUDE_DETAIL))) {
-			includeDescriptionDetail = jobRun.getParamBoolean(INCLUDE_DETAIL);
+			includeDescriptionDetail = run.getParamBoolean(INCLUDE_DETAIL);
 		}
 		
 		if (!StringUtils.isEmpty(run.getParamValue(WORD_MATCHES))) {
@@ -228,7 +228,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
+				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(WORD_MATCHES).withType(JobParameter.Type.STRING)
 				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
