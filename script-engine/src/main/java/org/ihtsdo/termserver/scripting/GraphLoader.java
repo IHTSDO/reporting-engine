@@ -1462,7 +1462,7 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 	
-	public Collection<String> getOrphanetConceptIds() {
+	public synchronized Collection<String> getOrphanetConceptIds() {
 		if (orphanetConceptIds == null) {
 			TermServerScript.print("Loading list of Orphanet Concepts...");
 			try {

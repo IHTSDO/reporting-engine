@@ -60,6 +60,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean expectStatedRelationshipInactivations = false;
 	protected String subHierarchyStr;
 	protected String subsetECL;
+	protected String overrideEclBranch = null;
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
 	protected boolean ignoreWhiteList = false;
@@ -696,26 +697,26 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
-		try {
-			convertStatedRelationshipsToAxioms(c, false);
-			if (!dryRun) {
+		if (dryRun) {
+			return c;
+		} else {
+			try {
+				convertStatedRelationshipsToAxioms(c, false);
 				if (validateConceptOnUpdate) {
 					validateConcept(t, c);
 				}
 				
 				debug ("Updating state of " + c + (info == null?"":info));
 				return tsClient.updateConcept(c, t.getBranchPath());
-			} else {
-				return c;
+			} catch (ValidationFailure e) {
+				throw e;
+			} catch (Exception e) {
+				String excpStr =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+				String msg = "Failed to update " + c + " in TS due to " + excpStr;
+				error (msg + " JSON = " + gson.toJson(c), e);
+				throw new TermServerScriptException(msg,e); 
 			}
-		} catch (ValidationFailure e) {
-			throw e;
-		} catch (Exception e) {
-			String excpStr =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-			String msg = "Failed to update " + c + " in TS due to " + excpStr;
-			error (msg + " JSON = " + gson.toJson(c), e);
-			throw new TermServerScriptException(msg,e); 
-		}
+		} 
 	}
 	
 	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
@@ -995,7 +996,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false, true, CharacteristicType.INFERRED_RELATIONSHIP);
+		String branch = overrideEclBranch == null ? project.getBranchPath() : overrideEclBranch;
+		return findConcepts(branch, ecl, false, true, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 
 	public Collection<Concept> findConceptsWithoutEffectiveTime(String ecl) throws TermServerScriptException {
