@@ -216,11 +216,23 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					warn (task + " contains " + task.size() + " concepts");
 				}
 				
-				//Create a task for this batch of concepts
-				createTask(task);
 				String xOfY =  (currentTaskNum) + " of " + batch.getTasks().size();
-				info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
-				incrementSummaryInformation("Tasks created",1);
+				//Did user specify that we're working in a particular task?  If so, we can only 
+				//work within a single task
+				if (this.taskKey != null) {
+					if (batch.getTasks().size() > 1) {
+						throw new TermServerScriptException("Task key specified.  Cannot work with " + batch.getTasks().size() + " tasks.  Check number of concepts per task");
+					}
+					task.setBranchPath(this.getProject().getBranchPath());
+					task.setPreExistingTask(true);
+					info ( (dryRun?"Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
+					
+				} else {
+					//Create a task for this batch of concepts
+					createTask(task);
+					info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
+					incrementSummaryInformation("Tasks created",1);
+				}
 				
 				//Process each component
 				int conceptInTask = 0;
@@ -234,7 +246,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					flushFilesSoft();  //Soft flush is optional
 				}
 				
-				if (!dryRun) {
+				//Don't update Editpanel or assign task if we're using a pre-existing one
+				if (!dryRun && !task.isPreExistingTask()) {
 					populateEditPanel(task);
 					updateTask(task);
 					

@@ -395,23 +395,38 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 								continue;
 							}
 							
-							//We want to look for the previous entry that has the value which is on our current active member and keep that
-							RefsetMember active = chooseActive(thisEntry, thatEntry, true);
-							String additionalFieldName = active.getOnlyAdditionalFieldName();
-							String targetOrValue = active.getField(additionalFieldName);
-							RefsetMember previouslyMatching = choose(previousThis, previousThat, targetOrValue, additionalFieldName, true);
-							if (previouslyMatching == null) {
-								//If _neither_ refset member used this target value and they're now duplicate, then
-								//the one that is currently inactive should be reset to its previous state
-								RefsetMember inactive = chooseActive(thisEntry, thatEntry, false);
-								RefsetMember revert = pickByID(inactive.getId(), previousThis, previousThat);
-								revert.setActive(false);
-								duplicatePair = new DuplicatePair().modify(revert);
+							//With reuse, it's possible for them both to be inactive also!
+							if (!thisEntry.isActive() && !thatEntry.isActive()) {
+								warn("Both entries are released, both inactive, but have been modified! " + thisEntry + " + " + thatEntry);
+								//In this case it doesn't matter which one we revert.  Take 'this'
+								duplicatePair = new DuplicatePair().modify(previousThis);
 							} else {
-								RefsetMember inactivate = choose(previousThis, previousThat, targetOrValue, additionalFieldName, false);
-								previouslyMatching.setActive(true);
-								inactivate.setActive(false);
-								duplicatePair = new DuplicatePair().modify(previouslyMatching, inactivate);
+								//We want to look for the previous entry that has the value which is on our current active member and keep that
+								RefsetMember active = chooseActive(thisEntry, thatEntry, true);
+								if (active == null) {
+									//We already checked for both inactive, so we have two active members here that are duplicates
+									//so we can revert either one of them to fix
+									//But make sure the one we're inactivating is being inactivated
+									previousThis.setActive(false);
+									duplicatePair = new DuplicatePair().modify(previousThis);
+								} else {
+									String additionalFieldName = active.getOnlyAdditionalFieldName();
+									String targetOrValue = active.getField(additionalFieldName);
+									RefsetMember previouslyMatching = choose(previousThis, previousThat, targetOrValue, additionalFieldName, true);
+									if (previouslyMatching == null) {
+										//If _neither_ refset member used this target value and they're now duplicate, then
+										//the one that is currently inactive should be reset to its previous state
+										RefsetMember inactive = chooseActive(thisEntry, thatEntry, false);
+										RefsetMember revert = pickByID(inactive.getId(), previousThis, previousThat);
+										revert.setActive(false);
+										duplicatePair = new DuplicatePair().modify(revert);
+									} else {
+										RefsetMember inactivate = choose(previousThis, previousThat, targetOrValue, additionalFieldName, false);
+										previouslyMatching.setActive(true);
+										inactivate.setActive(false);
+										duplicatePair = new DuplicatePair().modify(previouslyMatching, inactivate);
+									}
+								}
 							}
 						}
 					} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
@@ -507,7 +522,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private RefsetMember chooseActive(RefsetMember thisEntry, RefsetMember thatEntry, boolean active) {
 		if ((thisEntry.isActive() && thatEntry.isActive()) ||
 			(!thisEntry.isActive() && !thatEntry.isActive())) {
-			throw new IllegalStateException("Unable to find one active member of pair " + thisEntry + " vs " + thatEntry);
+			warn("Unable to find one active member of pair " + thisEntry + " vs " + thatEntry);
+			return null;
 		}
 		
 		if (active) {
