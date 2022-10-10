@@ -14,15 +14,6 @@ import java.util.*;
 
 public class Relationship extends Component implements IRelationshipTemplate, ScriptConstants, Comparable<Relationship> {
 
-	@SerializedName("effectiveTime")
-	@Expose
-	private String effectiveTime;
-	@SerializedName("moduleId")
-	@Expose
-	private String moduleId;
-	@SerializedName("active")
-	@Expose
-	private Boolean active = null;
 	@SerializedName("relationshipId")
 	@Expose
 	private String relationshipId;
@@ -44,9 +35,6 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	@SerializedName("modifier")
 	@Expose
 	private Modifier modifier;
-	@SerializedName("released")
-	@Expose
-	private Boolean released = null;
 	
 	private Concept source;
 	
@@ -121,43 +109,6 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
 		this.modifier = Modifier.EXISTENTIAL;
 		this.moduleId = SCTID_CORE_MODULE;
-	}
-
-	public String getEffectiveTime() {
-		return effectiveTime;
-	}
-
-	public void setEffectiveTime(String effectiveTime) {
-		if (StringUtils.isEmpty(effectiveTime)) {
-			this.effectiveTime = null;
-		} else {
-			this.effectiveTime = effectiveTime;
-			this.setDirty();
-		}
-	}
-
-	public String getModuleId() {
-		return moduleId;
-	}
-
-	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
-			setDirty();
-			this.effectiveTime = null;
-		}
-		this.moduleId = moduleId;
-	}
-
-	public boolean isActive() {
-		return active;
-	}
-
-	public void setActive(boolean newActiveState) {
-		if (this.active != null && !this.active == newActiveState) {
-			this.effectiveTime = null;
-			setDirty();
-		}
-		this.active = newActiveState;
 	}
 
 	public String getRelationshipId() {
@@ -463,18 +414,6 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		return getComponentType().toString();
 	}
 	
-	
-	public Boolean isReleased() {
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
-		return released;
-	}
-
-	public void setReleased(Boolean released) {
-		this.released = released;
-	}
-
 	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rhs) {
 		return this.type.equals(rhs.getType()) && equalsTargetOrValue(rhs);
 	}

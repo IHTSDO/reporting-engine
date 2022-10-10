@@ -16,18 +16,6 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	@SerializedName(value="axiomId", alternate="id")
 	@Expose
 	private String axiomId;
-	@SerializedName("effectiveTime")
-	@Expose
-	private String effectiveTime;
-	@SerializedName("moduleId")
-	@Expose
-	private String moduleId;
-	@SerializedName("active")
-	@Expose
-	private Boolean active;
-	@SerializedName("released")
-	@Expose
-	private Boolean released;
 	@SerializedName("definitionStatus")
 	@Expose
 	private DefinitionStatus definitionStatus;
@@ -44,18 +32,6 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 		active = true;
 	}
 	
-	public String getModuleId() {
-		return moduleId;
-	}
-	public void setModuleId(String moduleId) {
-		this.moduleId = moduleId;
-	}
-	public Boolean getReleased() {
-		return released;
-	}
-	public void setReleased(Boolean released) {
-		this.released = released;
-	}
 	public String getAxiomId() {
 		return axiomId;
 	}
@@ -80,20 +56,6 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	public void setNamedConceptOnLeft(Boolean namedConceptOnLeft) {
 		this.namedConceptOnLeft = namedConceptOnLeft;
 	}
-	@Override
-	public String getEffectiveTime() {
-		return this.effectiveTime;
-	}
-	public void setEffectiveTime(String effectiveTime) {
-		this.effectiveTime = effectiveTime;
-	}
-	public void setActive(boolean newActiveState) {
-		if (this.active != null && !this.active == newActiveState) {
-			this.effectiveTime = null;
-			setDirty();
-		}
-		this.active = newActiveState;
-	}
 	
 	@Override
 	public boolean equals(Object o) {
@@ -117,10 +79,6 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	@Override
 	public String getId() {
 		return axiomId;
-	}
-	@Override
-	public boolean isActive() {
-		return active;
 	}
 	@Override
 	public String getReportedName() {
@@ -203,11 +161,6 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 				.filter(r -> r.getType().equals(IS_A))
 				.map(r -> r.getTarget())
 				.collect(Collectors.toList());
-	}
-
-	@Override
-	public Boolean isReleased() {
-		return released;
 	}
 
 	@Override

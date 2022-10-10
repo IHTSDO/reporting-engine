@@ -15,21 +15,9 @@ RefsetMember extends Component implements ScriptConstants {
 	
 	protected static String[] additionalFieldNames = new String[0];
 
-	@SerializedName("active")
+	@SerializedName(value = "memberId", alternate = {"id"})
 	@Expose
-	protected  Boolean active;
-	@SerializedName("released")
-	@Expose
-	protected  Boolean released;
-	@SerializedName("releasedEffectiveTime")
-	@Expose
-	protected  Integer releasedEffectiveTime;
-	@SerializedName("memberId")
-	@Expose
-	protected  String id;
-	@SerializedName("moduleId")
-	@Expose
-	protected  String moduleId;
+	protected  String memberId;
 	@SerializedName("refsetId")
 	@Expose
 	protected  String refsetId;
@@ -42,9 +30,6 @@ RefsetMember extends Component implements ScriptConstants {
 	@SerializedName("referencedComponent")
 	@Expose
 	protected Object referencedComponent;
-	@SerializedName("effectiveTime")
-	@Expose
-	protected  String effectiveTime;
 	
 	protected String deletionEffectiveTime;
 	
@@ -52,69 +37,29 @@ RefsetMember extends Component implements ScriptConstants {
 	
 	public RefsetMember() {}
 	
+	public String getMemberId() {
+		return memberId;
+	}
+	
+	public String getId() {
+		if (id == null) {
+			return memberId;
+		}
+		return id;
+	}
+
+	public void setMemberId(String memberId) {
+		this.memberId = memberId;
+		this.id = memberId;
+	}
+
 	public RefsetMember(String refsetId, Concept referencedCompoment, String[] additionalValues) {
 		this.refsetId = refsetId;
 		this.referencedComponent = referencedCompoment;
 	}
-
-	public void setEffectiveTime(String effectiveTime) {
-		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
-			//Are we resetting this component to mark a change?
-			setDirty();
-		}
-		this.effectiveTime = effectiveTime;
-	}
 	
-	public String getModuleId() {
-		return moduleId;
-	}
-	
-	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
-			setDirty();
-			this.effectiveTime = null;
-		}
-		this.moduleId = moduleId;
-	}
-	public boolean isActive() {
-		return active;
-	}
-	
-	public void setActive(boolean newActiveState) {
-		setActive(newActiveState, false);
-	}
-	public void setActive(boolean newActiveState, boolean forceDirty) {
-		if (forceDirty || (this.active != null && this.active != newActiveState)) {
-			setDirty();
-			setEffectiveTime(null);
-		}
-		this.active = newActiveState;
-	}
 	public boolean isDeleted() {
 		return isDeleted;
-	}
-	public Boolean getReleased() {
-		return released;
-	}
-
-	public void setReleased(Boolean released) {
-		this.released = released;
-	}
-
-	public Integer getReleasedEffectiveTime() {
-		return releasedEffectiveTime;
-	}
-
-	public void setReleasedEffectiveTime(Integer releasedEffectiveTime) {
-		this.releasedEffectiveTime = releasedEffectiveTime;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
 	}
 
 	public String getRefsetId() {
@@ -153,10 +98,6 @@ RefsetMember extends Component implements ScriptConstants {
 		this.referencedComponent = referencedComponent;
 	}
 
-	public String getEffectiveTime() {
-		return effectiveTime;
-	}
-
 	@Override
 	public String getReportedName() {
 		throw new NotImplementedException();
@@ -186,10 +127,6 @@ RefsetMember extends Component implements ScriptConstants {
 		throw new NotImplementedException();
 	}
 	
-	public Boolean isReleased() {
-		return released;
-	}
-	
 	public void delete (String deletionEffectiveTime) {
 		this.deletionEffectiveTime = deletionEffectiveTime;
 		this.isDeleted = true;
@@ -197,7 +134,7 @@ RefsetMember extends Component implements ScriptConstants {
 	
 	public String[] toRF2(String[] additionalFieldNames) {
 		String[] rf2 =  new String[REF_IDX_FIRST_ADDITIONAL + additionalFieldNames.length];
-		rf2[REF_IDX_ID] = id;
+		rf2[REF_IDX_ID] = getId();
 		rf2[REF_IDX_EFFECTIVETIME] = (effectiveTime==null?"":effectiveTime);
 		rf2[REF_IDX_ACTIVE] = (active?"1":"0");
 		rf2[REF_IDX_MODULEID] = moduleId;
@@ -212,6 +149,7 @@ RefsetMember extends Component implements ScriptConstants {
 	
 	public static void populatefromRf2(RefsetMember m, String[] lineItems, String[] additionalFieldNames) throws TermServerScriptException {
 		m.setId(lineItems[REF_IDX_ID]);
+		m.setMemberId(lineItems[REF_IDX_ID]);
 		m.setEffectiveTime(lineItems[REF_IDX_EFFECTIVETIME]);
 		m.setActive(lineItems[REF_IDX_ACTIVE].equals("1"));
 		m.setModuleId(lineItems[REF_IDX_MODULEID]);
@@ -246,7 +184,7 @@ RefsetMember extends Component implements ScriptConstants {
 		
 		String[] row = new String[6 + additionalFields.size()];
 		int col = 0;
-		row[col++] = id;
+		row[col++] = getId();
 		row[col++] = effectiveTime==null?"":effectiveTime;
 		row[col++] = active?"1":"0";
 		row[col++] = moduleId;
@@ -282,11 +220,6 @@ RefsetMember extends Component implements ScriptConstants {
 		return false;
 	}
 	
-	@Override
-	public int hashCode() {
-		return this.getId().hashCode();
-	}
-	
 	public String toString() {
 		String additionalStr = "";
 		boolean isFirst = true;
@@ -296,7 +229,7 @@ RefsetMember extends Component implements ScriptConstants {
 			isFirst = false;
 		}
 		String activeIndicator = isActive()?"":"*";
-		return "[" + activeIndicator + "RM]:" + id + " - " + refsetId + " : " + referencedComponentId + " -> " + additionalStr;
+		return "[" + activeIndicator + "RM]:" + getId() + " - " + refsetId + " : " + referencedComponentId + " -> " + additionalStr;
 	}
 
 	/**
@@ -337,6 +270,6 @@ RefsetMember extends Component implements ScriptConstants {
 	}
 	
 	public String toStringWithId() {
-		return id + ": " + toString();
+		return getId() + ": " + toString();
 	}
 }

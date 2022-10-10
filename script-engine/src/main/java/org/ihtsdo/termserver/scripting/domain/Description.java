@@ -17,22 +17,6 @@ public class Description extends Component implements ScriptConstants {
 	
 	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
 
-	@SerializedName("effectiveTime")
-	@Expose
-	private String effectiveTime;
-	
-	@SerializedName("moduleId")
-	@Expose
-	private String moduleId;
-	
-	@SerializedName("active")
-	@Expose
-	private Boolean active;
-	
-	@SerializedName("released")
-	@Expose
-	private Boolean released;
-	
 	@SerializedName(value = "descriptionId", alternate = {"id"})
 	@Expose
 	private String descriptionId;
@@ -168,14 +152,6 @@ public class Description extends Component implements ScriptConstants {
 		this.moduleId = moduleId;
 	}
 
-	public boolean isActive() {
-		return active;
-	}
-	
-	public void setActive(boolean newActiveState) {
-		setActive(newActiveState, false); //Don't force dirty by default
-	}
-
 	public void setActive(boolean newActiveState, boolean forceDirty) {
 		if (forceDirty || (this.active != null && !this.active == newActiveState)) {
 			setDirty();
@@ -191,14 +167,6 @@ public class Description extends Component implements ScriptConstants {
 			this.effectiveTime = null;
 		}
 		this.active = newActiveState;
-	}
-
-	public boolean getReleased() {
-		return this.released;
-	}
-
-	public void setReleased(boolean released) {
-		this.released = released;
 	}
 
 	public String getDescriptionId() {

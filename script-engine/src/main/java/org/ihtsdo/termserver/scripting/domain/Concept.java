@@ -5,8 +5,6 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.apache.commons.lang.StringUtils;
-import org.ihtsdo.otf.RF2Constants.ActiveState;
-import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -18,19 +16,6 @@ import com.google.gson.annotations.SerializedName;
 
 public class Concept extends Component implements ScriptConstants, Comparable<Concept>, Expressable  {
 
-	@SerializedName("effectiveTime")
-	@Expose
-	private String effectiveTime;
-	@SerializedName("moduleId")
-	@Expose
-	private String moduleId;
-	@SerializedName("active")
-	@Expose
-	private boolean active = true;
-	@SerializedName("released")
-	@Expose
-	private Boolean released = null;
-	
 	@SerializedName(value="conceptId", alternate="id")
 	@Expose
 	private String conceptId;
@@ -163,37 +148,9 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		return c;
 	}
-
-	public String getEffectiveTime() {
-		return effectiveTime;
-	}
-
-	public void setEffectiveTime(String effectiveTime) {
-		this.effectiveTime = effectiveTime;
-	}
-
+	
 	public boolean hasEffectiveTime() {
 		return effectiveTime != null && !effectiveTime.isEmpty();
-	}
-
-	public String getModuleId() {
-		return moduleId;
-	}
-
-	public void setModuleId(String moduleId) {
-		/*if (this.moduleId != null && (!moduleId.equals(SCTID_CORE_MODULE) 
-				|| moduleId.equals(SCTID_CORE_MODULE) && this.moduleId.equals(SCTID_MODEL_MODULE))) {
-			TermServerScript.debug("here");
-		}*/
-		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
-			setDirty();
-			this.effectiveTime = null;
-		}
-		this.moduleId = moduleId;
-	}
-
-	public boolean isActive() {
-		return active;
 	}
 
 	public void setActive(boolean newActiveState) {
@@ -240,7 +197,6 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		}
 		return null;
 	}
-	
 
 	public String getFsnSafely() {
 		if (fsn == null) {
