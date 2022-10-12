@@ -75,9 +75,15 @@ public class INFRA9606_RetermMeasurementFindings extends BatchFix {
 		int changesMade = 0;
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-			String originalPT = loadedConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
-			changesMade = modifyDescriptions(task, loadedConcept);
-			reportAdditionalSynonyms(task, loadedConcept, originalPT);
+			String originalUSPT = loadedConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+			String originalGBPT = loadedConcept.getPreferredSynonym(GB_ENG_LANG_REFSET).getTerm();
+			boolean usgbVariance = false;
+			if (!originalUSPT.contentEquals(originalGBPT)) {
+				usgbVariance = true;
+				report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Check gb/us variance");
+			}
+			changesMade = modifyDescriptions(task, loadedConcept, usgbVariance);
+			reportAdditionalSynonyms(task, loadedConcept, originalUSPT);
 			if (changesMade > 0) {
 				tweakCsIfRequired(task, loadedConcept);
 				updateConcept(task, loadedConcept, info);
@@ -117,9 +123,9 @@ public class INFRA9606_RetermMeasurementFindings extends BatchFix {
 		}
 	}
 
-	private int modifyDescriptions(Task t, Concept c) throws TermServerScriptException {
+	private int modifyDescriptions(Task t, Concept c, boolean usgbVariance) throws TermServerScriptException {
 		int changesMade = 0;
-		PatternOfX patternOfX = identifyPattern(c.getFSNDescription());
+		PatternOfX patternOfX = identifyPattern(c.getFSNDescription(), true);
 		
 		if (patternOfX.equals(Pattern.CHECK_PT_ONLY)) {
 			checkPtMatchesFSN(t, c);
@@ -133,8 +139,15 @@ public class INFRA9606_RetermMeasurementFindings extends BatchFix {
 		
 		List<Description> originalDescriptions = new ArrayList<>(c.getDescriptions(ActiveState.ACTIVE));
 		for (Description d : originalDescriptions) {
-			String replacement = replaceDescription(patternOfX, d);
+			PatternOfX thisPatternOfX = patternOfX;
+			if (usgbVariance && d.isPreferred(GB_ENG_LANG_REFSET) && d.getType().equals(DescriptionType.SYNONYM) ) {
+				thisPatternOfX = identifyPattern(d, false);
+			}
+			String replacement = replaceDescription(thisPatternOfX, d);
 			if (!replacement.equals(d.getTerm())) {
+				if (StringUtils.initialLetterLowerCase(replacement)) {
+					replacement = StringUtils.capitalizeFirstLetter(replacement);
+				}
 				replaceDescription(t, c, d, replacement, inactivationIndicator, true);
 				changesMade++;
 			}
@@ -145,13 +158,16 @@ public class INFRA9606_RetermMeasurementFindings extends BatchFix {
 
 	private void checkPtMatchesFSN(Task t, Concept c) throws TermServerScriptException {
 		String term = SnomedUtils.deconstructFSN(c.getFsn())[0];
-		if (!c.getPreferredSynonym(US_ENG_LANG_REFSET).equals(term)) {
+		if (!c.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().equals(term)) {
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "PT / FSN variation", c.getPreferredSynonym(US_ENG_LANG_REFSET));
 		}
 	}
 
-	private PatternOfX identifyPattern(Description d) throws TermServerScriptException {
-		String term = SnomedUtils.deconstructFSN(d.getTerm())[0];
+	private PatternOfX identifyPattern(Description d, boolean isFSN) throws TermServerScriptException {
+		String term = d.getTerm();
+		if (isFSN) {
+			term = SnomedUtils.deconstructFSN(d.getTerm())[0];
+		}
 		String termLower = term.toLowerCase();
 		
 		if (term.endsWith("above reference range")) {
@@ -203,7 +219,7 @@ public class INFRA9606_RetermMeasurementFindings extends BatchFix {
 				}*/
 			} else {
 				try {
-					if (modifyDescriptions(null, c.cloneWithIds()) > 0) {
+					if (modifyDescriptions(null, c.cloneWithIds(), false) > 0) {
 						process.add(c);
 					}
 				} catch (Exception e) {
