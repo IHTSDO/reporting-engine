@@ -34,6 +34,7 @@ public class ReplaceAttributeValues extends BatchFix {
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
+			fix.taskPrefix = "Observable ";
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();

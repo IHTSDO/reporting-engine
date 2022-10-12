@@ -54,7 +54,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected int priorityBatchSize = 10;
 	private boolean firstTaskCreated = false;
 	public static String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
-	
+	public String taskPrefix = null;
 	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	private Batch currentBatch;
@@ -309,7 +309,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 							populateTaskDescription = false;
 						}
 					}
-					task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
+					String taskSummary = task.getSummary();
+					if (taskPrefix != null) {
+						taskSummary = taskPrefix + taskSummary;
+					}
+					task.setKey(scaClient.createTask(project.getKey(), taskSummary, taskDescription));
 					debug ("Creating task branch in terminology server: " + task);
 					task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
 					tsClient.setAuthorFlag(task.getBranchPath(), "batch-change", "true");
