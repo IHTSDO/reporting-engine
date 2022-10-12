@@ -151,7 +151,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 
 	private void checkPtMatchesFSN(Task t, Concept c) throws TermServerScriptException {
 		String term = SnomedUtils.deconstructFSN(c.getFsn())[0];
-		if (!c.getPreferredSynonym(US_ENG_LANG_REFSET).equals(term)) {
+		if (!c.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().equals(term)) {
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "PT / FSN variation", c.getPreferredSynonym(US_ENG_LANG_REFSET));
 		}
 	}
