@@ -32,6 +32,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		try {
 			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
 			app.init(args);
+			app.getArchiveManager().setPopulateReleasedFlag(true);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
 			app.processFile();
@@ -428,10 +429,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/morphologies/Malposition.json" };
 		templateNames = new String[] { "templates/Drug dependence.json" };
 		templateNames = new String[] { "templates/morphologies/Dislocation.json" };
-		
+		templateNames = new String[] { "templates/procedures/PlacementOfStent.json" };
 		*/
 		
-		templateNames = new String[] { "templates/procedures/PlacementOfStent.json" };
+		templateNames = new String[] { "templates/Toxic due to plant.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
