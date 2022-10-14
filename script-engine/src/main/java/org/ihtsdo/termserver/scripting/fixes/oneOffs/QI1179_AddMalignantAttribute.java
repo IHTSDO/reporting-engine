@@ -49,10 +49,12 @@ public class QI1179_AddMalignantAttribute extends BatchFix {
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		subsetECL = "< 372087000 |Primary malignant neoplasm (disorder)| MINUS ( << 269475001 |Malignant tumor of lymphoid, hemopoietic AND/OR related tissue (disorder)| OR (< 372087000 |Primary malignant neoplasm (disorder)| : 370135005 |Pathological process (attribute)| = 1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|))";
+		//subsetECL = "< 372087000 |Primary malignant neoplasm (disorder)| MINUS ( << 269475001 |Malignant tumor of lymphoid, hemopoietic AND/OR related tissue (disorder)| OR (< 372087000 |Primary malignant neoplasm (disorder)| : 370135005 |Pathological process (attribute)| = 1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|))";
+		subsetECL = "< 363346000 |Malignant neoplastic disease (disorder)| MINUS << 269475001 |Malignant tumor of lymphoid, hemopoietic AND/OR related tissue (disorder)| ";
 		relTemplate = new RelationshipTemplate(PATHOLOGICAL_PROCESS, gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm|"));
 		workAroundToRemove = new RelationshipTemplate(ASSOC_MORPH, gl.getConcept("86049000 |Malignant neoplasm, primary (morphologic abnormality)|"));
 		exclusions = new HashSet<>();
+		exclusions.add("metastasis");
 		replaceValuesMap = new HashMap<>();
 		replaceValuesMap.put(gl.getConcept("86049000 |Malignant neoplasm, primary|"), gl.getConcept("1240414004 |Malignant neoplasm morphology|"));
 		super.postInit();
@@ -63,7 +65,7 @@ public class QI1179_AddMalignantAttribute extends BatchFix {
 		int changesMade = 0;
 		try {
 			if (concept.getId().equals("285645000")) {
-				debug("here");
+			//	debug("here");
 			}
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = addAttribute(task, loadedConcept);
@@ -86,9 +88,9 @@ public class QI1179_AddMalignantAttribute extends BatchFix {
 		if (isExcluded(c)) {
 			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept Excluded due to lexical rule");
 		} else {
-			List<RelationshipGroup> groupsToProcess = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE);
+			List<RelationshipGroup> groupsToProcess = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ASSOC_MORPH);
 			for (RelationshipGroup g : groupsToProcess) {
-				boolean thisGroupRemoved = false;
+				/*boolean thisGroupRemoved = false;
 				//Is this an additional group that we need to remove?
 				if (groupsToProcess.size() > 1 && g.containsTypeValue(workAroundToRemove)) {
 					//Does the finding site in this group match the finding site in another group?
@@ -102,10 +104,10 @@ public class QI1179_AddMalignantAttribute extends BatchFix {
 					}
 				}
 				
-				if (!thisGroupRemoved) {
+				if (!thisGroupRemoved) {*/
 					Relationship attrib = relTemplate.createRelationship(c, g.getGroupId(), null);
 					changesMade += addRelationship(t, c, attrib, Mode.UNIQUE_TYPE_IN_THIS_GROUP);
-				}
+				//}
 			}
 			
 			//Self grouped would not be picked up in above due to lack of finding site
@@ -156,7 +158,9 @@ public class QI1179_AddMalignantAttribute extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		return findConcepts(subsetECL).parallelStream()
 				.filter(c -> c.getFsn().toLowerCase().contains(inclusionText))
-				.filter(c -> !gl.isOrphanetConcept(c))
+				.filter(c -> !isExcluded(c))
+				//.filter(c -> !gl.isOrphanetConcept(c))
+				.filter(c -> c.getRelationships(relTemplate, ActiveState.ACTIVE).size() == 0)
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
 	}
