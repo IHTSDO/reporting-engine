@@ -28,9 +28,9 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"UUID, RefsetId, Active, ReferencedComponentId, DOMAIN_CONSTRAINT, PARENT_DOMAIN, PROXIMAL_PRIMITIVE_CONSTRAINT," + 
+				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId, DOMAIN_CONSTRAINT, PARENT_DOMAIN, PROXIMAL_PRIMITIVE_CONSTRAINT," + 
 				"			PROXIMAL_PRIMITIVE_REFINEMENT, DOMAIN_TEMPLATE_FOR_PRECOORDINATION, DOMAIN_TEMPLATE_FOR_POSTCOORDINATION, GUIDE_URL",
-				"UUID, RefsetId, Active, ReferencedComponentId, RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID"};
+				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId, RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID"};
 		String[] tabNames = new String[] {
 				"MRCM Domain",
 				"MRCM Attribute"};
@@ -41,7 +41,7 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
-				.withName("New and Changes MRCM")
+				.withName("New and Changed MRCM")
 				.withDescription("This report lists updates to the MRCM refsets.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
@@ -58,7 +58,8 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	private void reportRefsetUpdates(int tabIdx, Map<Concept,? extends RefsetMember> mrcmMap) throws TermServerScriptException {
 		for (RefsetMember rm : mrcmMap.values()) {
 			if (StringUtils.isEmpty(rm.getEffectiveTime())) {
-				report(tabIdx, rm.getId(), rm.getRefsetId(), rm.isActive()?"1":"0", rm.getReferencedComponentId(), rm.getAdditionalFieldsArray());
+				countIssue((Concept)null);
+				report(tabIdx, rm.getId(), rm.getEffectiveTime(), rm.getRefsetId(), rm.isActive()?"1":"0", rm.getReferencedComponentId(), rm.getAdditionalFieldsArray());
 			}
 		}
 	}
