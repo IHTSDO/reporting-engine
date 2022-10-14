@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 
@@ -353,6 +354,28 @@ public class ScheduleServiceImpl implements ScheduleService {
 		}
 		job.setWhiteList(codeSystemShortname, whiteList);
 		jobRepository.save(job);
+	}
+
+	@Override
+	public Page<JobRun> listAllJobsRun(Set<JobStatus> statusFilter, Integer sinceMins, Pageable pageable) {
+		if (statusFilter == null && sinceMins == null) {
+			throw new IllegalArgumentException("Either statusFilter or sinceMins must be specified.");
+		}
+		
+		Date sinceDate = null;
+		if (sinceMins != null) {
+			sinceDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(sinceMins));
+		}
+		
+		if (statusFilter != null) {
+			if (sinceMins == null) {
+				return jobRunRepository.findByStatus(statusFilter, pageable);
+			} else {
+				return jobRunRepository.findByStatusSinceDate(sinceDate, statusFilter, pageable);
+			}
+		} else {
+			return jobRunRepository.findSinceDate(sinceDate, pageable);
+		}
 	}
 	
 }

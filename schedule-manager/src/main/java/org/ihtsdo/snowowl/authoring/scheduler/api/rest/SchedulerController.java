@@ -3,6 +3,7 @@ package org.ihtsdo.snowowl.authoring.scheduler.api.rest;
 import io.swagger.annotations.*;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.snowowl.authoring.scheduler.api.configuration.WebSecurityConfig;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.AccessControlService;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleService;
@@ -16,10 +17,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -87,6 +88,22 @@ public class SchedulerController {
 		
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
 		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable).getContent();
+	}
+	
+	@ApiOperation(value="List all jobs run")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/jobs/runs", method= RequestMethod.GET)
+	public List<JobRun> listAllJobsRun(HttpServletRequest request,
+			@RequestParam(required=false) final Set<JobStatus> statusFilter,
+			@RequestParam(required=false) final Integer sinceMins,
+			@RequestParam(required=false, defaultValue="0") final Integer page,
+			@RequestParam(required=false, defaultValue="50") final Integer size)
+		throws BusinessServiceException {
+		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
+		
+		return santise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
 	}
 	
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
@@ -213,5 +230,15 @@ public class SchedulerController {
 			@PathVariable final String codeSystemShortname,
 			@RequestBody Set<WhiteListedConcept> whiteList) throws BusinessServiceException {
 		scheduleService.setWhiteList(typeName, jobName, codeSystemShortname, whiteList);
+	}
+	
+	private List<JobRun> santise(Page<JobRun> jobRuns) {
+		return jobRuns.stream()
+				.peek(j -> j.suppressParameters())
+				.peek(j -> j.setTerminologyServerUrl(null))
+				.peek(j -> j.setIssuesReported(null))
+				.peek(j -> j.setResultUrl(null))
+				.peek(j -> j.setDebugInfo(null))
+				.collect(Collectors.toList());
 	}
 }

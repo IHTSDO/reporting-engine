@@ -6,6 +6,7 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,7 +18,7 @@ public interface ScheduleService {
 
 	public Job getJob(String jobName);
 	
-	Page<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects, Pageable pageable);
+	public Page<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects, Pageable pageable);
 
 	public JobRun runJob(String jobType, String jobName, JobRun jobRun) throws BusinessServiceException;
 
@@ -40,5 +41,7 @@ public interface ScheduleService {
 	public Set<WhiteListedConcept> getWhiteList(String typeName, String platformIdentifier, String jobName);
 
 	public void setWhiteList(String typeName, String jobName, String platformIdentifier, Set<WhiteListedConcept> whiteList);
+
+	public Page<JobRun> listAllJobsRun(Set<JobStatus> statusFilter, Integer sinceMins, Pageable pageable);
 
 }
