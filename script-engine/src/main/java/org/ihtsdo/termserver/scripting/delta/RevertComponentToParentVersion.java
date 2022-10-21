@@ -123,6 +123,8 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             if (jumpedModule(childMember, parentMember)) {
                 report(1, memberId, "ReferenceSetMember", "Looks to have incorrectly jumped module.");
                 writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
+            } else {
+                report(2, memberId, "ReferenceSetMember", "Unknown fault.");
             }
         }
     }
@@ -161,6 +163,8 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             if (jumpedModule(childDescription, parentDescription)) {
                 report(1, descriptionId, "Description", "Looks to have jumped module.");
                 writeToRF2File(descDeltaFilename, parentDescription.toRF2());
+            } else {
+                report(2, descriptionId, "Description", "Unknown fault.");
             }
         }
     }
