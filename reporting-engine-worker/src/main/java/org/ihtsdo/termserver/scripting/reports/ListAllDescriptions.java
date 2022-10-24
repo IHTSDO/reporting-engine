@@ -15,7 +15,10 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * See FD#25496
  */
 public class ListAllDescriptions extends TermServerReport implements ReportClass {
-	Set<Concept> alreadyReported = new HashSet<>();
+	
+	private static String DESCRIPTION_PER_LINE = "Description Per Line";
+	private Set<Concept> alreadyReported = new HashSet<>();
+	private boolean descriptionPerLine = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -23,20 +26,25 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
 		//params.put(SUB_HIERARCHY, "25093002 |Disorder of eye due to diabetes mellitus (disorder)|");
 		//params.put(SUB_HIERARCHY, "19598007 |Generalized epilepsy (disorder)|");
-		params.put(SUB_HIERARCHY, "84757009 |Epilepsy (disorder)|"); 
+		//params.put(SUB_HIERARCHY, "84757009 |Epilepsy (disorder)|"); 
+		params.put(ECL, "<<84757009 |Epilepsy (disorder)|"); 
 		TermServerReport.run(ListAllDescriptions.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		additionalReportColumns="FSN, SemTag, Hierarchy, Defn, Parents, Description";
+		additionalReportColumns="FSN, SemTag, Defn, Parents, Description";
+		
+		descriptionPerLine = run.getParamBoolean(DESCRIPTION_PER_LINE);
 		super.init(run);
 	}
 
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withMandatory().build();
+				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(DESCRIPTION_PER_LINE).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
@@ -50,51 +58,44 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		Concept hierarchy = gl.getConcept(jobRun.getMandatoryParamValue(SUB_HIERARCHY));
-		listDescriptionsAndChildren(hierarchy, 0);
+		List<Concept> concepts = SnomedUtils.sortFSN(findConcepts(subsetECL));
+		for (Concept concept : concepts) {
+			listDescriptions(concept);
+		}
 	}
 
-	private void listDescriptionsAndChildren(Concept c, int depth) throws TermServerScriptException {
+	private void listDescriptions(Concept c) throws TermServerScriptException {
 		//Have we already seen this concept?
 		if (alreadyReported.contains(c)) {
 			return;
 		}
 		
-		String indent = getIndent(depth);
 		String defn = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 		String parents = getParentsStr(c);
 		
-		report (c, indent, defn, parents);
-		incrementSummaryInformation("Concepts reported");
-		countIssue(c);
-		
 		List<Description> descriptions = c.getDescriptions(ActiveState.ACTIVE);
 		SnomedUtils.prioritise(descriptions);
-		for (Description d : descriptions) {
-			report((Concept)null, "", "", "", d);
+		
+		if (descriptionPerLine) {
+			report(c, defn, parents);
+			for (Description d : descriptions) {
+				report((Concept)null, "", "", d);
+			}
+		} else {
+			String descriptionStr = descriptions.stream()
+					.map(d -> d.getTerm())
+					.collect(Collectors.joining(",\n"));
+			report(c, defn, parents, descriptionStr);
 		}
 		
-		//Now recurse down into all children
-		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			listDescriptionsAndChildren(child, depth + 1);
-		}
+		incrementSummaryInformation("Concepts reported");
+		countIssue(c);
 	}
 
 	private String getParentsStr(Concept c) {
 		Set<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
 		return parents.stream().map(p->p.toString())
 				.collect(Collectors.joining(",\n"));
-	}
-
-	private String getIndent(int depth) {
-		if (depth == 0) {
-			return "";
-		} 
-		StringBuffer sb = new StringBuffer("|");
-		for (int i = 0; i < depth ; i++) {
-			sb.append("_");
-		}
-		return sb.toString();
 	}
 
 }
