@@ -17,6 +17,8 @@ import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
+import com.amazonaws.services.servicequotas.model.IllegalArgumentException;
+
 /**
  * Class form a delta of specified concepts from some edition and 
  * promote those (along with attribute values and necessary ancestors)
@@ -36,8 +38,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 10;
+	private Integer conceptsPerArchive = 100;
 	Queue<List<Component>> archiveBatches = null;
+	private boolean ensureConceptsHaveBeenReleased = false;
 	
 	Map<Concept, Concept> knownReplacements = new HashMap<>();
 	
@@ -46,10 +49,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		try {
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
-			//delta.moduleId = "1145237009"; //NEBCSR
+			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
+			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
+			delta.moduleId = "1145237009"; //NEBCSR
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			delta.moduleId = "731000124108";  //US Module
+			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
@@ -118,8 +122,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			boolean alsoImportingDescendants = false;
 			
 			Concept c = (Concept)component;
+			if (c.getModuleId() == null) {
+				throw new IllegalArgumentException("Concept " + c + " doesn't exist.  Check list of concepts to transfer");
+			}
 			
-			if (!c.isReleased()) {
+			if (ensureConceptsHaveBeenReleased && !c.isReleased()) {
 				throw new IllegalStateException(c + " has not been released");
 			}
 			
@@ -289,7 +296,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private void createOutputArchive() throws TermServerScriptException {
 		outputModifiedComponents(true);
-		getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to kee the report going
+		getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
 		File archive = SnomedUtils.createArchive(new File(outputDirName));
 		report((Concept)null, Severity.NONE, ReportActionType.INFO, "Created " + archive.getName());
 	}
@@ -358,7 +365,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//As long as the current module is not equal to the target module, we'll switch it
 		//And even then we might do it, if it's missing from the target server (eg NEBCSR)
 		if (conceptOnTS.equals(NULL_CONCEPT)) {
-			if (!c.getModuleId().equals(moduleId)) {
+			//NEBCSR is a bit loose with its modules.  Allow CORE to be used without complaining
+			if (!c.getModuleId().equals(moduleId) && !c.getModuleId().equals(SCTID_CORE_MODULE)) {
 				report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
 			}
 			//Was this concept originally specified, or picked up as a dependency?
