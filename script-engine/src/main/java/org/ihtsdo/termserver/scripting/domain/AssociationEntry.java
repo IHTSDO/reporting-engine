@@ -14,6 +14,8 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 
 	public static String TARGET_COMPONENT_ID = "targetComponentId";
 	
+	public static String[] additionalFieldNames = new String[] {TARGET_COMPONENT_ID};
+	
 	public AssociationEntry clone(String newComponentSctId) {
 		AssociationEntry clone = new AssociationEntry();
 		clone.id = UUID.randomUUID().toString();
@@ -127,5 +129,11 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 			return true;
 		}
 		return active == (activeState.equals(ActiveState.ACTIVE));
+	}
+	
+	//Note that because Java does not support polymorphism of variables, only methods,
+	//we need to call this method to pick up the field names of descendant types.
+	public String[] getAdditionalFieldNames() {
+		return additionalFieldNames;
 	}
 }

@@ -7,7 +7,7 @@ import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.io.File;
-import java.time.Instant;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -37,13 +37,16 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
     private static final List<String> REVERT_DESCRIPTIONS = List.of(
             // Give me a value, i.e. 3502010019
     );
+    
+    private static boolean forceOutput = false;
 
     public static void main(String[] args) throws Exception {
         RevertComponentToParentVersion app = new RevertComponentToParentVersion();
         try {
+            String now = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             app.getArchiveManager().setPopulateReleasedFlag(true);
             app.newIdsRequired = false;
-            app.packageDir = "output/Delta_" + Instant.now().toString() + File.separator;
+            app.packageDir = "output" + File.separator + "Delta_" + now + File.separator;
             app.init(args);
             app.postInit();
             app.validateScriptArguments();
@@ -116,15 +119,18 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             report(0, memberId, "ReferenceSetMember");
             if (parentMember == null) {
                 info(String.format("RefsetMember %s not found on parent and will be ignored by script.", memberId));
-                report(2, memberId, "ReferenceSetMember", "Doesn't exist on parent. Cannot be restored.");
+                report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Doesn't exist on parent. Cannot be restored.");
                 continue;
             }
 
             if (jumpedModule(childMember, parentMember)) {
-                report(1, memberId, "ReferenceSetMember", "Looks to have incorrectly jumped module.");
+                report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have incorrectly jumped module.");
+                writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
+            } else if (forceOutput) {
+                report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "'ForcedOutput' set to true");
                 writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
             } else {
-                report(2, memberId, "ReferenceSetMember", "Unknown fault.");
+                report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Unknown fault.");
             }
         }
     }
@@ -148,23 +154,21 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             Description childDescription = entrySet.getValue();
             Description parentDescription = parentDescriptions.get(descriptionId);
 
-            report(0, descriptionId, "Description");
+            report(PRIMARY_REPORT, descriptionId, "Description");
             if (parentDescription == null) {
                 info(String.format("Description %s not found on parent and will be ignored by script.", descriptionId));
-                report(2, descriptionId, "Description", "Doesn't exist on parent. Cannot be restored.");
+                report(TERTIARY_REPORT, descriptionId, "Description", "Doesn't exist on parent. Cannot be restored.");
                 continue;
             }
 
             if (lostEffectiveTime(childDescription, parentDescription)) {
-                report(1, descriptionId, "Description", "Looks to have lost effective time.");
+                report(SECONDARY_REPORT, descriptionId, "Description", "Looks to have lost effective time.");
                 writeToRF2File(descDeltaFilename, parentDescription.toRF2());
-            }
-
-            if (jumpedModule(childDescription, parentDescription)) {
-                report(1, descriptionId, "Description", "Looks to have jumped module.");
+            } else if (jumpedModule(childDescription, parentDescription)) {
+                report(SECONDARY_REPORT, descriptionId, "Description", "Looks to have jumped module.");
                 writeToRF2File(descDeltaFilename, parentDescription.toRF2());
             } else {
-                report(2, descriptionId, "Description", "Unknown fault.");
+                report(TERTIARY_REPORT, descriptionId, "Description", "No fault detected, ignoring.");
             }
         }
     }
@@ -256,6 +260,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
     }
 
     private String getFileNameByRefsetId(String refsetId) throws TermServerScriptException {
+         //See RF2Constants for constants for these values
         switch (refsetId) {
             case "734138000": // |Anatomy structure and entire association reference set|
             case "734139008": // |Anatomy structure and part association reference set|
@@ -273,6 +278,9 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             case "900000000000490003": // |Description inactivation indicator reference set|
             case "900000000000489007": // |Concept inactivation indicator reference set|
                 return attribValDeltaFilename;
+            case GB_ENG_LANG_REFSET:
+            case US_ENG_LANG_REFSET:
+                return langDeltaFilename;
             default:
                 throw new TermServerScriptException(String.format("Cannot get filename for reference set '%s'", refsetId));
         }

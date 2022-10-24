@@ -9,6 +9,8 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 
 	private static String VALUE_ID = "valueId";
 	
+	public static String[] additionalFieldNames = new String[] {VALUE_ID};
+	
 	public InactivationIndicatorEntry clone(String newComponentSctId) {
 		InactivationIndicatorEntry clone = new InactivationIndicatorEntry();
 		clone.id = UUID.randomUUID().toString();
@@ -113,5 +115,11 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 			differences.add("InactivationReasonId is different in " + name + ": " + this.getInactivationReasonId() + " vs " + otherI.getInactivationReasonId());
 		}
 		return differences;
+	}
+	
+	//Note that because Java does not support polymorphism of variables, only methods,
+	//we need to call this method to pick up the field names of descendant types.
+	public String[] getAdditionalFieldNames() {
+		return additionalFieldNames;
 	}
 }

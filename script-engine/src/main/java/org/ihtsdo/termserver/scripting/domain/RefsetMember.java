@@ -5,6 +5,7 @@ import java.util.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -13,20 +14,18 @@ public class
 
 RefsetMember extends Component implements ScriptConstants {
 	
-	protected static String[] additionalFieldNames = new String[0];
-
 	@SerializedName(value = "memberId", alternate = {"id"})
 	@Expose
-	protected  String memberId;
+	protected String memberId;
 	@SerializedName("refsetId")
 	@Expose
-	protected  String refsetId;
+	protected String refsetId;
 	@SerializedName("referencedComponentId")
 	@Expose
-	protected  String referencedComponentId;
+	protected String referencedComponentId;
 	@SerializedName("additionalFields")
 	@Expose
-	protected  Map<String, String> additionalFields = new HashMap<>();
+	protected Map<String, String> additionalFields = new HashMap<>();
 	@SerializedName("referencedComponent")
 	@Expose
 	protected Object referencedComponent;
@@ -34,6 +33,8 @@ RefsetMember extends Component implements ScriptConstants {
 	protected String deletionEffectiveTime;
 	
 	protected boolean isDeleted = false;
+	
+	private static boolean firstFieldNamesWarningGiven = false;
 	
 	public RefsetMember() {}
 	
@@ -132,19 +133,44 @@ RefsetMember extends Component implements ScriptConstants {
 		this.isDeleted = true;
 	}
 	
+	public String[] toRF2Deletion() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public String[] toRF2() {
+		return toRF2(getAdditionalFieldNames());
+	}
+	
 	public String[] toRF2(String[] additionalFieldNames) {
-		String[] rf2 =  new String[REF_IDX_FIRST_ADDITIONAL + additionalFieldNames.length];
-		rf2[REF_IDX_ID] = getId();
-		rf2[REF_IDX_EFFECTIVETIME] = (effectiveTime==null?"":effectiveTime);
-		rf2[REF_IDX_ACTIVE] = (active?"1":"0");
-		rf2[REF_IDX_MODULEID] = moduleId;
-		rf2[REF_IDX_REFSETID] = refsetId;
-		rf2[REF_IDX_REFCOMPID] = referencedComponentId;
-		for (int i=0; i <= additionalFieldNames.length; i++) {
-			int idx = i + REF_IDX_FIRST_ADDITIONAL;
-			rf2[idx] = getField(additionalFieldNames[i]);
+		//We're OK to output to RF2 without knowing exactly what this is as long as we have < 2
+		//fields to output.  Otherwise we need to know the field names
+		if (additionalFields.size() != additionalFieldNames.length) {
+			//If additionalFields is just 1 then the order doens't matter, so we can warn and continue
+			if (additionalFields.size() == 1) {
+				additionalFieldNames = additionalFields.keySet().toArray(String[]::new);
+				if (!firstFieldNamesWarningGiven) {
+					TermServerScript.warn("toRF2() called without fieldName order being known, but only 1 field so doesn't matter");
+					firstFieldNamesWarningGiven = true;
+				}
+			} else {
+				throw new IllegalArgumentException("Additional field names supplied do not match data.");
+			}
 		}
-		return rf2;
+		
+		String[] row = new String[6 + additionalFieldNames.length];
+		int col = 0;
+		row[col++] = getId();
+		row[col++] = effectiveTime==null?"":effectiveTime;
+		row[col++] = active?"1":"0";
+		row[col++] = moduleId;
+		row[col++] = refsetId;
+		row[col++] = referencedComponentId;
+		
+		for (String additionalFieldName : additionalFieldNames) {
+			row[col++] = getField(additionalFieldName);
+		}
+		return row;
 	}
 	
 	public static void populatefromRf2(RefsetMember m, String[] lineItems, String[] additionalFieldNames) throws TermServerScriptException {
@@ -165,38 +191,6 @@ RefsetMember extends Component implements ScriptConstants {
 		}
 	}
 	
-	public String[] toRF2Deletion() {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	public String[] toRF2() {
-		/*if (additionalFields.size() != 1) {
-			throw new IllegalStateException("Cannot yet determine column order for: " + this);
-		}
-		return new String[] { id, 
-				(effectiveTime==null?"":effectiveTime), 
-				(active?"1":"0"),
-				moduleId, refsetId,
-				referencedComponentId,
-				additionalFields.values().iterator().next()
-		};*/
-		
-		String[] row = new String[6 + additionalFields.size()];
-		int col = 0;
-		row[col++] = getId();
-		row[col++] = effectiveTime==null?"":effectiveTime;
-		row[col++] = active?"1":"0";
-		row[col++] = moduleId;
-		row[col++] = refsetId;
-		row[col++] = referencedComponentId;
-		
-		for (String additionalFieldName : additionalFieldNames) {
-			row[col++] = getField(additionalFieldName);
-		}
-		return row;
-	}
-	
 	public String[] getAdditionalFieldsArray() {
 		String[] fields = new String[getAdditionalFieldNames().length];
 		int col = 0;
@@ -209,7 +203,7 @@ RefsetMember extends Component implements ScriptConstants {
 	//Note that because Java does not support polymorphism of variables, only methods,
 	//we need to call this method to pick up the field names of descendant types.
 	public String[] getAdditionalFieldNames() {
-		return additionalFieldNames;
+		return new String[0];
 	}
 	
 	@Override 

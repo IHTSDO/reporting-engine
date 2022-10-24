@@ -1347,15 +1347,6 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		inferredRelationshipGroups = null;
 	}
 
-	
-	public Boolean isReleased() {
-		return released;
-	}
-
-	public void setReleased(Boolean released) {
-		this.released = released;
-	}
-
 	public int getMaxGroupId(CharacteristicType charType) {
 		int maxGroupId = 0;
 		for (RelationshipGroup g : getRelationshipGroups(charType)) {
