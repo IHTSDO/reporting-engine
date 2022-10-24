@@ -98,13 +98,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		
 		allActiveConceptsSorted = SnomedUtils.sortActive(gl.getAllConcepts());
 		allInactiveConceptsSorted = SnomedUtils.sortInactive(gl.getAllConcepts());
-		TransitiveClosure tc = gl.generateTransativeClosure();
 		
 		info ("Loading Previous Data");
 		loadData(prevRelease);
 		
 		info("Reporting Top Level Hierarchy Switch");
-		topLevelHierarchySwitch(tc);
+		topLevelHierarchySwitch();
 		
 		info("Checking for fsn changes");
 		checkForFsnChange();
@@ -131,7 +130,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		compileSummaryCounts();
 	}
 
-	private void topLevelHierarchySwitch(TransitiveClosure tc) throws TermServerScriptException {
+	private void topLevelHierarchySwitch() throws TermServerScriptException {
 		String summaryItem = "Top level hierarchy switch";
 		initialiseSummaryInformation(summaryItem);
 		for (Concept c : allActiveConceptsSorted) {
@@ -139,7 +138,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				//Was this concept in the previous release and if so, has it switched?
 				Datum prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
-					Concept topLevel = getHierarchy(tc, c);
+					Concept topLevel = SnomedUtils.getHierarchy(gl, c);
 					if (!prevDatum.hierarchy.equals(topLevel.getId())) {
 						report (SECONDARY_REPORT, c, topLevel.toStringPref(), gl.getConcept(prevDatum.hierarchy).toStringPref());
 						incrementSummaryInformation(summaryItem);

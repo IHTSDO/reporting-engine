@@ -192,7 +192,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeConcepts() throws TermServerScriptException {
-		TransitiveClosure tc = gl.generateTransativeClosure();
 		info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
@@ -201,7 +200,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}*/
 			//Is this concept in scope?  Even if its not, some of its components might be.
 			if (c.isActive()) {	
-				topLevel = getHierarchy(tc, c);
+				topLevel = SnomedUtils.getHierarchy(gl, c);
 			} else {
 				//Was it active in the previous release?
 				if (prevData.containsKey(c.getConceptId())) {

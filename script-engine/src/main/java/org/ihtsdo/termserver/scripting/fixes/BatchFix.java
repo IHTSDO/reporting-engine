@@ -1431,6 +1431,20 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, boolean checkOnly, boolean allowCompromise) throws TermServerScriptException {
 		int changesMade = 0;
 		
+		//If we're not told the new Prox Prim Parent, then work it out from the hierarchy or semantic tag
+		if (newPPP == null) {
+			if (c.getFsn().contains("(disorder)")) {
+				newPPP = DISEASE;
+			} else {
+				newPPP = SnomedUtils.getHierarchy(gl, c);
+			}
+		}
+		
+		if (newPPP == null) {
+			report (t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Unable to determine appropriate PPP");
+			return NO_CHANGES_MADE;
+		}
+		
 		//Do we in fact need to make any changes here?
 		Set<Concept> existingParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 		if (existingParents.size() == 1 && existingParents.contains(newPPP)) {
@@ -1462,7 +1476,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					return CHANGE_MADE;
 				}
 			} else {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + newPPP + ", cannot remodel.");
+				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that requested: " + newPPP + ", cannot remodel.");
 			}
 		}
 		return changesMade;

@@ -8,7 +8,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
-import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
@@ -149,35 +148,6 @@ public class HistoricDataUser extends TermServerReport {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to load " + dataFile, e);
 		}
-	}
-	
-	protected Concept getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {
-		if (c.equals(ROOT_CONCEPT)) {
-			return c;
-		}
-
-		if (!c.isActive() || c.getDepth() == NOT_SET) {
-			return null;  //Hopefully the previous release will know
-		} 
-		
-		if (c.getDepth() == 1) {
-			return c;
-		} 
-		
-		for (Long sctId : tc.getAncestors(c)) {
-			Concept a = gl.getConcept(sctId);
-			if (a.getDepth() == 1) {
-				return a;
-			} else if (a.getDepth() == NOT_SET) {
-				//Is this a full concept or have we picked it up from a relationship?
-				if (a.getFsn() == null) {
-					warn (a + " encountered as ancestor of " + c + " has partial existence");
-				} else {
-					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + c.toString() + "\nDefined as: "+ a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				}
-			}
-		}
-		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\nDefined as: "+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 	}
 	
 	protected class Datum {

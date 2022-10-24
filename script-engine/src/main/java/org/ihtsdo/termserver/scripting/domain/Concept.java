@@ -167,10 +167,14 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 	}
 
 	public String getConceptId() {
+		if (conceptId == null && id != null) {
+			conceptId = id;
+		}
 		return conceptId;
 	}
 
 	public void setConceptId(String conceptId) {
+		setId(conceptId);
 		this.conceptId = conceptId;
 	}
 
@@ -1185,6 +1189,7 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		clone.setInactivationIndicator(inactivationIndicator);
 		clone.setReleased(released);
 		clone.setFsn(getFsn());
+		clone.setDepth(depth);
 		
 		//Copy all descriptions
 		ActiveState activeState = includeInactiveComponents ? ActiveState.BOTH : ActiveState.ACTIVE;
