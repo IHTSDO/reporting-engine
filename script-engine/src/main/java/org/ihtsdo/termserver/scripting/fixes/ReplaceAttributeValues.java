@@ -19,7 +19,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class ReplaceAttributeValues extends BatchFix {
 	
 	Map<Concept, Concept> replacementMap;
-	String ecl = "< 363787002 |Observable entity| : * = 86049000 |Malignant neoplasm, primary (morphologic abnormality)|";
+	//String ecl = "< 363787002 |Observable entity| : * = 86049000 |Malignant neoplasm, primary (morphologic abnormality)|";
+	String ecl = "* : * = 367651003  |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|";
 	RelationshipTemplate addRelationship; 
 	
 	protected ReplaceAttributeValues(BatchFix clone) {
@@ -34,6 +35,7 @@ public class ReplaceAttributeValues extends BatchFix {
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
+			//fix.runStandAlone = true;
 			fix.taskPrefix = "Observable ";
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
@@ -46,12 +48,12 @@ public class ReplaceAttributeValues extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replacementMap = new HashMap<>();
-		replacementMap.put(gl.getConcept("86049000 |Malignant neoplasm, primary|"), 
-							gl.getConcept("1240414004 |Malignant neoplasm morphology|"));
+		replacementMap.put(gl.getConcept("367651003 |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|"), 
+							gl.getConcept("1240414004 |Malignant neoplasm|"));
 		
-		Concept addType = gl.getConcept(" 704321009 |Characterizes (attribute)|");
-		Concept addTarget = gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|");
-		addRelationship = new RelationshipTemplate(addType, addTarget, RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS);
+		//Concept addType = gl.getConcept(" 704321009 |Characterizes (attribute)|");
+		//Concept addTarget = gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|");
+		//addRelationship = new RelationshipTemplate(addType, addTarget, RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS);
 		super.postInit();
 	}
 
@@ -61,6 +63,9 @@ public class ReplaceAttributeValues extends BatchFix {
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = switchValues(task, loadedConcept);
+			if (changesMade > 0) {
+				changesMade += checkAndSetProximalPrimitiveParent(task, loadedConcept, null);
+			}
 			updateConcept(task, loadedConcept, info);
 		} catch (ValidationFailure v) {
 			report(task, concept, v);

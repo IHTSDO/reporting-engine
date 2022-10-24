@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import java.io.*;
@@ -2167,6 +2168,40 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			}
 		}
 		return false;
+	}
+	
+	public static Concept getHierarchy(GraphLoader gl, Concept c) throws TermServerScriptException {
+		TransitiveClosure tc = gl.getTransitiveClosure();
+		
+		if (c.equals(ROOT_CONCEPT)) {
+			return c;
+		}
+
+		if (!c.isActive() || c.getDepth() == NOT_SET) {
+			if (c.getDepth() == NOT_SET) {
+				TermServerScript.warn("Depth of " + c + " not set.  Is that expected?");
+			}
+			return null;  //Hopefully the previous release will know
+		} 
+		
+		if (c.getDepth() == 1) {
+			return c;
+		} 
+		
+		for (Long sctId : tc.getAncestors(c)) {
+			Concept a = gl.getConcept(sctId);
+			if (a.getDepth() == 1) {
+				return a;
+			} else if (a.getDepth() == NOT_SET) {
+				//Is this a full concept or have we picked it up from a relationship?
+				if (a.getFsn() == null) {
+					TermServerScript.warn(a + " encountered as ancestor of " + c + " has partial existence");
+				} else {
+					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + c.toString() + "\nDefined as: "+ a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				}
+			}
+		}
+		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\nDefined as: "+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 	}
 
 }

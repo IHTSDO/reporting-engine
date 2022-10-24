@@ -40,7 +40,6 @@ public class GraphLoader implements ScriptConstants {
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-	private TransitiveClosure previousTransativeClosure;
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
 	
@@ -53,6 +52,9 @@ public class GraphLoader implements ScriptConstants {
 	private boolean recordPreviousState = false;
 	
 	public StringBuffer log = new StringBuffer();
+	
+	private TransitiveClosure transitiveClosure;
+	private TransitiveClosure previousTransitiveClosure;
 	
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
@@ -141,7 +143,8 @@ public class GraphLoader implements ScriptConstants {
 		
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
-		previousTransativeClosure = null;
+		previousTransitiveClosure = null;
+		transitiveClosure = null;
 		
 		fsnMap = null;
 		usptMap = null;
@@ -1501,8 +1504,15 @@ public class GraphLoader implements ScriptConstants {
 
 	public void populatePreviousTransativeClosure() throws TermServerScriptException {
 		TermServerScript.info("Populating PREVIOUS transitive closure");
-		previousTransativeClosure = generateTransativeClosure();
+		previousTransitiveClosure = generateTransativeClosure();
 		TermServerScript.info("PREVIOUS transitive closure complete");
+	}
+	
+	public TransitiveClosure getTransitiveClosure() throws TermServerScriptException {
+		if (transitiveClosure == null) {
+			transitiveClosure = generateTransativeClosure();
+		}
+		return transitiveClosure;
 	}
 	
 	public TransitiveClosure generateTransativeClosure() throws TermServerScriptException {
@@ -1521,7 +1531,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 
 	public TransitiveClosure getPreviousTC() {
-		return previousTransativeClosure;
+		return previousTransitiveClosure;
 	}
 
 	public void setExcludedModules(HashSet<String> excludedModules) {
