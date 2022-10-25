@@ -54,7 +54,6 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 	}
 
 	public void runJob() throws TermServerScriptException {
-		
 		List<Concept> subset;
 		if (subsetECL != null) {
 			subset = new ArrayList<>(findConcepts(subsetECL));
@@ -64,7 +63,7 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 		subset.sort(Comparator.comparing(Concept::getFsn));
 		
 		Set<GroupPair> processedPairs = new HashSet<>();
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : subset) {
 			/*if (c.getConceptId().equals("10311005")) {
 				debug("here");
 			}*/
