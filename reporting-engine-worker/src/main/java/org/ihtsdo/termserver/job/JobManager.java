@@ -89,6 +89,7 @@ public class JobManager {
 	public void run(JobRun jobRun) {
 		boolean metadataRequest = false;
 		Thread watcherThread = null;
+		Date startTime = new Date();
 		try {
 			//Is this a special metadata request?
 			if (jobRun.getJobName().equals(METADATA)) {
@@ -126,7 +127,9 @@ public class JobManager {
 			}
 		} finally {
 			if (!metadataRequest) {
-				jobRun.setResultTime(new Date());
+				Date endTime = new Date();
+				jobRun.setResultTime(endTime);
+				jobRun.setExecutionTime((endTime.getTime() - startTime.getTime())/1000);
 				transmitter.send(this, jobRun);
 			}
 			try {
