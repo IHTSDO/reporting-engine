@@ -1,14 +1,12 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.fixes.metadata;
 
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 
 public class CodeSystemMetadataPopulation extends BatchFix implements ScriptConstants {
@@ -73,7 +71,7 @@ public class CodeSystemMetadataPopulation extends BatchFix implements ScriptCons
 			}
 			
 			if (doUpdate) {
-				Map<String, String> metaDataUpdate = new HashMap<>();
+				Map<String, Object> metaDataUpdate = new HashMap<>();
 				metaDataUpdate.put("previousDependencyPackage", previousDependencyPackage);
 				if (!dryRun) {
 					tsClient.updateMetadata(branch.getPath(), metaDataUpdate);
@@ -93,11 +91,6 @@ public class CodeSystemMetadataPopulation extends BatchFix implements ScriptCons
 			case "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip" : return "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip";
 		}
 		return null;
-	}
-
-	@Override
-	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		throw new NotImplementedException("Fix does not work with concepts");
 	}
 
 }

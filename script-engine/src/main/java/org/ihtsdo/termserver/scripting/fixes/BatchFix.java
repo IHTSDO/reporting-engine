@@ -89,8 +89,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return allComponentsToProcess;
 	}
 	
-	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure;
-
+	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		throw new NotImplementedException("Override doFix in the Concrete Class");
+	}
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Default implementation uses any specified ECL
 		return new ArrayList<>(SnomedUtils.sortFSN(findConcepts(subsetECL)));
