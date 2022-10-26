@@ -288,7 +288,7 @@ public class GraphLoader implements ScriptConstants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
-				/*if (conceptId == 1148749005L) {
+				/*if (conceptId == 1163463008L) {
 					TermServerScript.debug("Here");
 				}
 				
@@ -299,9 +299,13 @@ public class GraphLoader implements ScriptConstants {
 				try {
 					//Also save data in RF2 form so we can build Snapshot
 					AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
-					//Are we overwriting an existing axiom?
+					
+					//Are we overwriting an existing axiom?  We also want to capture what stated relationships
+					//were previously present so we can work out the invidiual published states.
+					Set<Relationship> previouslyPublishedStatedRels = null;
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
+						previouslyPublishedStatedRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 						axiomEntry.setReleased(replacedAxiomEntry.isReleased());
 						if (isRecordPreviousState()) {
 							String previousState = replacedAxiomEntry.getMutableFields();
@@ -373,6 +377,17 @@ public class GraphLoader implements ScriptConstants {
 						//Now we might need to adjust the active flag if the axiom is being inactivated
 						//Or juggle the groupId, since individual axioms don't know about each other's existence
 						alignAxiomRelationships(c, relationships, axiomEntry, axiomEntry.isActive());
+						
+						//Although axiom may have been published, relationships that were not previously
+						//present should not have that published state given to them
+						if (!isReleased && previouslyPublishedStatedRels != null && StringUtils.isEmpty(axiomEntry.getEffectiveTime())) {
+							for (Relationship r : relationships) {
+								if (!previouslyPublishedStatedRels.contains(r)) {
+									r.setReleased(false);
+								}
+							}
+						}
+						
 						for (Relationship r : relationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}

@@ -289,6 +289,9 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		}
 		
  		for (Concept c : gl.getAllConcepts()) {
+ 			/*if (c.getId().equals("1163463008")) {
+ 				debug("here");
+ 			}*/
 			//Filter for active concepts that have already been published and are sufficiently defined.
 			if (c.isActive() && c.isReleased() &&
 					c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
@@ -338,6 +341,9 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 
 	private List<Concept> getNewPrimitiveParents(Concept c) {
 		//Get new (ie not released) stated IS_A relationship targets
+		//This changes with axioms because an axiom can be released, and then changed
+		//which means relationships we've never seen before get marked as released.
+		//This has been addressed in GraphLoader by checking for pre-existing stated rels
 		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
 				.filter(r -> r.getType().equals(IS_A) && !r.isReleased())
 				.map(r -> r.getTarget())
