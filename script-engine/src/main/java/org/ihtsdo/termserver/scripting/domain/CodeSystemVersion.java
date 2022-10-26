@@ -83,5 +83,9 @@ public class CodeSystemVersion {
 	public void setBranchPath(String branchPath) {
 	this.branchPath = branchPath;
 	}
+	
+	public String toString() {
+		return shortName + " on branch: " + branchPath + " - latest: " + getEffectiveDate();
+	}
 
 }

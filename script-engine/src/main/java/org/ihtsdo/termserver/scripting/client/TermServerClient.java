@@ -800,7 +800,7 @@ public class TermServerClient {
 		}
 	}
 
-	public void updateMetadata(String branchPath, Map<String, String> metaDataUpdate) throws TermServerScriptException {
+	public void updateMetadata(String branchPath, Map<String, Object> metaDataUpdate) throws TermServerScriptException {
 		String url = this.url + "/branches/" + branchPath + "/metadata-upsert";
 		try {
 			restTemplate.put(url, metaDataUpdate, Object.class);

@@ -41,5 +41,10 @@ public class CodeSystem {
 	public void setBranchPath(String branchPath) {
 		this.branchPath = branchPath;
 	}
+	
+	@Override
+	public String toString() {
+		return shortName + " on branch: " + branchPath + (latestVersion == null ? "" : " - latest: " + latestVersion.getEffectiveDate());
+	}
 
 }
