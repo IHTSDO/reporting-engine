@@ -98,6 +98,15 @@
 									</mapper>
 								</data>
 								<data>
+									<src>${basedir}/scripts</src>
+									<dst>scripts</dst>
+									<type>directory</type>
+									<mapper>
+										<type>perm</type>
+										<prefix>/opt/${packageName}/scripts</prefix>
+									</mapper>
+								</data>
+								<data>
 									<src>${basedir}/src/deb/supervisor.conf</src>
 									<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
 									<type>file</type>
