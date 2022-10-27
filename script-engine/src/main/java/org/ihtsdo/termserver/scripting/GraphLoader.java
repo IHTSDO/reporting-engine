@@ -380,7 +380,7 @@ public class GraphLoader implements ScriptConstants {
 						
 						//Although axiom may have been published, relationships that were not previously
 						//present should not have that published state given to them
-						if (!isReleased && previouslyPublishedStatedRels != null && StringUtils.isEmpty(axiomEntry.getEffectiveTime())) {
+						if (isReleased != null && !isReleased && previouslyPublishedStatedRels != null && StringUtils.isEmpty(axiomEntry.getEffectiveTime())) {
 							for (Relationship r : relationships) {
 								if (!previouslyPublishedStatedRels.contains(r)) {
 									r.setReleased(false);
