@@ -27,6 +27,7 @@ public class BatchImportConcept extends Concept {
 		this.row = row;
 		this.requiresNewSCTID = requiresNewSCTID;
 		this.setModuleId(moduleId);
+		this.active = true;
 	}
 	
 	private BatchImportConcept() {
