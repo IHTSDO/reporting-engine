@@ -1047,13 +1047,25 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		
 		//Or do we need to create and add?
 		//Is this type (or type/value) unique for the concept
-		if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS) {
+		//or (new feature) do we want to replace any attributes of the same type if they exist
+		if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS ||
+				mode == RelationshipTemplate.Mode.REPLACE_TYPE_IN_THIS_GROUP) {
 			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					type,
 					ActiveState.ACTIVE);
 			if (rels.size() > 0) {
-				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, type + " attribute type already exists: " + rels.iterator().next());
-				return changesMade;
+				if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS) {
+					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, type + " attribute type already exists: " + rels.iterator().next());
+					return changesMade;
+				} else {
+					//Removing existing relationships of the same type, but only in this group
+					rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+							type,
+							groupId);
+					for (Relationship remove : rels) {
+						changesMade += removeRelationship(t, c, remove);
+					}
+				}
 			}
 		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS) {
 			RelationshipTemplate rt = new RelationshipTemplate(type,value);
