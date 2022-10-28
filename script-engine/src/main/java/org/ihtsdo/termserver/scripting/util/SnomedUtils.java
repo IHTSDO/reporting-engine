@@ -2204,4 +2204,17 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\nDefined as: "+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 	}
 
+	public static String toString(Map<String, Acceptability> acceptabilityMap, boolean lineFeed) throws TermServerScriptException {
+		String str = "{ ";
+		boolean isFirst = true;
+		for (Map.Entry<String, Acceptability> entry : acceptabilityMap.entrySet()) {
+			if (!isFirst) {
+				str += lineFeed?",\n":", ";
+			} else {
+				isFirst = false;
+			}
+			str += entry.getKey() + " --> " + translateAcceptability(entry.getValue());
+		}
+		return str + " }";
+	}
 }
