@@ -39,15 +39,11 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 			fix.inputFileHasHeaderRow = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
-			fix.postLoadInit();
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
 		}
-	}
-
-	private void postLoadInit() throws TermServerScriptException {
-		super.postInit();
 	}
 
 	@Override
