@@ -575,6 +575,10 @@ public class ArchiveManager implements ScriptConstants {
 			if (fileType.equals(SNAPSHOT) && populatePreviousTransativeClosure) {
 				gl.populatePreviousTransativeClosure();
 			}
+			
+			if(!isDelta && gl.isPopulateOriginalModuleMap()) {
+				gl.populateOriginalModuleMap();
+			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 		}
