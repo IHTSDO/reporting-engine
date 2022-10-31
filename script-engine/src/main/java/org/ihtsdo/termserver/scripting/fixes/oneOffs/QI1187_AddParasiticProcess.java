@@ -16,12 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class QI1187_AddParasiticProcess extends BatchFix {
 	
-	private Set<String> exclusions;
+	private Set<String> lexicalExclusions;
+	private Set<Concept> excludedConcepts = new HashSet<>();
 	private RelationshipTemplate relTemplate;
 	//private RelationshipTemplate workAroundToRemove;
 	//String inclusionText = "primary";
 	//private Map<Concept, Concept> replaceValuesMap;
-	Collection<Concept> matchValues;
+	private Collection<Concept> matchValues;
+	private Collection<Concept> excludeValues = new HashSet<>();
 	
 	protected QI1187_AddParasiticProcess(BatchFix clone) {
 		super(clone);
@@ -52,17 +54,27 @@ public class QI1187_AddParasiticProcess extends BatchFix {
 				"<<11950008 |Phylum Acanthocephala (organism)| OR " + 
 				"<<106762008 |Phylum Arthropoda (organism)| ) } )" +
 				" MINUS " +
-				" (< 404684003 |Clinical finding| : { 246075003 |Causative agent (attribute)| = *, 370135005 |Pathological process (attribute)|= 442614005 |Parasitic process (qualifier value)| })";
+				" (< 404684003 |Clinical finding| : { 246075003 |Causative agent (attribute)| = *, 370135005 |Pathological process (attribute)| = 442614005 |Parasitic process (qualifier value)| })";
 		relTemplate = new RelationshipTemplate(PATHOLOGICAL_PROCESS, gl.getConcept("442614005 |Parasitic process (qualifier value)| "));
 		//workAroundToRemove = new RelationshipTemplate(ASSOC_MORPH, gl.getConcept("86049000 |Malignant neoplasm, primary (morphologic abnormality)|"));
-		exclusions = new HashSet<>();
+		lexicalExclusions = new HashSet<>();
 		//exclusions.add("metastasis");
 		//replaceValuesMap = new HashMap<>();
 		//replaceValuesMap.put(gl.getConcept("86049000 |Malignant neoplasm, primary|"), gl.getConcept("1240414004 |Malignant neoplasm morphology|"));
-		matchValues = findConcepts( " <<417396000 |Kingdom Protozoa (organism)| OR " + 
+		matchValues = findConcepts(" <<417396000 |Kingdom Protozoa (organism)| OR " + 
 				"<<441649000 |Class Cestoda and/or Class Trematoda and/or Phylum Nemata (organism)| OR" + 
 				"<<11950008 |Phylum Acanthocephala (organism)| OR" + 
 				"<<106762008 |Phylum Arthropoda (organism)|" );
+		excludeValues = findConcepts("<<472964009 |Allergic process (qualifier value)|");
+		
+		excludedConcepts.add(gl.getConcept("838335003 |Arthropod bite caused by Atrax (disorder)|"));
+		excludedConcepts.add(gl.getConcept("68843000 |Disease caused by Arthropod (disorder)|"));
+		excludedConcepts.add(gl.getConcept("240884008 |Arthropod dermatosis (disorder)|"));
+		excludedConcepts.add(gl.getConcept("402151003 |Dermatosis caused by Arachnida (disorder)|"));
+		excludedConcepts.add(gl.getConcept("402152005 |Dermatosis caused by spider (disorder)|"));
+		excludedConcepts.add(gl.getConcept("402153000 |Dermatosis caused by scorpion (disorder)|"));
+		excludedConcepts.add(gl.getConcept("403147005 |Dermatosis caused by moth and/or butterfly (disorder)|"));
+		excludedConcepts.add(gl.getConcept("402149002 |Dermatosis caused by beetle (disorder)|"));
 		super.postInit();
 	}
 
@@ -110,9 +122,21 @@ public class QI1187_AddParasiticProcess extends BatchFix {
 	}
 
 	private boolean isExcluded(Concept c) {
+		if (excludedConcepts.contains(c)) {
+			return true;
+		}
+		
 		String fsn = " " + c.getFsn().toLowerCase();
-		for (String exclusionWord : exclusions) {
+		for (String exclusionWord : lexicalExclusions) {
 			if (fsn.contains(exclusionWord)) {
+				return true;
+			}
+		}
+		
+		//Does this concept feature an excluded value?
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (excludeValues.contains(r.getTarget())) {
+				reportSafely(PRIMARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept features excluded attribute value");
 				return true;
 			}
 		}
