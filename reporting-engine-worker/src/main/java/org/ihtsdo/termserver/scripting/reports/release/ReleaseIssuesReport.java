@@ -95,6 +95,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
+	private List<String> expectedExtensionModules = null;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
@@ -173,6 +175,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 		if (isMS()) {
 			defaultModule = project.getMetadata().getDefaultModuleId();
+			expectedExtensionModules = project.getMetadata().getExpectedExtensionModules();
+			if (expectedExtensionModules == null) {
+				report(null, "expectedExtensionModules metadata not populated, using defaultModuleId instead.");
+				expectedExtensionModules = Collections.singletonList(defaultModule);
+			}
 		}
 		
 		semTagHierarchyMap.put("(regime/therapy)", gl.getConcept("243120004|Regimes and therapies (regime/therapy)|"));
@@ -221,9 +228,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...modules are appropriate (~10 seconds)");
 		parentsInSameModule();
 		if (isMS()) {
-			unexpectedDescriptionModulesMS();
-			unexpectedRelationshipModulesMS();
-			unexpectedAxiomModulesMS();
+			unexpectedComponentModulesMS();
 			unnecessaryModuleJumping();
 		} else {
 			unexpectedDescriptionModules();
@@ -415,16 +420,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	/* Since and extension is based on a release, any modified description should
 	 * belong to the default module
 	 */
-	private void unexpectedDescriptionModulesMS() throws TermServerScriptException {
-		String issueStr ="Unexpected extension description module";
+	private void unexpectedComponentModulesMS() throws TermServerScriptException {
+		String issueStr ="Unexpected extension component module";
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConcepts) {
-			for (Description d : c.getDescriptions()) {
-				if (StringUtils.isEmpty(d.getEffectiveTime()) && !d.getModuleId().equals(defaultModule)) {
-					String msg = "Default module " + defaultModule + " vs Desc module " + d.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(d), isActive(c,d), msg, d);
+			for (Component comp: SnomedUtils.getAllComponents(c)) {
+				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
+					String msg = "Default module " + defaultModule + " vs component module " + comp.getModuleId();
+					boolean reported = report(c, issueStr, isLegacy(comp), isActive(c,comp), msg, comp);
 					if (reported) {
-						if (isLegacy(d).equals("Y")) {
+						if (isLegacy(comp).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
@@ -463,46 +468,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (!a.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Axiom module " + a.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(a), isActive(c,a), msg, a);
-					if (reported) {
-						if (isLegacy(a).equals("Y")) {
-							incrementSummaryInformation("Legacy Issues Reported");
-						}	else {
-							incrementSummaryInformation("Fresh Issues Reported");
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	private void unexpectedRelationshipModulesMS() throws TermServerScriptException {
-		String issueStr = "Unexpected extension inf rel module";
-		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
-			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				if (StringUtils.isEmpty(r.getEffectiveTime()) && !r.getModuleId().equals(defaultModule)) {
-					String msg = "Default module " + defaultModule + " vs Rel module " + r.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(r), isActive(c,r), msg, r);
-					if (reported) {
-						if (isLegacy(r).equals("Y")) {
-							incrementSummaryInformation("Legacy Issues Reported");
-						}	else {
-							incrementSummaryInformation("Fresh Issues Reported");
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	private void unexpectedAxiomModulesMS() throws TermServerScriptException {
-		String issueStr = "Unexpected extension axiom module";
-		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
-			for (AxiomEntry a : c.getAxiomEntries()) {
-				if (StringUtils.isEmpty(a.getEffectiveTime()) && !a.getModuleId().equals(defaultModule)) {
-					String msg = "Default module " + defaultModule + " vs Axiom module " + a.getModuleId();
 					boolean reported = report(c, issueStr, isLegacy(a), isActive(c,a), msg, a);
 					if (reported) {
 						if (isLegacy(a).equals("Y")) {

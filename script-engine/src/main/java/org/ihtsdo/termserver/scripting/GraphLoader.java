@@ -51,6 +51,9 @@ public class GraphLoader implements ScriptConstants {
 	private boolean checkForExcludedModules = false;
 	private boolean recordPreviousState = false;
 	
+	protected boolean populateOriginalModuleMap = false;
+	protected Map<Component, String> originalModuleMap = null;
+	
 	public StringBuffer log = new StringBuffer();
 	
 	private TransitiveClosure transitiveClosure;
@@ -1681,4 +1684,31 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 	
+	public boolean isPopulateOriginalModuleMap() {
+		return populateOriginalModuleMap;
+	}
+
+	public void setPopulateOriginalModuleMap(boolean populateOriginalModuleMap) {
+		this.populateOriginalModuleMap = populateOriginalModuleMap;
+	}
+	
+	public Map<Component, String> getOriginalModuleMap() {
+		return originalModuleMap;
+	}
+	
+	public void populateOriginalModuleMap() {
+		TermServerScript.info("Populating Original Module Map");
+		originalModuleMap = new HashMap<>();
+		for (Concept c : getAllConcepts()) {
+			for (Component comp : SnomedUtils.getAllComponents(c)) {
+				if (StringUtils.isEmpty(comp.getEffectiveTime())) {
+					throw new IllegalStateException("Can't populate original module on unreleased components like " + comp);
+				}
+				if (originalModuleMap.containsKey(comp)) {
+					throw new IllegalStateException("Original module map already contains: " + comp);
+				}
+				originalModuleMap.put(comp, comp.getModuleId());
+			}
+		}
+	}
 }
