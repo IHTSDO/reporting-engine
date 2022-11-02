@@ -53,4 +53,8 @@ public class TransitiveClosure implements ScriptConstants {
 		}
 		return descendantMap.get(id);
 	}
+	
+	public boolean contains(Long id) {
+		return descendantMap.containsKey(id);
+	}
 }
