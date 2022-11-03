@@ -9,7 +9,7 @@ APP_NAME=[[packageName]]
 # Make directories/permissions required
 # (means the AIM doesn't need to change for software updates)
 APP_DIR=/opt/$APP_NAME
-DIRECTORIES="historic-data releases snapshots resources secure reports"
+DIRECTORIES="historic-data releases snapshots resources secure reports scripts"
 
 for DIRECTORY in $DIRECTORIES; do
    sudo mkdir -p $APP_DIR/$DIRECTORY
