@@ -50,14 +50,15 @@ public class DescendantsGainedAndLostReport extends TermServerReport implements 
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Previous Count, Current Count (includes new), Hierarchy Movement Count (does not include inactivated)",
+		countNewAsGained = getJobRun().getParamBoolean(COUNT_NEW_AS_GAINED);
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Previous Count, Current Count " + (countNewAsGained?"(includes new)":"(does not include new)") + ", Hierarchy Movement Count (does not include inactivated)",
 				"SCTID, FSN, Semtag, Movement, Concept"};
 		String[] tabNames = new String[] {	"Summary",
 				"Detail"};
 		cache = gl.getAncestorsCache();
 		ptc = gl.getPreviousTC();
 		tc = gl.getTransitiveClosure();
-		countNewAsGained = getJobRun().getParamBoolean(COUNT_NEW_AS_GAINED);
+		
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
