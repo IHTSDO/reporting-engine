@@ -24,6 +24,7 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = true; // We'll only be inactivating existing relationships
 			delta.init(args);
+			delta.moduleId = "11000146104";
 			delta.loadProjectSnapshot(false);
 			delta.postInit();
 			delta.process();
@@ -38,10 +39,19 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			}
 		}
 	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {
+				"Id, FSN, SemTag, Severity, Action, Detail, Detail, Detail"};
+		String[] tabNames = new String[] {	
+				"Processing Report"};
+		super.postInit(tabNames, columnHeadings, false);
+	}
 
 	public void process() throws TermServerScriptException {
 		for (Concept c : identifyComponentsToProcess()) {
 			cloneDescriptions(c);
+			outputRF2(c, true);
 		}
 	}
 	
@@ -51,23 +61,38 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			Set<String> nonEnLangRefsets = getNonEnLangRefsets(c.getDescription(d.getId()));
 			if (nonEnLangRefsets.size() > 0) {
 				Description clone = d.clone(descIdGenerator.getSCTID());
+				clone.setDirty();
+				clone.setLang("nl");
+				clone.setModuleId(moduleId);
 				//Remove the EN dialect acceptability from the clone's map
 				//The rest of the values can be left 'as is'
-				clone.getAcceptabilityMap().remove(GB_ENG_LANG_REFSET);
-				clone.getAcceptabilityMap().remove(US_ENG_LANG_REFSET);
+				for (LangRefsetEntry l : new ArrayList<>(clone.getLangRefsetEntries())) {
+					if (enLangRefsets.contains(l.getRefsetId())) {
+						clone.getLangRefsetEntries().remove(l);
+					} else {
+						l.setModuleId(moduleId);
+						l.setDirty();
+					}
+				}
 				//And add the new description to our concept
 				c.addDescription(clone);
+				clone.calculateAcceptabilityMap();
 				report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d.getId(), clone, SnomedUtils.toString(clone.getAcceptabilityMap(), true));
 				
-				//And remove the non-EN langrefset entries from the original EN description
-				d.getAcceptabilityMap().keySet().removeAll(nonEnLangRefsets);
+				//And inactivate the non-EN langrefset entries from the original EN description
+				for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+					if (!enLangRefsets.contains(l.getRefsetId())) {
+						l.setActive(false);
+						l.setModuleId(moduleId);
+						l.setDirty();
+					}
+				}
+				d.calculateAcceptabilityMap();
 				String msg = "Removed: " + StringUtils.join(nonEnLangRefsets, ',');
 				msg += "\nRemaining: " +  SnomedUtils.toString(d.getAcceptabilityMap(), true);
 				report(c, Severity.LOW, ReportActionType.LANG_REFSET_MODIFIED, d.getId(), d, msg);
 			}
 		}
-		
-		
 	}
 
 	protected List<Concept> identifyComponentsToProcess() throws TermServerScriptException {
