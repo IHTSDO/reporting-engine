@@ -10,6 +10,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import com.google.gdata.model.atompub.Accept;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -771,6 +772,17 @@ public class Description extends Component implements ScriptConstants {
 
 	public void setAssociationTargets(AssociationTargets associationTargets) {
 		this.associationTargets = associationTargets;
+	}
+
+	public void calculateAcceptabilityMap() throws TermServerScriptException {
+		if (langRefsetEntries == null) {
+			throw new IllegalStateException("Must have langrefset entries loaded from RF2 to calculate acceptability map");
+		}
+		acceptabilityMap = new HashMap<>();
+		for (LangRefsetEntry lang : getLangRefsetEntries(ActiveState.ACTIVE)) {
+			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
+			setAcceptablity(lang.getRefsetId(), acceptability);
+		}
 	}
 
 }
