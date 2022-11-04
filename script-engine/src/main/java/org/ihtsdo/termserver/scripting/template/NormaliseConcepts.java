@@ -29,7 +29,8 @@ public class NormaliseConcepts extends BatchFix {
 	//private String ecl = "<< 10942006 |Plication (procedure)|  ";
 	//private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
 	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
-	private String ecl = "<3253007 |Discoloration of skin (finding)|";
+	//private String ecl = "<3253007 |Discoloration of skin (finding)|";
+	private String ecl = "< 67889009 |Irrigation (procedure)|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
@@ -66,9 +67,10 @@ public class NormaliseConcepts extends BatchFix {
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata"};
 		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
-		ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
+		//ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
 		//ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
 		//ppp = gl.getConcept("71388002 |Procedure (procedure)|");
+		//This can be passed through as null now, and calculated from the top level hierarchy
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -91,7 +93,7 @@ public class NormaliseConcepts extends BatchFix {
 	private int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
-		changesMade += checkAndSetProximalPrimitiveParent(t, c, ppp, false, false);
+		changesMade += checkAndSetProximalPrimitiveParent(t, c, null, false, false);
 		
 		//Remove any redundant relationships, or they'll be missing from the inferred view
 		changesMade += removeRedundandRelationships(t,c);
