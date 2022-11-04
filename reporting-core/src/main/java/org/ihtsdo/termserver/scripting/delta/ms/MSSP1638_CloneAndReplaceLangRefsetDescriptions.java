@@ -60,24 +60,31 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			//Is this description en with a non-en langrefset? Get local in-memory copy so we have access to RF2 LangRefsetEntries.
 			Set<String> nonEnLangRefsets = getNonEnLangRefsets(c.getDescription(d.getId()));
 			if (nonEnLangRefsets.size() > 0) {
-				Description clone = d.clone(descIdGenerator.getSCTID());
-				clone.setDirty();
-				clone.setLang("nl");
-				clone.setModuleId(moduleId);
-				//Remove the EN dialect acceptability from the clone's map
-				//The rest of the values can be left 'as is'
-				for (LangRefsetEntry l : new ArrayList<>(clone.getLangRefsetEntries())) {
-					if (enLangRefsets.contains(l.getRefsetId())) {
-						clone.getLangRefsetEntries().remove(l);
-					} else {
-						l.setModuleId(moduleId);
-						l.setDirty();
+				//Do we already have one of these in 'nl' - active or inactive?
+				Description existing = c.findTerm(d.getTerm(), "nl", true, true);
+				if (existing != null) {
+					rewireAcceptability(c, d, existing);
+					report(c, Severity.MEDIUM, ReportActionType.INFO, "Existing 'nl' description re-used", existing);
+				} else {
+					Description clone = d.clone(descIdGenerator.getSCTID());
+					clone.setDirty();
+					clone.setLang("nl");
+					clone.setModuleId(moduleId);
+					//Remove the EN dialect acceptability from the clone's map
+					//The rest of the values can be left 'as is'
+					for (LangRefsetEntry l : new ArrayList<>(clone.getLangRefsetEntries())) {
+						if (enLangRefsets.contains(l.getRefsetId())) {
+							clone.getLangRefsetEntries().remove(l);
+						} else {
+							l.setModuleId(moduleId);
+							l.setDirty();
+						}
 					}
+					//And add the new description to our concept
+					c.addDescription(clone);
+					clone.calculateAcceptabilityMap();
+					report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d.getId(), clone, SnomedUtils.toString(clone.getAcceptabilityMap(), true));
 				}
-				//And add the new description to our concept
-				c.addDescription(clone);
-				clone.calculateAcceptabilityMap();
-				report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d.getId(), clone, SnomedUtils.toString(clone.getAcceptabilityMap(), true));
 				
 				//And inactivate the non-EN langrefset entries from the original EN description
 				for (LangRefsetEntry l : d.getLangRefsetEntries()) {
@@ -95,8 +102,47 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 		}
 	}
 
+	private void rewireAcceptability(Concept c, Description d, Description existing) throws TermServerScriptException {
+		if (!existing.isActive()) {
+			existing.setActive(true);
+			report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_REACTIVATED, existing);
+		} 
+		//Get existing acceptability and enhance existing if required
+		for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+			if (!enLangRefsets.contains(l.getRefsetId())) {
+				String sctidAcceptability = l.getAcceptabilityId();
+				//Do we have acceptability on the existing descriptions
+				LangRefsetEntry existingAcceptability = existing.getLangRefsetEntry(ActiveState.ACTIVE, l.getRefsetId());
+				if (existingAcceptability == null) {
+					//Does it exist inactive then?
+					existingAcceptability = existing.getLangRefsetEntry(ActiveState.INACTIVE, l.getRefsetId());
+					if (existingAcceptability == null) {
+						LangRefsetEntry clone = l.clone(existing.getDescriptionId(), false);
+						clone.setDirty();
+						existing.addLangRefsetEntry(clone);
+					} else {
+						existingAcceptability.setActive(true);
+						existingAcceptability.setAcceptabilityId(sctidAcceptability);
+						report(c, Severity.MEDIUM, ReportActionType.LANG_REFSET_REACTIVATED, existingAcceptability);
+					}
+				} else if (sctidAcceptability.equals(SCTID_PREFERRED_TERM) && existingAcceptability.getAcceptabilityId().equals(SCTID_ACCEPTABLE_TERM)) {
+					existingAcceptability.setAcceptabilityId(SCTID_PREFERRED_TERM);
+					existingAcceptability.setDirty();
+					report(c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, "Upgraded A -> P", existing);
+				} else {
+					if (!d.getTerm().equals(existing.getTerm())) {
+						report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Case significance difference, removing nl langref from en term", d + "\n" + existing);
+					} else {
+						debug("Check what's happening here - same description, same acceptability?");
+					}
+				}
+			}
+		}
+	}
+
 	protected List<Concept> identifyComponentsToProcess() throws TermServerScriptException {
 		return gl.getAllConcepts().parallelStream()
+		//return List.of(gl.getConcept("43492007")).stream()
 				//.filter(c -> c.getFsn().toLowerCase().contains(inclusionText))
 				.filter(c -> hasEnglishDescriptionInNonEnglishLangRefset(c))
 				//.filter(c -> !gl.isOrphanetConcept(c))
