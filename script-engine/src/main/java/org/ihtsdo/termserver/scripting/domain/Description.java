@@ -785,4 +785,14 @@ public class Description extends Component implements ScriptConstants {
 		}
 	}
 
+	public LangRefsetEntry getLangRefsetEntry(ActiveState active, String refsetId) {
+		List<LangRefsetEntry> langRefsetEntries = getLangRefsetEntries(active, refsetId);
+		if (langRefsetEntries == null || langRefsetEntries.size() == 0) {
+			return null;
+		} else if (langRefsetEntries.size() > 1) {
+			throw new IllegalStateException("More than one langrefset entry for refset " + refsetId + " for " + this);
+		}
+		return langRefsetEntries.get(0);
+	}
+
 }
