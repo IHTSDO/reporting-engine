@@ -85,12 +85,12 @@ echo "Extracted right archive"
 #Flatten the left structure into directory "a"
 mkdir -p target/a
 echo "Moving ${leftName} from ${leftLocation} into flat structure 'a'"
-find ${leftLocation} -type f ! -name "*.json" -a | xargs -I {} mv {} target/a
+find ${leftLocation} -type f ! -name "*.json" | xargs -I {} mv {} target/a
 
 #Move the right structure into "b"
 mkdir -p target/b
 echo "Moving ${rightName} from ${rightLocation} into flat structure 'b'"
-find ${rightLocation} -type f ! -name "*.json" -a | xargs -I {} mv {} target/b
+find ${rightLocation} -type f ! -name "*.json" | xargs -I {} mv {} target/b
 
 #If we're normalising the dates, remove dates from a and b
 if [ "${normaliseDates}" == true ]; then

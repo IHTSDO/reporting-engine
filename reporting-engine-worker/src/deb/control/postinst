@@ -17,4 +17,6 @@ for DIRECTORY in $DIRECTORIES; do
    sudo chmod 755 $APP_DIR/$DIRECTORY
 done
 
+sudo chmod 755 $APP_DIR/scripts/*.sh
+
 supervisorctl update $APP_NAME || true
