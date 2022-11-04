@@ -229,7 +229,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		parentsInSameModule();
 		if (isMS()) {
 			unexpectedComponentModulesMS();
-			unnecessaryModuleJumping();
+			inappropriateModuleJumping();
 		} else {
 			unexpectedDescriptionModules();
 			unexpectedRelationshipModules();
@@ -293,9 +293,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("Summary tab complete, all done.");
 	}
 
-	private void unnecessaryModuleJumping() throws TermServerScriptException {
+	private void inappropriateModuleJumping() throws TermServerScriptException {
 		String issueStr = "Component module jumped, otherwise unchanged.";
+		String issueStr2 = "Component module jumped without parent";
 		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
 		for (Concept concept : allConceptsSorted) {
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
@@ -338,10 +340,34 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							incrementSummaryInformation("Fresh Issues Reported");
 						}
 					}
+				} else {
+					//Now even if there IS a difference, then we don't expect components to change
+					//module without their parent object - concept or description
+					Component owningObject = SnomedUtils.getParentComponent(c, gl);
+					if (!hasChangedModule(owningObject)) {
+						String msg = c.getIssues() + " vs " + c.getMutableFields();
+						boolean reported = report(concept, issueStr2, isLegacy(c), isActive(concept,c), msg, c, c.getId());
+						if (reported) {
+							if (isLegacy(c).equals("Y")) {
+								incrementSummaryInformation("Legacy Issues Reported");
+							}	else {
+								incrementSummaryInformation("Fresh Issues Reported");
+							}
+						}
+					}
 				}
 			}
 		}
 		
+	}
+
+	private boolean hasChangedModule(Component c) throws TermServerScriptException {
+		String[] previousState = c.getIssues().split(",");
+		String[] currentState = c.getMutableFields().split(",");
+		if (previousState.length != currentState.length) {
+			throw new TermServerScriptException("Investigate: component's state has changed length! " + c.getIssues() + " vs " + c);
+		}
+		return previousState[IDX_MODULEID].equals(currentState[IDX_MODULEID]);
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {

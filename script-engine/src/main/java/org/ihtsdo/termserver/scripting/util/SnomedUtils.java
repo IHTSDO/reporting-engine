@@ -1707,6 +1707,20 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return null;
 	}
+	
+	public static Component getParentComponent(Component c, GraphLoader gl) throws TermServerScriptException {
+		if (c instanceof RefsetMember) {
+			return getParentComponent((RefsetMember)c, gl);
+		} else if (c instanceof Concept) {
+			return null;
+		} else if (c instanceof Relationship) {
+			return ((Relationship)c).getSource();
+		} else if (c instanceof Description) {
+			return gl.getConcept(((Description)c).getConceptId());
+		} else {
+			throw new TermServerScriptException("Type could not be determined: " + c);
+		}
+	}
 
 	/*
 	 * Adds a historical association using the string based map format as per the Terminology Server's API
