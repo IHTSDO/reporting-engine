@@ -19,7 +19,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  */
-public class DescendantsGainedAndLostReport extends TermServerReport implements ReportClass {
+public class LostAndFoundDescendantsReport extends TermServerReport implements ReportClass {
 	private static String COUNT_NEW_AS_GAINED = "Count new concepts as gained";
 	
 	private AncestorsCache cache;
@@ -35,7 +35,7 @@ public class DescendantsGainedAndLostReport extends TermServerReport implements 
 		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		params.put(COUNT_NEW_AS_GAINED, "N");
 		//params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
-		TermServerReport.run(DescendantsGainedAndLostReport.class, args, params);
+		TermServerReport.run(LostAndFoundDescendantsReport.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -71,7 +71,7 @@ public class DescendantsGainedAndLostReport extends TermServerReport implements 
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
-				.withName("Descendants Gained and Lost Report")
+				.withName("Lost and Found Descendants")
 				.withDescription("This report lists descendants gained and lost in the current authoring cycle.  Note that a concept being made inactive does not qualify it for being 'lost'.  A lost concept must still be active.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
@@ -101,6 +101,11 @@ public class DescendantsGainedAndLostReport extends TermServerReport implements 
 				String stats = "+" + gainedDescendants.size() + " / -" + lostDescendants.size();
 				int previousCount = ptc.getDescendants(c).size();
 				int currentCount = tc.getDescendants(c).size();
+				//Skip concept if - despite being top level in our set, has no descendants and hasn't lost any
+				if (currentCount == 0 && lostDescendants.size() == 0) {
+					continue;
+				}
+				
 				report(c, previousCount, currentCount, stats);
 				
 				for (Long gainedConceptId : gainedDescendants) {
