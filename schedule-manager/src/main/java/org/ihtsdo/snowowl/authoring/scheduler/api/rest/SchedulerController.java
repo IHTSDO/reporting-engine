@@ -202,7 +202,7 @@ public class SchedulerController {
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/jobs/intitialise", method= RequestMethod.GET)
+	@RequestMapping(value="/jobs/initialise", method= RequestMethod.GET)
 	public void initialise() throws BusinessServiceException {
 		scheduleService.initialise();
 	}
