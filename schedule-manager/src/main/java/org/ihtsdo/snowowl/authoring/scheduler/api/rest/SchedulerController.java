@@ -237,7 +237,6 @@ public class SchedulerController {
 				.peek(j -> j.suppressParameters())
 				.peek(j -> j.setTerminologyServerUrl(null))
 				.peek(j -> j.setIssuesReported(null))
-				.peek(j -> j.setResultUrl(null))
 				.peek(j -> j.setDebugInfo(null))
 				.collect(Collectors.toList());
 	}
