@@ -952,9 +952,16 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		
 		if (includeInactive) {
 			for (Description d : getDescriptions(ActiveState.INACTIVE)) {
-				if (d.getTerm().equals(term) && 
-						(lang == null || lang.equals(d.getLang()))) {
-					return d;
+				if ((lang == null || lang.equals(d.getLang()))) {
+					if (caseInsensitive) {
+						term = term.toLowerCase();
+						String desc = d.getTerm().toLowerCase();
+						if (term.equals(desc)) {
+							return d;
+						}
+					} else if (d.getTerm().equals(term)) {
+							return d;
+					}
 				}
 			}
 		}
