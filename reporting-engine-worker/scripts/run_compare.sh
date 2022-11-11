@@ -1,38 +1,43 @@
 #!/bin/bash
 
-# Check for 6 input variables
-if [ $# -lt 6 ]
+# Check for 5 input variables
+if [ $# -lt 5 ]
 	then
 		echo "Not enough arguments supplied!" >&2
 		exit 1
 fi
 
 # Run with five parameters
-previousRelease=$1
-previousZip=$2
-currentRelease=$3
-currentZip=$4
-publishedFolder=$5
-uploadFolder=$6
+previousReleaseName=$1
+previousReleasePath=$2
+currentReleaseName=$3
+currentReleasePath=$4
+uploadFolder=$5
 
 # Set other parameters
-s3Release=snomed-releases/prod/published
+s3Release=snomed-releases
 
 rootFolder=$(pwd)
+
+previousZip=`echo "${previousReleasePath}" | sed -n 's/^\(.*\/\)*\(.*\)/\2/p'`
+currentZip=`echo "${currentReleasePath}" | sed -n 's/^\(.*\/\)*\(.*\)/\2/p'`
 
 previousDate=`echo "${previousZip}" | sed "s/.*_\([0-9]\{8\}\).*/\1/"`
 currentDate=`echo "${currentZip}" | sed "s/.*_\([0-9]\{8\}\).*/\1/"`
 
-runFolder="${previousRelease}_${previousDate}-${currentRelease}_${currentDate}"
+runFolder="${previousReleaseName}_${previousDate}-${currentReleaseName}_${currentDate}"
 
 # Debug
 echo "Running script with the following parameters:"
-echo $previousRelease
-echo $previousZip
-echo $currentRelease
-echo $currentZip
-echo $publishedFolder
+echo $previousReleaseName
+echo $previousReleasePath
+echo $currentReleaseName
+echo $currentReleasePath
 echo $uploadFolder
+
+echo "Names of .zip archives:"
+echo $previousZip
+echo $currentZip
 
 echo "Root folder and run folder:"
 echo $rootFolder
@@ -44,25 +49,25 @@ cp ${rootFolder}/compare-files.sh ${rootFolder}/${runFolder}/compare-files.sh
 cp ${rootFolder}/compare-packages-parallel.sh ${rootFolder}/${runFolder}/compare-packages-parallel.sh
 
 # If they exist copy the zip files from S3 into the run folder
-previousFileCheck=`aws s3 ls s3://${s3Release}/${publishedFolder}/${previousZip} | wc -l`
+previousFileCheck=`aws s3 ls s3://${s3Release}/${previousReleasePath} | wc -l`
 if [ "${previousFileCheck}" = "0" ] ; then
-	echo "File s3://${s3Release}/${publishedFolder}/${previousZip} is not in S3!" >&2
+	echo "File s3://${s3Release}/${previousReleasePath} is not in S3!" >&2
 	exit 1
 else
-	aws s3 cp s3://${s3Release}/${publishedFolder}/${previousZip} ${rootFolder}/${runFolder}/${previousZip}
+	aws s3 cp s3://${s3Release}/${previousReleasePath} ${rootFolder}/${runFolder}/${previousZip}
 fi
 
-currentFileCheck=`aws s3 ls s3://${s3Release}/${publishedFolder}/${currentZip} | wc -l`
+currentFileCheck=`aws s3 ls s3://${s3Release}/${currentReleasePath} | wc -l`
 if [ "${currentFileCheck}" = "0" ] ; then
-	echo "File s3://${s3Release}/${publishedFolder}/${currentZip} is not in S3!" >&2
+	echo "File s3://${s3Release}/${currentReleasePath} is not in S3!" >&2
 	exit 1
 else
-	aws s3 cp s3://${s3Release}/${publishedFolder}/${currentZip} ${rootFolder}/${runFolder}/${currentZip}
+	aws s3 cp s3://${s3Release}/${currentReleasePath} ${rootFolder}/${runFolder}/${currentZip}
 fi
 
 # Run the compare
 cd ${rootFolder}/${runFolder} || exit 1
-source compare-packages-parallel.sh "${previousRelease}_${previousDate}" "$previousZip" "${currentRelease}_${currentDate}" "$currentZip" -normaliseDates
+source compare-packages-parallel.sh "${previousReleaseName}_${previousDate}" "$previousZip" "${currentReleaseName}_${currentDate}" "$currentZip" -normaliseDates
 
 echo "Copy the results to S3"
 aws s3 cp ${rootFolder}/${runFolder}/target/c s3://snomed-compares/${uploadFolder} --recursive
