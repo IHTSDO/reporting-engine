@@ -92,10 +92,14 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(PREVIOUS_RELEASE_NAME).withType(JobParameter.Type.STRING)
-				.add(PREVIOUS_RELEASE_PATH).withType(JobParameter.Type.STRING)
-				.add(CURRENT_RELEASE_NAME).withType(JobParameter.Type.STRING)
-				.add(CURRENT_RELEASE_PATH).withType(JobParameter.Type.STRING)
+				.add(PREVIOUS_RELEASE_NAME).withType(JobParameter.Type.STRING).withMandatory()
+				.withDescription("Previous release short name (free text)")
+				.add(PREVIOUS_RELEASE_PATH).withType(JobParameter.Type.STRING).withMandatory()
+				.withDescription("Path to previous release .zip archive in S3 excluding bucket name")
+				.add(CURRENT_RELEASE_NAME).withType(JobParameter.Type.STRING).withMandatory()
+				.withDescription("Current release short name (free text)")
+				.add(CURRENT_RELEASE_PATH).withType(JobParameter.Type.STRING).withMandatory()
+				.withDescription("Path to current release .zip archive in S3 excluding bucket name")
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.GOOGLE.name())
 				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.CSV.name())
