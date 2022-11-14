@@ -39,7 +39,7 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 			fix.populateEditPanel = false;
 			fix.runStandAlone = true;
 			fix.populateTaskDescription = false;
-			fix.selfDetermining = true;
+			fix.selfDetermining = false;
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.overrideEclBranch = "MAIN";
@@ -89,8 +89,8 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 				return NO_CHANGES_MADE;
 			}
 			addAttribute(t, clone);
+			String expression = clone.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			Concept savedClone = createConcept(t, clone, null);
-			String expression = savedClone.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			report(t, c, Severity.LOW, ReportActionType.CONCEPT_ADDED, savedClone, expression);
 		} catch (ValidationFailure v) {
 			report(t, c, v);
@@ -201,7 +201,7 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 		return false;
 	}
 
-	@Override
+	/*@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		return findConcepts(subsetECL).parallelStream()
 				//.filter(c -> c.getFsn().toLowerCase().contains(inclusionText))
@@ -209,5 +209,5 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 				.filter(c -> !gl.isOrphanetConcept(c))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
-	}
+	}*/
 }
