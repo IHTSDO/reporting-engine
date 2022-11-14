@@ -31,14 +31,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
 			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13;  //Ensure refset tab is the last one as it's written at the end.
 	static final int MAX_REPORT_TABS = 14;
-	static final int DATA_WIDTH = 27;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
+	static final int DATA_WIDTH = 28;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5, 
-			IDX_MOVED_MODULE = 6, IDX_NEW_P = 7, IDX_NEW_SD = 8,
-			IDX_TOTAL = 9, IDX_INACT_AMBIGUOUS = 10,  IDX_INACT_MOVED_ELSEWHERE = 11, IDX_INACT_CONCEPT_NON_CURRENT = 12,
-			IDX_INACT_DUPLICATE = 13, IDX_INACT_ERRONEOUS = 14, IDX_INACT_INAPPROPRIATE = 15, IDX_INACT_LIMITED = 16,
-			IDX_INACT_OUTDATED = 17, IDX_INACT_PENDING_MOVE = 18, IDX_INACT_NON_CONFORMANCE = 19,
-			IDX_INACT_NOT_EQUIVALENT = 20, IDX_CONCEPTS_AFFECTED = 21, IDX_TOTAL_ACTIVE = 22, IDX_PROMOTED=23,
-			IDX_NEW_IN_QI_SCOPE = 24, IDX_GAINED_ATTRIBUTES = 25, IDX_LOST_ATTRIBUTES = 26; 
+			IDX_MOVED_MODULE = 6, IDX_CHANGED_INACTIVE = 7, IDX_NEW_P = 8, IDX_NEW_SD = 9,
+			IDX_TOTAL = 10, IDX_INACT_AMBIGUOUS = 11,  IDX_INACT_MOVED_ELSEWHERE = 12, IDX_INACT_CONCEPT_NON_CURRENT = 13,
+			IDX_INACT_DUPLICATE = 14, IDX_INACT_ERRONEOUS = 15, IDX_INACT_INAPPROPRIATE = 16, IDX_INACT_LIMITED = 17,
+			IDX_INACT_OUTDATED = 18, IDX_INACT_PENDING_MOVE = 19, IDX_INACT_NON_CONFORMANCE = 20,
+			IDX_INACT_NOT_EQUIVALENT = 21, IDX_CONCEPTS_AFFECTED = 22, IDX_TOTAL_ACTIVE = 23, IDX_PROMOTED=24,
+			IDX_NEW_IN_QI_SCOPE = 25, IDX_GAINED_ATTRIBUTES = 26, IDX_LOST_ATTRIBUTES = 27; 
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 	static List<DescriptionType> TEXT_DEFN;
 	static List<DescriptionType> NOT_TEXT_DEFN;
@@ -64,8 +64,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
 		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220930T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_202201031T120000Z.zip");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		//params.put(MODULES, "731000124108");
@@ -121,20 +121,20 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, New SD, New P, Total Active, Total, Promoted",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Concepts Affected, Total Active",
-												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, New Inactive, Changed, Inactivations Inactivated, Reactivated, New Inactive, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
-												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New Inactive, New with New Concept, Concepts Affected, Total Active",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Total, Concepts Affected, Total Active",
+		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, New SD, New P, Total Active, Total, Promoted",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, New Inactive, Changed, Inactivations Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
 												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, New Inactive, Total, Total Active",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Total Active, Total",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Total Active, Total",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Total Active, Total"
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -290,9 +290,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					counts[IDX_MOVED_MODULE]++;
 				}
 			}
-		} else if (prevData.containsKey(c.getConceptId()) && prevData.get(c.getConceptId()).isActive) {
-			//If we had it last time active, then it's been inactivated in this release
-			counts[IDX_INACT]++;
+		} else if (prevData.containsKey(c.getConceptId())) {
+			if (prevData.get(c.getConceptId()).isActive) {
+				//If we had it last time active, then it's been inactivated in this release
+				counts[IDX_INACT]++;
+			} else if (isChangedSinceLastRelease(c)){
+				//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
+				counts[IDX_CHANGED_INACTIVE]++;
+			}
 		} else if (!prevData.containsKey(c.getConceptId())) {
 			//If it's inactive and we DIDN'T see it before, then we've got a born inactive or "New Inactive" concept
 			counts[IDX_NEW_INACTIVE]++;
@@ -364,6 +369,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					//If we saw this previously active, then it's been inactivated
 					if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
 						incrementCounts(a, counts, IDX_INACT);
+					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
+						//If it was previous inactive and continues to be so, yet has changed, then it's changed inactive
+						if (isChangedSinceLastRelease(a)) {
+							incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
+						}
 					} else if (datum == null) {
 						incrementCounts(a, counts, IDX_NEW_INACTIVE);
 					}
@@ -394,6 +404,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					//If we saw this previously active, then it's been inactivated
 					if (datum != null && datum.descInactivationIds.contains(i.getId())) {
 						incrementCounts(i, thisInactTab, IDX_INACT);
+					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
+						//If it was previous inactive and continues to be so, yet has changed, then it's changed inactive
+						if (isChangedSinceLastRelease(i)) {
+							incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
+						}
 					} else if (datum == null) {
 						incrementCounts(i, thisInactTab, IDX_NEW_INACTIVE);
 					}
@@ -472,6 +487,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				conceptAffected = true;
 			} else if (!previouslyExistedActive && !previouslyExistedInactive) {
 				incrementCounts(component, counts, IDX_NEW_INACTIVE);
+			} else if (previouslyExistedInactive && isChangedSinceLastRelease(component)) {
+				incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
 			}
 			incrementCounts(component, counts, IDX_TOTAL);
 			debugToFile(component, "Total");
@@ -612,28 +629,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
 		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 		
 		Arrays.asList(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 		});
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
 				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
 		});
 		
 		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACT, IDX_TOTAL_ACTIVE)));
 
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_TOTAL, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
 
 		return sheetFieldsByIndex;
 	}
@@ -689,28 +706,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		
 		String[] data = new String[24];
 		data[0]  = sum(TAB_CONCEPTS, IDX_NEW);
-		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_MOVED_MODULE);
+		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_MOVED_MODULE);
 		data[2]  = sum(TAB_CONCEPTS, IDX_TOTAL);
 		data[3]  = sum(TAB_DESCS, IDX_NEW_NEW);
-		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[5]  = sum(TAB_DESCS, IDX_TOTAL);
 		data[6]  = sum(TAB_TEXT_DEFN, IDX_NEW_NEW);
-		data[7]  = minusPlus(TAB_TEXT_DEFN, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[7]  = minusPlus(TAB_TEXT_DEFN, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[8]  = sum(TAB_TEXT_DEFN, IDX_TOTAL);
 		data[9]  = sum(TAB_LANG, IDX_NEW_NEW);
-		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[11] = sum(TAB_LANG, IDX_TOTAL);
 		data[12] = sum(TAB_AXIOMS, IDX_NEW_NEW);
-		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[14] = sum(TAB_AXIOMS, IDX_TOTAL);
 		data[15] = "0";
 		data[16] = "0";
 		data[17] = "1024719";
 		data[18] = sum(TAB_RELS, IDX_NEW_NEW);
-		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[20] = sum(TAB_RELS, IDX_TOTAL);
 		data[21] = sum(TAB_CD, IDX_NEW_NEW);
-		data[22] = minusPlus(TAB_CD, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[22] = minusPlus(TAB_CD, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[23] = sum(TAB_CD, IDX_TOTAL);
 		
 		rs.setData(data);
