@@ -13,7 +13,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -32,13 +31,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
 			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13;  //Ensure refset tab is the last one as it's written at the end.
 	static final int MAX_REPORT_TABS = 14;
-	static final int DATA_WIDTH = 26;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
-	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5, IDX_NEW_P = 6, IDX_NEW_SD = 7,
-			IDX_TOTAL = 8, IDX_INACT_AMBIGUOUS = 9,  IDX_INACT_MOVED_ELSEWHERE = 10, IDX_INACT_CONCEPT_NON_CURRENT = 11,
-			IDX_INACT_DUPLICATE = 12, IDX_INACT_ERRONEOUS = 13, IDX_INACT_INAPPROPRIATE = 14, IDX_INACT_LIMITED = 15,
-			IDX_INACT_OUTDATED = 16, IDX_INACT_PENDING_MOVE = 17, IDX_INACT_NON_CONFORMANCE = 18,
-			IDX_INACT_NOT_EQUIVALENT = 19, IDX_CONCEPTS_AFFECTED = 20, IDX_TOTAL_ACTIVE = 21, IDX_PROMOTED=22,
-			IDX_NEW_IN_QI_SCOPE = 23, IDX_GAINED_ATTRIBUTES = 24, IDX_LOST_ATTRIBUTES = 25; 
+	static final int DATA_WIDTH = 27;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
+	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5, 
+			IDX_MOVED_MODULE = 6, IDX_NEW_P = 7, IDX_NEW_SD = 8,
+			IDX_TOTAL = 9, IDX_INACT_AMBIGUOUS = 10,  IDX_INACT_MOVED_ELSEWHERE = 11, IDX_INACT_CONCEPT_NON_CURRENT = 12,
+			IDX_INACT_DUPLICATE = 13, IDX_INACT_ERRONEOUS = 14, IDX_INACT_INAPPROPRIATE = 15, IDX_INACT_LIMITED = 16,
+			IDX_INACT_OUTDATED = 17, IDX_INACT_PENDING_MOVE = 18, IDX_INACT_NON_CONFORMANCE = 19,
+			IDX_INACT_NOT_EQUIVALENT = 20, IDX_CONCEPTS_AFFECTED = 21, IDX_TOTAL_ACTIVE = 22, IDX_PROMOTED=23,
+			IDX_NEW_IN_QI_SCOPE = 24, IDX_GAINED_ATTRIBUTES = 25, IDX_LOST_ATTRIBUTES = 26; 
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 	static List<DescriptionType> TEXT_DEFN;
 	static List<DescriptionType> NOT_TEXT_DEFN;
@@ -121,7 +121,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, New SD, New P, Total Active, Total, Promoted",
+		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, New SD, New P, Total Active, Total, Promoted",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Total Active, Total, Concepts Affected",
@@ -198,13 +198,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			/*if (c.getId().equals("322236009")) {
 				debug("here");
 			}*/
+			Datum datum = prevData.get(c.getConceptId());
 			//Is this concept in scope?  Even if its not, some of its components might be.
 			if (c.isActive()) {	
 				topLevel = SnomedUtils.getHierarchy(gl, c);
 			} else {
 				//Was it active in the previous release?
-				if (prevData.containsKey(c.getConceptId())) {
-					topLevel = gl.getConcept(prevData.get(c.getConceptId()).hierarchy);
+				if (datum != null) {
+					topLevel = gl.getConcept(datum.hierarchy);
 				} else {
 					//If not, it's been created and made inactive since the previous data was created.
 					//This is a separate category of concept.
@@ -219,7 +220,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				summaryDataMap.put(topLevel, summaryData);
 			}
 			
-			Datum datum = prevData.get(c.getConceptId());
 			boolean isNewConcept = datum==null;
 			Boolean wasSD = datum==null?null:datum.isSD;
 			Boolean wasActive = datum==null?null:datum.isActive;
@@ -231,10 +231,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					summaryData[TAB_CONCEPTS][IDX_PROMOTED]++;
 				}
 			} else {
-				analyzeConcept(c, topLevel, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
+				analyzeConcept(c, topLevel, datum, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 			}
 			
-			analyzeDescriptions(c, topLevel, wasActive, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
+			analyzeDescriptions(c, topLevel, datum, wasActive, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
 			
 			List<Relationship> normalRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
@@ -261,7 +261,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 	
-	private void analyzeConcept(Concept c, Concept topLevel, Boolean wasSD, Boolean wasActive, int[] counts, int[] qiCounts) throws TermServerScriptException {
+	private void analyzeConcept(Concept c, Concept topLevel, Datum datum, Boolean wasSD, Boolean wasActive, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (wasSD == null);
 		
@@ -283,6 +283,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				} else if (isSD != wasSD) {
 					//Active now and not new, and previously new, we must have changed Definition Status
 					counts[IDX_CHANGED]++;
+				}
+				
+				//Has the concept remained active, but moved into this module?
+				if (datum != null && !datum.moduleId.equals(c.getModuleId())) {
+					counts[IDX_MOVED_MODULE]++;
 				}
 			}
 		} else if (prevData.containsKey(c.getConceptId()) && prevData.get(c.getConceptId()).isActive) {
@@ -328,8 +333,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return refsetCounts;
 	}
 	
-	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
-		Datum datum = prevData.get(c.getConceptId());
+	private void analyzeDescriptions(Concept c, Concept topLevel, Datum datum, Boolean wasActive, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
 			/*if (d.getId().equals("3770564011")) {
 				debug("here");
@@ -608,7 +612,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
 		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
 			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE,  IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
@@ -685,7 +689,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		
 		String[] data = new String[24];
 		data[0]  = sum(TAB_CONCEPTS, IDX_NEW);
-		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_MOVED_MODULE);
 		data[2]  = sum(TAB_CONCEPTS, IDX_TOTAL);
 		data[3]  = sum(TAB_DESCS, IDX_NEW_NEW);
 		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
