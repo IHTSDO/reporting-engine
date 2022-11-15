@@ -17,8 +17,9 @@ import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
- * This report executes shell scripts that download and compare the content of the two .zip release packages
- * which are specified as input report parameters.
+ * This report executes shell scripts that download and compare the content of the two .zip release packages,
+ * stored in S3 bucket snomed-releases, which are specified as input report parameters - a full path to archives
+ * except the bucket name is expected.
  * The result of the comparison is uploaded to S3 bucket snomed-compares.
  */
 public class PackageComparisonReport extends TermServerReport implements ReportClass {
@@ -81,10 +82,10 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Previous Release, Current Release, Comparison Results"
+				"Previous Release, Current Release, Comparison Results", "Script Output"
 		};
 		String[] tabNames = new String[] {
-				"Comparison Summary"
+				"Comparison Summary", "Log"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -146,11 +147,16 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 		builder.directory(new File("scripts"));
 		builder.command("sh", "-c", command);
 
+		List<String> output = new ArrayList<>();
+
 		try {
 			Process process = builder.start();
 
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-				reader.lines().forEach(line -> info(line));
+				reader.lines().forEach(line -> {
+					output.add(line);
+					info(line);
+				});
 			}
 
 			if (process.waitFor(30, TimeUnit.MINUTES)) {
@@ -168,6 +174,9 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 
 			// Write results to Google Sheets
 			report(PRIMARY_REPORT, previousReleasePath, currentReleasePath, "s3://snomed-compares/" + uploadFolder);
+			for (String line: output) {
+				report(SECONDARY_REPORT, line);
+			}
 
 		} catch (IOException | InterruptedException | TermServerScriptException e) {
 			error("Script execution failed", e);
