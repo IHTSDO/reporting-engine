@@ -392,6 +392,15 @@ public class ArchiveManager implements ScriptConstants {
 				if (integrityCheckIgnoreList.contains(c.getId())) {
 					continue;
 				}
+				
+				if (c.isActive() == null) {
+					String msg = "Phantom concept encountered - no active state: " + c.getId();
+					if (ts.getDependencyArchive() != null) {
+						msg += ". Check dependency is appropriate - " + ts.getDependencyArchive(); 
+					}
+					throw new IllegalStateException(msg);
+				}
+				
 				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
 					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
 					if (expectStatedParents) {
