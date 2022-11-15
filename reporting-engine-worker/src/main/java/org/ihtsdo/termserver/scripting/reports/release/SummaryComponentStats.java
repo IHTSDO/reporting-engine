@@ -53,7 +53,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			OBSERVABLE_ENTITY, EVENT, 
 			PHARM_DOSE_FORM};
 	
-	public static final EnumSet<ComponentType> typesToDebugToFile = EnumSet.of(ComponentType.ATTRIBUTE_VALUE);
+	public static final EnumSet<ComponentType> typesToDebugToFile = EnumSet.of(ComponentType.CONCEPT);
 	
 	public static Set<String> refsetsToDebugToFile = new HashSet<>();
 	/*static {
@@ -64,8 +64,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
 		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220930T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_202201031T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220930T120000Z.zip");
+		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_202201031T120000Z.zip");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		//params.put(MODULES, "731000124108");
@@ -195,7 +195,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
-			/*if (c.getId().equals("322236009")) {
+			/*if (c.getId().equals("1908008") || c.getId().equals("1010625007") || c.getId().equals("8661000119102")) {
 				debug("here");
 			}*/
 			Datum datum = prevData.get(c.getConceptId());
@@ -294,6 +294,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			if (prevData.get(c.getConceptId()).isActive) {
 				//If we had it last time active, then it's been inactivated in this release
 				counts[IDX_INACT]++;
+				System.out.println(c.getId() + " - " + topLevel + " - " + counts[IDX_INACT]);
+				debugToFile(c, "Inactivated");
 			} else if (isChangedSinceLastRelease(c)){
 				//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
 				counts[IDX_CHANGED_INACTIVE]++;

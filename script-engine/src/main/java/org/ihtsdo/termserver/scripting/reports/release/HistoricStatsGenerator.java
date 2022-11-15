@@ -29,10 +29,11 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * 5.  Does the concept have SD ancestors
  * 6.  For QI, does the concept have attributes?
  * See HistoricStatsAnalyzer for analysis.
-  * */
+ * NB Used by Summary Component Stats as well as HistoricStatsAnalyzer
+ * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
-	private boolean splitOutDisease = true;
+	private boolean splitOutDisease = false;  //If you change this to true, don't check it in! See ISRS-1392.
 	
 	private static final String dataDir = "historic-data/";
 	private static int ACTIVE = 1;
