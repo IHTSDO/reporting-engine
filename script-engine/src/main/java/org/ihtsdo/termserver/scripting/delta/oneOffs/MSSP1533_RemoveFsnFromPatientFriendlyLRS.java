@@ -36,19 +36,6 @@ public class MSSP1533_RemoveFsnFromPatientFriendlyLRS extends DeltaGenerator {
 		}
 	}
 	
-	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[]{
-			"SCTID, FSN, SemTag, Severity, Action, Details, Details, , "
-		};
-		
-		String[] tabNames = new String[]{
-			"Delta Records Created"
-		};
-		
-		super.postInit(tabNames, columnHeadings, false);
-	}
-
-
 	protected void process() throws TermServerScriptException {
 		List<Concept> conceptsSorted = gl.getAllConcepts().stream()
 				.sorted(Comparator.comparing(Concept::getSemTag)
