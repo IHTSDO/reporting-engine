@@ -253,22 +253,27 @@ public class Description extends Component implements ScriptConstants {
 		if (descriptionId == null && (term == null || term.isEmpty())) {
 			return "";
 		}
-		String caseSig = caseSignificance == null ? "?" : caseSignificance.toString();
+		String caseSig = "?";
 		try {
-			caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance); 
+			if (caseSignificance != null) {
+				caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance);
+			}
 		} catch (Exception e) {}
 		
-		sb.append(isActive()?"":"*")
+		sb.append((isActive() == null || isActive())?"":"*")
 		.append(descriptionId==null?"NEW":descriptionId)
 		.append(" [")
 		.append(conceptId)
 		.append( "] ");
 		
-		if (lang.contentEquals("en")) {
-			sb.append(SnomedUtils.toString(acceptabilityMap));
-		} else {
-			sb.append(lang);
+		if (lang != null) {
+			if (lang.contentEquals("en")) {
+				sb.append(SnomedUtils.toString(acceptabilityMap));
+			} else {
+				sb.append(lang);
+			}
 		}
+		
 		sb.append(": ")
 		.append(term)
 		.append(" [")

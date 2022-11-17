@@ -6,6 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -18,14 +19,15 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	private List<String> exceptions = new ArrayList<>();
 	private boolean expectFirstLetterCapitalization = false;
 	private String longDash = Character.toString((char)150);
+	private List<Component> knownEntireTermCaseSensitive;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CaseSignificanceFixForLanguage delta = new CaseSignificanceFixForLanguage();
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\
 			delta.additionalReportColumns = "FSN, SemTag, Severity, Action, Description, Old, New, Notes, ";
-			delta.languageCode = "da";
-			delta.edition="DK";
+			delta.languageCode = "nl";
+			delta.edition="NL";
 			delta.runStandAlone = false;
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
@@ -41,8 +43,21 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		}
 	}
 	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {
+				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes",
+				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes"};
+		String[] tabNames = new String[] {
+				"Changed",
+				"Unchanged"};
+		super.postInit(tabNames, columnHeadings, false);
+	}
+	
 	private void process() throws TermServerScriptException {
 		info("Processing...");
+		
+		knownEntireTermCaseSensitive = processFile();
+		
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (c.isActive()) {
 				normalizeCaseSignificance(c, false);
@@ -56,6 +71,11 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		}
 	}
 
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
+		Description d = gl.getDescription(lineItems[0]);
+		return List.of(d);
+	}
+
 	public int normalizeCaseSignificance(Concept c, boolean aggressive) throws TermServerScriptException {
 		int changesMade = 0;
 		if (exceptions.contains(c.getId())) {
@@ -66,8 +86,8 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 					report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, d, "","","Description manually listed as an exception");
 				} else {
 					changesMade += funnySymbolSwap(c, d);
-					
-					changesMade += checkForCaptitalizedEnglishWord(c, d);
+					changesMade += normalizeCaseSignificance(c, d);
+					/*changesMade += checkForCaptitalizedEnglishWord(c, d);
 					//Requirement to align with English as first check
 					if (!alignWithEnglishIfSameFirstWord(c, d)) {
 						switch (d.getCaseSignificance()) {
@@ -83,11 +103,70 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 						}
 					} else {
 						changesMade += 1;
-					}
+					}*/
 				}
 			}
 		}
 		return changesMade;
+	}
+	
+	/**
+	 * This function follows the Dutch rules:
+	 * If the description is listed as known rule in supplied file set to CS
+	 * If the term starts with a capital letter or a digit, it should always be marked as 'entire sensitive'.
+	 * If the term does not contain any upper case letters at all, it should be marked 'entire insensitive'.
+	 * If the term starts with a character that is not a letter or digit, e.g. 'WHO performance status' graad 1 (which starts with a quotation mark), you should look at the next character that is a letter or digit; so this particular example should be marked 'entire sensitive'.
+	 * The terms in the file I attached to this issue (Entire-sensitive-exceptions.txt) should be marked as 'entire sensitive'. I have added the description Id, concept Id and term itself.
+	 * All other terms (i.e. starting with lowercase letter, containing an uppercase letter, and not listed as an exception) should be marked 'initial character insensitive'.
+	 * @throws TermServerScriptException 
+	 */
+	private int normalizeCaseSignificance(Concept c, Description d) throws TermServerScriptException {
+		
+		if (knownEntireTermCaseSensitive.contains(d)) {
+			return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
+		}
+		
+		char firstChar = d.getTerm().charAt(0);
+		//char secondChar = d.getTerm().charAt(1);
+		//We might have a succession of non-alpha characters, so find the first letter
+		Character firstLetter = StringUtils.getFirstLetter(d.getTerm());
+		boolean firstCharIsAlpha = StringUtils.isLetter(firstChar);
+		//boolean firstCharIsDigit = StringUtils.isDigit(firstChar);
+		
+		if (firstLetter == null) {
+			//If we have no letters then we must be case insensitive
+			return setCaseSignificanceIfRequired(CaseSignificance.CASE_INSENSITIVE, c, d);
+		} else if (firstCharIsAlpha && StringUtils.isCapitalized(firstChar)) {
+			return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
+		} else if (!firstCharIsAlpha && StringUtils.isCapitalized(firstLetter)) {
+			if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+				return NO_CHANGES_MADE;
+			}
+			return setCaseSignificanceIfRequired(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, c, d);
+		} else if (!StringUtils.isCaseSensitive(d.getTerm(), false)) {
+			return setCaseSignificanceIfRequired(CaseSignificance.CASE_INSENSITIVE, c, d);
+		} else if (!StringUtils.isCapitalized(firstChar) && StringUtils.isCaseSensitive(d.getTerm(), false)) {
+			return setCaseSignificanceIfRequired(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, c, d);
+		} else {
+			throw new IllegalStateException("Coding error - unexpected condition for " + d);
+		}
+	}
+
+	private int setCaseSignificanceIfRequired(CaseSignificance caseSig, Concept c, Description d) throws TermServerScriptException {
+		if (d.getCaseSignificance().equals(caseSig)) {
+			boolean skip = caseSig.equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm(), false);
+			if (!skip) {
+				report (SECONDARY_REPORT, c, Severity.NONE, ReportActionType.NO_CHANGE, d);
+			}
+			return NO_CHANGES_MADE;
+		} else {
+			String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+			String after = SnomedUtils.translateCaseSignificanceFromEnum(caseSig);
+			report (c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, before,after);
+			d.setCaseSignificance(caseSig);
+			d.setDirty();
+			return CHANGE_MADE;
+		}
 	}
 
 	private int funnySymbolSwap(Concept c, Description d) throws TermServerScriptException {
@@ -121,7 +200,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				isFirst = false;
 				continue;
 			}
-			if (StringUtils.isCapitalized(word) && existsAsCaseInsitiveEnglishFirstWord(c, word)) {
+			if (StringUtils.isCapitalized(word) && existsAsCaseInsensitiveEnglishFirstWord(c, word)) {
 				String oldTerm = d.getTerm();
 				String newTerm = d.getTerm().replace(word, word.toLowerCase());
 				d.setTerm(newTerm);
@@ -135,7 +214,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		return NO_CHANGES_MADE;
 	}
 
-	private boolean existsAsCaseInsitiveEnglishFirstWord(Concept c, String word) {
+	private boolean existsAsCaseInsensitiveEnglishFirstWord(Concept c, String word) {
 		for (Description d : c.getDescriptions("en", ActiveState.ACTIVE)) {
 			if (d.getTerm().startsWith(word) 
 					&& d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
