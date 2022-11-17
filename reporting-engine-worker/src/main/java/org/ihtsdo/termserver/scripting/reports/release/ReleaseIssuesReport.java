@@ -298,16 +298,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issueStr2 = "Component module jumped without parent";
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
+		info("Started inappropriateModuleJumping check");
 		for (Concept concept : allConceptsSorted) {
+			/*if (concept.getId().equals("58732000")) {
+				logger.debug("here");
+			}*/
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				/*if (c.getId().equals("7b28c61b-b9cc-4406-8672-86d872c2f9d5")) {
+				/*if (c.getId().equals("63b2b3c4-3948-5ed2-abeb-a1bcf4af7ae3")) {
 					logger.debug("here");
 				}*/
+				
 				//Did it change in the current delta?
 				if (StringUtils.isEmpty(c.getIssues())) {
 					continue;
 				}
+				
+				//We'll give inferred relationships the benefit of the doubt
+				//They can be changed by extensions without changing the owning component
+				if (c instanceof Relationship) {
+					continue;
+				}
+				
 				String[] previousState = c.getIssues().split(",");
 				String[] currentState = c.getMutableFields().split(",");
 				if (previousState.length != currentState.length) {
@@ -344,7 +356,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					//Now even if there IS a difference, then we don't expect components to change
 					//module without their parent object - concept or description
 					Component owningObject = SnomedUtils.getParentComponent(c, gl);
-					if (!hasChangedModule(owningObject)) {
+					if (owningObject == null) {
+						warn("Could not determine owner of " + c);
+					} else if (!hasChangedModule(owningObject)) {
 						String msg = c.getIssues() + " vs " + c.getMutableFields();
 						boolean reported = report(concept, issueStr2, isLegacy(c), isActive(concept,c), msg, c, c.getId());
 						if (reported) {
@@ -358,14 +372,18 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
-		
+		info("Completed inappropriateModuleJumping check");
 	}
 
 	private boolean hasChangedModule(Component c) throws TermServerScriptException {
+		//If the componet has an effective time, then it hasn't changed in this release
+		if (!StringUtils.isEmpty(c.getEffectiveTime())) {
+			return false;
+		}
 		String[] previousState = c.getIssues().split(",");
 		String[] currentState = c.getMutableFields().split(",");
 		if (previousState.length != currentState.length) {
-			throw new TermServerScriptException("Investigate: component's state has changed length! " + c.getIssues() + " vs " + c);
+			throw new TermServerScriptException("Investigate: component's state has changed length! Previous state: '" + c.getIssues() + "' vs current: " + c);
 		}
 		return previousState[IDX_MODULEID].equals(currentState[IDX_MODULEID]);
 	}

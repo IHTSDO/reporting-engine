@@ -1697,7 +1697,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 
 	public static Component getParentComponent(RefsetMember rm, GraphLoader gl) throws TermServerScriptException {
-		if (rm == null || StringUtils.isEmpty(rm.getReferencedComponentId())) {
+		if (rm != null && !StringUtils.isEmpty(rm.getReferencedComponentId())) {
 			if (isConceptSctid(rm.getReferencedComponentId())) {
 				//Don't validate, don't create if required
 				return gl.getConcept(rm.getReferencedComponentId(), false, false);

@@ -142,7 +142,6 @@ public class GraphLoader implements ScriptConstants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
-		recordPreviousState = false;
 		
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
@@ -191,7 +190,7 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				
-				/*if (lineItems[REL_IDX_ID].equals("4675343027")) {
+				/*if (lineItems[REL_IDX_ID].equals("243605023")) {
 					TermServerScript.debug("here");
 				}*/
 				
@@ -710,9 +709,9 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				
-				/*if (lineItems[IDX_ID].equals("59748008")) {
+				if (lineItems[IDX_ID].equals("394576009")) {
 					TermServerScript.debug("here");
-				}*/
+				}
 
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
