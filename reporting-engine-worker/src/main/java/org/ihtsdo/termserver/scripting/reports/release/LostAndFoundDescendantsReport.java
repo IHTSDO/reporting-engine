@@ -91,9 +91,27 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
+		int lastPercReported = 0;
+		int conceptsProcessed = 0;
+		
+		info("Sorting concepts of interest...");
  		for (Concept c : SnomedUtils.sort(conceptsOfInterest)) {
+ 			if (conceptsProcessed == 0) {
+ 				info("Sorting complete.");
+ 			}
  			if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
  				continue;
+ 			}
+ 			
+ 			//Skip the root concept, it's descendant's lost/gained would take all day!
+ 			if (c.equals(ROOT_CONCEPT)) {
+ 				continue;
+ 			}
+ 			
+ 			int percCompleted = (int)((++conceptsProcessed/(double)conceptsOfInterest.size())*100);
+ 			if (percCompleted >= lastPercReported + 5) {
+ 				info (percCompleted + "% complete.");
+ 				lastPercReported = percCompleted;
  			}
 			Set<Long> gainedDescendants = getGainedDescendants(c);
 			Set<Long> lostDescendants = getLostDescendants(c);
@@ -107,6 +125,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 				}
 				
 				report(c, previousCount, currentCount, stats);
+				countIssue(c);
 				
 				for (Long gainedConceptId : gainedDescendants) {
 					Concept gainedConcept = gl.getConcept(gainedConceptId);
