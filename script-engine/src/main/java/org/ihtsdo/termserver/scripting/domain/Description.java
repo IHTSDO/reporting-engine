@@ -350,24 +350,30 @@ public class Description extends Component implements ScriptConstants {
 	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
 		this.inactivationIndicator = inactivationIndicator;
 	}
+	
+	public void setAcceptability(String refsetId, Acceptability acceptability) throws TermServerScriptException {
+		setAcceptability(refsetId, acceptability, false);
+	}
 
-	public void setAcceptablity(String refsetId, Acceptability acceptability) throws TermServerScriptException {
+	public void setAcceptability(String refsetId, Acceptability acceptability, boolean isReplacement) throws TermServerScriptException {
 		if (acceptabilityMap == null) {
 			acceptabilityMap = new HashMap<String, Acceptability> ();
 		}
 		acceptabilityMap.put(refsetId, acceptability);
 		
-		//Also if we're working with RF2 loaded content we need to make the same change to the entries
-		boolean refsetEntrySet = false;
-		for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
-			l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
-			refsetEntrySet = true;
-		}
-		//If we've not set it, is there an inactive record we could re-use?
-		if (!refsetEntrySet) {
-			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.INACTIVE, refsetId)) {
-				l.setActive(true);
+		if (!isReplacement) {
+			//Also if we're working with RF2 loaded content we need to make the same change to the entries
+			boolean refsetEntrySet = false;
+			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
 				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+				refsetEntrySet = true;
+			}
+			//If we've not set it, is there an inactive record we could re-use?
+			if (!refsetEntrySet) {
+				for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.INACTIVE, refsetId)) {
+					l.setActive(true);
+					l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+				}
 			}
 		}
 	}
@@ -542,9 +548,13 @@ public class Description extends Component implements ScriptConstants {
 	//is a text based json representation.   This method allows the former to 
 	//be converted to the latter.
 	public void addLangRefsetEntry(LangRefsetEntry lang) throws TermServerScriptException {
+		addLangRefsetEntry(lang, true, false);
+	}
+	
+	public void addLangRefsetEntry(LangRefsetEntry lang, boolean ensureReuse, boolean isReplacement) throws TermServerScriptException {
 		if (lang.isActive()) {
 			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
-			setAcceptablity(lang.getRefsetId(), acceptability);
+			setAcceptability(lang.getRefsetId(), acceptability, isReplacement);
 		} else {
 			removeAcceptability(lang.getRefsetId());
 		}
@@ -556,10 +566,19 @@ public class Description extends Component implements ScriptConstants {
 			langRefsetEntries = new ArrayList<>();
 		}
 		
-		if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
-			langRefsetEntries.stream()
-				.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
-			throw new IllegalStateException("Check here, don't want two entries for same refset");
+		if (ensureReuse) {
+			if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
+				langRefsetEntries.stream()
+					.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
+				throw new IllegalStateException("Check here, don't want two entries for same refset");
+			}
+		} else {
+			if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
+					langRefsetEntries.stream()
+						.filter(l -> l.isActive())
+						.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
+					throw new IllegalStateException("Check here, don't want two active entries for same refset");
+				}
 		}
 		langRefsetEntries.add(lang);
 	}
@@ -786,7 +805,7 @@ public class Description extends Component implements ScriptConstants {
 		acceptabilityMap = new HashMap<>();
 		for (LangRefsetEntry lang : getLangRefsetEntries(ActiveState.ACTIVE)) {
 			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
-			setAcceptablity(lang.getRefsetId(), acceptability);
+			setAcceptability(lang.getRefsetId(), acceptability);
 		}
 	}
 

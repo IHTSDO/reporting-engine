@@ -120,7 +120,7 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 			for (Description d : extPTs) {
 				//Recover description object from loaded concept, not local cache - won't affect save
 				Description loadedDescription = c.getDescription(d.getDescriptionId());
-				loadedDescription.setAcceptablity(refsetId, Acceptability.ACCEPTABLE);
+				loadedDescription.setAcceptability(refsetId, Acceptability.ACCEPTABLE);
 				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "P -> A in " + refsetId, d);
 				changesMade++;
 			}

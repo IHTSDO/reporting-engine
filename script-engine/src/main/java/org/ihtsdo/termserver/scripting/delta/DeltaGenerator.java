@@ -173,7 +173,14 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		super.postInit();
+		String[] columnHeadings = new String[]{
+			"SCTID, FSN, SemTag, Severity, Action, Details, Details, , "
+		};
+		
+		String[] tabNames = new String[]{
+			"Delta Records Created"
+		};
+		postInit(tabNames, columnHeadings, false);
 	}
 	
 	public void finish() {

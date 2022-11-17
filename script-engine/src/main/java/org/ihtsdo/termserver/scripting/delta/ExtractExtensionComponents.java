@@ -465,12 +465,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						loadedPT.setActive(true); //Will only mark dirty if not already active
 						//Only demote to US acceptable if currently preferred in US
 						if (loadedPT.isPreferred(US_ENG_LANG_REFSET)) {
-							loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+							loadedPT.setAcceptability(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
 						}
 						
 						//Only demote to GB acceptable if currently preferred in GB
 						if (loadedPT.isPreferred(GB_ENG_LANG_REFSET)) {
-							loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+							loadedPT.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
 						}
 						//The local copy may already be acceptable, so mark as dirty to force this state to TS
 						loadedPT.setDirty(ENGLISH_DIALECTS);
