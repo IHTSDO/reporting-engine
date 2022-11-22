@@ -975,10 +975,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected int deleteRefsetMember(Task t, String uuid) throws TermServerScriptException {
+		return deleteRefsetMember(t, uuid, false); //Don't force! (by default anyway)
+	}
+	
+	protected int deleteRefsetMember(Task t, String uuid, boolean force) throws TermServerScriptException {
 		try {
 			debug ((dryRun ?"Dry run deleting ":"Deleting ") + uuid );
 			if (!dryRun) {
-				tsClient.deleteRefsetMember(uuid, t.getBranchPath(), false);  //Don't force!
+				tsClient.deleteRefsetMember(uuid, t.getBranchPath(), force); 
 			}
 			return CHANGE_MADE;
 		} catch (Exception e) {
