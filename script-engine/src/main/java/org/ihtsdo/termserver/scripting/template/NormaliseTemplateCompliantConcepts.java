@@ -491,7 +491,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//If the proximal primitive parent matches that of the matching template, we can set that
 		List<String> focusConceptIds = conceptToTemplateMap.get(c).getLogicalTemplate().getFocusConcepts();
 		if (focusConceptIds.size() == 1) {
-			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)), false, allowCompromisePPP);
+			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)), false, allowCompromisePPP, null);
 		} else {
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
 		}
