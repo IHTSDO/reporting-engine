@@ -102,7 +102,7 @@ public class NormaliseConcepts extends BatchFix {
 	private int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
-		changesMade += checkAndSetProximalPrimitiveParent(t, c, null, false, false);
+		changesMade += checkAndSetProximalPrimitiveParent(t, c, null, false, false, null);
 		
 		//Remove any redundant relationships, or they'll be missing from the inferred view
 		changesMade += removeRedundandRelationships(t,c);
