@@ -1366,13 +1366,31 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		report(t, loadedConcept, Severity.HIGH, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationIndicator + " and " + histAssocStr + replacement);
 	}
 
-	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {
-		return checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false);
+	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, Set<Concept> calculatedPPP) throws TermServerScriptException {
+		return checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false, calculatedPPP);
 	}
-
-	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, boolean checkOnly, boolean allowCompromise) throws TermServerScriptException {
+	
+	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {
+		return checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false, null);
+	}
+	
+	/***
+	 * 
+	 * @param t
+	 * @param c
+	 * @param newPPP
+	 * @param checkOnly
+	 * @param allowCompromise
+	 * @param calculatedPPP - is a return parameter to allow us to say what PPP were calculated, in addition to saying if any changes were made
+	 * @return
+	 * @throws TermServerScriptException
+	 */
+	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, boolean checkOnly, boolean allowCompromise, Set<Concept> calculatedPPP) throws TermServerScriptException {
 		int changesMade = 0;
-
+		
+		if (calculatedPPP == null) {
+			calculatedPPP = new HashSet<>();
+		}
 		//If we're not told the new Prox Prim Parent, then work it out from the hierarchy or semantic tag
 		if (newPPP == null) {
 			if (c.getFsn().contains("(disorder)")) {
@@ -1401,7 +1419,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			String pppsStr = ppps.stream()
 					.map(p -> p.toString())
 					.collect(Collectors.joining(",\n"));
-			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP, pppsStr);
+			calculatedPPP.addAll(ppps);
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP, pppsStr);
 		} else {
 			Concept ppp = ppps.iterator().next();
 			//We need to either calculate the ppp as the intended one, or higher than it eg calculated PPP of Disease is OK if we're setting the more specific "Complication"
@@ -1418,7 +1437,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					return CHANGE_MADE;
 				}
 			} else {
-				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that requested: " + newPPP + ", cannot remodel.");
+				calculatedPPP.addAll(ppps);
+				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that requested: " + newPPP + ", cannot remodel.");
 			}
 		}
 		return changesMade;
