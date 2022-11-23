@@ -78,7 +78,7 @@ public class AddRoleGroupWithParents extends BatchFix {
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			if (ppp != null) {
-				changesMade += checkAndSetProximalPrimitiveParent(task, loadedConcept, ppp, false, false);
+				changesMade += checkAndSetProximalPrimitiveParent(task, loadedConcept, ppp, false, false, null);
 			}
 			
 			if (parentsToRemove.size() > 0 || parentsToAdd.size() > 0) {
