@@ -709,9 +709,9 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				
-				if (lineItems[IDX_ID].equals("394576009")) {
+				/*if (lineItems[IDX_ID].equals("394576009")) {
 					TermServerScript.debug("here");
-				}
+				}*/
 
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);

@@ -95,6 +95,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
+	public static String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
+	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
+	public static String SCTID_CH_MOD = "2011000195101"; //Swiss Module
+	public static String SCTID_CH_LRS = "2021000195106"; //Swiss French Language Reference Set
+	
+	private static int MUT_IDX_ACTIVE = 0;
+	private static int MUT_IDX_MODULEID = 1;
+	
 	private List<String> expectedExtensionModules = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -216,12 +224,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		info("Checking...");
+		info("Checking " + gl.getAllConcepts().size() + " concepts...");
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConcepts = allConceptsSorted.stream()
 				.filter(c -> c.isActive())
 				.collect(Collectors.toList());
-		
+		info("Sorted " + allConceptsSorted.size() + " concepts");
 		info("Detecting recently touched concepts");
 		populateRecentlyTouched();
 		
@@ -300,12 +308,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr2);
 		info("Started inappropriateModuleJumping check");
 		for (Concept concept : allConceptsSorted) {
-			/*if (concept.getId().equals("58732000")) {
+			/*if (concept.getId().equals("273741005")) {
 				logger.debug("here");
 			}*/
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				/*if (c.getId().equals("63b2b3c4-3948-5ed2-abeb-a1bcf4af7ae3")) {
+				/*if (c.getId().equals("38e7f341-77c9-0688-6c9e-ff90c282b431")) {
 					logger.debug("here");
 				}*/
 				
@@ -325,6 +333,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (previousState.length != currentState.length) {
 					throw new TermServerScriptException("Investigate: component's state has changed length! " + c.getIssues() + " vs " + c);
 				}
+				
+				//If the module has not changed, then we've nothing to worry about.
+				if (previousState[MUT_IDX_MODULEID].equals(currentState[MUT_IDX_MODULEID])) {
+					continue;
+				}
+				
 				//Check what fields are different.  It's a problem if ONLY the moduleId has changed
 				boolean differenceFound = false;
 				for (int idx=0; idx < previousState.length; idx++) {
@@ -359,6 +373,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (owningObject == null) {
 						warn("Could not determine owner of " + c);
 					} else if (!hasChangedModule(owningObject)) {
+						if (owningObject.getModuleId().equals(SCTID_CF_MOD) && 
+								isExpectedModuleJumpException(c, previousState, currentState)) {
+							continue;
+						}
+						
 						String msg = c.getIssues() + " vs " + c.getMutableFields();
 						boolean reported = report(concept, issueStr2, isLegacy(c), isActive(concept,c), msg, c, c.getId());
 						if (reported) {
@@ -375,8 +394,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("Completed inappropriateModuleJumping check");
 	}
 
+	private boolean isExpectedModuleJumpException(Component c, String[] previousState, String[] currentState) {
+		String prevModule = previousState[MUT_IDX_MODULEID];
+		String currModule = currentState[MUT_IDX_MODULEID];
+		String prevActive = previousState[MUT_IDX_ACTIVE];
+		
+		//RP-675 Add allowance for CF LRS entries on CF descriptions being inactivated in CH Module
+		if (c instanceof LangRefsetEntry &&
+				prevModule.equals(SCTID_CF_MOD) &&
+				currModule.equals(SCTID_CH_MOD) &&
+				!c.isActive() && prevActive.equals("1")) {
+			return true;
+		}
+		return false;
+	}
+
 	private boolean hasChangedModule(Component c) throws TermServerScriptException {
-		//If the componet has an effective time, then it hasn't changed in this release
+		//If the component has an effective time, then it hasn't changed in this release
 		if (!StringUtils.isEmpty(c.getEffectiveTime())) {
 			return false;
 		}
@@ -385,7 +419,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (previousState.length != currentState.length) {
 			throw new TermServerScriptException("Investigate: component's state has changed length! Previous state: '" + c.getIssues() + "' vs current: " + c);
 		}
-		return previousState[IDX_MODULEID].equals(currentState[IDX_MODULEID]);
+		
+		String prevModule = previousState[MUT_IDX_MODULEID];
+		String currModule = currentState[MUT_IDX_MODULEID];
+		return prevModule.equals(currModule);
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
@@ -444,7 +481,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedDescriptionModules() throws TermServerScriptException {
 		String issueStr ="Unexpected Description Module";
 		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allConceptsSorted) {
 			for (Description d : c.getDescriptions()) {
 				if (!d.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Desc module " + d.getModuleId();
@@ -467,8 +504,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedComponentModulesMS() throws TermServerScriptException {
 		String issueStr ="Unexpected extension component module";
 		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
+		info("Checking " + allConceptsSorted.size() + " for unexpected component modules");
+		for (Concept c : allConceptsSorted) {
+			/*if (c.getId().equals("52792009")) {
+				debug("here");
+			}*/
 			for (Component comp: SnomedUtils.getAllComponents(c)) {
+				/*if (comp.getId().equals("80983393-ed14-4223-aa15-815e439bac62")) {
+					debug("here");
+				}*/
 				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
 					String msg = "Default module " + defaultModule + " vs component module " + comp.getModuleId();
 					boolean reported = report(c, issueStr, isLegacy(comp), isActive(c,comp), msg, comp);
@@ -488,7 +532,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
 		String issueStr = "Unexpected Inf Rel Module";
 		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allConceptsSorted) {
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (!r.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
@@ -508,7 +552,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedAxiomModules() throws TermServerScriptException {
 		String issueStr = "Unexpected Axiom Module";
 		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allConceptsSorted) {
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (!a.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Axiom module " + a.getModuleId();
@@ -531,7 +575,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issue2Str = ">1 Text Definition per Dialect";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allConceptsSorted) {
 			if (whiteListedConceptIds.contains(c.getId())) {
 				continue;
 			}
@@ -831,7 +875,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 	private Map<String, String> generateRefsetLangCodeMap() {
-		Map<String, String> refsetLangCodeMap = new HashMap();
+		Map<String, String> refsetLangCodeMap = new HashMap<>();
 		//First populate en-gb and en-us since we always know about those
 		refsetLangCodeMap.put(US_ENG_LANG_REFSET, "en");
 		refsetLangCodeMap.put(GB_ENG_LANG_REFSET, "en");
