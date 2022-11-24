@@ -46,17 +46,6 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 		}
 	}
 	
-	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[]{
-			"SCTID, FSN, SemTag, Severity, Action, Description, Details, Details, , "
-		};
-		
-		String[] tabNames = new String[]{
-			"Delta Records Created"
-		};
-		postInit(tabNames, columnHeadings, false);
-	}
-	
 	public void process() throws TermServerScriptException, IOException {
 		loadCommonFrenchRelease();
 		int conceptsProcessed = 0;
