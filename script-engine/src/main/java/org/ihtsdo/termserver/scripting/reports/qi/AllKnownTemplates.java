@@ -519,6 +519,14 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/Drug dependence.json" };
 		populateTemplates(null, templateNames);
 		
+		templateNames = new String[] { "templates/morphologies/Dislocation.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/procedures/PlacementOfStent.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/Toxic due to plant.json" };
+		populateTemplates(null, templateNames);
 		
 		//Do this one last to pick up whatever is left under Disease
 		subsetECL = "<< 64572001 |Disease (disorder)|"; 
