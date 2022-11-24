@@ -107,6 +107,27 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private void preProcessFile() throws TermServerScriptException {
 		archiveBatches = new ArrayDeque<>();
 		List<Component> componentsOfInterest = super.processFile();
+		
+		for (Component c : componentsOfInterest) {
+			if (c.getModuleId() == null) {
+				throw new IllegalArgumentException("Concept " + c + " doesn't exist.  Check list of concepts to transfer");
+			}
+			
+			if (ensureConceptsHaveBeenReleased && !c.isReleased()) {
+				throw new IllegalStateException(c + " has not been released");
+			}
+		}
+		
+		//If we can fit everything we're loading into a single batch file, then we don't need
+		//to worry about what concepts go in what Zip file.
+		if (componentsOfInterest.size() < conceptsPerArchive) {
+			archiveBatches.add(componentsOfInterest);
+		} else {
+			assignConceptsToBatches(componentsOfInterest);
+		}
+	}
+
+	private void assignConceptsToBatches(List<Component> componentsOfInterest) throws TermServerScriptException {
 		//Work through these and group parents with children.
 		//However if a parent has more children than we have concepts in a task, 
 		//then we have a problem.
@@ -118,17 +139,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		Set<Concept> requiresFirstPassLoad = new HashSet<>();
 		
 		for (Component component : componentsOfInterest) {
+			Concept c = (Concept)component;
 			boolean alsoImportingAncestors = false;
 			boolean alsoImportingDescendants = false;
-			
-			Concept c = (Concept)component;
-			if (c.getModuleId() == null) {
-				throw new IllegalArgumentException("Concept " + c + " doesn't exist.  Check list of concepts to transfer");
-			}
-			
-			if (ensureConceptsHaveBeenReleased && !c.isReleased()) {
-				throw new IllegalStateException(c + " has not been released");
-			}
 			
 			Set<Concept> ancestorsToImport = gl.getAncestorsCache().getAncestors(c, true);  //Need a mutable set
 			//If no ancestors in common with what we're loading, then concept is free
@@ -253,6 +266,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if ((int)totalConceptsInBatches != componentsOfInterest.size()) {
 			throw new TermServerScriptException("Expected to allocated " + componentsOfInterest.size() + " concepts.");
 		}
+		
 	}
 
 	private Concept findBestMerge(Map<Concept, Set<Concept>> parentChildMap, Set<Concept> batchesAvailableToMerge,
