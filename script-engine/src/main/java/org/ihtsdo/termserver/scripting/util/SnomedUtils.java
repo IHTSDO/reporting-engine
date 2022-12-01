@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
+import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import java.io.*;
@@ -2143,8 +2144,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 
 	public static boolean hasExtensionSCTID(Component c) {
+		return isExtensionSCTID(c.getId());
+	}
+	
+	public static boolean isExtensionSCTID(String sctId) {
 		//3rd to last character tells us if we're using a namespace or not
-		String sctId = c.getId();
 		int idx = sctId.length() - 3;
 		return sctId.charAt(idx) == '1';
 	}
@@ -2230,5 +2234,25 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			str += entry.getKey() + " --> " + translateAcceptability(entry.getValue());
 		}
 		return str + " }";
+	}
+
+	public static ExtractType getExtractType(String filename) {
+		if (filename.contains("Delta")) {
+			return ExtractType.DELTA;
+		} else if (filename.contains("Snapshot")) {
+			return ExtractType.SNAPSHOT;
+		} else if (filename.contains("Full")) {
+			return ExtractType.FULL;
+		}
+		return null;
+	}
+	
+	public static String getExtractTypeString (ExtractType type) {
+		switch (type) {
+		case DELTA: return "Delta";
+		case SNAPSHOT : return "Snapshot";
+		case FULL : return "Full";
+		default : throw new IllegalArgumentException("Unknown Extract Type: " + type);
+		}
 	}
 }
