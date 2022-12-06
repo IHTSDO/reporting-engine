@@ -96,6 +96,10 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			if (thisRow.getRecordNumber() % 50 == 0) {
 				info("Row " + thisRow.getRecordNumber());
 			}
+			
+			/*if (thisRow.getRecordNumber() == 69) {
+				debug("here");
+			}*/
 			if (thisRow.size() >= minViableColumns) {
 				try {
 					BatchImportConcept thisConcept = format.createConcept(thisRow, moduleId);

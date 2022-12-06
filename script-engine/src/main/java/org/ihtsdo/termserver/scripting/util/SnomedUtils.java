@@ -1596,7 +1596,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	private static int findEndOfTerm(StringBuffer hrExp, int searchStart) {
-		int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
+		//int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
+		int endIdx = hrExp.indexOf(PIPE, searchStart+1);
 		//If we didn't find a terminator, cut to the end.
 		if (endIdx == -1) {
 			endIdx = hrExp.length();
