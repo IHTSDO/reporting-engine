@@ -24,6 +24,25 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		clone.released = this.released;
 		return clone;
 	}
+	
+	public InactivationIndicatorEntry clone(boolean keepIds) {
+		InactivationIndicatorEntry clone = new InactivationIndicatorEntry();
+		if (keepIds) {
+			clone.id = this.getId();
+		} else {
+			clone.id = UUID.randomUUID().toString();
+		}
+		
+		clone.effectiveTime = null;
+		clone.moduleId = this.moduleId;
+		clone.active = this.active;
+		clone.refsetId = this.refsetId;
+		clone.referencedComponentId = this.getReferencedComponentId();
+		clone.setInactivationReasonId(getInactivationReasonId());
+		clone.isDirty = true; //New components need to be written to any delta
+		clone.released = this.released;
+		return clone;
+	}
 	private static InactivationIndicatorEntry withDefaults() {
 		InactivationIndicatorEntry i = new InactivationIndicatorEntry();
 		i.setId(UUID.randomUUID().toString());

@@ -1051,6 +1051,10 @@ public class GraphLoader implements ScriptConstants {
 				}
 				String id = lineItems[IDX_ID];
 				
+				/*if (id.equals("f0046c6b-287b-545f-aae5-f0a4b9946a0a")) {
+					TermServerScript.debug("here");
+				}*/
+				
 				String revertEffectiveTime = null;
 				if (detectNoChangeDelta && isReleased != null && !isReleased) {
 					//Recover this entry for the component - concept or description

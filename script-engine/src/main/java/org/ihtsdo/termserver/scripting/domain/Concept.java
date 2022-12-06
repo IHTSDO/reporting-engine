@@ -1259,8 +1259,14 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 		
 		//If we're keeping IDs, copy any inactivation indicators and historical associations also.
 		if (keepIds) {
-			clone.inactivationIndicatorEntries = new ArrayList<>(getInactivationIndicatorEntries());
-			clone.associationEntries = new ArrayList<>(getAssociationEntries());
+			clone.inactivationIndicatorEntries = getInactivationIndicatorEntries().stream()
+					.map(i -> i.clone(keepIds))
+					.collect(Collectors.toList());
+					
+			clone.associationEntries = getAssociationEntries().stream()
+				.map(a -> a.clone(keepIds))
+				.collect(Collectors.toList());
+			
 			for (AssociationEntry entry : clone.getAssociationEntries()) {
 				SnomedUtils.addHistoricalAssociationInTsForm(clone, entry);
 			}

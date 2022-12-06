@@ -16,9 +16,13 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	
 	public static String[] additionalFieldNames = new String[] {TARGET_COMPONENT_ID};
 	
-	public AssociationEntry clone(String newComponentSctId) {
+	public AssociationEntry clone(String newComponentSctId, boolean keepIds) {
 		AssociationEntry clone = new AssociationEntry();
-		clone.id = UUID.randomUUID().toString();
+		if (keepIds) {
+			clone.id = this.getId();
+		} else {
+			clone.id = UUID.randomUUID().toString();
+		}
 		clone.effectiveTime = null;
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
@@ -30,8 +34,8 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		return clone;
 	}
 	
-	public AssociationEntry clone() {
-		return clone(this.referencedComponentId);
+	public AssociationEntry clone(boolean keepIds) {
+		return clone(this.referencedComponentId, keepIds);
 	}
 	
 	public String toString() {

@@ -149,7 +149,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		boolean dependencySpecified = (getDependencyArchive() != null);
 		
-		if (projectName.endsWith(".zip")) {
+		if (projectName != null && projectName.endsWith(".zip")) {
 			String choice = dependencySpecified? "Y":"N";
 			if (!dependencySpecified) {
 				info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");

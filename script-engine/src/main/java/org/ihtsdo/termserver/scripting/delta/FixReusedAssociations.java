@@ -74,7 +74,7 @@ public class FixReusedAssociations extends DeltaGenerator implements ScriptConst
 			
 			//Now if the new value is not active, we don't want to create a born inactive component
 			if (columns[IDX.NEW_ACTIVE.ordinal()].equals("1")) {
-				AssociationEntry newAssoc = origAssoc.clone();
+				AssociationEntry newAssoc = origAssoc.clone(false);
 				newAssoc.setRefsetId(columns[IDX.NEW_REFSETID.ordinal()]);
 				newAssoc.setTargetComponentId(columns[IDX.NEW_TARGET.ordinal()]);
 				newAssoc.setActive(true);

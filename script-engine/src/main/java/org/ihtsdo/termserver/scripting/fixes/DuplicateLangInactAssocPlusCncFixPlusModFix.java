@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
+import org.springframework.web.client.RestClientResponseException;
 
 /*
  * INFRA-2480 Finding concept and description inactivation indicators that are duplicated
@@ -88,7 +89,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete);
 				if (!dryRun) {
-					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+					try {
+						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+					} catch (RestClientResponseException e) {
+						report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Failed to delete refset member: " + e.getMessage());
+						return NO_CHANGES_MADE;
+					}
 				}
 				changesMade++;
 				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getInactivationIndicatorEntries(), t);
@@ -146,7 +152,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
 				} else {
 					for (RefsetMember modify : duplicatePair.modify) {
-						RefsetMember original = c.getAssociationEntry(modify.getId());
+						RefsetMember original = d.getLangRefsetEntry(modify.getId());
 						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original, modify);
 						updateRefsetMember(t, modify, "");
 						changesMade++;
@@ -260,12 +266,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("19421000146107"))) {	
-		for (final Concept c : gl.getAllConcepts()) {
+		for (final Concept c : Collections.singleton(gl.getConcept("601000119109"))) {	
+		//for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
-				if (d.getId().equals("61401000195115")) {
+				/*if (d.getId().equals("61401000195115")) {
 						debug("here");
-				}
+				}*/
 				
 				//Too many of these in the international edition - discuss elsewhere
 				if (project.getBranchPath().contains("SNOMEDCT-")) {
@@ -306,7 +312,6 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				}
 				
 				//Do we have refset members newly created, but not in the default module?
-				
 				for (RefsetMember rm : SnomedUtils.getAllRefsetMembers(c)) {
 					if (!rm.isReleased() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
 						processMe.add(c);
@@ -358,10 +363,9 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				if (thisEntry.getId().equals(thatEntry.getId()) || 
 						mentioned(duplicatePairs, thisEntry) ||
 						mentioned(duplicatePairs, thatEntry)) {
-					if (true) {}
 					continue;
-					
 				}
+				
 				if (thisEntry.duplicates(thatEntry)) {
 					//Are they both published?  If INT is active and EXT is inactive with no effective time then that's as good as we'll get
 					if (thisEntry.isReleased() && thatEntry.isReleased()) {
@@ -382,7 +386,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						//That said, if one or both of them have a null effective time, then it LOOKS like we 
 						//created something redundant in the last authoring cycle.
 						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) || StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-							warn("Previously released entry have lost it's effective time: " + thisEntry + " + " + thatEntry);
+							warn("Previously released entry(s) have lost effective time: " + thisEntry + " + " + thatEntry);
 							//Have we modified a previously active refset member such that it's now a duplicate with a previously inactive one?
 							//In this case we need to revert the active one back to it's previous value, inactive it
 							//and resurrect the previously inactive value instead
