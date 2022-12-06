@@ -15,12 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * INFRA-7531 Replace 257867005 |Insertion - action (qualifier value)| with 129336009 |Implantation - action (qualifier value)|
  * QI-1143 Replace 86049000 |Malignant neoplasm, primary| with 1240414004 |Malignant neoplasm morphology|
+ * QI-1208 Replace 6920004 |Defect (morphologic abnormality)| with 783804002 |Abnormal communication (morphologic abnormality)|
  */
 public class ReplaceAttributeValues extends BatchFix {
 	
 	Map<Concept, Concept> replacementMap;
 	//String ecl = "< 363787002 |Observable entity| : * = 86049000 |Malignant neoplasm, primary (morphologic abnormality)|";
-	String ecl = "* : * = 367651003  |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|";
+	//String ecl = "* : * = 367651003  |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|";
+	String ecl = "<< 253273004 |Cardiac septal defects (disorder)| OR << 768552007 |Congenital ventricular septal defect (disorder)| ";
 	RelationshipTemplate addRelationship; 
 	
 	protected ReplaceAttributeValues(BatchFix clone) {
@@ -48,8 +50,12 @@ public class ReplaceAttributeValues extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replacementMap = new HashMap<>();
-		replacementMap.put(gl.getConcept("367651003 |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|"), 
-							gl.getConcept("1240414004 |Malignant neoplasm|"));
+		Concept replacement = gl.getConcept("783804002 |Abnormal communication (morphologic abnormality)|");
+		replacementMap.put(gl.getConcept("6920004 |Defect (morphologic abnormality)|"), replacement); 
+		replacementMap.put(gl.getConcept("371520008 |Developmental failure of fusion (morphologic abnormality)|"), replacement); 		
+		
+		//replacementMap.put(gl.getConcept("367651003 |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|"), 
+		//					gl.getConcept("1240414004 |Malignant neoplasm|"));
 		
 		//Concept addType = gl.getConcept(" 704321009 |Characterizes (attribute)|");
 		//Concept addTarget = gl.getConcept("1234914003 |Malignant proliferation of primary neoplasm (qualifier value)|");
@@ -64,7 +70,7 @@ public class ReplaceAttributeValues extends BatchFix {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = switchValues(task, loadedConcept);
 			if (changesMade > 0) {
-				changesMade += checkAndSetProximalPrimitiveParent(task, loadedConcept, null);
+				//changesMade += checkAndSetProximalPrimitiveParent(task, loadedConcept, null);
 			}
 			updateConcept(task, loadedConcept, info);
 		} catch (ValidationFailure v) {
