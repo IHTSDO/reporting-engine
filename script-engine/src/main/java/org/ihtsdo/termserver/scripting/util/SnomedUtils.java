@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.util;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
+import org.ihtsdo.otf.RF2Constants.ActiveState;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -1475,13 +1476,14 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	/**
 	 * @return the list ordered so that FSN is returned first, then PT, then acceptable synonyms
 	 */
-	public static void prioritise(List<Description> descriptions) {
+	public static List<Description> prioritise(List<Description> descriptions) {
 		Collections.sort(descriptions, new Comparator<Description>() {
 			@Override
 			public int compare(Description d1, Description d2) {
 			return priority(d2).compareTo(priority(d1));
 			}
 		});
+		return descriptions;
 	}
 	
 	private static Integer priority(Description d) {
@@ -1491,6 +1493,13 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			return 1;
 		}
 		return 0;
+	}
+	
+	/**
+	 * @return a prioritised joined list of descriptions
+	 */
+	public static String getDescriptions(Concept c) {
+		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream().map(d -> d.getTerm()).collect(Collectors.joining(",\n"));
 	}
 
 	public static Set<Concept> hasParents(Set<Concept> matchParents, Set<Concept> range, int limit) {

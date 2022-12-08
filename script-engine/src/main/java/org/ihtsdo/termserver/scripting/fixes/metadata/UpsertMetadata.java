@@ -55,6 +55,9 @@ public class UpsertMetadata extends BatchFix implements ScriptConstants{
 			if (cs.getShortName().equals("SNOMEDCT-NO")) {
 				expectedExtensionModules = List.of("57101000202106", "51000202101", "57091000202101");
 			}
+			if (cs.getShortName().equals("SNOMEDCT-CH")) {
+				expectedExtensionModules = List.of("2011000195101", "11000241103");
+			}
 			Map<String, Object> metadata = new HashMap<>();
 			metadata.put(EXPECTED_EXTENSION_MODULES, expectedExtensionModules);
 			if (!dryRun) {

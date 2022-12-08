@@ -496,6 +496,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 		}
 		
+		//For batch fixes we generally need to know if the components we're modifying have been
+		//released or not, so set this by default
+		getArchiveManager(true).setPopulateReleasedFlag(true);
+		
 		try {
 			super.init(args);
 		} catch (Exception e) {
@@ -894,9 +898,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		
 		//We'll recover an original copy of the description so that we see the original name in the report
 		Concept origConcept = gl.getConcept(c.getId());
-		
-		if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(newTerm)) {
-			debug ("Check case sensitivity here");
+
+		if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && 
+				!StringUtils.isCaseSensitive(newTerm)) {
+			//debug ("Check case sensitivity here");
 		}
 
 		if (reuseMe != null) {
@@ -926,13 +931,13 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			replacement = d.clone(null); //Includes acceptability and case significance
 			replacement.setTerm(newTerm);
 			c.addDescription(replacement);
+			report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement, info);
 		}
 		
 		//Are we deleting, demoting or inactivating this term?
 		if (d != null) {
 			if (d.isPreferred() && demotePT && d.getType().equals(DescriptionType.SYNONYM)) {
 				SnomedUtils.demoteAcceptabilityMap(d);
-				report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement, info);
 				report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d, info);
 			} else {
 				removeDescription(t, c, d, newTerm, indicator);

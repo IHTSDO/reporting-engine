@@ -297,7 +297,7 @@ public class GraphLoader implements ScriptConstants {
 					TermServerScript.debug("Here");
 				}
 				
-				if (lineItems[IDX_ID].equals("74825332-420b-71be-c477-e8dc574323c5")) {
+				if (lineItems[IDX_ID].equals("5a1fa3c4-4d22-48b2-bb7e-2f8d8f5a279c")) {
 					TermServerScript.debug ("here");
 				}*/
 				
@@ -306,7 +306,7 @@ public class GraphLoader implements ScriptConstants {
 					AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
 					
 					//Are we overwriting an existing axiom?  We also want to capture what stated relationships
-					//were previously present so we can work out the invidiual published states.
+					//were previously present so we can work out the individual published states.
 					Set<Relationship> previouslyPublishedStatedRels = null;
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());

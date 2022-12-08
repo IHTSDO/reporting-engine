@@ -2,9 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -61,12 +59,6 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 		cnc.setInactivationReasonId(SCTID_INACT_CONCEPT_NON_CURRENT);
 		d.addInactivationIndicator(cnc);
 		return cnc;
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

@@ -314,6 +314,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		clone.axiom = this.axiom;
 		clone.axiomEntry = this.axiomEntry;
 		clone.setIssue(this.getIssues());
+		clone.setReleased(this.isReleased());
 		return clone;
 	}
 	
