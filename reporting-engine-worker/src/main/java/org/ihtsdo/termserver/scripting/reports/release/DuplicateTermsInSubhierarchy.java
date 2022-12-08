@@ -2,12 +2,14 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -34,6 +36,12 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, SemTag, Legacy, Description, Matched Description, Matched Concept";
+		
+		//Are we in an extension?  Confirm expectedExtensionModules metadata is present if so, or refuse to run.
+		//This will be used after we've formed the snapshot in TermServerScript.inScope(component c)
+		if (project.getBranchPath().contains("SNOMEDCT-") && project.getMetadata().getExpectedExtensionModules() == null) {
+			throw new TermServerScriptException("Extension does not have expectedExtensionModules metadata populated.  Cannot continue.");
+		}
 	}
 
 	@Override
@@ -52,7 +60,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 						"The 'Issues' count here reflects the number of rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
-				.withTag(INT)
+				.withTag(INT).withTag(MS)
 				.build();
 	}
 
@@ -76,13 +84,19 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		Map<String, Description> knownTerms = new HashMap<>();
 		Acceptability acceptability = ptOnly ? Acceptability.PREFERRED : Acceptability.BOTH;
 		Collection<Concept> concepts = subHierarchy == null ? gl.getAllConcepts() : subHierarchy.getDescendents(NOT_SET);
-		for (Concept c : concepts) {
+		for (Concept c : SnomedUtils.sort(concepts)) {
 			//Have we white listed this concept?
 			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
-			for (Description d : c.getDescriptions(acceptability, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+			
+			List<Description> descriptions = c.getDescriptions(acceptability, DescriptionType.SYNONYM, ActiveState.ACTIVE)
+					.stream()
+					.filter(d -> inScope(d))
+					.collect(Collectors.toList());
+			
+			for (Description d : descriptions) {
 				//Do we already know about this term?
 				Description alreadyKnown = knownTerms.get(d.getTerm());
 				

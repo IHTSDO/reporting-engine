@@ -1626,7 +1626,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		//Do we have a default module id ie for a managed service project?
 		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
-			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+			//We really need to be sure that expectedExtensionModules has been populated, 
+			//because CH and NO will have content in multiple modules
+			if (project.getMetadata().getExpectedExtensionModules() == null) {
+				throw new IllegalArgumentException("Extension does not have expectedExtensionModules metadata populated.  Cannot continue.");
+			}
+			return project.getMetadata().getExpectedExtensionModules().contains(c.getModuleId());
 		}
 		return true;
 	}
