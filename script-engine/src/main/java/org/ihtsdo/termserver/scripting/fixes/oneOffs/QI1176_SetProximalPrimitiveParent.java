@@ -28,7 +28,7 @@ public class QI1176_SetProximalPrimitiveParent extends BatchFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		QI1176_SetProximalPrimitiveParent app = new QI1176_SetProximalPrimitiveParent(null);
 		try {
-			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
+			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  // Ad-Hoc Batch Updates
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
