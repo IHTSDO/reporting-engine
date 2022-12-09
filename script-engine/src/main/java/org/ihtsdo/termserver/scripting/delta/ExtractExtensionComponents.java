@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.amazonaws.services.servicequotas.model.IllegalArgumentException;
 
@@ -47,6 +48,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
+			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
@@ -58,7 +60,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
 			//delta.moduleId = "999000011000000103"; //UK
-			//delta.getArchiveManager().setRunIntegrityChecks(false);
+			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -100,7 +102,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	public void postInit() throws TermServerScriptException {
 		knownReplacements.put(gl.getConcept("261231004|Local flap|"), gl.getConcept("256683004|Flap|"));
-
+		knownReplacements.put(gl.getConcept("367651003 |Malignant neoplasm of p, s, or u origin|"), gl.getConcept("1240414004 |Malignant neoplasm|"));
 		super.postInit();
 	}
 	
@@ -358,7 +360,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private boolean switchModule(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 		
-		/*if (c.getConceptId().equals("10200004")) {
+		/*if (c.getConceptId().equals("1255997005")) {
 			debug("Here: " + c);
 		}*/
 		
@@ -499,8 +501,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		boolean relationshipAlreadyMoved = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			//If this is an axiom based relationship, then we'll catch that below with an axiom move
+			//Actually, if any of them are axiom based, then we don't need to check the others.
 			if (r.fromAxiom()) {
-				continue;
+				break;
 			}
 			
 			//Rel may already be in the target module, but be missing from the target server
@@ -510,7 +513,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (r.isActive() && !r.fromAxiom()) {
 					info ("Unexpected active stated relationship not from axiom: "+ r);
 				}
-				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
+				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess, new HashMap<>())) {
 					subComponentsMoved = true;
 					relationshipMoved = true;
 				} 
@@ -625,13 +628,21 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			
 			AxiomRepresentation axiomRepresentation = axiomService.convertAxiomToRelationships(a.getOwlExpression());
 			if (axiomRepresentation != null) {
+				Map<Concept, Concept> replacementsMadeMap = new HashMap<>();
 				for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
 					r.setAxiomEntry(a);
-					//This is only needed to include dependencies. 
-					//The relationship itself is not attached to the concept
-					if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
+					if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess, replacementsMadeMap)) {
 						axiomRelationshipMoved = true;
 						a.setDirty();
+					}
+				}
+				//Did we have to modify the axiom during transfer?  Alter the OWL string if so
+				if (a.isDirty()) {
+					//The OWL Service is tricky to set up because we'd need to tell it about which attribute types
+					//should be role grouped, so we'll do a dirty search and replace instead.
+					//String owlStr = gl.getAxiomService().convertRelationshipsToAxiom(axiomRepresentation);
+					for (Map.Entry<Concept, Concept> entry : replacementsMadeMap.entrySet()) {
+						a.setOwlExpression(a.getOwlExpression().replaceAll(":"+entry.getKey().getId(), ":"+entry.getValue().getId()));
 					}
 				}
 			} else {
@@ -656,7 +667,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return axiomRelationshipMoved;
 	}
 
-	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
+	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component> componentsToProcess, Map<Concept, Concept> replacementsMadeMap) throws TermServerScriptException {
 		//If we already have the concept on the Terminology Server, perhaps we already have the relationship too,
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
@@ -705,7 +716,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						String reason = loadedTarget.getInactivationIndicator().toString();
 						Concept replacement = knownReplacements.get(loadedTarget);
 						if (replacement == null) {
-							replacement = getReplacement(loadedTarget, isIsA);
+							replacement = getReplacement(r.getSource(), loadedTarget, isIsA);
 						}
 						
 						if (replacement == null && isIsA) {
@@ -715,6 +726,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 							msg += ". Replacing with " + replacement;
 							report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 							target = replacement;
+							replacementsMadeMap.put(loadedTarget, replacement);
 							Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
 							//Ensure it gets allocated to the same Axiom
 							newRel.setAxiomEntry(r.getAxiomEntry());
@@ -751,7 +763,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return true;
 	}
 
-	private Concept getReplacement(Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
+	private Concept getReplacement(Concept context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
 		/*List<HistoricalAssociation> assocs =  inactiveConcept.getHistorialAssociations(ActiveState.ACTIVE);
 		if (assocs.size() == 1) {
 			HistoricalAssociation assoc = assocs.iterator().next();
@@ -763,13 +775,20 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
 		}*/
 		Set<String> assocs = inactiveConcept.getAssociationTargets().getReplacedBy();
-		if (assocs.size() != 1) {
+		assocs.addAll(inactiveConcept.getAssociationTargets().getAlternatives());
+		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
+		assocs.addAll(inactiveConcept.getAssociationTargets().getSameAs());
+		if (assocs.size() == 0) {
 			if (isIsA) {
 				//We'll try and carry on without this parent.
 				return null;
 			}
 			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
 		} else {
+			if(assocs.size() > 1){
+				String assocStr = inactiveConcept.getAssociationTargets().toString(gl);
+				report(context, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple HistAssocs available. Result chosen at random.  Please specify to hardcode choice", assocStr);
+			}
 			//We will probably not have loaded this concept via RF2 if the target has been replaced, so load from secondary source
 			return loadConcept(gl.getConcept(assocs.iterator().next()));
 		}
