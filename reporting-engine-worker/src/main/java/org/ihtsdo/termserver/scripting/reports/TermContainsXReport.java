@@ -137,7 +137,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		
 		nextConcept:
 		for (Concept c : conceptsOfInterest) {
-			
+			boolean atLeastOneTermMatched = false;
 			if (c.getId().equals("307651005")) {
 				debug("Here");
 			}
@@ -180,6 +180,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 									(startsWith && (term.startsWith(matchText) || altTerm.startsWith(matchText)))) {
 								report(c,matchText, d);
 								reported = true;
+								atLeastOneTermMatched = true;
 								incrementSummaryInformation("Matched '" + matchText.trim() + "'");
 							}
 						}
@@ -206,7 +207,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 						}
 					}
 				}
-				if (getJobRun().getParamValue(WITHOUT) != null && withoutMode == WithoutMode.ALL_WITHOUT) {
+				
+				if (textsToMatch == null && getJobRun().getParamValue(WITHOUT) != null && withoutMode == WithoutMode.ALL_WITHOUT) {
 					String allTerms = c.getDescriptions(ActiveState.ACTIVE).stream()
 							.filter(d -> isTargetDescriptionType(d))
 							.sorted(SnomedUtils.decriptionPrioritiser)
