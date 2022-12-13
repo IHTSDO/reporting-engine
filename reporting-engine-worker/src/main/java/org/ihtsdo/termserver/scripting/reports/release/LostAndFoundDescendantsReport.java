@@ -70,7 +70,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 				.add(COUNT_NEW_AS_GAINED).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Lost and Found Descendants")
 				.withDescription("This report lists descendants gained and lost in the current authoring cycle.  Note that a concept being made inactive does not qualify it for being 'lost'.  A lost concept must still be active.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
