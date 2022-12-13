@@ -259,6 +259,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//suspectedProperNameCaseInsensitive();
 		if (isMS()) {
 			unexpectedLangCodeMS();
+		} else {
+			dueWithoutTo();
 		}
 
 		info("...duplicate semantic tags");
@@ -906,6 +908,52 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 								ptMap.put(l.getRefsetId(), d);
 							}
 						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void dueWithoutTo() throws TermServerScriptException {
+		String issueStr = "'Due' not followed by 'to'";
+		String[] acceptableAlternativesPost = new String[] { "date", "mostly to", "either to", "with", "next", "new"};
+		String[] acceptableAlternativesPre = new String[] { "claim" };
+		initialiseSummary(issueStr);
+		for (Concept c : allConceptsSorted) {
+			nextDescription:
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.getTerm().contains("due") || d.getTerm().contains("Due")) {
+					String term = " " + d.getTerm().toLowerCase() + " ";
+					if (d.getType().equals(DescriptionType.FSN)) {
+						term = " " + SnomedUtils.deconstructFSN(d.getTerm())[0].toLowerCase() + " ";
+					}
+					//Might have more than one Due to find
+					int idx = term.indexOf(" due ");
+					while (idx != NOT_FOUND) {
+						boolean acceptableAltFound = false;
+						//Due at the end of the term if fine
+						if (term.endsWith(" due ")) {
+							continue nextDescription;
+						}
+						//Is this one of our acceptable alternatives
+						for (String acceptableAlt : acceptableAlternativesPost) {
+							if (term.indexOf(" due " + acceptableAlt, idx) == idx) {
+								acceptableAltFound = true;
+								break;
+							}
+						}
+						
+						for (String acceptableAlt : acceptableAlternativesPre) {
+							if (term.contains(acceptableAlt + " due")) {
+								continue nextDescription;
+							}
+						}
+						
+						if (!acceptableAltFound && term.indexOf(" due to", idx) == NOT_FOUND) {
+							report(c, issueStr, isLegacy(d), isActive(c, d), d);
+							continue nextDescription;
+						}
+						idx = term.indexOf(" due ", idx + 1);
 					}
 				}
 			}
