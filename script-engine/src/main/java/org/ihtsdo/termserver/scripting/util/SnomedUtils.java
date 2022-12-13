@@ -1472,17 +1472,19 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return sb.toString();
 	}
+	
+	public static Comparator<Description> decriptionPrioritiser = new Comparator<Description>() {
+		@Override
+		public int compare(Description d1, Description d2) {
+		return priority(d2).compareTo(priority(d1));
+		}
+	};
 
 	/**
 	 * @return the list ordered so that FSN is returned first, then PT, then acceptable synonyms
 	 */
 	public static List<Description> prioritise(List<Description> descriptions) {
-		Collections.sort(descriptions, new Comparator<Description>() {
-			@Override
-			public int compare(Description d1, Description d2) {
-			return priority(d2).compareTo(priority(d1));
-			}
-		});
+		Collections.sort(descriptions, decriptionPrioritiser);
 		return descriptions;
 	}
 	

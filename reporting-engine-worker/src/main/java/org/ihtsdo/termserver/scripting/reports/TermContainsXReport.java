@@ -207,7 +207,12 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 					}
 				}
 				if (getJobRun().getParamValue(WITHOUT) != null && withoutMode == WithoutMode.ALL_WITHOUT) {
-					report(c, "No terms contained: " + getJobRun().getParamValue(WITHOUT));
+					String allTerms = c.getDescriptions(ActiveState.ACTIVE).stream()
+							.filter(d -> isTargetDescriptionType(d))
+							.sorted(SnomedUtils.decriptionPrioritiser)
+							.map(d -> d.getTerm())
+							.collect(Collectors.joining(",\n"));
+					report(c, "No terms contained: " + getJobRun().getParamValue(WITHOUT), allTerms);
 				}
 			}
 		}
