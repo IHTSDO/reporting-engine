@@ -90,7 +90,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	DescendantsCache cache;
 	private Set<Concept> deprecatedHierarchies;
 	private String defaultModule = SCTID_CORE_MODULE;
-	private List<Concept> allActiveConcepts;
+	private List<Concept> allActiveConceptsSorted;
 	private Set<Concept> recentlyTouched;
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
@@ -226,7 +226,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public void runJob() throws TermServerScriptException {
 		info("Checking " + gl.getAllConcepts().size() + " concepts...");
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
-		allActiveConcepts = allConceptsSorted.stream()
+		allActiveConceptsSorted = allConceptsSorted.stream()
 				.filter(c -> c.isActive())
 				.collect(Collectors.toList());
 		info("Sorted " + allConceptsSorted.size() + " concepts");
@@ -447,7 +447,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		String issueStr = "Mismatching parent moduleId";
 		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.getModuleId() == null) {
 				warn ("Encountered concept with no module defined: " + c);
 				continue;
@@ -665,7 +665,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void semTagInCorrectHierarchy() throws TermServerScriptException {
 		String issueStr = "SemTag used outside of expected hierarchy";
 		initialiseSummary(issueStr);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (inScope(c) && !semTagHierarchyMap.containsValue(c)) {
 				for (Map.Entry<String, Concept> entry : semTagHierarchyMap.entrySet()) {
 					String semTag = SnomedUtils.deconstructFSN(c.getFsn(), true)[1];
@@ -686,7 +686,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(wordGroupIssueStr);
 		initialiseSummary(wordIssueStr);
 
-		final Collection<Concept> concepts = includeLegacyIssues ? allConceptsSorted : allActiveConcepts;
+		final Collection<Concept> concepts = includeLegacyIssues ? allConceptsSorted : allActiveConceptsSorted;
 		nextConcept:
 		for (Concept c : concepts) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
@@ -767,7 +767,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 
 		nextConcept:
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					String[] words = d.getTerm().split(" ");
@@ -788,7 +788,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issueStr = "Potential mistyped word in Description";
 		initialiseSummary(issueStr);
 
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -919,7 +919,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String[] acceptableAlternativesPost = new String[] { "date", "mostly to", "either to", "with", "next", "new"};
 		String[] acceptableAlternativesPre = new String[] { "claim" };
 		initialiseSummary(issueStr);
-		for (Concept c : allConceptsSorted) {
+		for (Concept c : allActiveConceptsSorted) {
 			nextDescription:
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.getTerm().contains("due") || d.getTerm().contains("Due")) {
@@ -1046,7 +1046,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		whiteList.add("368808003");
 		
 		//First pass through all active concepts to find semantic tags
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.getFSNDescription() == null) {
 				warn("No FSN Description found for concept " + c.getConceptId());
 				continue;
@@ -1069,7 +1069,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (!inScope(c)) {
 				continue;
 			}
@@ -1127,7 +1127,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String issueStr = "Unexpected character(s) - " + unwantedChar[1];
 			initialiseSummary(issueStr);
 			
-			for (Concept c : allActiveConcepts) {
+			for (Concept c : allActiveConceptsSorted) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
@@ -1174,7 +1174,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issueStr = "Extraneous space inside bracket";
 		initialiseSummary(issueStr);
 		nextConcept:
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() || includeLegacyIssues) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
@@ -1199,7 +1199,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		whiteList.add(gl.getConcept("411115002 |Drug-device combination product (product)|")); 
 				
 		nextConcept:
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (!inScope(c)) {
 				continue;
 			}
@@ -1270,7 +1270,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue4Str);
 		
 		//Check all concepts referenced in relationships are valid
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
 				//Check all RHS relationships are active
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -1319,7 +1319,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		
 		//Check no active relationship is non-axiom
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = isLegacy(r);
@@ -1373,7 +1373,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		
 		List<Description> bothDialectTextDefns = new ArrayList<>();
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive()) {
 				List<Description> textDefns = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
 				if (textDefns.size() > 2) {
@@ -1453,7 +1453,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			{'[',']'}};
 			
 		nextConcept:
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (!c.isActive()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
@@ -1496,7 +1496,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		Concept type = gl.getConcept("424876005 |Surgical approach (attribute)|");
 		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
 		Set<Concept> subHierarchyList = cache.getDescendentsOrSelf(subHierarchy);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
 				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
 			}
@@ -1527,7 +1527,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		typesOfInterest.addAll(procSiteTypes);
 		Set<Concept> invalidValues = cache.getDescendentsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
 		
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
 				for (Concept type : typesOfInterest) {
 					validateTypeValueCombo(c, type, invalidValues, issueStr, false);
@@ -1633,7 +1633,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept[] neverTogether : neverTogetherList) {
 			String issueStr = "Attributes " + neverTogether[0].toStringPref() + " and " + neverTogether[1].toStringPref() + " must not appear in same group";
 			initialiseSummary(issueStr);
-			for (Concept c : allActiveConcepts) {
+			for (Concept c : allActiveConceptsSorted) {
 				if (c.isActive() && inScope(c)) {
 					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
 						report (c, issueStr, isLegacy(c), isActive(c, null));
