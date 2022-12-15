@@ -6,3 +6,4 @@ snapshots
 releases
 releases/
 reports/*
+!/scripts/*.sh
