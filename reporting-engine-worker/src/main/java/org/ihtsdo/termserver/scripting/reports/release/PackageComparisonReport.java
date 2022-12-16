@@ -123,6 +123,8 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 				.build();
 	}
 
+	// This report does not need to hold a snapshot in memory,
+	// so we override the default behaviour by having an empty method here.
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) {
 	}
@@ -229,6 +231,8 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 					continue;
 				}
 
+				// Start from index = 2 to exclude "<" or ">" and the following space and
+				// split into an id part (key) and the rest (value)
 				String[] cols = line.substring(2).split("\t", 2);
 
 				String key = cols[0];
@@ -264,6 +268,13 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 	}
 
 	static class ValuePair {
+		// Previous value in the pair contains a line marked "<" starting from the second column (i.e. excludes id)
+		// Current value contains a matching line marked ">", also starting from the second column (i.e. excludes id)
+		// Stripped id is the same for the pair of values
+
+		// Index of the "active" indicator column in the value string
+		static final int DIFF_IDX_ACTIVE = 1;
+
 		String previousValue;
 		String currentValue;
 
@@ -273,7 +284,10 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 		}
 
 		boolean isInactivated() {
-			return "1".equals(previousValue.split("\t")[1]) && "0".equals(currentValue.split("\t")[1]);
+			// Split previous and current value strings into parts (columns) and
+			// compare their second column, i.e. "active" indicator
+			return "1".equals(previousValue.split("\t")[DIFF_IDX_ACTIVE]) &&
+					"0".equals(currentValue.split("\t")[DIFF_IDX_ACTIVE]);
 		}
 	}
 }
