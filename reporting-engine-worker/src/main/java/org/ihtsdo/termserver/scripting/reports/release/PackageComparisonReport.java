@@ -1,12 +1,17 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -48,22 +53,22 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 		Map<String, String> params = new HashMap<>();
 
 		// Estonia release
-		/*params.put(PREVIOUS_RELEASE_NAME, "EE_2021-11-30");
-		params.put(PREVIOUS_RELEASE_PATH, "SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20211130T120000Z.zip");
-		params.put(CURRENT_RELEASE_NAME, "EE_2022-05-30");
-		params.put(CURRENT_RELEASE_PATH, "SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20220530T120000Z.zip");*/
+		params.put(PREVIOUS_RELEASE_NAME, "EE20211130");
+		params.put(PREVIOUS_RELEASE_PATH, "prod/builds/ee/estonia_extension_releases/2022-06-28T13:54:09/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20211130T120000Z.zip");
+		params.put(CURRENT_RELEASE_NAME, "EE20221130");
+		params.put(CURRENT_RELEASE_PATH, "prod/builds/ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
 
 		// Ireland release
-		params.put(PREVIOUS_RELEASE_NAME, "IE_2022-04-21");
-		params.put(PREVIOUS_RELEASE_PATH, "prod/builds/ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
-		params.put(CURRENT_RELEASE_NAME, "IE_2022-10-21");
-		params.put(CURRENT_RELEASE_PATH, "prod/builds/ie/snomed_ct_ireland_extension_releases/2022-04-19T14:02:59/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20220421T120000Z.zip");
+		//params.put(PREVIOUS_RELEASE_NAME, "IE_2022-04-21");
+		//params.put(PREVIOUS_RELEASE_PATH, "prod/builds/ie/snomed_ct_ireland_extension_releases/2022-04-19T14:02:59/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20220421T120000Z.zip");
+		//params.put(CURRENT_RELEASE_NAME, "IE_2022-10-21");
+		//params.put(CURRENT_RELEASE_PATH, "prod/builds/ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
 
 	@Override
-	protected void preInit() throws TermServerScriptException {
+	protected void preInit() {
 		// For running the report locally
 		runHeadless(5);
 	}
@@ -82,7 +87,7 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Previous Release, Current Release, Comparison Results", "Script Output"
+				"Filename, Added, Deleted, Updated, Inactivated, All", "Script Output"
 		};
 		String[] tabNames = new String[] {
 				"Comparison Summary", "Log"
@@ -118,8 +123,10 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 				.build();
 	}
 
+	// This report does not need to hold a snapshot in memory,
+	// so we override the default behaviour by having an empty method here.
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) {
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -150,6 +157,7 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 		List<String> output = new ArrayList<>();
 
 		try {
+			// Execute scripts
 			Process process = builder.start();
 
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
@@ -166,20 +174,30 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 				if (exitValue != 0) {
 					throw new TermServerScriptException("Script execution failed with exit code: " + exitValue);
 				}
-				info("Script execution finished with exit code: " + exitValue);
+				info("Script execution finished successfully");
+				output.add("Diff files for '" + previousReleasePath + "' and '" + currentReleasePath + "' are uploaded to s3://snomed-compares/" + uploadFolder);
 			} else {
 				// Process timed out
 				throw new TermServerScriptException("Script execution timed out");
 			}
 
-			// Write results to Google Sheets
-			report(PRIMARY_REPORT, previousReleasePath, currentReleasePath, "s3://snomed-compares/" + uploadFolder);
-			for (String line: output) {
-				report(SECONDARY_REPORT, line);
+			// Process resulting diff files
+			String path = "scripts/" + uploadFolder + "/target/c";
+
+			try (Stream<Path> stream = Files.list(Paths.get(path))) {
+				stream.filter(file -> !Files.isDirectory(file))
+						.map(Path::getFileName)
+						.map(Path::toString)
+						.filter(filename -> filename.matches("diff_.*(sct2|der2)_.*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt"))
+						.forEach(filename -> processFile(path, filename));
 			}
 
 		} catch (IOException | InterruptedException | TermServerScriptException e) {
-			error("Script execution failed", e);
+			error("Report execution failed", e);
+		}
+
+		for (String line: output) {
+			report(SECONDARY_REPORT, line);
 		}
 	}
 
@@ -195,5 +213,81 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 			return matcher.group(1);
 		}
 		return path;
+	}
+
+	private void processFile(String path, String filename) {
+		Map<String, String> deleted = new HashMap<>();
+		Map<String, String> created = new HashMap<>();
+		Map<String, ValuePair> updated = new HashMap<>();
+		Map<String, ValuePair> inactivated = new HashMap<>();
+
+		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				char ch = line.charAt(0);
+
+				if (!(ch == '<' || ch == '>')) {
+					continue;
+				}
+
+				// Start from index = 2 to exclude "<" or ">" and the following space and
+				// split into an id part (key) and the rest (value)
+				String[] cols = line.substring(2).split("\t", 2);
+
+				String key = cols[0];
+				String value = cols[1];
+
+				switch (ch) {
+					case '<':
+						// Previous release entry
+						deleted.put(key, value);
+						break;
+
+					case '>':
+						// Current release entry
+						if (deleted.containsKey(key)) {
+							String previousValue = deleted.remove(key);
+							ValuePair valuePair = new ValuePair(previousValue, value);
+							if (valuePair.isInactivated()) {
+								inactivated.put(key, valuePair);
+							} else {
+								updated.put(key, valuePair);
+							}
+						} else {
+							created.put(key, value);
+						}
+						break;
+				}
+			}
+			int total = created.size() + deleted.size() + updated.size() + inactivated.size();
+			report(PRIMARY_REPORT, filename, created.size(), deleted.size(), updated.size(), inactivated.size(), total);
+		} catch (IOException | IndexOutOfBoundsException | TermServerScriptException e) {
+			error("Error processing file: " + filename, e);
+		}
+	}
+
+	static class ValuePair {
+		// Previous value in the pair contains a line marked "<" starting from the second column (i.e. excludes id)
+		// Current value contains a matching line marked ">", also starting from the second column (i.e. excludes id)
+		// Stripped id is the same for the pair of values
+
+		// Index of the "active" indicator column in the value string
+		static final int DIFF_IDX_ACTIVE = 1;
+
+		String previousValue;
+		String currentValue;
+
+		ValuePair(String previousValue, String currentValue) {
+			this.previousValue = previousValue;
+			this.currentValue = currentValue;
+		}
+
+		boolean isInactivated() {
+			// Split previous and current value strings into parts (columns) and
+			// compare their second column, i.e. "active" indicator
+			return "1".equals(previousValue.split("\t")[DIFF_IDX_ACTIVE]) &&
+					"0".equals(currentValue.split("\t")[DIFF_IDX_ACTIVE]);
+		}
 	}
 }

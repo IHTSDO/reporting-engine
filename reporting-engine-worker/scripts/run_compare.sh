@@ -12,7 +12,7 @@ previousReleaseName=$1
 previousReleasePath=$2
 currentReleaseName=$3
 currentReleasePath=$4
-uploadFolder=$5
+runFolder=$5
 
 # Set other parameters
 s3Release=snomed-releases
@@ -25,15 +25,12 @@ currentZip=`echo "${currentReleasePath}" | sed -n 's/^\(.*\/\)*\(.*\)/\2/p'`
 previousDate=`echo "${previousZip}" | sed "s/.*_\([0-9]\{8\}\).*/\1/"`
 currentDate=`echo "${currentZip}" | sed "s/.*_\([0-9]\{8\}\).*/\1/"`
 
-runFolder="${previousReleaseName}_${previousDate}-${currentReleaseName}_${currentDate}"
-
 # Debug
 echo "Running script with the following parameters:"
 echo $previousReleaseName
 echo $previousReleasePath
 echo $currentReleaseName
 echo $currentReleasePath
-echo $uploadFolder
 
 echo "Names of .zip archives:"
 echo $previousZip
@@ -70,7 +67,7 @@ cd ${rootFolder}/${runFolder} || exit 1
 source compare-packages-parallel.sh "${previousReleaseName}_${previousDate}" "$previousZip" "${currentReleaseName}_${currentDate}" "$currentZip" -normaliseDates
 
 echo "Copy the results to S3"
-aws s3 cp ${rootFolder}/${runFolder}/target/c s3://snomed-compares/${uploadFolder} --recursive
+aws s3 cp ${rootFolder}/${runFolder}/target/c s3://snomed-compares/${runFolder} --recursive
 
 # Tidy up running folder
-rm -rf ${rootFolder}/${runFolder}
+#rm -rf ${rootFolder}/${runFolder}
