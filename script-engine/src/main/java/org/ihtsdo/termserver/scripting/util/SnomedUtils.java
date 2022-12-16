@@ -685,11 +685,13 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			}
 		}
 		
-		String targets = c.getAssociationTargets().toString(gl);
-		if (targets.length() > 0 && associations.length() > 0) {
-			associations += "\n";
+		if (c.getAssociationEntries().isEmpty()) {
+			String targets = c.getAssociationTargets().toString(gl);
+			if (targets.length() > 0 && associations.length() > 0) {
+				associations += "\n";
+			}
+			associations += targets;
 		}
-		associations += targets;
 		
 		return associations;
 	}
@@ -2266,5 +2268,58 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		case FULL : return "Full";
 		default : throw new IllegalArgumentException("Unknown Extract Type: " + type);
 		}
+	}
+	
+	public static Concept getTopLevel(Concept thisConcept) throws TermServerScriptException {
+		//Is this itself a top level concept?
+		if (thisConcept.getDepth() == 1 || thisConcept.getDepth() == 0) {
+			return thisConcept;
+		}
+		
+		Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET);
+		for (Concept ancestor : ancestors) {
+			if (ancestor.getDepth() == 1) {
+				return ancestor;
+			}
+		}
+		return null;
+	}
+	
+	private static Map<Concept, Set<String>> semanticTagHierarchyMap;
+	private static Set<String> allKnowActiveSemanticTags;
+	
+	private static void populateSemanticTagHierarchyMap(GraphLoader gl) throws TermServerScriptException {
+		semanticTagHierarchyMap = new HashMap<>();
+		allKnowActiveSemanticTags = new HashSet<>();
+		for (Concept c : gl.getAllConcepts()) {
+			if (!c.isActive()) {
+				continue;
+			}
+			String semTag = deconstructFSN(c.getFsn())[1];
+			if (!allKnowActiveSemanticTags.contains(semTag)) {
+				allKnowActiveSemanticTags.add(semTag);
+				Concept hierarchy = getTopLevel(c);
+				Set<String> semTagsInHierarchy = semanticTagHierarchyMap.get(hierarchy);
+				if (semTagsInHierarchy == null) {
+					semTagsInHierarchy = new HashSet<>();
+					semanticTagHierarchyMap.put(hierarchy, semTagsInHierarchy);
+				}
+				semTagsInHierarchy.add(semTag);
+			}
+		}
+	}
+		
+	public static boolean isActiveSemanticTag(String semTag, GraphLoader gl) throws TermServerScriptException {
+		if (allKnowActiveSemanticTags == null) {
+			populateSemanticTagHierarchyMap(gl);
+		}
+		return allKnowActiveSemanticTags.contains(semTag);
+	}
+	
+	public static Set<String> getSemanticTagsUsedInHierarchy(Concept hierarchy, GraphLoader gl) throws TermServerScriptException {
+		if (semanticTagHierarchyMap == null) {
+			populateSemanticTagHierarchyMap(gl);
+		}
+		return semanticTagHierarchyMap.get(hierarchy);
 	}
 }

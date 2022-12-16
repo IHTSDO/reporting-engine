@@ -57,7 +57,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		Multiset<String> tags = HashMultiset.create();
 		for (Concept thisConcept : filterActive(gl.getAllConcepts())) {
 			//What hierarchy is this concept in?
-			Concept thisHierarchy = getTopLevel(thisConcept);
+			Concept thisHierarchy = SnomedUtils.getTopLevel(thisConcept);
 			if (thisHierarchy == null) {
 				debug ("Unable to determine top level hierarchy for: "  + thisConcept);
 			}
@@ -87,21 +87,6 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		for (String tag : tags.elementSet()) {
 			info ("\t" + tag + ": " + tags.count(tag));
 		}
-	}
-
-	private Concept getTopLevel(Concept thisConcept) throws TermServerScriptException {
-		//Is this itself a top level concept?
-		if (thisConcept.getDepth() == 1 || thisConcept.getDepth() == 0) {
-			return thisConcept;
-		}
-		
-		Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET);
-		for (Concept ancestor : ancestors) {
-			if (ancestor.getDepth() == 1) {
-				return ancestor;
-			}
-		}
-		return null;
 	}
 
 	private Set<Concept> filterActive(Collection<Concept> collection) {
