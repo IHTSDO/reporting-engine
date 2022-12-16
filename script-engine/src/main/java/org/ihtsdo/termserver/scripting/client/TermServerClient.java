@@ -11,6 +11,7 @@ import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.authoringservices.RestyOverrideAccept;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Review;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
 import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -807,6 +808,30 @@ public class TermServerClient {
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
 		}
+	}
+
+	public Review getReview(String branchPath) throws TermServerScriptException {
+		String url = this.url + "/reviews";
+		String targetPath = getParentBranchPath(branchPath);
+		Map<String, String> requestBody = Map.of("source", branchPath, "target", targetPath);
+		HttpEntity<Map<String,String>> entity = new HttpEntity<>(requestBody);
+		try {
+			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.POST, entity, Object.class);
+			//int statusCode = response.getStatusCodeValue();
+			String location = response.getHeaders().getLocation() == null ? "" : response.getHeaders().getLocation().toString();
+			//Wait, what, 3 seconds?
+			Thread.sleep(3*1000);
+			return restTemplate.getForObject(location, Review.class);
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		} catch (InterruptedException e) {
+			throw new TermServerScriptException(e);
+		}
+	}
+	
+	public static String getParentBranchPath(String branchPath) {
+		int endIndex = branchPath.lastIndexOf("/");
+		return branchPath.substring(0, endIndex);
 	}
 
 }

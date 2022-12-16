@@ -69,7 +69,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.additionalReportColumns = "FSN, SemTag, Severity, ChangeType, Detail, Additional Detail, , ";
 			delta.postInit();
 			delta.startTimer();
-			delta.preProcessFile();
+			//delta.preProcessFile();
+			delta.selectConceptsViaReview();
 			delta.processFile();
 			if (delta.archiveBatches == null) {
 				delta.createOutputArchive();
@@ -106,19 +107,33 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		super.postInit();
 	}
 	
+	private void selectConceptsViaReview() throws TermServerScriptException {
+		preProcessConcepts(getConceptsInReview(), true);
+	}
+	
 	private void preProcessFile() throws TermServerScriptException {
+		preProcessConcepts(super.processFile(), false);
+	}
+
+	private void preProcessConcepts(List<Component> componentsOfInterest, boolean viaReview) throws TermServerScriptException {
 		archiveBatches = new ArrayDeque<>();
-		List<Component> componentsOfInterest = super.processFile();
-		
+		Set<Component> excludeComponents = new HashSet<>();
 		for (Component c : componentsOfInterest) {
 			if (c.getModuleId() == null) {
-				throw new IllegalArgumentException("Concept " + c + " doesn't exist.  Check list of concepts to transfer");
+				if (viaReview) {
+					report((Concept)c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept appearing in review has been deleted?");
+					excludeComponents.add(c);
+				} else { 
+					throw new IllegalArgumentException("Concept " + c + " doesn't exist.  Check list of concepts to transfer");
+				}
 			}
 			
 			if (ensureConceptsHaveBeenReleased && !c.isReleased()) {
 				throw new IllegalStateException(c + " has not been released");
 			}
 		}
+		
+		componentsOfInterest.removeAll(excludeComponents);
 		
 		//If we can fit everything we're loading into a single batch file, then we don't need
 		//to worry about what concepts go in what Zip file.
@@ -323,6 +338,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		info ("Extracting specified concepts");
 		for (Component thisComponent : componentsToProcess) {
 			Concept thisConcept = (Concept)thisComponent;
+			if (thisConcept.getId().equals("445028008")) {
+				debug("here");
+			}
 
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {

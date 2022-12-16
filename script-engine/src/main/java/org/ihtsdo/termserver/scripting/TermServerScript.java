@@ -1727,5 +1727,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	synchronized public void asyncSnapshotCacheInProgress(boolean asyncSnapshotCacheInProgress) {
 		this.asyncSnapshotCacheInProgress  = asyncSnapshotCacheInProgress;
 	}
+	
+	public List<Component> getConceptsInReview() throws TermServerScriptException {
+		info("Recovering list of review concepts from " + project.getBranchPath());
+		Review review = tsClient.getReview(project.getBranchPath());
+		if (true);
+		return review.getChangedConcepts().stream()
+				.map(s -> gl.getConceptSafely(s.toString()))
+				.collect(Collectors.toList());
+	}
 
 }
