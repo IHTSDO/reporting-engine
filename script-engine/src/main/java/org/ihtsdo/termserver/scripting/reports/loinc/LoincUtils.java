@@ -1,11 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
-import org.ihtsdo.otf.RF2Constants.ActiveState;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class LoincUtils {
+public class LoincUtils implements RF2Constants {
 	
 	public static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	public static String CORRELATION_PREFIX = "Correlation ID:";
@@ -37,6 +42,15 @@ public class LoincUtils {
 			}
 		}
 		throw new TermServerScriptException(c + " does not specify a " + prefix);
-		
+	}
+	
+	
+	public static List<Concept> getActiveLOINCconcepts(GraphLoader gl) {
+		return SnomedUtils.sort(gl.getAllConcepts()
+				.stream()
+				.filter(c -> c.isActive())
+				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
+				.collect(Collectors.toList())
+				);
 	}
 }

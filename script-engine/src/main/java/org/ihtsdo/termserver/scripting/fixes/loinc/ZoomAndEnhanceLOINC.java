@@ -509,7 +509,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
 		setQuiet(true);
-		for (Concept c : getActiveLOINCconcepts()) {
+		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
 			//Only process component if we have changes to make
 			if (upgradeLOINCConcept(null, c.cloneWithIds()) > 0) {
 				componentsToProcess.add(c);
@@ -517,15 +517,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		}
 		setQuiet(false);
 		return componentsToProcess;
-	}
-	
-	private List<Concept> getActiveLOINCconcepts() {
-		return SnomedUtils.sort(gl.getAllConcepts()
-				.stream()
-				.filter(c -> c.isActive())
-				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
-				.collect(Collectors.toList())
-				);
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
