@@ -406,6 +406,14 @@ public class ArchiveManager implements ScriptConstants {
 					if (expectStatedParents) {
 						checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
 					}
+				} else if (!c.isActive()) {
+					if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+						integrityFailureMessage.append(c + " is inactive but has inferred parents.");
+					}
+					
+					if (c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+						integrityFailureMessage.append(c + " is inactive but has inferred children.");
+					}
 				}
 				
 				if (populateHierarchyDepth && c.isActive() && c.getDepth() == NOT_SET) {
