@@ -132,6 +132,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		Character firstLetter = StringUtils.getFirstLetter(d.getTerm());
 		boolean firstCharIsAlpha = StringUtils.isLetter(firstChar);
 		//boolean firstCharIsDigit = StringUtils.isDigit(firstChar);
+		String firstWord = StringUtils.getFirstWord(d.getTerm());
 		
 		if (firstLetter == null) {
 			//If we have no letters then we must be case insensitive
@@ -145,6 +146,8 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			return setCaseSignificanceIfRequired(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, c, d);
 		} else if (!StringUtils.isCaseSensitive(d.getTerm(), false)) {
 			return setCaseSignificanceIfRequired(CaseSignificance.CASE_INSENSITIVE, c, d);
+		} else if (!StringUtils.isCapitalized(firstChar) && StringUtils.isMixedCase(firstWord)) {
+			return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
 		} else if (!StringUtils.isCapitalized(firstChar) && StringUtils.isCaseSensitive(d.getTerm(), false)) {
 			return setCaseSignificanceIfRequired(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, c, d);
 		} else {
