@@ -39,7 +39,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 100;
+	private Integer conceptsPerArchive = 10;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
@@ -53,9 +53,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
-			delta.moduleId = "1145237009"; //NEBCSR
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.moduleId = "731000124108";  //US Module
+			delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
@@ -69,8 +68,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.additionalReportColumns = "FSN, SemTag, Severity, ChangeType, Detail, Additional Detail, , ";
 			delta.postInit();
 			delta.startTimer();
-			//delta.preProcessFile();
-			delta.selectConceptsViaReview();
+			delta.preProcessFile();
+			//delta.selectConceptsViaReview();
 			delta.processFile();
 			if (delta.archiveBatches == null) {
 				delta.createOutputArchive();
@@ -120,12 +119,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		Set<Component> excludeComponents = new HashSet<>();
 		for (Component c : componentsOfInterest) {
 			if (c.getModuleId() == null) {
-				if (viaReview) {
-					report((Concept)c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept appearing in review has been deleted?");
+				//if (viaReview) {
+					String msg = viaReview ? "Concept appearing in review has been deleted?" : "Concept not found in target location";
+					report((Concept)c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 					excludeComponents.add(c);
-				} else { 
+				/*} else { 
 					throw new IllegalArgumentException("Concept " + c + " doesn't exist.  Check list of concepts to transfer");
-				}
+				}*/
 			}
 			
 			if (ensureConceptsHaveBeenReleased && !c.isReleased()) {
@@ -338,9 +338,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		info ("Extracting specified concepts");
 		for (Component thisComponent : componentsToProcess) {
 			Concept thisConcept = (Concept)thisComponent;
-			if (thisConcept.getId().equals("445028008")) {
+			/*if (thisConcept.getId().equals("445028008")) {
 				debug("here");
-			}
+			}*/
 
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {
@@ -465,7 +465,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
 					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
 				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
-					if (true);
 					subComponentsMoved = true;
 					thisDescMoved = true;
 				}
@@ -484,7 +483,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (d.getType().equals(DescriptionType.FSN)) {
 					String existingFsnId = conceptOnTS.getFSNDescription().getId();
 					Description loadedFSN = c.getDescription(existingFsnId);
-					if (loadedFSN != null) {
+					if (loadedFSN != null && !existingFsnId.equals(loadedFSN.getId())) {
 						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
 						setDescriptionAndLangRefModule(loadedFSN);
 						loadedFSN.setActive(false, true); //Force dirty flag
@@ -493,7 +492,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				} else if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
 					String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
 					Description loadedPT = c.getDescription(existingPtId);
-					if (loadedPT != null) {
+					if (loadedPT != null && !existingPtId.equals(loadedPT.getId())) {
 						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
 						setDescriptionAndLangRefModule(loadedPT);
 						loadedPT.setActive(true); //Will only mark dirty if not already active
