@@ -93,6 +93,7 @@ public interface ScriptConstants extends RF2Constants {
 	static Concept ASSOC_WITH = new Concept ("47429007", "Associated with (attribute)");
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
 	static Concept FINDING_SITE = new Concept ("363698007", "Finding site (attribute)");
+	static Concept OCCURRENCE = new Concept ("246454002", "Occurrence (attribute)");
 	static Concept ANAT_OR_ACQ_BODY_STRUCT = new Concept("442083009", "Anatomical or acquired body structure (body structure)");
 	static Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
 	static Concept SPECIAL_CONCEPT = new Concept("370115009", "Special concept (special concept)");

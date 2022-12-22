@@ -30,7 +30,7 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<95320005 |Disorder of skin (disorder)| ");
 		params.put(CHAR_TYPE, "Inferred");
-		params.put(ATTRIBUTE_A, CAUSE_AGENT.toString());
+		params.put(ATTRIBUTE_A, OCCURRENCE.toString());
 		params.put(ATTRIBUTE_B, FINDING_SITE.toString());
 		params.put(MUST_BOTH_EXIST, "TRUE");
 		TermServerReport.run(AttributesNotGroupedTogether.class, args, params);
@@ -57,7 +57,7 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.add(ATTRIBUTE_A).withType(JobParameter.Type.CONCEPT).withMandatory()
 				.add(ATTRIBUTE_B).withType(JobParameter.Type.CONCEPT).withMandatory()
-				.add(CHAR_TYPE).withType(JobParameter.Type.DROPDOWN).withValues("Stated","Inferred").withDefaultValue("Inferred")
+				.add(CHAR_TYPE).withType(JobParameter.Type.DROPDOWN).withOptions("Stated","Inferred").withDefaultValue("Inferred")
 				.add(MUST_BOTH_EXIST).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		
