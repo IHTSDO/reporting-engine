@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class Transmitter {
 	
-	public static int MAX_TEXT_LENGTH = 65000;
+	public static int MAX_TEXT_LENGTH = 64000;
 	
 	@Autowired
 	private JmsTemplate jmsTemplate;
@@ -48,8 +48,8 @@ public class Transmitter {
 		
 		//RP-594 We might have more information than we can digest in the debugInfo
 		String debugInfo = run.getDebugInfo();
-		if (debugInfo != null) {
-			logger.warn("Full debug message truncated to 65K characters\n {}", debugInfo);
+		if (debugInfo != null && debugInfo.length() >= MAX_TEXT_LENGTH) {
+			logger.warn("Full debug message truncated to 64K characters\n {}", debugInfo);
 			debugInfo = debugInfo.substring(0, Math.min(debugInfo.length(), MAX_TEXT_LENGTH)) + "...[truncated at source]";
 			run.setDebugInfo(debugInfo);
 		}

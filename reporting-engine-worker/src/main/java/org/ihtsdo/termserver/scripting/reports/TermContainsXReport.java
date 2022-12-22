@@ -75,6 +75,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 			for (int i=0; i < textsToMatch.length; i++) {
 				textsToMatch[i] = textsToMatch[i].toLowerCase().trim();
 			}
+			
+			if (run.getParamValue(WORDS).contains("FAIL_LARGE")) {
+				throw new TermServerScriptException("Deliberate fail with long message: " + StringUtils.repeat('A', 65100));
+			}
 		}
 		
 		if (!StringUtils.isEmpty(run.getParamValue(WITHOUT))) {
@@ -138,9 +142,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		nextConcept:
 		for (Concept c : conceptsOfInterest) {
 			boolean atLeastOneTermMatched = false;
-			if (c.getId().equals("307651005")) {
+			/*if (c.getId().equals("307651005")) {
 				debug("Here");
-			}
+			}*/
 			if (c.isActive()) {
 				if (whiteListedConceptIds.contains(c.getId())) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
