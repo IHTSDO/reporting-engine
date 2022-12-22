@@ -13,6 +13,8 @@ import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.otf.RF2Constants.ReportActionType;
+import org.ihtsdo.otf.RF2Constants.Severity;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -52,6 +54,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
+	protected File inputFile3;
 	private String dependencyArchive;
 	protected String projectName;
 	private String reportName;
@@ -187,7 +190,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				if (!inputFile2.canRead()) {
 					throw new TermServerScriptException ("Unable to read input file 2 " + args[x+1]);
 				}
-			} else if (thisArg.equals("-r")) {
+			} else if (thisArg.equals("-f3")) {
+				inputFile3 = new File(args[x+1]);
+				if (!inputFile3.canRead()) {
+					throw new TermServerScriptException ("Unable to read input file 3 " + args[x+1]);
+				}
+			}else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
 				dependencyArchive = args[x+1];
@@ -1735,6 +1743,39 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return review.getChangedConcepts().stream()
 				.map(s -> gl.getConceptSafely(s.toString()))
 				.collect(Collectors.toList());
+	}
+	
+	protected Concept getReplacementSafely(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) {
+		try {
+			return getReplacement(reportTabIdx, context, inactiveConcept, isIsA);
+		} catch (TermServerScriptException e) {
+			warn(e);
+		}
+		return null;
+	}
+	
+	protected Concept getReplacement(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
+		Set<String> assocs = new HashSet<>(inactiveConcept.getAssociationTargets().getReplacedBy());
+		assocs.addAll(inactiveConcept.getAssociationTargets().getAlternatives());
+		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
+		assocs.addAll(inactiveConcept.getAssociationTargets().getSameAs());
+		if (assocs.size() == 0) {
+			if (isIsA) {
+				//We'll try and carry on without this parent.
+				return null;
+			}
+			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
+		} else {
+			if(assocs.size() > 1){
+				String assocStr = inactiveConcept.getAssociationTargets().toString(gl);
+				if (context instanceof Concept) {
+					report((Concept)context, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple HistAssocs available. Result chosen at random.  Please specify to hardcode choice", assocStr);
+				} else {
+					report(reportTabIdx, "", context, "Multiple HistAssocs available for "  + inactiveConcept + ". Replacement chosen at random.  Please specify to hardcode choice", assocStr);
+				}
+			}
+			return  gl.getConcept(assocs.iterator().next());
+		}
 	}
 
 }

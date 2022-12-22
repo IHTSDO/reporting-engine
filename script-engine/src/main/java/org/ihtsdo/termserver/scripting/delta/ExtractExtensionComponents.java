@@ -733,7 +733,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						String reason = loadedTarget.getInactivationIndicator().toString();
 						Concept replacement = knownReplacements.get(loadedTarget);
 						if (replacement == null) {
-							replacement = getReplacement(r.getSource(), loadedTarget, isIsA);
+							replacement = getReplacement(PRIMARY_REPORT, r.getSource(), loadedTarget, isIsA);
+							//We will probably not have loaded this concept via RF2 if the target has been replaced, so load from secondary source
+							replacement = loadConcept(replacement);
 						}
 						
 						if (replacement == null && isIsA) {
@@ -778,37 +780,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			report(r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
 		}
 		return true;
-	}
-
-	private Concept getReplacement(Concept context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
-		/*List<HistoricalAssociation> assocs =  inactiveConcept.getHistorialAssociations(ActiveState.ACTIVE);
-		if (assocs.size() == 1) {
-			HistoricalAssociation assoc = assocs.iterator().next();
-			Concept assocType = gl.getConcept(assoc.getRefsetId());
-			Concept assocTarget = gl.getConcept(assoc.getTargetComponentId());
-			println (inactiveConcept + " is " + assocType.getPreferredSynonym() + " " + assocTarget);
-			return assocTarget;
-		} else {
-			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
-		}*/
-		Set<String> assocs = inactiveConcept.getAssociationTargets().getReplacedBy();
-		assocs.addAll(inactiveConcept.getAssociationTargets().getAlternatives());
-		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
-		assocs.addAll(inactiveConcept.getAssociationTargets().getSameAs());
-		if (assocs.size() == 0) {
-			if (isIsA) {
-				//We'll try and carry on without this parent.
-				return null;
-			}
-			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
-		} else {
-			if(assocs.size() > 1){
-				String assocStr = inactiveConcept.getAssociationTargets().toString(gl);
-				report(context, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple HistAssocs available. Result chosen at random.  Please specify to hardcode choice", assocStr);
-			}
-			//We will probably not have loaded this concept via RF2 if the target has been replaced, so load from secondary source
-			return loadConcept(gl.getConcept(assocs.iterator().next()));
-		}
 	}
 
 	private Concept loadConcept(Concept c) throws TermServerScriptException {
