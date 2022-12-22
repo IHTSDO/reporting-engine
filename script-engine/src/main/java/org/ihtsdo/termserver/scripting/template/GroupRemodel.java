@@ -260,8 +260,8 @@ public class GroupRemodel extends TemplateFix {
 		Map<Integer, Integer> additionalGroupNums = new HashMap<>();
 		
 		//Get a copy of the stated and inferred modelling "before"
-		String statedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
-		String inferredForm = SnomedUtils.getModel(c, CharacteristicType.INFERRED_RELATIONSHIP);
+		String statedForm = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String inferredForm = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
 		
 		for (int groupId = 0; groupId < maxGroups; groupId++) {
 			//Prepare for groups 0 and 1 anyway
@@ -370,7 +370,7 @@ public class GroupRemodel extends TemplateFix {
 			changesMade += applyRemodelledGroups(t,c,groups);
 			changesMade += removeRedundandGroups(t,c);
 			selfGroupAttributes(t,c);
-			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
+			String modifiedForm = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			
 			//Now check that we've actually ended up making actual changes
 			if (modifiedForm.equals(statedForm)) {

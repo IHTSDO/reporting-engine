@@ -1006,7 +1006,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return value;
 	}
 	
-	public static String getModel(Expressable c, CharacteristicType charType) {
+	/*public static String getModel(Expressable c, CharacteristicType charType) {
 		return getModel(c, charType, false);
 	}
 	
@@ -1034,7 +1034,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		//Split into separate lines so we can see better
 		model = model.replaceAll ("\\{", "\\{  ").replaceAll("\\,", "\\,\n   ");
 		return model;
-	}
+	}*/
 	
 	public static Integer countAttributes(Expressable c, CharacteristicType charType) {
 		int attributeCount = 0;

@@ -14,7 +14,7 @@ import org.snomed.otf.script.Script;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Concept extends Component implements ScriptConstants, Comparable<Concept>, Expressable  {
+public class Concept extends Expressable implements ScriptConstants, Comparable<Concept>  {
 
 	@SerializedName(value="conceptId", alternate="id")
 	@Expose
@@ -469,35 +469,6 @@ public class Concept extends Component implements ScriptConstants, Comparable<Co
 
 	public String toStringPref() {
 		return conceptId + " |" + getPreferredSynonym() + "|";
-	}
-
-	public String toExpression(CharacteristicType charType) {
-		String expression = getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
-		
-		//Parents may not be maintained if we're working with a loaded concept.
-		//Work with active IS_A relationships instead
-		expression += getRelationships(charType, IS_A, ActiveState.ACTIVE).stream()
-				.map(r -> r.getTarget())
-				.map(p -> p.toString())
-				.collect(Collectors.joining (" + \n"));
-		
-		if (getRelationships(charType, ActiveState.ACTIVE).size() > 0) {
-			expression += " : \n";
-		}
-		//Add any ungrouped attributes
-		boolean isFirstGroup = true;
-		for (RelationshipGroup group : getRelationshipGroups (charType)) {
-			if (isFirstGroup) {
-				isFirstGroup = false;
-			} else {
-				expression += ",\n";
-			}
-			expression += group.isGrouped() ? "{" : "";
-			expression += group.getRelationships().stream().map(p -> "  " + p.toString())
-					.collect(Collectors.joining (",\n"));
-			expression += group.isGrouped() ? " }" : "";
-		}
-		return expression;
 	}
 
 	@Override

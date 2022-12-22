@@ -11,7 +11,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Axiom extends Component implements ScriptConstants, Expressable {
+public class Axiom extends Expressable implements ScriptConstants {
 
 	@SerializedName(value="axiomId", alternate="id")
 	@Expose
@@ -102,7 +102,7 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	}
 	
 	public String toString() {
-		return SnomedUtils.getModel(this, null);
+		return toExpression(CharacteristicType.STATED_RELATIONSHIP);
 	}
 
 	public Axiom clone(String id, Concept c) {
@@ -171,5 +171,13 @@ public class Axiom extends Component implements ScriptConstants, Expressable {
 	@Override
 	public String getMutableFields() {
 		throw new NotImplementedException("Expecting getMutableFields to be called on AxiomEntry rather than Axiom");
+	}
+
+	@Override
+	public Set<Relationship> getRelationships(CharacteristicType charType, Concept type, ActiveState activeState) {
+		return relationships.stream()
+				.filter(r -> r.hasActiveState(activeState))
+				.filter(r -> r.getType().equals(type))
+				.collect(Collectors.toSet());
 	}
 }

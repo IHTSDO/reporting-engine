@@ -187,7 +187,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 
 	protected int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		BatchImportConcept concept = (BatchImportConcept)c;
-		String statedForm = SnomedUtils.getModel(concept, CharacteristicType.STATED_RELATIONSHIP, true);
+		String statedForm = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		try{
 			validateConcept(t, c);
 			removeTemporaryIds(c);

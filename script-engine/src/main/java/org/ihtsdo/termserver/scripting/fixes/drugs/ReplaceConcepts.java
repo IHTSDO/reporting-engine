@@ -12,7 +12,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
@@ -138,7 +137,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 				.collect(Collectors.toSet());
 		
 		changesMade += applyRemodelledGroups(t, c, new ArrayList<>(allInheritedGroups));
-		report(t, c, Severity.MEDIUM, ReportActionType.INFO, SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP));
+		report(t, c, Severity.MEDIUM, ReportActionType.INFO, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 		return changesMade;
 	}
 
