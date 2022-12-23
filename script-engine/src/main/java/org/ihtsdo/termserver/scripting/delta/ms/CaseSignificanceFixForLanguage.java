@@ -46,10 +46,12 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes",
+				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes",
 				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes"};
 		String[] tabNames = new String[] {
 				"Changed",
-				"Unchanged"};
+				"Unchanged",
+				"Special"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -86,7 +88,11 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 					report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, d, "","","Description manually listed as an exception");
 				} else {
 					changesMade += funnySymbolSwap(c, d);
-					changesMade += normalizeCaseSignificance(c, d);
+					try {
+						changesMade += normalizeCaseSignificance(c, d);
+					} catch (Exception e) {
+						report (c, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, d, e);
+					}
 					/*changesMade += checkForCaptitalizedEnglishWord(c, d);
 					//Requirement to align with English as first check
 					if (!alignWithEnglishIfSameFirstWord(c, d)) {
@@ -131,8 +137,20 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		//We might have a succession of non-alpha characters, so find the first letter
 		Character firstLetter = StringUtils.getFirstLetter(d.getTerm());
 		boolean firstCharIsAlpha = StringUtils.isLetter(firstChar);
-		//boolean firstCharIsDigit = StringUtils.isDigit(firstChar);
-		String firstWord = StringUtils.getFirstWord(d.getTerm());
+		boolean firstCharIsDigit = StringUtils.isDigit(firstChar);
+		String firstWord = StringUtils.getFirstWord(d.getTerm(), true);
+		
+		//Special case for substances like 11q22.2q22.3-microdeletiesyndroom and 2-ethylhexylacrylaat
+		//Find starts with number and then check for number letter in first word
+		if (firstCharIsDigit) {
+			//We're going to ignore dashes in this situation
+			String firstWordIgnoreDashes = StringUtils.getFirstWord(d.getTerm().replaceAll("-", ""));
+			if (StringUtils.isMixAlphaNumeric(firstWordIgnoreDashes)) {
+				return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
+			} else {
+				report (TERTIARY_REPORT, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, d);
+			}
+		}
 		
 		if (firstLetter == null) {
 			//If we have no letters then we must be case insensitive
@@ -140,10 +158,11 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		} else if (firstCharIsAlpha && StringUtils.isCapitalized(firstChar)) {
 			return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
 		} else if (!firstCharIsAlpha && StringUtils.isCapitalized(firstLetter)) {
-			if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+			/*if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 				return NO_CHANGES_MADE;
 			}
-			return setCaseSignificanceIfRequired(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, c, d);
+			return setCaseSignificanceIfRequired(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, c, d);*/
+			return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
 		} else if (!StringUtils.isCaseSensitive(d.getTerm(), false)) {
 			return setCaseSignificanceIfRequired(CaseSignificance.CASE_INSENSITIVE, c, d);
 		} else if (!StringUtils.isCapitalized(firstChar) && StringUtils.isMixedCase(firstWord)) {
