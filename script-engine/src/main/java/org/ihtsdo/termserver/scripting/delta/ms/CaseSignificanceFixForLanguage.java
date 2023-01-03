@@ -53,6 +53,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				"Unchanged",
 				"Special"};
 		super.postInit(tabNames, columnHeadings, false);
+		gl.setAllComponentsClean();
 	}
 	
 	private void process() throws TermServerScriptException {
@@ -127,6 +128,9 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	 * @throws TermServerScriptException 
 	 */
 	private int normalizeCaseSignificance(Concept c, Description d) throws TermServerScriptException {
+		if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+			return NO_CHANGES_MADE;
+		}
 		
 		if (knownEntireTermCaseSensitive.contains(d)) {
 			return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
@@ -178,7 +182,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		if (d.getCaseSignificance().equals(caseSig)) {
 			boolean skip = caseSig.equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm(), false);
 			if (!skip) {
-				report (SECONDARY_REPORT, c, Severity.NONE, ReportActionType.NO_CHANGE, d);
+				//report (SECONDARY_REPORT, c, Severity.NONE, ReportActionType.NO_CHANGE, d);
 			}
 			return NO_CHANGES_MADE;
 		} else {
@@ -187,6 +191,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			report (c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, before,after);
 			d.setCaseSignificance(caseSig);
 			d.setDirty();
+			c.setModified();
 			return CHANGE_MADE;
 		}
 	}
