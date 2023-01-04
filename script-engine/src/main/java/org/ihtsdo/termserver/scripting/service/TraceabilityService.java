@@ -16,6 +16,6 @@ public interface TraceabilityService {
 
 	void tidyUp() throws TermServerScriptException;
 	
-	void setBranchPrefixFilter(String onBranch);
+	void setBranchPath(String onBranch);
 
 }

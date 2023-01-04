@@ -218,8 +218,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			} else {
 				onBranch = project.getBranchPath();
 			}
-			traceabilityService.setBranchPrefixFilter(onBranch);
-			
+			traceabilityService.setBranchPath(onBranch);
+		} else {
+			traceabilityService.setBranchPath(project.getBranchPath());
 		}
 		
 		super.postInit(tabNames, columnHeadings, false);
@@ -811,7 +812,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 
 		@Override
-		public void setBranchPrefixFilter(String onBranch) {
+		public void setBranchPath(String onBranch) {
 		}
 
 		@Override

@@ -65,7 +65,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 		postInit(tabNames, columnHeadings, false);
 		
 		traceabilityService = new MultiDetailTraceabilityService(jobRun, this);
-		traceabilityService.setBranchPrefixFilter(project.getKey());
+		traceabilityService.setBranchPath(project.getKey());
 	}
 	
 	@Override
