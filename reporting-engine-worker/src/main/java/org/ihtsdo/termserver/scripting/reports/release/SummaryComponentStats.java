@@ -29,8 +29,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_CD = 3, TAB_AXIOMS = 4,
 			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
-			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13;  //Ensure refset tab is the last one as it's written at the end.
-	static final int MAX_REPORT_TABS = 14;
+			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13,
+			TAB_DESC_BY_LANG = 14;  
+	static final int MAX_REPORT_TABS = 15;
 	static final int DATA_WIDTH = 28;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5, 
 			IDX_MOVED_MODULE = 6, IDX_CHANGED_INACTIVE = 7, IDX_NEW_P = 8, IDX_NEW_SD = 9,
@@ -46,6 +47,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	File debugFile;
 	
 	private int[][] totals;
+	private Map<String, Map<String, int[]>> descriptionStatsByLanguage = new HashMap<>();
 	
 	Concept[] QIScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
 			PHARM_BIO_PRODUCT, PROCEDURE,
@@ -134,7 +136,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, New Inactive, Total, Total Active",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+												" , ,Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -149,7 +152,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 											"Desc Assoc",
 											"Desc CNC",
 											"Desc Inact",
-											"Refsets"};
+											"Refsets",
+											"Desc by Lang"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.add(ROOT_CONCEPT);
@@ -340,6 +344,22 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return refsetCounts;
 	}
 	
+	private int[] getDescriptionByLanguageArray (DescriptionType type, String lang) {
+		String statBucket = (type == DescriptionType.TEXT_DEFINITION ? "Text Defn" : "Description");
+		Map<String, int[]> statsByLanguage = descriptionStatsByLanguage.get(statBucket);
+		if (statsByLanguage == null) {
+			statsByLanguage = new HashMap<>();
+			descriptionStatsByLanguage.put(statBucket, statsByLanguage);
+		}
+		
+		int[] descCounts = statsByLanguage.get(lang);
+		if (descCounts == null) {
+			descCounts = new int[DATA_WIDTH];
+			statsByLanguage.put(lang, descCounts);
+		}
+		return descCounts;
+	}
+	
 	private void analyzeDescriptions(Concept c, Concept topLevel, Datum datum, Boolean wasActive, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
 			/*if (d.getId().equals("3770564011")) {
@@ -512,6 +532,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			RefsetMember refsetMember = (RefsetMember) component;
 			getRefsetData(refsetMember.getRefsetId())[idx]++;
 		}
+		//If this component is a description, then also increment our descriptions by language summary
+		if (component instanceof Description) {
+			Description desc = (Description) component;
+			getDescriptionByLanguageArray(desc.getType(), desc.getLang())[idx]++;
+		}
 	}
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
@@ -585,7 +610,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
 			if (summaryData != null) {
-				for (int idxTab = 0; idxTab < MAX_REPORT_TABS - 1; idxTab++) {
+				for (int idxTab = 0; idxTab < MAX_REPORT_TABS - 2; idxTab++) {
 					report(idxTab, hierarchy, summaryData[idxTab]);
 					for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
 						totals[idxTab][idxMovement] += summaryData[idxTab][idxMovement];
@@ -596,35 +621,58 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		
 		//Refset data is not broken down by major hierarchy
 		//Split into each type of refset with sub totals
-		outputRefsetData("association", totals);
-		outputRefsetData("language", totals);
-		outputRefsetData("indicator", totals);
+		outputRefsetData(TAB_REFSET, "association", totals);
+		outputRefsetData(TAB_REFSET, "language", totals);
+		outputRefsetData(TAB_REFSET, "indicator", totals);
+		
+		outputDescriptionByLanguage(TAB_DESC_BY_LANG, totals);
 		
 		for (int idxTab = 0; idxTab < MAX_REPORT_TABS; idxTab++) {
-			report (idxTab, totalConcept, totals[idxTab]);
+			report(idxTab, totalConcept, totals[idxTab]);
 		}
 	}
 	
-	private void outputRefsetData(String filter, int[][] totals) throws TermServerScriptException {
+	private void outputRefsetData(int tabIdx, String filter, int[][] totals) throws TermServerScriptException {
 		int[] subTotals = new int[DATA_WIDTH];
 		Concept subTotalConcept = new Concept("","  SubTotal");
 		for (Map.Entry<String, int[]> entry : refsetDataMap.entrySet()) {
 			Concept refset = gl.getConcept(entry.getKey());
 			if (refset.getFsn().contains(filter)) {
-				report(MAX_REPORT_TABS -1, refset, entry.getValue());
+				report(tabIdx, refset, entry.getValue());
 				for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
 					subTotals[idxMovement] += entry.getValue()[idxMovement];
-					totals[MAX_REPORT_TABS -1][idxMovement] +=  entry.getValue()[idxMovement];
+					totals[tabIdx][idxMovement] +=  entry.getValue()[idxMovement];
 				}
 			}
 		}
-		report(MAX_REPORT_TABS -1, subTotalConcept, subTotals);
-		report(MAX_REPORT_TABS -1, "");
+		report(tabIdx, subTotalConcept, subTotals);
+		report(tabIdx, "");
+	}
+	
+	private void outputDescriptionByLanguage(int tabIdx, int[][] totals) throws TermServerScriptException {
+		for (Map.Entry<String, Map<String, int[]>> descTypeEntry : descriptionStatsByLanguage.entrySet()) {
+			int[] subTotals = new int[DATA_WIDTH];
+			String descType = descTypeEntry.getKey();
+			for (Map.Entry<String, int[]> entry : descTypeEntry.getValue().entrySet()) {
+				String lang = entry.getKey();
+				report(tabIdx, descType + " - " + lang, entry.getValue());
+				for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
+					subTotals[idxMovement] += entry.getValue()[idxMovement];
+					totals[tabIdx][idxMovement] +=  entry.getValue()[idxMovement];
+				}
+			}
+			report(tabIdx, "Subtotal", subTotals);
+			report(tabIdx, "");
+		}
 	}
 
-	protected void report (int idxTab, Concept c, int[] data) throws TermServerScriptException {
+	protected void report(int idxTab, Concept c, int[] data) throws TermServerScriptException {
 		super.report(idxTab, c, getReportData(idxTab, data));
 		countIssue(c);
+	}
+	
+	protected void report(int idxTab, String lang, int[] data) throws TermServerScriptException {
+		super.report(idxTab, "", "", lang, getReportData(idxTab, data));
 	}
 
 	private static Map<Integer, List<Integer>> getSheetFieldsMap() {
@@ -637,7 +685,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 		
-		Arrays.asList(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET).stream().forEach(index -> {
+		Arrays.asList(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET, TAB_DESC_BY_LANG).stream().forEach(index -> {
 			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 		});
 

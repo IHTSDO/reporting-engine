@@ -13,8 +13,6 @@ import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.otf.RF2Constants.ReportActionType;
-import org.ihtsdo.otf.RF2Constants.Severity;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
