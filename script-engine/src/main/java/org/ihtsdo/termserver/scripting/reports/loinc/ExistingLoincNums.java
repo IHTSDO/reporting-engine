@@ -35,11 +35,13 @@ public class ExistingLoincNums extends TermServerScript {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
-				"LoincNum, LoincPartNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,"
+				"LoincNum, LoincPartNum, Advice, LoincPartName, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
+				"LoincPartNum, Advice, Detail, Detail"
 		};
 		String[] tabNames = new String[] {
 				"LoincNums to Model",
-				"Live Modeling"
+				"Live Modeling",
+				"Part Mapping Notes"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -89,9 +91,12 @@ public class ExistingLoincNums extends TermServerScript {
 	private void determineExistingParts() throws TermServerScriptException {
 		try {
 			info ("Loading Parts " + inputFile3);
-			int hit = 0;
-			int miss = 0;
 			boolean isFirstLine = true;
+			Set<String> partNumsMapped = new HashSet<>();
+			Set<String> partNumsUnmapped = new HashSet<>();
+			int skipped = 0;
+			int mapped = 0;
+			int unmapped = 0;
 			try (BufferedReader br = new BufferedReader(new FileReader(inputFile3))) {
 				String line;
 				while ((line = br.readLine()) != null) {
@@ -104,24 +109,38 @@ public class ExistingLoincNums extends TermServerScript {
 						
 						//Do we have this partNum?
 						RelationshipTemplate partAttribute = loincPartMap.get(partNum);
+						if (partTypeName.equals("CLASS")) {
+							skipped++;
+							continue;
+						}
 						
 						if (partAttribute != null) {
-							hit++;
+							mapped++;
 							report(SECONDARY_REPORT,
 									loincNum,
 									partNum,
+									"Mapped OK",
+									partName,
 									partAttribute);
+							partNumsMapped.add(partNum);
 						} else {
-							miss++;
+							unmapped++;
 							report(SECONDARY_REPORT,
 									loincNum,
 									partNum,
-									"Not Part Mapped - " + partTypeName + " | " + partName);
+									"Not Mapped - " + partTypeName + " | " + partName,
+									partName);
+							partNumsUnmapped.add(partNum);
 						}
 					} else isFirstLine = false;
 				}
 			}
-			info("Parts mapped = " + hit + "/" + (hit + miss));
+			report (SECONDARY_REPORT, "");
+			report (SECONDARY_REPORT, "Parts mapped", mapped);
+			report (SECONDARY_REPORT, "Parts unmapped", unmapped);
+			report (SECONDARY_REPORT, "Parts skipped", skipped);
+			report (SECONDARY_REPORT, "Unique PartNums mapped", partNumsMapped.size());
+			report (SECONDARY_REPORT, "Unique PartNums unmapped", partNumsUnmapped.size());
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
@@ -136,6 +155,10 @@ public class ExistingLoincNums extends TermServerScript {
 	
 	private void populatePartMap() throws TermServerScriptException {
 		try {
+			int successfullTypeReplacement = 0;
+			int successfullValueReplacement = 0;
+			int unsuccessfullTypeReplacement = 0;
+			int unsuccessfullValueReplacement = 0;
 			info ("Loading Part Map" + inputFile2);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(inputFile2))) {
@@ -150,7 +173,9 @@ public class ExistingLoincNums extends TermServerScript {
 						if (!attributeType.isActive()) {
 							Concept replacementType = getReplacementSafely(SECONDARY_REPORT, partNum, attributeType, false);
 							String replacementMsg = replacementType == null ? " no replacement available." : " replaced with " + replacementType;
-							report(SECONDARY_REPORT, "", partNum, "Mapped to inactive type: " + attributeType + replacementMsg);
+							if (replacementType == null) unsuccessfullTypeReplacement++; 
+								else successfullTypeReplacement++;
+							report(TERTIARY_REPORT, partNum, "Mapped to inactive type: " + attributeType + replacementMsg);
 							if (replacementType != null) {
 								attributeType = replacementType;
 							}
@@ -158,7 +183,10 @@ public class ExistingLoincNums extends TermServerScript {
 						if (!attributeValue.isActive()) {
 							Concept replacementValue = getReplacementSafely(SECONDARY_REPORT, partNum, attributeValue, false);
 							String replacementMsg = replacementValue == null ? "  no replacement available." : " replaced with " + replacementValue;
-							report(SECONDARY_REPORT, "", partNum, "Mapped to inactive value: " + attributeValue + replacementMsg);
+							if (replacementValue == null) unsuccessfullValueReplacement++; 
+							else successfullValueReplacement++;
+							String prefix = replacementValue == null ? "* " : "";
+							report(TERTIARY_REPORT, partNum, prefix + "Mapped to inactive value: " + attributeValue + replacementMsg);
 							if (replacementValue != null) {
 								attributeValue = replacementValue;
 							}
@@ -169,6 +197,12 @@ public class ExistingLoincNums extends TermServerScript {
 				}
 			}
 			info("Populated map of " + loincPartMap.size() + " LOINC parts");
+			report(TERTIARY_REPORT, "");
+			report(TERTIARY_REPORT, "successfullTypeReplacement",successfullTypeReplacement);
+			report(TERTIARY_REPORT, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
+			report(TERTIARY_REPORT, "successfullValueReplacement",successfullValueReplacement);
+			report(TERTIARY_REPORT, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
+
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
