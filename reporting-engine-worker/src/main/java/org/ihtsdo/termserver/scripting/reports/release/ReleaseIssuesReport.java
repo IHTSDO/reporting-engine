@@ -988,42 +988,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private void populateRecentlyTouched() {
 		if (recentlyTouched == null) {
-			recentlyTouched = new HashSet<>();
-			nextConcept:
-			for (Concept c : allConceptsSorted) {
-				if (StringUtils.isEmpty(c.getEffectiveTime())) {
-					recentlyTouched.add(c);
-					continue nextConcept;
-				}
-				for (Description d: c.getDescriptions()) {
-					if (StringUtils.isEmpty(d.getEffectiveTime())) {
-						recentlyTouched.add(c);
-						continue nextConcept;
-					}
-				}
-				//We won't check inferred modelling since that can change without an author
-				//touching the concept
-				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
-					if (StringUtils.isEmpty(r.getEffectiveTime())) {
-						recentlyTouched.add(c);
-						continue nextConcept;
-					}
-				}
-				
-				for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE)) {
-					if (StringUtils.isEmpty(a.getEffectiveTime())) {
-						recentlyTouched.add(c);
-						continue nextConcept;
-					}
-				}
-				
-				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-					if (StringUtils.isEmpty(i.getEffectiveTime())) {
-						recentlyTouched.add(c);
-						continue nextConcept;
-					}
-				}
-			}
+			recentlyTouched = SnomedUtils.getRecentlyTouchedConcepts(allConceptsSorted);
 		}
 	}
 

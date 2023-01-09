@@ -28,6 +28,7 @@ import com.google.common.io.Files;
 public class ValidateDrugModeling extends TermServerReport implements ReportClass {
 	
 	private List<Concept> allDrugs;
+	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
@@ -45,6 +46,9 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	//private Set<RelationshipGroup> reportedForBoSSPAIViolation = new HashSet<>();
 	private Set<BaseMDF> reportedBaseMDFCombos = new HashSet<>();
 	
+	private boolean isRecentlyTouchedConceptsOnly = false;
+	private Set<Concept> recentlyTouchedConcepts;
+	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	
@@ -58,6 +62,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		params.put(RECENT_CHANGES_ONLY, "true");
 		TermServerReport.run(ValidateDrugModeling.class, args, params);
 	}
 	
@@ -94,16 +99,27 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		bannedMpParents.add(gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|"));
 		bannedMpParents.add(gl.getConcept("763760008 |Medicinal product categorized by structure (product)|"));
 		bannedMpParents.add(gl.getConcept("763087004 |Medicinal product categorized by therapeutic role (product)|"));
+		
+		if (jobRun.getParamBoolean(RECENT_CHANGES_ONLY)) {
+			isRecentlyTouchedConceptsOnly = true;
+			recentlyTouchedConcepts = SnomedUtils.getRecentlyTouchedConcepts(gl.getAllConcepts());
+		}
 	}
 
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(RECENT_CHANGES_ONLY)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(true)
+			.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Drugs Validation")
 				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
+				.withParameters(params)
 				.build();
 	}
 	
@@ -120,6 +136,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		double conceptsConsidered = 0;
 		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
 		for (Concept c : allDrugs) {
+			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
+				continue;
+			}
+			
 			DrugUtils.setConceptType(c);
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
@@ -756,7 +776,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			if (!rg.isGrouped() /*|| reportedForBoSSPAIViolation.contains(rg)*/) {
 				continue;
 			}
-			//What is this BaseMDF?  Find all other RelGroups that have that save base and pharm dose form
+			//What is this BaseMDF?  Find all other RelGroups that have that same base and pharm dose form
 			Concept mdf = getMDF(concept);
 			BaseMDF baseMDF = getBaseMDF(rg, mdf);
 			

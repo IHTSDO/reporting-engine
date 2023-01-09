@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.otf.RF2Constants.ActiveState;
+import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -2321,5 +2322,45 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			populateSemanticTagHierarchyMap(gl);
 		}
 		return semanticTagHierarchyMap.get(hierarchy);
+	}
+
+	public static Set<Concept> getRecentlyTouchedConcepts(Collection<Concept> concepts) {
+		HashSet<Concept> recentlyTouched = new HashSet<>();
+		nextConcept:
+		for (Concept c : concepts) {
+			if (StringUtils.isEmpty(c.getEffectiveTime())) {
+				recentlyTouched.add(c);
+				continue nextConcept;
+			}
+			for (Description d: c.getDescriptions()) {
+				if (StringUtils.isEmpty(d.getEffectiveTime())) {
+					recentlyTouched.add(c);
+					continue nextConcept;
+				}
+			}
+			//We won't check inferred modelling since that can change without an author
+			//touching the concept
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+				if (StringUtils.isEmpty(r.getEffectiveTime())) {
+					recentlyTouched.add(c);
+					continue nextConcept;
+				}
+			}
+			
+			for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE)) {
+				if (StringUtils.isEmpty(a.getEffectiveTime())) {
+					recentlyTouched.add(c);
+					continue nextConcept;
+				}
+			}
+			
+			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+				if (StringUtils.isEmpty(i.getEffectiveTime())) {
+					recentlyTouched.add(c);
+					continue nextConcept;
+				}
+			}
+		}
+		return recentlyTouched;
 	}
 }
