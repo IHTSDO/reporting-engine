@@ -1,13 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.apache.commons.lang3.time.DateUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.service.BulkTraceabilityService;
+import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
+import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -19,7 +22,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class LoincReport extends TermServerReport implements ReportClass {
 	
-	Set<String> semTagExclusions = new HashSet<>();
+	private Set<String> semTagExclusions = new HashSet<>();
+	private TraceabilityService traceabilityService;
+	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		TermServerReport.run(LoincReport.class, args, new HashMap<>());
@@ -32,8 +37,8 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag, Author, Task, Creation Date",
-				"SCTID, FSN, SemTag, Author, Task, Creation Date"};
+		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag, EffectiveTime, Author, Task, Creation Date",
+				"SCTID, FSN, SemTag, EffectiveTime, Author, Task, Creation Date"};
 		String[] tabNames = new String[] {	"New Observable Entities",
 				"New Evaluation Procedures"};
 		semTagExclusions.add("(regime/therapy)");
@@ -52,22 +57,32 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		BulkTraceabilityService traceability = new BulkTraceabilityService(jobRun, this);
+		traceabilityService = new SingleTraceabilityService(jobRun, this);
+		traceabilityService.setBranchPath(project.getKey());
 		
 		for (Concept c : gl.getConcept("363787002 | Observable entity (observable entity)").getDescendents(NOT_SET)) {
 			if (!c.isReleased() && !isExcluded(c)) {
-				traceability.populateTraceabilityAndReport(PRIMARY_REPORT, c);
+				populateTraceabilityAndReport(PRIMARY_REPORT, c);
 				countIssue(c);
 			}
 		}
 		
 		for (Concept c : gl.getConcept("386053000 | Evaluation procedure (procedure)").getDescendents(NOT_SET)) {
 			if (!c.isReleased() && !isExcluded(c)) {
-				traceability.populateTraceabilityAndReport(SECONDARY_REPORT, c);
+				populateTraceabilityAndReport(SECONDARY_REPORT, c);
 				countIssue(c);
 			}
 		}
-		traceability.flush();
+		traceabilityService.flush();
+	}
+	
+	private void populateTraceabilityAndReport(int tabIdx, Concept c, Object... data) throws TermServerScriptException {
+		//Are we working on a published release, or "in-flight" project?
+		String fromDate = null;
+		//We're now working on monthly releases, so it could be anything in the last 3 months tops
+		Date fromDateDate = DateUtils.addDays(new Date(),-180);
+		fromDate = dateFormat.format(fromDateDate);
+		traceabilityService.populateTraceabilityAndReport(fromDate, null, tabIdx, c, data);
 	}
 
 	private boolean isExcluded(Concept c) {
