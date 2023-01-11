@@ -84,6 +84,10 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	}
 	
 	public void runJob() throws TermServerScriptException {
+		if (componentIds == null || componentIds.isEmpty()) {
+			throw new TermServerScriptException("Please specify component ids for which traceability should be reported.");
+		}
+		
 		for (String componentId : componentIds) {
 			Component c = gl.getComponent(componentId);
 			if (c == null) {
