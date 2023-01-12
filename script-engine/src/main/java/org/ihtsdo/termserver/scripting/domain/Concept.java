@@ -504,11 +504,15 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		String rhsExpression = rhs.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		return thisExpression.equals(rhsExpression);
 	}
-
+	
 	public void addRelationship(Concept type, Concept target) {
+		addRelationship(type, target, 0);
+	}
+
+	public void addRelationship(Concept type, Concept target, int groupId) {
 		Relationship r = new Relationship();
 		r.setActive(true);
-		r.setGroupId(0);
+		r.setGroupId(groupId);
 		r.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		r.setSourceId(this.getConceptId());
 		r.setType(type);

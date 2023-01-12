@@ -2363,4 +2363,31 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return recentlyTouched;
 	}
+
+	/**Initial very basic implementation will not consider grouping 
+	 */
+	public static String getModelDifferences(Concept lhs, Concept rhs, CharacteristicType charType) {
+		String differences = "";
+		for (Relationship lhsR : lhs.getRelationships(charType, ActiveState.ACTIVE)) {
+			//Do we have this relationship on the RHS?
+			if (rhs.getRelationships(charType, lhsR.getType(), lhsR.getTarget(), ActiveState.ACTIVE).size() == 0) {
+				differences += lineFeed(differences) + "Missing: " + lhsR.toShortPrettyString();
+			}
+		}
+		//Now do we have any on the other side that are considered 'extra'?
+		for (Relationship rhsR : rhs.getRelationships(charType, ActiveState.ACTIVE)) {
+			//Do we have this relationship on the RHS?
+			if (lhs.getRelationships(charType, rhsR.getType(), rhsR.getTarget(), ActiveState.ACTIVE).size() == 0) {
+				differences += lineFeed(differences) + "Additional: " + rhsR.toShortPrettyString();
+			}
+		}
+		return differences;
+	}
+
+	private static String lineFeed(String str) {
+		if (!str.isEmpty()) {
+			return ",\n";
+		}
+		return "";
+	}
 }

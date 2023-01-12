@@ -8,6 +8,7 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * LOINC-382 List Primitive LOINC concepts
@@ -36,7 +37,7 @@ public class ExistingLoincNums extends TermServerScript {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
-				"LoincNum, LoincPartNum, Advice, LoincPartName, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
+				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, Advice, Detail, Detail",
 				"LoincNum, SCTID, FSN, Current Model, Proposed Model, Difference"
 		};
@@ -112,6 +113,8 @@ public class ExistingLoincNums extends TermServerScript {
 			int unmapped = 0;
 			try (BufferedReader br = new BufferedReader(new FileReader(inputFile3))) {
 				String line;
+				Set<RelationshipTemplate> attributeSet = new HashSet<>();
+				String lastLoincNum = "";
 				while ((line = br.readLine()) != null) {
 					if (!isFirstLine) {
 						String[] items = line.split("\t");
@@ -119,6 +122,15 @@ public class ExistingLoincNums extends TermServerScript {
 						String partNum = items[2];
 						String partName = items[3];
 						String partTypeName = items[5];
+						
+						//Have we moved on to a new LOINC Num?  Do model comparison if so.
+						if (!lastLoincNum.equals(loincNum)) {
+							if (!lastLoincNum.isEmpty()) {
+								doProposedModelComparison(loincNum, attributeSet);
+							}
+							lastLoincNum = loincNum;
+							attributeSet.clear();
+						}
 						
 						//Do we have this partNum?
 						RelationshipTemplate partAttribute = loincPartMap.get(partNum);
@@ -136,6 +148,7 @@ public class ExistingLoincNums extends TermServerScript {
 									partName,
 									partAttribute);
 							partNumsMapped.add(partNum);
+							attributeSet.add(partAttribute);
 						} else {
 							unmapped++;
 							report(SECONDARY_REPORT,
@@ -159,6 +172,25 @@ public class ExistingLoincNums extends TermServerScript {
 		}
 	}
 	
+	private void doProposedModelComparison(String loincNum, Set<RelationshipTemplate> attributeSet) throws TermServerScriptException {
+		//Do we have this loincNum
+		Concept loincConcept = loincNumMap.get(loincNum);
+		if (loincConcept == null) {
+			return;
+		}
+		
+		Concept proposedLoincConcept = new Concept("0");
+		proposedLoincConcept.addRelationship(IS_A, OBSERVABLE_ENTITY);
+		proposedLoincConcept.setDefinitionStatus(loincConcept.getDefinitionStatus());
+		for (RelationshipTemplate rt : attributeSet) {
+			proposedLoincConcept.addRelationship(rt.getType(), rt.getTarget(), SnomedUtils.getFirstFreeGroup(proposedLoincConcept));
+		}
+		String existingSCG = loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String proposedSCG = proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String modelDiff = SnomedUtils.getModelDifferences(loincConcept, proposedLoincConcept, CharacteristicType.STATED_RELATIONSHIP);
+		report(QUATERNARY_REPORT, loincNum, loincConcept.getId(), loincConcept.getFsn(), existingSCG, proposedSCG, modelDiff);
+	}
+
 	private void populateLoincNumMap() throws TermServerScriptException {
 		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
 			loincNumMap.put(LoincUtils.getLoincNumFromDescription(c), c);
@@ -193,7 +225,7 @@ public class ExistingLoincNums extends TermServerScript {
 							String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
 							if (replacementType == null) unsuccessfullTypeReplacement++; 
 								else successfullTypeReplacement++;
-							report(TERTIARY_REPORT, partNum, "Mapped to inactive type: " + attributeType + replacementMsg);
+							report(TERTIARY_REPORT, partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
 							if (replacementType != null) {
 								attributeType = replacementType;
 							}
@@ -209,7 +241,7 @@ public class ExistingLoincNums extends TermServerScript {
 							if (replacementValue == null) unsuccessfullValueReplacement++; 
 							else successfullValueReplacement++;
 							String prefix = replacementValue == null ? "* " : "";
-							report(TERTIARY_REPORT, partNum, prefix + "Mapped to inactive value: " + attributeValue + replacementMsg);
+							report(TERTIARY_REPORT, partNum, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
 							if (replacementValue != null) {
 								attributeValue = replacementValue;
 							}

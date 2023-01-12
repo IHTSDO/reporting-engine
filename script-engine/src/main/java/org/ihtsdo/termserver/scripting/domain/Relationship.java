@@ -166,6 +166,10 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	public void setModifier(Modifier modifier) {
 		this.modifier = modifier;
 	}
+	
+	public String toShortPrettyString() {
+		return  type.toStringPref() + " -> " + target.toStringPref();
+	}
 
 	public String toShortString() {
 		return "[S: " + sourceId + ", T: " + type.getConceptId() + ", D: " + target.getConceptId() + "]";
