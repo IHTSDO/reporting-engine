@@ -20,19 +20,22 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 	public static String ATTRIBUTE_B = "Attribute B";
 	public static String CHAR_TYPE = "Characteristic Type";
 	public static String MUST_BOTH_EXIST = "Must Both Exist";
+	public static String SELF_GROUPED_ONLY = "Self Grouped Only";
 	
 	private Concept attrA;
 	private Concept attrB;
 	private CharacteristicType charType;
 	private boolean mustBothExist = false;
+	boolean selfGroupedOnly = true;
 		
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<95320005 |Disorder of skin (disorder)| ");
+		params.put(ECL, "*");
 		params.put(CHAR_TYPE, "Inferred");
 		params.put(ATTRIBUTE_A, OCCURRENCE.toString());
 		params.put(ATTRIBUTE_B, FINDING_SITE.toString());
 		params.put(MUST_BOTH_EXIST, "TRUE");
+		params.put(SELF_GROUPED_ONLY, "TRUE");
 		TermServerReport.run(AttributesNotGroupedTogether.class, args, params);
 	}
 	
@@ -48,6 +51,7 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 		attrB = gl.getConcept(jobRun.getMandatoryParamValue(ATTRIBUTE_B));
 		charType = jobRun.getMandatoryParamValue(CHAR_TYPE).equals("Inferred")?CharacteristicType.INFERRED_RELATIONSHIP:CharacteristicType.STATED_RELATIONSHIP;
 		mustBothExist = jobRun.getParamBoolean(MUST_BOTH_EXIST);
+		selfGroupedOnly = jobRun.getParamBoolean(SELF_GROUPED_ONLY);
 		super.postInit();
 	}
 	
@@ -95,6 +99,9 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 			
 			//Now work through all groups to find A or B without the other
 			for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
+				if (selfGroupedOnly && g.size() > 1) {
+					continue;
+				}
 				boolean attrAGrouped = g.containsType(attrA);
 				boolean attrBGrouped = g.containsType(attrB);
 				boolean reported = false;
