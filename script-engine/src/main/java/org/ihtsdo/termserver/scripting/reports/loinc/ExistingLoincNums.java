@@ -16,6 +16,7 @@ public class ExistingLoincNums extends TermServerScript {
 	
 	private static Map<String, Concept> loincNumMap = new HashMap<>();
 	private static Map<String, RelationshipTemplate> loincPartMap = new HashMap<>();
+	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExistingLoincNums report = new ExistingLoincNums();
@@ -36,14 +37,26 @@ public class ExistingLoincNums extends TermServerScript {
 		String[] columnHeadings = new String[] {
 				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
 				"LoincNum, LoincPartNum, Advice, LoincPartName, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
-				"LoincPartNum, Advice, Detail, Detail"
+				"LoincPartNum, Advice, Detail, Detail",
+				"LoincNum, SCTID, FSN, Current Model, Proposed Model, Difference"
 		};
 		String[] tabNames = new String[] {
 				"LoincNums to Model",
 				"Live Modeling",
-				"Part Mapping Notes"
+				"Part Mapping Notes",
+				"Proposed Model Comparison"
 		};
 		super.postInit(tabNames, columnHeadings, false);
+		
+		knownReplacementMap.put(gl.getConcept("720309005 |Immunoglobulin G antibody to Streptococcus pneumoniae 43 (substance)|"), gl.getConcept("767402003 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 43 (substance)|"));
+		knownReplacementMap.put(gl.getConcept("720308002 |Immunoglobulin G antibody to Streptococcus pneumoniae 34 (substance)|"), gl.getConcept("767408004 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 34 (substance)|"));
+		knownReplacementMap.put(gl.getConcept("54708003 |Extended zinc insulin (substance)|"), gl.getConcept("10329000 |Zinc insulin (substance)|"));
+		knownReplacementMap.put(gl.getConcept("409258004 |Hydroxocobalamin (substance)|"), gl.getConcept("1217427007 |Aquacobalamin (substance)|"));
+		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
+		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
+		knownReplacementMap.put(gl.getConcept("27192005 |Aminosalicylic acid (substance)|"), gl.getConcept("255666002 |Para-aminosalicylic acid (substance)|"));
+		knownReplacementMap.put(gl.getConcept("250428009 |Substance with antimicrobial mechanism of action (substance)|"), gl.getConcept("419241000 |Substance with antibacterial mechanism of action (substance)|"));
+		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
 	}
 
 	private void runReport() throws TermServerScriptException {
@@ -171,8 +184,13 @@ public class ExistingLoincNums extends TermServerScript {
 						Concept attributeValue = gl.getConcept(items[5]);
 						
 						if (!attributeType.isActive()) {
-							Concept replacementType = getReplacementSafely(SECONDARY_REPORT, partNum, attributeType, false);
-							String replacementMsg = replacementType == null ? " no replacement available." : " replaced with " + replacementType;
+							String hardCodedIndicator = " hardcoded";
+							Concept replacementType = knownReplacementMap.get(attributeType);
+							if (replacementType == null) {
+								hardCodedIndicator = "";
+								replacementType = getReplacementSafely(TERTIARY_REPORT, partNum, attributeType, false);
+							} 
+							String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
 							if (replacementType == null) unsuccessfullTypeReplacement++; 
 								else successfullTypeReplacement++;
 							report(TERTIARY_REPORT, partNum, "Mapped to inactive type: " + attributeType + replacementMsg);
@@ -181,8 +199,13 @@ public class ExistingLoincNums extends TermServerScript {
 							}
 						}
 						if (!attributeValue.isActive()) {
-							Concept replacementValue = getReplacementSafely(SECONDARY_REPORT, partNum, attributeValue, false);
-							String replacementMsg = replacementValue == null ? "  no replacement available." : " replaced with " + replacementValue;
+							String hardCodedIndicator = " hardcoded";
+							Concept replacementValue = knownReplacementMap.get(attributeValue);
+							if (replacementValue == null) {
+								hardCodedIndicator = "";
+								replacementValue = getReplacementSafely(TERTIARY_REPORT, partNum, attributeValue, false);
+							}
+							String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
 							if (replacementValue == null) unsuccessfullValueReplacement++; 
 							else successfullValueReplacement++;
 							String prefix = replacementValue == null ? "* " : "";
