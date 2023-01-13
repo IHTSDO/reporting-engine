@@ -37,9 +37,10 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 				"4257621000202113,2177271000202117,3773321000202117,3766611000202115," +
 				"4251151000202119,3910121000202111,3992221000202119,4204801000202116," +
 				"3700231000202113,4257611000202117");*/
-		params.put(COMPONENT_IDS, "85197d34-bcc9-44b7-b024-b8cfda2c4bfa,86592bf0-bac6-4ea1-824f-b61cc5a065f9," +
+		/*params.put(COMPONENT_IDS, "85197d34-bcc9-44b7-b024-b8cfda2c4bfa,86592bf0-bac6-4ea1-824f-b61cc5a065f9," +
 				"6f33c8d8-b280-48a0-9574-eb2489db77df,95ccfa99-173d-4908-bde4-107cb778b9e6,"+
-				"6c733651-1956-49ed-a2f2-ee7627290695");
+				"6c733651-1956-49ed-a2f2-ee7627290695");*/
+		params.put(COMPONENT_IDS, "8041000146102");
 		TermServerReport.run(ComponentTraceability.class, args, params);
 	}
 	
@@ -65,7 +66,9 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 		postInit(tabNames, columnHeadings, false);
 		
 		traceabilityService = new MultiDetailTraceabilityService(jobRun, this);
-		traceabilityService.setBranchPath(project.getKey());
+		//Do not set a search path because we want to know about all activity, not just
+		//that which has been promoted.
+		//traceabilityService.setBranchPath(project.getKey());
 	}
 	
 	@Override
@@ -76,7 +79,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Component Traceability")
-				.withDescription("This report lists traceability for the specified (comma separated list of) components.")
+				.withDescription("This report lists traceability for the specified (comma separated list of) components.   Note that this report does work at the per-component level, so a request for concept traceability would only return results if the concept has had its definition status modified.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -95,8 +98,8 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 				c = new UnknownComponent(componentId, ComponentType.UNKNOWN);
 			}
 			
-			traceabilityService.populateTraceabilityAndReport(PRIMARY_REPORT, c, (Object)null);
-			
+			int rowsReported = traceabilityService.populateTraceabilityAndReport(PRIMARY_REPORT, c, (Object)null);
+			countIssue(null, rowsReported);
 		}
 		traceabilityService.tidyUp();
 		info ("Job complete");

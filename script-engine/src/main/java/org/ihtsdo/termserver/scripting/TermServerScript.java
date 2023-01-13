@@ -1525,8 +1525,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void countIssue(Concept c) {
+		countIssue(c, 1);
+	}
+	
+	protected void countIssue(Concept c, int increment) {
 		if (c==null || !whiteListedConceptIds.contains(c.getId())) {
-			incrementSummaryInformation(ISSUE_COUNT);
+			incrementSummaryInformation(ISSUE_COUNT, increment);
 		}
 	}
 

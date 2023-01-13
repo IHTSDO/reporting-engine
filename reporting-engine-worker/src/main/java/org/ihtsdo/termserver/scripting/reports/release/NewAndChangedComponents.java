@@ -816,8 +816,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 
 		@Override
-		public void populateTraceabilityAndReport(int tabIdx, Component c, Object... details)
+		public int populateTraceabilityAndReport(int tabIdx, Component c, Object... details)
 				throws TermServerScriptException {
+			return NOT_SET;
 		}
 	}
 	

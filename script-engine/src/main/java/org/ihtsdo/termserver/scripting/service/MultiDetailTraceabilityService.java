@@ -33,7 +33,8 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 		
 	}
 	
-	public void populateTraceabilityAndReport(int tabIdx, Component c, Object... details) throws TermServerScriptException {
+	public int populateTraceabilityAndReport(int tabIdx, Component c, Object... details) throws TermServerScriptException {
+		int rowsReported = 0;
 		try {
 			List<Activity> activities = client.getComponentActivity(c.getId(), onBranch);
 			for (Activity activity : activities) {
@@ -49,15 +50,16 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 									activity.getUsername(),
 									activity.getHighestPromotedBranch(),
 									c);
+							rowsReported++;
 						}
 					}
 					
 				}
 			}
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			ts.report(tabIdx, c.getId(), c.getComponentType(), e);
-			return;
 		}
+		return rowsReported;
 	}
 
 	@Override

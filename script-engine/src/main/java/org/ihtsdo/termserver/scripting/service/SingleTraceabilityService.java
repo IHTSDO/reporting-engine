@@ -387,10 +387,9 @@ public class SingleTraceabilityService implements TraceabilityService {
 	}
 
 	@Override
-	public void populateTraceabilityAndReport(int tabIdx, Component c, Object... details)
+	public int populateTraceabilityAndReport(int tabIdx, Component c, Object... details)
 			throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		
+		return NOT_SET;
 	}
 	
 }
