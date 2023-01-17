@@ -9,7 +9,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
 public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 
-	private static String ACCEPTABILITY_ID = "acceptabilityId";
+	public static String ACCEPTABILITY_ID = "acceptabilityId";
 	
 	public LangRefsetEntry clone(String descriptionSctId, boolean keepIds) {
 		LangRefsetEntry clone = new LangRefsetEntry();
