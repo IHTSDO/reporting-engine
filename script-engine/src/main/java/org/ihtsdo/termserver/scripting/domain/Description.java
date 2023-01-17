@@ -367,12 +367,14 @@ public class Description extends Component implements ScriptConstants {
 			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
 				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
 				refsetEntrySet = true;
+				l.setDirty();
 			}
 			//If we've not set it, is there an inactive record we could re-use?
 			if (!refsetEntrySet) {
 				for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.INACTIVE, refsetId)) {
 					l.setActive(true);
 					l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+					l.setDirty();
 				}
 			}
 		}
