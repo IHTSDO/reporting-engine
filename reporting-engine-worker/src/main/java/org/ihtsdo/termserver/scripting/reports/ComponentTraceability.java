@@ -74,7 +74,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(COMPONENT_IDS).withType(JobParameter.Type.STRING)
+				.add(COMPONENT_IDS).withType(JobParameter.Type.STRING).withMandatory()
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
