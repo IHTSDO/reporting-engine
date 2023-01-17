@@ -10,9 +10,12 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerator {
+	Logger logger = LoggerFactory.getLogger(this.getClass());
 	List<String> enLangRefsets = Arrays.asList(ENGLISH_DIALECTS);
 	
 	public static void main(String[] args) throws TermServerScriptException, FileNotFoundException {
@@ -24,7 +27,7 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = true; // We'll only be inactivating existing relationships
 			delta.init(args);
-			delta.moduleId = "11000146104";
+			delta.targetModuleId = "11000146104";
 			delta.loadProjectSnapshot(false);
 			delta.postInit();
 			delta.process();
@@ -69,14 +72,14 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 					Description clone = d.clone(descIdGenerator.getSCTID());
 					clone.setDirty();
 					clone.setLang("nl");
-					clone.setModuleId(moduleId);
+					clone.setModuleId(targetModuleId);
 					//Remove the EN dialect acceptability from the clone's map
 					//The rest of the values can be left 'as is'
 					for (LangRefsetEntry l : new ArrayList<>(clone.getLangRefsetEntries())) {
 						if (enLangRefsets.contains(l.getRefsetId())) {
 							clone.getLangRefsetEntries().remove(l);
 						} else {
-							l.setModuleId(moduleId);
+							l.setModuleId(targetModuleId);
 							l.setDirty();
 						}
 					}
@@ -90,7 +93,7 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 				for (LangRefsetEntry l : d.getLangRefsetEntries()) {
 					if (!enLangRefsets.contains(l.getRefsetId())) {
 						l.setActive(false);
-						l.setModuleId(moduleId);
+						l.setModuleId(targetModuleId);
 						l.setDirty();
 					}
 				}
@@ -133,7 +136,7 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 					if (!d.getTerm().equals(existing.getTerm())) {
 						report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Case significance difference, removing nl langref from en term", d + "\n" + existing);
 					} else {
-						debug("Check what's happening here - same description, same acceptability?");
+						logger.debug("Check what's happening here - same description, same acceptability?");
 					}
 				}
 			}
