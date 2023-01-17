@@ -16,10 +16,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * MSSP-1837 Descriptions should have their en-gb langrefset entries copied to nz langrefset
+ * MSSP-1838 Descriptions should have their en-gb langrefset entries copied to ie langrefset
  */
 public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements ScriptConstants {
-
-	Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	String langRefsetId = "271000210107";  //New Zealand English language reference set (foundation metadata concept)
 	String previousRelease = "MAIN/2021-01-31";
@@ -50,7 +49,7 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			boolean changeMade = false;
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				//Skip this description if it has an NZ langrefentry
+				//Skip this description if it has an MS langrefentry
 				if (d.getLangRefsetEntries(ActiveState.BOTH, langRefsetId).size() > 0) {
 					continue;
 				}
@@ -70,12 +69,12 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 				LangRefsetEntry l = enGb.clone(d.getDescriptionId(), false);
 				
 				//If this is a PT Synonym, does the country already have one?  
-				//If the NZ PT was previously also the GB PT, then we can downgrade
-				//the NZ PT to keep it aligned with GB.  Otherwise downgrade the GB one.
+				//If the MS PT was previously also the GB PT, then we can downgrade
+				//the MS PT to keep it aligned with GB.  Otherwise downgrade the GB one.
 				if (d.isPreferred(GB_ENG_LANG_REFSET) && d.getType().equals(DescriptionType.SYNONYM)) {
-					Description enNZPT = c.getPreferredSynonym(langRefsetId);
-					if (enNZPT != null && !enNZPT.equals(d)) {
-						List<LangRefsetEntry> previousGbLRSs = enNZPT.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET);
+					Description enMSPT = c.getPreferredSynonym(langRefsetId);
+					if (enMSPT != null && !enMSPT.equals(d)) {
+						List<LangRefsetEntry> previousGbLRSs = enMSPT.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET);
 						if (previousGbLRSs.size() > 0) {
 							if(previousGbLRSs.size() > 1) {
 								report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "More than one inactive gb pt langrefset member", d);
@@ -90,11 +89,11 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 							if (previousGbLRSOnOldBranch == null || !previousGbLRSOnOldBranch.getField(LangRefsetEntry.ACCEPTABILITY_ID).equals(SCTID_PREFERRED_TERM)) {
 								report(c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Check prior state of previous GB LRS", enGb + ",\n" + previousGbLRS, d);
 							}
-							report(c, Severity.LOW, ReportActionType.INFO, "Downgrading existing NZ PT to acceptable, due to new GP PT, previously aligned", enNZPT);
-							enNZPT.setAcceptability(langRefsetId, Acceptability.ACCEPTABLE);
+							report(c, Severity.LOW, ReportActionType.INFO, "Downgrading existing MS PT to acceptable, due to new GP PT, previously aligned", enMSPT);
+							enMSPT.setAcceptability(langRefsetId, Acceptability.ACCEPTABLE);
 							incrementSummaryInformation("LangRefset entries downgraded");
 						} else {
-							report(c, Severity.MEDIUM, ReportActionType.INFO, "Downgrading description to acceptable, due to existing NZ PT", d);
+							report(c, Severity.MEDIUM, ReportActionType.INFO, "Downgrading description to acceptable, due to existing MS PT", d);
 							l.setAcceptabilityId(SCTID_ACCEPTABLE_TERM);
 						}
 					}
@@ -112,7 +111,7 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 			
 			String changeAdvice = changeMade ? " Changes Made" : "";
 			
-			//Check that the engb PT is the same as the NZ one.
+			//Check that the engb PT is the same as the MS one.
 			Description enGbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
 			if (enGbPT == null) {
 				//This is fine if this is an NZ concept.  But if it's not...
@@ -120,25 +119,25 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 					report(c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Int concept missing GB PT?");
 				}
 			} else {
-				Description enNZPT = c.getPreferredSynonym(langRefsetId);
-				//If we don't have en enNZPT (eg 279026008 |Structure of surface region of upper abdomen (body structure)|), then
+				Description enMSPT = c.getPreferredSynonym(langRefsetId);
+				//If we don't have en enMSPT (eg 279026008 |Structure of surface region of upper abdomen (body structure)|), then
 				//promote whatever description is the GB PT
-				if (enNZPT == null) {
+				if (enMSPT == null) {
 					enGbPT.setAcceptability(langRefsetId, Acceptability.PREFERRED);
 					incrementSummaryInformation("LangRefset entries upgraded");
 					report(c, Severity.HIGH, ReportActionType.LANG_REFSET_MODIFIED, "Concept missing PT.  Brought into alignement with GB.");
-				} else if (!enGbPT.equals(enNZPT)) {
-					report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Preferred Terms are not aligned." + changeAdvice, "GB: " + enGbPT + ",\nNZ: " + enNZPT);
+				} else if (!enGbPT.equals(enMSPT)) {
+					report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Preferred Terms are not aligned." + changeAdvice, "GB: " + enGbPT + ",\nMS: " + enMSPT);
 				}
 			}
 			
-			//Have we left ourselves with 2 x NZ PTs?
-			List<Description> nzPts = c.getDescriptions(langRefsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-			if (nzPts.size() > 1) {
-				String descStr = nzPts.stream()
+			//Have we left ourselves with 2 x MS PTs?
+			List<Description> msPts = c.getDescriptions(langRefsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+			if (msPts.size() > 1) {
+				String descStr = msPts.stream()
 						.map(d -> d.toString())
 						.collect(Collectors.joining(",\n"));
-				report(c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "2 x NZ PTs now exist." + changeAdvice, descStr);
+				report(c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "2 x MS PTs now exist." + changeAdvice, descStr);
 			}
 			
 			if (c.isModified()) {
