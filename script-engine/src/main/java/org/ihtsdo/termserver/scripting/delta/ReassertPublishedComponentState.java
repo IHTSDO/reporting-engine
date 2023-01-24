@@ -17,29 +17,11 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class ReassertPublishedComponentState extends DeltaGenerator {
 	
 	String[] componentsToProcess = new String[] {
-		"54516021",
-		"529188028",
-		"529190027",
-		"529191028",
-		"529192024",
-		"1656929029",
-		"1730286025",
-		"1730287023",
-		"2207364021",
-		"2219896024",
-		"2448852021",
-		"2519488028",
-		"2655557022",
-		"2655558028",
-		"2779333027",
-		"2854001027",
-		"3421766020",
-		"3468948025",
-		"6995423026",
-		"6995424021",
-		"6995425022",
-		"9299711024",
-		"12142143025"
+		"777aa7ae-e7a2-5590-a357-dee151d3b0a5",
+		"b69d41e0-ec46-58cc-a937-b41fd73bd851",
+		"8cc94bc7-4276-5544-baa7-a76bdb143012",
+		"3a1257e3-ddc9-59ca-8e38-76176d973e97",
+		"761c9289-5376-5341-8c9d-91ad150a348a"
 	};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
