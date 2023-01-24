@@ -1,23 +1,37 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.*;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
- * LOINC-382 List Primitive LOINC concepts
+ * LE-3
  */
 public class ExistingLoincNums extends TermServerScript {
+	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
+	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2017.tsv"  
+	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Supplementary.tsv"
+	//-f4 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
+	private int FILE_IDX_LOINC_100 = 0;
+	private int FILE_IDX_LOINC_100_PARTS_MAP = 1;
+	private int FILE_IDX_LOINC_100_Supplement = 2;
+	private int FILE_IDX_LOINC_PARTS = 3;
 	
 	private static Map<String, Concept> loincNumMap = new HashMap<>();
-	private static Map<String, RelationshipTemplate> loincPartMap = new HashMap<>();
+	private static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
+	private Map<String, LoincPart> loincParts = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExistingLoincNums report = new ExistingLoincNums();
@@ -38,7 +52,7 @@ public class ExistingLoincNums extends TermServerScript {
 		String[] columnHeadings = new String[] {
 				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
-				"LoincPartNum, Advice, Detail, Detail",
+				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, SCTID, FSN, Current Model, Proposed Model, Difference"
 		};
 		String[] tabNames = new String[] {
@@ -62,16 +76,17 @@ public class ExistingLoincNums extends TermServerScript {
 
 	private void runReport() throws TermServerScriptException {
 		populateLoincNumMap();
-		populatePartMap();
+		loadLoincParts();
+		populatePartAttributeMap();
 		determineExistingConcepts();
 		determineExistingParts();
 	}
 	
 	private void determineExistingConcepts() throws TermServerScriptException {
 		try {
-			info ("Loading " + inputFile);
+			info ("Loading " + getInputFile(FILE_IDX_LOINC_100));
 			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100)))) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					if (!isFirstLine) {
@@ -104,14 +119,14 @@ public class ExistingLoincNums extends TermServerScript {
 	
 	private void determineExistingParts() throws TermServerScriptException {
 		try {
-			info ("Loading Parts " + inputFile3);
+			info ("Loading Parts: " + getInputFile(FILE_IDX_LOINC_100_Supplement));
 			boolean isFirstLine = true;
 			Set<String> partNumsMapped = new HashSet<>();
 			Set<String> partNumsUnmapped = new HashSet<>();
 			int skipped = 0;
 			int mapped = 0;
 			int unmapped = 0;
-			try (BufferedReader br = new BufferedReader(new FileReader(inputFile3))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_Supplement)))) {
 				String line;
 				Set<RelationshipTemplate> attributeSet = new HashSet<>();
 				String lastLoincNum = "";
@@ -132,8 +147,12 @@ public class ExistingLoincNums extends TermServerScript {
 							attributeSet.clear();
 						}
 						
+						if (!loincNum.equals("11557-6")) {
+							continue;
+						}
+						
 						//Do we have this partNum?
-						RelationshipTemplate partAttribute = loincPartMap.get(partNum);
+						RelationshipTemplate partAttribute = loincPartAttributeMap.get(partNum);
 						if (partTypeName.equals("CLASS")) {
 							skipped++;
 							continue;
@@ -198,15 +217,15 @@ public class ExistingLoincNums extends TermServerScript {
 		info("Populated map of " + loincNumMap.size() + " LOINC concepts");
 	}
 	
-	private void populatePartMap() throws TermServerScriptException {
+	private void populatePartAttributeMap() throws TermServerScriptException {
 		try {
 			int successfullTypeReplacement = 0;
 			int successfullValueReplacement = 0;
 			int unsuccessfullTypeReplacement = 0;
 			int unsuccessfullValueReplacement = 0;
-			info ("Loading Part Map" + inputFile2);
+			info ("Loading Part Attribute Map: " + getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
 			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(inputFile2))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP)))) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					if (!isFirstLine) {
@@ -241,17 +260,20 @@ public class ExistingLoincNums extends TermServerScript {
 							if (replacementValue == null) unsuccessfullValueReplacement++; 
 							else successfullValueReplacement++;
 							String prefix = replacementValue == null ? "* " : "";
-							report(TERTIARY_REPORT, partNum, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
+							LoincPart part = loincParts.get(partNum);
+							String partName = part == null ? "Unlisted" : part.getPartName();
+							String partStatus = part == null ? "Unlisted" : part.getStatus().name();
+							report(TERTIARY_REPORT, partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
 							if (replacementValue != null) {
 								attributeValue = replacementValue;
 							}
 						}
 						
-						loincPartMap.put(partNum, new RelationshipTemplate(attributeType, attributeValue));
+						loincPartAttributeMap.put(partNum, new RelationshipTemplate(attributeType, attributeValue));
 					} else isFirstLine = false;
 				}
 			}
-			info("Populated map of " + loincPartMap.size() + " LOINC parts");
+			info("Populated map of " + loincPartAttributeMap.size() + " LOINC parts to attributes");
 			report(TERTIARY_REPORT, "");
 			report(TERTIARY_REPORT, "successfullTypeReplacement",successfullTypeReplacement);
 			report(TERTIARY_REPORT, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
@@ -263,4 +285,25 @@ public class ExistingLoincNums extends TermServerScript {
 		}
 	}
 
+	
+	private void loadLoincParts() throws TermServerScriptException {
+		info ("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
+		try {
+			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_PARTS)));
+			//withSkipHeaderRecord() is apparently ignore when using iterator
+			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
+			CSVRecord header = iterator.next();
+			while (iterator.hasNext()) {
+				CSVRecord thisLine = iterator.next();
+				LoincPart loincPart = LoincPart.parse(thisLine);
+				if (loincParts.containsKey(loincPart.getPartNumber())) {
+					throw new TermServerScriptException("Duplicate Part Number Loaded: " + loincPart.getPartNumber());
+				}
+				loincParts.put(loincPart.getPartNumber(), loincPart);
+			}
+			info("Loaded " + loincParts.size() + " loinc parts.");
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_PARTS), e);
+		}
+	}
 }
