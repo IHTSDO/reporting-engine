@@ -59,7 +59,7 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 	}
 	
 	public void process() throws TermServerScriptException {
-		if (inputFile != null) {
+		if (getInputFile() != null) {
 			for (Component component : processFile()) {
 				Concept c = loadConcept(component.getId(), project.getBranchPath());
 				processConcept(c);

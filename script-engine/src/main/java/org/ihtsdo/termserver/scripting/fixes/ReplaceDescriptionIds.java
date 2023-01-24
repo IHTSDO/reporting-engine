@@ -45,8 +45,8 @@ public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 	
 	private void loadDescIds() throws TermServerScriptException {
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-			info ("Loading description ids from " + inputFile);
+			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			info ("Loading description ids from " + getInputFile());
 			for (String line : lines) {
 				descIds.add(line);
 			}

@@ -50,9 +50,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int processingLimit = NOT_SET;
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
-	protected File inputFile;
-	protected File inputFile2;
-	protected File inputFile3;
+	protected List<File> inputFiles = new ArrayList<File>(Collections.nCopies(4, (File) null));
 	private String dependencyArchive;
 	protected String projectName;
 	private String reportName;
@@ -178,22 +176,28 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					this.runStandAlone = false;
 				}
 			} else if (thisArg.equals("-f")) {
-				inputFile = new File(args[x+1]);
-				if (!inputFile.canRead()) {
+				//TODO Put this into a loop where we pull out the idx
+				inputFiles.add(0, new File(args[x+1]));
+				if (!getInputFile().canRead()) {
 					throw new TermServerScriptException ("Unable to read input file " + args[x+1]);
 				}
-				info ("Reading data from " + inputFile.getAbsolutePath());
+				info ("Reading data from " + getInputFile().getAbsolutePath());
 			} else if (thisArg.equals("-f2")) {
-				inputFile2 = new File(args[x+1]);
-				if (!inputFile2.canRead()) {
+				inputFiles.add(1, new File(args[x+1]));
+				if (!getInputFile(1).canRead()) {
 					throw new TermServerScriptException ("Unable to read input file 2 " + args[x+1]);
 				}
 			} else if (thisArg.equals("-f3")) {
-				inputFile3 = new File(args[x+1]);
-				if (!inputFile3.canRead()) {
+				inputFiles.add(2, new File(args[x+1]));
+				if (!getInputFile(2).canRead()) {
 					throw new TermServerScriptException ("Unable to read input file 3 " + args[x+1]);
 				}
-			}else if (thisArg.equals("-r")) {
+			} else if (thisArg.equals("-f4")) {
+				inputFiles.add(3, new File(args[x+1]));
+				if (!getInputFile(3).canRead()) {
+					throw new TermServerScriptException ("Unable to read input file 4 " + args[x+1]);
+				}
+			} else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
 				dependencyArchive = args[x+1];
@@ -342,9 +346,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
-			inputFile = new File(inputFileName);
-			if (!inputFile.canRead() || !inputFile.isFile()) {
-				throw new TermServerScriptException("Unable to read specified file: " + inputFile);
+			inputFiles.add(0,new File(inputFileName));
+			if (!getInputFile().canRead() || !getInputFile().isFile()) {
+				throw new TermServerScriptException("Unable to read specified file: " + getInputFile());
 			}
 		}
 		
@@ -1153,10 +1157,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 */
 	protected List<Component> processFile() throws TermServerScriptException {
-		if (inputFile == null) {
+		if (getInputFile() == null) {
 			throw new TermServerScriptException("Unable to process file as no file specified!  Check -f parameter has been supplied, or alternatively, an ECL selection.");
 		}
-		return processFile(inputFile);
+		return processFile(getInputFile());
 	}
 	
 	protected List<Component> processFile(File file) throws TermServerScriptException {
@@ -1330,7 +1334,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public String getReportName() {
 		if (reportName == null) {
-			String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
+			String fileName = SnomedUtils.deconstructFilename(getInputFile())[1];
 			String spacer = " ";
 			reportName = getScriptName() + (fileName.isEmpty()?"" : spacer + fileName);
 			try {
@@ -1583,7 +1587,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public File getInputFile() {
-		return inputFile;
+		return getInputFile(0);
+	}
+	
+	public File getInputFile(int idx) {
+		return inputFiles.get(idx);
 	}
 
 	public void setExclusions(String[] exclusions) throws TermServerScriptException {

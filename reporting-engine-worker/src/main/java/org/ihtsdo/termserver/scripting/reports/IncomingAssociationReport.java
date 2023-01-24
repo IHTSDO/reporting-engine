@@ -65,7 +65,7 @@ public class IncomingAssociationReport extends TermServerScript implements Repor
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		if (inputFile != null) {
+		if (getInputFile() != null) {
 			loadExclusions();
 		}
 		super.postInit();
@@ -97,16 +97,16 @@ public class IncomingAssociationReport extends TermServerScript implements Repor
 	
 
 	private void loadExclusions() throws TermServerScriptException {
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException ("Cannot read: " + inputFile);
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 			for (String line : lines) {
 				exclusions.add(gl.getConcept(line.trim(), false, true));
 			}
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to load " + inputFile, e);
+			throw new TermServerScriptException("Failed to load " + getInputFile(), e);
 		}
 	}
 }

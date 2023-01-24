@@ -72,7 +72,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 	
 	private void initMap() throws TermServerScriptException, FileNotFoundException, IOException {
 		String header;
-		try (BufferedReader br =  new BufferedReader(new FileReader(inputFile))) {
+		try (BufferedReader br =  new BufferedReader(new FileReader(getInputFile()))) {
 			header = br.readLine();
 		}
 		if (header.contains("Technique")) {

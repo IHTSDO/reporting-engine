@@ -571,11 +571,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		for (Template template : templates) {
 			//Are we finding concepts to process, or are they stated in a file?
 			Collection<Concept> potentialMatches;
-			if (inputFile == null) {
+			if (getInputFile() == null) {
 				potentialMatches = findConcepts(template.getDomain());
 				addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 			} else {
-				potentialMatches = processFile(inputFile).stream()
+				potentialMatches = processFile(getInputFile()).stream()
 						.map(c -> (Concept)c)
 						.collect(Collectors.toSet());
 			}

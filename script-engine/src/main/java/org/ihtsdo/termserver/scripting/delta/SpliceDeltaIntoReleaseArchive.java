@@ -87,8 +87,8 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 
 	public void process() throws TermServerScriptException, IOException {
 		loadDelta();
-		info("Processing " + inputFile2);
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile2));
+		info("Processing " + getInputFile(1));
+		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile(1)));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
@@ -104,7 +104,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + inputFile2);
+		info("Finished Loading " + getInputFile(1));
 		getRF2Manager().flushFiles(false);
 	}
 	
@@ -201,8 +201,8 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 	}
 
 	private void loadDelta() throws IOException, TermServerScriptException {
-		info("Loading " + inputFile);
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
+		info("Loading " + getInputFile());
+		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
@@ -218,7 +218,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + inputFile);
+		info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {

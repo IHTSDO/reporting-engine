@@ -84,14 +84,14 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	}
 
 	private void processCSWordsFile() throws IOException, TermServerScriptException {
-		info ("Processing " + inputFile);
+		info ("Processing " + getInputFile());
 		String timeStamp = df.format(new Date());
-		String outputFileName = inputFile.getAbsolutePath().replace(".txt", "_" + timeStamp + ".txt");
+		String outputFileName = getInputFile().getAbsolutePath().replace(".txt", "_" + timeStamp + ".txt");
 		File outputFile = new File(outputFileName);
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException ("Cannot read: " + inputFile);
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		int linesWritten = 0;
 		String lastLineWritten = "";
 		for (int i=1; i<lines.size() - 1; i++) {

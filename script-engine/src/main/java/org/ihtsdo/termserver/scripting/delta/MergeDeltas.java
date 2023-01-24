@@ -69,7 +69,7 @@ public class MergeDeltas extends DeltaGenerator {
 	
 	private void doMerge() throws TermServerScriptException, FileNotFoundException, IOException {
 		//First load in the current state
-		currentDelta.loadArchive(inputFile);
+		currentDelta.loadArchive(getInputFile());
 		
 		//Now work through the fix Delta and compare each line
 		processFixDelta();

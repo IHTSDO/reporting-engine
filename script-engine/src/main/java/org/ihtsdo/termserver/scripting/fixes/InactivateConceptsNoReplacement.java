@@ -85,22 +85,22 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		super.postInit();
 		
 		//Need report output initialised before this next bit
-		if (inputFile != null) {
+		if (getInputFile() != null) {
 			loadIncomingHistoricReplacements();
 		}
 	}
 
 	private void loadIncomingHistoricReplacements() throws TermServerScriptException {
 		incomingHistAssocReplacements = new HashMap<>();
-		print("Loading Historic Replacements " + inputFile + "...");
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException("Cannot read: " + inputFile);
+		print("Loading Historic Replacements " + getInputFile() + "...");
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(inputFile, Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
+			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
 		debug("Processing Historic Replacements File");
 		for (String line : lines) {
