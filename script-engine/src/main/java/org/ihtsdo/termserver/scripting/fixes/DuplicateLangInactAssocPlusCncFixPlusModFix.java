@@ -79,7 +79,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			throws TermServerScriptException {
 		int changesMade = 0;
 		
-		/*if (c.getId().equals("840534001")) {
+		/*if (c.getId().equals("60949004")) {
 			debug ("here");
 		}*/
 		
@@ -135,7 +135,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		}
 		
 		for (final Description d : c.getDescriptions()) {
-			/*if (d.getId().equals("61401000195115")) {
+			/*if (d.getId().equals("2966088011")) {
 				debug("here");
 			}*/
 			
@@ -166,13 +166,22 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
-				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
-				if (!dryRun) {
-					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
-				}
-				changesMade++;
-				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getInactivationIndicatorEntries(), t);
+				if (duplicatePair.isDeleting()) {
+					debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
+					if (!dryRun) {
+						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+					}
+					changesMade++;
+					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
+				} else {
+					for (RefsetMember modify : duplicatePair.modify) {
+						RefsetMember original = d.getLangRefsetEntry(modify.getId());
+						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original, modify);
+						updateRefsetMember(t, modify, "");
+						changesMade++;
+					}
+				}	
 			}
 			
 			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
@@ -266,8 +275,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		for (final Concept c : Collections.singleton(gl.getConcept("601000119109"))) {	
-		//for (final Concept c : gl.getAllConcepts()) {
+		//for (final Concept c : Collections.singleton(gl.getConcept("601000119109"))) {	
+		for (final Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
 				/*if (d.getId().equals("61401000195115")) {
 						debug("here");
