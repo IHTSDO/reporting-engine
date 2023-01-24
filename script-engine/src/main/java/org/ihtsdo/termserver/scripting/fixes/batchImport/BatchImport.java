@@ -67,12 +67,12 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	
 	@Override
 	public List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		if (inputFile == null) {
+		if (getInputFile() == null) {
 			throw new TermServerScriptException("Unable to identify components to process, no input file specified.");
 		}
 		
 		try {
-			Reader in = new InputStreamReader(new FileInputStream(inputFile));
+			Reader in = new InputStreamReader(new FileInputStream(getInputFile()));
 			//SIRS files contain duplicate headers (eg multiple Notes columns) 
 			//So read 1st row as a record instead.
 			CSVParser parser = CSVFormat.EXCEL.parse(in);
@@ -85,7 +85,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			validateLoadHierarchy();
 			return null;
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failure while reading " + inputFile.getAbsolutePath(), e);
+			throw new TermServerScriptException("Failure while reading " + getInputFile().getAbsolutePath(), e);
 		}
 	}
 	
@@ -169,7 +169,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 
 	@Override
 	protected Batch formIntoBatch (List<Component> allComponents) {
-		Batch batch = new Batch(inputFile.getAbsolutePath(), GraphLoader.getGraphLoader());
+		Batch batch = new Batch(getInputFile().getAbsolutePath(), GraphLoader.getGraphLoader());
 		//Loop through all the children of root, starting a new task every "concepts per task"
 		Task thisTask = null;
 		for (Concept thisChild : getRootConcept().getChildren(CharacteristicType.STATED_RELATIONSHIP)) {

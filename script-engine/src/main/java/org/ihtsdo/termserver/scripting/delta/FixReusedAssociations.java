@@ -55,7 +55,7 @@ public class FixReusedAssociations extends DeltaGenerator implements ScriptConst
 	private void process() throws ValidationFailure, TermServerScriptException, IOException {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		for (String line : lines) {
 			String[] columns = line.split(TAB);
 			Concept c = gl.getConcept(columns[IDX.NEW_SCTID.ordinal()]);

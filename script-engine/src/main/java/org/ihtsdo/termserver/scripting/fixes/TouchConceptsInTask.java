@@ -46,7 +46,7 @@ public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 		Batch b = new Batch ("foo");
 		Task t = b.addNewTask(new String[] { "bar" });
 		t.setBranchPath(targetTaskPath);
-		allComponentsToProcess = processFile(inputFile);
+		allComponentsToProcess = processFile(getInputFile());
 		for (Concept c : asConcepts(allComponentsToProcess)) {
 			Concept loadedConcept = loadConcept(c, targetTaskPath);
 			Description fsn = loadedConcept.getFSNDescription();

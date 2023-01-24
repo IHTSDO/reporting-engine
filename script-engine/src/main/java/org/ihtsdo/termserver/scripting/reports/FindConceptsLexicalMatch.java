@@ -115,7 +115,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 	public void runJob() throws TermServerScriptException {
 		//Work through the file and attempt to find a match for each term
 		try {
-			LineIterator it = FileUtils.lineIterator(inputFile, "UTF-8");
+			LineIterator it = FileUtils.lineIterator(getInputFile(), "UTF-8");
 			try {
 				while (it.hasNext()) {
 					matchTerm(it.nextLine());
@@ -124,7 +124,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 				it.close();
 			}
 		} catch (IOException e) {
-			throw new TermServerScriptException("Error reading from: " + inputFile, e);
+			throw new TermServerScriptException("Error reading from: " + getInputFile(), e);
 		}
 	}
 

@@ -44,7 +44,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 
 	private void loadDeltaArchive() throws TermServerScriptException{
 		try {
-			ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 			ZipEntry ze = zis.getNextEntry();
 			try {
 				while (ze != null) {
@@ -78,7 +78,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 				zis.close();
 			}
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to process delta " + inputFile, e);
+			throw new TermServerScriptException("Failed to process delta " + getInputFile(), e);
 		}
 	}
 

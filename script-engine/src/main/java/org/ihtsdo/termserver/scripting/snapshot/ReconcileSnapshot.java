@@ -73,7 +73,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		File exportedSnapshot = inputFile;
+		File exportedSnapshot = getInputFile();
 		if (exportedSnapshot == null) {
 			info ("Exporting Snapshot...");
 			exportedSnapshot = getSnapshot();

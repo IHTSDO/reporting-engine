@@ -94,8 +94,8 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		//info(descriptionConceptMap.size() + " descriptions are mapped to concepts");
 		//Set<String> concepts = new HashSet<>(descriptionConceptMap.values());
 		//info(concepts.size() + " concepts have descriptions");	
-		info("Second Pass " + inputFile);
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
+		info("Second Pass " + getInputFile());
+		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
@@ -111,7 +111,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Processing " + inputFile);
+		info("Finished Processing " + getInputFile());
 		getRF2Manager().flushFiles(false);
 	}
 	
@@ -176,8 +176,8 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	}
 
 	private void firstPass() throws IOException, TermServerScriptException {
-		info("Loading " + inputFile);
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
+		info("Loading " + getInputFile());
+		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
@@ -193,7 +193,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + inputFile);
+		info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {

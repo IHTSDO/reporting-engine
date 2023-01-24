@@ -56,7 +56,7 @@ public class SnapshotGenerator extends TermServerScript {
 			snapGen.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			snapGen.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
-			snapGen.loadArchive(snapGen.inputFile, false, "Delta", false);
+			snapGen.loadArchive(snapGen.getInputFile(), false, "Delta", false);
 			snapGen.startTimer();
 			snapGen.outputRF2();
 			snapGen.flushFiles(false, false);

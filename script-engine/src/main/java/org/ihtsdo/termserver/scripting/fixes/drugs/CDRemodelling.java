@@ -73,10 +73,10 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	@Override
 	public void init(String[] args) throws TermServerScriptException {
 		super.init(args);
-		if (inputFile2 == null) {
+		if (getInputFile(1) == null) {
 			warn ("No input file specified to verify terms");
 		} else {
-			termVerifier = new TermVerifier(inputFile2,this);
+			termVerifier = new TermVerifier(getInputFile(1),this);
 			termVerifier.init();
 		}
 	}

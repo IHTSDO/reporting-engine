@@ -42,11 +42,11 @@ public class MultiArchiveImporter extends BatchFix {
 	}
 
 	private void importArchives() throws TermServerScriptException {
-		info("Processing all archives in " + inputFile);
-		String[] dirListing = inputFile.list();
+		info("Processing all archives in " + getInputFile());
+		String[] dirListing = getInputFile().list();
 		Arrays.sort(dirListing, NumberAwareStringComparator.INSTANCE);
 		for (String archiveStr : dirListing){
-			File thisArchive = new File(inputFile + File.separator + archiveStr);
+			File thisArchive = new File(getInputFile() + File.separator + archiveStr);
 			info("Processing: " + thisArchive);
 			importArchive(thisArchive);
 		}

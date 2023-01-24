@@ -82,11 +82,11 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 	}
 
 	private void loadComponentsToProcess() throws TermServerScriptException {
-		debug ("Loading " + inputFile );
+		debug ("Loading " + getInputFile() );
 		try {
-			componentIds = Files.readLines(inputFile, Charsets.UTF_8).toArray(new String[0]);
+			componentIds = Files.readLines(getInputFile(), Charsets.UTF_8).toArray(new String[0]);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read " + inputFile, e);
+			throw new TermServerScriptException("Unable to read " + getInputFile(), e);
 		}
 		
 	}

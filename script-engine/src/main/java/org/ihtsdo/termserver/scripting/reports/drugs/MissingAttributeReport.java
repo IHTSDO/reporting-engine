@@ -39,7 +39,7 @@ public class MissingAttributeReport extends TermServerReport {
 	}
 
 	private void runMissingAttributeReport() throws TermServerScriptException {
-		List<Concept> concepts = asConcepts(processFile(inputFile));
+		List<Concept> concepts = asConcepts(processFile(getInputFile()));
 		for (Concept c : concepts) {
 			//If we don't have the FSN then project doesn't yet know about this concept
 			if (c.getFsn() == null || c.getFsn().isEmpty()) {

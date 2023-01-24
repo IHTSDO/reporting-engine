@@ -34,8 +34,8 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 	}
 	
 	private void loadEntriesToFix() throws IOException {
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		info ("Loading affected description ids from " + inputFile);
+		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+		info ("Loading affected description ids from " + getInputFile());
 		for (String line : lines) {
 			descIds.add(line);
 		}

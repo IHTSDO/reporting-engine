@@ -69,7 +69,7 @@ public class Rf2Player extends BatchFix {
 	
 	private void processDelta() throws TermServerScriptException, FileNotFoundException, IOException {
 		try {
-			ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 			ZipEntry ze = zis.getNextEntry();
 			try {
 				while (ze != null) {
@@ -90,7 +90,7 @@ public class Rf2Player extends BatchFix {
 				zis.close();
 			}
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to expand archive " + inputFile.getName(), e);
+			throw new TermServerScriptException("Failed to expand archive " + getInputFile().getName(), e);
 		}
 		
 		for (Concept changingConcept : changingConcepts.values()) {

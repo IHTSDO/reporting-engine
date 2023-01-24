@@ -61,7 +61,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
-			this.inputFile = clone.inputFile;
+			this.inputFiles.add(0, clone.getInputFile());
 			setReportManager(clone.getReportManager());
 			this.project = clone.project;
 			this.tsClient = clone.tsClient;
@@ -536,9 +536,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 		}
 
-		if (!selfDetermining && inputFile == null) {
+		if (!selfDetermining && getInputFile() == null) {
 			if (jobRun != null && jobRun.getParamValue(INPUT_FILE) != null) {
-				inputFile = new File(jobRun.getParamValue(INPUT_FILE));
+				inputFiles.add(0,new File(jobRun.getParamValue(INPUT_FILE)));
 			} else {
 				warn("No valid batch import file detected in command line arguments, assuming self determining");
 				selfDetermining = true;
@@ -560,7 +560,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 		
 		if (!selfDetermining) {
-			info("Reading file from line " + restartPosition + " - " + inputFile.getName());
+			info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
 		}
 		
 		info ("\nBatching " + taskSize + " concepts per task");

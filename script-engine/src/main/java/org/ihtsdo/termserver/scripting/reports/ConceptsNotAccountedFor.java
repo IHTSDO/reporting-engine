@@ -46,9 +46,9 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	public void postInit() throws TermServerScriptException {
 		List<String> lines = null;
 		try {
-			lines = Files.readLines(inputFile, Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to read " + inputFile, e);
+			throw new TermServerScriptException("Failed to read " + getInputFile(), e);
 		}
 		
 		for (String line : lines) {

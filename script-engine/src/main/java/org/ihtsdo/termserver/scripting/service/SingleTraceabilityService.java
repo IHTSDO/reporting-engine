@@ -359,18 +359,22 @@ public class SingleTraceabilityService implements TraceabilityService {
 
 	@Override
 	public void flush() throws TermServerScriptException {
-		for (Worker worker : workers) {
-			worker.shutdown();
-			if (worker.isRunning()) {
-				logger.debug("Waiting for worker to shut down");
-				while (worker.isRunning()) {
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+		if (workers == null) {
+			logger.info("No traceability workers have been created, skipping shut down.");
+		} else {
+			for (Worker worker : workers) {
+				worker.shutdown();
+				if (worker.isRunning()) {
+					logger.debug("Waiting for worker to shut down");
+					while (worker.isRunning()) {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
 					}
+					logger.info("Worker confirmed shutdown");
 				}
-				logger.debug("Worker confirmed shutdown");
 			}
 		}
 	}

@@ -51,8 +51,8 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 		attributesOfInterest.add(gl.getConcept("411116001")); //Has manufactured dose form (attribute)
 		
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-			info ("Loading concepts agreed for change from " + inputFile);
+			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			info ("Loading concepts agreed for change from " + getInputFile());
 			for (String line : lines) {
 				conceptsAgreedToChange.add(gl.getConcept(line.trim()));
 			}

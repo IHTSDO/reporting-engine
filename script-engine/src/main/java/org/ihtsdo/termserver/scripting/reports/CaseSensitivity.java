@@ -47,7 +47,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, Semtag, Description, isPreferred, CaseSignificance, Issue";
-		inputFile = new File("resources/cs_words.tsv");
+		inputFiles.add(0, new File("resources/cs_words.tsv"));
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -103,15 +103,15 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	}
 
 	public void loadCSWords() throws TermServerScriptException {
-		print("Loading " + inputFile + "...");
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException("Cannot read: " + inputFile);
+		print("Loading " + getInputFile() + "...");
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(inputFile, Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
+			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
 		info ("Complete");
 		debug("Processing cs words file");

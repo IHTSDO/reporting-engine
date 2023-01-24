@@ -44,11 +44,11 @@ public class MultiReportRunner extends TermServerReport {
 	
 	private void runMultipleReports() throws TermServerScriptException, IOException {
 		report.setReportManager(getReportManager());
-		info("Loading " + inputFile);
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException("Cannot read: " + inputFile);
+		info("Loading " + getInputFile());
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		for (String line : lines) {
 			//In this file, the first item is the subhierarchy and any
 			//others are the exceptions

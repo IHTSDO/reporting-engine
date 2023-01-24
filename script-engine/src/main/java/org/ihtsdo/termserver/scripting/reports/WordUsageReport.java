@@ -47,15 +47,15 @@ public class WordUsageReport extends TermServerScript{
 	}
 
 	private void loadWords() throws IOException {
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		info ("Loading words of interest from " + inputFile);
+		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+		info ("Loading words of interest from " + getInputFile());
 		for (String line : lines) {
 			wordUsage.put(line, new Usage());
 		}
 	}
 
 	private void reportWordUsage() throws TermServerScriptException {
-		info ("Loading words of interest from " + inputFile);
+		info ("Loading words of interest from " + getInputFile());
 		Collection<Concept> concepts = GraphLoader.getGraphLoader().getAllConcepts();
 		for (Map.Entry<String, Usage> wordUsageEntry : wordUsage.entrySet()) {
 			//We'll add a space to the word to ensure we don't have partial matches

@@ -27,7 +27,7 @@ public class SubstanceINN extends TermServerReport {
 			report.inputFileHasHeaderRow = true;
 			report.expectNullConcepts = true;
 			report.init(args);
-			report.processFile(report.inputFile); //Load early so we know if there's a problem
+			report.processFile(report.getInputFile()); //Load early so we know if there's a problem
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
 			report.runSubstanceINNReport();

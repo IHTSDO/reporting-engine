@@ -68,15 +68,15 @@ abstract public class TemplateFix extends BatchFix {
 	
 	private void importExplicitExclusions() throws TermServerScriptException {
 		explicitExclusions = new HashSet<>();
-		print("Loading Explicit Exclusions " + inputFile + "...");
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException("Cannot read: " + inputFile);
+		print("Loading Explicit Exclusions " + getInputFile() + "...");
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(inputFile, Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
+			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
 		debug("Processing Explicit Exclusions File");
 		for (String line : lines) {
@@ -133,7 +133,7 @@ abstract public class TemplateFix extends BatchFix {
 			exclusionWords = new ArrayList<>();
 		}
 		
-		if (inputFile != null) {
+		if (getInputFile() != null) {
 			importExplicitExclusions();
 		}
 		

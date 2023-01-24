@@ -65,12 +65,12 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		subHierarchies = new ArrayList<>();
 		targetValues = new ArrayList<>();
 		
-		info ("Loading " + inputFile);
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException ("Cannot read: " + inputFile);
+		info ("Loading " + getInputFile());
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
 		
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 		for (String line : lines) {
 			if (!line.trim().isEmpty()) {
 				String[] concepts = line.split(COMMA);
