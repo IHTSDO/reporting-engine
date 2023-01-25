@@ -149,6 +149,21 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return c;
 	}
 	
+	public static Concept withDefaultsFromSctIdFsn (String sctIdFSN) {
+		String[] parts = SnomedUtils.deconstructSCTIDFsn(sctIdFSN);
+		Concept c = new Concept(parts[0]);
+		c.setModuleId(SCTID_CORE_MODULE);
+		c.setActive(true);
+		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+		String fsnStr = parts[1];
+		String[] fsnParts = SnomedUtils.deconstructFSN(fsnStr);
+		Description fsn = Description.withDefaults(fsnStr, DescriptionType.FSN, Acceptability.PREFERRED);
+		Description pt = Description.withDefaults(fsnParts[0], DescriptionType.SYNONYM, Acceptability.PREFERRED);
+		c.addDescription(fsn);
+		c.addDescription(pt);
+		return c;
+	}
+	
 	public boolean hasEffectiveTime() {
 		return effectiveTime != null && !effectiveTime.isEmpty();
 	}
