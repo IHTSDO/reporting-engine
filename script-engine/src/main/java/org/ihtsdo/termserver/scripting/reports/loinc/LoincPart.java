@@ -32,6 +32,15 @@ public class LoincPart {
 	//private String PartDisplayName;
 	private LoincStatus status;
 	
+	private LoincPart() {
+	}
+	
+	public LoincPart(String partNumber, String partTypeName, String partName) {
+		this.partNumber = partNumber;
+		this.partTypeName = partTypeName;
+		this.partName = partName;
+	}
+	
 	public String getPartNumber() {
 		return partNumber;
 	}
@@ -72,5 +81,22 @@ public class LoincPart {
 		loincPart.setPartName(csv.get(2));
 		loincPart.setStatus(getLoincStatus(csv.get(4)));
 		return loincPart;
+	}
+	
+	public String toString() {
+		return getPartNumber() + "|" + getPartTypeName() + "|" + getPartName();
+	}
+	
+	@Override
+	public int hashCode() {
+		return getPartNumber().hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (other instanceof LoincPart) {
+			return getPartNumber().equals(((LoincPart)other).getPartNumber());
+		}
+		return false;
 	}
 }

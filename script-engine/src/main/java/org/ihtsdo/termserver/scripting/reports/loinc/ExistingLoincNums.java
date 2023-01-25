@@ -53,12 +53,14 @@ public class ExistingLoincNums extends TermServerScript {
 				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
-				"LoincNum, SCTID, FSN, Current Model, Proposed Model, Difference"
+				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
+				"LoincNum, Existing Concept, Template, Proposed FSN, Current Model, Proposed Model, Difference"
 		};
 		String[] tabNames = new String[] {
 				"LoincNums to Model",
-				"Live Modeling",
-				"Part Mapping Notes",
+				"All Mapping Notes",
+				"Part Map Notes",
+				"Template Based Map Results",
 				"Proposed Model Comparison"
 		};
 		super.postInit(tabNames, columnHeadings, false);
@@ -72,14 +74,22 @@ public class ExistingLoincNums extends TermServerScript {
 		knownReplacementMap.put(gl.getConcept("27192005 |Aminosalicylic acid (substance)|"), gl.getConcept("255666002 |Para-aminosalicylic acid (substance)|"));
 		knownReplacementMap.put(gl.getConcept("250428009 |Substance with antimicrobial mechanism of action (substance)|"), gl.getConcept("419241000 |Substance with antibacterial mechanism of action (substance)|"));
 		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
+	
+		//Just temporarily, we need to create some concepts that aren't visible yet
+		gl.registerConcept("10021010000100 |Platelet poor plasma or whole blood specimen (specimen)|"); 
+		gl.registerConcept("10051010000107 |Plasma specimen or whole blood specimen (specimen)|");
+		gl.registerConcept("10031010000102 |Bromocresol purple dye binding technique (qualifier value)|");
+		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)");
 	}
 
 	private void runReport() throws TermServerScriptException {
 		populateLoincNumMap();
 		loadLoincParts();
 		populatePartAttributeMap();
+		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap);
 		determineExistingConcepts();
 		determineExistingParts();
+		LoincTemplatedConcept.reportStats();
 	}
 	
 	private void determineExistingConcepts() throws TermServerScriptException {
@@ -121,14 +131,9 @@ public class ExistingLoincNums extends TermServerScript {
 		try {
 			info ("Loading Parts: " + getInputFile(FILE_IDX_LOINC_100_Supplement));
 			boolean isFirstLine = true;
-			Set<String> partNumsMapped = new HashSet<>();
-			Set<String> partNumsUnmapped = new HashSet<>();
-			int skipped = 0;
-			int mapped = 0;
-			int unmapped = 0;
 			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_Supplement)))) {
 				String line;
-				Set<RelationshipTemplate> attributeSet = new HashSet<>();
+				ArrayList<LoincPart> loincParts = new ArrayList<>();
 				String lastLoincNum = "";
 				while ((line = br.readLine()) != null) {
 					if (!isFirstLine) {
@@ -138,76 +143,40 @@ public class ExistingLoincNums extends TermServerScript {
 						String partName = items[3];
 						String partTypeName = items[5];
 						
-						//Have we moved on to a new LOINC Num?  Do model comparison if so.
+						//Have we moved on to a new LOINC Num?  Do model comparison on the last number if so,
+						//which is now assumed to be complete.
 						if (!lastLoincNum.equals(loincNum)) {
 							if (!lastLoincNum.isEmpty()) {
-								doProposedModelComparison(loincNum, attributeSet);
+								LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(lastLoincNum, loincParts);
+								doProposedModelComparison(lastLoincNum, templatedConcept);
 							}
 							lastLoincNum = loincNum;
-							attributeSet.clear();
+							loincParts.clear();
 						}
-						
-						if (!loincNum.equals("11557-6")) {
-							continue;
-						}
-						
-						//Do we have this partNum?
-						RelationshipTemplate partAttribute = loincPartAttributeMap.get(partNum);
-						if (partTypeName.equals("CLASS")) {
-							skipped++;
-							continue;
-						}
-						
-						if (partAttribute != null) {
-							mapped++;
-							report(SECONDARY_REPORT,
-									loincNum,
-									partNum,
-									"Mapped OK",
-									partName,
-									partAttribute);
-							partNumsMapped.add(partNum);
-							attributeSet.add(partAttribute);
-						} else {
-							unmapped++;
-							report(SECONDARY_REPORT,
-									loincNum,
-									partNum,
-									"Not Mapped - " + partTypeName + " | " + partName,
-									partName);
-							partNumsUnmapped.add(partNum);
-						}
+						loincParts.add(new LoincPart(partNum, partTypeName, partName));
 					} else isFirstLine = false;
 				}
 			}
-			report (SECONDARY_REPORT, "");
-			report (SECONDARY_REPORT, "Parts mapped", mapped);
-			report (SECONDARY_REPORT, "Parts unmapped", unmapped);
-			report (SECONDARY_REPORT, "Parts skipped", skipped);
-			report (SECONDARY_REPORT, "Unique PartNums mapped", partNumsMapped.size());
-			report (SECONDARY_REPORT, "Unique PartNums unmapped", partNumsUnmapped.size());
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
 	}
 	
-	private void doProposedModelComparison(String loincNum, Set<RelationshipTemplate> attributeSet) throws TermServerScriptException {
+	private void doProposedModelComparison(String loincNum, LoincTemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
 		//Do we have this loincNum
-		Concept loincConcept = loincNumMap.get(loincNum);
-		if (loincConcept == null) {
-			return;
-		}
+		Concept existingLoincConcept = loincNumMap.get(loincNum);
+		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
 		
-		Concept proposedLoincConcept = new Concept("0");
-		proposedLoincConcept.addRelationship(IS_A, OBSERVABLE_ENTITY);
-		proposedLoincConcept.setDefinitionStatus(loincConcept.getDefinitionStatus());
-		for (RelationshipTemplate rt : attributeSet) {
-			proposedLoincConcept.addRelationship(rt.getType(), rt.getTarget(), SnomedUtils.getFirstFreeGroup(proposedLoincConcept));
-		}
-		String existingSCG = loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String existingSCG = "N/A";
+		String modelDiff = "";
 		String proposedSCG = proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		String modelDiff = SnomedUtils.getModelDifferences(loincConcept, proposedLoincConcept, CharacteristicType.STATED_RELATIONSHIP);
-		report(QUATERNARY_REPORT, loincNum, loincConcept.getId(), loincConcept.getFsn(), existingSCG, proposedSCG, modelDiff);
+		String existingLoincConceptStr = "N/A";
+		if (existingLoincConcept != null) {
+			existingLoincConceptStr = existingLoincConcept.getId();
+			existingSCG = existingLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+			modelDiff = SnomedUtils.getModelDifferences(existingLoincConcept, proposedLoincConcept, CharacteristicType.STATED_RELATIONSHIP);
+		}
+		report(QUINARY_REPORT, loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedLoincConcept.getFsn(), existingSCG, proposedSCG, modelDiff);
 	}
 
 	private void populateLoincNumMap() throws TermServerScriptException {
@@ -218,17 +187,18 @@ public class ExistingLoincNums extends TermServerScript {
 	}
 	
 	private void populatePartAttributeMap() throws TermServerScriptException {
+		int lineNum = 0;
 		try {
 			int successfullTypeReplacement = 0;
 			int successfullValueReplacement = 0;
 			int unsuccessfullTypeReplacement = 0;
 			int unsuccessfullValueReplacement = 0;
 			info ("Loading Part Attribute Map: " + getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
-			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP)))) {
 				String line;
 				while ((line = br.readLine()) != null) {
-					if (!isFirstLine) {
+					lineNum++;
+					if (lineNum > 1) {
 						String[] items = line.split("\t");
 						String partNum = items[6];
 						Concept attributeType = gl.getConcept(items[7]);
@@ -270,7 +240,7 @@ public class ExistingLoincNums extends TermServerScript {
 						}
 						
 						loincPartAttributeMap.put(partNum, new RelationshipTemplate(attributeType, attributeValue));
-					} else isFirstLine = false;
+					}
 				}
 			}
 			info("Populated map of " + loincPartAttributeMap.size() + " LOINC parts to attributes");
@@ -281,7 +251,7 @@ public class ExistingLoincNums extends TermServerScript {
 			report(TERTIARY_REPORT, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
 
 		} catch (Exception e) {
-			throw new TermServerScriptException(e);
+			throw new TermServerScriptException("At line " + lineNum, e);
 		}
 	}
 
