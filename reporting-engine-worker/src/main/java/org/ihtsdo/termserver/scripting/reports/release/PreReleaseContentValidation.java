@@ -45,6 +45,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 
@@ -96,8 +97,17 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	
 	public void runJob() throws TermServerScriptException {
 		
-		allActiveConceptsSorted = SnomedUtils.sortActive(gl.getAllConcepts());
-		allInactiveConceptsSorted = SnomedUtils.sortInactive(gl.getAllConcepts());
+		allActiveConceptsSorted = gl.getAllConcepts().stream()
+				.filter(c -> c.isActive())
+				.filter(c -> inScope(c))
+				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.collect(Collectors.toList());
+		
+		allInactiveConceptsSorted =gl.getAllConcepts().stream()
+				.filter(c -> !c.isActive())
+				.filter(c -> inScope(c))
+				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.collect(Collectors.toList());
 		
 		info ("Loading Previous Data");
 		loadData(prevRelease);
