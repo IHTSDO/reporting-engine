@@ -16,13 +16,16 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * INFRA-7531 Replace 257867005 |Insertion - action (qualifier value)| with 129336009 |Implantation - action (qualifier value)|
  * QI-1143 Replace 86049000 |Malignant neoplasm, primary| with 1240414004 |Malignant neoplasm morphology|
  * QI-1208 Replace 6920004 |Defect (morphologic abnormality)| with 783804002 |Abnormal communication (morphologic abnormality)|
+ * QI-1221 For Direct Morphologies, replace 6920004 |Defect (morphologic abnormality)| with 783804002 |Abnormal communication (morphologic abnormality)|
  */
 public class ReplaceAttributeValues extends BatchFix {
 	
 	Map<Concept, Concept> replacementMap;
+	Concept restrictToType = null;
 	//String ecl = "< 363787002 |Observable entity| : * = 86049000 |Malignant neoplasm, primary (morphologic abnormality)|";
 	//String ecl = "* : * = 367651003  |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|";
-	String ecl = "<< 253273004 |Cardiac septal defects (disorder)| OR << 768552007 |Congenital ventricular septal defect (disorder)| ";
+	//String ecl = "<< 253273004 |Cardiac septal defects (disorder)| OR << 768552007 |Congenital ventricular septal defect (disorder)| ";
+	String ecl = "<<53941002 |Closure of septal fenestration of heart (procedure)|";
 	RelationshipTemplate addRelationship; 
 	
 	protected ReplaceAttributeValues(BatchFix clone) {
@@ -52,7 +55,9 @@ public class ReplaceAttributeValues extends BatchFix {
 		replacementMap = new HashMap<>();
 		Concept replacement = gl.getConcept("783804002 |Abnormal communication (morphologic abnormality)|");
 		replacementMap.put(gl.getConcept("6920004 |Defect (morphologic abnormality)|"), replacement); 
-		replacementMap.put(gl.getConcept("371520008 |Developmental failure of fusion (morphologic abnormality)|"), replacement); 		
+		//replacementMap.put(gl.getConcept("371520008 |Developmental failure of fusion (morphologic abnormality)|"), replacement); 		
+		
+		restrictToType = gl.getConcept("363700003 |Direct morphology (attribute)|");
 		
 		//replacementMap.put(gl.getConcept("367651003 |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|"), 
 		//					gl.getConcept("1240414004 |Malignant neoplasm|"));
@@ -87,6 +92,10 @@ public class ReplaceAttributeValues extends BatchFix {
 			//Switch all stated relationships from the findValue to the replaceValue
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (r.getTarget().equals(targetTarget)) {
+					if (restrictToType != null && !r.getType().equals(restrictToType)) {
+						report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Expected value found, but not in expected attribute type", r);
+						continue;
+					}
 					Relationship replacement = r.clone();
 					replacement.setTarget(replacementMap.get(targetTarget));
 					changesMade += replaceRelationship(t, c, r, replacement);
