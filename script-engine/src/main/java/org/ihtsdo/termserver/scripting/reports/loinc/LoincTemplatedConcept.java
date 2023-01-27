@@ -44,11 +44,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 	public static LoincTemplatedConcept populateModel(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, loincParts);
 		templatedConcept.populateParts(loincParts);
-		templatedConcept.populateTerms(loincParts);
+		templatedConcept.populateTerms(loincNum, loincParts);
 		return templatedConcept;
 	}
 
-	private void populateTerms(List<LoincPart> loincParts) throws TermServerScriptException {
+	private void populateTerms(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
 		String ptStr = preferredTermTemplate;
 		for (LoincPart loincPart : loincParts) {
@@ -72,11 +72,30 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 				TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
 			}
 		}
+		ptStr = tidyUpTerm(loincNum, ptStr);
 		ptStr = StringUtils.capitalizeFirstLetter(ptStr);
 		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
 		Description fsn = Description.withDefaults(ptStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
 		concept.addDescription(pt);
 		concept.addDescription(fsn);
+	}
+
+	protected String tidyUpTerm(String loincNum, String term) {
+		if (term.contains(" at [TIME]")) {
+			term = replaceAndWarn(loincNum, term, " at [TIME]");
+		}
+		if (term.contains(" by [METHOD]")) {
+			term = replaceAndWarn(loincNum, term, " by [METHOD]");
+		}
+		if (term.contains(" to [DIVISOR]")) {
+			term = replaceAndWarn(loincNum, term, " to [DIVISOR]");
+		}
+		return term;
+	}
+
+	private String replaceAndWarn(String loincNum, String term, String str) {
+		TermServerScript.warn(loincNum + " did not provide '" + str + "'");
+		return term.replaceAll(str, "");
 	}
 
 	private void populateParts(List<LoincPart> loincParts) throws TermServerScriptException {
