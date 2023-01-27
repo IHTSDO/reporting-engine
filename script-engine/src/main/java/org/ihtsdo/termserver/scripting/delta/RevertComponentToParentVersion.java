@@ -126,6 +126,9 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             if (jumpedModule(childMember, parentMember)) {
                 report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have incorrectly jumped module.");
                 writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
+            } else if (illegalChangeOfAdditionalField(childMember, parentMember)) {
+                report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have an illegal additional field change.");
+                writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
             } else if (forceOutput) {
                 report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "'ForcedOutput' set to true");
                 writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
@@ -220,6 +223,27 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 
         if (!matchModule && !matchEffectiveTime) {
             return matchActive && matchReleased && matchReleasedEffectiveTime && matchRefsetId && matchReferencedComponentId && matchAdditionalFields;
+        }
+
+        return false;
+    }
+
+    private boolean illegalChangeOfAdditionalField(RefsetMember childMember, RefsetMember parentMember) {
+        if (childMember.isActive()) {
+            return false;
+        }
+
+        boolean matchActive = Objects.equals(childMember.isActive(), parentMember.isActive());
+        boolean matchModule = Objects.equals(childMember.getModuleId(), parentMember.getModuleId());
+        boolean matchReleased = Objects.equals(childMember.getReleased(), parentMember.getReleased());
+        boolean matchReleasedEffectiveTime = Objects.equals(childMember.getReleasedEffectiveTime(), parentMember.getReleasedEffectiveTime());
+        boolean matchRefsetId = Objects.equals(childMember.getRefsetId(), parentMember.getRefsetId());
+        boolean matchReferencedComponentId = Objects.equals(childMember.getReferencedComponentId(), parentMember.getReferencedComponentId());
+        boolean matchAdditionalFields = Objects.equals(childMember.getAdditionalFields(), parentMember.getAdditionalFields());
+        boolean matchEffectiveTime = Objects.equals(childMember.getEffectiveTime(), parentMember.getEffectiveTime());
+
+        if (!matchAdditionalFields && !matchEffectiveTime) {
+            return matchActive && matchModule && matchReleased && matchReleasedEffectiveTime && matchRefsetId && matchReferencedComponentId;
         }
 
         return false;
