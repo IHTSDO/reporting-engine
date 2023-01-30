@@ -79,7 +79,8 @@ public class ExistingLoincNums extends TermServerScript {
 		gl.registerConcept("10021010000100 |Platelet poor plasma or whole blood specimen (specimen)|"); 
 		gl.registerConcept("10051010000107 |Plasma specimen or whole blood specimen (specimen)|");
 		gl.registerConcept("10031010000102 |Bromocresol purple dye binding technique (qualifier value)|");
-		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)");
+		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
+		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 	}
 
 	private void runReport() throws TermServerScriptException {
@@ -200,6 +201,10 @@ public class ExistingLoincNums extends TermServerScript {
 					lineNum++;
 					if (lineNum > 1) {
 						String[] items = line.split("\t");
+						//Skip the row if it's not active
+						if (items[2].equals("0")) {
+							continue;
+						}
 						String partNum = items[6];
 						Concept attributeType = gl.getConcept(items[7]);
 						Concept attributeValue = gl.getConcept(items[5]);

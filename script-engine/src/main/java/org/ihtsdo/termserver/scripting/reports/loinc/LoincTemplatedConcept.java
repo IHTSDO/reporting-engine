@@ -81,21 +81,21 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 	}
 
 	protected String tidyUpTerm(String loincNum, String term) {
-		if (term.contains(" at [TIME]")) {
-			term = replaceAndWarn(loincNum, term, " at [TIME]");
-		}
-		if (term.contains(" by [METHOD]")) {
-			term = replaceAndWarn(loincNum, term, " by [METHOD]");
-		}
-		if (term.contains(" to [DIVISOR]")) {
-			term = replaceAndWarn(loincNum, term, " to [DIVISOR]");
-		}
+		term = replaceAndWarn(loincNum, term, " at [TIME]");
+		term = replaceAndWarn(loincNum, term, " by [METHOD]");
+		term = replaceAndWarn(loincNum, term, " to [DIVISOR]");
+		term = replaceAndWarn(loincNum, term, " in [SYSTEM]");
 		return term;
 	}
 
 	private String replaceAndWarn(String loincNum, String term, String str) {
-		TermServerScript.warn(loincNum + " did not provide '" + str + "'");
-		return term.replaceAll(str, "");
+		if (term.contains(str)) {
+			TermServerScript.warn(loincNum + " did not provide '" + str + "'");
+			//Need to make string regex safe
+			str = str.replaceAll("\\[","\\\\\\[").replaceAll("\\]","\\\\\\]");
+			term = term.replaceAll(str, "");
+		}
+		return term;
 	}
 
 	private void populateParts(List<LoincPart> loincParts) throws TermServerScriptException {
