@@ -1411,9 +1411,10 @@ public class GraphLoader implements ScriptConstants {
 		concepts.put(concept.getConceptId(), concept);
 	}
 	
-	public void registerConcept(String sctIdFSN) {
+	public Concept registerConcept(String sctIdFSN) {
 		Concept concept = Concept.withDefaultsFromSctIdFsn(sctIdFSN);
 		concepts.put(concept.getConceptId(), concept);
+		return concept;
 	}
 
 	public DescendantsCache getDescendantsCache() {

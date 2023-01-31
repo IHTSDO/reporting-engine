@@ -523,6 +523,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public void addRelationship(Concept type, Concept target) {
 		addRelationship(type, target, 0);
 	}
+	
+	public void addRelationship(RelationshipTemplate rt, int groupId) {
+		addRelationship(rt.getType(), rt.getTarget(), groupId);
+	}
 
 	public void addRelationship(Concept type, Concept target, int groupId) {
 		Relationship r = new Relationship();
