@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.commons.csv.CSVFormat;
@@ -18,7 +19,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * LE-3
  */
-public class ExistingLoincNums extends TermServerScript {
+public class ExistingLoincNums extends TermServerScript implements LoincConstants {
+	
+	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
+	
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
 	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2017.tsv"  
 	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
@@ -58,14 +62,16 @@ public class ExistingLoincNums extends TermServerScript {
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
-				"LoincNum, Existing Concept, Template, Proposed FSN, Current Model, Proposed Model, Difference"
+				"LoincNum, Existing Concept, Template, Proposed FSN, Current Model, Proposed Model, Difference",
+				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId"
 		};
 		String[] tabNames = new String[] {
 				"LoincNums to Model",
 				"All Mapping Notes",
 				"Part Map Notes",
 				"Modeling Notes",
-				"Proposed Model Comparison"
+				"Proposed Model Comparison",
+				"RF2 Identifier File"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 		
@@ -170,6 +176,13 @@ public class ExistingLoincNums extends TermServerScript {
 										templatedConcept.getConcept().getIssues());
 								} else {
 									doProposedModelComparison(lastLoincNum, templatedConcept);
+									report(SENARY_REPORT,
+										loincNum,
+										today,
+										"1",
+										LOINC_MODULE_ID,
+										SCTID_LOINC_CODE_SYSTEM,
+										UUID.randomUUID());
 								}
 							}
 							lastLoincNum = loincNum;
