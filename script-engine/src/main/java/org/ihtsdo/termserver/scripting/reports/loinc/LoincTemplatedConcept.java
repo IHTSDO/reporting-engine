@@ -123,13 +123,19 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 				concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
 			} else {
 				unmapped++;
+				String issue = "Not Mapped - " + loincPart.getPartTypeName() + " | " + loincPart.getPartNumber() + "| " + loincPart.getPartName();
 				ts.report(SECONDARY_REPORT,
 					loincNum,
 					loincPart.getPartNumber(),
-					"Not Mapped - " + loincPart.getPartTypeName() + " | " + loincPart.getPartNumber(),
+					issue,
 					loincPart.getPartName());
+				concept.addIssue(issue, ",\n");
 				partNumsUnmapped.add(loincPart.getPartNumber());
 			}
+		}
+		
+		if (concept.hasIssues()) {
+			concept.addIssue("Template used: " + this.getClass().getSimpleName(), ",\n");
 		}
 	}
 

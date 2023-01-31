@@ -57,14 +57,14 @@ public class ExistingLoincNums extends TermServerScript {
 				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
-				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
+				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed FSN, Current Model, Proposed Model, Difference"
 		};
 		String[] tabNames = new String[] {
 				"LoincNums to Model",
 				"All Mapping Notes",
 				"Part Map Notes",
-				"Template Based Map Results",
+				"Modeling Notes",
 				"Proposed Model Comparison"
 		};
 		super.postInit(tabNames, columnHeadings, false);
@@ -163,7 +163,14 @@ public class ExistingLoincNums extends TermServerScript {
 							if (!lastLoincNum.isEmpty()) {
 								LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(lastLoincNum, loincParts);
 								populateCategorization(loincNum, templatedConcept.getConcept());
-								doProposedModelComparison(lastLoincNum, templatedConcept);
+								if (templatedConcept.getConcept().hasIssues()) {
+									report(QUATERNARY_REPORT,
+										loincNum,
+										loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+										templatedConcept.getConcept().getIssues());
+								} else {
+									doProposedModelComparison(lastLoincNum, templatedConcept);
+								}
 							}
 							lastLoincNum = loincNum;
 							loincParts.clear();
