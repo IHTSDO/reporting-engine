@@ -120,7 +120,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 					loincPart.getPartName(),
 					rt);
 				partNumsMapped.add(loincPart.getPartNumber());
-				concept.addRelationship(rt.getType(), rt.getTarget(), SnomedUtils.getFirstFreeGroup(concept));
+				concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
 			} else {
 				unmapped++;
 				ts.report(SECONDARY_REPORT,

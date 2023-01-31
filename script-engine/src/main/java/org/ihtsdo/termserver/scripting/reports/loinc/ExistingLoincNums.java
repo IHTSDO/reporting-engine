@@ -21,17 +21,21 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class ExistingLoincNums extends TermServerScript {
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
 	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2017.tsv"  
-	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Supplementary.tsv"
+	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
 	private int FILE_IDX_LOINC_100 = 0;
 	private int FILE_IDX_LOINC_100_PARTS_MAP = 1;
-	private int FILE_IDX_LOINC_100_Supplement = 2;
+	private int FILE_IDX_LOINC_100_Primary = 2;
 	private int FILE_IDX_LOINC_PARTS = 3;
 	
-	private static Map<String, Concept> loincNumMap = new HashMap<>();
+	private static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
+	private static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	private static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<String, LoincPart> loincParts = new HashMap<>();
+	private Map<String, Concept> categorizationMap = new HashMap<>();
+	
+	private Concept HasConceptCategorizationStatus;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExistingLoincNums report = new ExistingLoincNums();
@@ -81,6 +85,13 @@ public class ExistingLoincNums extends TermServerScript {
 		gl.registerConcept("10031010000102 |Bromocresol purple dye binding technique (qualifier value)|");
 		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
+		
+		HasConceptCategorizationStatus = gl.registerConcept("10071010000104 |Has concept categorization status (attribute)|");
+		
+		categorizationMap.put("Observation", gl.registerConcept("10101010000107 |Observation concept categorization status (qualifier value)|"));
+		categorizationMap.put("Order", gl.registerConcept("10091010000103 |Orderable concept categorization status (qualifier value)|"));
+		categorizationMap.put("Both", gl.registerConcept("10111010000105 |Both orderable and observation concept categorization status (qualifier value)|"));
+		categorizationMap.put("Subset", gl.registerConcept("10121010000104 |Subset of panel concept categorization status (qualifier value)|"));
 	}
 
 	private void runReport() throws TermServerScriptException {
@@ -89,7 +100,7 @@ public class ExistingLoincNums extends TermServerScript {
 		populatePartAttributeMap();
 		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap);
 		determineExistingConcepts();
-		determineExistingParts();
+		doModeling();
 		LoincTemplatedConcept.reportStats();
 	}
 	
@@ -104,8 +115,10 @@ public class ExistingLoincNums extends TermServerScript {
 						String[] items = line.split("\t");
 						String loincNum = items[0];
 						String longCommonName = items[25];
+						LoincTerm loincTerm = LoincTerm.parse(items);
+						loincNumToLoincTermMap.put(loincNum, loincTerm);
 						//Do we have this loincNum
-						Concept loincConcept = loincNumMap.get(loincNum);
+						Concept loincConcept = loincNumToSnomedConceptMap.get(loincNum);
 						if (loincConcept != null) {
 							report(PRIMARY_REPORT,
 									loincNum,
@@ -128,11 +141,11 @@ public class ExistingLoincNums extends TermServerScript {
 		}
 	}
 	
-	private void determineExistingParts() throws TermServerScriptException {
+	private void doModeling() throws TermServerScriptException {
 		try {
-			info ("Loading Parts: " + getInputFile(FILE_IDX_LOINC_100_Supplement));
+			info ("Loading Parts: " + getInputFile(FILE_IDX_LOINC_100_Primary));
 			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_Supplement)))) {
+			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_Primary)))) {
 				String line;
 				ArrayList<LoincPart> loincParts = new ArrayList<>();
 				String lastLoincNum = "";
@@ -149,6 +162,7 @@ public class ExistingLoincNums extends TermServerScript {
 						if (!lastLoincNum.equals(loincNum)) {
 							if (!lastLoincNum.isEmpty()) {
 								LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(lastLoincNum, loincParts);
+								populateCategorization(loincNum, templatedConcept.getConcept());
 								doProposedModelComparison(lastLoincNum, templatedConcept);
 							}
 							lastLoincNum = loincNum;
@@ -163,9 +177,18 @@ public class ExistingLoincNums extends TermServerScript {
 		}
 	}
 	
+	private void populateCategorization(String loincNum, Concept concept) {
+		//Do we have the full set of properties for this loincTerm?
+		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
+		String order = loincTerm.getOrderObs();
+		Concept categoryConcept = categorizationMap.get(order);
+		RelationshipTemplate rt = new RelationshipTemplate(HasConceptCategorizationStatus, categoryConcept);
+		concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
+	}
+
 	private void doProposedModelComparison(String loincNum, LoincTemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
 		//Do we have this loincNum
-		Concept existingLoincConcept = loincNumMap.get(loincNum);
+		Concept existingLoincConcept = loincNumToSnomedConceptMap.get(loincNum);
 		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
 		
 		String existingSCG = "N/A";
@@ -182,9 +205,9 @@ public class ExistingLoincNums extends TermServerScript {
 
 	private void populateLoincNumMap() throws TermServerScriptException {
 		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
-			loincNumMap.put(LoincUtils.getLoincNumFromDescription(c), c);
+			loincNumToSnomedConceptMap.put(LoincUtils.getLoincNumFromDescription(c), c);
 		}
-		info("Populated map of " + loincNumMap.size() + " LOINC concepts");
+		info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
 	}
 	
 	private void populatePartAttributeMap() throws TermServerScriptException {
