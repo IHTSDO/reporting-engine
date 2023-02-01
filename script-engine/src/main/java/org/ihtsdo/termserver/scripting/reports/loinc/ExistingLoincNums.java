@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -62,13 +63,13 @@ public class ExistingLoincNums extends TermServerScript implements LoincConstant
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
-				"LoincNum, Existing Concept, Template, Proposed FSN, Current Model, Proposed Model, Difference",
+				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference",
 				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId"
 		};
 		String[] tabNames = new String[] {
-				"LoincNums to Model",
-				"All Mapping Notes",
-				"Part Map Notes",
+				"Pre-Existing Concepts",
+				"Part Mapping Detail",
+				"RF2 Part Map Notes",
 				"Modeling Notes",
 				"Proposed Model Comparison",
 				"RF2 Identifier File"
@@ -104,7 +105,7 @@ public class ExistingLoincNums extends TermServerScript implements LoincConstant
 		populateLoincNumMap();
 		loadLoincParts();
 		populatePartAttributeMap();
-		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap);
+		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap);
 		determineExistingConcepts();
 		doModeling();
 		LoincTemplatedConcept.reportStats();
@@ -220,7 +221,10 @@ public class ExistingLoincNums extends TermServerScript implements LoincConstant
 			existingSCG = existingLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			modelDiff = SnomedUtils.getModelDifferences(existingLoincConcept, proposedLoincConcept, CharacteristicType.STATED_RELATIONSHIP);
 		}
-		report(QUINARY_REPORT, loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedLoincConcept.getFsn(), existingSCG, proposedSCG, modelDiff);
+		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
+				.map(d -> d.toString())
+				.collect(Collectors.joining(",\n"));
+		report(QUINARY_REPORT, loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff);
 	}
 
 	private void populateLoincNumMap() throws TermServerScriptException {

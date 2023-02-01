@@ -24,17 +24,36 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 	protected static TermServerScript ts;
 	protected static GraphLoader gl;
 	protected static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
+	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	
+	protected static Map<String, String> termTweakingMap = new HashMap<>();
+	protected static Map<Concept, Set<String>> typeValueTermRemovalMap = new HashMap<>();
+	protected static Map<String, Set<String>> valueSemTagTermRemovalMap = new HashMap<>();
 	
 	protected String loincNum;
 	protected Map<String, Concept> typeMap = new HashMap<>();
 	protected String preferredTermTemplate;
 	protected Concept concept;
-
-	public static void initialise(TermServerScript ts, GraphLoader gl, Map<String, RelationshipTemplate> loincPartAttributeMap) {
+	
+	public static void initialise(TermServerScript ts, GraphLoader gl, 
+			Map<String, RelationshipTemplate> loincPartAttributeMap,
+			Map<String, LoincTerm> loincNumToLoincTermMap) {
 		LoincTemplatedConcept.ts = ts;
 		LoincTemplatedConcept.gl = gl;
 		LoincTemplatedConcept.loincPartAttributeMap = loincPartAttributeMap;
+		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
+		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
+		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
+		
+		Set<String> removals = new HashSet<>(Arrays.asList("specimen", "of", "at", "from"));
+		typeValueTermRemovalMap.put(DIRECT_SITE, removals);
+		
+		removals = new HashSet<>(Arrays.asList("clade", "class", "division", "domain", "family", "genus", 
+				"infraclass", "infraclass", "infrakingdom", "infraorder", "infraorder", "kingdom", "order", 
+				"phylum", "species", "subclass", "subdivision", "subfamily", "subgenus", "subkingdom", 
+				"suborder", "subphylum", "subspecies", "superclass", "superdivision", "superfamily", 
+				"superkingdom", "superorder", "superphylum"));
+		valueSemTagTermRemovalMap.put("(organism)", removals);
 	}
 
 	protected LoincTemplatedConcept (String loincNum) {
@@ -62,6 +81,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 				//TODO Detect GB Spelling and break out another term
 				Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
 				String itemStr = targetPt.getTerm();
+				
+				itemStr = applyTermTweaking(rt, itemStr);
 				//Can we make this lower case?
 				if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) || 
 						targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
@@ -76,8 +97,45 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 		ptStr = StringUtils.capitalizeFirstLetter(ptStr);
 		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
 		Description fsn = Description.withDefaults(ptStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
+		//Also add the Long Common Name as a Synonym
+		String lcnStr = loincNumToLoincTermMap.get(loincNum).getLongCommonName();
+		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		
 		concept.addDescription(pt);
 		concept.addDescription(fsn);
+		concept.addDescription(lcn);
+	}
+
+	private String applyTermTweaking(RelationshipTemplate rt, String term) {
+		Concept value = rt.getTarget();
+		
+		//Firstly, do we have a flat out replacement for this value?
+		if (termTweakingMap.containsKey(value.getId())) {
+			term = termTweakingMap.get(value.getId());
+		}
+		
+		//Are we making any removals based on semantic tag?
+		String semTag = SnomedUtils.deconstructFSN(value.getFsn())[1];
+		if (valueSemTagTermRemovalMap.containsKey(semTag)) {
+			for (String removal : valueSemTagTermRemovalMap.get(semTag)) {
+				term = term.replaceAll(removal, "");
+				term = term.replaceAll(StringUtils.capitalizeFirstLetter(removal), "");
+			}
+		}
+		
+		//Are we making any removals based on the type?
+		if (typeValueTermRemovalMap.containsKey(rt.getType())) {
+			//Add a space to ensure we do whole word removal
+			term = " " + term + " ";
+			for (String removal : typeValueTermRemovalMap.get(rt.getType())) {
+				removal = " " + removal + " ";
+				term = term.replaceAll(removal, " ");
+				term = term.replaceAll(StringUtils.capitalizeFirstLetter(removal), " ");
+			}
+			term = term.trim();
+		}
+		
+		return term;
 	}
 
 	protected String tidyUpTerm(String loincNum, String term) {
