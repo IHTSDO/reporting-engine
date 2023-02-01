@@ -320,7 +320,7 @@ public class LoincTerm {
 		//loincTerm.setHl7FieldSubfieldId(items[22]);
 		//loincTerm.setExternalCopyrightNotice(items[23]);
 		//loincTerm.setExampleUnits(items[24]);
-		//loincTerm.setLongCommonName(items[25]);
+		loincTerm.setLongCommonName(items[25]);
 		//loincTerm.setExampleUCUMUnits(items[26]);
 		//loincTerm.setStatusReason(items[27]);
 		//loincTerm.setStatusText(items[28]);
