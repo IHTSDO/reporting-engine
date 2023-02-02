@@ -205,7 +205,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				taskKey = args[x+1];
 			}
 		}
-		checkSettingsWithUser(null);
+		
+		if (headlessEnvironment == null) {
+			checkSettingsWithUser(null);
+		}
+		
 		init();
 	}
 	
@@ -222,31 +226,35 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		tsClient = createTSClient(this.url, authenticatedCookie);
 		boolean loadingRelease = false;
 		//Recover the full project path from authoring services, if not already fully specified
-		project = new Project();
-		if (projectName.startsWith("MAIN")) {
-			project.setBranchPath(projectName);
-			if (projectName.equals("MAIN")) {
+		if (project == null) {
+			project = new Project();
+			if (projectName.startsWith("MAIN")) {
+				project.setBranchPath(projectName);
+				if (projectName.equals("MAIN")) {
+					project.setKey(projectName);
+				} else {
+					project.setKey(projectName.substring(projectName.lastIndexOf("/")));
+				}
+			} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
+				info ("Loading release: " + projectName); 
+				loadingRelease = true;
 				project.setKey(projectName);
 			} else {
-				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
-			}
-		} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
-			info ("Loading release: " + projectName); 
-			loadingRelease = true;
-			project.setKey(projectName);
-		} else {
-			if (runStandAlone) {
-				info ("Running stand alone. Guessing project path to be MAIN/" + projectName);
-				project.setBranchPath("MAIN/" + projectName);
-			} else {
-				try {
-					project = scaClient.getProject(projectName);
-					info ("Recovered project " + project.getKey() + " with branch path: " + project.getBranchPath());
-				} catch (RestClientException e) {
-					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
+				if (runStandAlone) {
+					info ("Running stand alone. Guessing project path to be MAIN/" + projectName);
+					project.setBranchPath("MAIN/" + projectName);
+				} else {
+					try {
+						project = scaClient.getProject(projectName);
+						info ("Recovered project " + project.getKey() + " with branch path: " + project.getBranchPath());
+					} catch (RestClientException e) {
+						throw new TermServerScriptException("Unable to recover project: " + projectName,e);
+					}
 				}
+				project.setKey(projectName);
 			}
-			project.setKey(projectName);
+		} else {
+			warn("Project already set as " + project);
 		}
 		
 		if (taskKey != null) {
@@ -794,8 +802,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			throw new TermServerScriptException("Concept has not fully saved to TS, although no error was reported");
 		}
 	}*/
-
+	
 	protected Concept createConcept(Task t, Concept c, String info) throws TermServerScriptException {
+		return createConcept(t, c,  info, true); //validate by default
+	}
+
+	protected Concept createConcept(Task t, Concept c, String info, boolean validate) throws TermServerScriptException {
 		if (c.getFsn() == null || c.getFsn().isEmpty()) {
 			throw new ValidationFailure(c, "Cannot create concept with no FSN");
 		}
@@ -804,7 +816,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			try {
 				//Copy across the concept type to the returned object - it isn't known to the TS
 				ConceptType conceptType = c.getConceptType();
-				Concept createdConcept = attemptConceptCreation(t,c,info);
+				Concept createdConcept = attemptConceptCreation(t, c, info, validate);
 				createdConcept.setConceptType(conceptType);
 				return createdConcept;
 			} catch (Exception e) {
@@ -823,11 +835,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 	
-	private Concept attemptConceptCreation(Task t, Concept c, String info) throws Exception {
+	private Concept attemptConceptCreation(Task t, Concept c, String info, boolean validate) throws Exception {
 		debug ((dryRun ?"Dry run creating ":"Creating ") + (c.getConceptType() != null ?c.getConceptType() + " ":"") + c + info);
 		convertStatedRelationshipsToAxioms(c, false);
 		if (!dryRun) {
-			validateConcept(t, c);
+			if (validate) {
+				validateConcept(t, c);
+			}
 			c = tsClient.createConcept(c, t.getBranchPath());
 		} else {
 			c = c.clone("NEW_SCTID");
@@ -1569,6 +1583,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public String getEnv() {
 		return env;
 	}
+	
+	public void setEnv(String env) {
+		this.env = env;
+	}
 
 	public GraphLoader getGraphLoader() {
 		return gl;
@@ -1740,6 +1758,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public String getServerUrl() {
 		return url;
+	}
+	
+	public void setServerUrl(String url) {
+		this.url = url;
 	}
 
 	synchronized public void asyncSnapshotCacheInProgress(boolean asyncSnapshotCacheInProgress) {

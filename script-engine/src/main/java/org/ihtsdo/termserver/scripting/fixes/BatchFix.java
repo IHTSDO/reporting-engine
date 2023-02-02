@@ -192,7 +192,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 	}
 
-
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int currentTaskNum = 0;
 		this.currentBatch = batch;
@@ -441,6 +440,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 		author_reviewer = new String[] { jobRun.getUser() };
 	}
+	
+	public void inflightInit (String[] args) throws TermServerScriptException {
+		init(args);
+	}
 
 	protected void init (String[] args) throws TermServerScriptException {
 		if (args.length < 3) {
@@ -494,6 +497,13 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				info ("Limiting number of tasks being created to " + processingLimit);
 				isLimit = false;
 			}
+		}
+		
+		
+		if (targetReviewer != null) {
+			author_reviewer = new String[] { targetAuthor, targetReviewer };
+		} else {
+			author_reviewer = new String[] { targetAuthor };
 		}
 		
 		//For batch fixes we generally need to know if the components we're modifying have been
