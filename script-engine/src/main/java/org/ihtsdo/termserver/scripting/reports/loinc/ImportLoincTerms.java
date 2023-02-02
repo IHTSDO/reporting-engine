@@ -23,7 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * LE-3
  */
-public class ExistingLoincNums extends TermServerScript implements LoincConstants {
+public class ImportLoincTerms extends TermServerScript implements LoincConstants {
 	
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	
@@ -46,7 +46,7 @@ public class ExistingLoincNums extends TermServerScript implements LoincConstant
 	private Concept HasConceptCategorizationStatus;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		ExistingLoincNums report = new ExistingLoincNums();
+		ImportLoincTerms report = new ImportLoincTerms();
 		try {
 			report.runStandAlone = false;
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
