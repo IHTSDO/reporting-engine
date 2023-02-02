@@ -21,6 +21,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 	private static int unmapped = 0;
 	private static int skipped = 0;
 	
+	private static int conceptsModelled = 0;
+	
 	protected static TermServerScript ts;
 	protected static GraphLoader gl;
 	protected static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
@@ -157,7 +159,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 	}
 
 	private void populateParts(List<LoincPart> loincParts) throws TermServerScriptException {
-		concept = new Concept("0");
+		concept = Concept.withDefaults(Integer.toString((++conceptsModelled)));
+		concept.setModuleId(SCTID_LOINC_MODULE);
 		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 		Set<LoincPart> loincPartsSeen = new HashSet<>();
