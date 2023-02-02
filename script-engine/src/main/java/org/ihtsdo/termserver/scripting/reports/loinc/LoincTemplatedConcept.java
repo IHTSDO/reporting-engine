@@ -99,13 +99,21 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 		ptStr = StringUtils.capitalizeFirstLetter(ptStr);
 		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
 		Description fsn = Description.withDefaults(ptStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
+		
 		//Also add the Long Common Name as a Synonym
 		String lcnStr = loincNumToLoincTermMap.get(loincNum).getLongCommonName();
 		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		//Override the case significance for these
+		lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		
+		//And the LoncNum itself, until we have the Identifier File available to use
+		String lnStr = LoincUtils.buildLoincNumTerm(loincNum);
+		Description ln = Description.withDefaults(lnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 		
 		concept.addDescription(pt);
 		concept.addDescription(fsn);
 		concept.addDescription(lcn);
+		concept.addDescription(ln);
 	}
 
 	private String applyTermTweaking(RelationshipTemplate rt, String term) {
@@ -145,6 +153,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 		term = replaceAndWarn(loincNum, term, " by [METHOD]");
 		term = replaceAndWarn(loincNum, term, " to [DIVISOR]");
 		term = replaceAndWarn(loincNum, term, " in [SYSTEM]");
+		term = term.replaceAll("  ", " ");
 		return term;
 	}
 

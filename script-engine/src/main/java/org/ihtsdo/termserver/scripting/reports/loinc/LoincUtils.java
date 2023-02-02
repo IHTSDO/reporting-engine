@@ -23,6 +23,14 @@ public class LoincUtils implements RF2Constants {
 		}
 	}
 	
+	public static String buildCorrelationTerm(String correlationId) {
+		return LOINC_NUM_PREFIX + correlationId;
+	}
+	
+	public static String buildLoincNumTerm(String loincNum) {
+		return LOINC_NUM_PREFIX + loincNum;
+	}
+	
 	public static Description getLoincNumDescription(Concept c) throws TermServerScriptException {
 		return getDescription(c, LOINC_NUM_PREFIX); 
 	}
@@ -53,4 +61,5 @@ public class LoincUtils implements RF2Constants {
 				.collect(Collectors.toList())
 				);
 	}
+	
 }
