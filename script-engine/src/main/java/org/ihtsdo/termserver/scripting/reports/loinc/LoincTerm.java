@@ -297,17 +297,17 @@ public class LoincTerm {
 		LoincTerm loincTerm = new LoincTerm();
 		loincTerm.setLoincNum(items[0]);
 		loincTerm.setComponent(items[1]);
-		//loincTerm.setProperty(items[2]);
-		//loincTerm.setTimeAspct(items[3]);
-		//loincTerm.setSystem(items[4]);
-		//loincTerm.setScaleType(items[5]);
-		//loincTerm.setMethodType(items[6]);
-		//loincTerm.setLoincClass(items[7]);
-		//loincTerm.setVersionLastChanged(items[8]);
-		//loincTerm.setChngType(items[9]);
+		loincTerm.setProperty(items[2]);
+		loincTerm.setTimeAspct(items[3]);
+		loincTerm.setSystem(items[4]);
+		loincTerm.setScaleType(items[5]);
+		loincTerm.setMethodType(items[6]);
+		loincTerm.setLoincClass(items[7]);
+		loincTerm.setVersionLastChanged(items[8]);
+		loincTerm.setChngType(items[9]);
 		//loincTerm.setDefinitionDescription(items[10]);
-		//loincTerm.setStatus(items[11]);
-		//loincTerm.setClassType(items[12]);
+		loincTerm.setStatus(items[11]);
+		loincTerm.setClassType(items[12]);
 		//loincTerm.setConsumerName(items[13]);
 		//loincTerm.setFormula(items[14]);
 		//loincTerm.setExmplAnswers(items[15]);
@@ -322,15 +322,15 @@ public class LoincTerm {
 		//loincTerm.setExampleUnits(items[24]);
 		loincTerm.setLongCommonName(items[25]);
 		//loincTerm.setExampleUCUMUnits(items[26]);
-		//loincTerm.setStatusReason(items[27]);
-		//loincTerm.setStatusText(items[28]);
+		loincTerm.setStatusReason(items[27]);
+		loincTerm.setStatusText(items[28]);
 		//loincTerm.setChangeReasonPublic(items[29]);
-		//loincTerm.setCommonTestRank(items[30]);
-		//loincTerm.setCommonOrderRank(items[31]);
-		//loincTerm.setCommonSItestRank(items[32]);
+		loincTerm.setCommonTestRank(items[30]);
+		loincTerm.setCommonOrderRank(items[31]);
+		loincTerm.setCommonSItestRank(items[32]);
 		//loincTerm.setHl7AttachmentStructure(items[33]);
 		//loincTerm.setExternalCopyrightLink(items[34]);
-		//loincTerm.setPanelType(items[35]);
+		loincTerm.setPanelType(items[35]);
 		//loincTerm.setAskatOrderEntry(items[36]);
 		//loincTerm.setAssociatedObservations(items[37]);
 		//loincTerm.setVersionFirstReleased(items[38]);
@@ -339,4 +339,27 @@ public class LoincTerm {
 		return loincTerm;
 	}
 	
+	public String[] getCommonColumns() {
+		return new String[] {
+				getComponent(),
+				getProperty(),
+				getTimeAspct(),
+				getSystem(),
+				getScaleType(),
+				getMethodType(),
+				getLoincClass(),
+				getClassType(),
+				getVersionLastChanged(),
+				getChngType(),
+				getStatus(),
+				getStatusReason(),
+				getStatusText(),
+				getOrderObs(),
+				getLongCommonName(),
+				getCommonTestRank(),
+				getCommonOrderRank(),
+				getCommonSItestRank(),
+				getPanelType()
+		};
+	}
 }
