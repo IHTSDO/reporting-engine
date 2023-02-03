@@ -114,9 +114,22 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
-		//importIntoTask(successfullyModelled);
+		importIntoTask(successfullyModelled);
+		generateAlternateIdentifierFile(successfullyModelled);
 	}
 	
+	private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {
+		for (LoincTemplatedConcept ltc : ltcs) {
+			report(SENARY_REPORT,
+					ltc.getLoincNum(),
+					today,
+					"1",
+					LOINC_MODULE_ID,
+					SCTID_LOINC_CODE_SYSTEM,
+					ltc.getConcept().getId());
+		}
+	}
+
 	private void determineExistingConcepts() throws TermServerScriptException {
 		try {
 			info ("Loading " + getInputFile(FILE_IDX_LOINC_100));
@@ -185,13 +198,6 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 								} else {
 									successfullyModelledConcepts.add(templatedConcept);
 									doProposedModelComparison(lastLoincNum, templatedConcept);
-									report(SENARY_REPORT,
-										lastLoincNum,
-										today,
-										"1",
-										LOINC_MODULE_ID,
-										SCTID_LOINC_CODE_SYSTEM,
-										UUID.randomUUID());
 								}
 							}
 							lastLoincNum = loincNum;
@@ -340,10 +346,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	
 	private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		//TODO Move this class to be a BatchFix so we don't need a plug in class
-		Set<Concept> concepts = successfullyModelled.stream()
-				.map(l -> l.getConcept())
-				.collect(Collectors.toSet());
-		CreateConceptsPreModelled batchProcess = new CreateConceptsPreModelled(getReportManager(), QUINARY_REPORT, concepts);
+		CreateConceptsPreModelled batchProcess = new CreateConceptsPreModelled(getReportManager(), QUINARY_REPORT, successfullyModelled);
 		batchProcess.setProject(new Project("LE","MAIN/SNOMEDCT-LOINCEXT/LE"));
 		BatchFix.headlessEnvironment = NOT_SET;  //Avoid asking any more questions to the user
 		batchProcess.setServerUrl(getServerUrl());
