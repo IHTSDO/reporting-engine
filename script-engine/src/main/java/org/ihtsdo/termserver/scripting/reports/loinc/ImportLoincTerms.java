@@ -26,7 +26,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class ImportLoincTerms extends TermServerScript implements LoincConstants {
 	
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	
+	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType,";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
 	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2017.tsv"  
 	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
@@ -62,7 +62,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	
 	public void postInit() throws TermServerScriptException {
 		String[] tabNames = new String[] {
-				"Pre-Existing Concepts",
+				"Top 100",
 				"Part Mapping Detail",
 				"RF2 Part Map Notes",
 				"Modeling Notes",
@@ -70,7 +70,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 				"RF2 Identifier File",
 				"Import Status" };
 		String[] columnHeadings = new String[] {
-				"LoincNum, LongCommonName, Concept, PT, Correlation, Expression, , , ,",
+				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
@@ -114,7 +114,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
-		importIntoTask(successfullyModelled);
+		//importIntoTask(successfullyModelled);
 	}
 	
 	private void determineExistingConcepts() throws TermServerScriptException {
@@ -137,9 +137,9 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 									loincNum,
 									longCommonName,
 									loincConcept, 
-									loincConcept.getPreferredSynonym(),
 									LoincUtils.getCorrelation(loincConcept),
-									loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+									loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP),
+									loincTerm.getCommonColumns());
 						} else {
 							report(PRIMARY_REPORT,
 									loincNum,
