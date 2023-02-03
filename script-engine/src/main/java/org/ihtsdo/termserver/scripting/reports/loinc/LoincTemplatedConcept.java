@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public abstract class LoincTemplatedConcept implements ScriptConstants {
+public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper {
 	
 	private static final String semTag = " (observable entity)";
 	private static Set<String> partNumsMapped = new HashSet<>();
@@ -260,9 +260,21 @@ public abstract class LoincTemplatedConcept implements ScriptConstants {
 		//throw new TermServerScriptException("Unable to determine template for " + loincNum);
 		return LoincTemplatedConceptWithDefaultMap.create(loincNum);
 	}
+	
+	public void setConcept(Concept c) {
+		this.concept = c;
+	}
 
 	public Concept getConcept() {
 		return concept;
+	}
+	
+	public String getLoincNum() {
+		return loincNum;
+	}
+	
+	public String getWrappedId() {
+		return loincNum;
 	}
 
 	public static void reportStats() throws TermServerScriptException {

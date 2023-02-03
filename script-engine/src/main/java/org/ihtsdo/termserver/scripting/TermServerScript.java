@@ -818,6 +818,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				ConceptType conceptType = c.getConceptType();
 				Concept createdConcept = attemptConceptCreation(t, c, info, validate);
 				createdConcept.setConceptType(conceptType);
+				//Populate the new SCTID into our original object, so the task can properly update the task description
+				c.setId(createdConcept.getId());
 				return createdConcept;
 			} catch (Exception e) {
 				attempt++;

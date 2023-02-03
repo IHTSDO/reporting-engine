@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 
