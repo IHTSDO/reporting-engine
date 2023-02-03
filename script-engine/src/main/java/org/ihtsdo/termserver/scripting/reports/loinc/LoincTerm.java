@@ -362,4 +362,14 @@ public class LoincTerm {
 				getPanelType()
 		};
 	}
+	public String getColonizedTerm() {
+		String term = getComponent() + ":" + getProperty() + ":" +
+				getTimeAspct() + ":" + getSystem() + ":" + getScaleType() + ":" +
+				getMethodType();
+		term = term.replaceAll("::", ":");
+		if (term.endsWith(":")) {
+			term = term.substring(0, term.length() - 1);
+		}
+		return term;
+	}
 }

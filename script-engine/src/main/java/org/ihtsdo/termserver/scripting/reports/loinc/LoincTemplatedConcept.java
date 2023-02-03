@@ -106,6 +106,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		//Override the case significance for these
 		lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		
+		//Add in the traditional colon form that we've previously used as the FSN
+		String colonStr = loincNumToLoincTermMap.get(loincNum).getColonizedTerm();
+		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		
 		//And the LoncNum itself, until we have the Identifier File available to use
 		String lnStr = LoincUtils.buildLoincNumTerm(loincNum);
 		Description ln = Description.withDefaults(lnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
@@ -114,6 +119,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		concept.addDescription(fsn);
 		concept.addDescription(lcn);
 		concept.addDescription(ln);
+		concept.addDescription(colonDesc);
 	}
 
 	private String applyTermTweaking(RelationshipTemplate rt, String term) {
