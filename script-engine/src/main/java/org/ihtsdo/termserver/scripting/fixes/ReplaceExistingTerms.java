@@ -21,6 +21,11 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 	static final String replace =  "stadium";
 	boolean retainPtAsAcceptable = false;
 	
+	private static Set<String> exclusions = new HashSet<>(); 
+	static {
+		exclusions.add("1222594003");
+	}
+	
 	protected ReplaceExistingTerms(BatchFix clone) {
 		super(clone);
 	}
@@ -74,6 +79,9 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 		descTypes.add(DescriptionType.SYNONYM);
 		info("Identifying concepts to process");
 		for (Concept c : allPotential) {
+			if (exclusions.contains(c.getId())) {
+				continue;
+			}
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE, descTypes)) {
 				if (inScope(d) && /*d.isPreferred() &&*/ d.getTerm().contains(match)
 						/*d.getTerm().startsWith(match)*/) {
