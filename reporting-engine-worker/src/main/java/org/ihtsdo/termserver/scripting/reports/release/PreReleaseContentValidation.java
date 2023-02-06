@@ -26,14 +26,20 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
+		params.put(MODULES, "45991000052106");
 		TermServerReport.run(PreReleaseContentValidation.class, args, params);
 	}
 
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
+				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
@@ -65,6 +71,54 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
+	}
+	
+	@Override
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+		//If we're working with zip packages, we'll use the HistoricDataGenerator
+		//Otherwise we'll use the default behaviour
+		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
+		if (prevRelease == null) {
+			super.doDefaultProjectSnapshotLoad(fsnOnly);
+		} else {
+			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
+			
+			if (StringUtils.isEmpty(prevDependency)) {
+				prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
+				if (StringUtils.isEmpty(prevDependency)) {
+					throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
+				}
+			}
+			
+			setDependencyArchive(prevDependency);
+			
+			thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
+			if (StringUtils.isEmpty(thisDependency)) {
+				thisDependency = getProject().getMetadata().getDependencyPackage();
+			}
+			
+			if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_DEPENDENCY)) 
+					&& StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
+				throw new TermServerScriptException("Module filter must be specified when working with published archives");
+			}
+			
+			if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
+				String defaultModule = project.getMetadata().getDefaultModuleId();
+				if (StringUtils.isEmpty(defaultModule)) {
+					throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
+				}
+				moduleFilter = Collections.singletonList(defaultModule);
+			}
+			
+			super.loadProjectSnapshot(fsnOnly);
+		}
+	}
+
+	@Override
+	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+		info("Setting dependency archive: " + thisDependency);
+		setDependencyArchive(thisDependency);
+		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
 
 	public void postInit() throws TermServerScriptException {
