@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
+import org.apache.commons.csv.CSVRecord;
+
 public class LoincTerm {
 
 	private String loincNum;
@@ -336,6 +338,52 @@ public class LoincTerm {
 		//loincTerm.setVersionFirstReleased(items[38]);
 		//loincTerm.setValidHL7AttachmentRequest(items[39]);
 		loincTerm.setDisplayName(items[40]);
+		return loincTerm;
+	}
+	
+	public static LoincTerm parse(CSVRecord csv) {
+		LoincTerm loincTerm = new LoincTerm();
+		loincTerm.setLoincNum(csv.get(0));
+		loincTerm.setComponent(csv.get(1));
+		loincTerm.setProperty(csv.get(2));
+		loincTerm.setTimeAspct(csv.get(3));
+		loincTerm.setSystem(csv.get(4));
+		loincTerm.setScaleType(csv.get(5));
+		loincTerm.setMethodType(csv.get(6));
+		loincTerm.setLoincClass(csv.get(7));
+		loincTerm.setVersionLastChanged(csv.get(8));
+		loincTerm.setChngType(csv.get(9));
+		//loincTerm.setDefinitionDescription(csv.get(10));
+		loincTerm.setStatus(csv.get(11));
+		loincTerm.setClassType(csv.get(12));
+		//loincTerm.setConsumerName(csv.get(13));
+		//loincTerm.setFormula(csv.get(14));
+		//loincTerm.setExmplAnswers(csv.get(15));
+		//loincTerm.setSurveyQuestText(csv.get(16));
+		//loincTerm.setSurveyQuestSrc(csv.get(17));
+		//loincTerm.setUnitsRequired(csv.get(18));
+		//loincTerm.setRelatedNames2(csv.get(19));
+		//loincTerm.setShortName(csv.get(20));
+		loincTerm.setOrderObs(csv.get(21));
+		//loincTerm.setHl7FieldSubfieldId(csv.get(22));
+		//loincTerm.setExternalCopyrightNotice(csv.get(23));
+		//loincTerm.setExampleUnits(csv.get(24));
+		loincTerm.setLongCommonName(csv.get(25));
+		//loincTerm.setExampleUCUMUnits(csv.get(26));
+		loincTerm.setStatusReason(csv.get(27));
+		loincTerm.setStatusText(csv.get(28));
+		//loincTerm.setChangeReasonPublic(csv.get(29));
+		loincTerm.setCommonTestRank(csv.get(30));
+		loincTerm.setCommonOrderRank(csv.get(31));
+		loincTerm.setCommonSItestRank(csv.get(32));
+		//loincTerm.setHl7AttachmentStructure(csv.get(33));
+		//loincTerm.setExternalCopyrightLink(csv.get(34));
+		loincTerm.setPanelType(csv.get(35));
+		//loincTerm.setAskatOrderEntry(csv.get(36));
+		//loincTerm.setAssociatedObservations(csv.get(37));
+		//loincTerm.setVersionFirstReleased(csv.get(38));
+		//loincTerm.setValidHL7AttachmentRequest(csv.get(39));
+		loincTerm.setDisplayName(csv.get(40));
 		return loincTerm;
 	}
 	

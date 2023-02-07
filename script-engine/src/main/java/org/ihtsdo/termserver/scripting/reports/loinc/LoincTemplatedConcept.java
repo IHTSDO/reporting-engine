@@ -20,7 +20,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	private static int mapped = 0;
 	private static int unmapped = 0;
 	private static int skipped = 0;
-	
+	private static int MAPPING_DETAIL_TAB = TERTIARY_REPORT;
 	private static int conceptsModelled = 0;
 	
 	protected static TermServerScript ts;
@@ -186,10 +186,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				continue;
 			}
 			loincPartsSeen.add(loincPart);
-			RelationshipTemplate rt = getAttributeForLoincPart(SECONDARY_REPORT, loincPart);
+			RelationshipTemplate rt = getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincPart);
 			if (rt != null) {
 				mapped++;
-				ts.report(SECONDARY_REPORT,
+				ts.report(MAPPING_DETAIL_TAB,
 					loincNum,
 					loincPart.getPartNumber(),
 					"Mapped OK",
@@ -200,7 +200,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			} else {
 				unmapped++;
 				String issue = "Not Mapped - " + loincPart.getPartTypeName() + " | " + loincPart.getPartNumber() + "| " + loincPart.getPartName();
-				ts.report(SECONDARY_REPORT,
+				ts.report(MAPPING_DETAIL_TAB,
 					loincNum,
 					loincPart.getPartNumber(),
 					issue,
@@ -284,11 +284,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 
 	public static void reportStats() throws TermServerScriptException {
-		ts.report(SECONDARY_REPORT, "");
-		ts.report(SECONDARY_REPORT, "Parts mapped", mapped);
-		ts.report(SECONDARY_REPORT, "Parts unmapped", unmapped);
-		ts.report(SECONDARY_REPORT, "Parts skipped", skipped);
-		ts.report(SECONDARY_REPORT, "Unique PartNums mapped", partNumsMapped.size());
-		ts.report(SECONDARY_REPORT, "Unique PartNums unmapped", partNumsUnmapped.size());
+		ts.report(MAPPING_DETAIL_TAB, "");
+		ts.report(MAPPING_DETAIL_TAB, "Parts mapped", mapped);
+		ts.report(MAPPING_DETAIL_TAB, "Parts unmapped", unmapped);
+		ts.report(MAPPING_DETAIL_TAB, "Parts skipped", skipped);
+		ts.report(MAPPING_DETAIL_TAB, "Unique PartNums mapped", partNumsMapped.size());
+		ts.report(MAPPING_DETAIL_TAB, "Unique PartNums unmapped", partNumsUnmapped.size());
 	}
 }
