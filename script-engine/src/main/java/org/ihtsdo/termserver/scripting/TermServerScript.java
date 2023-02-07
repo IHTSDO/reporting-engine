@@ -50,7 +50,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int processingLimit = NOT_SET;
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
-	protected List<File> inputFiles = new ArrayList<File>(Collections.nCopies(4, (File) null));
+	protected List<File> inputFiles = new ArrayList<File>(Collections.nCopies(10, (File) null));
 	private String dependencyArchive;
 	protected String projectName;
 	private String reportName;
@@ -175,28 +175,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				if (!dryRun) {
 					this.runStandAlone = false;
 				}
-			} else if (thisArg.equals("-f")) {
-				//TODO Put this into a loop where we pull out the idx
-				inputFiles.add(0, new File(args[x+1]));
+			} else if (thisArg.startsWith("-f")) {
+				int fileIdx = 0;
+				if (thisArg.length() > 2) {
+					fileIdx = Integer.parseInt(thisArg.substring(2));
+					fileIdx--;  //f2 will actually have index 1
+				}
+				inputFiles.add(fileIdx, new File(args[x+1]));
 				if (!getInputFile().canRead()) {
 					throw new TermServerScriptException ("Unable to read input file " + args[x+1]);
 				}
 				info ("Reading data from " + getInputFile().getAbsolutePath());
-			} else if (thisArg.equals("-f2")) {
-				inputFiles.add(1, new File(args[x+1]));
-				if (!getInputFile(1).canRead()) {
-					throw new TermServerScriptException ("Unable to read input file 2 " + args[x+1]);
-				}
-			} else if (thisArg.equals("-f3")) {
-				inputFiles.add(2, new File(args[x+1]));
-				if (!getInputFile(2).canRead()) {
-					throw new TermServerScriptException ("Unable to read input file 3 " + args[x+1]);
-				}
-			} else if (thisArg.equals("-f4")) {
-				inputFiles.add(3, new File(args[x+1]));
-				if (!getInputFile(3).canRead()) {
-					throw new TermServerScriptException ("Unable to read input file 4 " + args[x+1]);
-				}
 			} else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
