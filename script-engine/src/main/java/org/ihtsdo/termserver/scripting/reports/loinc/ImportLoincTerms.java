@@ -8,10 +8,13 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -26,15 +29,38 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class ImportLoincTerms extends TermServerScript implements LoincConstants {
 	
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType,";
+	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
 	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2017.tsv"  
 	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
+	//-f5 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
 	private int FILE_IDX_LOINC_100 = 0;
 	private int FILE_IDX_LOINC_100_PARTS_MAP = 1;
 	private int FILE_IDX_LOINC_100_Primary = 2;
 	private int FILE_IDX_LOINC_PARTS = 3;
+	private int FILE_IDX_LOINC_FULL = 4;
+	
+	private static final String TAB_TOP_100 = "Top 100";
+	private static final String TAB_TOP_2K = "Top 2K";
+	private static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
+	private static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
+	private static final String TAB_MODELING_NOTES = "Modeling Notes";
+	private static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
+	private static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
+	private static final String TAB_IMPORT_STATUS = "Import Status";
+	
+	private int additionalThreadCount = 0;
+	
+	private static String[] tabNames = new String[] {
+			TAB_TOP_100,
+			TAB_TOP_2K,
+			TAB_PART_MAPPING_DETAIL,
+			TAB_RF2_PART_MAP_NOTES,
+			TAB_MODELING_NOTES,
+			TAB_PROPOSED_MODEL_COMPARISON,
+			TAB_RF2_IDENTIFIER_FILE,
+			TAB_IMPORT_STATUS };
 	
 	private static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
 	private static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
@@ -59,17 +85,19 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			report.finish();
 		}
 	}
-	
+
+	private int getTab(String tabName) throws TermServerScriptException {
+		for (int i = 0; i < tabNames.length; i++) {
+			if (tabNames[i].equals(tabName)) {
+				return i;
+			}
+		}
+		throw new TermServerScriptException("Tab '" + tabName + "' not recognised");
+	}
+
 	public void postInit() throws TermServerScriptException {
-		String[] tabNames = new String[] {
-				"Top 100",
-				"Part Mapping Detail",
-				"RF2 Part Map Notes",
-				"Modeling Notes",
-				"Proposed Model Comparison",
-				"RF2 Identifier File",
-				"Import Status" };
 		String[] columnHeadings = new String[] {
+				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
 				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
@@ -106,21 +134,27 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		categorizationMap.put("Subset", gl.registerConcept("10121010000104 |Subset of panel concept categorization status (qualifier value)|"));
 	}
 
-	private void runReport() throws TermServerScriptException {
+	private void runReport() throws TermServerScriptException, InterruptedException {
+		ExecutorService executor = Executors.newCachedThreadPool();
 		populateLoincNumMap();
 		loadLoincParts();
+		//We can look at the full LOINC file in parallel
+		executor.execute(() -> loadFullLoincFile());
 		populatePartAttributeMap();
 		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap);
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
-		importIntoTask(successfullyModelled);
-		generateAlternateIdentifierFile(successfullyModelled);
+		//importIntoTask(successfullyModelled);
+		//generateAlternateIdentifierFile(successfullyModelled);
+		while (additionalThreadCount > 0) {
+			Thread.sleep(1000);
+		}
 	}
 	
 	private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {
 		for (LoincTemplatedConcept ltc : ltcs) {
-			report(SENARY_REPORT,
+			report(getTab(TAB_RF2_IDENTIFIER_FILE),
 					ltc.getLoincNum(),
 					today,
 					"1",
@@ -139,26 +173,9 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 				while ((line = br.readLine()) != null) {
 					if (!isFirstLine) {
 						String[] items = line.split("\t");
-						String loincNum = items[0];
-						String longCommonName = items[25];
 						LoincTerm loincTerm = LoincTerm.parse(items);
-						loincNumToLoincTermMap.put(loincNum, loincTerm);
-						//Do we have this loincNum
-						Concept loincConcept = loincNumToSnomedConceptMap.get(loincNum);
-						if (loincConcept != null) {
-							report(PRIMARY_REPORT,
-									loincNum,
-									longCommonName,
-									loincConcept, 
-									LoincUtils.getCorrelation(loincConcept),
-									loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP),
-									loincTerm.getCommonColumns());
-						} else {
-							report(PRIMARY_REPORT,
-									loincNum,
-									longCommonName,
-									"Not Modelled");
-						}
+						loincNumToLoincTermMap.put(loincTerm.getLoincNum(), loincTerm);
+						checkForExistingModelling(loincTerm, getTab(TAB_TOP_100));
 					} else isFirstLine = false;
 				}
 			}
@@ -167,6 +184,30 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		}
 	}
 	
+	private boolean checkForExistingModelling(LoincTerm loincTerm, int reportTab) throws TermServerScriptException {
+		//Do we have this loincNum
+		Concept loincConcept = loincNumToSnomedConceptMap.get(loincTerm.getLoincNum());
+		if (loincConcept != null) {
+			report(reportTab,
+					loincTerm.getLoincNum(),
+					loincTerm.getLongCommonName(),
+					loincConcept, 
+					LoincUtils.getCorrelation(loincConcept),
+					loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP),
+					loincTerm.getCommonColumns());
+			return true;
+		} else {
+			report(reportTab,
+					loincTerm.getLoincNum(),
+					loincTerm.getLongCommonName(),
+					"Not Modelled",
+					"",
+					"",
+					loincTerm.getCommonColumns());
+			return false;
+		}
+	}
+
 	private Set<LoincTemplatedConcept> doModeling() throws TermServerScriptException {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		try {
@@ -191,7 +232,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 								LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(lastLoincNum, loincParts);
 								populateCategorization(loincNum, templatedConcept.getConcept());
 								if (templatedConcept.getConcept().hasIssues()) {
-									report(QUATERNARY_REPORT,
+									report(getTab(TAB_MODELING_NOTES),
 										lastLoincNum,
 										loincNumToLoincTermMap.get(lastLoincNum).getDisplayName(),
 										templatedConcept.getConcept().getIssues());
@@ -239,7 +280,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
 				.map(d -> d.toString())
 				.collect(Collectors.joining(",\n"));
-		report(QUINARY_REPORT, loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff);
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff);
 	}
 
 	private void populateLoincNumMap() throws TermServerScriptException {
@@ -276,12 +317,12 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 							Concept replacementType = knownReplacementMap.get(attributeType);
 							if (replacementType == null) {
 								hardCodedIndicator = "";
-								replacementType = getReplacementSafely(TERTIARY_REPORT, partNum, attributeType, false);
+								replacementType = getReplacementSafely(getTab(TAB_RF2_PART_MAP_NOTES), partNum, attributeType, false);
 							} 
 							String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
 							if (replacementType == null) unsuccessfullTypeReplacement++; 
 								else successfullTypeReplacement++;
-							report(TERTIARY_REPORT, partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
+							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
 							if (replacementType != null) {
 								attributeType = replacementType;
 							}
@@ -291,7 +332,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 							Concept replacementValue = knownReplacementMap.get(attributeValue);
 							if (replacementValue == null) {
 								hardCodedIndicator = "";
-								replacementValue = getReplacementSafely(TERTIARY_REPORT, partNum, attributeValue, false);
+								replacementValue = getReplacementSafely(getTab(TAB_RF2_PART_MAP_NOTES), partNum, attributeValue, false);
 							}
 							String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
 							if (replacementValue == null) unsuccessfullValueReplacement++; 
@@ -300,7 +341,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 							LoincPart part = loincParts.get(partNum);
 							String partName = part == null ? "Unlisted" : part.getPartName();
 							String partStatus = part == null ? "Unlisted" : part.getStatus().name();
-							report(TERTIARY_REPORT, partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
+							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
 							if (replacementValue != null) {
 								attributeValue = replacementValue;
 							}
@@ -311,11 +352,11 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 				}
 			}
 			info("Populated map of " + loincPartAttributeMap.size() + " LOINC parts to attributes");
-			report(TERTIARY_REPORT, "");
-			report(TERTIARY_REPORT, "successfullTypeReplacement",successfullTypeReplacement);
-			report(TERTIARY_REPORT, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
-			report(TERTIARY_REPORT, "successfullValueReplacement",successfullValueReplacement);
-			report(TERTIARY_REPORT, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
+			report(getTab(TAB_RF2_PART_MAP_NOTES), "");
+			report(getTab(TAB_RF2_PART_MAP_NOTES), "successfullTypeReplacement",successfullTypeReplacement);
+			report(getTab(TAB_RF2_PART_MAP_NOTES), "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
+			report(getTab(TAB_RF2_PART_MAP_NOTES), "successfullValueReplacement",successfullValueReplacement);
+			report(getTab(TAB_RF2_PART_MAP_NOTES), "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
 
 		} catch (Exception e) {
 			throw new TermServerScriptException("At line " + lineNum, e);
@@ -344,9 +385,43 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		}
 	}
 	
+	private void loadFullLoincFile() {
+		additionalThreadCount++;
+		info ("Loading Full Loinc: " + getInputFile(FILE_IDX_LOINC_FULL));
+		try {
+			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_FULL)));
+			//withSkipHeaderRecord() is apparently ignored when using iterator
+			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
+			CSVRecord header = iterator.next();
+			int existingConceptCount = 0;
+			int notExistingConceptCount = 0;
+			while (iterator.hasNext()) {
+				CSVRecord thisLine = iterator.next();
+				LoincTerm loincTerm = LoincTerm.parse(thisLine);
+				//Is this term one of the top 20K?
+				String testRank = loincTerm.getCommonTestRank();
+				if (!StringUtils.isEmpty(testRank) && !testRank.equals("0")) {
+					if (checkForExistingModelling(loincTerm, getTab(TAB_TOP_2K))) {
+						existingConceptCount++;
+					} else {
+						notExistingConceptCount++;
+					}
+				}
+			}
+			report(getTab(TAB_TOP_2K),"");
+			report(getTab(TAB_TOP_2K),"Summary:");
+			report(getTab(TAB_TOP_2K),"Already exists", existingConceptCount);
+			report(getTab(TAB_TOP_2K),"Does not exist", notExistingConceptCount);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_FULL), e);
+		} finally {
+			additionalThreadCount--;
+		}
+	}
+	
 	private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		//TODO Move this class to be a BatchFix so we don't need a plug in class
-		CreateConceptsPreModelled batchProcess = new CreateConceptsPreModelled(getReportManager(), QUINARY_REPORT, successfullyModelled);
+		CreateConceptsPreModelled batchProcess = new CreateConceptsPreModelled(getReportManager(), getTab(TAB_IMPORT_STATUS), successfullyModelled);
 		batchProcess.setProject(new Project("LE","MAIN/SNOMEDCT-LOINCEXT/LE"));
 		BatchFix.headlessEnvironment = NOT_SET;  //Avoid asking any more questions to the user
 		batchProcess.setServerUrl(getServerUrl());
