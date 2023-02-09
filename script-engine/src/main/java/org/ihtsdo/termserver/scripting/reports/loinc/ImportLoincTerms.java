@@ -102,7 +102,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
-				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference",
+				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId",
 				"TaskId, LoincNum, Expression, Status"
 		};
@@ -229,17 +229,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 						//which is now assumed to be complete.
 						if (!lastLoincNum.equals(loincNum)) {
 							if (!lastLoincNum.isEmpty()) {
-								LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(lastLoincNum, loincParts);
-								populateCategorization(loincNum, templatedConcept.getConcept());
-								if (templatedConcept.getConcept().hasIssues()) {
-									report(getTab(TAB_MODELING_NOTES),
-										lastLoincNum,
-										loincNumToLoincTermMap.get(lastLoincNum).getDisplayName(),
-										templatedConcept.getConcept().getIssues());
-								} else {
-									successfullyModelledConcepts.add(templatedConcept);
-									doProposedModelComparison(lastLoincNum, templatedConcept);
-								}
+								processCollectedPartLines(lastLoincNum, loincParts, successfullyModelledConcepts);
 							}
 							lastLoincNum = loincNum;
 							loincParts.clear();
@@ -247,6 +237,8 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 						loincParts.add(new LoincPart(partNum, partTypeName, partName));
 					} else isFirstLine = false;
 				}
+				//And mop up the final set of parts
+				processCollectedPartLines(lastLoincNum, loincParts, successfullyModelledConcepts);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -254,6 +246,24 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		return successfullyModelledConcepts;
 	}
 	
+	private void processCollectedPartLines(String loincNum, ArrayList<LoincPart> loincParts, Set<LoincTemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
+		/*if (loincNum.equals("32713-0")) {
+			debug("here");
+		}*/
+		
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
+		populateCategorization(loincNum, templatedConcept.getConcept());
+		if (templatedConcept.getConcept().hasIssues()) {
+			report(getTab(TAB_MODELING_NOTES),
+					loincNum,
+					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+					templatedConcept.getConcept().getIssues());
+		} else {
+			successfullyModelledConcepts.add(templatedConcept);
+			doProposedModelComparison(loincNum, templatedConcept);
+		}
+	}
+
 	private void populateCategorization(String loincNum, Concept concept) {
 		//Do we have the full set of properties for this loincTerm?
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
@@ -267,6 +277,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		//Do we have this loincNum
 		Concept existingLoincConcept = loincNumToSnomedConceptMap.get(loincNum);
 		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
+		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 		
 		String existingSCG = "N/A";
 		String modelDiff = "";
@@ -280,7 +291,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
 				.map(d -> d.toString())
 				.collect(Collectors.joining(",\n"));
-		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff);
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
 	}
 
 	private void populateLoincNumMap() throws TermServerScriptException {
