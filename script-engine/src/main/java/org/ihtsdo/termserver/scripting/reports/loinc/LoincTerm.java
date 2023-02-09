@@ -309,8 +309,8 @@ public class LoincTerm {
 		loincTerm.setChngType(items[9]);
 		//loincTerm.setDefinitionDescription(items[10]);
 		loincTerm.setStatus(items[11]);
-		loincTerm.setClassType(items[12]);
-		//loincTerm.setConsumerName(items[13]);
+		//loincTerm.setConsumerName(items[12]);
+		loincTerm.setClassType(items[13]);
 		//loincTerm.setFormula(items[14]);
 		//loincTerm.setExmplAnswers(items[15]);
 		//loincTerm.setSurveyQuestText(items[16]);
@@ -355,8 +355,8 @@ public class LoincTerm {
 		loincTerm.setChngType(csv.get(9));
 		//loincTerm.setDefinitionDescription(csv.get(10));
 		loincTerm.setStatus(csv.get(11));
-		loincTerm.setClassType(csv.get(12));
-		//loincTerm.setConsumerName(csv.get(13));
+		//loincTerm.setConsumerName(csv.get(12));
+		loincTerm.setClassType(csv.get(13));
 		//loincTerm.setFormula(csv.get(14));
 		//loincTerm.setExmplAnswers(csv.get(15));
 		//loincTerm.setSurveyQuestText(csv.get(16));
