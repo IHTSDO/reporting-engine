@@ -202,7 +202,7 @@ public class InactivateLOINC extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			if (c.getModuleId().equals(SCTID_LOINC_MODULE)) {
+			if (c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE)) {
 				String loincNum = getLoincNumFromDescription(c);
 				String thisStatus = get(loincFileMap, loincNum, LoincCol.STATUS.ordinal());
 				if (thisStatus.equals(DISCOURAGED)) {

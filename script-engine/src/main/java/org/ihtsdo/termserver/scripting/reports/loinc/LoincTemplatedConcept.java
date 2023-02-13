@@ -175,7 +175,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	private void populateParts(List<LoincPart> loincParts) throws TermServerScriptException {
 		concept = Concept.withDefaults(Integer.toString((++conceptsModelled)));
-		concept.setModuleId(SCTID_LOINC_MODULE);
+		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 		Set<LoincPart> loincPartsSeen = new HashSet<>();

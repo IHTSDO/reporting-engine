@@ -37,7 +37,7 @@ public class RecentSpecimenChanges extends TermServerScript {
 			if (c.getModuleId() == null) {
 				warn ("Invalid concept loaded through reference? " + c.getId());
 			} else if (c.isActive() && 
-					c.getModuleId().equals(SCTID_LOINC_MODULE) &&
+					c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE) &&
 					hasRecentlyModifiedTargetAttribute(c)) {
 				report (c, 
 						c.getPreferredSynonym(),
