@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper {
+public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincConstants {
 	
 	private static final String semTag = " (observable entity)";
 	private static Set<String> partNumsMapped = new HashSet<>();
