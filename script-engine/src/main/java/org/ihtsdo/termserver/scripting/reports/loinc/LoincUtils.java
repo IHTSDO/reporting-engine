@@ -57,7 +57,7 @@ public class LoincUtils implements RF2Constants {
 		return SnomedUtils.sort(gl.getAllConcepts()
 				.stream()
 				.filter(c -> c.isActive())
-				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
+				.filter(c -> c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE))
 				.collect(Collectors.toList())
 				);
 	}

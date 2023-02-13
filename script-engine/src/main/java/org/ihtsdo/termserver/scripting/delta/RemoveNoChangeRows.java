@@ -103,7 +103,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
 				//Filter out LOINC rows
-				if (lineItems[IDX_MODULEID].equals(SCTID_LOINC_MODULE)) {
+				if (lineItems[IDX_MODULEID].equals(SCTID_LOINC_PROJECT_MODULE)) {
 					continue;
 				}
 				String[] output = processDeltaLine(componentType, lineItems);
