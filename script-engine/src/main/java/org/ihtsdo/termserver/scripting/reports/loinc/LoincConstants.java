@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.loinc;
 
 public interface LoincConstants {
 	
-	public String LOINC_MODULE_ID = "11010000107";
+	public String SCTID_LOINC_MODULE = "11010000107";
 	public String SCTID_LOINC_CODE_SYSTEM = "705113004";
 
 	public int IDX_LOINC_NUM = 0;

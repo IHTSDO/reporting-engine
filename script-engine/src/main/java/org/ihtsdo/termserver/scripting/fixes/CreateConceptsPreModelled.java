@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.loinc.ConceptWrapper;
-import org.ihtsdo.termserver.scripting.reports.loinc.LoincUtils;
 import org.snomed.otf.script.dao.ReportManager;
 
 /*
@@ -44,7 +43,7 @@ public class CreateConceptsPreModelled extends BatchFix implements ScriptConstan
 			c.setId(null);
 			Concept createdConcept = createConcept(t, c, info, false);
 			wrapping.setConcept(createdConcept);  //Save it so our calling function can retain this
-			report(tabIdx, t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, wrapping.getWrappedId(), scg);
+			report(tabIdx, t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, wrapping.getWrappedId(), scg, "OK");
 		} catch (Exception e) {
 			report(tabIdx, t, c, Severity.CRITICAL, ReportActionType.API_ERROR, wrapping.getWrappedId(), e.getMessage());
 		}
