@@ -42,7 +42,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	private int FILE_IDX_LOINC_FULL = 4;
 	
 	private static final String TAB_TOP_100 = "Top 100";
-	private static final String TAB_TOP_2K = "Top 2K";
+	private static final String TAB_TOP_20K = "Top 20K";
 	private static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
 	private static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
 	private static final String TAB_MODELING_NOTES = "Modeling Notes";
@@ -54,7 +54,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	
 	private static String[] tabNames = new String[] {
 			TAB_TOP_100,
-			TAB_TOP_2K,
+			TAB_TOP_20K,
 			TAB_PART_MAPPING_DETAIL,
 			TAB_RF2_PART_MAP_NOTES,
 			TAB_MODELING_NOTES,
@@ -104,7 +104,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId",
-				"TaskId, LoincNum, Expression, Status"
+				"TaskId, Concept, Severity, Action, LoincNum, Expression, Status, , "
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
@@ -145,8 +145,8 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
-		//importIntoTask(successfullyModelled);
-		//generateAlternateIdentifierFile(successfullyModelled);
+		importIntoTask(successfullyModelled);
+		generateAlternateIdentifierFile(successfullyModelled);
 		while (additionalThreadCount > 0) {
 			Thread.sleep(1000);
 		}
@@ -158,7 +158,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 					ltc.getLoincNum(),
 					today,
 					"1",
-					LOINC_MODULE_ID,
+					SCTID_LOINC_MODULE,
 					SCTID_LOINC_CODE_SYSTEM,
 					ltc.getConcept().getId());
 		}
@@ -412,17 +412,17 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 				//Is this term one of the top 20K?
 				String testRank = loincTerm.getCommonTestRank();
 				if (!StringUtils.isEmpty(testRank) && !testRank.equals("0")) {
-					if (checkForExistingModelling(loincTerm, getTab(TAB_TOP_2K))) {
+					if (checkForExistingModelling(loincTerm, getTab(TAB_TOP_20K))) {
 						existingConceptCount++;
 					} else {
 						notExistingConceptCount++;
 					}
 				}
 			}
-			report(getTab(TAB_TOP_2K),"");
-			report(getTab(TAB_TOP_2K),"Summary:");
-			report(getTab(TAB_TOP_2K),"Already exists", existingConceptCount);
-			report(getTab(TAB_TOP_2K),"Does not exist", notExistingConceptCount);
+			report(getTab(TAB_TOP_20K),"");
+			report(getTab(TAB_TOP_20K),"Summary:");
+			report(getTab(TAB_TOP_20K),"Already exists", existingConceptCount);
+			report(getTab(TAB_TOP_20K),"Does not exist", notExistingConceptCount);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_FULL), e);
 		} finally {
