@@ -35,7 +35,7 @@ public class LoincMatchingAttributes extends TermServerScript{
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
 			boolean attributeTypeDetected = false;
-			if (c.isActive() && c.getModuleId().equals(SCTID_LOINC_MODULE)) {
+			if (c.isActive() && c.getModuleId().equals(SCTID_LOINC_EXTENSION_MODULE)) {
 				//debug(c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (r.isActive() && r.getType().equals(targetType)) {
@@ -52,7 +52,7 @@ public class LoincMatchingAttributes extends TermServerScript{
 					report (c, "Does not feature " + targetType, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 					
 				}
-			} else if (c.getModuleId().equals(SCTID_LOINC_MODULE)) {
+			} else if (c.getModuleId().equals(SCTID_LOINC_EXTENSION_MODULE)) {
 				loincInactive++;
 			}
 		}

@@ -158,7 +158,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 					ltc.getLoincNum(),
 					today,
 					"1",
-					SCTID_LOINC_MODULE,
+					SCTID_LOINC_EXTENSION_MODULE,
 					SCTID_LOINC_CODE_SYSTEM,
 					ltc.getConcept().getId());
 		}

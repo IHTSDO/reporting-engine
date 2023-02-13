@@ -61,7 +61,7 @@ public class LOINCStats extends TermServerReport {
 
 	public void doReport() throws TermServerScriptException, ConversionException {
 		Map<String, Concept> currentContentMap =  gl.getAllConcepts().stream()
-				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
+				.filter(c -> c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE))
 				.collect(Collectors.toMap(c -> getLoincNumFromDescriptionSafely(c), c -> c));
 		
 		if (currentContentMap.containsKey(ERROR)) {
@@ -256,7 +256,7 @@ public class LOINCStats extends TermServerReport {
 
 	private void checkForInactiveLoincNumDescription(String loincNum, String issue) throws TermServerScriptException {
 		Concept foundInactiveDesc = gl.getAllConcepts().stream()
-				.filter(c -> c.getModuleId().equals(SCTID_LOINC_MODULE))
+				.filter(c -> c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE))
 				.filter(c -> getLoincNumFromInactiveDescription(c).equals(loincNum))
 				.findAny().orElseGet( () -> { return null; });
 		String extraDetail = foundInactiveDesc == null ? "" : "Found as inactive description on " + foundInactiveDesc;
