@@ -128,7 +128,7 @@ public class ValidateSubstanceList extends TermServerReport implements ReportCla
 			throw new TermServerScriptException ("Cannot read: " + inputFile);
 		}
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_16LE);
+			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_16LE);
 			boolean isHeader = true;
 			for (String line : lines) {
 				if (!isHeader) {
@@ -139,7 +139,7 @@ public class ValidateSubstanceList extends TermServerReport implements ReportCla
 				}
 			}
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to load " + inputFile, e);
+			throw new TermServerScriptException("Failed to load " + getInputFile(), e);
 		}
 	}
 	
