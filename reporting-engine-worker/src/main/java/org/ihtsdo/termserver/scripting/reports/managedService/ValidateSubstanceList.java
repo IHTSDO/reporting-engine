@@ -117,13 +117,13 @@ public class ValidateSubstanceList extends TermServerReport implements ReportCla
 	}
 
 	private void loadSubstanceList() throws TermServerScriptException {
-		inputFile = new File("G:\\My Drive\\005_Ad_hoc_queries\\045_SaudiArabia\\MOH Allergy Substance List Unicode.txt");
-		info("Loading " + inputFile);
-		if (!inputFile.canRead()) {
-			throw new TermServerScriptException ("Cannot read: " + inputFile);
+		setInputFile(0, new File("G:\\My Drive\\005_Ad_hoc_queries\\045_SaudiArabia\\MOH Allergy Substance List Unicode.txt"));
+		info("Loading " + getInputFile());
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_16LE);
+			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_16LE);
 			boolean isHeader = true;
 			for (String line : lines) {
 				if (!isHeader) {
@@ -134,7 +134,7 @@ public class ValidateSubstanceList extends TermServerReport implements ReportCla
 				}
 			}
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to load " + inputFile, e);
+			throw new TermServerScriptException("Failed to load " + getInputFile(), e);
 		}
 	}
 	
