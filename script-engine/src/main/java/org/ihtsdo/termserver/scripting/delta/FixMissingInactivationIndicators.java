@@ -43,7 +43,7 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getInactivationIndicator() == null) {
+					if (d.getInactivationIndicator() == null && inScope(d)) {
 						InactivationIndicatorEntry i = addConceptNotCurrentInactivationIndicator(c, d);
 						report (c, d, i);
 						outputRF2(d);
@@ -57,6 +57,7 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 	public InactivationIndicatorEntry addConceptNotCurrentInactivationIndicator(Concept c, Description d) throws TermServerScriptException, ValidationFailure {
 		InactivationIndicatorEntry cnc = InactivationIndicatorEntry.withDefaults(d);
 		cnc.setInactivationReasonId(SCTID_INACT_CONCEPT_NON_CURRENT);
+		cnc.setModuleId(d.getModuleId());
 		d.addInactivationIndicator(cnc);
 		return cnc;
 	}
