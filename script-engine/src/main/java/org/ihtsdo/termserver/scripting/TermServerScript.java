@@ -1602,6 +1602,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public File getInputFile(int idx) {
 		return inputFiles.get(idx);
 	}
+	
+	public void setInputFile(int idx, File file) {
+		inputFiles.set(idx, file);
+	}
 
 	public void setExclusions(String[] exclusions) throws TermServerScriptException {
 		this.excludeHierarchies = exclusions;
