@@ -156,8 +156,8 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 	}
 	
 	private void loadCommonFrenchRelease() throws IOException, TermServerScriptException {
-		info("Loading " + inputFile);
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
+		info("Loading " + getInputFile());
+		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
@@ -173,7 +173,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + inputFile);
+		info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {
