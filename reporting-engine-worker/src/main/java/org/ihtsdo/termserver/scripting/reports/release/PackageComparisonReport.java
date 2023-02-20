@@ -188,7 +188,8 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 				stream.filter(file -> !Files.isDirectory(file))
 						.map(Path::getFileName)
 						.map(Path::toString)
-						.filter(filename -> filename.matches("diff_.*(sct2|der2)_.*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt"))
+						.filter(filename -> filename.matches("diff_.*(sct2|der2)_.*(Snapshot).*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt"))
+						.sorted(String::compareToIgnoreCase)
 						.forEach(filename -> processFile(path, filename));
 			}
 
