@@ -26,7 +26,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-232 Redundant stated IS A
  * RP-231 Newly inactivatated duplicate created in prior release
  * RP-230 Existing sufficiently defined concepts that 
- * gained a stated intermediate primitive parent and lost active inferred descendant(s)
+ * gained a stated primitive parent and lost active inferred descendant(s)
  */
 public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	
@@ -280,7 +280,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		//RP-230 Existing sufficiently defined concepts that: 
 		//1. gained a stated intermediate primitive parent and 
 		//2. lost active inferred descendant(s)
-		String issueStr = "Pattern 11: Existing sufficiently defined concepts that gained a stated intermediate primitive parent and lost active inferred descendant(s)";
+		String issueStr = "Pattern 11: Existing sufficiently defined concepts that gained a stated primitive parent and lost active inferred descendant(s)";
 		initialiseSummary(issueStr);
 		
 		if (gl.getPreviousTC() == null) {
