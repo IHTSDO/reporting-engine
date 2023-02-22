@@ -178,6 +178,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else if (thisArg.startsWith("-f")) {
 				int fileIdx = 0;
 				if (thisArg.length() > 2) {
+					//If we don't have a number, skip this argument
+					if (!StringUtils.isNumeric(thisArg.substring(1))) {
+						continue;
+					}
 					fileIdx = Integer.parseInt(thisArg.substring(2));
 					fileIdx--;  //f2 will actually have index 1
 				}
