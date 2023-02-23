@@ -42,8 +42,8 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Lang, Term, Description",
-				"Id, FSN, SemTag, Lang, Term, Text Definition"};
+				"Id, FSN, SemTag, Lang, SCTID, Term, Description",
+				"Id, FSN, SemTag, Lang, SCTID, Term, Text Definition"};
 		String[] tabNames = new String[] {	
 				"Description", "Text Defn"};
 		super.postInit(tabNames, columnHeadings, false);
@@ -117,7 +117,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 				if (!d.isReleased() && inScope(d) && 
 						(unpromotedDescriptions == null || unpromotedDescriptions.contains(d))) {
 					int tabIdx = d.getType().equals(DescriptionType.TEXT_DEFINITION) ? SECONDARY_REPORT : PRIMARY_REPORT;
-					report(tabIdx, c, d.getLang(), d.getTerm(), d);
+					report(tabIdx, c, d.getLang(), d.getId(), d.getTerm(), d);
 					countIssue(c);
 				}
 			}
