@@ -39,7 +39,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 10;
+	private Integer conceptsPerArchive = 1000;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
