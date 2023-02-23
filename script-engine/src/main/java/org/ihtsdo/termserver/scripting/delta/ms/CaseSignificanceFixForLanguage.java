@@ -20,6 +20,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	private boolean expectFirstLetterCapitalization = false;
 	private String longDash = Character.toString((char)150);
 	private List<Component> knownEntireTermCaseSensitive;
+	private int skippedDueToNotStartingWithLetter = 0;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CaseSignificanceFixForLanguage delta = new CaseSignificanceFixForLanguage();
@@ -72,6 +73,9 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				}
 			}
 		}
+		
+		info("Processing Complete");
+		info("Skipped " + skippedDueToNotStartingWithLetter + " due to not starting with a letter");
 	}
 
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
@@ -82,17 +86,23 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	public int normalizeCaseSignificance(Concept c, boolean aggressive) throws TermServerScriptException {
 		int changesMade = 0;
 		if (exceptions.contains(c.getId())) {
-			report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "", "","","Concept manually listed as an exception");
+			report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "", "","","Concept manually listed as an exception");
 		} else {
 			for (Description d : c.getDescriptions(languageCode, ActiveState.ACTIVE)) {
+				char firstChar = d.getTerm().charAt(0);
+				//Decided to skip terms that don't start with a letter, for now
+				if (!StringUtils.isLetter(firstChar)) {
+					skippedDueToNotStartingWithLetter++;
+					continue;
+				}
 				if (exceptions.contains(c.getId())) {
-					report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, d, "","","Description manually listed as an exception");
+					report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, d, "","","Description manually listed as an exception");
 				} else {
 					changesMade += funnySymbolSwap(c, d);
 					try {
 						changesMade += normalizeCaseSignificance(c, d);
 					} catch (Exception e) {
-						report (c, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, d, e);
+						report(c, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, d, e);
 					}
 					/*changesMade += checkForCaptitalizedEnglishWord(c, d);
 					//Requirement to align with English as first check
@@ -152,7 +162,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			if (StringUtils.isMixAlphaNumeric(firstWordIgnoreDashes)) {
 				return setCaseSignificanceIfRequired(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE, c, d);
 			} else {
-				report (TERTIARY_REPORT, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, d);
+				report(TERTIARY_REPORT, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, d);
 			}
 		}
 		
@@ -182,14 +192,15 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		if (d.getCaseSignificance().equals(caseSig)) {
 			boolean skip = caseSig.equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm(), false);
 			if (!skip) {
-				//report (SECONDARY_REPORT, c, Severity.NONE, ReportActionType.NO_CHANGE, d);
+				//report(SECONDARY_REPORT, c, Severity.NONE, ReportActionType.NO_CHANGE, d);
 			}
 			return NO_CHANGES_MADE;
 		} else {
 			String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 			String after = SnomedUtils.translateCaseSignificanceFromEnum(caseSig);
-			report (c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, before,after);
+			report(c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, before,after);
 			d.setCaseSignificance(caseSig);
+			d.setEffectiveTime(null);
 			d.setDirty();
 			c.setModified();
 			return CHANGE_MADE;
@@ -204,7 +215,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			d.setEffectiveTime(null);
 			d.setDirty();
 			c.setModified();
-			report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Mangled character replaced with '-', was " + oldTerm);
+			report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Mangled character replaced with '-', was " + oldTerm);
 			return CHANGE_MADE;
 		}
 		return NO_CHANGES_MADE;
@@ -234,7 +245,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				d.setEffectiveTime(null);
 				d.setDirty();
 				c.setModified();
-				report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Decapitalized non-first English word.  Was: " + oldTerm);
+				report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, d, "","","Decapitalized non-first English word.  Was: " + oldTerm);
 				return CHANGE_MADE;
 			}
 		}
@@ -279,7 +290,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				d.setDirty();
 				c.setModified();
 				incrementSummaryInformation("Descriptions modified", 1);
-				report (c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, before,after,"Case Sigificance aligned with:" + checkMe);
+				report(c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, before,after,"Case Sigificance aligned with:" + checkMe);
 				return true;
 			}
 		}
