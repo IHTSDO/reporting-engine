@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.*;
 
@@ -27,4 +28,6 @@ public interface JobRunRepository extends CrudRepository<JobRun, UUID> {
 	" AND status IN (?2)")
 	Page<JobRun> findByStatusSinceDate(Date sinceDate, Set<JobStatus> statusFilter, Pageable pageable);
 
+	@Query(nativeQuery=true, value="SELECT * FROM job_run WHERE job_name = :jobName ORDER BY parameters_id DESC LIMIT 1")
+	Optional<JobRun> findLastRunByJobName(@Param("jobName") String jobName);
 }

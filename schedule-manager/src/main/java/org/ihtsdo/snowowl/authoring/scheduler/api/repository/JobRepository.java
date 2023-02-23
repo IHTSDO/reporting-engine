@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.data.repository.CrudRepository;
+import reactor.util.annotation.NonNull;
 
 public interface JobRepository extends CrudRepository<Job, Long> {
 
@@ -11,4 +12,6 @@ public interface JobRepository extends CrudRepository<Job, Long> {
 
 	List<Job> findByCategoryId(long id);
 
+	@NonNull
+	List<Job> findAll();
 }

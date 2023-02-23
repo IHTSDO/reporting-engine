@@ -5,6 +5,8 @@ import io.swagger.annotations.*;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.snowowl.authoring.scheduler.api.configuration.WebSecurityConfig;
+import org.ihtsdo.snowowl.authoring.scheduler.api.rest.tools.AllReportRunner;
+import org.ihtsdo.snowowl.authoring.scheduler.api.rest.tools.AllReportRunnerResult;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.AccessControlService;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleService;
 import org.slf4j.Logger;
@@ -37,7 +39,10 @@ public class SchedulerController {
 	
 	@Autowired
 	WebSecurityConfig config;
-	
+
+	@Autowired
+	private AllReportRunner allReportRunner;
+
 	@Value("${schedule.manager.terminology.server.uri}")
 	String terminologyServerUrl;
 	
@@ -105,7 +110,18 @@ public class SchedulerController {
 		
 		return santise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
 	}
-	
+
+	@ApiOperation(value="Run all jobs")
+	@ApiResponses({@ApiResponse(code = 200, message = "OK")})
+	@RequestMapping(value="/jobs/runall", method= RequestMethod.POST)
+	@ResponseBody
+	public List<AllReportRunnerResult> runAll(
+			@RequestParam(name="username", required=false, defaultValue="") final String username,
+			@RequestParam(name="enabled", required=false, defaultValue="false") final Boolean enabled
+	) {
+		return allReportRunner.runAllReports(username, enabled);
+	}
+
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
 		String authToken = request.getHeader(X_AUTH_TOK);
 		String username = request.getHeader(X_AUTH_USER);
