@@ -69,8 +69,12 @@ public class SingleTraceabilityService implements TraceabilityService {
 	}
 	
 	public void tidyUp() {
-		for (Worker worker : workers) {
-			worker.shutdown();
+		if (workers == null) {
+			logger.info("No traceability workers have been created, skipping tidy up.");
+		} else {
+			for (Worker worker : workers) {
+				worker.shutdown();
+			}
 		}
 	}
 	
