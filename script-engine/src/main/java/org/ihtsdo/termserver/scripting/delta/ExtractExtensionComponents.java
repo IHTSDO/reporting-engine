@@ -464,6 +464,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| conceptOnTS.getDescription(d.getId()) == null
 					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
 					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
+				//However, don't move inactive descriptions if they don't already exist at the target location
+				if (!d.isActive() && conceptOnTS.getDescription(d.getId()) == null) {
+					info("Skipping inactive description, not existing in target location: " + d);
+					continue;
+				}
+				
 				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
 					subComponentsMoved = true;
 					thisDescMoved = true;
