@@ -42,8 +42,8 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Lang, SCTID, Term, Description",
-				"Id, FSN, SemTag, Lang, SCTID, Term, Text Definition"};
+				"ConceptId, FSN, SemTag, Lang, DescriptionId, Term, Description",
+				"ConceptId, FSN, SemTag, Lang, DescriptionId, Term, Text Definition"};
 		String[] tabNames = new String[] {	
 				"Description", "Text Defn"};
 		super.postInit(tabNames, columnHeadings, false);
