@@ -22,6 +22,7 @@ import java.util.Optional;
 public class AllReportRunner {
     private static final Logger LOG = LoggerFactory.getLogger(AllReportRunner.class);
     public static final String ECL_PARAMETER_NAME = "ECL";
+    public static final String DEFAULT_ECL_VALUE = "*";
 
     @Autowired
     private JobRunRepository jobRunRepository;
@@ -32,19 +33,16 @@ public class AllReportRunner {
     @Autowired
     private ScheduleService scheduleService;
 
-    public static final String DEFAULT_ECL_VALUE = "*";
+    private Boolean dryRun;
+    private String userName;
 
-    private Boolean allReportRunnerIsEnabled;
-
-    private String allReportRunnerUserName;
-
-    public List<AllReportRunnerResult> runAllReports(String username, boolean enabled) {
-        allReportRunnerIsEnabled = enabled;
-        allReportRunnerUserName = username;
+    public List<AllReportRunnerResult> runAllReports(boolean dryRun, String userName) {
+        this.dryRun = dryRun;
+        this.userName = userName;
 
         List<AllReportRunnerResult> allReportRunnerResults = new ArrayList<>();
         List<Job> listOfJobs = jobRepository.findAll();
-        LOG.info("Run {} reports ({}ENABLED) for user '{}'", listOfJobs.size(), allReportRunnerIsEnabled ? "" : "NOT ", allReportRunnerUserName);
+        LOG.info("Running {} reports ({}ENABLED) for user '{}'", listOfJobs.size(), this.dryRun ? "" : "NOT ", userName);
 
         for (Job job : listOfJobs) {
             allReportRunnerResults.add(createReportJobAndRunIt(job));
@@ -56,21 +54,23 @@ public class AllReportRunner {
     private AllReportRunnerResult createReportJobAndRunIt(Job job) {
         String jobName = job.getName();
         Optional<JobRun> jobRun = jobRunRepository.findLastRunByJobName(jobName);
+        JobRun lastJobRun;
 
-        if (jobRun.isEmpty()) {
-            LOG.error("Unable to find job history to run : '{}'", jobName);
-            return new AllReportRunnerResult(jobName, "ERROR", "Unable to find job history");
+        if (jobRun.isPresent()) {
+            lastJobRun = jobRun.get();
+        } else {
+            LOG.warn("Unable to find job history to run, so creating new : '{}'", jobName);
+            lastJobRun = JobRun.create(jobName, userName);
         }
 
-        JobRun lastJobRun = jobRun.get();
         checkAndUpdateEclParameterIfBlank(jobName, lastJobRun);
 
-        if (allReportRunnerIsEnabled) {
-            return runTheReport(jobName, lastJobRun);
+        if (dryRun) {
+            LOG.info("Dry run of report job : '{}'", jobName);
+            return new AllReportRunnerResult(jobName, "OK", "Dry run");
         }
 
-        LOG.info("Dry run of report job : '{}'", jobName);
-        return new AllReportRunnerResult(jobName, "OK", "Dry run");
+        return runTheReport(jobName, lastJobRun);
     }
 
     private AllReportRunnerResult runTheReport(String jobName, JobRun lastJobRun) {
@@ -85,7 +85,7 @@ public class AllReportRunner {
     }
 
     private void checkAndUpdateEclParameterIfBlank(String jobName, JobRun lastJobRun) {
-        lastJobRun.setUser(allReportRunnerUserName);
+        lastJobRun.setUser(userName);
         JobRunParameters paramMap = lastJobRun.getParameters();
 
         for (Map.Entry<String, JobParameter> entry : paramMap.getParameterMap().entrySet()) {

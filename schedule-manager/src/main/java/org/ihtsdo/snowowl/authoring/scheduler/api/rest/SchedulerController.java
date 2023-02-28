@@ -116,10 +116,11 @@ public class SchedulerController {
 	@RequestMapping(value="/jobs/runall", method= RequestMethod.POST)
 	@ResponseBody
 	public List<AllReportRunnerResult> runAll(
-			@RequestParam(name="username", required=false, defaultValue="") final String username,
-			@RequestParam(name="enabled", required=false, defaultValue="false") final Boolean enabled
+			HttpServletRequest request,
+			@RequestParam(name= "dryRun", required=false, defaultValue="true") final Boolean dryRun
 	) {
-		return allReportRunner.runAllReports(username, enabled);
+		String userName = request.getHeader(X_AUTH_USER);
+		return allReportRunner.runAllReports(dryRun, userName);
 	}
 
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
