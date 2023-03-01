@@ -849,7 +849,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				d.addAcceptability(entry);
 			}
 		} else {
+			boolean hasUSLangRefset = false;
 			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET)) {
+				hasUSLangRefset = true;
 				//Only move if there's a difference
 				//Note we cannot get LangRefsetEntries from TS because browser format only uses AcceptabilityMap
 				if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
@@ -864,9 +866,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 			
 			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET)) {
-				if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
-					gbEntry.setModuleId(targetModuleId);
-					gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
+				//if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
+				gbEntry.setModuleId(targetModuleId);
+				gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
+				//}
+				//Do we need to copy the GB Langref as the US one?
+				if (!hasUSLangRefset) {
+					LangRefsetEntry usEntry = gbEntry.clone(d.getId(), false);
+					usEntry.setRefsetId(US_ENG_LANG_REFSET);
+					usEntry.setDirty();
+					d.addLangRefsetEntry(usEntry);
 				}
 			}
 		}
