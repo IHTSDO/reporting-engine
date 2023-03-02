@@ -885,14 +885,20 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public void setAssignedAuthor(String assignedAuthor) {
 		this.assignedAuthor = assignedAuthor;
 	}
-
+	
 	public Description getFSNDescription() {
+		return getFSNDescription("en");
+	}
+
+	public Description getFSNDescription(String lang) {
 		if (descriptions == null) {
 			String err = "Concept " + conceptId + " |" + getFsn() + "| has no descriptions";
 			throw new IllegalArgumentException(err);
 		}
 		for (Description d : descriptions) {
-			if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
+			if (d.isActive() 
+					&& d.getType().equals(DescriptionType.FSN)
+					&& d.getLang().equals(lang)) {
 				return d;
 			}
 		}
