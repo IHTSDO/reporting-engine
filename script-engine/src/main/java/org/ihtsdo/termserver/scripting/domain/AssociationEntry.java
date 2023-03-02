@@ -140,4 +140,15 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	public String[] getAdditionalFieldNames() {
 		return additionalFieldNames;
 	}
+
+	public static AssociationEntry create(Concept c, String refsetId, Concept replacement) {
+		AssociationEntry a = new AssociationEntry();
+		a.setModuleId(c.getModuleId());
+		a.setRefsetId(refsetId);
+		a.setReferencedComponentId(c.getId());
+		a.setTargetComponentId(replacement.getId());
+		a.setActive(true);
+		a.setDirty();
+		return a;
+	}
 }

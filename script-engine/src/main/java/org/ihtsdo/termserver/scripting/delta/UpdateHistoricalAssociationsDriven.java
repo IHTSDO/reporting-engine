@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -25,7 +26,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; 
 			delta.init(args);
-			delta.loadProjectSnapshot(true); 
+			delta.loadProjectSnapshot(false); 
 			delta.postInit();
 			delta.process();
 			delta.flushFiles(false, true); //Need to flush files before zipping
@@ -43,13 +44,51 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			//Is this a concept we've been told to replace the associations on?
 			if (replacementMap.containsKey(c)) {
 				if (!c.isActive()) {
-					String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
-					report(c, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, assocStr, replacementMap.get(c));
+					//Change the Inactivation Indicator
+					List<InactivationIndicatorEntry> indicators = c.getInactivationIndicatorEntries(ActiveState.ACTIVE);
+					if (indicators.size() != 1) {
+						report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept has " + indicators.size() + " active inactivation indicators");
+						continue;
+					}
+					InactivationIndicatorEntry i = indicators.get(0);
+					InactivationIndicator prevInactValue = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId());
+					//We're going to skip concepts that are currently ambigous and just say what they're set to
+					if (prevInactValue.equals(InactivationIndicator.AMBIGUOUS)) {
+						String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+						report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, assocStr, "Supplied: " + replacementMap.get(c));
+						continue;
+					}
+				
+					if (!prevInactValue.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+						i.setInactivationReasonId(SCTID_INACT_NON_CONFORMANCE);
+						i.setEffectiveTime(null);  //Will mark as dirty
+						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> NCEP");
+					}
+					
+					replaceHistoricalAssociations(c);
+					
 				} else {
 					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is active");
 				}
 			}
 		}
+	}
+
+	private void replaceHistoricalAssociations(Concept c) throws TermServerScriptException {
+		String prevAssocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+		for (AssociationEntry a : c.getAssociationEntries()) {
+			if (a.getRefsetId().equals(SCTID_ASSOC_REPLACED_BY_REFSETID)) {
+				report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept already using a ReplacedBy association");
+				return;
+			}
+			a.setActive(false);
+			a.setEffectiveTime(null);
+		}
+		Concept replacement = replacementMap.get(c);
+		AssociationEntry assoc = AssociationEntry.create(c, SCTID_ASSOC_REPLACED_BY_REFSETID, replacement);
+		c.getAssociationEntries().add(assoc);
+		String newAssocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+		report(c, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, prevAssocStr, newAssocStr);
 	}
 
 	private void populateReplacementMap() throws TermServerScriptException {
@@ -72,13 +111,6 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			throw new TermServerScriptException(e);
 		}
 		
-	}
-
-	public InactivationIndicatorEntry addConceptNotCurrentInactivationIndicator(Concept c, Description d) throws TermServerScriptException, ValidationFailure {
-		InactivationIndicatorEntry cnc = InactivationIndicatorEntry.withDefaults(d);
-		cnc.setInactivationReasonId(SCTID_INACT_CONCEPT_NON_CURRENT);
-		d.addInactivationIndicator(cnc);
-		return cnc;
 	}
 
 }

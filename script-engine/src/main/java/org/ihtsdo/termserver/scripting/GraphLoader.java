@@ -795,7 +795,7 @@ public class GraphLoader implements ScriptConstants {
 					}
 				}
 				
-				if (!fsnOnly) {
+				if (!fsnOnly || lineItems[DES_IDX_TYPEID].equals(FSN)) {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription(lineItems[DES_IDX_ID]);
 					

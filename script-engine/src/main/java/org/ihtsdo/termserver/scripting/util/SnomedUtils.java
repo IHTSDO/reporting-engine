@@ -665,7 +665,6 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID : return Association.PARTIALLY_EQUIV_TO;
 			case SCTID_ASSOC_ALTERNATIVE_REFSETID : return Association.ALTERNATIVE;
 			case SCTID_ASSOC_REFERS_TO_REFSETID : return Association.REFERS_TO;
-			
 			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID : return Association.ANATOMY_STRUC_ENTIRE;
 			case SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID : return Association.ANATOMY_STRUC_PART;
 			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
@@ -681,6 +680,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 					associations += "\n";
 				} else {
 					isFirst = false;
+				}
+				if (assoc.getRefsetId() == null || assoc.getTargetComponentId() == null) {
+					throw new TermServerScriptException("Malformed historical association encountered : " + assoc);
 				}
 				associations += translateAssociation(assoc.getRefsetId()) + ": " + gl.getConcept(assoc.getTargetComponentId());
 			}
