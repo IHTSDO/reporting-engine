@@ -33,49 +33,43 @@ public class AllReportRunner {
     @Autowired
     private ScheduleService scheduleService;
 
-    private Boolean dryRun;
-    private String userName;
-
     public List<AllReportRunnerResult> runAllReports(boolean dryRun, String userName) {
-        this.dryRun = dryRun;
-        this.userName = userName;
-
         List<AllReportRunnerResult> allReportRunnerResults = new ArrayList<>();
         List<Job> listOfJobs = jobRepository.findAll();
-        LOG.info("Running {} reports ({}ENABLED) for user '{}'", listOfJobs.size(), this.dryRun ? "" : "NOT ", userName);
+        LOG.info("{} {} reports for user '{}'", dryRun ? "Dry run of" : "Running", listOfJobs.size(), userName);
 
         for (Job job : listOfJobs) {
-            allReportRunnerResults.add(createReportJobAndRunIt(job));
+            allReportRunnerResults.add(createReportJobAndRunIt(job, userName, dryRun));
         }
 
         return allReportRunnerResults;
     }
 
-    private AllReportRunnerResult createReportJobAndRunIt(Job job) {
+    private AllReportRunnerResult createReportJobAndRunIt(Job job, String userName, boolean dryRun) {
         String jobName = job.getName();
         Optional<JobRun> jobRun = jobRunRepository.findLastRunByJobName(jobName);
-        JobRun lastJobRun;
+        JobRun reRunJob;
 
         if (jobRun.isPresent()) {
-            lastJobRun = jobRun.get();
+            reRunJob = jobRun.get().cloneForRerun();
         } else {
             LOG.warn("Unable to find job history to run, so creating new : '{}'", jobName);
-            lastJobRun = JobRun.create(jobName, userName);
+            reRunJob = JobRun.create(jobName, userName);
         }
 
-        checkAndUpdateEclParameterIfBlank(jobName, lastJobRun);
+        checkAndUpdateEclParameterIfBlank(jobName, reRunJob, userName);
 
         if (dryRun) {
             LOG.info("Dry run of report job : '{}'", jobName);
             return new AllReportRunnerResult(jobName, "OK", "Dry run");
         }
 
-        return runTheReport(jobName, lastJobRun);
+        return runTheReport(jobName, reRunJob);
     }
 
-    private AllReportRunnerResult runTheReport(String jobName, JobRun lastJobRun) {
+    private AllReportRunnerResult runTheReport(String jobName, JobRun reRunJob) {
         try {
-            JobRun result = scheduleService.runJob(lastJobRun);
+            JobRun result = scheduleService.runJob(reRunJob);
             LOG.info("Running report job : '{}'", jobName);
             return new AllReportRunnerResult(jobName, "OK", "Running", result.getId());
         } catch (BusinessServiceException e) {
@@ -84,9 +78,9 @@ public class AllReportRunner {
         }
     }
 
-    private void checkAndUpdateEclParameterIfBlank(String jobName, JobRun lastJobRun) {
-        lastJobRun.setUser(userName);
-        JobRunParameters paramMap = lastJobRun.getParameters();
+    private void checkAndUpdateEclParameterIfBlank(String jobName, JobRun reRunJob, String userName) {
+        reRunJob.setUser(userName);
+        JobRunParameters paramMap = reRunJob.getParameters();
 
         for (Map.Entry<String, JobParameter> entry : paramMap.getParameterMap().entrySet()) {
             JobParameter jobParameter = entry.getValue();
