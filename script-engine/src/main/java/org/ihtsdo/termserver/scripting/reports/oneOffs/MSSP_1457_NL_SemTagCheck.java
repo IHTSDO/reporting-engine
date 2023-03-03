@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.reports.oneOffs;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
