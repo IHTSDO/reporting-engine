@@ -293,7 +293,7 @@ public class GraphLoader implements ScriptConstants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
-				/*if (conceptId == 1163463008L) {
+				/*if (conceptId == 10504007L) {
 					TermServerScript.debug("Here");
 				}
 				

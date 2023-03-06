@@ -22,6 +22,7 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 		clone.referencedComponentId = keepIds ? this.referencedComponentId : newComponentSctId;
 		clone.owlExpression = this.owlExpression;
 		clone.isDirty = true; //New components need to be written to any delta
+		clone.isGCI = this.isGCI;
 		return clone;
 	}
 	

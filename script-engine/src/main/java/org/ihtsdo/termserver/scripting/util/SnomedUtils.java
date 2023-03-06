@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.otf.RF2Constants.ActiveState;
 import org.ihtsdo.otf.RF2Constants.CharacteristicType;
+import org.ihtsdo.otf.RF2Constants.DefinitionStatus;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -2391,5 +2392,41 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			return ",\n";
 		}
 		return "";
+	}
+	
+	public static String toExpression(DefinitionStatus definitionStatus, List<RelationshipGroup> groups) {
+		String expression = definitionStatus.equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
+		
+		//Parents may not be maintained if we're working with a loaded concept.
+		//Work with active IS_A relationships instead
+		for (RelationshipGroup group : groups) {
+			expression += group.getRelationships().stream()
+					.filter(r -> r.getType().equals(IS_A))
+					.map(r -> r.getTarget())
+					.map(p -> p.toString())
+					.collect(Collectors.joining (" + \n"));
+		}
+
+		expression += " : \n";
+
+		boolean isFirstGroup = true;
+		for (RelationshipGroup group : groups) {
+			if (group.isAllISA()) {
+				continue;
+			}
+			
+			if (isFirstGroup) {
+				isFirstGroup = false;
+			} else {
+				expression += ",\n";
+			}
+			expression += group.isGrouped() ? "{" : "";
+			expression += group.getRelationships().stream()
+					.filter(r -> !r.getType().equals(IS_A))
+					.map(p -> "  " + p.toString())
+					.collect(Collectors.joining (",\n"));
+			expression += group.isGrouped() ? " }" : "";
+		}
+		return expression;
 	}
 }

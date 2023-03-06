@@ -1307,22 +1307,34 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, boolean includeIsA) {
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
-			Map<Integer, RelationshipGroup> groups = new HashMap<>();
+			//RelationshipGroups will be distinct from the axioms they came from
+			Map<String, Map<Integer, RelationshipGroup>> axiomGroupMap = new HashMap<>();
 			//If we're including group 0, always add that in any event
 			for (Relationship r : getRelationships(characteristicType, ActiveState.ACTIVE)) {
 				if (!includeIsA && r.getType().equals(IS_A)) {
 					continue;
 				}
+				//Do we know about this axiom yet? Or if null, flatten
+				Map<Integer, RelationshipGroup> axiomGroups = axiomGroupMap.get(r.getAxiomEntry().getId());
+				if (axiomGroups == null) {
+					axiomGroups = new HashMap<>();
+					axiomGroupMap.put(r.getAxiomEntry().getId(), axiomGroups);
+				}
 				//Do we know about this Relationship Group yet?
-				RelationshipGroup group = groups.get(r.getGroupId());
+				
+				RelationshipGroup group = axiomGroups.get(r.getGroupId());
 				if (group == null) {
 					group = new RelationshipGroup(r.getGroupId() , r);
-					groups.put(r.getGroupId(), group);
+					axiomGroups.put(r.getGroupId(), group);
 				} else {
 					group.getRelationships().add(r);
 				}
 			}
-			relationshipGroups = groups.values();
+			
+			relationshipGroups = axiomGroupMap.values().stream()
+					.flatMap(a -> a.values().stream())
+					.collect(Collectors.toList());
+			
 			if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
 				statedRelationshipGroups = relationshipGroups;
 			} else {
@@ -1657,6 +1669,21 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			d.getInactivationIndicatorEntries().removeIf(c -> !c.isActive());
 			d.getAssociationEntries().removeIf(c -> !c.isActive());
 		}
+	}
+
+	public Map<String, List<RelationshipGroup>> getRelationshipGroupsByAxiom() {
+		Map<String, List<RelationshipGroup>> groupsByAxiom = new HashMap<>();
+		//For now we'll assume that the first Axiom encountered in a group is the owning axiom
+		for (RelationshipGroup g : getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, true)) {
+			AxiomEntry a = g.getAxiomEntry();
+			List<RelationshipGroup> axiomGroups = groupsByAxiom.get(a.getId());
+			if (axiomGroups == null) {
+				axiomGroups = new ArrayList<>();
+				groupsByAxiom.put(a.getId(), axiomGroups);
+			}
+			axiomGroups.add(g);
+		}
+		return groupsByAxiom;
 	}
 
 }

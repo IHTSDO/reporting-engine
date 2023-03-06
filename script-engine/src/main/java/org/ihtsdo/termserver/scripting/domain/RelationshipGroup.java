@@ -3,11 +3,10 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.RF2Constants.ActiveState;
-
-public class RelationshipGroup {
-	Set<Relationship> relationships = new HashSet<>();
-	int groupId;
+public class RelationshipGroup implements ScriptConstants {
+	private Set<Relationship> relationships = new HashSet<>();
+	private int groupId;
+	private AxiomEntry axiomEntry;  //Used when loading from RF2
 	
 	//Generic flag to say if group should be highlighted for some reason, eg cause a template match to fail
 	String indicators = "";
@@ -269,6 +268,32 @@ public class RelationshipGroup {
 		for (Relationship r : relationships) {
 			r.setReleased(isReleased);
 		}
+	}
+
+	public AxiomEntry getAxiomEntry() {
+		if (axiomEntry == null) {
+			//Use the first axiom entry assigned
+			for (Relationship r : getRelationships()) {
+				if (r.getAxiomEntry() != null) {
+					axiomEntry = r.getAxiomEntry();
+					break;
+				}
+			}
+		}
+		return axiomEntry;
+	}
+
+	public void setAxiomEntry(AxiomEntry axiomEntry) {
+		this.axiomEntry = axiomEntry;
+	}
+
+	public boolean isAllISA() {
+		for (Relationship r : getRelationships()) {
+			if (!r.getType().equals(IS_A)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
