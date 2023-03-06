@@ -63,12 +63,13 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 				.add(ATTRIBUTE_B).withType(JobParameter.Type.CONCEPT).withMandatory()
 				.add(CHAR_TYPE).withType(JobParameter.Type.DROPDOWN).withOptions("Stated","Inferred").withDefaultValue("Inferred")
 				.add(MUST_BOTH_EXIST).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.add(SELF_GROUPED_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List Attributes Not Grouped Together")
-				.withDescription("This report lists all concepts where one of the two attributes exists, but not grouped with the other. For example, a causative agent not grouped with a finding site.")
+				.withDescription("This report lists all concepts where one of the two attributes exists, but not grouped with the other. For example, a causative agent not grouped with a finding site.  Optionally only pick up those cases when one of the attributes is in a group by itself (selected by default).")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
