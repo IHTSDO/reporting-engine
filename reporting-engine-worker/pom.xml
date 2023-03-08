@@ -6,7 +6,7 @@
 	
 	<parent>
 		<groupId>org.snomed.otf</groupId>
-		<version>5.15.3</version>
+		<version>5.16.0-SNAPSHOT</version>
 		<artifactId>reporting-engine</artifactId>
 	</parent>
 
@@ -14,7 +14,7 @@
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>script-engine</artifactId>
-			<version>5.15.3</version>
+			<version>5.16.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
