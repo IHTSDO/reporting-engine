@@ -141,7 +141,7 @@ public class JobManager {
 	private boolean ensureJobValid(JobRun jobRun, Job job) {
 		if (StringUtils.isEmpty(jobRun.getAuthToken())) {
 			jobRun.setStatus(JobStatus.Failed);
-			jobRun.setDebugInfo("No valid authenticatin token included in request");
+			jobRun.setDebugInfo("No valid authentication token included in request");
 			return false;
 		}
 		

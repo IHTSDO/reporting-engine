@@ -153,8 +153,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 			jobRun.setProject("MAIN");
 			logger.warn("Failed to find Project parameter, defaulting to MAIN");
 		}
-		
-		jobRun = jobRunRepository.save(jobRun);
+
+		JobRun savedJobRun = jobRunRepository.save(jobRun);
+		jobRun.setId(savedJobRun.getId());
 		logger.info("Running job: {}", jobRun);
 		transmitter.send(jobRun);
 		return jobRun;
