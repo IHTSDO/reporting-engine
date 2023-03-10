@@ -51,6 +51,35 @@ public class SchedulerController {
 	private static final String X_AUTH_TOK = "X-AUTH-token";
 	private static final String X_AUTH_USER = "X-AUTH-username";
 
+	private static class AuthData {
+		public final String authToken;
+		public final String userName;
+
+		public AuthData(String authToken, String userName) {
+			this.authToken = authToken;
+			this.userName = userName;
+		}
+	}
+
+	private AuthData getAuthData(HttpServletRequest request) throws BusinessServiceException {
+		String authToken = request.getHeader(X_AUTH_TOK);
+		String userName = request.getHeader(X_AUTH_USER);
+
+		if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(userName)) {
+			//Are local override values available?
+			authToken = config.getOverrideToken();
+			userName = config.getOverrideUsername();
+
+			if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(userName)) {
+				throw new BusinessServiceException("Failed to recover authentication details from HTTP headers");
+			} else {
+				logger.warn("Auth token not recovered from headers, using locally supplied override for user: {}", userName);
+			}
+		}
+
+		return new AuthData(authToken, userName);
+	}
+
 	@ApiOperation(value="List Job Types")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
@@ -118,28 +147,14 @@ public class SchedulerController {
 	public List<AllReportRunnerResult> runAll(
 			HttpServletRequest request,
 			@RequestParam(name= "dryRun", required=false, defaultValue="true") final Boolean dryRun
-	) {
-		String userName = request.getHeader(X_AUTH_USER);
-		return allReportRunner.runAllReports(dryRun, userName);
+	) throws BusinessServiceException {
+		AuthData authData = getAuthData(request);
+		return allReportRunner.runAllReports(dryRun, authData.userName, authData.authToken);
 	}
 
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
-		String authToken = request.getHeader(X_AUTH_TOK);
-		String username = request.getHeader(X_AUTH_USER);
-		//Note that this user is the currently logged in user.  It's also possible to specify
-		//a user to the listJobsRun server to filter it down to the user who originally ran the reprot
-		
-		if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(username)) {
-			//Are local override values available?
-			authToken = config.getOverrideToken();
-			username = config.getOverrideUsername();
-			if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(username)) {
-				throw new BusinessServiceException("Failed to recover authentication details from HTTP headers");
-			} else {
-				logger.warn("Auth token not recovered from headers, using locally supplied override for user: {}", username);
-			}
-		}
-		return accessControlService.getProjects(username, terminologyServerUrl, authToken);
+		AuthData result = getAuthData(request);
+		return accessControlService.getProjects(result.userName, terminologyServerUrl, result.authToken);
 	}
 
 	@ApiOperation(value="Run job")

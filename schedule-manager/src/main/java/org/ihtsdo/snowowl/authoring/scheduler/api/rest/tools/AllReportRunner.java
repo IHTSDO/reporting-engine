@@ -33,19 +33,19 @@ public class AllReportRunner {
     @Autowired
     private ScheduleService scheduleService;
 
-    public List<AllReportRunnerResult> runAllReports(boolean dryRun, String userName) {
+    public List<AllReportRunnerResult> runAllReports(boolean dryRun, String userName, String authToken) {
         List<AllReportRunnerResult> allReportRunnerResults = new ArrayList<>();
         List<Job> listOfJobs = jobRepository.findAll();
         LOG.info("{} {} reports for user '{}'", dryRun ? "Dry run of" : "Running", listOfJobs.size(), userName);
 
         for (Job job : listOfJobs) {
-            allReportRunnerResults.add(createReportJobAndRunIt(job, userName, dryRun));
+            allReportRunnerResults.add(createReportJobAndRunIt(job, userName, authToken, dryRun));
         }
 
         return allReportRunnerResults;
     }
 
-    private AllReportRunnerResult createReportJobAndRunIt(Job job, String userName, boolean dryRun) {
+    private AllReportRunnerResult createReportJobAndRunIt(Job job, String userName, String authToken, boolean dryRun) {
         String jobName = job.getName();
         Optional<JobRun> jobRun = jobRunRepository.findLastRunByJobName(jobName);
         JobRun reRunJob;
@@ -58,6 +58,7 @@ public class AllReportRunner {
         }
 
         checkAndUpdateEclParameterIfBlank(jobName, reRunJob, userName);
+        reRunJob.setAuthToken(authToken);
 
         if (dryRun) {
             LOG.info("Dry run of report job : '{}'", jobName);
