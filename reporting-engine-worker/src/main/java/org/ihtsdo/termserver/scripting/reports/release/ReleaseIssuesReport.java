@@ -310,7 +310,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr2);
 		info("Started inappropriateModuleJumping check");
 		for (Concept concept : allConceptsSorted) {
-			/*if (concept.getId().equals("273741005")) {
+			/*if (concept.getId().equals("434701000124101")) {
 				logger.debug("here");
 			}*/
 			nextComponent:
@@ -359,7 +359,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 				
 				if (!differenceFound) {
-					String msg = c.getIssues() + " vs " + c.getMutableFields();
+					String msg = c.getComponentType() + ": " + c.getIssues() + " vs " + c.getMutableFields();
 					boolean reported = report(concept, issueStr, isLegacy(c), isActive(concept,c), msg, c, c.getId());
 					if (reported) {
 						if (isLegacy(c).equals("Y")) {
@@ -380,7 +380,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							continue;
 						}
 						
-						String msg = c.getIssues() + " vs " + c.getMutableFields();
+						String msg = c.getComponentType() + ": " + c.getIssues() + " vs " + c.getMutableFields();
 						boolean reported = report(concept, issueStr2, isLegacy(c), isActive(concept,c), msg, c, c.getId());
 						if (reported) {
 							if (isLegacy(c).equals("Y")) {
