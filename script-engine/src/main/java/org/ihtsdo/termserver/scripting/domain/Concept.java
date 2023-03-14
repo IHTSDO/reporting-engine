@@ -1307,6 +1307,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, boolean includeIsA) {
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
+			boolean flatten = characteristicType.equals(CharacteristicType.INFERRED_RELATIONSHIP);
 			//RelationshipGroups will be distinct from the axioms they came from
 			Map<String, Map<Integer, RelationshipGroup>> axiomGroupMap = new HashMap<>();
 			//If we're including group 0, always add that in any event
@@ -1315,13 +1316,13 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 					continue;
 				}
 				//Do we know about this axiom yet? Or if null, flatten
-				Map<Integer, RelationshipGroup> axiomGroups = axiomGroupMap.get(r.getAxiomEntry().getId());
+				Map<Integer, RelationshipGroup> axiomGroups = axiomGroupMap.get(flatten ? NOT_SET : r.getAxiomEntry().getId());
 				if (axiomGroups == null) {
 					axiomGroups = new HashMap<>();
-					axiomGroupMap.put(r.getAxiomEntry().getId(), axiomGroups);
+					axiomGroupMap.put((flatten ? "N/A" : r.getAxiomEntry().getId()), axiomGroups);
 				}
-				//Do we know about this Relationship Group yet?
 				
+				//Do we know about this Relationship Group yet?
 				RelationshipGroup group = axiomGroups.get(r.getGroupId());
 				if (group == null) {
 					group = new RelationshipGroup(r.getGroupId() , r);
