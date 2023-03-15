@@ -315,7 +315,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}*/
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				/*if (c.getId().equals("38e7f341-77c9-0688-6c9e-ff90c282b431")) {
+				/*if (c.getId().equals("1e684afa-9319-4b24-9489-40caef554e13")) {
 					logger.debug("here");
 				}*/
 				
@@ -360,12 +360,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				
 				if (!differenceFound) {
 					String msg = c.getComponentType() + ": " + c.getIssues() + " vs " + c.getMutableFields();
-					boolean reported = report(concept, issueStr, isLegacy(c), isActive(concept,c), msg, c, c.getId());
-					if (reported) {
-						if (isLegacy(c).equals("Y")) {
-							incrementSummaryInformation("Legacy Issues Reported");
-						}	else {
-							incrementSummaryInformation("Fresh Issues Reported");
+					
+					//Are we reporting legacy issues, and is this one?
+					if (includeLegacyIssues || !isLegacy(c)) {
+						boolean reported = report(concept, issueStr, getLegacyIndicator(c), isActive(concept,c), msg, c, c.getId());
+						if (reported) {
+							if (isLegacy(c)) {
+								incrementSummaryInformation("Legacy Issues Reported");
+							}	else {
+								incrementSummaryInformation("Fresh Issues Reported");
+							}
 						}
 					}
 				} else {
@@ -381,9 +385,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}
 						
 						String msg = c.getComponentType() + ": " + c.getIssues() + " vs " + c.getMutableFields();
-						boolean reported = report(concept, issueStr2, isLegacy(c), isActive(concept,c), msg, c, c.getId());
+						boolean reported = report(concept, issueStr2, getLegacyIndicator(c), isActive(concept,c), msg, c, c.getId());
 						if (reported) {
-							if (isLegacy(c).equals("Y")) {
+							if (getLegacyIndicator(c).equals("Y")) {
 								incrementSummaryInformation("Legacy Issues Reported");
 							}	else {
 								incrementSummaryInformation("Fresh Issues Reported");
@@ -464,9 +468,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			
 			for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (!p.getModuleId().equals(c.getModuleId())) {
-					boolean reported = report(c, issueStr,isLegacy(c), isActive(c,null), p);
+					boolean reported = report(c, issueStr,getLegacyIndicator(c), isActive(c,null), p);
 					if (reported) {
-						if (isLegacy(c).equals("Y")) {
+						if (getLegacyIndicator(c).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
@@ -487,9 +491,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Description d : c.getDescriptions()) {
 				if (!d.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Desc module " + d.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(d), isActive(c,d), msg, d);
+					boolean reported = report(c, issueStr, getLegacyIndicator(d), isActive(c,d), msg, d);
 					if (reported) {
-						if (isLegacy(d).equals("Y")) {
+						if (getLegacyIndicator(d).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
@@ -517,9 +521,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}*/
 				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
 					String msg = "Default module " + defaultModule + " vs component module " + comp.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(comp), isActive(c,comp), msg, comp);
+					boolean reported = report(c, issueStr, getLegacyIndicator(comp), isActive(c,comp), msg, comp);
 					if (reported) {
-						if (isLegacy(comp).equals("Y")) {
+						if (getLegacyIndicator(comp).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
@@ -538,9 +542,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (!r.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(r), isActive(c,r), msg, r);
+					boolean reported = report(c, issueStr, getLegacyIndicator(r), isActive(c,r), msg, r);
 					if (reported) {
-						if (isLegacy(r).equals("Y")) {
+						if (getLegacyIndicator(r).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
@@ -558,9 +562,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (!a.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Axiom module " + a.getModuleId();
-					boolean reported = report(c, issueStr, isLegacy(a), isActive(c,a), msg, a);
+					boolean reported = report(c, issueStr, getLegacyIndicator(a), isActive(c,a), msg, a);
 					if (reported) {
-						if (isLegacy(a).equals("Y")) {
+						if (getLegacyIndicator(a).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
@@ -587,9 +591,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
-							boolean reported = report(c, issueStr, isLegacy(d), isActive(c,d), d);
+							boolean reported = report(c, issueStr, getLegacyIndicator(d), isActive(c,d), d);
 							if (reported) {
-								if (isLegacy(d).equals("Y")) {
+								if (getLegacyIndicator(d).equals("Y")) {
 									incrementSummaryInformation("Legacy Issues Reported");
 								}	else {
 									incrementSummaryInformation("Fresh Issues Reported");
@@ -626,21 +630,21 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (inScope(c) && isInternational(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
-					reported = report(c, issueStr, isLegacy(c), isActive(c,null)) || reported;
+					reported = report(c, issueStr, getLegacyIndicator(c), isActive(c,null)) || reported;
 				}
 				
 				Description usPT = c.getPreferredSynonym(US_ENG_LANG_REFSET);
 				if (usPT == null || !usPT.isActive()) {
-					reported = report(c, issue2Str, isLegacy(c), isActive(c,null)) || reported;
+					reported = report(c, issue2Str, getLegacyIndicator(c), isActive(c,null)) || reported;
 				}
 				
 				Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
 				if (gbPT == null || !gbPT.isActive()) {
-					reported = report(c, issue3Str, isLegacy(c), isActive(c,null)) || reported;
+					reported = report(c, issue3Str, getLegacyIndicator(c), isActive(c,null)) || reported;
 				}
 				
 				if (reported) {
-					if (isLegacy(c).equals("Y")) {
+					if (getLegacyIndicator(c).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
@@ -725,7 +729,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 									boolean wordOftenTypedTwice = wordsOftenTypedTwice.contains(currentWord);
 									if (descriptionNotChecked && wordsEqual && wordOftenTypedTwice) {
 										descriptionNotChecked = false;
-										report(c, wordIssueStr, isLegacy(d), isActive(c, d), "Repeated word: " + currentWord, d);
+										report(c, wordIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + currentWord, d);
 									}
 								}
 
@@ -749,7 +753,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 									}
 
 									if (concern > 2) {
-										report(c, wordGroupIssueStr, isLegacy(d), isActive(c, d), "Repeated word: " + words[x], d);
+										report(c, wordGroupIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + words[x], d);
 										continue nextConcept;
 									}
 								}
@@ -775,7 +779,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					for (int x = 0; x < wordsLength; x++) {
 						String currentWord = words[x];
 						if ("cannot".equalsIgnoreCase(currentWord) || (x + 1 < wordsLength && "can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(words[x + 1]))) {
-							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 							continue nextConcept;
 						}
 					}
@@ -798,7 +802,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
 						if (indexOf != -1) {
 							String detailStr = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
-							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 							continue nextDescription;
 						}
 					}
@@ -836,7 +840,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						if (activeInRefsets.contains(l.getRefsetId())) {
 							String detailStr = "Description has multiple langrefset entries in same refset: " + l.getRefsetId();
-							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 							continue nextDescription;
 						} else {
 							activeInRefsets.add(l.getRefsetId());
@@ -868,7 +872,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}
 						if (!d.getLang().equals(expectedLangCode)) {
 							String detailStr = "Expected '" + expectedLangCode + "'";
-							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d, l);
+							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d, l);
 						}
 					}
 				}
@@ -902,7 +906,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						if (l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
 							if (ptMap.containsKey(l.getRefsetId())) {
 								String detailStr = d + " + " + ptMap.get(l.getRefsetId());
-								report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+								report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 								continue nextDescription;
 							} else {
 								ptMap.put(l.getRefsetId(), d);
@@ -950,7 +954,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}
 						
 						if (!acceptableAltFound && term.indexOf(" due to", idx) == NOT_FOUND) {
-							report(c, issueStr, isLegacy(d), isActive(c, d), d);
+							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), d);
 							continue nextDescription;
 						}
 						idx = term.indexOf(" due ", idx + 1);
@@ -1022,7 +1026,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				if (StringUtils.isEmpty(semTag)) {
-					String legacy = isLegacy(c.getFSNDescription());
+					String legacy = getLegacyIndicator(c.getFSNDescription());
 					report(c, issueStr, legacy, isActive(c,c.getFSNDescription()), c.getFsn());
 				} else {
 					knownSemanticTags.put(semTag, c);
@@ -1049,7 +1053,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
 				continue;
 			}
-			String legacy = isLegacy(c.getFSNDescription());
+			String legacy = getLegacyIndicator(c.getFSNDescription());
 			
 			//Don't log lack of semantic tag for inactive concepts
 			String termWithoutTag = SnomedUtils.deconstructFSN(c.getFsn(), !c.isActive())[0];
@@ -1096,7 +1100,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
-							String legacy = isLegacy(d);
+							String legacy = getLegacyIndicator(d);
 							String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
 							boolean reported = report(c, issueStr, legacy, isActive(c,d),msg, d);
 							if (reported) {
@@ -1144,7 +1148,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
-							report(c, issueStr, isLegacy(d), isActive(c,d), d);
+							report(c, issueStr, getLegacyIndicator(d), isActive(c,d), d);
 							continue nextConcept;
 						}
 					}
@@ -1173,7 +1177,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				continue;
 			}
 			if (c.isActive()) {
-				String legacy = isLegacy(c);
+				String legacy = getLegacyIndicator(c);
 				
 				//Skip root concept - has no highest ancestor
 				if (c.equals(ROOT_CONCEPT)) {
@@ -1239,7 +1243,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (c.isActive() && inScope(c)) {
 				//Check all RHS relationships are active
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					String legacy = isLegacy(r);
+					String legacy = getLegacyIndicator(r);
 					if (!r.getType().isActive()) {
 						report(c, issueStr, legacy, isActive(c,r), r);
 					}
@@ -1251,7 +1255,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				//Check all LHS relationships are active
 				for (AxiomEntry a : c.getAxiomEntries()) {
 					try {
-						String legacy = isLegacy(a);
+						String legacy = getLegacyIndicator(a);
 						AxiomRepresentation axiom = gl.getAxiomService().convertAxiomToRelationships(a.getOwlExpression());
 						//Things like property chains give us a null axiom
 						if (axiom == null) {
@@ -1287,7 +1291,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					String legacy = isLegacy(r);
+					String legacy = getLegacyIndicator(r);
 					if (!r.fromAxiom()) {
 						report(c, issueStr, legacy, isActive(c,r), r);
 					}
@@ -1314,7 +1318,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (semTag.equals("(finding)")) {
 				checkForAncestorSemTag(c, "(disorder)", issueStr);
 			} else if (semTag.equals("(disorder)") && !diseases.contains(c)) {
-				String legacy = isLegacy(c);
+				String legacy = getLegacyIndicator(c);
 				report(c, issue2Str, legacy, isActive(c,null));
 			}
 		}
@@ -1325,7 +1329,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept ancestor : ancestors) {
 			String semTag = SnomedUtils.deconstructFSN(ancestor.getFsn())[1];
 			if (semTag.equals("(disorder)")) {
-				String legacy = isLegacy(c);
+				String legacy = getLegacyIndicator(c);
 				report(c, issueStr, legacy, isActive(c,null), ancestor);
 				return;
 			}
@@ -1365,7 +1369,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					}
 				}
 				if ((hasUS && !hasGB) || (hasGB && !hasUS)) {
-					String legacy = isLegacy(c);
+					String legacy = getLegacyIndicator(c);
 					report(c, issueStr, legacy, isActive(c,null));
 				}
 			}
@@ -1396,7 +1400,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Description textDefn : bothDialectTextDefns) {
 			String term = " " + textDefn.getTerm().toLowerCase().replaceAll("[^A-Za-z0-9]", " ");
 			Concept c = gl.getConcept(textDefn.getConceptId());
-			String legacy = isLegacy(c);
+			String legacy = getLegacyIndicator(c);
 			for (DialectPair dialectPair : dialectPairs) {
 				if (term.contains(dialectPair.usTerm)) {
 					report(c, issueStr, legacy, isActive(c,null), dialectPair.usTerm, textDefn);
@@ -1424,7 +1428,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (inScope(d)) {
 						for (Character[] bracketPair : bracketPairs) {
 							if (containsNestedBracket(c, d, bracketPair)) {
-								report (c, issueStr, isLegacy(c), isActive(c,d), d);
+								report (c, issueStr, getLegacyIndicator(c), isActive(c,d), d);
 								continue nextConcept;
 							}
 						}
@@ -1444,7 +1448,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
 				if (brackets.size() == 0) {
-					report (c,"Closing bracket found without matching opening", isLegacy(c), isActive(c,d), d);
+					report (c,"Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c,d), d);
 				} else {
 					brackets.pop();
 				}
@@ -1476,7 +1480,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
 		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type)) {
 			if (!subHierarchyList.contains(c)) {
-				report (c, issueStr, isLegacy(c), isActive(c, null));
+				report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
 			}
 		}
 	}
@@ -1509,7 +1513,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
 			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
 				if (!c.isReleased() && inScope(c)) {
-					report (c, issueStr, isLegacy(c), isActive(c, null), deprecatedHierarchy);
+					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
 				}
 			}
 		}
@@ -1545,7 +1549,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field)) {
 			Concept refConcept = gl.getConcept(field, false, false);
 			if (refConcept == null || !refConcept.isActive()) {
-				report (c, issueStr, isLegacy(c), isActive(c, null), field, rm.getId(), field);
+				report (c, issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);
 			}
 			return;
 		}
@@ -1556,13 +1560,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (matcher.groupCount() == 3) {
 				Concept refConcept = gl.getConcept(matcher.group(1), false, false);
 				if (refConcept == null || !refConcept.isActive()) {
-					report (c, issueStr, isLegacy(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 				}
 				String fsn = matcher.group(3);
 				if (!refConcept.getFsn().equals(fsn)) {
 					//Sometimes we use the PT.  Check on the rules for when we use each one.
 					if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
-						report (c, issueStr2, isLegacy(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
+						report (c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
 					}
 				}
 			}
@@ -1581,7 +1585,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Must the value be in, or must the value be NOT in our list of values?
 			boolean isIn = values.contains(relWithType.getTarget());
 			if (!isIn == mustBeIn) {
-				report (c, issueStr, isLegacy(relWithType), isActive(c, relWithType), relWithType);
+				report (c, issueStr, getLegacyIndicator(relWithType), isActive(c, relWithType), relWithType);
 			}
 		}
 	}
@@ -1601,7 +1605,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Concept c : allActiveConceptsSorted) {
 				if (c.isActive() && inScope(c)) {
 					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
-						report (c, issueStr, isLegacy(c), isActive(c, null));
+						report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
 					}
 				}
 			}
@@ -1625,7 +1629,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						//RP-574 But is this concept also a type of a domain that would allow this attribute?
 						Set<Concept> ancestors = c.getAncestors(NOT_SET);
 						if (!ancestors.contains(domainType[2])) {
-							report (c, issueStr, isLegacy(c), isActive(c, null));
+							report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
 						}
 					}
 				}
@@ -1673,8 +1677,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		return (c1.isActive() ? "Y":"N") + "/" + (c2 == null?"" : (c2.isActive() ? "Y":"N"));
 	}
 
-	private String isLegacy(Component c) {
-		return (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty() || recentlyTouched.contains(c)) ? "N" : "Y";
+	private String getLegacyIndicator(Component c) {
+		return isLegacy(c) ? "N" : "Y";
+	}
+	
+	private boolean isLegacy(Component c) {
+		return (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty() || recentlyTouched.contains(c));
 	}
 	
 	class DialectPair {
