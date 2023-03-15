@@ -16,12 +16,31 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class ReassertPublishedComponentState extends DeltaGenerator {
 	
+	/*String[] componentsToProcess = new String[] {
+		"5169695010",
+		"5090569016",
+		"e1d8fe7d-5caa-4a89-86f9-418ccf4700dc",
+		"42fd1dd9-5341-46ab-9be9-601dc4b47e78",
+		"07abc513-d04c-4447-ac8b-ad40923e1b38",
+		"6ec2a92d-a4ea-4c28-8fa1-540239eb543b",
+		"e50189c8-6ed4-4a79-be1b-6fb61112eb20",
+		"8aa56630-0ba6-47a8-a7e2-6219d9d69e88",
+		"a99d3d06-6633-4065-9540-fc85c4bfc719",
+		"e2495aeb-968f-4c9d-802e-a0f5d08303ac",
+		"63d92d0d-df7d-42b6-9d8f-0747c2f03ebf",
+		"9df1e144-cc69-447d-b133-9c2a7e731e20",
+		"fdce7c61-3e0b-4f04-b6f6-8d8bafb678e5",
+		"f9314dd1-aec0-430d-bf16-c442d854be45"
+	};
+	
 	String[] componentsToProcess = new String[] {
-		"777aa7ae-e7a2-5590-a357-dee151d3b0a5",
-		"b69d41e0-ec46-58cc-a937-b41fd73bd851",
-		"8cc94bc7-4276-5544-baa7-a76bdb143012",
-		"3a1257e3-ddc9-59ca-8e38-76176d973e97",
-		"761c9289-5376-5341-8c9d-91ad150a348a"
+			"105221000220106",
+			"233321000220112",
+			"233331000220110"
+	};*/
+	
+	String[] componentsToProcess = new String[] {
+			"1e684afa-9319-4b24-9489-40caef554e13"
 	};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -32,6 +51,11 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
 			delta.init(args);
+			//It might be that we need component from an upgraded international edition
+			//so we might have very bad integrity.  Doesn't matter in this case, we just
+			//need the rows from the RF2
+			delta.getArchiveManager(true).setPopulateHierarchyDepth(false);
+			delta.getArchiveManager(true).setRunIntegrityChecks(false);
 			delta.loadProjectSnapshot(false);
 			delta.postInit();
 			delta.process();
@@ -56,7 +80,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Component Reasserted"};
+				"Id, FSN, SemTag, ModuleId, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
 		
@@ -71,7 +95,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 				report((Concept)null, componentId, "Not found in " + project.getKey());
 			} else {
 				Concept owningConcept = gl.getComponentOwner(component.getId());
-				report (owningConcept, component);
+				report (owningConcept, component.getModuleId(), component);
 				component.setDirty();
 				outputRF2(owningConcept, true);  //Will only output dirty fields.
 				component.setClean();  //Revert this in case we output other components for this concept.
