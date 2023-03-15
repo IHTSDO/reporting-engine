@@ -79,7 +79,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			throws TermServerScriptException {
 		int changesMade = 0;
 		
-		/*if (c.getId().equals("60949004")) {
+		/*if (c.getId().equals("359592009")) {
 			debug ("here");
 		}*/
 		
@@ -148,6 +148,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					if (!dryRun) {
 						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
 					}
+					//Remove this from the concept also so that we don't eg also modify its module id further down
+					d.getLangRefsetEntries().remove(duplicatePair.delete);
 					changesMade++;
 					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
 				} else {
@@ -160,18 +162,16 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				}
 			}
 			
-			if (!inScope(d)) {
-				continue;
-			}
-			
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				if (duplicatePair.isDeleting()) {
-					debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+					debug((dryRun?"Dry Run (so not) r":"R") + "emoving duplicate: " + duplicatePair.delete);
 					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 					if (!dryRun) {
 						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
 					}
+					//Remove this from the concept also so that we don't eg also modify its module id further down
+					d.getInactivationIndicatorEntries().remove(duplicatePair.delete);
 					changesMade++;
 					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
 				} else {
@@ -182,6 +182,10 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						changesMade++;
 					}
 				}	
+			}
+			
+			if (!inScope(d)) {
+				continue;
 			}
 			
 			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {

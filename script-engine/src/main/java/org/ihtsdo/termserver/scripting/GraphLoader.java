@@ -297,7 +297,7 @@ public class GraphLoader implements ScriptConstants {
 					TermServerScript.debug("Here");
 				}
 				
-				if (lineItems[IDX_ID].equals("5a1fa3c4-4d22-48b2-bb7e-2f8d8f5a279c")) {
+				if (lineItems[IDX_ID].equals("1e684afa-9319-4b24-9489-40caef554e13")) {
 					TermServerScript.debug ("here");
 				}*/
 				
@@ -1338,6 +1338,9 @@ public class GraphLoader implements ScriptConstants {
 			allComponents.put(c.getId(), c);
 			componentOwnerMap.put(c,  c);
 			for (Description d : c.getDescriptions()) {
+				/*if (d.getId().equals("5169695010")) {
+					TermServerScript.debug("Debug here\n");
+				}*/
 				populateDescriptionComponents(c, d);
 			}
 			
@@ -1383,7 +1386,7 @@ public class GraphLoader implements ScriptConstants {
 				componentOwnerMap.put(a, c);
 			}
 		}
-		System.out.print("complete.");
+		System.out.print("Component owner map complete with " + componentOwnerMap.size() + " entries.\n");
 	}
 
 	private void populateDescriptionComponents(Concept c, Description d) {
