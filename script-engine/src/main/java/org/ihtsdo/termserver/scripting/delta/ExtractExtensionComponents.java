@@ -39,7 +39,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 1000;
+	private Integer conceptsPerArchive = 5;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
@@ -54,11 +54,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			delta.moduleId = "731000124108";  //US Module
+			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
 			//delta.moduleId = "999000011000000103"; //UK
+			delta.moduleId = "57091000202101";  //Norway module for medicines
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -726,7 +727,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
 		Concept target = r.getTarget();
-		if (includeDependencies && !allModifiedConcepts.contains(target)) {
+		
+		//If we don't have a target, we'll assume that's a concrete value.  No need to check that.
+		if (target != null && includeDependencies && !allModifiedConcepts.contains(target)) {
 			//Don't worry about the target if it's on our to-do list anyway.
 			if (!componentsToProcess.contains(target)) {
 				//If our dependency is in the core module, then check - live - if it is active
