@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.rest.tools;
 
+import org.snomed.otf.scheduler.domain.JobStatus;
+
 import java.util.UUID;
 
 public class AllReportRunnerResult {
@@ -8,18 +10,20 @@ public class AllReportRunnerResult {
     private String message;
     private UUID id;
 
-    public AllReportRunnerResult(String name, String status, String message, UUID id) {
+    public AllReportRunnerResult(String name, JobStatus jobStatus, UUID id) {
         this.name = name;
-        this.status = status;
-        this.message = message;
+        this.status = jobStatus.name();
         this.id = id;
     }
 
-    public AllReportRunnerResult(String name, String status, String message) {
+    public AllReportRunnerResult(String name, JobStatus jobStatus, String message) {
         this.name = name;
-        this.status = status;
+        this.status = jobStatus.name();
         this.message = message;
-        this.id = null;
+    }
+
+    public AllReportRunnerResult(String name) {
+        this.name = name;
     }
 
     public String getName() {
