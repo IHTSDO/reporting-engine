@@ -51,8 +51,8 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	
 	public void postInit() throws TermServerScriptException {
 		countNewAsGained = getJobRun().getParamBoolean(COUNT_NEW_AS_GAINED);
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Previous Count, Current Count " + (countNewAsGained?"(includes new)":"(does not include new)") + ", Hierarchy Movement Count (does not include inactivated)",
-				"SCTID, FSN, Semtag, Movement, Concept"};
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Active, Previous Count, Current Count " + (countNewAsGained?"(includes new)":"(does not include new)") + ", Hierarchy Movement Count (does not include inactivated)",
+				"SCTID, FSN, Semtag, Active, Movement, Concept"};
 		String[] tabNames = new String[] {	"Summary",
 				"Detail"};
 		cache = gl.getAncestorsCache();
@@ -124,7 +124,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 					continue;
 				}
 				
-				report(c, previousCount, currentCount, stats);
+				report(c, c.isActive() ? "Y":"N", previousCount, currentCount, stats);
 				countIssue(c);
 				
 				for (Long gainedConceptId : gainedDescendants) {
@@ -132,7 +132,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 					//If this concept has ancestors in this set that are also being reported
 					//then we don't need to also report the children.
 					if (!hasAncestorsBeingReported(c, gainedDescendants)) {
-						report(SECONDARY_REPORT, c, "Gained", gainedConcept);
+						report(SECONDARY_REPORT, c, c.isActive() ? "Y":"N", "Gained", gainedConcept);
 					}
 				}
 				
@@ -141,7 +141,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 					//If this concept has ancestors in this set that are also being reported
 					//then we don't need to also report the children.
 					if (!hasAncestorsBeingReported(c, lostDescendants)) {
-						report(SECONDARY_REPORT, c, "Lost", lostConcept);
+						report(SECONDARY_REPORT, c, c.isActive() ? "Y":"N", "Lost", lostConcept);
 					}
 				}
 			}
