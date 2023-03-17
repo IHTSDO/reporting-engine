@@ -47,8 +47,12 @@ public class MultiArchiveImporter extends BatchFix {
 		Arrays.sort(dirListing, NumberAwareStringComparator.INSTANCE);
 		for (String archiveStr : dirListing){
 			File thisArchive = new File(getInputFile() + File.separator + archiveStr);
-			info("Processing: " + thisArchive);
-			importArchive(thisArchive);
+			if (thisArchive.getPath().endsWith(".zip")) {
+				info("Processing: " + thisArchive);
+				importArchive(thisArchive);
+			} else {
+				info("Skipping non archive: " + thisArchive);
+			}
 		}
 	}
 
