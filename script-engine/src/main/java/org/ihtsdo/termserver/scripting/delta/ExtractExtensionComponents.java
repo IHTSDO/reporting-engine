@@ -18,8 +18,6 @@ import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.amazonaws.services.servicequotas.model.IllegalArgumentException;
-
 /**
  * Class form a delta of specified concepts from some edition and 
  * promote those (along with attribute values and necessary ancestors)
@@ -39,7 +37,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 5;
+	private Integer conceptsPerArchive = 99999;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
@@ -54,12 +52,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.moduleId = "731000124108";  //US Module
+			delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
 			//delta.moduleId = "999000011000000103"; //UK
-			delta.moduleId = "57091000202101";  //Norway module for medicines
+			//delta.moduleId = "57091000202101";  //Norway module for medicines
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -853,22 +851,32 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		} else {
 			boolean hasUSLangRefset = false;
-			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET)) {
+			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
 				hasUSLangRefset = true;
 				//Only move if there's a difference
 				//Note we cannot get LangRefsetEntries from TS because browser format only uses AcceptabilityMap
 				if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
 					usEntry.setModuleId(targetModuleId);
 					usEntry.setDirty();
-					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET).size() ==0) {
-						LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
-						gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
-						d.addAcceptability(gbEntry);
+					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).size() ==0) {
+						//Might be an inactive GB refset entry that we can reuse
+						List<LangRefsetEntry> gbInactiveLangRefs = d.getLangRefsetEntries(ActiveState.INACTIVE, GB_ENG_LANG_REFSET);
+						if (gbInactiveLangRefs.size() > 0) {
+							LangRefsetEntry gbEntry = gbInactiveLangRefs.get(0);
+							gbEntry.setActive(true);
+							gbEntry.setEffectiveTime(null);
+							gbEntry.setDirty();
+						} else {
+							//Otherwise clone the US entry to use as GB
+							LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
+							gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
+							d.addAcceptability(gbEntry);
+						}
 					}
 				}
 			}
 			
-			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET)) {
+			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
 				//if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
 				gbEntry.setModuleId(targetModuleId);
 				gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
