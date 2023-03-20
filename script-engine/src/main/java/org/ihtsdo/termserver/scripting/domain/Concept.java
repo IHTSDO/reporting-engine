@@ -1316,7 +1316,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 					continue;
 				}
 				//Do we know about this axiom yet? Or if null, flatten
-				Map<Integer, RelationshipGroup> axiomGroups = axiomGroupMap.get(flatten ? NOT_SET : r.getAxiomEntry().getId());
+				Map<Integer, RelationshipGroup> axiomGroups = axiomGroupMap.get(flatten ? "N/A" : r.getAxiomEntry().getId());
 				if (axiomGroups == null) {
 					axiomGroups = new HashMap<>();
 					axiomGroupMap.put((flatten ? "N/A" : r.getAxiomEntry().getId()), axiomGroups);
