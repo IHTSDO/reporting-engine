@@ -32,6 +32,7 @@ public class TemplateServiceClient {
 	
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
+	private String serverUrl;
 	LogicalTemplateParserService service  = new LogicalTemplateParserService();
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
@@ -88,6 +89,8 @@ public class TemplateServiceClient {
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
 		
+		this.serverUrl = serverUrl;
+		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
 		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
 			@Override
@@ -105,6 +108,10 @@ public class TemplateServiceClient {
 				null,
 				new ParameterizedTypeReference<List<ConceptTemplate>>(){});
 		return response.getBody();
+	}
+	
+	public String getServerUrl() {
+		return serverUrl;
 	}
 
 }

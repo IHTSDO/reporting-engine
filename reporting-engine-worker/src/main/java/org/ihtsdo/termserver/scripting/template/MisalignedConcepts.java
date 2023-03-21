@@ -47,11 +47,14 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<<  302495003 |Arthrotomy (procedure)|");
+		params.put(ECL, "<< 263063009 |Fracture dislocation of joint (disorder)|");
 		//params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~0..1]]{[[~1..1]]  363702006 |Has focus (attribute)|  = [[+id(<< 399269003 |Arthropathy (disorder)| )]]}[[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id( << 129287005 |Incision - action (qualifier value)| )]],[[~1..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<<  39352004 |Joint structure (body structure)| )]],[[~0..1]]  260507000 |Access (attribute)| = [[+id(< 309795001 |Surgical access values (qualifier value)| )]]}[[~0..*]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id(<< 129284003 |Surgical action (qualifier value)| )]],[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<<  91723000 |Anatomical structure (body structure)| )]],[[~0..1]]  405814001 |Procedure site - Indirect (attribute)|  = [[+id(<<  91723000 |Anatomical structure (body structure)| )]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id (<< 105590001 |Substance (substance)| )]],[[~0..1]]  363699004 |Direct device (attribute)|  = [[+id(<  49062001 |Device (physical object)| )]],[[~0..1]]  363700003 |Direct morphology (attribute)|  = [[+id(<<  49755003 |Morphologically abnormal structure (morphologic abnormality)| )]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id(<< 261217004 |Substance (attribute)| )]]}");
-		params.put(INCLUDE_COMPLEX, "false");
+		params.put(TEMPLATE_NAME, "Fracture dislocation of [body structure] (disorder) - v1.0");
+		//params.put(TEMPLATE_NAME, "Fracture%20dislocation%20of%20%5Bbody%20structure%5D%20(disorder)%20-%20v1.0");
+		
+		params.put(INCLUDE_COMPLEX, "true");
 		params.put(INCLUDE_ORPHANET, "true");
-		params.put(KNOWN_COMPLETE, "true");
+		params.put(KNOWN_COMPLETE, "false");
 		TermServerReport.run(MisalignedConcepts.class, args, params);
 	}
 	
@@ -124,6 +127,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			}
 
 			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
+			if (!templateServerUrl.endsWith("template-service/") && (!templateServerUrl.endsWith("template-service"))) {
+				templateServerUrl += "/template-service";
+			}
+			
 			//Do we have a template name to load, or some actual template language?
 			String templateName = jobRun.getParamValue(TEMPLATE_NAME);
 			String template = jobRun.getParamValue(TEMPLATE);

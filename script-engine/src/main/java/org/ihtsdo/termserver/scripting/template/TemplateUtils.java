@@ -107,6 +107,7 @@ public class TemplateUtils implements ScriptConstants {
 			if (isValid) {
 				isValid = validateNamedSlots(c, t, namedSlots);
 			}
+			//if (true);
 			return isValid;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to validate concept " + c + " against template '" + t.getName() + "'", e);

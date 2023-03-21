@@ -46,11 +46,19 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		TermServerReport.run(AllTemplateCompliance.class,args, params);
 	}
 	
+	/*public void init(JobRun run) throws TermServerScriptException {
+		commonInit(run, true);  //Single template mode
+		populateTemplateFromTS("Fracture dislocation of [body structure] (disorder) - v1.0");
+		super.init(run);
+	}*/
+	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Subset ECL, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered", 
-												"KPI, Count"};
+												"KPI, Count",
+												"Template Name, Issue"};
 		String[] tabNames = new String[] {	"Template Compliance", 
-											"Summary Stats / KPIs"};
+											"Summary Stats / KPIs",
+											"Template issues"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -83,19 +91,13 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
-				warn ("Inactive or Non-existent domain: " + invalidTemplateDomain + " in template: " + t.getName());
+				String msg = "Inactive or Non-existent domain: " + invalidTemplateDomain;
+				warn (msg + " in template: " + t.getName());
+				report(TERTIARY_REPORT, t.getName(), msg);
 			}
 			domainTemplates.remove(invalidTemplateDomain);
 		}
 		
-		//We're going to sort by the top level domain and the domain's FSN
-		//Can't decide how to sort ECL statements
-		/*Comparator<Entry<String, List<Template>>> comparator = (e1, e2) -> compare(e1, e2);
-
-		Map<String, List<Template>> sortedDomainTemplates = domainTemplates.entrySet().stream()
-				.sorted(comparator)
-				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (k, v) -> k, LinkedHashMap::new));
-		*/
 		//Work through all subsets
 		for (Map.Entry<String, List<Template>> entry : domainTemplates.entrySet()) {
 			String subsetECL = entry.getKey();
@@ -217,10 +219,19 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		String templatesConsidered = templates.stream().map(t -> t.getName()).collect(Collectors.joining(",\n"));
 		
 		//Domain/SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
-		report(PRIMARY_REPORT, ecl, topHierarchyText, subsetSize, noModelSize, outOfScope, countedElsewhere, templateMatches.size(), templatesConsidered);
+		report(PRIMARY_REPORT, ecl, topHierarchyText, subsetSize + " (" + subset.size() + " available)", noModelSize, outOfScope, countedElsewhere, templateMatches.size(), templatesConsidered);
 		totalTemplateMatches += templateMatches.size();
 	}
 	
+	/*private boolean containsTemplate(List<Template> templates, String templateName) {
+		for (Template template : templates) {
+			if (template.getName().equals(templateName)) {
+				return true;
+			}
+		}
+		return false;
+	}*/
+
 	protected boolean inModuleScope(Component c) {
 		if (project.getKey().equals("MAIN")) {
 			return true;

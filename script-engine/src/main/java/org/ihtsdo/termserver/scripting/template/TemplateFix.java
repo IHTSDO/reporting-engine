@@ -216,7 +216,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
-			TermServerScript.info("Loading remote template " + id + ": " + templateName );
+			TermServerScript.info("Loading remote template " + id + ": '" + templateName + "' from " + tsc.getServerUrl() );
 			ConceptTemplate ct = tsc.loadLogicalTemplate(templateName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, templateName);
