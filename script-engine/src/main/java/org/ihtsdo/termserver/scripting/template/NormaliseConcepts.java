@@ -32,7 +32,8 @@ public class NormaliseConcepts extends BatchFix {
 	//private String ecl = "<3253007 |Discoloration of skin (finding)|";
 	//private String ecl = "< 67889009 |Irrigation (procedure)|";
 	//private String ecl = "< 11429006 |Consultation (procedure)| ";
-	private String ecl = "< 14766002 |Aspiration (procedure)| ";
+	//private String ecl = "< 14766002 |Aspiration (procedure)| ";
+	private String ecl = "<! 59108006 |Injection (procedure)|";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
