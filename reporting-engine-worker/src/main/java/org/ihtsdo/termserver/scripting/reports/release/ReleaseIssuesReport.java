@@ -256,6 +256,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		wordsInReverse();
 		multipleLangRef();
 		multiplePTs();
+		multipleFSNs();
 		//suspectedProperNameCaseInsensitive();
 		if (isMS()) {
 			unexpectedLangCodeMS();
@@ -898,21 +899,51 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		List<DescriptionType> typesOfInterest = Collections.singletonList(DescriptionType.SYNONYM);
 		Map<String, Description> ptMap = new HashMap<>();
 		for (Concept c : allConceptsSorted) {
-			if (inScope(c)) {
-				ptMap.clear();
-				nextDescription:
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
-					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-						if (l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
-							if (ptMap.containsKey(l.getRefsetId())) {
+			ptMap.clear();
+			nextDescription:
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
+				boolean inScopePTDetected = false;
+				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+					if (l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+						if (inScope(d)) {
+							inScopePTDetected = true;
+						}
+						if (ptMap.containsKey(l.getRefsetId())) {
+							if (inScopePTDetected) {
 								String detailStr = d + " + " + ptMap.get(l.getRefsetId());
 								report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 								continue nextDescription;
-							} else {
-								ptMap.put(l.getRefsetId(), d);
 							}
+						} else {
+							ptMap.put(l.getRefsetId(), d);
 						}
 					}
+				}
+			}
+		}
+	}
+	
+	private void multipleFSNs() throws TermServerScriptException {
+		String issueStr = "Multiple active FSNs in same language";
+		initialiseSummary(issueStr);
+		List<DescriptionType> typesOfInterest = Collections.singletonList(DescriptionType.FSN);
+		Map<String, Description> fsnMap = new HashMap<>();
+		for (Concept c : allConceptsSorted) {
+			fsnMap.clear();
+			nextDescription:
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
+				boolean inScopeFSNDetected = false;
+				if (inScope(d)) {
+					inScopeFSNDetected = true;
+				}
+				if (fsnMap.containsKey(d.getLang())) {
+					if (inScopeFSNDetected) {
+						String detailStr = d + ",\n" + fsnMap.get(d.getLang());
+						report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr);
+						continue nextDescription;
+					}
+				} else {
+					fsnMap.put(d.getLang(), d);
 				}
 			}
 		}
