@@ -151,33 +151,33 @@ public class HistoricDataUser extends TermServerReport {
 	}
 	
 	protected class Datum {
-		long conceptId;
-		String fsn;
-		boolean isActive;
-		boolean isSD;
-		String hierarchy;
-		boolean isIP;
-		boolean hasSdDescendant;
-		boolean hasSdAncestor;
-		int hashCode;
-		String moduleId;
-		List<String> relIds;
-		List<String> descIds;
-		List<String> axiomIds;
-		List<String> langRefsetIds;
-		List<String> inactivationIds;
-		List<String> histAssocIds;
-		List<String> relIdsInact;
-		List<String> descIdsInact;
-		List<String> axiomIdsInact;
-		List<String> langRefsetIdsInact;
-		List<String> inactivationIdsInact;
-		List<String> histAssocIdsInact;
-		boolean hasAttributes;
-		List<String> descHistAssocIds;
-		List<String> descHistAssocIdsInact;
-		List<String> descInactivationIds;
-		List<String> descInactivationIdsInact;
+		public long conceptId;
+		public String fsn;
+		public boolean isActive;
+		public boolean isSD;
+		public String hierarchy;
+		public boolean isIP;
+		public boolean hasSdDescendant;
+		public boolean hasSdAncestor;
+		public int hashCode;
+		public String moduleId;
+		public List<String> relIds;
+		public List<String> descIds;
+		public List<String> axiomIds;
+		public List<String> langRefsetIds;
+		public List<String> inactivationIds;
+		public List<String> histAssocIds;
+		public List<String> relIdsInact;
+		public List<String> descIdsInact;
+		public List<String> axiomIdsInact;
+		public List<String> langRefsetIdsInact;
+		public List<String> inactivationIdsInact;
+		public List<String> histAssocIdsInact;
+		public boolean hasAttributes;
+		public List<String> descHistAssocIds;
+		public List<String> descHistAssocIdsInact;
+		public List<String> descInactivationIds;
+		public List<String> descInactivationIdsInact;
 		
 		@Override
 		public int hashCode () {
