@@ -31,7 +31,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 	//String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
 	//											"20190731", "MAIN" };
 	private static String packageTemplate = "SnomedCT_InternationalRF2_PRODUCTION_#DATE#T120000Z.zip";
-	String[] releasesToAnalyse = new String[] { "20180731", "20220930" };
+	String[] releasesToAnalyse = new String[] { "20180731", "20230331" };
 	
 	Map<String, Map<Long, Datum>> prevData;
 	Map<String, Map<Long, Datum>> thisData;
