@@ -41,12 +41,12 @@ public class HistoricDataUser extends TermServerReport {
 	protected int topLevelHierarchyCount = 0;
 	protected String complexName;
 	
-	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException {
 		super.loadProjectSnapshot(fsnOnly);
 	}
 	
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		boolean compareTwoSnapshots = false; 
 		projectKey = getProject().getKey();
 		info("Historic data being imported, wiping Graph Loader for safety.");
@@ -74,25 +74,27 @@ public class HistoricDataUser extends TermServerReport {
 		if (StringUtils.isEmpty(prevRelease)) {
 			prevRelease = getProject().getMetadata().getPreviousPackage();
 		}
-
 		
 		getProject().setKey(prevRelease);
 		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
 		String task = getJobRun().getTask();
 		getJobRun().setTask(null);
-		
-		ArchiveManager mgr = getArchiveManager(true);
-		mgr.setLoadEditionArchive(true);
-		mgr.loadSnapshot(fsnOnly);
-		
-		previousEffectiveTime = gl.getCurrentEffectiveTime();
-		info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
-		
-		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
-		statsGenerator.setModuleFilter(moduleFilter);
-		statsGenerator.runJob();
-		mgr.reset();
-		getJobRun().setTask(task);
+		try {
+			ArchiveManager mgr = getArchiveManager(true);
+			mgr.setLoadEditionArchive(true);
+			mgr.loadSnapshot(fsnOnly);
+			
+			previousEffectiveTime = gl.getCurrentEffectiveTime();
+			info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
+			
+			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
+			statsGenerator.setModuleFilter(moduleFilter);
+			statsGenerator.runJob();
+			mgr.reset();
+			getJobRun().setTask(task);
+		} catch (TermServerScriptException e) {
+			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
+		}
 		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	};
 	

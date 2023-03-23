@@ -64,7 +64,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	}
 	
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		//If we're working with zip packages, we'll use the HistoricDataGenerator
 		//Otherwise we'll use the default behaviour
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);

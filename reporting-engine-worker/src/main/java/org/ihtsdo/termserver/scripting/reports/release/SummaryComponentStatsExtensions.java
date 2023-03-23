@@ -68,7 +68,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	}
 	
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		//Either specify all values or none of them.   Use the XOR indicator
 		if (XOR(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
 			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");

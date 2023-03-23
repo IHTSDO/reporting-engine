@@ -548,7 +548,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return new TermServerClient(url + contextPath, authenticatedCookie);
 	}
 	
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		getArchiveManager(true).loadSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
