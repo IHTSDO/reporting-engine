@@ -37,10 +37,16 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			"105221000220106",
 			"233321000220112",
 			"233331000220110"
-	};*/
+	};
 	
 	String[] componentsToProcess = new String[] {
 			"1e684afa-9319-4b24-9489-40caef554e13"
+	};*/
+	
+	String[] componentsToProcess = new String[] {
+			"5146860018",
+			"36820a1d-ed25-48ca-90d0-bda314dedf8b",
+			"6b2bc82b-fac5-4094-a910-4b5db67ed035"
 	};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
