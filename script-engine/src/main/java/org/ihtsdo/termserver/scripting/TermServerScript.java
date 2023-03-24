@@ -1343,7 +1343,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public String getReportName() {
 		if (reportName == null) {
-			String fileName = SnomedUtils.deconstructFilename(getInputFile())[1];
+			String fileName = "";
+			if (hasInputFile(0)) {
+				fileName = SnomedUtils.deconstructFilename(getInputFile())[1];
+			}
 			String spacer = " ";
 			reportName = getScriptName() + (fileName.isEmpty()?"" : spacer + fileName);
 			try {
@@ -1598,8 +1601,15 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public ArchiveManager getArchiveManager(boolean forceReuse) {
 		return ArchiveManager.getArchiveManager(this, appContext, forceReuse);
 	}
+	
+	public boolean hasInputFile(int n) {
+		return getInputFile(n) != null;
+	}
 
 	public File getInputFile() {
+		if (getInputFile(0) == null) {
+			throw new IllegalArgumentException("No file specified for process.  Check the -f command line argument");
+		}
 		return getInputFile(0);
 	}
 	

@@ -1254,6 +1254,10 @@ public class GraphLoader implements ScriptConstants {
 		return new ArrayList<AssociationEntry>();
 	}
 	
+	public boolean isUsedAsHistoricalAssociationTarget (Concept c) {
+		return historicalAssociations.containsKey(c);
+	}
+	
 	public void loadMRCMAttributeRangeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
