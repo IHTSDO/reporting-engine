@@ -34,7 +34,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * 
  * DRUGS-814 Changes now that we're working with axioms.  Ingredients self grouped.
  * 
- * 
+ * RP-723 Allowing report to have its claws back and actually create the concepts it proposes.
  */
 public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 	
@@ -59,6 +59,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	
 	Set<String> suppress = new HashSet<>();
 	
+	private boolean newConceptsOnly = true;
+	
 	public CreateMissingDrugConcepts() {
 		super(null);
 	}
@@ -77,12 +79,18 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(NEW_CONCEPTS_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
+				.add(CONCEPTS_PER_TASK).withType(JobParameter.Type.STRING).withDefaultValue(5).withMandatory()
+				.add(DRY_RUN).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
+				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Missing MP MPF concepts - concrete domains")
 				.withDescription("This report lists MP/MPF concepts which should be there, but aren't.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
+				.withParameters(params)
 				.build();
 	}
 	
@@ -93,6 +101,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		populateTaskDescription = true;
 		selfDetermining = true;
 		classifyTasks = false;
+
+		JobRun jobRun = getJobRun();
+		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
+		dryRun = jobRun.getParamBoolean(DRY_RUN);
+		taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -233,9 +246,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		Set<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-			if (straw.getConceptId().equals("774384006")) {
+			/*if (straw.getConceptId().equals("774384006")) {
 				debug ("debug here also");
-			}
+			}*/
 			
 			//Do a simple sum check to see if we can rule out a match early doors
 			if (straw.getStatedAttribSum() != needle.getStatedAttribSum()) {
@@ -322,13 +335,21 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		return drug;
 	}
 	
+	public boolean inScope(Concept c) {
+		return !newConceptsOnly || (!c.hasEffectiveTime() && !c.isReleased());
+	}
+	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		List<Concept> allAffected = new ArrayList<Concept>();
 		termGenerator.setQuiet(true);
+		List<Concept> conceptsToProcess = MEDICINAL_PRODUCT.getDescendents(NOT_SET).stream()
+				.filter(c -> inScope(c))
+				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.collect(Collectors.toList());
 		nextConcept:
-		//for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-		for (Concept c : Collections.singleton(gl.getConcept("425226008"))) {
+		for (Concept c : conceptsToProcess) {
+		//for (Concept c : Collections.singleton(gl.getConcept("425226008"))) {
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);

@@ -95,6 +95,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String FILE = "File";
 	protected static final String DRY_RUN = "Dry Run";
 	protected static final String INPUT_FILE = "InputFile";
+	protected static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
 	protected static final String ATTRIBUTE_TYPE = "Attribute Type";
 	protected static final String HIERARCHIES = "Hierarchies";
