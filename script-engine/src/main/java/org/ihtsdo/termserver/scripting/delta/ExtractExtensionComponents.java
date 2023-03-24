@@ -31,13 +31,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> noMoveRequired = new ArrayList<>();
 	private boolean includeDependencies = true;
 	
+	private boolean includeInferredParents = true;
+	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
 	String targetModuleId = SCTID_CORE_MODULE;
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 99999;
+	private Integer conceptsPerArchive = 4;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
@@ -52,12 +54,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			delta.moduleId = "731000124108";  //US Module
+			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
 			//delta.moduleId = "999000011000000103"; //UK
-			//delta.moduleId = "57091000202101";  //Norway module for medicines
+			delta.moduleId = "57091000202101";  //Norway module for medicines
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -535,7 +537,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (r.isActive() && !r.fromAxiom()) {
 					info ("Unexpected active stated relationship not from axiom: "+ r);
 				}
-				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess, new HashMap<>())) {
+				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
 					subComponentsMoved = true;
 					relationshipMoved = true;
 				} 
@@ -547,13 +549,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Partial move on the modeling.  Exported axiom may be incomplete.");
 		}
 		
-		/* Policy is not to moved inferred modeling
-		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if ((!r.getModuleId().equals(targetModuleId) && !r.getModuleId().equals(SCTID_MODEL_MODULE)) {
-				moveRelationshipToTargetModule(r);
-				subComponentsMoved = true;
+		//Policy is not to moved inferred modelling
+		//Unless we also want the inferred parents
+		if (includeInferredParents) {
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
+				if ((!r.getModuleId().equals(targetModuleId) && !r.getModuleId().equals(SCTID_MODEL_MODULE))) {
+					moveRelationshipTarget(r, componentsToProcess);
+					subComponentsMoved = true;
+				}
 			}
-		}*/
+		}
 		
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			//We have an issue with concepts in the examined space already
@@ -653,7 +658,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				Map<Concept, Concept> replacementsMadeMap = new HashMap<>();
 				for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
 					r.setAxiomEntry(a);
-					if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess, replacementsMadeMap)) {
+					if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
 						axiomRelationshipMoved = true;
 						a.setDirty();
 					}
@@ -689,7 +694,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return axiomRelationshipMoved;
 	}
 
-	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component> componentsToProcess, Map<Concept, Concept> replacementsMadeMap) throws TermServerScriptException {
+	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
 		//If we already have the concept on the Terminology Server, perhaps we already have the relationship too,
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
@@ -720,12 +725,23 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 		
-		boolean isIsA = r.getType().equals(IS_A);
+		
 		
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
-		Concept target = r.getTarget();
+		moveRelationshipTarget(r, componentsToProcess);
 		
+		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
+		if (!conceptOnTS.equals(NULL_CONCEPT)) {
+			report(r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
+		}
+		return true;
+	}
+
+	private void moveRelationshipTarget(Relationship r, List<Component> componentsToProcess/*, Map<Concept, Concept> replacementsMadeMap*/) throws TermServerScriptException {
+		Concept target = r.getTarget();
+		boolean isIsA = r.getType().equals(IS_A);
+		String charTypeStr = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)?"Stated":"Inferred";
 		//If we don't have a target, we'll assume that's a concrete value.  No need to check that.
 		if (target != null && includeDependencies && !allModifiedConcepts.contains(target)) {
 			//Don't worry about the target if it's on our to-do list anyway.
@@ -752,7 +768,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 							msg += ". Replacing with " + replacement;
 							report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 							target = replacement;
-							replacementsMadeMap.put(loadedTarget, replacement);
 							Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
 							//Ensure it gets allocated to the same Axiom
 							newRel.setAxiomEntry(r.getAxiomEntry());
@@ -773,7 +788,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					if (!componentsToProcess.contains(target)) {
 						incrementSummaryInformation("Unexpected dependencies included");
 						addSummaryInformation("Unexpected target dependency: " + target, "");
-						report(r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in Stated Modeling", target);
+						report(r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in " + charTypeStr + " Modeling", target);
 					}
 				} else {
 					//No need to try to switch this concept again
@@ -781,12 +796,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				}
 			}
 		}
-		
-		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
-		if (!conceptOnTS.equals(NULL_CONCEPT)) {
-			report(r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
-		}
-		return true;
 	}
 
 	private Concept loadConcept(Concept c) throws TermServerScriptException {
