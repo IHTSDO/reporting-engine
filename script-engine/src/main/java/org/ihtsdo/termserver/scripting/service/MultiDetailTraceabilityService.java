@@ -35,6 +35,7 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 	
 	public int populateTraceabilityAndReport(int tabIdx, Component c, Object... details) throws TermServerScriptException {
 		int rowsReported = 0;
+		Concept owningConcept = ts.getGraphLoader().getComponentOwner(c.getId());
 		try {
 			List<Activity> activities = client.getComponentActivity(c.getId(), onBranch);
 			for (Activity activity : activities) {
@@ -49,6 +50,7 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 									activity.getBranch(), 
 									activity.getUsername(),
 									activity.getHighestPromotedBranch(),
+									(owningConcept == null ? "Unknown" : owningConcept),
 									c);
 							rowsReported++;
 						}
