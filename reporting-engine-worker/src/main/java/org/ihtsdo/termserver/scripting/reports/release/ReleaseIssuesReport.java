@@ -1284,7 +1284,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 				
 				//Check all LHS relationships are active
-				for (AxiomEntry a : c.getAxiomEntries()) {
+				for (AxiomEntry a : c.getAxiomEntries(ActiveState.ACTIVE, true)) {
 					try {
 						String legacy = getLegacyIndicator(a);
 						AxiomRepresentation axiom = gl.getAxiomService().convertAxiomToRelationships(a.getOwlExpression());
