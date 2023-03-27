@@ -444,6 +444,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
 			debug ("Application context has " + (appContext == null?"not " : "") + "been supplied");
 			this.appContext = appContext;
+			this.jobRun = jobRun;
 
 			//Job Runs generally self determine
 			preInit();

@@ -70,7 +70,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		TermServerReport.run(CreateMissingDrugConcepts.class, args, new HashMap<>());
+		Map<String, String> params = new HashMap<>();
+		params.put(NEW_CONCEPTS_ONLY, "false");
+		params.put(CONCEPTS_PER_TASK, "5");
+		params.put(DRY_RUN, "true");
+		TermServerReport.run(CreateMissingDrugConcepts.class, args, params);
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -86,8 +90,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Missing MP MPF concepts - concrete domains")
-				.withDescription("This report lists MP/MPF concepts which should be there, but aren't.")
+				.withName("Missing MP MPF concepts")
+				.withDescription("This job creates missing MP/MPF concepts.  Options exist for only checking recently created CDs, and running as a 'Dry Run'")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.withParameters(params)
@@ -110,8 +114,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
+				"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
 				"Suppressed Concepts"};
 		String[] tabNames = new String[] {	"Missing MP/MPF Concepts",
+				"Processing Issues",
 				"Suppressed Concepts"};
 		
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
@@ -173,7 +179,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		super.postInit(tabNames, columnHeadings, false);
 		
 		for (String suppressedConcept : suppress) {
-			report (SECONDARY_REPORT, suppressedConcept);
+			report (TERTIARY_REPORT, suppressedConcept);
 		}
 	}
 
@@ -363,7 +369,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 						Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
 						if (!allowMoreSpecificDoseForms.contains(doseForm)) {
 							if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
-								report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+								report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 								continue nextConcept;
 							}
 						}
@@ -384,7 +390,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 							.collect(Collectors.toList());
 					for (Concept currentMP : currentMPs) {
 						if (SnomedUtils.hasMoreSpecificModel(currentMP, mp, AncestorsCache.getAncestorsCache())) {
-							report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 							continue nextConcept;
 						}
 					}
@@ -397,7 +403,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 								allAffected.add(c);
 							}
 						} else {
-							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 						}
 					}
 					

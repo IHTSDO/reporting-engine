@@ -6,11 +6,11 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.otf.RF2Constants.CaseSignificance;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import com.google.gdata.model.atompub.Accept;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -119,7 +119,11 @@ public class Description extends Component implements ScriptConstants {
 	
 	public static Description withDefaults (String term, DescriptionType type, Map<String,Acceptability> acceptabilityMap) {
 		Description d = new Description();
-		d.setCaseSignificance(StringUtils.calculateCaseSignificance(term));
+		if (!StringUtils.isEmpty(term)) {
+			d.setCaseSignificance(StringUtils.calculateCaseSignificance(term));
+		} else {
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+		}
 		d.setLang(LANG_EN);
 		d.setModuleId(SCTID_CORE_MODULE);
 		d.setActive(true);

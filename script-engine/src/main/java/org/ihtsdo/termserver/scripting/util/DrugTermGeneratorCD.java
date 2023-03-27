@@ -119,6 +119,10 @@ public class DrugTermGeneratorCD extends TermGenerator {
 			ensureCaptialization(d);
 		}
 		String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType);
+		if (StringUtils.isEmpty(replacementTerm)) {
+			throw new TermServerScriptException("Failed to create term for " + c);
+		}
+		
 		if (d.getTerm() != null) {
 			replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
 		}
