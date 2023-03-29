@@ -22,8 +22,8 @@ class EclCacheTest extends Specification {
             "Complex with ("               | "("                                                                 || false
             "Complex with !"               | "!"                                                                 || false
             "Complex with :"               | ":"                                                                 || false
-            "Complex with MINUS"           | " MINUS "                                                           || false
-            "Complex with AND"             | " AND "                                                             || false
+            "Complex with MINUS"           | "1234 MINUS 4321"                                                   || false
+            "Complex with AND"             | "1234 AND 4321"                                                     || false
             "Example from RP-700"          | '<<49755003 |Morph.. | term=(wild: "*dysplasia" wild:"*neoplasia")' || false
     }
 }
