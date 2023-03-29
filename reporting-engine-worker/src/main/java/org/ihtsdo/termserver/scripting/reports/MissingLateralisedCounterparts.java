@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * RP-585 Report for finding missing lateralised counterparts. For example, report if there is a 'Left' Concept with no corresponding 'Right' Concept.
+ * RP-585 Report for finding missing lateralised anatomy counterparts. For example, report if there is a 'Left' Concept with no corresponding 'Right' Concept in the body structure hierarchy.
  */
 public class MissingLateralisedCounterparts extends TermServerReport implements ReportClass {
     private static final String CURRENT_CYCLE = "Concepts new/modified"; // Toggle whether to process all Concepts or only those that are new/modified.
@@ -41,8 +41,8 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
     public Job getJob() {
         return new Job()
                 .withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
-                .withName("Missing lateralised counterparts")
-                .withDescription("This report finds missing lateralised counterparts. For example, if there is a 'Left' Concept with no corresponding 'Right' Concept.")
+                .withName("Missing lateralised anatomy counterparts")
+                .withDescription("This report finds missing lateralised anatomy counterparts. For example, if there is a 'Left' Concept with no corresponding 'Right' Concept in the body structure hierarchy.")
                 .withProductionStatus(ProductionStatus.PROD_READY)
                 .withParameters(
                         new JobParameters()
