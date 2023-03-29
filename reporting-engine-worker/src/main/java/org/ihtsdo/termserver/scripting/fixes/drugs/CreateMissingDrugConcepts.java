@@ -446,7 +446,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				} 
 			} catch (Exception e) {
 				String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
-				report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
+				report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
 				warn (msg);
 				if (!msg.contains("has multiple modification attributes")) {
 					e.printStackTrace(new PrintStream(System.out));
@@ -482,7 +482,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		for (Concept ingred : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			for (String exceptionStr: substanceExceptions) {
 				if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
-					report ((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
+					report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
 					return true;
 				}
 			}
@@ -490,7 +490,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 			if (ingred.getFsn().toLowerCase().contains("complex")) {
 				for (String exceptionStr: complexExceptions) {
 					if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
-						report ((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
+						report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
 						return true;
 					}
 				}
