@@ -52,10 +52,9 @@ public class BanUsanReport extends TermServerScript{
 	}
 
 	private Set<Concept> evaluateExpression(String humanReadableExpression) throws TermServerScriptException {
-		StringBuffer expression = new StringBuffer(humanReadableExpression);
-		SnomedUtils.makeMachineReadable(expression);
-		String[] parts = expression.toString().split(UNION);
-		Set<Concept> expansion = new HashSet<Concept>();
+		String expression = SnomedUtils.makeMachineReadable(humanReadableExpression);
+		String[] parts = expression.split(UNION);
+		Set<Concept> expansion = new HashSet<>();
 		for (String part : parts) {
 			Set<Concept> partExpansion = expandExpression(part);
 			expansion.addAll(partExpansion);

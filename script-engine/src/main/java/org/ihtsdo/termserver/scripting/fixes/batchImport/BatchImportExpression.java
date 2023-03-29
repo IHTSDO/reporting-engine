@@ -33,8 +33,7 @@ public class BatchImportExpression implements ScriptConstants {
 	
 	public static BatchImportExpression parse(String expressionStr, String moduleId) throws TermServerScriptException {
 		BatchImportExpression result = new BatchImportExpression();
-		StringBuffer expressionBuff = new StringBuffer(expressionStr);
-		SnomedUtils.makeMachineReadable(expressionBuff);
+		StringBuffer expressionBuff = new StringBuffer(SnomedUtils.makeMachineReadable(expressionStr));
 		//After each extract we're left with the remainder of the expression
 		result.definitionStatus = extractDefinitionStatus(expressionBuff);
 		result.focusConcepts = extractFocusConcepts(expressionBuff);

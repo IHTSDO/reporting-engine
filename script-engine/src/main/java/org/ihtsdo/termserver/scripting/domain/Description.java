@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.otf.RF2Constants.CaseSignificance;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -121,8 +120,6 @@ public class Description extends Component implements ScriptConstants {
 		Description d = new Description();
 		if (!StringUtils.isEmpty(term)) {
 			d.setCaseSignificance(StringUtils.calculateCaseSignificance(term));
-		} else {
-			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		d.setLang(LANG_EN);
 		d.setModuleId(SCTID_CORE_MODULE);

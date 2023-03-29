@@ -253,7 +253,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	public static String[] deconstructFilename(File file) {
 		String[] parts = new String[] {"","",""};
 		
-		if (file== null) {
+		if (file == null || StringUtils.isEmpty(file.getPath())) {
 			return parts;
 		}
 		parts[0] = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(File.separator));
@@ -1595,62 +1595,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	public static String makeMachineReadable (String exp) {
-		StringBuffer hrExp = new StringBuffer(exp);
-		makeMachineReadable(hrExp);
-		exp = hrExp.toString().toUpperCase();
-		exp = exp.replaceAll("OR", " OR ").replaceAll("AND", " AND ").replaceAll("MINUS", " MINUS ");
-		return exp;
-	}
-	
-	public static void makeMachineReadable (StringBuffer hrExp) {
-		int pipeIdx =  hrExp.indexOf(PIPE);
-		while (pipeIdx != -1) {
-			int endIdx = findEndOfTerm(hrExp, pipeIdx);
-			hrExp.delete(pipeIdx, endIdx);
-			pipeIdx =  hrExp.indexOf(PIPE);
-		}
-		remove(hrExp, SPACE_CHAR);
-	}
-	
-	private static int findEndOfTerm(StringBuffer hrExp, int searchStart) {
-		//int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
-		int endIdx = hrExp.indexOf(PIPE, searchStart+1);
-		//If we didn't find a terminator, cut to the end.
-		if (endIdx == -1) {
-			endIdx = hrExp.length();
-		} else {
-			//If the character found as a terminator is a pipe, then cut that too
-			if (hrExp.charAt(endIdx) == PIPE_CHAR) {
-				endIdx++;
-			} else if (hrExp.charAt(endIdx) == ATTRIBUTE_SEPARATOR.charAt(0)) {
-				//If the character is a comma, then it might be a comma inside a term so find out if the next token is a number
-				if (!StringUtils.isNumericSpace(hrExp.substring(endIdx+1, endIdx+5))) {
-					//OK it's a term, so find the new actual end. 
-					endIdx = findEndOfTerm(hrExp, endIdx);
-				}
-			}
-		}
-		return endIdx;
-	}
-	
-	static void remove (StringBuffer haystack, char needle) {
-		for (int idx = 0; idx < haystack.length(); idx++) {
-			if (haystack.charAt(idx) == needle) {
-				haystack.deleteCharAt(idx);
-				idx --;
-			}
-		}
-	}
-	
-	static int indexOf (StringBuffer haystack, char[] needles, int startFrom) {
-		for (int idx = startFrom; idx < haystack.length(); idx++) {
-			for (char thisNeedle : needles) {
-				if (haystack.charAt(idx) == thisNeedle) {
-					return idx;
-				}
-			}
-		}
-		return -1;
+		return exp.trim()
+				.replaceAll("\\|[^\\|]+\\|", " ")
+				.replaceAll("\\s+", " ")
+				.replaceAll("\\s+([\\(\\{\\<\\>\\}\\)\\]:=*\",])", "$1")
+				.replaceAll("([\\(\\{\\<\\>\\}\\)\\]:=*])\\s+", "$1")
+				.toUpperCase();
 	}
 
 	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {
