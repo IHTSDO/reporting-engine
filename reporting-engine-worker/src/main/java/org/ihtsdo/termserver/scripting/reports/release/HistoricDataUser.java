@@ -120,7 +120,7 @@ public class HistoricDataUser extends TermServerReport {
 		}
 	}
 
-	protected void loadData(String release) throws TermServerScriptException {
+	protected Map<String, Datum> loadData(String release) throws TermServerScriptException {
 		File dataFile = null;
 		prevData = new HashMap<>();
 		try {
@@ -150,6 +150,7 @@ public class HistoricDataUser extends TermServerReport {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to load " + dataFile, e);
 		}
+		return prevData;
 	}
 	
 	protected class Datum {
