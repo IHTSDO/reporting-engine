@@ -61,6 +61,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 		InactivationIndicatorEntry cii = InactivationIndicatorEntry.withDefaults(c);
 		cii.setModuleId(moduleId);
 		cii.setInactivationReasonId(SCTID_INACT_CLASS_DERIVED_COMPONENT);
+		c.addInactivationIndicator(cii);
 		
 		//Inactivate Axioms
 		for (AxiomEntry a : c.getAxiomEntries()) {
