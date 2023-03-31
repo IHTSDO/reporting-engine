@@ -2,11 +2,10 @@ package org.ihtsdo.termserver.scripting.reports.managedService;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
@@ -31,6 +30,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private Map<String, Datum> incomingData;
 	
 	private Map<Concept, Concept> usedInStatedModellingMap; 
+	private Map<Concept, Concept> usedAsStatedParentMap;
+	
+	private String[][] columnNames;  //Used for both column names, and to track totals
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -78,6 +80,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		boolean compareTwoSnapshots = false; 
+		previousTransitiveClosureNeeded = false;
 		info("International Release data being imported, wiping Graph Loader for safety.");
 		getArchiveManager(true).reset(false);
 		Project previousProject = project.clone();
@@ -117,7 +120,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		thisDependency = project.getMetadata().getDependencyPackage();
 		info("Setting dependency archive: " + thisDependency);
 		setDependencyArchive(thisDependency);
-		getArchiveManager().setPopulatePreviousTransativeClosure(false);
 		super.loadCurrentPosition(false, fsnOnly);
 	}
 
@@ -128,45 +130,75 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			getJobRun().setProject(origProject);
 		}
 		
+		columnNames = new String[][] { {"Inactivated Used As Stated Parent", "Inactivated Used In Stated Modelling", "Inactivated With Inferred Extension Children"}};
+		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
-												"SCTID, FSN, SemTag, InactivatedWithInferredExtensionChildren, example, inactivatedUsedInStatedModelling, example",
-												"SCTID, FSN, SemTag, InactivatedWithInferredExtensionChildren, example, inactivatedUsedInStatedModelling, example",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag, Defn Status Change",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag, Text Definition",
-												"SCTID, FSN, SemTag"};
+												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
+												"SCTID, FSN, SemTag, InactivatedWithInferredExtensionChildren, example, inactivatedUsedInStatedModelling, example"};
+		
 		String[] tabNames = new String[] {	"Summary Counts",  //PRIMARY
-											"Inactive",    //SECONDARY
-											"New Concepts",    //TERTIARY
-											"Modeling",        //QUAD
-											"Translation",     //
-											"DefnStatus",
-											"New FSNs",
-											"Text Defn",
-											"ICD-O"};
+											"Inactivations",   //SECONDARY
+											"Translations"};   //TERTIARY
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
+	private String formColumnNames(String[] columnNames, boolean includeExamples) {
+		String header = "";
+		boolean isFirst = true;
+		for (String columnName : columnNames) {
+			if (!isFirst) {
+				header += ",";
+			} else {
+				isFirst = false;
+			}
+			header += columnName;
+			if (includeExamples) {
+				header += ",Example";
+			}
+		}
+		return header;
+	}
+
 	public void runJob() throws TermServerScriptException {
 		//We've always loaded historic data as 'prev' but in this case, we're looking the release that
 		//we're about to upgrade to.  So we'll give that a more appropriate name
 		info ("Loading Previous Data");
-		incomingData = loadData(incomingDataKey);
+		incomingData = loadData(incomingDataKey); 
 		
 		info("Populating map of all concepts used in stated modelling");
 		populateStatedModellingMap();
 		
-		Executor executor = Executors.newFixedThreadPool(7);
+		//Executor executor = Executors.newFixedThreadPool(7);
 		
 		//Work through the top level hierarchies
 		List<Concept> topLevelHierarchies = SnomedUtils.sort(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
 		for (Concept topLevelConcept : topLevelHierarchies) {
 			info("Processing - " + topLevelConcept);
 			Set<String> thisHierarchy = getHierarchy(topLevelConcept);
-			reportInactivations(topLevelConcept, thisHierarchy);
+			
+			reportInactivations(topLevelConcept, thisHierarchy, columnNames[0]);
 		}
+		
+		//We can now populate all the of the total columns
+		writeTotalRow(SECONDARY_REPORT, columnNames[0], true);
+	}
+
+	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {
+		String[] data = new String[columnNames.length];
+		if (includeExamples) {
+			data = new String[columnNames.length * 2];
+		}
+		int idx = 0;
+		for (String columnName : columnNames) {
+			int count = getSummaryInformationInt(columnName);
+			countIssue(null, count);
+			data[idx++] = Integer.toString(count);
+			if (includeExamples) {
+				data[idx++] = "";
+			}
+		}
+		report(tabNum, "");
+		report(tabNum, "", "", "Total:", data);
 	}
 
 	private Set<String> getHierarchy(Concept topLevelConcept) throws TermServerScriptException {
@@ -187,11 +219,12 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	}
 
 
-	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy) throws TermServerScriptException {
+	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
 		info("Reporting Inactivations");
 		int inactivatedWithInferredExtensionChildren = 0;
 		int inactivatedUsedInStatedModelling = 0;
-		String[] examples = new String[2];
+		int inactivatedUsedAsStatedParent = 0;
+		String[] examples = new String[3];
 		
 		Set<Concept> noInScopeDescendentsCache = new HashSet<>();
 		Set<Concept> yesInScopeDescendentsCache = new HashSet<>();
@@ -208,38 +241,56 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				continue;
 			}
 			
+			Concept usedIn = usedAsStatedParentMap.get(currentConcept);
+			if (usedIn != null) {
+				inactivatedUsedAsStatedParent++;
+				incrementSummaryInformation(summaryNames[0]);
+				examples[0] = currentConcept + "\nParent of : " + usedIn;
+			}
+			
+			usedIn = usedInStatedModellingMap.get(currentConcept);
+			if (usedIn != null) {
+				inactivatedUsedInStatedModelling++;
+				incrementSummaryInformation(summaryNames[1]);
+				examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + usedIn.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+			}
+			
 			//Does this concept have any inScope children?  We'll step this with new code
 			//to short cut finding the complete set and allocating memory for that
 			if (hasInScopeDescendents(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
 				inactivatedWithInferredExtensionChildren++;
-				examples[0] = currentConcept.toString();
-			}
-			
-			Concept usedIn = usedInStatedModellingMap.get(currentConcept);
-			if (usedIn != null) {
-				inactivatedUsedInStatedModelling++;
-				examples[1] = currentConcept + " used in :\n" + usedIn.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+				incrementSummaryInformation(summaryNames[2]);
+				examples[2] = currentConcept.toString();
 			}
 		}
-		report(SECONDARY_REPORT, topLevelConcept, inactivatedWithInferredExtensionChildren, examples[0], inactivatedUsedInStatedModelling, examples[1]);
+		report(SECONDARY_REPORT, topLevelConcept, inactivatedUsedAsStatedParent, examples[0], inactivatedUsedInStatedModelling, examples[1], inactivatedWithInferredExtensionChildren, examples[2]);
 	}
 
 	private void populateStatedModellingMap() {
 		usedInStatedModellingMap = new HashMap<>();
+		usedAsStatedParentMap = new HashMap<>();
 		//I'm not calling getRelationships(Active, Stated) because that causes memory to be allocated
 		//and we're going through A LOT of loops here, so just test values
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive() && inScope(c)) {
 				for (Relationship r : c.getRelationships()) {
-					if (r.isActive() 
-							&& r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)
-							&& !r.getType().equals(IS_A)) {
-						if (!usedInStatedModellingMap.containsKey(r.getType())) {
-							usedInStatedModellingMap.put(r.getType(), c);
-						}
-						
-						if (r.isNotConcrete() && !usedInStatedModellingMap.containsKey(r.getTarget())) {
-							usedInStatedModellingMap.put(r.getTarget(), c);
+					if (r.isActive() && r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)) {
+						if (r.getType().equals(IS_A)) {
+							if (!usedAsStatedParentMap.containsKey(r.getType())) {
+								usedAsStatedParentMap.put(r.getType(), c);
+							}
+							
+							if (!usedAsStatedParentMap.containsKey(r.getTarget())) {
+								usedAsStatedParentMap.put(r.getTarget(), c);
+							}
+						} else {
+							if (!usedInStatedModellingMap.containsKey(r.getType())) {
+								usedInStatedModellingMap.put(r.getType(), c);
+							}
+							
+							if (r.isNotConcrete() && !usedInStatedModellingMap.containsKey(r.getTarget())) {
+								usedInStatedModellingMap.put(r.getTarget(), c);
+							}
 						}
 					}
 				}
@@ -267,5 +318,10 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 		noInScopeDescendentsCache.add(c);
 		return false;
+	}
+	
+	@Override
+	protected boolean inScope(Component c) {
+		return !SnomedUtils.isInternational(c);
 	}
 }

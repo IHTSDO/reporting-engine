@@ -1251,18 +1251,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public void finish() throws TermServerScriptException {
 		info (BREAK);
-
-		Date endTime = new Date();
-		if (startTime != null) {
-			long diff = endTime.getTime() - startTime.getTime();
-			recordSummaryText ("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
-			recordSummaryText ("Started at: " + startTime);
-		}
-		recordSummaryText ("Finished at: " + endTime);
-		
-		if (summaryTabIdx != NOT_SET) {
-			recordSummaryText("");
-		}
 		
 		List<String> criticalIssues = new ArrayList<String>();
 		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
@@ -1297,6 +1285,19 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			recordSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
 		}
+		
+		if (summaryTabIdx != NOT_SET) {
+			recordSummaryText("");
+			recordSummaryText("");
+		}
+		
+		Date endTime = new Date();
+		if (startTime != null) {
+			long diff = endTime.getTime() - startTime.getTime();
+			recordSummaryText("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
+			recordSummaryText("Started at: " + startTime);
+		}
+		recordSummaryText("Finished at: " + endTime);
 		
 		info(BREAK);
 		
@@ -1819,6 +1820,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			return  gl.getConcept(assocs.iterator().next());
 		}
+	}
+
+	public boolean getAsyncSnapshotCacheInProgress() {
+		return asyncSnapshotCacheInProgress;
 	}
 
 }

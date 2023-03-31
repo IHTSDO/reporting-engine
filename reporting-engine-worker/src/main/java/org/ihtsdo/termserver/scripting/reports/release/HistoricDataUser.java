@@ -40,6 +40,7 @@ public class HistoricDataUser extends TermServerReport {
 	protected String thisEffectiveTime;
 	protected int topLevelHierarchyCount = 0;
 	protected String complexName;
+	protected boolean previousTransitiveClosureNeeded = true;
 	
 	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException {
 		super.loadProjectSnapshot(fsnOnly);
@@ -113,7 +114,7 @@ public class HistoricDataUser extends TermServerReport {
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
-			mgr.setPopulatePreviousTransativeClosure(true);
+			mgr.setPopulatePreviousTransativeClosure(previousTransitiveClosureNeeded );
 			mgr.setLoadEditionArchive(false);
 			getProject().setKey(projectKey);
 			mgr.loadSnapshot(fsnOnly);

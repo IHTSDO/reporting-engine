@@ -818,6 +818,16 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	public void reset(boolean fullReset) {
+		//Don't reset if we're still saving to disk - need that data!
+		while (ts.getAsyncSnapshotCacheInProgress()) {
+			TermServerScript.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
+			try {
+				Thread.sleep(5 * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		//Do we need to reset?
 		if (this.gl.getAllConcepts().size() > 100) {
 			this.gl.reset();
