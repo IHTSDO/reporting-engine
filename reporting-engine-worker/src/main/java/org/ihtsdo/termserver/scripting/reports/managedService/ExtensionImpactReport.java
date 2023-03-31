@@ -36,7 +36,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 		TermServerReport.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -58,13 +58,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
-		
 		origProject = run.getProject();
-		if (!StringUtils.isEmpty(run.getParamValue(INTERNATIONAL_RELEASE))) {
-			projectName = run.getParamValue(INTERNATIONAL_RELEASE);
-			run.setProject(projectName);
-		}
-		
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 		
@@ -84,7 +78,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		info("International Release data being imported, wiping Graph Loader for safety.");
 		getArchiveManager(true).reset(false);
 		Project previousProject = project.clone();
-		boolean loadEditionArchive = false;
+		//boolean loadEditionArchive = false;
 		
 		if (StringUtils.isEmpty(getJobRun().getParamValue(INTERNATIONAL_RELEASE))) {
 			Branch branch = tsClient.getBranch("MAIN");
@@ -95,13 +89,13 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			projectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
 			project.setKey(projectKey);
 			project.setBranchPath(projectKey);
-			loadEditionArchive = true;
+			//loadEditionArchive = true;
 		}
 
 		try {
 			incomingDataKey = project.getKey();
 			ArchiveManager mgr = getArchiveManager(true);
-			mgr.setLoadEditionArchive(loadEditionArchive);
+			//mgr.setLoadEditionArchive(loadEditionArchive);
 			mgr.loadSnapshot(fsnOnly);
 			
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
@@ -130,11 +124,12 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			getJobRun().setProject(origProject);
 		}
 		
-		columnNames = new String[][] { {"Inactivated Used As Stated Parent", "Inactivated Used In Stated Modelling", "Inactivated With Inferred Extension Children"}};
+		columnNames = new String[][] {	{"Inactivated Used As Stated Parent", "Inactivated Used In Stated Modelling", "Inactivated With Inferred Extension Children"},
+										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation"}};
 		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
-												"SCTID, FSN, SemTag, InactivatedWithInferredExtensionChildren, example, inactivatedUsedInStatedModelling, example"};
+												"SCTID, FSN, SemTag," + formColumnNames(columnNames[1], false)};
 		
 		String[] tabNames = new String[] {	"Summary Counts",  //PRIMARY
 											"Inactivations",   //SECONDARY
@@ -177,47 +172,13 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			Set<String> thisHierarchy = getHierarchy(topLevelConcept);
 			
 			reportInactivations(topLevelConcept, thisHierarchy, columnNames[0]);
+			reportTransations(topLevelConcept, thisHierarchy, columnNames[1]);
 		}
 		
 		//We can now populate all the of the total columns
 		writeTotalRow(SECONDARY_REPORT, columnNames[0], true);
+		writeTotalRow(TERTIARY_REPORT, columnNames[1], false);
 	}
-
-	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {
-		String[] data = new String[columnNames.length];
-		if (includeExamples) {
-			data = new String[columnNames.length * 2];
-		}
-		int idx = 0;
-		for (String columnName : columnNames) {
-			int count = getSummaryInformationInt(columnName);
-			countIssue(null, count);
-			data[idx++] = Integer.toString(count);
-			if (includeExamples) {
-				data[idx++] = "";
-			}
-		}
-		report(tabNum, "");
-		report(tabNum, "", "", "Total:", data);
-	}
-
-	private Set<String> getHierarchy(Concept topLevelConcept) throws TermServerScriptException {
-		//Form the top level set as the sum of current hierarchy and what's in the incoming data
-		Set<String> hierarchy = new HashSet<>();
-		hierarchy = topLevelConcept.getDescendents(NOT_SET).stream()
-				.map(c -> c.getId())
-				.collect(Collectors.toSet());
-		
-		//Now add in what we see in the proposed upgrade version
-		for (Map.Entry<String, Datum> entry : incomingData.entrySet()) {
-			if (entry.getValue().hierarchy != null
-					&& entry.getValue().hierarchy.equals(topLevelConcept.getId())) {
-				hierarchy.add(entry.getKey());
-			}
-		}
-		return hierarchy;
-	}
-
 
 	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
 		info("Reporting Inactivations");
@@ -264,6 +225,81 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			}
 		}
 		report(SECONDARY_REPORT, topLevelConcept, inactivatedUsedAsStatedParent, examples[0], inactivatedUsedInStatedModelling, examples[1], inactivatedWithInferredExtensionChildren, examples[2]);
+	}
+	
+
+	private void reportTransations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
+		info("Reporting Translations Required");
+		int newConceptCount = 0;
+		int changedFSNCount = 0;
+		int changedFSNCountNoCurrent = 0;
+		for (String sctId : thisHierarchy) {
+			Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
+			//If this concept does not currently exist, then it's new, so it'll need a translation
+			if (currentConcept == null) {
+				//No need to check scope, this can only have come from the international edition
+				newConceptCount++;
+				incrementSummaryInformation(summaryNames[0]);
+				continue;
+			}
+			
+			//Now we don't need to worry about any changes to extension components - they've already been made
+			if (!SnomedUtils.isInternational(currentConcept)) {
+				continue;
+			}
+			
+			Datum datum = incomingData.get(sctId);
+			if (datum == null) {
+				throw new TermServerScriptException(sctId + " is known to extension, is considered International and yet is not known to proposed update package.  Check date specified.  It must be in advance of current extension upgrade point");
+			}
+			
+			//Has the FSN changed from what's currently here?
+			if (!currentConcept.getFsn().equals(datum.fsn)) {
+				if (hasTranslation(currentConcept)) {
+					changedFSNCount++;
+					incrementSummaryInformation(summaryNames[1]);
+				} else {
+					changedFSNCountNoCurrent++;
+					incrementSummaryInformation(summaryNames[2]);
+				}
+			}
+		}
+		report(TERTIARY_REPORT, topLevelConcept, newConceptCount, changedFSNCount);
+	}
+
+	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {
+		String[] data = new String[columnNames.length];
+		if (includeExamples) {
+			data = new String[columnNames.length * 2];
+		}
+		int idx = 0;
+		for (String columnName : columnNames) {
+			int count = getSummaryInformationInt(columnName);
+			countIssue(null, count);
+			data[idx++] = Integer.toString(count);
+			if (includeExamples) {
+				data[idx++] = "";
+			}
+		}
+		report(tabNum, "");
+		report(tabNum, "", "", "Total:", data);
+	}
+
+	private Set<String> getHierarchy(Concept topLevelConcept) throws TermServerScriptException {
+		//Form the top level set as the sum of current hierarchy and what's in the incoming data
+		Set<String> hierarchy = new HashSet<>();
+		hierarchy = topLevelConcept.getDescendents(NOT_SET).stream()
+				.map(c -> c.getId())
+				.collect(Collectors.toSet());
+		
+		//Now add in what we see in the proposed upgrade version
+		for (Map.Entry<String, Datum> entry : incomingData.entrySet()) {
+			if (entry.getValue().hierarchy != null
+					&& entry.getValue().hierarchy.equals(topLevelConcept.getId())) {
+				hierarchy.add(entry.getKey());
+			}
+		}
+		return hierarchy;
 	}
 
 	private void populateStatedModellingMap() {
@@ -324,4 +360,10 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	protected boolean inScope(Component c) {
 		return !SnomedUtils.isInternational(c);
 	}
+	
+	private boolean hasTranslation(Concept c) {
+		return c.getDescriptions().stream()
+				.anyMatch(d -> !d.getLang().equals("en"));
+	}
+
 }

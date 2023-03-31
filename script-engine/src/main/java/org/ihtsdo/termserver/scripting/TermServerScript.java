@@ -1251,10 +1251,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public void finish() throws TermServerScriptException {
 		info (BREAK);
+		List<String> reportLast = new ArrayList<String>(Arrays.asList("Issue count", "Report lines written"));
 		
 		List<String> criticalIssues = new ArrayList<String>();
 		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
 			String key = summaryDetail.getKey();
+			if (reportLast.contains(key)) {
+				continue;
+			}
 			Object value = summaryDetail.getValue();
 			String display = "";
 			if (value != null) {
@@ -1289,6 +1293,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (summaryTabIdx != NOT_SET) {
 			recordSummaryText("");
 			recordSummaryText("");
+		}
+		
+		for (String key : reportLast) {
+			if (summaryDetails.containsKey(key)) {
+				String display = summaryDetails.get(key).toString();
+				recordSummaryText (key + (display.isEmpty()?"":": ") + display);
+			}
 		}
 		
 		Date endTime = new Date();
