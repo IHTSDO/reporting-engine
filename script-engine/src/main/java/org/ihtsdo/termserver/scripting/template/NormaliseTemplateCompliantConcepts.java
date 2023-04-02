@@ -430,9 +430,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/Drug dependence.json" };
 		templateNames = new String[] { "templates/morphologies/Dislocation.json" };
 		templateNames = new String[] { "templates/procedures/PlacementOfStent.json" };
+		templateNames = new String[] { "templates/Toxic due to plant.json" };
 		*/
 		
-		templateNames = new String[] { "templates/Toxic due to plant.json" };
+		templateNames = new String[] { "templates/procedures/Intubation.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
@@ -571,13 +572,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		for (Template template : templates) {
 			//Are we finding concepts to process, or are they stated in a file?
 			Collection<Concept> potentialMatches;
-			if (getInputFile() == null) {
-				potentialMatches = findConcepts(template.getDomain());
-				addSummaryInformation("Concepts matching ECL", potentialMatches.size());
-			} else {
+			if (hasInputFile(0)) {
 				potentialMatches = processFile(getInputFile()).stream()
 						.map(c -> (Concept)c)
 						.collect(Collectors.toSet());
+			} else {
+				potentialMatches = findConcepts(template.getDomain());
+				addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 			}
 			//Only concepts that are misaligned against *all* templates should be counted
 			//But in the case of Normalise, we only use a single template

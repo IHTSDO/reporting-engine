@@ -133,7 +133,7 @@ abstract public class TemplateFix extends BatchFix {
 			exclusionWords = new ArrayList<>();
 		}
 		
-		if (getInputFile() != null) {
+		if (hasInputFile(0)) {
 			importExplicitExclusions();
 		}
 		
