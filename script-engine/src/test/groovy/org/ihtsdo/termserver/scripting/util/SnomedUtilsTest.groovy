@@ -57,5 +57,10 @@ class SnomedUtilsTest extends Specification {
               { 363698007 |Finding site (attribute)| = 39607008 |Lung structure (body structure)|  ,   
                116676008 |Associated morphology (attribute)| = 
                 1240414004 |Malignant neoplasm (morphologic abnormality)| }  """                        || '===430621000 + 188361007 + 126713003:{363698007=39607008, 116676008=1240414004}'
-    }
+				"""<<  52765003 |Intubation (procedure)| MINUS ( << 71388002 |Procedure (procedure)| 
+				: 260686004 |Method (attribute)| != << 257867005 |Insertion - action (qualifier value)| )""" || '<<52765003 MINUS (<<71388002:260686004 !=<<257867005)'
+				"""<  404684003 |Clinical finding (finding)|  OR <  71388002 |Procedure (procedure)|"""    ||  '<404684003 OR <71388002 '
+				"""(<  404684003 |Clinical finding (finding)|)  OR (<  71388002 |Procedure (procedure)|)"""    ||  '(<404684003) OR (<71388002)'
+
+				    }
 }

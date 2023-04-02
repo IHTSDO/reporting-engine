@@ -1597,9 +1597,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	public static String makeMachineReadable (String exp) {
 		return exp.trim()
 				.replaceAll("\\|[^\\|]+\\|", " ")
-				.replaceAll("\\s+", " ")
 				.replaceAll("\\s+([\\(\\{\\<\\>\\}\\)\\]:=*\",])", "$1")
 				.replaceAll("([\\(\\{\\<\\>\\}\\)\\]:=*])\\s+", "$1")
+				.replaceAll("MINUS", " MINUS ")
+				.replaceAll("OR", " OR ")
+				.replaceAll("AND", " AND ")
+				.replaceAll("\\s+", " ")
 				.toUpperCase();
 	}
 
