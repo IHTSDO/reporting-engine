@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.oneOffs;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,8 +26,14 @@ public class ListAcronymDescriptions extends TermServerReport implements ReportC
 		getArchiveManager().setPopulateReleasedFlag(true);
 		ReportSheetManager.targetFolderId = "1bHVd-cWbcafa3alwf5nmSOVREHYbpOMP"; //MS AdHoc Reports
 		super.init(run);
-		additionalReportColumns = "FSN, Semtag, isActive, EN Description, Issue, NL Description";
-		inputFiles.add(0, new File("resources/nl_semantic_tag_translations.tsv"));
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag, Acryonym",
+				"SCTID, FSN, SemTag, Acronym",};
+		String[] tabNames = new String[] {	"Acronyms without Expansion",
+				"Acryonyms with Capitalised Expansion"};
+		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	@Override
@@ -43,6 +48,7 @@ public class ListAcronymDescriptions extends TermServerReport implements ReportC
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
+				.withTag(INT)
 				.build();
 	}
 
@@ -57,10 +63,32 @@ public class ListAcronymDescriptions extends TermServerReport implements ReportC
 					.filter(t -> isAcronym(t))
 					.collect(Collectors.joining(",\n"));
 			if (!StringUtils.isEmpty(acronymsStr)) {
-				report(c, acronymsStr);
+				report(PRIMARY_REPORT, c, acronymsStr);
+				countIssue(c);
+			}
+			
+			acronymsStr = c.getDescriptions(ActiveState.ACTIVE).stream()
+					.map(d -> d.getTerm())
+					.filter(t -> t.contains(" - "))
+					.filter(t -> hasCapitalisedExpansion(t))
+					.collect(Collectors.joining(",\n"));
+			if (!StringUtils.isEmpty(acronymsStr)) {
+				report(SECONDARY_REPORT, c, acronymsStr);
 				countIssue(c);
 			}
 		}
+	}
+
+	private boolean hasCapitalisedExpansion(String term) {
+		//Our cut point is the first " - "  We need everything left of that
+		//to be a capital, and at least one letter to the right to be a capital
+		int cutPoint = term.indexOf(" - ");
+		String left = term.substring(0, cutPoint);
+		if (!left.equals(left.toUpperCase())) {
+			return false;
+		}
+		String right = term.substring(0, cutPoint);
+		return !right.equals(right.toLowerCase()); 
 	}
 
 	private boolean isAcronym(String term) {
