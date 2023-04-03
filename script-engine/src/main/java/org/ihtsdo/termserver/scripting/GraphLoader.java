@@ -85,7 +85,7 @@ public class GraphLoader implements ScriptConstants {
 			singleton = new GraphLoader();
 			singleton.axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 			singleton.excludedModules = new HashSet<>();
-			singleton.excludedModules.add(SCTID_LOINC_PROJECT_MODULE);
+//			singleton.excludedModules.add(SCTID_LOINC_PROJECT_MODULE);
 			populateKnownConcepts();
 		}
 		return singleton;
