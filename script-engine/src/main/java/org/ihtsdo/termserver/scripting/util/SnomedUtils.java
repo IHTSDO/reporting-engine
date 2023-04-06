@@ -1594,16 +1594,21 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return true;
 	}
 	
-	public static String makeMachineReadable (String exp) {
+	public static String makeMachineReadable(String exp) {
 		return exp.trim()
-				.replaceAll("\\|[^\\|]+\\|", " ")
-				.replaceAll("\\s+([\\(\\{\\<\\>\\}\\)\\]:=*\",])", "$1")
-				.replaceAll("([\\(\\{\\<\\>\\}\\)\\]:=*])\\s+", "$1")
-				.replaceAll("MINUS", " MINUS ")
-				.replaceAll("OR", " OR ")
-				.replaceAll("AND", " AND ")
-				.replaceAll("\\s+", " ")
-				.toUpperCase();
+				.toUpperCase()
+				.replaceAll("\\|[^\\|]+\\|", " ") // Remove |string| sections entirely.
+				.replaceAll("\\s+([\\(\\{\\<\\>\\}\\)\\]!:=*\",])", "$1") // Remove necessary spaces before "sections".
+				.replaceAll("([\\(\\{\\<\\>\\}\\)\\]!:=*])\\s+", "$1") // Remove necessary spaces after "sections".
+				.replaceAll("([^A-Z])MINUS([^A-Z])", "$1 MINUS $2") // Ensure MINUS verb has spaces around it.
+				.replaceAll("([^A-Z])AND([^A-Z])", "$1 AND $2") // Ensure AND verb has spaces around it.
+				.replaceAll("([^A-Z])OR([^A-Z])", "$1 OR $2") // Ensure OR verb has spaces around it.
+				.replaceAll("\\+ID", " +ID") // Ensure "+ID" has a space before the plus.
+				.replaceAll("\\@", " @") // Ensure "@" has a space before.
+				.replaceAll("\\s+", " ") // Replace multiple whitespace (space, tab, newline etc) with single space.
+				.replaceAll("^\\s+", "") // Trim leading spaces.
+				.replaceAll("\\s+$", "") // Trim trailing spaces.
+				;
 	}
 
 	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {
