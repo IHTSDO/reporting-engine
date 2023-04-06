@@ -43,9 +43,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
         return new Job()
                 .withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
                 .withName("Concepts with Parents")
-                .withDescription(
-                        "This report lists all parents and grandparents of concepts in the specified hierarchies. " +
-                                "Note that since this report is not listing any problems, the 'Issues' count will always be 0.")
+                .withDescription("This report lists all parents and grandparents of concepts in the specified hierarchies.")
                 .withProductionStatus(ProductionStatus.PROD_READY)
                 .withParameters(params)
                 .withTag(INT)
@@ -105,7 +103,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 
         resultEcl.append(ecl.trim());
 
-        if (terms == null || terms.isEmpty() || (ecl != null && CONTAINS_TERM_PATTERN.matcher(ecl).find())) {
+        if (terms == null || terms.isEmpty() || (CONTAINS_TERM_PATTERN.matcher(ecl).find())) {
             return resultEcl.toString().replaceAll("\\s+", " ");
         }
 
