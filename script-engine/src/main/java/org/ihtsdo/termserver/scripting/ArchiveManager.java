@@ -75,18 +75,21 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
-			TermServerScript.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName() + ".  Resetting load flags");
+			TermServerScript.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName());
 			singleton.gl = ts.getGraphLoader();
 		} else {
 			TermServerScript.info("Archive manager being reused in: " + ts.getClass().getSimpleName()); 
 		}
 		
 		if (!forceReuse) {
+			TermServerScript.info("Resetting Archive Manager load flags");
 			//Don't assume that just because we're being reused, we're loading the same files
 			singleton.loadEditionArchive = false;
 			singleton.loadDependencyPlusExtensionArchive = false;
 			singleton.populatePreviousTransativeClosure = false;
 			singleton.populateReleasedFlag = false;
+		} else {
+			TermServerScript.info("Archive Manager load flags retained - reuse forced.");
 		}
 		singleton.ts = ts;
 		return singleton;
