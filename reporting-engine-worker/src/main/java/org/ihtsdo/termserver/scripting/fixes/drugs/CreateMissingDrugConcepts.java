@@ -85,13 +85,14 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(NEW_CONCEPTS_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
-				.add(CONCEPTS_PER_TASK).withType(JobParameter.Type.STRING).withDefaultValue(5).withMandatory()
-				.add(DRY_RUN).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
+				//.add(CONCEPTS_PER_TASK).withType(JobParameter.Type.STRING).withDefaultValue(5).withMandatory()
+				//.add(DRY_RUN).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Missing MP MPF concepts")
-				.withDescription("This job creates missing MP/MPF concepts.  Options exist for only checking recently created CDs, and running as a 'Dry Run'")
+				//.withDescription("This job creates missing MP/MPF concepts.  Options exist for only checking recently created CDs, and running as a 'Dry Run'")
+				.withDescription("This job reports missing MP/MPF concepts.  Option exist for only checking recently created CDs.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.withParameters(params)
@@ -108,8 +109,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
-		dryRun = jobRun.getParamBoolean(DRY_RUN);
-		taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
+		//dryRun = jobRun.getParamBoolean(DRY_RUN);
+		//taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
 	}
 	
 	public void postInit() throws TermServerScriptException {

@@ -120,6 +120,8 @@ public class Description extends Component implements ScriptConstants {
 		Description d = new Description();
 		if (!StringUtils.isEmpty(term)) {
 			d.setCaseSignificance(StringUtils.calculateCaseSignificance(term));
+		} else {
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		d.setLang(LANG_EN);
 		d.setModuleId(SCTID_CORE_MODULE);
