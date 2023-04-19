@@ -31,15 +31,18 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Map<String, String> termTweakingMap = new HashMap<>();
 	protected static Map<Concept, Set<String>> typeValueTermRemovalMap = new HashMap<>();
 	protected static Map<String, Set<String>> valueSemTagTermRemovalMap = new HashMap<>();
+	protected static Set<String> problematicParts;
 	
 	protected String loincNum;
 	protected Map<String, Concept> typeMap = new HashMap<>();
 	protected String preferredTermTemplate;
 	protected Concept concept;
 	
+	
 	public static void initialise(TermServerScript ts, GraphLoader gl, 
 			Map<String, RelationshipTemplate> loincPartAttributeMap,
-			Map<String, LoincTerm> loincNumToLoincTermMap) {
+			Map<String, LoincTerm> loincNumToLoincTermMap,
+			Set<String> problematicParts) {
 		LoincTemplatedConcept.ts = ts;
 		LoincTemplatedConcept.gl = gl;
 		LoincTemplatedConcept.loincPartAttributeMap = loincPartAttributeMap;
@@ -56,6 +59,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				"suborder", "subphylum", "subspecies", "superclass", "superdivision", "superfamily", 
 				"superkingdom", "superorder", "superphylum"));
 		valueSemTagTermRemovalMap.put("(organism)", removals);
+		LoincTemplatedConcept.problematicParts = problematicParts;
 	}
 
 	protected LoincTemplatedConcept (String loincNum) {
@@ -185,6 +189,17 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				TermServerScript.warn("Duplicate LOINC Part seen: " + loincPart);
 				continue;
 			}
+			
+			//Is this LOINC Part one of our problematic ones (more than one possible SNOMED concept mapped)?
+			if (problematicParts.contains(loincPart.getPartNumber())) {
+				ts.report(MAPPING_DETAIL_TAB,
+						loincNum,
+						loincPart.getPartNumber(),
+						"Problematic Mapping",
+						loincPart.getPartName(),
+						"Multiple SNOMED concepts potentially map");
+			}
+			
 			loincPartsSeen.add(loincPart);
 			RelationshipTemplate rt = getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincPart);
 			if (rt != null) {

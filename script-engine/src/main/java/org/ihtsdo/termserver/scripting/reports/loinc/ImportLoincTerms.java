@@ -31,7 +31,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
-	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2017.tsv"  
+	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2023.tsv"  
 	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
 	//-f5 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
@@ -68,6 +68,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<String, LoincPart> loincParts = new HashMap<>();
 	private Map<String, Concept> categorizationMap = new HashMap<>();
+	private Set<String> problematicParts = new HashSet<>();
 	
 	private Concept HasConceptCategorizationStatus;
 	
@@ -141,12 +142,12 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		//We can look at the full LOINC file in parallel
 		executor.execute(() -> loadFullLoincFile());
 		populatePartAttributeMap();
-		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap);
+		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap, problematicParts);
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
-		importIntoTask(successfullyModelled);
-		generateAlternateIdentifierFile(successfullyModelled);
+		/*importIntoTask(successfullyModelled);
+		generateAlternateIdentifierFile(successfullyModelled);*/
 		while (additionalThreadCount > 0) {
 			Thread.sleep(1000);
 		}
@@ -338,6 +339,11 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 								attributeType = replacementType;
 							}
 						}
+						
+						LoincPart part = loincParts.get(partNum);
+						String partName = part == null ? "Unlisted" : part.getPartName();
+						String partStatus = part == null ? "Unlisted" : part.getStatus().name();
+					
 						if (!attributeValue.isActive()) {
 							String hardCodedIndicator = " hardcoded";
 							Concept replacementValue = knownReplacementMap.get(attributeValue);
@@ -349,16 +355,17 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 							if (replacementValue == null) unsuccessfullValueReplacement++; 
 							else successfullValueReplacement++;
 							String prefix = replacementValue == null ? "* " : "";
-							LoincPart part = loincParts.get(partNum);
-							String partName = part == null ? "Unlisted" : part.getPartName();
-							String partStatus = part == null ? "Unlisted" : part.getStatus().name();
 							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
 							if (replacementValue != null) {
 								attributeValue = replacementValue;
 							}
 						}
-						
-						loincPartAttributeMap.put(partNum, new RelationshipTemplate(attributeType, attributeValue));
+						RelationshipTemplate attribute = new RelationshipTemplate(attributeType, attributeValue);
+						if (loincPartAttributeMap.containsKey(partNum)) {
+							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, partName, partStatus, "** Duplicate map encountered: " + loincPartAttributeMap.get(partNum) + " replaced with " + attribute);
+							problematicParts.add(partNum);
+						}
+						loincPartAttributeMap.put(partNum, attribute);
 					}
 				}
 			}
