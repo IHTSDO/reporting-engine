@@ -19,8 +19,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("DIVISOR", gl.getConcept("704325000 |Relative to (attribute)|"));
 		templatedConcept.typeMap.put("UNITS", gl.getConcept("415067009 |Percentage unit (qualifier value)|"));
 		
-		//templatedConcept.preferredTermTemplate = "[SCALE] [PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD] using [using device] [precondition]";
-		templatedConcept.preferredTermTemplate = "[SCALE] [PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD]";
 		return templatedConcept;
 	}
 

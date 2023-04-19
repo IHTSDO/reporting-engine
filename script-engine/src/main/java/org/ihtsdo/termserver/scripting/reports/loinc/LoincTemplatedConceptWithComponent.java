@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
 
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 
@@ -18,8 +17,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
 		templatedConcept.typeMap.put("COMPONENT", gl.getConcept(" 246093002 |Component (attribute)|"));
 		
-		//templatedConcept.preferredTermTemplate = "[SCALE] [PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [using device] [precondition]";
-		templatedConcept.preferredTermTemplate = "[SCALE] [PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD]";
 		return templatedConcept;
 	}
 

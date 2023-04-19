@@ -17,8 +17,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
 		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("704319004 |Inheres in (attribute)|"));
 		
-		//templatedConcept.preferredTermTemplate = "[SCALE] [PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [using device] [precondition]";
-		templatedConcept.preferredTermTemplate = "[SCALE] [PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD]";
 		return templatedConcept;
 	}
 
