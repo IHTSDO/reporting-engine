@@ -180,17 +180,18 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				int fileIdx = 0;
 				if (thisArg.length() > 2) {
 					//If we don't have a number, skip this argument
-					if (!StringUtils.isNumeric(thisArg.substring(1))) {
+					if (!StringUtils.isNumeric(thisArg.substring(2))) {
 						continue;
 					}
 					fileIdx = Integer.parseInt(thisArg.substring(2));
 					fileIdx--;  //f2 will actually have index 1
 				}
-				inputFiles.add(fileIdx, new File(args[x+1]));
+				File thisFile = new File(args[x+1]);
+				setInputFile(fileIdx, thisFile);
 				if (!getInputFile().canRead()) {
-					throw new TermServerScriptException ("Unable to read input file " + args[x+1]);
+					throw new TermServerScriptException ("Unable to read input file: " + thisFile);
 				}
-				info ("Reading data from " + getInputFile().getAbsolutePath());
+				info ("Reading data (fileIdx " + fileIdx + ") from " + thisFile.getAbsolutePath());
 			} else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
