@@ -1,6 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
 public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 
@@ -22,5 +26,35 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD]";
 		return templatedConcept;
 	}
+
+	@Override
+	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum) throws TermServerScriptException {
+		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
+		//With respect to the values read from Loinc_Detail_Type_1 file
+		List<RelationshipTemplate> attributes = new ArrayList<>();
+		if (CompNumPnIsSafe(loincNum)) {
+			//Use COMPNUM_PN LOINC Part map to model SCT Component
+			attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPNUM_PN));
+		} else {
+			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
+			if (denom != null) {
+				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPNUM_PN));
+				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPDENOM_PN));
+				//Check for percentage
+				if (denom.getPartName().contains("100")) {
+					attributes.add(percentAttribute);
+				}
+			}
+			
+			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+				if(attributes.isEmpty()) {
+					attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPNUM_PN));
+				}
+				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPSUBPART2_PN));
+			}
+		}
+		return attributes;
+	}
+
 
 }

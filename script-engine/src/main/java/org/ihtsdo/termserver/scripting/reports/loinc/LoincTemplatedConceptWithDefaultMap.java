@@ -1,6 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
+import java.util.List;
+
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
 public class LoincTemplatedConceptWithDefaultMap extends LoincTemplatedConcept {
 
@@ -12,6 +15,12 @@ public class LoincTemplatedConceptWithDefaultMap extends LoincTemplatedConcept {
 		LoincTemplatedConcept templatedConcept = new LoincTemplatedConceptWithDefaultMap(loincNum);
 		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD] using [using device] [precondition]";
 		return templatedConcept;
+	}
+
+	@Override
+	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum)
+			throws TermServerScriptException {
+		throw new TermServerScriptException("Not expecting to use default map.  LoincNum: " + loincNum);
 	}
 
 }

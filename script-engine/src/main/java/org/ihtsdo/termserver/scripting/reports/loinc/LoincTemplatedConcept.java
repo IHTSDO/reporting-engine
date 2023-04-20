@@ -21,17 +21,22 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	private static int unmapped = 0;
 	private static int skipped = 0;
 	private static int MAPPING_DETAIL_TAB = TERTIARY_REPORT;
+	private static int TAB_MODELING_NOTES = QUINARY_REPORT;
 	private static int conceptsModelled = 0;
 	
 	protected static TermServerScript ts;
 	protected static GraphLoader gl;
 	protected static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
+	protected static RelationshipTemplate percentAttribute;
 	
 	protected static Map<String, String> termTweakingMap = new HashMap<>();
 	protected static Map<Concept, Set<String>> typeValueTermRemovalMap = new HashMap<>();
 	protected static Map<String, Set<String>> valueSemTagTermRemovalMap = new HashMap<>();
 	protected static Set<String> problematicParts;
+	
+	//Map of LoincNums to ldtColumnNames to details
+	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
 	
 	protected String loincNum;
 	protected Map<String, Concept> typeMap = new HashMap<>();
@@ -39,10 +44,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected Concept concept;
 	
 	
+	
 	public static void initialise(TermServerScript ts, GraphLoader gl, 
 			Map<String, RelationshipTemplate> loincPartAttributeMap,
 			Map<String, LoincTerm> loincNumToLoincTermMap,
-			Set<String> problematicParts) {
+			Set<String> problematicParts, 
+			Map<String, Map<String, LoincDetail>> loincDetailMap) throws TermServerScriptException {
 		LoincTemplatedConcept.ts = ts;
 		LoincTemplatedConcept.gl = gl;
 		LoincTemplatedConcept.loincPartAttributeMap = loincPartAttributeMap;
@@ -60,6 +67,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				"superkingdom", "superorder", "superphylum"));
 		valueSemTagTermRemovalMap.put("(organism)", removals);
 		LoincTemplatedConcept.problematicParts = problematicParts;
+		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
+		
+		percentAttribute = new RelationshipTemplate(gl.getConcept("246514001 |Units|"),
+				gl.getConcept(" 415067009 |Percentage unit|"));
 	}
 
 	protected LoincTemplatedConcept (String loincNum) {
@@ -68,8 +79,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateModel(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, loincParts);
-		templatedConcept.populateParts(loincParts);
-		templatedConcept.populateTerms(loincNum, loincParts);
+		if (templatedConcept != null) {
+			templatedConcept.populateParts(loincParts);
+			templatedConcept.populateTerms(loincNum, loincParts);
+			if (detailsIndicatePrimitiveConcept(loincNum)) {
+				templatedConcept.getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			}
+		}
 		return templatedConcept;
 	}
 
@@ -201,27 +217,37 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			}
 			
 			loincPartsSeen.add(loincPart);
-			RelationshipTemplate rt = getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincPart);
-			if (rt != null) {
-				mapped++;
-				ts.report(MAPPING_DETAIL_TAB,
-					loincNum,
-					loincPart.getPartNumber(),
-					"Mapped OK",
-					loincPart.getPartName(),
-					rt);
-				partNumsMapped.add(loincPart.getPartNumber());
-				concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
+			
+			boolean isComponent = false;
+			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
+			if (isComponent) {
+				attributesToAdd = determineComponentAttributes(loincNum);
 			} else {
-				unmapped++;
-				String issue = "Not Mapped - " + loincPart.getPartTypeName() + " | " + loincPart.getPartNumber() + "| " + loincPart.getPartName();
-				ts.report(MAPPING_DETAIL_TAB,
-					loincNum,
-					loincPart.getPartNumber(),
-					issue,
-					loincPart.getPartName());
-				concept.addIssue(issue, ",\n");
-				partNumsUnmapped.add(loincPart.getPartNumber());
+				attributesToAdd = Collections.singletonList(getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincPart));
+			}
+			
+			for (RelationshipTemplate rt : attributesToAdd) {
+				if (rt != null) {
+					mapped++;
+					ts.report(MAPPING_DETAIL_TAB,
+						loincNum,
+						loincPart.getPartNumber(),
+						"Mapped OK",
+						loincPart.getPartName(),
+						rt);
+					partNumsMapped.add(loincPart.getPartNumber());
+					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
+				} else {
+					unmapped++;
+					String issue = "Not Mapped - " + loincPart.getPartTypeName() + " | " + loincPart.getPartNumber() + "| " + loincPart.getPartName();
+					ts.report(MAPPING_DETAIL_TAB,
+						loincNum,
+						loincPart.getPartNumber(),
+						issue,
+						loincPart.getPartName());
+					concept.addIssue(issue, ",\n");
+					partNumsUnmapped.add(loincPart.getPartNumber());
+				}
 			}
 		}
 		
@@ -229,6 +255,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			concept.addIssue("Template used: " + this.getClass().getSimpleName(), ",\n");
 		}
 	}
+
+	protected abstract List<RelationshipTemplate> determineComponentAttributes(String loincNum) throws TermServerScriptException;
 
 	private RelationshipTemplate getAttributeForLoincPart(int idxTab, LoincPart loincPart) throws TermServerScriptException {
 		RelationshipTemplate rt = loincPartAttributeMap.get(loincPart.getPartNumber());
@@ -279,7 +307,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			}
 		}
 		//throw new TermServerScriptException("Unable to determine template for " + loincNum);
-		return LoincTemplatedConceptWithDefaultMap.create(loincNum);
+		//return LoincTemplatedConceptWithDefaultMap.create(loincNum);
+		return null;
 	}
 	
 	public void setConcept(Concept c) {
@@ -306,4 +335,64 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		ts.report(MAPPING_DETAIL_TAB, "Unique PartNums mapped", partNumsMapped.size());
 		ts.report(MAPPING_DETAIL_TAB, "Unique PartNums unmapped", partNumsUnmapped.size());
 	}
+	
+	/**
+	 * If the “PartNumber” and “Part” fields (column B and D) are the same for COMPONENT_PN and COMPNUM
+	 * @throws TermServerScriptException 
+	 */
+	protected boolean CompNumPnIsSafe(String loincNum) throws TermServerScriptException {
+		LoincDetail ldComponentPn = getLoincDetail(loincNum, LoincDetail.COMPONENT_PN);
+		LoincDetail ldCompNum = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN);
+		
+		if (ldComponentPn == null || ldCompNum == null) {
+			throw new TermServerScriptException(loincNum + " detail did not feature COMPONENT_PN or COMPNUM_PN");
+		}
+		
+		return ldComponentPn.getPartNumber().equals(ldCompNum.getPartNumber()) &&
+				ldComponentPn.getPartName().equals(ldCompNum.getPartName());
+	}
+
+	protected static LoincDetail getLoincDetailIfPresent(String loincNum, String ldtColumnName) throws TermServerScriptException {
+		//What LoincDetails do we have for this loincNum?
+		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(loincNum);
+		if (partDetailMap == null) {
+			throw new TermServerScriptException("No LOINC part details found for loincNum: " + loincNum);
+		}
+		return partDetailMap.get(ldtColumnName);
+	}
+	
+	protected static LoincDetail getLoincDetail(String loincNum, String ldtColumnName) throws TermServerScriptException {
+		LoincDetail loincDetail = getLoincDetailIfPresent(loincNum, ldtColumnName);
+		if (loincDetail == null) {
+			throw new TermServerScriptException("Could not find detail with ldtColumnName " + ldtColumnName + " for loincNum " + loincNum);
+		}
+		return loincDetail;
+	}
+	
+	protected static boolean detailsIndicatePrimitiveConcept(String loincNum) throws TermServerScriptException {
+		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN) ||
+			detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	protected static boolean detailPresent(String loincNum, String ldtColumnName) throws TermServerScriptException {
+		return getLoincDetailIfPresent(loincNum, ldtColumnName) != null;
+	}
+	
+	protected static RelationshipTemplate getAttributeFromDetail(String loincNum, String ldtColumnName) throws TermServerScriptException {
+		LoincDetail loincDetail = getLoincDetail(loincNum, ldtColumnName);
+		String loincPartNum = loincDetail.getPartNumber();
+		//We will change the attribute type from this map, depending on the template, so return a copy
+		return loincPartAttributeMap.get(loincPartNum).clone();
+	}
+	
+	protected static RelationshipTemplate getAttributeFromDetailWithType(String loincNum, String ldtColumnName, Concept type) throws TermServerScriptException {
+		RelationshipTemplate rt = getAttributeFromDetail(loincNum, ldtColumnName);
+		rt.setTarget(type);
+		return rt;
+	}
+
 }

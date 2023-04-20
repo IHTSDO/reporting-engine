@@ -184,7 +184,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						continue;
 					}
 					fileIdx = Integer.parseInt(thisArg.substring(2));
-					fileIdx--;  //f2 will actually have index 1
 				}
 				File thisFile = new File(args[x+1]);
 				setInputFile(fileIdx, thisFile);
@@ -349,10 +348,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
-			inputFiles.add(0,new File(inputFileName));
-			if (!getInputFile().canRead() || !getInputFile().isFile()) {
-				throw new TermServerScriptException("Unable to read specified file: " + getInputFile());
-			}
+			setInputFile(0,new File(inputFileName));
 		}
 		
 		if (jobRun.getWhiteList() != null) {
@@ -1632,7 +1628,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return inputFiles.get(idx);
 	}
 	
-	public void setInputFile(int idx, File file) {
+	public void setInputFile(int idx, File file) throws TermServerScriptException {
+		if (!file.canRead() || !file.isFile()) {
+			throw new TermServerScriptException("Unable to read specified file: " + file);
+		}
 		inputFiles.set(idx, file);
 	}
 

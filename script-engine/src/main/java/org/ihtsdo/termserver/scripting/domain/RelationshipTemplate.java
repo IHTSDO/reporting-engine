@@ -100,4 +100,11 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	public void setMode(Mode mode) {
 		this.mode = mode;
 	}
+	
+	@Override
+	public RelationshipTemplate clone() {
+		RelationshipTemplate clone = new RelationshipTemplate(this.getType(), this.getTarget());
+		clone.setConcreteValue(this.getConcreteValue());
+		return clone;
+	}
 }

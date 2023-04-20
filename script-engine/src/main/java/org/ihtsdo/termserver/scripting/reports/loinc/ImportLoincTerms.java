@@ -31,24 +31,27 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
-	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2023.tsv"  
-	//-f3 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
-	//-f4 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
-	//-f5 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
+	//-f1 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2023.tsv"  
+	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
+	//-f3 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
+	//-f4 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
+	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_All_Active_Lab_Parts.xlsx - LDT1_Parts.tsv" 
+	
 	private int FILE_IDX_LOINC_100 = 0;
 	private int FILE_IDX_LOINC_100_PARTS_MAP = 1;
 	private int FILE_IDX_LOINC_100_Primary = 2;
 	private int FILE_IDX_LOINC_PARTS = 3;
 	private int FILE_IDX_LOINC_FULL = 4;
+	private int FILE_IDX_LOINC_DETAIL = 5;
 	
-	private static final String TAB_TOP_100 = "Top 100";
-	private static final String TAB_TOP_20K = "Top 20K";
-	private static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
-	private static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
-	private static final String TAB_MODELING_NOTES = "Modeling Notes";
-	private static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
-	private static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
-	private static final String TAB_IMPORT_STATUS = "Import Status";
+	public static final String TAB_TOP_100 = "Top 100";
+	public static final String TAB_TOP_20K = "Top 20K";
+	public static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
+	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
+	public static final String TAB_MODELING_NOTES = "Modeling Notes";
+	public static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
+	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
+	public static final String TAB_IMPORT_STATUS = "Import Status";
 	
 	private int additionalThreadCount = 0;
 	
@@ -69,6 +72,8 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	private Map<String, LoincPart> loincParts = new HashMap<>();
 	private Map<String, Concept> categorizationMap = new HashMap<>();
 	private Set<String> problematicParts = new HashSet<>();
+	//Map of LoincNums to ldtColumnNames to details
+	private static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 	
 	private Concept HasConceptCategorizationStatus;
 	
@@ -139,10 +144,11 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		ExecutorService executor = Executors.newCachedThreadPool();
 		populateLoincNumMap();
 		loadLoincParts();
-		//We can look at the full LOINC file in parallel
+		//We can look at the full LOINC file in parallel as it's not needed for modelling
 		executor.execute(() -> loadFullLoincFile());
+		loadLoincDetail();
 		populatePartAttributeMap();
-		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap, problematicParts);
+		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap, problematicParts, loincDetailMap);
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
@@ -254,7 +260,12 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		
 		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
 		//populateCategorization(loincNum, templatedConcept.getConcept());
-		if (templatedConcept.getConcept().hasIssues()) {
+		if (templatedConcept == null) {
+			report(getTab(TAB_MODELING_NOTES),
+					loincNum,
+					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+					"Does not meet criteria for template match");
+		} else if (templatedConcept.getConcept().hasIssues()) {
 			report(getTab(TAB_MODELING_NOTES),
 					loincNum,
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
@@ -400,6 +411,44 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			info("Loaded " + loincParts.size() + " loinc parts.");
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_PARTS), e);
+		}
+	}
+	
+	private void loadLoincDetail() {
+		info ("Loading Loinc Detail: " + getInputFile(FILE_IDX_LOINC_DETAIL));
+		BufferedReader in = null;
+		try {
+			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_DETAIL)));
+			String line = in.readLine();
+			int count = 0;
+			while (line != null) {
+				if (count > 0) {
+					LoincDetail loincDetail = LoincDetail.parse(line.split(TAB));
+					//Have we seen anything details for this LoincNum?
+					Map<String, LoincDetail> partDetailMap = loincDetailMap.get(loincDetail.getLoincNum());
+					if (partDetailMap == null) {
+						partDetailMap = new HashMap<>();
+						loincDetailMap.put(loincDetail.getLoincNum(), partDetailMap);
+					}
+					//Now have we seen anything for this loincPart before?
+					if (partDetailMap.containsKey(loincDetail.getLDTColumnName())) {
+						throw new TermServerScriptException("Duplicate LOINC detail encountered in " + FILE_IDX_LOINC_DETAIL + ": " + loincDetail);
+					}
+					partDetailMap.put(loincDetail.getLDTColumnName(), loincDetail);
+				}
+				count++;
+				line = in.readLine();
+			}
+			info("Loaded " + count + " details for " + loincDetailMap.size() + " loincNums");
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_DETAIL), e);
+		} finally {
+			if (in != null) {
+				try {
+					in.close();
+				} catch (IOException e) {}
+			}
+			additionalThreadCount--;
 		}
 	}
 	
