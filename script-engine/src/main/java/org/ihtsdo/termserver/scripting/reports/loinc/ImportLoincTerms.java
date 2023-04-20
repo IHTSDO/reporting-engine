@@ -253,7 +253,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		}*/
 		
 		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
-		populateCategorization(loincNum, templatedConcept.getConcept());
+		//populateCategorization(loincNum, templatedConcept.getConcept());
 		if (templatedConcept.getConcept().hasIssues()) {
 			report(getTab(TAB_MODELING_NOTES),
 					loincNum,
@@ -265,14 +265,14 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		}
 	}
 
-	private void populateCategorization(String loincNum, Concept concept) {
+	/*private void populateCategorization(String loincNum, Concept concept) {
 		//Do we have the full set of properties for this loincTerm?
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 		String order = loincTerm.getOrderObs();
 		Concept categoryConcept = categorizationMap.get(order);
 		RelationshipTemplate rt = new RelationshipTemplate(HasConceptCategorizationStatus, categoryConcept);
 		concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
-	}
+	}*/
 
 	private void doProposedModelComparison(String loincNum, LoincTemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
 		//Do we have this loincNum
