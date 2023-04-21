@@ -31,6 +31,12 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 		this.characteristicType = characteristicType;
 	}
 
+	public RelationshipTemplate(Relationship r) {
+		this.type = r.getType();
+		this.target = r.getTarget();
+		this.characteristicType = r.getCharacteristicType();
+	}
+
 	public Concept getType() {
 		return type;
 	}

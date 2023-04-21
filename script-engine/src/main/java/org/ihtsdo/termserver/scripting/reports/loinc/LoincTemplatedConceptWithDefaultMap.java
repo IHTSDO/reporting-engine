@@ -18,7 +18,7 @@ public class LoincTemplatedConceptWithDefaultMap extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum)
+	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues)
 			throws TermServerScriptException {
 		throw new TermServerScriptException("Not expecting to use default map.  LoincNum: " + loincNum);
 	}

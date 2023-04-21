@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
 public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
@@ -28,29 +29,30 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum) throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
+		Concept relativeTo = gl.getConcept("704325000 |Relative to (attribute)|");
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPNUM_PN));
+			addAttributeFromDetail(attributes,loincNum, LoincDetail.COMPNUM_PN, issues);
 		} else {
 			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
 			if (denom != null) {
-				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPNUM_PN));
-				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPDENOM_PN));
+				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPNUM_PN, issues);
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
 				//Check for percentage
-				if (denom.getPartName().contains("100")) {
+				if (denom.getPartName().contains("100") && true) {
 					attributes.add(percentAttribute);
 				}
 			}
 			
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPNUM_PN));
+					addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPNUM_PN, issues);
 				}
-				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPSUBPART2_PN));
+				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues);
 			}
 		}
 		return attributes;

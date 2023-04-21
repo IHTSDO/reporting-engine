@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
@@ -27,26 +28,32 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum) throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept inheresIn = gl.getConcept("704319004 |Inheres in (attribute)|");
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model Inheres in
-			attributes.add(getAttributeFromDetailWithType(loincNum, LoincDetail.COMPNUM_PN, inheresIn));
+			if (!detailPresent(loincNum, LoincDetail.COMPNUM_PN)) {
+				TermServerScript.debug("Check here");
+			}
+			//If we can't map the COMPNUM_PN then concept will be set to primitive.   Use an inhere from the core
+			if (!addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn)) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, inheresIn);
+			}
 		} else {
 			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
 			if (denom != null) {
-				attributes.add(getAttributeFromDetailWithType(loincNum, LoincDetail.COMPNUM_PN, inheresIn));
-				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPDENOM_PN));
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
+				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues);
 			}
 			
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					attributes.add(getAttributeFromDetailWithType(loincNum, LoincDetail.COMPNUM_PN, inheresIn));
+					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
 				}
-				attributes.add(getAttributeFromDetail(loincNum, LoincDetail.COMPSUBPART2_PN));
+				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues);
 			}
 		}
 		return attributes;

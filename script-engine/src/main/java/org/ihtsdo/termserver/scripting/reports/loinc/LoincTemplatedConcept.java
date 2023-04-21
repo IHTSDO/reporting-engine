@@ -8,6 +8,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -99,18 +100,24 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			}
 			String templateItem = "\\[" + loincPart.getPartTypeName() + "\\]";
 			RelationshipTemplate rt = getAttributeForLoincPart(NOT_SET, loincPart);
-			if (rt != null) {
-				//TODO Detect GB Spelling and break out another term
-				Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
-				String itemStr = targetPt.getTerm();
-				
-				itemStr = applyTermTweaking(rt, itemStr);
-				//Can we make this lower case?
-				if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) || 
-						targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
-					itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+			
+			//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
+			if (rt == null) {
+				Concept attributeType = typeMap.get(loincPart.getPartTypeName());
+				if (attributeType == null) {
+					TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName());
+				} else {
+					try {
+						Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).iterator().next();
+						rt = new RelationshipTemplate(r);
+					} catch (Exception e) {
+						TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());;
+					}
 				}
-				ptStr = ptStr.replaceAll(templateItem, itemStr);
+			}
+			
+			if (rt != null) {
+				ptStr = populateTermTemplate(rt, templateItem, ptStr);
 			} else {
 				TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
 			}
@@ -140,6 +147,21 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		concept.addDescription(lcn);
 		concept.addDescription(ln);
 		concept.addDescription(colonDesc);
+	}
+
+	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr) throws TermServerScriptException {
+		//TODO Detect GB Spelling and break out another term
+		Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
+		String itemStr = targetPt.getTerm();
+		
+		itemStr = applyTermTweaking(rt, itemStr);
+		//Can we make this lower case?
+		if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) || 
+				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+			itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+		}
+		ptStr = ptStr.replaceAll(templateItem, itemStr);
+		return ptStr;
 	}
 
 	private String applyTermTweaking(RelationshipTemplate rt, String term) {
@@ -218,10 +240,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			
 			loincPartsSeen.add(loincPart);
 			
-			boolean isComponent = false;
+			boolean isComponent = loincPart.getPartTypeName().equals("COMPONENT");
 			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 			if (isComponent) {
-				attributesToAdd = determineComponentAttributes(loincNum);
+				ArrayList<String> issues = new ArrayList<>();
+				attributesToAdd = determineComponentAttributes(loincNum, issues);
+				concept.addIssues(issues, ",\n");
 			} else {
 				attributesToAdd = Collections.singletonList(getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincPart));
 			}
@@ -251,12 +275,31 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			}
 		}
 		
+		//Ensure attributes are unique (duplicates caused by multiple information sources)
+		checkAndRemoveDuplicateAttributes();
+		
 		if (concept.hasIssues()) {
 			concept.addIssue("Template used: " + this.getClass().getSimpleName(), ",\n");
 		}
 	}
 
-	protected abstract List<RelationshipTemplate> determineComponentAttributes(String loincNum) throws TermServerScriptException;
+	protected void checkAndRemoveDuplicateAttributes() {
+		Set<RelationshipTemplate> relsSeen = new HashSet<>();
+		Set<Relationship> relsToRemove = new HashSet<>();
+		for (Relationship r : concept.getRelationships()) {
+			RelationshipTemplate rt = new RelationshipTemplate(r);
+			if (relsSeen.contains(rt)) {
+				relsToRemove.add(r);
+			}
+		}
+		
+		for (Relationship r : relsToRemove) {
+			concept.getRelationships().remove(r);
+			TermServerScript.warn("Removed a redundant " + r + " from " + this);
+		}
+	}
+
+	protected abstract List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException;
 
 	private RelationshipTemplate getAttributeForLoincPart(int idxTab, LoincPart loincPart) throws TermServerScriptException {
 		RelationshipTemplate rt = loincPartAttributeMap.get(loincPart.getPartNumber());
@@ -385,14 +428,47 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static RelationshipTemplate getAttributeFromDetail(String loincNum, String ldtColumnName) throws TermServerScriptException {
 		LoincDetail loincDetail = getLoincDetail(loincNum, ldtColumnName);
 		String loincPartNum = loincDetail.getPartNumber();
+		if (!loincPartAttributeMap.containsKey(loincPartNum)) {
+			throw new TermServerScriptException("Unable to find attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ")" );
+		}
 		//We will change the attribute type from this map, depending on the template, so return a copy
 		return loincPartAttributeMap.get(loincPartNum).clone();
 	}
 	
 	protected static RelationshipTemplate getAttributeFromDetailWithType(String loincNum, String ldtColumnName, Concept type) throws TermServerScriptException {
 		RelationshipTemplate rt = getAttributeFromDetail(loincNum, ldtColumnName);
-		rt.setTarget(type);
+		rt.setType(type);
 		return rt;
 	}
+	
+	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, String loincNum, String ldtColumnName,
+			List<String> issues, Concept type) {
+		boolean attributeAdded = false;
+		try {
+			attributes.add(getAttributeFromDetailWithType(loincNum, ldtColumnName, type));
+			attributeAdded = true;
+		} catch (TermServerScriptException e) {
+			//TODO Stop passing issues around, we have access to the concept here
+			issues.add(e.getMessage() + " definition status set to Primitive");
+			this.concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+		}
+		return attributeAdded;
+	}
+	
+	protected boolean addAttributeFromDetail(List<RelationshipTemplate> attributes, String loincNum, String ldtColumnName,
+			List<String> issues) {
+		boolean attributeAdded = false;
+		try {
+			attributes.add(getAttributeFromDetail(loincNum, ldtColumnName));
+			attributeAdded = true;
+		} catch (TermServerScriptException e) {
+			//TODO Stop passing issues around, we have access to the concept here
+			issues.add(e.getMessage() + " definition status set to Primitive");
+			this.concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+		}
+		return attributeAdded;
+	}
+	
+	
 
 }

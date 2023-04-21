@@ -48,7 +48,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	public static final String TAB_TOP_20K = "Top 20K";
 	public static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
 	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
-	public static final String TAB_MODELING_NOTES = "Modeling Notes";
+	public static final String TAB_MODELING_ISSUES = "Modeling Issues";
 	public static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
 	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
 	public static final String TAB_IMPORT_STATUS = "Import Status";
@@ -60,7 +60,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			TAB_TOP_20K,
 			TAB_PART_MAPPING_DETAIL,
 			TAB_RF2_PART_MAP_NOTES,
-			TAB_MODELING_NOTES,
+			TAB_MODELING_ISSUES,
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_RF2_IDENTIFIER_FILE,
 			TAB_IMPORT_STATUS };
@@ -75,7 +75,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	//Map of LoincNums to ldtColumnNames to details
 	private static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 	
-	private Concept HasConceptCategorizationStatus;
+	//private Concept HasConceptCategorizationStatus;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ImportLoincTerms report = new ImportLoincTerms();
@@ -132,7 +132,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 		
-		HasConceptCategorizationStatus = gl.registerConcept("10071010000104 |Has concept categorization status (attribute)|");
+		//HasConceptCategorizationStatus = gl.registerConcept("10071010000104 |Has concept categorization status (attribute)|");
 		
 		categorizationMap.put("Observation", gl.registerConcept("10101010000107 |Observation concept categorization status (qualifier value)|"));
 		categorizationMap.put("Order", gl.registerConcept("10091010000103 |Orderable concept categorization status (qualifier value)|"));
@@ -254,23 +254,24 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	}
 	
 	private void processCollectedPartLines(String loincNum, ArrayList<LoincPart> loincParts, Set<LoincTemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
-		/*if (loincNum.equals("32713-0")) {
+		if (loincNum.equals("23761-0")) {
 			debug("here");
-		}*/
+		}
 		
 		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
 		//populateCategorization(loincNum, templatedConcept.getConcept());
 		if (templatedConcept == null) {
-			report(getTab(TAB_MODELING_NOTES),
+			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 					"Does not meet criteria for template match");
-		} else if (templatedConcept.getConcept().hasIssues()) {
-			report(getTab(TAB_MODELING_NOTES),
-					loincNum,
-					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
-					templatedConcept.getConcept().getIssues());
 		} else {
+			if (templatedConcept.getConcept().hasIssues()) {
+				report(getTab(TAB_MODELING_ISSUES),
+						loincNum,
+						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+						templatedConcept.getConcept().getIssues());
+			}
 			successfullyModelledConcepts.add(templatedConcept);
 			doProposedModelComparison(loincNum, templatedConcept);
 		}
