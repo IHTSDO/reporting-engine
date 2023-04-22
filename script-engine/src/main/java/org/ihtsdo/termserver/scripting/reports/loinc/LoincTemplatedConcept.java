@@ -326,8 +326,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				case "NCnc" :
 				case "LsCnc" :
 				case "Naric" :
-				case "MoM" :
-				case "EntMass" : return LoincTemplatedConceptWithComponent.create(loincNum);
+				case "MoM" :  return LoincTemplatedConceptWithComponent.create(loincNum);
+				//case "EntMass" : 
 				case "Prid" :
 				case "EntVol" :
 				case "Vol" :

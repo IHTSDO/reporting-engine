@@ -251,7 +251,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		
 		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
 		//populateCategorization(loincNum, templatedConcept.getConcept());
-		if (templatedConcept == null && true) {
+		if (templatedConcept == null) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
