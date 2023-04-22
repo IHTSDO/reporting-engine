@@ -67,11 +67,11 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	
 	private static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
 	private static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
-	private static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
-	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
+	//private static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
+	private static AttributePartMapManager attributePartMapManager;
 	private Map<String, LoincPart> loincParts = new HashMap<>();
 	private Map<String, Concept> categorizationMap = new HashMap<>();
-	private Set<String> problematicParts = new HashSet<>();
+	
 	//Map of LoincNums to ldtColumnNames to details
 	private static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 	
@@ -115,16 +115,6 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 
 		super.postInit(tabNames, columnHeadings, false);
 		
-		knownReplacementMap.put(gl.getConcept("720309005 |Immunoglobulin G antibody to Streptococcus pneumoniae 43 (substance)|"), gl.getConcept("767402003 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 43 (substance)|"));
-		knownReplacementMap.put(gl.getConcept("720308002 |Immunoglobulin G antibody to Streptococcus pneumoniae 34 (substance)|"), gl.getConcept("767408004 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 34 (substance)|"));
-		knownReplacementMap.put(gl.getConcept("54708003 |Extended zinc insulin (substance)|"), gl.getConcept("10329000 |Zinc insulin (substance)|"));
-		knownReplacementMap.put(gl.getConcept("409258004 |Hydroxocobalamin (substance)|"), gl.getConcept("1217427007 |Aquacobalamin (substance)|"));
-		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
-		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
-		knownReplacementMap.put(gl.getConcept("27192005 |Aminosalicylic acid (substance)|"), gl.getConcept("255666002 |Para-aminosalicylic acid (substance)|"));
-		knownReplacementMap.put(gl.getConcept("250428009 |Substance with antimicrobial mechanism of action (substance)|"), gl.getConcept("419241000 |Substance with antibacterial mechanism of action (substance)|"));
-		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
-	
 		//Just temporarily, we need to create some concepts that aren't visible yet
 		gl.registerConcept("10021010000100 |Platelet poor plasma or whole blood specimen (specimen)|"); 
 		gl.registerConcept("10051010000107 |Plasma specimen or whole blood specimen (specimen)|");
@@ -147,8 +137,9 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		//We can look at the full LOINC file in parallel as it's not needed for modelling
 		executor.execute(() -> loadFullLoincFile());
 		loadLoincDetail();
-		populatePartAttributeMap();
-		LoincTemplatedConcept.initialise(this, gl, loincPartAttributeMap, loincNumToLoincTermMap, problematicParts, loincDetailMap);
+		attributePartMapManager = new AttributePartMapManager(this, loincParts);
+		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
+		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap);
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
@@ -260,7 +251,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		
 		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
 		//populateCategorization(loincNum, templatedConcept.getConcept());
-		if (templatedConcept == null) {
+		if (templatedConcept == null && true) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
@@ -314,84 +305,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
 	}
 	
-	private void populatePartAttributeMap() throws TermServerScriptException {
-		int lineNum = 0;
-		try {
-			int successfullTypeReplacement = 0;
-			int successfullValueReplacement = 0;
-			int unsuccessfullTypeReplacement = 0;
-			int unsuccessfullValueReplacement = 0;
-			info ("Loading Part Attribute Map: " + getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
-			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP)))) {
-				String line;
-				while ((line = br.readLine()) != null) {
-					lineNum++;
-					if (lineNum > 1) {
-						String[] items = line.split("\t");
-						//Skip the row if it's not active
-						if (items[2].equals("0")) {
-							continue;
-						}
-						String partNum = items[6];
-						Concept attributeType = gl.getConcept(items[7]);
-						Concept attributeValue = gl.getConcept(items[5]);
-						
-						if (!attributeType.isActive()) {
-							String hardCodedIndicator = " hardcoded";
-							Concept replacementType = knownReplacementMap.get(attributeType);
-							if (replacementType == null) {
-								hardCodedIndicator = "";
-								replacementType = getReplacementSafely(getTab(TAB_RF2_PART_MAP_NOTES), partNum, attributeType, false);
-							} 
-							String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
-							if (replacementType == null) unsuccessfullTypeReplacement++; 
-								else successfullTypeReplacement++;
-							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
-							if (replacementType != null) {
-								attributeType = replacementType;
-							}
-						}
-						
-						LoincPart part = loincParts.get(partNum);
-						String partName = part == null ? "Unlisted" : part.getPartName();
-						String partStatus = part == null ? "Unlisted" : part.getStatus().name();
-					
-						if (!attributeValue.isActive()) {
-							String hardCodedIndicator = " hardcoded";
-							Concept replacementValue = knownReplacementMap.get(attributeValue);
-							if (replacementValue == null) {
-								hardCodedIndicator = "";
-								replacementValue = getReplacementSafely(getTab(TAB_RF2_PART_MAP_NOTES), partNum, attributeValue, false);
-							}
-							String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
-							if (replacementValue == null) unsuccessfullValueReplacement++; 
-							else successfullValueReplacement++;
-							String prefix = replacementValue == null ? "* " : "";
-							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
-							if (replacementValue != null) {
-								attributeValue = replacementValue;
-							}
-						}
-						RelationshipTemplate attribute = new RelationshipTemplate(attributeType, attributeValue);
-						if (loincPartAttributeMap.containsKey(partNum)) {
-							report(getTab(TAB_RF2_PART_MAP_NOTES), partNum, partName, partStatus, "** Duplicate map encountered: " + loincPartAttributeMap.get(partNum) + " replaced with " + attribute);
-							problematicParts.add(partNum);
-						}
-						loincPartAttributeMap.put(partNum, attribute);
-					}
-				}
-			}
-			info("Populated map of " + loincPartAttributeMap.size() + " LOINC parts to attributes");
-			report(getTab(TAB_RF2_PART_MAP_NOTES), "");
-			report(getTab(TAB_RF2_PART_MAP_NOTES), "successfullTypeReplacement",successfullTypeReplacement);
-			report(getTab(TAB_RF2_PART_MAP_NOTES), "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
-			report(getTab(TAB_RF2_PART_MAP_NOTES), "successfullValueReplacement",successfullValueReplacement);
-			report(getTab(TAB_RF2_PART_MAP_NOTES), "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
 
-		} catch (Exception e) {
-			throw new TermServerScriptException("At line " + lineNum, e);
-		}
-	}
 
 	
 	private void loadLoincParts() throws TermServerScriptException {

@@ -1800,7 +1800,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				.collect(Collectors.toList());
 	}
 	
-	protected Concept getReplacementSafely(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) {
+	public Concept getReplacementSafely(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) {
 		try {
 			return getReplacement(reportTabIdx, context, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {
