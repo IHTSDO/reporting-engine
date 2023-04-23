@@ -23,6 +23,7 @@ public class AttributePartMapManager {
 	private Map<String, LoincPart> loincParts;
 	private Map<String, Map<Concept, Set<RelationshipTemplate>>> loincPartToAttributeMap;
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
+	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
 	private int size = 0;
 	private Concept component;
 	
@@ -94,6 +95,10 @@ public class AttributePartMapManager {
 						String partNum = items[6];
 						Concept attributeType = gl.getConcept(items[7]);
 						Concept attributeValue = gl.getConcept(items[5]);
+						
+						if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
+							attributeType = hardCodedTypeReplacementMap.get(attributeType);
+						}
 						
 						if (!attributeType.isActive()) {
 							String hardCodedIndicator = " hardcoded";
@@ -172,6 +177,8 @@ public class AttributePartMapManager {
 		knownReplacementMap.put(gl.getConcept("27192005 |Aminosalicylic acid (substance)|"), gl.getConcept("255666002 |Para-aminosalicylic acid (substance)|"));
 		knownReplacementMap.put(gl.getConcept("250428009 |Substance with antimicrobial mechanism of action (substance)|"), gl.getConcept("419241000 |Substance with antibacterial mechanism of action (substance)|"));
 		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
+	
+		hardCodedTypeReplacementMap.put(gl.getConcept("410670007 |Time|"), gl.getConcept("370134009 |Time aspect|"));
 	}
 
 	public boolean containsMappingForLoincPartNum(String loincPartNum) {

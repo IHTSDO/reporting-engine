@@ -49,6 +49,12 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 					addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues);
 				}
 			}
+			
+			if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN) ||
+				detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPONENT_PN);
+				slotTermMap.put("COMPONENT", componentDetail.getPartName());
+			}
 		}
 		return attributes;
 	}

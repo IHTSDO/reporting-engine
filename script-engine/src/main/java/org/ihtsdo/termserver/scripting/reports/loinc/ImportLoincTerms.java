@@ -245,7 +245,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	}
 	
 	private void processCollectedPartLines(String loincNum, ArrayList<LoincPart> loincParts, Set<LoincTemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
-		if (loincNum.equals("23761-0")) {
+		if (loincNum.equals("38488-3")) {
 			debug("here");
 		}
 		
@@ -266,6 +266,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			successfullyModelledConcepts.add(templatedConcept);
 			doProposedModelComparison(loincNum, templatedConcept);
 		}
+		flushFilesSoft();
 	}
 
 	/*private void populateCategorization(String loincNum, Concept concept) {

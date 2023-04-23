@@ -42,8 +42,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected Map<String, Concept> typeMap = new HashMap<>();
 	protected String preferredTermTemplate;
 	protected Concept concept;
-	
-	
+	protected Map<String, String> slotTermMap = new HashMap<>();
 	
 	public static void initialise(TermServerScript ts, GraphLoader gl, 
 			AttributePartMapManager attributePartMapManager,
@@ -89,40 +88,57 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	private void populateTerms(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
-		String ptStr = preferredTermTemplate;
+		String ptTemplateStr = preferredTermTemplate;
+		Concept conceptModelObjectAttrib = gl.getConcept("762705008 |Concept model object attribute|");
 		for (LoincPart loincPart : loincParts) {
 			if (loincPart.getPartTypeName().equals("CLASS") || 
 					loincPart.getPartTypeName().equals("SUFFIX")) {
 				continue;
 			}
 			String templateItem = "\\[" + loincPart.getPartTypeName() + "\\]";
-			RelationshipTemplate rt = getAttributeForLoincPart(NOT_SET, loincPart);
+			RelationshipTemplate rt = null;
 			
-			//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
-			if (rt == null) {
-				Concept attributeType = typeMap.get(loincPart.getPartTypeName());
-				if (attributeType == null) {
-					TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName());
-				} else {
-					try {
-						Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).iterator().next();
-						rt = new RelationshipTemplate(r);
-					} catch (Exception e) {
-						TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());;
+			//Do we have this slot name defined for us?
+			if (slotTermMap.containsKey(templateItem)) {
+				populateTermTemplate(slotTermMap.get(templateItem), templateItem, ptTemplateStr);
+			} else {
+				rt = getAttributeForLoincPart(NOT_SET, loincPart);
+				
+				//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
+				if (rt == null) {
+					Concept attributeType = typeMap.get(loincPart.getPartTypeName());
+					if (attributeType == null) {
+						TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName());
+					} else {
+						try {
+							Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).iterator().next();
+							rt = new RelationshipTemplate(r);
+						} catch (Exception e) {
+							//Workaround for some map entries to 762705008 |Concept model object attribute|
+							
+							try {
+								Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, conceptModelObjectAttrib, ActiveState.ACTIVE).iterator().next();
+								rt = new RelationshipTemplate(r);
+							} catch (Exception e2) {
+								TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
+							}
+						}
 					}
+				}
+				
+				if (rt != null) {
+					ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr);
+				} else {
+					TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
 				}
 			}
 			
-			if (rt != null) {
-				ptStr = populateTermTemplate(rt, templateItem, ptStr);
-			} else {
-				TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
-			}
+
 		}
-		ptStr = tidyUpTerm(loincNum, ptStr);
-		ptStr = StringUtils.capitalizeFirstLetter(ptStr);
-		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
-		Description fsn = Description.withDefaults(ptStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
+		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
+		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
+		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
+		Description fsn = Description.withDefaults(ptTemplateStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
 		
 		//Also add the Long Common Name as a Synonym
 		String lcnStr = loincNumToLoincTermMap.get(loincNum).getLongCommonName();
@@ -157,6 +173,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 			itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 		}
+		ptStr = ptStr.replaceAll(templateItem, itemStr);
+		return ptStr;
+	}
+	
+	private String populateTermTemplate(String itemStr, String templateItem, String ptStr) throws TermServerScriptException {
+		itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 		ptStr = ptStr.replaceAll(templateItem, itemStr);
 		return ptStr;
 	}
