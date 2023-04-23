@@ -23,8 +23,10 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("246093002 |Component (attribute)|"));
 		templatedConcept.typeMap.put("DIVISOR", gl.getConcept("704325000 |Relative to (attribute)|"));
 		templatedConcept.typeMap.put("UNITS", gl.getConcept("415067009 |Percentage unit (qualifier value)|"));
+		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
+		templatedConcept.typeMap.put("PRECONDITION", precondition);
 		
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [PRECONDITION]";
 		return templatedConcept;
 	}
 
@@ -33,7 +35,6 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
-		Concept relativeTo = gl.getConcept("704325000 |Relative to (attribute)|");
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetail(attributes,loincNum, LoincDetail.COMPNUM_PN, issues);
@@ -43,8 +44,9 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPNUM_PN, issues);
 				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
 				//Check for percentage
-				if (denom.getPartName().contains("100") && true) {
+				if (denom.getPartName().contains("100")) {
 					attributes.add(percentAttribute);
+					slotTermMap.put("PROPERTY", "percentage");
 				}
 			}
 			

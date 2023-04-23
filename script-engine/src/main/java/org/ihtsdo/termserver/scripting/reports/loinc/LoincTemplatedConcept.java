@@ -34,6 +34,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Map<String, String> termTweakingMap = new HashMap<>();
 	protected static Map<Concept, Set<String>> typeValueTermRemovalMap = new HashMap<>();
 	protected static Map<String, Set<String>> valueSemTagTermRemovalMap = new HashMap<>();
+	protected static Concept conceptModelObjectAttrib;
+	protected static Concept precondition;
+	protected static Concept relativeTo;
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
@@ -42,6 +45,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected Map<String, Concept> typeMap = new HashMap<>();
 	protected String preferredTermTemplate;
 	protected Concept concept;
+	
 	protected Map<String, String> slotTermMap = new HashMap<>();
 	
 	public static void initialise(TermServerScript ts, GraphLoader gl, 
@@ -64,17 +68,24 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				"suborder", "subphylum", "subspecies", "superclass", "superdivision", "superfamily", 
 				"superkingdom", "superorder", "superphylum"));
 		valueSemTagTermRemovalMap.put("(organism)", removals);
+		
+		removals = new HashSet<>(Arrays.asList("population of all", "in portion of fluid"));
+		valueSemTagTermRemovalMap.put("(body structure)", removals);
+		
 		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
 		
 		percentAttribute = new RelationshipTemplate(gl.getConcept("246514001 |Units|"),
 				gl.getConcept(" 415067009 |Percentage unit|"));
+		conceptModelObjectAttrib = gl.getConcept("762705008 |Concept model object attribute|");
+		precondition = gl.getConcept("704326004 |Precondition (attribute)|");
+		relativeTo = gl.getConcept("704325000 |Relative to (attribute)|");
 	}
 
 	protected LoincTemplatedConcept (String loincNum) {
 		this.loincNum = loincNum;
 	}
 
-	public static LoincTemplatedConcept populateModel(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
+	public static LoincTemplatedConcept populateTemplate(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, loincParts);
 		if (templatedConcept != null) {
 			templatedConcept.populateParts(loincParts);
@@ -89,52 +100,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	private void populateTerms(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
 		String ptTemplateStr = preferredTermTemplate;
-		Concept conceptModelObjectAttrib = gl.getConcept("762705008 |Concept model object attribute|");
 		for (LoincPart loincPart : loincParts) {
-			if (loincPart.getPartTypeName().equals("CLASS") || 
-					loincPart.getPartTypeName().equals("SUFFIX")) {
-				continue;
-			}
-			String templateItem = "\\[" + loincPart.getPartTypeName() + "\\]";
-			RelationshipTemplate rt = null;
-			
-			//Do we have this slot name defined for us?
-			if (slotTermMap.containsKey(templateItem)) {
-				populateTermTemplate(slotTermMap.get(templateItem), templateItem, ptTemplateStr);
-			} else {
-				rt = getAttributeForLoincPart(NOT_SET, loincPart);
-				
-				//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
-				if (rt == null) {
-					Concept attributeType = typeMap.get(loincPart.getPartTypeName());
-					if (attributeType == null) {
-						TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName());
-					} else {
-						try {
-							Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).iterator().next();
-							rt = new RelationshipTemplate(r);
-						} catch (Exception e) {
-							//Workaround for some map entries to 762705008 |Concept model object attribute|
-							
-							try {
-								Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, conceptModelObjectAttrib, ActiveState.ACTIVE).iterator().next();
-								rt = new RelationshipTemplate(r);
-							} catch (Exception e2) {
-								TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
-							}
-						}
-					}
-				}
-				
-				if (rt != null) {
-					ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr);
-				} else {
-					TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
-				}
-			}
-			
-
+			ptTemplateStr = populateTermTemplateFromLoincPart(ptTemplateStr, loincPart);
 		}
+		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
+		
 		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
 		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
@@ -162,6 +132,89 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		concept.addDescription(colonDesc);
 	}
 
+	private String populateTermTemplateFromLoincPart(String ptTemplateStr, LoincPart loincPart) throws TermServerScriptException {
+		if (loincPart.getPartTypeName().equals("CLASS") || 
+				loincPart.getPartTypeName().equals("SUFFIX")) {
+			return ptTemplateStr;
+		}
+		String templateItem = "\\[" + loincPart.getPartTypeName() + "\\]";
+		RelationshipTemplate rt = null;
+		
+		//Do we have this slot name defined for us?
+		if (slotTermMap.containsKey(loincPart.getPartTypeName())) {
+			//ptTemplateStr = populateTermTemplate(slotTermMap.get(loincPart.getPartTypeName()), templateItem, ptTemplateStr);
+			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(loincPart.getPartTypeName()));
+			ptTemplateStr = ptTemplateStr.replaceAll(templateItem, itemStr);
+		} else {
+			rt = getAttributeForLoincPart(NOT_SET, loincPart);
+			
+			//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
+			if (rt == null) {
+				Concept attributeType = typeMap.get(loincPart.getPartTypeName());
+				if (attributeType == null) {
+					TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName());
+				} else {
+					try {
+						Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).iterator().next();
+						rt = new RelationshipTemplate(r);
+					} catch (Exception e) {
+						//Workaround for some map entries to 762705008 |Concept model object attribute|
+						
+						try {
+							Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, conceptModelObjectAttrib, ActiveState.ACTIVE).iterator().next();
+							rt = new RelationshipTemplate(r);
+						} catch (Exception e2) {
+							TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
+						}
+					}
+				}
+			}
+			
+			if (rt != null) {
+				ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr);
+			} else {
+				TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
+			}
+		}
+		return ptTemplateStr;
+	}
+
+	private String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
+		//Do we have any slots left to fill?  Find their attributetypes via the slot map
+		String [] templateItems = org.apache.commons.lang3.StringUtils.substringsBetween(ptTemplateStr,"[", "]");
+		if (templateItems == null) {
+			return ptTemplateStr;
+		}
+		
+		for (String templateItem : templateItems) {
+			String regex = "\\[" + templateItem + "\\]";
+			if (slotTermMap.containsKey(templateItem)) {
+				//populateTermTemplate(slotTermMap.get(templateItem), templateItem, ptTemplateStr);
+				String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
+				ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
+			} else {
+				Concept attributeType = typeMap.get(templateItem);
+				if (attributeType == null) {
+					throw new TermServerScriptException("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
+				}
+				Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+				if (rels.size() == 0) {
+					continue;
+				}
+				if (rels.size() > 1) {
+					throw new TermServerScriptException(rels.size() + " relationships for " + attributeType + " in " + getLoincNum());
+				}
+				RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
+				/*Concept attributeValue = rels.iterator().next().getTarget();
+				String prefTerm = StringUtils.deCapitalize(attributeValue.getPreferredSynonym());
+				ptTemplateStr = ptTemplateStr.replaceAll(regex, prefTerm);*/
+				ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr);
+			}
+		}
+		return ptTemplateStr;
+	}
+
+
 	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr) throws TermServerScriptException {
 		//TODO Detect GB Spelling and break out another term
 		Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
@@ -177,11 +230,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return ptStr;
 	}
 	
-	private String populateTermTemplate(String itemStr, String templateItem, String ptStr) throws TermServerScriptException {
+	/*private String populateTermTemplate(String itemStr, String templateItem, String ptStr) throws TermServerScriptException {
 		itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 		ptStr = ptStr.replaceAll(templateItem, itemStr);
 		return ptStr;
-	}
+	}*/
 
 	private String applyTermTweaking(RelationshipTemplate rt, String term) {
 		Concept value = rt.getTarget();
@@ -220,6 +273,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		term = replaceAndWarn(loincNum, term, " by [METHOD]");
 		term = replaceAndWarn(loincNum, term, " to [DIVISOR]");
 		term = replaceAndWarn(loincNum, term, " in [SYSTEM]");
+		term = replaceAndWarn(loincNum, term, " using [DEVICE]");
+		term = replaceAndWarn(loincNum, term, " [PRECONDITION]");
 		term = term.replaceAll("  ", " ");
 		return term;
 	}
@@ -279,6 +334,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 						issue,
 						loincPart.getPartName());
 					concept.addIssue(issue, ",\n");
+					concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 					partNumsUnmapped.add(loincPart.getPartNumber());
 				}
 			}

@@ -245,11 +245,11 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	}
 	
 	private void processCollectedPartLines(String loincNum, ArrayList<LoincPart> loincParts, Set<LoincTemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
-		if (loincNum.equals("38488-3")) {
+		if (loincNum.equals("17849-1")) {
 			debug("here");
 		}
 		
-		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateModel(loincNum, loincParts);
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(loincNum, loincParts);
 		//populateCategorization(loincNum, templatedConcept.getConcept());
 		if (templatedConcept == null) {
 			report(getTab(TAB_MODELING_ISSUES),
@@ -257,14 +257,22 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 					"Does not meet criteria for template match");
 		} else {
+			String fsn = templatedConcept.getConcept().getFsn();
+			boolean insufficientTermPopulation = fsn.contains("[");
+			if (insufficientTermPopulation) {
+				templatedConcept.getConcept().addIssue("FSN indicates failure to populate required slot: " + fsn, ",\n");
+			} else {
+				successfullyModelledConcepts.add(templatedConcept);
+				doProposedModelComparison(loincNum, templatedConcept);
+			}
+			
 			if (templatedConcept.getConcept().hasIssues()) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 						templatedConcept.getConcept().getIssues());
 			}
-			successfullyModelledConcepts.add(templatedConcept);
-			doProposedModelComparison(loincNum, templatedConcept);
+			
 		}
 		flushFilesSoft();
 	}

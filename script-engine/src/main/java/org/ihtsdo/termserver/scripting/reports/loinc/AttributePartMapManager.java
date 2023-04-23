@@ -26,14 +26,26 @@ public class AttributePartMapManager {
 	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
 	private int size = 0;
 	private Concept component;
+	private Concept genericType;
+	private boolean initialised = false;
 	
 	public AttributePartMapManager (TermServerScript ts, Map<String, LoincPart> loincParts) {
 		this.ts = ts;
 		this.gl = ts.getGraphLoader();
 		this.loincParts = loincParts;
+		
+	}
+	
+	private void init() throws TermServerScriptException {
+		genericType = gl.getConcept("762705008 |Concept model object attribute|");
+		initialised = true;
 	}
 
 	public RelationshipTemplate getPartMappedAttributeForType(int idxTab, String loincNum, String loincPartNum, Concept attributeType) throws TermServerScriptException {
+		if (!initialised) {
+			init();
+		}
+		
 		RelationshipTemplate rt = null;
 		if (!containsMappingForLoincPartNum(loincPartNum)) {
 			ts.report(idxTab,
@@ -43,11 +55,25 @@ public class AttributePartMapManager {
 		} else {
 			Map<Concept, Set<RelationshipTemplate>> typeAttributeMap = getTypeAttributeMap(loincPartNum);
 			if (!typeAttributeMap.containsKey(attributeType)) {
-				ts.report(idxTab,
-						loincNum,
-						loincPartNum,
-						"Attribute mappings available, but not for attribute type",
-						attributeType);
+				//Workaround, see if we can find one for 762705008 |Concept model object attribute| and override
+				if (typeAttributeMap.containsKey(genericType)) {
+					Set<RelationshipTemplate> attributes = typeAttributeMap.get(genericType);
+					if (attributes.size() > 1) {
+						ts.report(idxTab,
+								loincNum,
+								loincPartNum,
+								"Multiple attribute values available for generic mapping. Choosing at random!",
+								attributeType);
+					}
+					rt = attributes.iterator().next();
+					rt.setType(attributeType);
+				} else {
+					ts.report(idxTab,
+							loincNum,
+							loincPartNum,
+							"Attribute mappings available, but not for attribute type",
+							attributeType);
+				}
 			} else {
 				Set<RelationshipTemplate> attributes = typeAttributeMap.get(attributeType);
 				if (attributes.size() > 1) {
