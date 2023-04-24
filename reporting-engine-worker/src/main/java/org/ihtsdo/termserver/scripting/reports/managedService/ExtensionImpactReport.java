@@ -53,6 +53,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
+				.withTag(INT)
 				.build();
 	}
 
