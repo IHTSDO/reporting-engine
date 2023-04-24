@@ -125,7 +125,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 		
 		columnNames = new String[][] {	{"Inactivated Used As Stated Parent", "Inactivated Used In Stated Modelling", "Inactivated With Inferred Extension Children"},
-										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation"}};
+										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation", "Translated Concept Inactivated - Replacement Requires Translation"}};
 		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
@@ -172,7 +172,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			Set<String> thisHierarchy = getHierarchy(topLevelConcept);
 			
 			reportInactivations(topLevelConcept, thisHierarchy, columnNames[0]);
-			reportTransations(topLevelConcept, thisHierarchy, columnNames[1]);
+			reportTranslations(topLevelConcept, thisHierarchy, columnNames[1]);
 		}
 		
 		//We can now populate all the of the total columns
@@ -228,11 +228,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	}
 	
 
-	private void reportTransations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
+	private void reportTranslations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
 		info("Reporting Translations Required");
 		int newConceptCount = 0;
 		int changedFSNCount = 0;
 		int changedFSNCountNoCurrent = 0;
+		int translatedInactivatedCount = 0;
+		Set<String> conceptReplacementSeen = new HashSet<>();
+		
 		for (String sctId : thisHierarchy) {
 			Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
 			//If this concept does not currently exist, then it's new, so it'll need a translation
@@ -263,8 +266,29 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 					incrementSummaryInformation(summaryNames[2]);
 				}
 			}
+			
+			//Report translated concepts that have been inactivated where the replacement has not been translated
+			if (!datum.isActive && 
+					currentConcept.isActive() &&
+					hasTranslation(currentConcept)) {
+				//Can't use association entries because of course _this_ snapshot doesn't know 
+				//about the inactivation.  Pull it from the datum instead
+				for (String histAssocTarget : datum.histAssocTargets) {
+					//Only count a given replacement once
+					if (!conceptReplacementSeen.contains(histAssocTarget)) {
+						Concept targetConcept = gl.getConcept(histAssocTarget, false, false);
+						//If we don't have this concept then we'll already have counted it
+						if (targetConcept != null && !hasTranslation(targetConcept)) {
+							translatedInactivatedCount++;
+							incrementSummaryInformation(summaryNames[3]);
+						}
+						conceptReplacementSeen.add(histAssocTarget);
+					}
+				}
+			}
 		}
-		report(TERTIARY_REPORT, topLevelConcept, newConceptCount, changedFSNCount);
+		
+		report(TERTIARY_REPORT, topLevelConcept, newConceptCount, changedFSNCount, changedFSNCountNoCurrent, translatedInactivatedCount);
 	}
 
 	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {

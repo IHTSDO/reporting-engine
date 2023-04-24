@@ -115,12 +115,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String[] histAssocIds = getHistAssocIds(c);
 				String[] descHistAssocIds = getDescHistAssocIds(c);
 				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
+				String histAssocTargets = getHistAssocTargets(c);
 				ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
 						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
 						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
 						c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE],
-						descInactivationIds[ACTIVE], descInactivationIds[INACTIVE]);
+						descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], histAssocTargets);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -133,6 +134,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				e.printStackTrace();
 			}
 		}
+	}
+
+	private String getHistAssocTargets(Concept c) {
+		return c.getAssociations(ActiveState.ACTIVE, true)
+				.stream()
+				.map(a -> a.getTargetComponentId())
+				.collect(Collectors.joining(","));
 	}
 
 	private void populateSemTagHierarchyMap(TransitiveClosure tc) throws TermServerScriptException {

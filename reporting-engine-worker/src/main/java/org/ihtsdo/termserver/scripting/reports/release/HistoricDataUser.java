@@ -182,6 +182,7 @@ public class HistoricDataUser extends TermServerReport {
 		public List<String> descHistAssocIdsInact;
 		public List<String> descInactivationIds;
 		public List<String> descInactivationIdsInact;
+		public List<String> histAssocTargets;
 		
 		@Override
 		public int hashCode () {
@@ -228,6 +229,7 @@ public class HistoricDataUser extends TermServerReport {
 		datum.descHistAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		datum.descInactivationIds = Arrays.asList(lineItems[++idx].split(","));
 		datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
 		return datum;
 	}
 	
