@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -39,7 +40,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	
 	private int FILE_IDX_LOINC_100 = 0;
 	private int FILE_IDX_LOINC_100_PARTS_MAP = 1;
-	private int FILE_IDX_LOINC_100_Primary = 2;
+	//private int FILE_IDX_LOINC_100_Primary = 2;
 	private int FILE_IDX_LOINC_PARTS = 3;
 	private int FILE_IDX_LOINC_FULL = 4;
 	private int FILE_IDX_LOINC_DETAIL = 5;
@@ -67,7 +68,6 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	
 	private static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
 	private static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
-	//private static Map<String, RelationshipTemplate> loincPartAttributeMap = new HashMap<>();
 	private static AttributePartMapManager attributePartMapManager;
 	private Map<String, LoincPart> loincParts = new HashMap<>();
 	private Map<String, Concept> categorizationMap = new HashMap<>();
@@ -88,6 +88,9 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			report.postInit();
 			report.runReport();
 		} finally {
+			while (report.additionalThreadCount > 0) {
+				Thread.sleep(1000);
+			}
 			report.finish();
 		}
 	}
@@ -131,11 +134,12 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	}
 
 	private void runReport() throws TermServerScriptException, InterruptedException {
-		ExecutorService executor = Executors.newCachedThreadPool();
+		//ExecutorService executor = Executors.newCachedThreadPool();
 		populateLoincNumMap();
 		loadLoincParts();
 		//We can look at the full LOINC file in parallel as it's not needed for modelling
-		executor.execute(() -> loadFullLoincFile());
+		//executor.execute(() -> loadFullLoincFile());
+		loadFullLoincFile();
 		loadLoincDetail();
 		attributePartMapManager = new AttributePartMapManager(this, loincParts);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
@@ -143,11 +147,9 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 		determineExistingConcepts();
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
+		LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
 		/*importIntoTask(successfullyModelled);
 		generateAlternateIdentifierFile(successfullyModelled);*/
-		while (additionalThreadCount > 0) {
-			Thread.sleep(1000);
-		}
 	}
 	
 	private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {
@@ -163,6 +165,8 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 	}
 
 	private void determineExistingConcepts() throws TermServerScriptException {
+		int total  = 0;
+		int existingConceptCount = 0;
 		try {
 			info ("Loading " + getInputFile(FILE_IDX_LOINC_100));
 			boolean isFirstLine = true;
@@ -173,10 +177,15 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 						String[] items = line.split("\t");
 						LoincTerm loincTerm = LoincTerm.parse(items);
 						loincNumToLoincTermMap.put(loincTerm.getLoincNum(), loincTerm);
-						checkForExistingModelling(loincTerm, getTab(TAB_TOP_100));
+						boolean exists = checkForExistingModelling(loincTerm, getTab(TAB_TOP_100));
+						if (exists) existingConceptCount++;
 					} else isFirstLine = false;
 				}
 			}
+			report(getTab(TAB_TOP_20K),"");
+			report(getTab(TAB_TOP_20K),"Summary:");
+			report(getTab(TAB_TOP_20K),"Already exists", existingConceptCount);
+			report(getTab(TAB_TOP_20K),"Total", total);
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
@@ -205,51 +214,31 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			return false;
 		}
 	}
-
+	
 	private Set<LoincTemplatedConcept> doModeling() throws TermServerScriptException {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
-		try {
-			info ("Loading Parts: " + getInputFile(FILE_IDX_LOINC_100_Primary));
-			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100_Primary)))) {
-				String line;
-				ArrayList<LoincPart> loincParts = new ArrayList<>();
-				String lastLoincNum = "";
-				while ((line = br.readLine()) != null) {
-					if (!isFirstLine) {
-						String[] items = line.split("\t");
-						String loincNum = items[0];
-						String partNum = items[2];
-						String partName = items[3];
-						String partTypeName = items[5];
-						
-						//Have we moved on to a new LOINC Num?  Do model comparison on the last number if so,
-						//which is now assumed to be complete.
-						if (!lastLoincNum.equals(loincNum)) {
-							if (!lastLoincNum.isEmpty()) {
-								processCollectedPartLines(lastLoincNum, loincParts, successfullyModelledConcepts);
-							}
-							lastLoincNum = loincNum;
-							loincParts.clear();
-						}
-						loincParts.add(new LoincPart(partNum, partTypeName, partName));
-					} else isFirstLine = false;
-				}
-				//And mop up the final set of parts
-				processCollectedPartLines(lastLoincNum, loincParts, successfullyModelledConcepts);
-			}
-		} catch (Exception e) {
-			throw new TermServerScriptException(e);
+		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
+			LoincTemplatedConcept templatedConcept = doModeling(entry.getKey(), entry.getValue());
+			successfullyModelledConcepts.add(templatedConcept);
 		}
 		return successfullyModelledConcepts;
 	}
 	
-	private void processCollectedPartLines(String loincNum, ArrayList<LoincPart> loincParts, Set<LoincTemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
+	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		if (loincNum.equals("17849-1")) {
 			debug("here");
 		}
 		
-		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(loincNum, loincParts);
+		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
+				!loincDetailMap.containsKey(LoincDetail.COMPNUM_PN)) {
+			report(getTab(TAB_MODELING_ISSUES),
+					loincNum,
+					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+					"Does not feature one of COMPONENT_PN or COMPNUM_PN");
+			return null;
+		}
+		
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(loincNum, loincDetailMap);
 		//populateCategorization(loincNum, templatedConcept.getConcept());
 		if (templatedConcept == null) {
 			report(getTab(TAB_MODELING_ISSUES),
@@ -262,7 +251,6 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			if (insufficientTermPopulation) {
 				templatedConcept.getConcept().addIssue("FSN indicates failure to populate required slot: " + fsn, ",\n");
 			} else {
-				successfullyModelledConcepts.add(templatedConcept);
 				doProposedModelComparison(loincNum, templatedConcept);
 			}
 			
@@ -275,6 +263,7 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			
 		}
 		flushFilesSoft();
+		return templatedConcept;
 	}
 
 	/*private void populateCategorization(String loincNum, Concept concept) {
@@ -372,13 +361,14 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 					in.close();
 				} catch (IOException e) {}
 			}
-			additionalThreadCount--;
 		}
 	}
 	
 	private void loadFullLoincFile() {
 		additionalThreadCount++;
 		info ("Loading Full Loinc: " + getInputFile(FILE_IDX_LOINC_FULL));
+		loincNumToLoincTermMap = new HashMap<>();
+		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_FULL)));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
@@ -386,16 +376,27 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			CSVRecord header = iterator.next();
 			int existingConceptCount = 0;
 			int notExistingConceptCount = 0;
+			int hasTargettedPropertyIn20K = 0;
+			int hasTargettedPropertyNotIn20K = 0;
 			while (iterator.hasNext()) {
 				CSVRecord thisLine = iterator.next();
 				LoincTerm loincTerm = LoincTerm.parse(thisLine);
+				loincNumToLoincTermMap.put(loincTerm.getLoincNum(), loincTerm);
 				//Is this term one of the top 20K?
 				String testRank = loincTerm.getCommonTestRank();
-				if (!StringUtils.isEmpty(testRank) && !testRank.equals("0")) {
+				if (StringUtils.isEmpty(testRank) || testRank.equals("0")) {
+					if (targettedProperties.contains(loincTerm.getProperty())) {
+						hasTargettedPropertyNotIn20K++;
+					}
+				} else {
 					if (checkForExistingModelling(loincTerm, getTab(TAB_TOP_20K))) {
 						existingConceptCount++;
 					} else {
 						notExistingConceptCount++;
+					}
+					
+					if (targettedProperties.contains(loincTerm.getProperty())) {
+						hasTargettedPropertyIn20K++;
 					}
 				}
 			}
@@ -403,6 +404,10 @@ public class ImportLoincTerms extends TermServerScript implements LoincConstants
 			report(getTab(TAB_TOP_20K),"Summary:");
 			report(getTab(TAB_TOP_20K),"Already exists", existingConceptCount);
 			report(getTab(TAB_TOP_20K),"Does not exist", notExistingConceptCount);
+			report(getTab(TAB_TOP_20K),"");
+			report(getTab(TAB_TOP_20K),"Has Targetted Property in Top 20K", hasTargettedPropertyIn20K);
+			report(getTab(TAB_TOP_20K),"Has Targetted Property not in Top 20K", hasTargettedPropertyNotIn20K);
+			
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_FULL), e);
 		} finally {

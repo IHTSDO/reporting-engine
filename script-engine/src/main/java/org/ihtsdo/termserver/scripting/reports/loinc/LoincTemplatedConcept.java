@@ -37,6 +37,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Concept conceptModelObjectAttrib;
 	protected static Concept precondition;
 	protected static Concept relativeTo;
+	protected static Set<String> skipPartTypes;
+	
+	protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
+	protected static int failedMappingAlreadySeenForOtherProperty = 0;
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
@@ -74,6 +78,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		
 		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
 		
+		skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS"));
+		
 		percentAttribute = new RelationshipTemplate(gl.getConcept("246514001 |Units|"),
 				gl.getConcept(" 415067009 |Percentage unit|"));
 		conceptModelObjectAttrib = gl.getConcept("762705008 |Concept model object attribute|");
@@ -85,11 +91,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		this.loincNum = loincNum;
 	}
 
-	public static LoincTemplatedConcept populateTemplate(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
-		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, loincParts);
+	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
+		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
-			templatedConcept.populateParts(loincParts);
-			templatedConcept.populateTerms(loincNum, loincParts);
+			templatedConcept.populateParts(details);
+			templatedConcept.populateTerms(loincNum, details);
 			if (detailsIndicatePrimitiveConcept(loincNum)) {
 				templatedConcept.getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			}
@@ -97,11 +103,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return templatedConcept;
 	}
 
-	private void populateTerms(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
+	private void populateTerms(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
 		String ptTemplateStr = preferredTermTemplate;
-		for (LoincPart loincPart : loincParts) {
-			ptTemplateStr = populateTermTemplateFromLoincPart(ptTemplateStr, loincPart);
+		for (LoincDetail detail : details.values()) {
+			ptTemplateStr = populateTermTemplateFromLoincPart(ptTemplateStr, detail);
 		}
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
 		
@@ -132,27 +138,26 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		concept.addDescription(colonDesc);
 	}
 
-	private String populateTermTemplateFromLoincPart(String ptTemplateStr, LoincPart loincPart) throws TermServerScriptException {
-		if (loincPart.getPartTypeName().equals("CLASS") || 
-				loincPart.getPartTypeName().equals("SUFFIX")) {
+	private String populateTermTemplateFromLoincPart(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {
+		if (skipPartTypes.contains(detail.getPartTypeName())) {
 			return ptTemplateStr;
 		}
-		String templateItem = "\\[" + loincPart.getPartTypeName() + "\\]";
+		String templateItem = "\\[" + detail.getPartTypeName() + "\\]";
 		RelationshipTemplate rt = null;
 		
 		//Do we have this slot name defined for us?
-		if (slotTermMap.containsKey(loincPart.getPartTypeName())) {
+		if (slotTermMap.containsKey(detail.getPartTypeName())) {
 			//ptTemplateStr = populateTermTemplate(slotTermMap.get(loincPart.getPartTypeName()), templateItem, ptTemplateStr);
-			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(loincPart.getPartTypeName()));
+			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(detail.getPartTypeName()));
 			ptTemplateStr = ptTemplateStr.replaceAll(templateItem, itemStr);
 		} else {
-			rt = getAttributeForLoincPart(NOT_SET, loincPart);
+			rt = getAttributeForLoincPart(NOT_SET, detail);
 			
 			//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
 			if (rt == null) {
-				Concept attributeType = typeMap.get(loincPart.getPartTypeName());
+				Concept attributeType = typeMap.get(detail.getPartTypeName());
 				if (attributeType == null) {
-					TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName());
+					TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName());
 				} else {
 					try {
 						Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).iterator().next();
@@ -164,7 +169,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 							Relationship r = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, conceptModelObjectAttrib, ActiveState.ACTIVE).iterator().next();
 							rt = new RelationshipTemplate(r);
 						} catch (Exception e2) {
-							TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + loincPart.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
+							TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
 						}
 					}
 				}
@@ -173,7 +178,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			if (rt != null) {
 				ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr);
 			} else {
-				TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + loincPart);
+				TermServerScript.debug("No attribute during FSN gen for " + loincNum + " / " + detail);
 			}
 		}
 		return ptTemplateStr;
@@ -195,7 +200,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			} else {
 				Concept attributeType = typeMap.get(templateItem);
 				if (attributeType == null) {
-					throw new TermServerScriptException("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
+					//throw new TermServerScriptException("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName() + " while processing " + getLoincNum());
+					concept.addIssue("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
+					return ptTemplateStr;
 				}
 				Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 				if (rels.size() == 0) {
@@ -289,53 +296,57 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return term;
 	}
 
-	private void populateParts(List<LoincPart> loincParts) throws TermServerScriptException {
+	private void populateParts(Map<String, LoincDetail> details) throws TermServerScriptException {
 		concept = Concept.withDefaults(Integer.toString((++conceptsModelled)));
 		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
-		Set<LoincPart> loincPartsSeen = new HashSet<>();
-		for (LoincPart loincPart : loincParts) {
-			//Have we seen this loincPart before?
-			if (loincPartsSeen.contains(loincPart)) {
-				TermServerScript.warn("Duplicate LOINC Part seen: " + loincPart);
+		Set<String> partTypeSeen = new HashSet<>();
+		for (LoincDetail loincDetail : details.values()) {
+			String partTypeName = loincDetail.getPartTypeName();
+			if (skipPartTypes.contains(partTypeName)) {
 				continue;
 			}
-			
-			loincPartsSeen.add(loincPart);
-			
-			boolean isComponent = loincPart.getPartTypeName().equals("COMPONENT");
+			if (partTypeSeen.contains(partTypeName)) {
+				continue;
+			}
+			partTypeSeen.add(partTypeName);
+			boolean isComponent = loincDetail.getPartTypeName().equals("COMPONENT");
 			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 			if (isComponent) {
 				ArrayList<String> issues = new ArrayList<>();
 				attributesToAdd = determineComponentAttributes(loincNum, issues);
 				concept.addIssues(issues, ",\n");
 			} else {
-				attributesToAdd = Collections.singletonList(getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincPart));
+				attributesToAdd = Collections.singletonList(getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincDetail));
 			}
 			
 			for (RelationshipTemplate rt : attributesToAdd) {
 				if (rt != null) {
+					if (rt.getTarget() == null || rt.getType() == null) {
+						TermServerScript.debug("Here");
+					}
 					mapped++;
 					ts.report(MAPPING_DETAIL_TAB,
 						loincNum,
-						loincPart.getPartNumber(),
+						loincDetail.getPartNumber(),
 						"Mapped OK",
-						loincPart.getPartName(),
+						loincDetail.getPartName(),
 						rt);
-					partNumsMapped.add(loincPart.getPartNumber());
+					partNumsMapped.add(loincDetail.getPartNumber());
 					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
 				} else {
 					unmapped++;
-					String issue = "Not Mapped - " + loincPart.getPartTypeName() + " | " + loincPart.getPartNumber() + "| " + loincPart.getPartName();
+					String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
 					ts.report(MAPPING_DETAIL_TAB,
 						loincNum,
-						loincPart.getPartNumber(),
+						loincDetail.getPartNumber(),
 						issue,
-						loincPart.getPartName());
+						loincDetail.getPartName());
 					concept.addIssue(issue, ",\n");
 					concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-					partNumsUnmapped.add(loincPart.getPartNumber());
+					partNumsUnmapped.add(loincDetail.getPartNumber());
+					addFailedMapping(loincNum, loincDetail.getPartNumber());
 				}
 			}
 		}
@@ -366,55 +377,57 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	protected abstract List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException;
 
-	private RelationshipTemplate getAttributeForLoincPart(int idxTab, LoincPart loincPart) throws TermServerScriptException {
-		if (loincPart.getPartTypeName().equals("CLASS")) {
-			skipped++;
-			return null;
-		}
-		
+	private RelationshipTemplate getAttributeForLoincPart(int idxTab, LoincDetail loincDetail) throws TermServerScriptException {
 		//Now given the template that we've chosen for this LOINC Term, what attribute
 		//type would we use?
-		Concept attributeType = typeMap.get(loincPart.getPartTypeName());
+		Concept attributeType = typeMap.get(loincDetail.getPartTypeName());
 		if (attributeType == null) {
 			if (idxTab != NOT_SET) {
 				ts.report(idxTab,
 					loincNum,
-					loincPart.getPartNumber(),
-					"Type in context not identified - " + loincPart.getPartTypeName() + " | " + this.getClass().getSimpleName(),
-					loincPart.getPartName());
+					loincDetail.getPartNumber(),
+					"Type in context not identified - " + loincDetail.getPartTypeName() + " | " + this.getClass().getSimpleName(),
+					loincDetail.getPartName());
 			}
+			return null;
 		}
 		
-		return attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincPart.getPartNumber(), attributeType);
+		return attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincDetail.getPartNumber(), attributeType);
 	}
 
-	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, List<LoincPart> loincParts) throws TermServerScriptException {
-		for (LoincPart loincPart : loincParts) {
-			switch (loincPart.getPartName()) {
-				case "Ratio" :
-				case "MRto" :
-				case "VFr" :
-				case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
-				case "PrThr" :
-				case "PPres" :
-				case "CCnc" :
-				case "MCnc" :
-				case "SCnc" :
-				case "ACnc" :
-				case "NCnc" :
-				case "LsCnc" :
-				case "Naric" :
-				case "MoM" :  return LoincTemplatedConceptWithComponent.create(loincNum);
-				//case "EntMass" : 
-				case "Prid" :
-				case "EntVol" :
-				case "Vol" :
-				case "Type" : return LoincTemplatedConceptWithInheres.create(loincNum);
+	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
+		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
+		switch (loincDetail.getPartName()) {
+			case "Ratio" :
+			case "MRto" :
+			case "VFr" :
+			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
+			case "PrThr" :
+			case "PPres" :
+			case "CCnc" :
+			case "MCnc" :
+			case "SCnc" :
+			case "ACnc" :
+			case "NCnc" :
+			case "LsCnc" :
+			case "Naric" :
+			case "MoM" :  return LoincTemplatedConceptWithComponent.create(loincNum);
+			//case "EntMass" : 
+			case "Prid" :
+			case "EntVol" :
+			case "Vol" :
+			case "Type" : return LoincTemplatedConceptWithInheres.create(loincNum);
+		}
+		return null;
+	}
+
+	private static LoincDetail getPartDetail(String loincNum, Map<String, LoincDetail> loincDetailMap, String partTypeName) throws TermServerScriptException {
+		for (LoincDetail detail : loincDetailMap.values()) {
+			if (detail.getPartTypeName().equals(partTypeName)) {
+				return detail;
 			}
 		}
-		//throw new TermServerScriptException("Unable to determine template for " + loincNum);
-		//return LoincTemplatedConceptWithDefaultMap.create(loincNum);
-		return null;
+		throw new TermServerScriptException("Unable to find part " + partTypeName + " in " + loincNum);
 	}
 	
 	public void setConcept(Concept c) {
@@ -548,6 +561,36 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return attributeAdded;
 	}
 	
+	protected void addFailedMapping(String loincNum, String partNum) throws TermServerScriptException {
+		//What is the property for this loincNum?
+		LoincDetail propertyDetail = loincDetailMap.get(loincNum).get(LoincDetail.PROPERTY);
+		String property = propertyDetail.getPartName();
+		//Have we seen any partNums for this property before
+		Set<String> partNums = failedMappingsByProperty.get(property);
+		if (partNums == null) {
+			partNums = new HashSet<>();
+			failedMappingsByProperty.put(property, partNums);
+		}
+		
+		//Have we seen this partNum for any _other_ properties?
+		for (String thisProperty : failedMappingsByProperty.keySet()) {
+			if (thisProperty.equals(property)) {
+				continue;
+			} else if (failedMappingsByProperty.get(thisProperty).contains(partNum)) {
+				TermServerScript.warn(partNum + " seen for multiple properties: " + property + " + " + thisProperty);
+				failedMappingAlreadySeenForOtherProperty++;
+			}
+		}
+		partNums.add(partNum);
+	}
 	
+	public static void reportFailedMappingsByProperty(int tabIdx) throws TermServerScriptException {
+		ts.report(tabIdx, "");
+		ts.report(tabIdx, "Failed Mapping Summary Counts per Property");
+		for (String property : failedMappingsByProperty.keySet()) {
+			ts.report(tabIdx, property, failedMappingsByProperty.get(property).size());
+		}
+		ts.report(tabIdx, "Failed Mapping Already Seen For Other Property", failedMappingAlreadySeenForOtherProperty);
+	}
 
 }
