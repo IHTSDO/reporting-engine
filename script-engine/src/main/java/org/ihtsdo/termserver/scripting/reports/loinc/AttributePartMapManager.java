@@ -16,6 +16,8 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
 public class AttributePartMapManager {
 	
+	private static int NOT_SET = -1;
+	
 	private int TAB_RF2_PART_MAP_NOTES = TermServerScript.QUATERNARY_REPORT;
 
 	private TermServerScript ts;
@@ -28,6 +30,11 @@ public class AttributePartMapManager {
 	private Concept component;
 	private Concept genericType;
 	private boolean initialised = false;
+	
+	private int unsuccessfullTypeReplacement = 0;
+	private int successfullTypeReplacement = 0;
+	private int successfullValueReplacement = 0;
+	private int unsuccessfullValueReplacement = 0;
 	
 	public AttributePartMapManager (TermServerScript ts, Map<String, LoincPart> loincParts) {
 		this.ts = ts;
@@ -103,10 +110,6 @@ public class AttributePartMapManager {
 		populateKnownMappings();
 		int lineNum = 0;
 		try {
-			int successfullTypeReplacement = 0;
-			int successfullValueReplacement = 0;
-			int unsuccessfullTypeReplacement = 0;
-			int unsuccessfullValueReplacement = 0;
 			TermServerScript.info("Loading Part Attribute Map: " + attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
@@ -122,46 +125,13 @@ public class AttributePartMapManager {
 						Concept attributeType = gl.getConcept(items[7]);
 						Concept attributeValue = gl.getConcept(items[5]);
 						
-						if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
-							attributeType = hardCodedTypeReplacementMap.get(attributeType);
-						}
-						
-						if (!attributeType.isActive()) {
-							String hardCodedIndicator = " hardcoded";
-							Concept replacementType = knownReplacementMap.get(attributeType);
-							if (replacementType == null) {
-								hardCodedIndicator = "";
-								replacementType = ts.getReplacementSafely(TAB_RF2_PART_MAP_NOTES, partNum, attributeType, false);
-							} 
-							String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
-							if (replacementType == null) unsuccessfullTypeReplacement++; 
-								else successfullTypeReplacement++;
-							ts.report(TAB_RF2_PART_MAP_NOTES, partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
-							if (replacementType != null) {
-								attributeType = replacementType;
-							}
-						}
+						attributeType = replaceTypeIfRequired(TAB_RF2_PART_MAP_NOTES, attributeType, partNum);
 						
 						LoincPart part = loincParts.get(partNum);
 						String partName = part == null ? "Unlisted" : part.getPartName();
 						String partStatus = part == null ? "Unlisted" : part.getStatus().name();
 					
-						if (!attributeValue.isActive()) {
-							String hardCodedIndicator = " hardcoded";
-							Concept replacementValue = knownReplacementMap.get(attributeValue);
-							if (replacementValue == null) {
-								hardCodedIndicator = "";
-								replacementValue = ts.getReplacementSafely(TAB_RF2_PART_MAP_NOTES, partNum, attributeValue, false);
-							}
-							String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
-							if (replacementValue == null) unsuccessfullValueReplacement++; 
-							else successfullValueReplacement++;
-							String prefix = replacementValue == null ? "* " : "";
-							ts.report(TAB_RF2_PART_MAP_NOTES, partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
-							if (replacementValue != null) {
-								attributeValue = replacementValue;
-							}
-						}
+						attributeValue = replaceValueIfRequired(TAB_RF2_PART_MAP_NOTES, attributeValue, partNum, partName, partStatus);
 						addAttributeMapping(partNum, partName, partStatus, new RelationshipTemplate(attributeType, attributeValue));
 					}
 				}
@@ -176,6 +146,57 @@ public class AttributePartMapManager {
 		} catch (Exception e) {
 			throw new TermServerScriptException("At line " + lineNum, e);
 		}
+	}
+
+	public Concept replaceValueIfRequired(int tabIdx, Concept attributeValue, String partNum,
+			String partName, String partStatus) throws TermServerScriptException {
+		if (!attributeValue.isActive()) {
+			String hardCodedIndicator = " hardcoded";
+			Concept replacementValue = knownReplacementMap.get(attributeValue);
+			if (replacementValue == null) {
+				hardCodedIndicator = "";
+				replacementValue = ts.getReplacementSafely(tabIdx, partNum, attributeValue, false);
+			}
+			
+			if (tabIdx != NOT_SET) {
+				String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
+				if (replacementValue == null) unsuccessfullValueReplacement++; 
+				else successfullValueReplacement++;
+				String prefix = replacementValue == null ? "* " : "";
+				ts.report(tabIdx, partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
+			}
+			
+			if (replacementValue != null) {
+				attributeValue = replacementValue;
+			}
+		}
+		return attributeValue;
+	}
+
+	public Concept replaceTypeIfRequired(int tabIdx, Concept attributeType, String partNum) throws TermServerScriptException {
+		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
+			attributeType = hardCodedTypeReplacementMap.get(attributeType);
+		}
+		
+		if (!attributeType.isActive()) {
+			String hardCodedIndicator = " hardcoded";
+			Concept replacementType = knownReplacementMap.get(attributeType);
+			if (replacementType == null) {
+				hardCodedIndicator = "";
+				replacementType = ts.getReplacementSafely(TAB_RF2_PART_MAP_NOTES, partNum, attributeType, false);
+			} 
+			String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
+			if (tabIdx != NOT_SET) {
+				if (replacementType == null) unsuccessfullTypeReplacement++; 
+					else successfullTypeReplacement++;
+				ts.report(tabIdx, partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
+			}
+			
+			if (replacementType != null) {
+				attributeType = replacementType;
+			}
+		}
+		return attributeType;
 	}
 
 	private void addAttributeMapping(String partNum, String partName, String partStatus, RelationshipTemplate attribute) throws TermServerScriptException {
@@ -223,4 +244,5 @@ public class AttributePartMapManager {
 		
 		return getPartMappedAttributeForType(tabIdx, loincNum, loincPartNum, attributeType);
 	}
+
 }
