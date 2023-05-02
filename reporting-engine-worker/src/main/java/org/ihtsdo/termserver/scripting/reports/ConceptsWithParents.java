@@ -36,8 +36,13 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
     @Override
     public Job getJob() {
         JobParameters params = new JobParameters()
-                .add(ECL).withDescription("foo").withType(JobParameter.Type.ECL).withMandatory().withDescription("Specify")
-                .add(TERMS_FILTER).withDescription("Optional.  Use a comma to separate multiple terms.  This will be ignored if the ECL contains a term filter.").withType(JobParameter.Type.STRING)
+                .add(ECL)
+                    .withType(JobParameter.Type.ECL)
+                    .withMandatory()
+                    .withDescription("Specify")
+                .add(TERMS_FILTER)
+                    .withType(JobParameter.Type.STRING)
+                    .withDescription("Optional.  Use a comma to separate multiple terms.  This will be ignored if the ECL contains a term filter.")
                 .build();
 
         return new Job()
@@ -56,6 +61,10 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
         List<Concept> sortedListOfConceptsOfInterest = SnomedUtils.sort(conceptsOfInterest);
 
         for (Concept concept : sortedListOfConceptsOfInterest) {
+            if (!concept.isActive()) {
+                continue;
+            }
+
             if (whiteListedConceptIds.contains(concept.getId())) {
                 incrementSummaryInformation(WHITE_LISTED_COUNT);
                 continue;

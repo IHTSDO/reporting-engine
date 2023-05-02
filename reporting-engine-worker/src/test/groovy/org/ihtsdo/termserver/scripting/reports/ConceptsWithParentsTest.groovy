@@ -39,6 +39,7 @@ class ConceptsWithParentsTest extends Specification {
             Concept c220 = new Concept('220', 'FSN: 220')
             Concept c221 = new Concept('221', 'FSN: 221')
             Concept c222 = new Concept('222', 'FSN: 222')
+            Concept cInactive = new Concept('666', 'FSN: 666')
             c100.semTag = "(body structure 100)"
             c110.semTag = "(body structure 110)"
             c111.semTag = "(body structure 111)"
@@ -53,6 +54,22 @@ class ConceptsWithParentsTest extends Specification {
             c220.semTag = "(body structure 220)"
             c221.semTag = "(body structure 221)"
             c222.semTag = "(body structure 222)"
+            cInactive.semTag = "(body structure 666)"
+            c100.setActive(true)
+            c110.setActive(true)
+            c111.setActive(true)
+            c112.setActive(true)
+            c120.setActive(true)
+            c121.setActive(true)
+            c122.setActive(true)
+            c200.setActive(true)
+            c210.setActive(true)
+            c211.setActive(true)
+            c212.setActive(true)
+            c220.setActive(true)
+            c221.setActive(true)
+            c222.setActive(true)
+            cInactive.setActive(false)
 
             // Inferred grand-parents.
             c110.addParent(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, c112)
@@ -85,6 +102,7 @@ class ConceptsWithParentsTest extends Specification {
             List<Concept> conceptsOfInterest = new ArrayList<Concept>()
             conceptsOfInterest.add(c200)
             conceptsOfInterest.add(c100)
+            conceptsOfInterest.add(cInactive)
             JobRun jobRunMock = Mock()
             jobRunMock.getMandatoryParamValue('ECL') >> '<< 100'
             jobRunMock.getParamValue('Filter for terms') >> 'capsule'
