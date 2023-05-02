@@ -49,6 +49,19 @@ public class LoincTerm {
 	private LoincTerm() {
 	}
 	
+	@Override
+	public int hashCode() {
+		return loincNum.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (!(other instanceof LoincTerm)) {
+			return false;
+		}
+		return ((LoincTerm)other).getLoincNum().equals(this.getLoincNum());
+	}
+	
 	public String getLoincNum() {
 		return loincNum;
 	}

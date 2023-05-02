@@ -1,24 +1,13 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.fixes.CreateConceptsPreModelled;
@@ -44,6 +33,7 @@ public class ImportLoincTerms extends LoincScript {
 	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
 	public static final String TAB_MODELING_ISSUES = "Modeling Issues";
 	public static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
+	public static final String TAB_MAP_ME = "MAP ME!";
 	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
 	public static final String TAB_IMPORT_STATUS = "Import Status";
 	
@@ -54,9 +44,9 @@ public class ImportLoincTerms extends LoincScript {
 			TAB_RF2_PART_MAP_NOTES,
 			TAB_MODELING_ISSUES,
 			TAB_PROPOSED_MODEL_COMPARISON,
+			TAB_MAP_ME,
 			TAB_RF2_IDENTIFIER_FILE,
 			TAB_IMPORT_STATUS };
-	
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ImportLoincTerms report = new ImportLoincTerms();
@@ -116,11 +106,12 @@ public class ImportLoincTerms extends LoincScript {
 		loadLoincDetail();
 		attributePartMapManager = new AttributePartMapManager(this, loincParts);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
-		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap);
+		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 		determineExistingConcepts(getTab(TAB_TOP_100));
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
 		LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
+		LoincTemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
 		/*importIntoTask(successfullyModelled);
 		generateAlternateIdentifierFile(successfullyModelled);*/
 	}
@@ -136,10 +127,6 @@ public class ImportLoincTerms extends LoincScript {
 					ltc.getConcept().getId());
 		}
 	}
-
-
-	
-
 	
 	private Set<LoincTemplatedConcept> doModeling() throws TermServerScriptException {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
@@ -186,7 +173,6 @@ public class ImportLoincTerms extends LoincScript {
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 						templatedConcept.getConcept().getIssues());
 			}
-			
 		}
 		flushFilesSoft();
 		return templatedConcept;

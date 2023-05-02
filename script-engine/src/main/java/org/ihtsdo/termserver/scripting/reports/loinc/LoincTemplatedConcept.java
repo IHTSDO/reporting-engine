@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -41,6 +42,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	
 	protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
 	protected static int failedMappingAlreadySeenForOtherProperty = 0;
+	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
+	protected static Map<String, LoincPart> loincParts;
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
@@ -55,11 +58,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	public static void initialise(TermServerScript ts, GraphLoader gl, 
 			AttributePartMapManager attributePartMapManager,
 			Map<String, LoincTerm> loincNumToLoincTermMap,
-			Map<String, Map<String, LoincDetail>> loincDetailMap) throws TermServerScriptException {
+			Map<String, Map<String, LoincDetail>> loincDetailMap, 
+			Map<String, LoincPart> loincParts) throws TermServerScriptException {
 		LoincTemplatedConcept.ts = ts;
 		LoincTemplatedConcept.gl = gl;
 		LoincTemplatedConcept.attributePartMapManager = attributePartMapManager;
 		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
+		LoincTemplatedConcept.loincParts = loincParts;
 		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		
@@ -110,7 +115,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			ptTemplateStr = populateTermTemplateFromLoincPart(ptTemplateStr, detail);
 		}
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
-		
 		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
 		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
@@ -333,7 +337,14 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 						"Mapped OK",
 						loincDetail.getPartName(),
 						rt);
+					//Record the fact that we failed to find a map 
 					partNumsMapped.add(loincDetail.getPartNumber());
+					LoincUsage usage = unmappedPartUsageMap.get(loincDetail.getPartNumber());
+					if (usage == null) {
+						usage = new LoincUsage();
+						unmappedPartUsageMap.put(loincDetail.getPartNumber(), usage);
+					}
+					usage.add(loincNumToLoincTermMap.get(loincDetail.getLoincNum()));
 					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
 				} else {
 					unmapped++;
@@ -591,6 +602,25 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			ts.report(tabIdx, property, failedMappingsByProperty.get(property).size());
 		}
 		ts.report(tabIdx, "Failed Mapping Already Seen For Other Property", failedMappingAlreadySeenForOtherProperty);
+	}
+
+	public static void reportMissingMappings(int tabIdx) {
+		//This list needs to be sorted based on a rank + usage metric
+		unmappedPartUsageMap.entrySet().stream()
+			.sorted((k1, k2) -> k1.getValue().compareTo(k2.getValue()))
+			.forEach(e -> reportMissingMap(tabIdx, e));
+		
+	}
+
+	private static void reportMissingMap(int tabIdx, Entry<String, LoincUsage> entry) {
+		String loincPartNum = entry.getKey();
+		String loincPartName = loincParts.get(loincPartNum).getPartName();
+		LoincUsage usage = entry.getValue();
+		try {
+			ts.report(tabIdx, loincPartNum, loincPartName, usage.getPriority(), usage.getTopRankedLoincTermsStr());
+		} catch (TermServerScriptException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }
