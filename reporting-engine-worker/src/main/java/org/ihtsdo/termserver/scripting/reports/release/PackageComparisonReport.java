@@ -4,22 +4,23 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
+import org.ihtsdo.termserver.scripting.dao.BuildLoaderConfig;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This report executes shell scripts that download and compare the content of the two .zip release packages,
@@ -27,42 +28,26 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * except the bucket name is expected.
  * The result of the comparison is uploaded to S3 bucket snomed-compares.
  */
-public class PackageComparisonReport extends TermServerReport implements ReportClass {
-
-	// Name of the previous release - free text specified by the user
-	public static final String PREVIOUS_RELEASE_NAME = "Previous Release Name";
-
-	// Path to the previous release zip archive excluding S3 bucket name
-	public static final String PREVIOUS_RELEASE_PATH = "Previous Release Path";
-
-	// Name of the current release - free text specified by the user
-	public static final String CURRENT_RELEASE_NAME = "Current Release Name";
-
-	// Path to the current release zip archive excluding S3 bucket name
-	public static final String CURRENT_RELEASE_PATH = "Current Release Path";
+public class PackageComparisonReport extends HistoricDataUser implements ReportClass { // extends TermServerReport
+	@Autowired
+	private BuildLoaderConfig buildLoaderConfig;
 
 	// Name of the starting script
-	private static final String SCRIPT_NAME = "run_compare.sh";
+	private static final String SCRIPT_NAME = "run-compare-packages.sh";
 
-	private String previousReleaseName;
 	private String previousReleasePath;
-	private String currentReleaseName;
 	private String currentReleasePath;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 
 		// Estonia release
-		params.put(PREVIOUS_RELEASE_NAME, "EE20211130");
-		params.put(PREVIOUS_RELEASE_PATH, "prod/builds/ee/estonia_extension_releases/2022-06-28T13:54:09/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20211130T120000Z.zip");
-		params.put(CURRENT_RELEASE_NAME, "EE20221130");
-		params.put(CURRENT_RELEASE_PATH, "prod/builds/ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
+		params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-06-28T13:54:09/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20211130T120000Z.zip");
+		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
 
 		// Ireland release
-		//params.put(PREVIOUS_RELEASE_NAME, "IE_2022-04-21");
-		//params.put(PREVIOUS_RELEASE_PATH, "prod/builds/ie/snomed_ct_ireland_extension_releases/2022-04-19T14:02:59/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20220421T120000Z.zip");
-		//params.put(CURRENT_RELEASE_NAME, "IE_2022-10-21");
-		//params.put(CURRENT_RELEASE_PATH, "prod/builds/ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
+		//params.put(PREV_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-04-19T14:02:59/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20220421T120000Z.zip");
+		//params.put(THIS_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
@@ -76,12 +61,8 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 	@Override
 	protected void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; // Release Stats
-
-		previousReleaseName = run.getParamValue(PREVIOUS_RELEASE_NAME);
-		previousReleasePath = run.getParamValue(PREVIOUS_RELEASE_PATH);
-		currentReleaseName = run.getParamValue(CURRENT_RELEASE_NAME);
-		currentReleasePath = run.getParamValue(CURRENT_RELEASE_PATH);
-
+		previousReleasePath = run.getParamValue(PREV_RELEASE);
+		currentReleasePath = run.getParamValue(THIS_RELEASE);
 		super.init(run);
 	}
 
@@ -97,27 +78,21 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 	
 	@Override
 	public Job getJob() {
+
 		JobParameters params = new JobParameters()
-				.add(PREVIOUS_RELEASE_NAME).withType(JobParameter.Type.STRING).withMandatory()
-				.withDescription("Previous release short name (free text)")
-				.add(PREVIOUS_RELEASE_PATH).withType(JobParameter.Type.STRING).withMandatory()
-				.withDescription("Path to previous release .zip archive in S3 excluding bucket name")
-				.add(CURRENT_RELEASE_NAME).withType(JobParameter.Type.STRING).withMandatory()
-				.withDescription("Current release short name (free text)")
-				.add(CURRENT_RELEASE_PATH).withType(JobParameter.Type.STRING).withMandatory()
-				.withDescription("Path to current release .zip archive in S3 excluding bucket name")
+				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.GOOGLE.name())
 				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.CSV.name())
 				.build();
-				
+
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Package Comparison Report")
 				.withDescription("This report compares two packages (zip archives) using Unix scripts with output captured into usual Google Sheets")
 				.withParameters(params)
-				.withTag(INT)
-				.withTag(MS)
+				.withTag(INT).withTag(MS)
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withExpectedDuration(40)
 				.build();
@@ -126,32 +101,40 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 	// This report does not need to hold a snapshot in memory,
 	// so we override the default behaviour by having an empty method here.
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+		if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) || StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
+			throw new TermServerScriptException("Previous and current releases must be specified.");
+		}
+		ArchiveDataLoader archiveDataLoader = ArchiveDataLoader.create(new BuildLoaderConfig());
+		archiveDataLoader.download(new File(previousReleasePath), new File("builds"));
+		archiveDataLoader.download(new File(currentReleasePath), new File("builds"));
 	}
-	
+
 	public void runJob() throws TermServerScriptException {
 		if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
 			throw new TermServerScriptException("Windows operating system detected. This report can only run on Linux or MacOS.");
 		}
 
+		File previousRelease = new File(previousReleasePath);
+		File currentRelease = new File(currentReleasePath);
+
 		String uploadFolder = String.join("_",
-				previousReleaseName, extractDate(previousReleasePath),
-				currentReleaseName,	extractDate(currentReleasePath),
-				LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd-HHmm")));
+				LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd-HHmm")),
+				previousRelease.getName(),
+				currentRelease.getName());
 
 		String[] scriptArguments = new String[]{
-				doubleQuote(previousReleaseName),
-				doubleQuote(previousReleasePath),
-				doubleQuote(currentReleaseName),
-				doubleQuote(currentReleasePath),
+				doubleQuote(previousRelease.getName()),
+				doubleQuote(previousRelease.getPath()),
+				doubleQuote(currentRelease.getName()),
+				doubleQuote(currentRelease.getPath()),
 				doubleQuote(uploadFolder)
 		};
 
-		String command = "./" + SCRIPT_NAME + " " + String.join(" ", scriptArguments);
+		String command = "scripts/" + SCRIPT_NAME + " " + String.join(" ", scriptArguments);
 
 		ProcessBuilder builder = new ProcessBuilder();
 		builder.redirectErrorStream(true);
-		builder.directory(new File("scripts"));
 		builder.command("sh", "-c", command);
 
 		List<String> output = new ArrayList<>();
@@ -175,23 +158,28 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 					throw new TermServerScriptException("Script execution failed with exit code: " + exitValue);
 				}
 				info("Script execution finished successfully");
-				output.add("Diff files for '" + previousReleasePath + "' and '" + currentReleasePath + "' are uploaded to s3://snomed-compares/" + uploadFolder);
+				output.add("Diff files for '" + previousRelease.getPath() + "' and '" + currentRelease.getPath() + "' are uploaded to s3://snomed-compares/" + uploadFolder);
 			} else {
 				// Process timed out
 				throw new TermServerScriptException("Script execution timed out");
 			}
 
 			// Process resulting diff files
-			String path = "scripts/" + uploadFolder + "/target/c";
+			Path diffDir = Path.of("builds/" + uploadFolder + "/target/c");
 
-			try (Stream<Path> stream = Files.list(Paths.get(path))) {
+			try (Stream<Path> stream = Files.list(diffDir)) {
 				stream.filter(file -> !Files.isDirectory(file))
 						.map(Path::getFileName)
 						.map(Path::toString)
 						.filter(filename -> filename.matches("diff_.*(sct2|der2)_.*(Snapshot).*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt"))
 						.sorted(String::compareToIgnoreCase)
-						.forEach(filename -> processFile(path, filename));
+						.forEach(filename -> processFile(diffDir.toString(), filename));
 			}
+
+			Files.walk(Path.of("builds/" + uploadFolder))
+					.sorted(Comparator.reverseOrder())
+					.map(Path::toFile)
+					.forEach(File::delete);
 
 		} catch (IOException | InterruptedException | TermServerScriptException e) {
 			error("Report execution failed", e);
@@ -204,16 +192,6 @@ public class PackageComparisonReport extends TermServerReport implements ReportC
 
 	private String doubleQuote(String arg) {
 		return "\"" + arg + "\"";
-	}
-
-	private String extractDate(String path) {
-		Pattern pattern = Pattern.compile(".*_(\\d{8}).*");
-
-		Matcher matcher = pattern.matcher(path);
-		if (matcher.find()) {
-			return matcher.group(1);
-		}
-		return path;
 	}
 
 	private void processFile(String path, String filename) {

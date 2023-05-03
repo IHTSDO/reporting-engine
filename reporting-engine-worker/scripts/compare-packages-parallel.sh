@@ -40,7 +40,7 @@ rm -rf target || true
 mkdir -p target
 
 if [ $# -lt 4 ]; then
-	echo "Usage: compare-packages.sh <Left Name eg SRS> <Left Archive location> <Right Name eg Legacy> <Right Archive or Download Directory> [-normaliseDates]" >&2
+	echo "Usage: compare-packages-parallel.sh <Left Archive Name> <Left Archive Location> <Right Archive Name> <Right Archive Location> [-normaliseDates]" >&2
 	exit 1
 fi
 
