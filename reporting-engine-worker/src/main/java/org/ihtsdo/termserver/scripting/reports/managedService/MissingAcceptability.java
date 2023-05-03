@@ -81,6 +81,7 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
+				.withTag(INT)
 				.withExpectedDuration(30)
 				.build();
 	}

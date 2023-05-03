@@ -60,6 +60,7 @@ public class MultipleModuleAxioms extends TermServerReport implements ReportClas
 				.withDescription("This report lists concepts with active axioms in multiple modules")
 				.withParameters(params)
 				.withTag(MS)
+				.withTag(INT)
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.build();
 	}

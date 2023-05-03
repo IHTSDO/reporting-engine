@@ -85,6 +85,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
+				.withTag(INT)
 				.build();
 	}
 	

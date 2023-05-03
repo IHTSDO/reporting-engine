@@ -68,6 +68,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
+				.withTag(INT)
 				.build();
 	}
 	
