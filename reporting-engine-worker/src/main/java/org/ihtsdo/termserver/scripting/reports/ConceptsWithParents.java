@@ -61,10 +61,6 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
         List<Concept> sortedListOfConceptsOfInterest = SnomedUtils.sort(conceptsOfInterest);
 
         for (Concept concept : sortedListOfConceptsOfInterest) {
-            if (!concept.isActive()) {
-                continue;
-            }
-
             if (whiteListedConceptIds.contains(concept.getId())) {
                 incrementSummaryInformation(WHITE_LISTED_COUNT);
                 continue;
