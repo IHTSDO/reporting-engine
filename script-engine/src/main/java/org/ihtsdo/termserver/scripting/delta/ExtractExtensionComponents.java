@@ -60,8 +60,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK
 			//delta.moduleId = "999000011000000103"; //UK
-			//delta.moduleId = "57091000202101";  //Norway module for medicines
-			delta.moduleId = "51000202101"; //Norway Module
+			delta.moduleId = "57091000202101";  //Norway module for medicines
+			//delta.moduleId = "51000202101"; //Norway Module
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
