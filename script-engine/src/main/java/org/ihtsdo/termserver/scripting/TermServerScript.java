@@ -63,6 +63,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
 	protected boolean ignoreWhiteList = false;
+	protected boolean allowMissingExpectedModules = false;
+	protected boolean allowDirectoryInputFile = false;
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
@@ -1629,7 +1631,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public void setInputFile(int idx, File file) throws TermServerScriptException {
-		if (!file.canRead() || !file.isFile()) {
+		if (!file.canRead() || (!file.isFile() && !allowDirectoryInputFile)) {
 			throw new TermServerScriptException("Unable to read specified file: " + file);
 		}
 		inputFiles.set(idx, file);
@@ -1688,7 +1690,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//We really need to be sure that expectedExtensionModules has been populated, 
 			//because CH and NO will have content in multiple modules
 			if (project.getMetadata().getExpectedExtensionModules() == null) {
-				throw new IllegalArgumentException("Extension does not have expectedExtensionModules metadata populated.  Cannot continue.");
+				if (allowMissingExpectedModules) {
+					return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+				} else {
+					throw new IllegalArgumentException("Extension does not have expectedExtensionModules metadata populated.  Cannot continue.");
+				}
 			}
 			return project.getMetadata().getExpectedExtensionModules().contains(c.getModuleId());
 		}

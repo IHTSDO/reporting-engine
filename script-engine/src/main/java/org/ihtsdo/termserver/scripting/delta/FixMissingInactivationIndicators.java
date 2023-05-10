@@ -26,6 +26,7 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
+			delta.allowMissingExpectedModules = true;
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
