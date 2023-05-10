@@ -33,6 +33,7 @@ public class MultiArchiveImporter extends BatchFix {
 		try {
 			ReportSheetManager.targetFolderId = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; //Batch Import
 			importer.classifyTasks = true;
+			importer.allowDirectoryInputFile = true;
 			importer.init(args);
 			importer.postInit(null, new String[] {"Task, Archive, Result"}, false);
 			importer.importArchives();
