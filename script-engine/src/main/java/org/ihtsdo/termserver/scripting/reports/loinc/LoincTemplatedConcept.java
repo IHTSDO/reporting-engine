@@ -337,14 +337,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 						"Mapped OK",
 						loincDetail.getPartName(),
 						rt);
-					//Record the fact that we failed to find a map 
-					partNumsMapped.add(loincDetail.getPartNumber());
-					LoincUsage usage = unmappedPartUsageMap.get(loincDetail.getPartNumber());
-					if (usage == null) {
-						usage = new LoincUsage();
-						unmappedPartUsageMap.put(loincDetail.getPartNumber(), usage);
-					}
-					usage.add(loincNumToLoincTermMap.get(loincDetail.getLoincNum()));
 					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
 				} else {
 					unmapped++;
@@ -357,7 +349,18 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 					concept.addIssue(issue, ",\n");
 					concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 					partNumsUnmapped.add(loincDetail.getPartNumber());
+					
+					//Record the fact that we failed to find a map on a per property basis
 					addFailedMapping(loincNum, loincDetail.getPartNumber());
+					
+					//Record the fact that we failed to find a map on a per part basis
+					partNumsMapped.add(loincDetail.getPartNumber());
+					LoincUsage usage = unmappedPartUsageMap.get(loincDetail.getPartNumber());
+					if (usage == null) {
+						usage = new LoincUsage();
+						unmappedPartUsageMap.put(loincDetail.getPartNumber(), usage);
+					}
+					usage.add(loincNumToLoincTermMap.get(loincDetail.getLoincNum()));
 				}
 			}
 		}
@@ -576,21 +579,23 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		//What is the property for this loincNum?
 		LoincDetail propertyDetail = loincDetailMap.get(loincNum).get(LoincDetail.PROPERTY);
 		String property = propertyDetail.getPartName();
-		//Have we seen any partNums for this property before
-		Set<String> partNums = failedMappingsByProperty.get(property);
-		if (partNums == null) {
-			partNums = new HashSet<>();
-			failedMappingsByProperty.put(property, partNums);
-		}
 		
-		//Have we seen this partNum for any _other_ properties?
+		//Have we seen this partNum for any _other_ properties before?
 		for (String thisProperty : failedMappingsByProperty.keySet()) {
 			if (thisProperty.equals(property)) {
 				continue;
 			} else if (failedMappingsByProperty.get(thisProperty).contains(partNum)) {
 				TermServerScript.warn(partNum + " seen for multiple properties: " + property + " + " + thisProperty);
 				failedMappingAlreadySeenForOtherProperty++;
+				return;
 			}
+		}
+		
+		//Have we seen any partNums for this property before
+		Set<String> partNums = failedMappingsByProperty.get(property);
+		if (partNums == null) {
+			partNums = new HashSet<>();
+			failedMappingsByProperty.put(property, partNums);
 		}
 		partNums.add(partNum);
 	}
@@ -613,11 +618,15 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 
 	private static void reportMissingMap(int tabIdx, Entry<String, LoincUsage> entry) {
-		String loincPartNum = entry.getKey();
-		String loincPartName = loincParts.get(loincPartNum).getPartName();
-		LoincUsage usage = entry.getValue();
 		try {
-			ts.report(tabIdx, loincPartNum, loincPartName, usage.getPriority(), usage.getTopRankedLoincTermsStr());
+			String loincPartNum = entry.getKey();
+			if (!loincParts.containsKey(loincPartNum)) {
+				ts.report(tabIdx, loincPartNum, "Unknown", "", "Part num not known to list of parts.  Check origin.");
+			} else {
+				String loincPartName = loincParts.get(loincPartNum).getPartName();
+				LoincUsage usage = entry.getValue();
+				ts.report(tabIdx, loincPartNum, loincPartName, usage.getPriority(), usage.getCount(), usage.getTopRankedLoincTermsStr());
+			}
 		} catch (TermServerScriptException e) {
 			throw new RuntimeException(e);
 		}

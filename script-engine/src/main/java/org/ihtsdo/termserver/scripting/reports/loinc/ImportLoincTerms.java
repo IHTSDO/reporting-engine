@@ -33,7 +33,7 @@ public class ImportLoincTerms extends LoincScript {
 	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
 	public static final String TAB_MODELING_ISSUES = "Modeling Issues";
 	public static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
-	public static final String TAB_MAP_ME = "MAP ME!";
+	public static final String TAB_MAP_ME = "Map Me!";
 	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
 	public static final String TAB_IMPORT_STATUS = "Import Status";
 	
@@ -83,6 +83,7 @@ public class ImportLoincTerms extends LoincScript {
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
+				"PartNum, PartName, PriorityIndex, Usage Count, Top Priority Usage, ",
 				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId",
 				"TaskId, Concept, Severity, Action, LoincNum, Expression, Status, , "
 		};

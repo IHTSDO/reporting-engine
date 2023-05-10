@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class LoincUsage implements Comparable {
+public class LoincUsage implements Comparable<Object> {
 	private static int MAX_EXAMPLES = 3;
 	boolean analysed = false;
 	int priority = 0;
@@ -20,7 +20,8 @@ public class LoincUsage implements Comparable {
 		for (LoincTerm loincTerm : usage) {
 			int thisPriority = getLoincTermPriority(loincTerm);
 			for (int x = 0; x < MAX_EXAMPLES; x++) {
-				if (thisPriority > getLoincTermPriority(topRankedLoincTerms.get(x))) {
+				if (x >= topRankedLoincTerms.size() || 
+						thisPriority > getLoincTermPriority(topRankedLoincTerms.get(x))) {
 					topRankedLoincTerms.add(x, loincTerm);
 					break;
 				}
@@ -57,12 +58,18 @@ public class LoincUsage implements Comparable {
 	@Override
 	public int compareTo(Object o) {
 		LoincUsage other = (LoincUsage)o;
-		return ((Integer)getPriority()).compareTo((Integer)other.getPriority());
+		int comparison = ((Integer)other.getPriority()).compareTo((Integer)getPriority());
+		
+		return comparison == 0 ? ((Integer)other.getCount()).compareTo((Integer)getCount()) : comparison;
 	}
 
 	public String getTopRankedLoincTermsStr() {
 		return getTopRankedLoincTerms().stream()
 				.map(l -> l.getLoincNum() + " " + l.getLongCommonName())
 				.collect(Collectors.joining(", \n"));
+	}
+
+	public int getCount() {
+		return usage.size();
 	}
 }
