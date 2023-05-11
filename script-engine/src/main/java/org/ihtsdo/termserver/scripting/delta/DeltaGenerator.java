@@ -67,19 +67,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 				moduleId = args[++x];
 			}
 			if (args[x].equals("-iC")) {
-				conIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.CONCEPT);
-				conIdGenerator.setNamespace(nameSpace);
-				conIdGenerator.isExtension(isExtension);
+				conIdGenerator = initialiseIdGenerator(args[++x], PartitionIdentifier.CONCEPT);
 			}
 			if (args[x].equals("-iD")) {
-				descIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.DESCRIPTION);
-				descIdGenerator.setNamespace(nameSpace);
-				descIdGenerator.isExtension(isExtension);
+				descIdGenerator = initialiseIdGenerator(args[++x], PartitionIdentifier.DESCRIPTION);
 			}
 			if (args[x].equals("-iR")) {
-				relIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.RELATIONSHIP);
-				relIdGenerator.setNamespace(nameSpace);
-				relIdGenerator.isExtension(isExtension);
+				relIdGenerator = initialiseIdGenerator(args[++x], PartitionIdentifier.RELATIONSHIP);
 			}
 			if (args[x].equals("-e")) {
 				eclSubset = args[++x];
@@ -94,6 +88,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
+	protected IdGenerator initialiseIdGenerator(String fileName, PartitionIdentifier partition) throws TermServerScriptException {
+		IdGenerator idGenerator = IdGenerator.initiateIdGenerator(fileName,partition);
+		idGenerator.setNamespace(nameSpace);
+		idGenerator.isExtension(isExtension);
+		return idGenerator;
+	}
+
 	protected void initialiseOutputDirectory() {
 		//Don't add to previously exported data
 		File outputDir = new File (outputDirName);
@@ -193,6 +194,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		} catch (Exception e) {
 			error("Failed to flush files.", e);
 		}
+		closeIdGenerators();
+	}
+	
+	protected void closeIdGenerators() {
 		try {
 			if (conIdGenerator != null) {
 				info(conIdGenerator.finish());
@@ -207,7 +212,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			error ("Failed to close id generators",e);
 		}
 	}
-	
+
 	protected void initialiseFileHeaders() throws TermServerScriptException {
 		String termDir = packageDir +"Delta/Terminology/";
 		String refDir =  packageDir +"Delta/Refset/";

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.fixes.CreateConceptsPreModelled;
@@ -37,6 +38,8 @@ public class ImportLoincTerms extends LoincScript {
 	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
 	public static final String TAB_IMPORT_STATUS = "Import Status";
 	
+	Rf2ConceptCreator conceptCreator;
+	
 	private static String[] tabNames = new String[] {
 			TAB_TOP_100,
 			TAB_TOP_20K,
@@ -55,6 +58,7 @@ public class ImportLoincTerms extends LoincScript {
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
 			report.getArchiveManager().setRunIntegrityChecks(false);
 			report.init(args);
+			report.conceptCreator = Rf2ConceptCreator.build(report);
 			report.loadProjectSnapshot(false);
 			report.postInit();
 			report.runReport();
