@@ -26,7 +26,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
-		<otf.common.version>5.10.2-SNAPSHOT</otf.common.version>
+		<otf.common.version>5.11.0</otf.common.version>
 		<snomed-template-parser.version>2.0.0</snomed-template-parser.version>
 		<springfox-swagger.version>2.7.0</springfox-swagger.version>
 		<maven.test.skip>false</maven.test.skip>
