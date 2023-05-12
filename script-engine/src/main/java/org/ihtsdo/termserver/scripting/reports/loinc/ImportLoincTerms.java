@@ -58,15 +58,16 @@ public class ImportLoincTerms extends LoincScript {
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
 			report.getArchiveManager().setRunIntegrityChecks(false);
 			report.init(args);
-			report.conceptCreator = Rf2ConceptCreator.build(report);
 			report.loadProjectSnapshot(false);
 			report.postInit();
+			report.conceptCreator = Rf2ConceptCreator.build(report);
 			report.runReport();
 		} finally {
 			while (report.additionalThreadCount > 0) {
 				Thread.sleep(1000);
 			}
 			report.finish();
+			report.conceptCreator.finish();
 		}
 	}
 
@@ -87,7 +88,7 @@ public class ImportLoincTerms extends LoincScript {
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
-				"PartNum, PartName, PriorityIndex, Usage Count, Top Priority Usage, ",
+				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
 				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId",
 				"TaskId, Concept, Severity, Action, LoincNum, Expression, Status, , "
 		};
@@ -110,13 +111,23 @@ public class ImportLoincTerms extends LoincScript {
 		loadFullLoincFile(getTab(TAB_TOP_20K));
 		loadLoincDetail();
 		attributePartMapManager = new AttributePartMapManager(this, loincParts);
-		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_100_PARTS_MAP));
+		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 		determineExistingConcepts(getTab(TAB_TOP_100));
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
 		LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
 		LoincTemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
+		flushFiles(false, true);
+		for (LoincTemplatedConcept tc : successfullyModelled) {
+			Concept concept = tc.getConcept();
+			try {
+				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getLoincNum());
+			} catch (Exception e) {
+				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getLoincNum(), e);
+			}
+		}
+		
 		/*importIntoTask(successfullyModelled);
 		generateAlternateIdentifierFile(successfullyModelled);*/
 	}
@@ -137,15 +148,17 @@ public class ImportLoincTerms extends LoincScript {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
 			LoincTemplatedConcept templatedConcept = doModeling(entry.getKey(), entry.getValue());
-			successfullyModelledConcepts.add(templatedConcept);
+			if (templatedConcept != null) {
+				successfullyModelledConcepts.add(templatedConcept);
+			}
 		}
 		return successfullyModelledConcepts;
 	}
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		if (loincNum.equals("17849-1")) {
+		/*if (loincNum.equals("31701-6")) {
 			debug("here");
-		}
+		}*/
 		
 		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
 				!loincDetailMap.containsKey(LoincDetail.COMPNUM_PN)) {

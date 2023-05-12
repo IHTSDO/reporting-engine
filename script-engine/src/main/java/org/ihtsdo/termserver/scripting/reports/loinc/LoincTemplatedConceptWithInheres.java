@@ -23,9 +23,9 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
 		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("704319004 |Inheres in (attribute)|"));
 		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
-		templatedConcept.typeMap.put("PRECONDITION", precondition);
+		templatedConcept.typeMap.put("CHALLENGE", precondition);
 		
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [PRECONDITION]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
 	}
 
@@ -71,6 +71,11 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
 				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPONENT_PN);
 			slotTermMap.put("COMPONENT", componentDetail.getPartName());
+		}
+		
+		//If we didn't find the component, return a null so that we record that failed mapping usage
+		if (attributes.size() == 0) {
+			attributes.add(null);
 		}
 		return attributes;
 	}

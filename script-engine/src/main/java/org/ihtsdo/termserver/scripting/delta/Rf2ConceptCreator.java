@@ -30,16 +30,24 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		return conceptCreator;
 	}
 
-	protected void writeConceptsToRF2(List<Concept> concepts) throws TermServerScriptException {
+	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts) throws TermServerScriptException {
 		for (Concept concept : concepts) {
-			populateIds(concept);
-			incrementSummaryInformation("Concepts created");
-			outputRF2(concept);  //Will only output dirty fields.
+			writeConceptToRF2(tabIdx, concept, "");
 		}
+	}
+
+	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
+		concept.setId(null);
+		populateIds(concept);
+		incrementSummaryInformation("Concepts created");
+		outputRF2(concept);  //Will only output dirty fields.
+		report(tabIdx, null, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, concept.toExpression(CharacteristicType.STATED_RELATIONSHIP), "OK");
+		return concept;
 	}
 
 	private void populateIds(Concept concept) throws TermServerScriptException {
 		for (Component c : SnomedUtils.getAllComponents(concept)) {
+			c.setDirty();
 			if (c.getId() == null) {
 				switch (c.getComponentType()) {
 					case CONCEPT : c.setId(conIdGenerator.getSCTID());

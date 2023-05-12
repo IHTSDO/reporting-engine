@@ -21,12 +21,12 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("SYSTEM", gl.getConcept("704327008  |Direct site (attribute)|"));
 		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
 		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("246093002 |Component (attribute)|"));
-		templatedConcept.typeMap.put("DIVISOR", gl.getConcept("704325000 |Relative to (attribute)|"));
+		templatedConcept.typeMap.put("DIVISORS", gl.getConcept("704325000 |Relative to (attribute)|"));
 		templatedConcept.typeMap.put("UNITS", gl.getConcept("415067009 |Percentage unit (qualifier value)|"));
 		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
-		templatedConcept.typeMap.put("PRECONDITION", precondition);
+		templatedConcept.typeMap.put("CHALLENGE", precondition);
 		
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [PRECONDITION]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] to [DIVISORS] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
 	}
 
@@ -35,13 +35,15 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
+		Concept componentAttrib = typeMap.get("COMPONENT");
+		Concept challengeAttrib = typeMap.get("CHALLENGE"); 
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetail(attributes,loincNum, LoincDetail.COMPNUM_PN, issues);
+			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
 		} else {
 			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
 			if (denom != null) {
-				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPNUM_PN, issues);
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
 				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
 				//Check for percentage
 				if (denom.getPartName().contains("100")) {
@@ -52,10 +54,15 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 			
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPNUM_PN, issues);
+					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
 				}
-				addAttributeFromDetail(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues);
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, challengeAttrib);
 			}
+		}
+		
+		//If we didn't find the component, return a null so that we record that failed mapping usage
+		if (attributes.size() == 0) {
+			attributes.add(null);
 		}
 		return attributes;
 	}

@@ -23,13 +23,10 @@ public class AttributePartMapManager {
 	private TermServerScript ts;
 	private GraphLoader gl;
 	private Map<String, LoincPart> loincParts;
-	private Map<String, Map<Concept, Set<RelationshipTemplate>>> loincPartToAttributeMap;
+	private Map<String, RelationshipTemplate> loincPartToAttributeMap;
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
-	private int size = 0;
 	private Concept component;
-	private Concept genericType;
-	private boolean initialised = false;
 	
 	private int unsuccessfullTypeReplacement = 0;
 	private int successfullTypeReplacement = 0;
@@ -42,102 +39,52 @@ public class AttributePartMapManager {
 		this.loincParts = loincParts;
 		
 	}
-	
-	private void init() throws TermServerScriptException {
-		genericType = gl.getConcept("762705008 |Concept model object attribute|");
-		initialised = true;
-	}
 
 	public RelationshipTemplate getPartMappedAttributeForType(int idxTab, String loincNum, String loincPartNum, Concept attributeType) throws TermServerScriptException {
-		if (!initialised) {
-			init();
-		}
-		
 		RelationshipTemplate rt = null;
-		if (!containsMappingForLoincPartNum(loincPartNum)) {
+		if (containsMappingForLoincPartNum(loincPartNum)) {
+			rt = loincPartToAttributeMap.get(loincPartNum).clone();
+			rt.setType(attributeType);
+		} else {
 			ts.report(idxTab,
 					loincNum,
 					loincPartNum,
 					"No attribute mapping available");
-		} else {
-			Map<Concept, Set<RelationshipTemplate>> typeAttributeMap = getTypeAttributeMap(loincPartNum);
-			if (!typeAttributeMap.containsKey(attributeType)) {
-				//Workaround, see if we can find one for 762705008 |Concept model object attribute| and override
-				if (typeAttributeMap.containsKey(genericType)) {
-					Set<RelationshipTemplate> attributes = typeAttributeMap.get(genericType);
-					if (attributes.size() > 1) {
-						ts.report(idxTab,
-								loincNum,
-								loincPartNum,
-								"Multiple attribute values available for generic mapping. Choosing at random!",
-								attributeType);
-					}
-					rt = attributes.iterator().next();
-					rt.setType(attributeType);
-				} else {
-					ts.report(idxTab,
-							loincNum,
-							loincPartNum,
-							"Attribute mappings available, but not for attribute type",
-							attributeType);
-				}
-			} else {
-				Set<RelationshipTemplate> attributes = typeAttributeMap.get(attributeType);
-				if (attributes.size() > 1) {
-					ts.report(idxTab,
-							loincNum,
-							loincPartNum,
-							"Multiple attribute values available for mapping. Choosing at random!",
-							attributeType);
-				}
-				rt = attributes.iterator().next();
-			}
 		}
-		return rt;
-	}
-	
-	Map<Concept, Set<RelationshipTemplate>> getTypeAttributeMap(String loincPartNum) {
-		Map<Concept, Set<RelationshipTemplate>> typeAttributeMap = loincPartToAttributeMap.get(loincPartNum);
-		if (typeAttributeMap == null) {
-			typeAttributeMap = new HashMap<>();
-			loincPartToAttributeMap.put(loincPartNum, typeAttributeMap);
-		}
-		return typeAttributeMap;
+		return rt;	
 	}
 	
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
 		loincPartToAttributeMap = new HashMap<>();
 		populateKnownMappings();
 		int lineNum = 0;
+		Set<String> partsSeen = new HashSet<>();
 		try {
-			TermServerScript.info("Loading Part Attribute Map: " + attributeMapFile);
+			TermServerScript.info("Loading Part / Attribute Map Base File: " + attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					lineNum++;
 					if (lineNum > 1) {
 						String[] items = line.split("\t");
-						//Skip the row if it's not active
-						if (items[2].equals("0")) {
-							continue;
+						String partNum = items[1];
+						//Have we seen this part before?  Map should now be unique
+						if (partsSeen.contains(partNum)) {
+							throw new TermServerScriptException("Part / Attribute BaseFile contains duplicate entry for " + partNum);
 						}
-						String partNum = items[6];
-						Concept attributeType = gl.getConcept(items[7]);
-						Concept attributeValue = gl.getConcept(items[5]);
-						
-						attributeType = replaceTypeIfRequired(TAB_RF2_PART_MAP_NOTES, attributeType, partNum);
+						partsSeen.add(partNum);
+						Concept attributeValue = gl.getConcept(items[4]);
 						
 						LoincPart part = loincParts.get(partNum);
 						String partName = part == null ? "Unlisted" : part.getPartName();
 						String partStatus = part == null ? "Unlisted" : part.getStatus().name();
-					
 						attributeValue = replaceValueIfRequired(TAB_RF2_PART_MAP_NOTES, attributeValue, partNum, partName, partStatus);
-						addAttributeMapping(partNum, partName, partStatus, new RelationshipTemplate(attributeType, attributeValue));
+						loincPartToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
 					}
 				}
 			}
 			
-			TermServerScript.info("Populated map of " + size + " LOINC parts to attributes");
+			TermServerScript.info("Populated map of " + loincPartToAttributeMap.size() + " LOINC parts to attributes");
 			ts.report(TAB_RF2_PART_MAP_NOTES, "");
 			ts.report(TAB_RF2_PART_MAP_NOTES, "successfullTypeReplacement",successfullTypeReplacement);
 			ts.report(TAB_RF2_PART_MAP_NOTES, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
@@ -199,19 +146,6 @@ public class AttributePartMapManager {
 		return attributeType;
 	}
 
-	private void addAttributeMapping(String partNum, String partName, String partStatus, RelationshipTemplate attribute) throws TermServerScriptException {
-		Map<Concept, Set<RelationshipTemplate>> typeAttributeMap = getTypeAttributeMap(partNum);
-		Set<RelationshipTemplate> attributesForType = typeAttributeMap.get(attribute.getType());
-		if (attributesForType != null) {
-			ts.report(TAB_RF2_PART_MAP_NOTES, partNum, partName, partStatus, "Multiple attributes for " + partNum + " " + attribute.getType().toStringPref());
-		} else {
-			attributesForType = new HashSet<>();
-			typeAttributeMap.put(attribute.getType(), attributesForType);
-		}
-		attributesForType.add(attribute);
-		size++;
-	}
-
 	private void populateKnownMappings() throws TermServerScriptException {
 		component = gl.getConcept("246093002 |Component (attribute)|");
 		
@@ -230,19 +164,6 @@ public class AttributePartMapManager {
 
 	public boolean containsMappingForLoincPartNum(String loincPartNum) {
 		return loincPartToAttributeMap.containsKey(loincPartNum);
-	}
-
-	public RelationshipTemplate get(int tabIdx, String loincNum, String loincPartNum) throws TermServerScriptException {
-		//Without specifying the type, first see if there's only one (easy pick)
-		//Or otherwise use the Component
-		Map<Concept, Set<RelationshipTemplate>> typeAttributeMap = getTypeAttributeMap(loincPartNum);
-		
-		Concept attributeType = typeAttributeMap.keySet().iterator().next();
-		if (typeAttributeMap.size() > 1) {
-			attributeType = component;
-		}
-		
-		return getPartMappedAttributeForType(tabIdx, loincNum, loincPartNum, attributeType);
 	}
 
 }

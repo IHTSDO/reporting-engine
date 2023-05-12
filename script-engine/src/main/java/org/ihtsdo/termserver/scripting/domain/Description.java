@@ -828,8 +828,9 @@ public class Description extends Component implements ScriptConstants {
 	public String toWhitelistString() {
 		try {
 			return super.toWhitelistString() + conceptId + "," + lang + "," +
-					SnomedUtils.translateCaseSignificanceToSctId(caseSignificance) + "," +
-					term;
+					SnomedUtils.translateDescType(type) + "," +
+					term + "," +
+					SnomedUtils.translateCaseSignificanceToSctId(caseSignificance);
 		} catch (TermServerScriptException e) {
 			throw new IllegalArgumentException("Failed to form whitelist string in " + this);
 		}
