@@ -68,10 +68,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		
-		Set<String> removals = new HashSet<>(Arrays.asList("specimen", "of", "at", "from"));
+		//Populate removals into specific maps depending on how that removal will be processed.
+		Set<String> removals = new HashSet<>(Arrays.asList());
 		typeValueTermRemovalMap.put(DIRECT_SITE, removals);
 		
-		removals = new HashSet<>(Arrays.asList("clade", "class", "division", "domain", "family", "genus", 
+		removals = new HashSet<>(Arrays.asList("specimen", "structure", "of", "at", "from",
+				"clade", "class", "division", "domain", "family", "genus", 
 				"infraclass", "infraclass", "infrakingdom", "infraorder", "infraorder", "kingdom", "order", 
 				"phylum", "species", "subclass", "subdivision", "subfamily", "subgenus", "subkingdom", 
 				"suborder", "subphylum", "subspecies", "superclass", "superdivision", "superfamily", 
@@ -95,8 +97,39 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected LoincTemplatedConcept (String loincNum) {
 		this.loincNum = loincNum;
 	}
+	
+	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
+		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
+		switch (loincDetail.getPartName()) {
+			case "Ratio" :
+			case "MRto" :
+			case "VFr" :
+			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
+			case "PrThr" :
+			case "PPres" :
+			case "CCnc" :
+			case "MCnc" :
+			case "SCnc" :
+			case "ACnc" :
+			case "NCnc" :
+			case "LsCnc" :
+			case "Naric" :
+			case "MoM" :  return LoincTemplatedConceptWithComponent.create(loincNum);
+			//case "EntMass" : 
+			case "Prid" :
+			case "EntVol" :
+			case "Vol" :
+			case "Type" : return LoincTemplatedConceptWithInheres.create(loincNum);
+		}
+		return null;
+	}
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
+		
+		if (loincNum.equals("61124-4")) {
+			TermServerScript.debug("here");
+		}
+		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
 			templatedConcept.populateParts(details);
@@ -388,6 +421,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			RelationshipTemplate rt = new RelationshipTemplate(r);
 			if (relsSeen.contains(rt)) {
 				relsToRemove.add(r);
+			} else {
+				relsSeen.add(rt);
 			}
 		}
 		
@@ -414,32 +449,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			return null;
 		}
 		return attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincDetail.getPartNumber(), attributeType);
-	}
-
-	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
-		switch (loincDetail.getPartName()) {
-			case "Ratio" :
-			case "MRto" :
-			case "VFr" :
-			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
-			case "PrThr" :
-			case "PPres" :
-			case "CCnc" :
-			case "MCnc" :
-			case "SCnc" :
-			case "ACnc" :
-			case "NCnc" :
-			case "LsCnc" :
-			case "Naric" :
-			case "MoM" :  return LoincTemplatedConceptWithComponent.create(loincNum);
-			//case "EntMass" : 
-			case "Prid" :
-			case "EntVol" :
-			case "Vol" :
-			case "Type" : return LoincTemplatedConceptWithInheres.create(loincNum);
-		}
-		return null;
 	}
 
 	private static LoincDetail getPartDetail(String loincNum, Map<String, LoincDetail> loincDetailMap, String partTypeName) throws TermServerScriptException {
@@ -606,6 +615,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		} catch (TermServerScriptException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	public String toString() {
+		return this.getClass().getSimpleName() + " for loincNum " + loincNum;
 	}
 
 }

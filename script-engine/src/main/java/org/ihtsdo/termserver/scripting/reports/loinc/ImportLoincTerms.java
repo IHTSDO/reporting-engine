@@ -126,6 +126,7 @@ public class ImportLoincTerms extends LoincScript {
 			} catch (Exception e) {
 				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getLoincNum(), e);
 			}
+			conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 		}
 		
 		/*importIntoTask(successfullyModelled);

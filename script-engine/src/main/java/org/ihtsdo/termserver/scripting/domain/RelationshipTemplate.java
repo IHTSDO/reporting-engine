@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import com.google.api.client.util.Objects;
+
 public class RelationshipTemplate implements IRelationshipTemplate {
 	
 	public enum Mode { PERMISSIVE, REPLACE_TYPE_IN_THIS_GROUP, UNIQUE_TYPE_IN_THIS_GROUP, UNIQUE_TYPE_ACROSS_ALL_GROUPS, UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS}
@@ -9,6 +11,7 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	private CharacteristicType characteristicType;
 	private ConcreteValue concreteValue;
 	private Mode mode;
+	private Integer hashCode;
 
 	public RelationshipTemplate (Concept type, Concept target, CharacteristicType characteristicType) {
 		this.type = type;
@@ -82,6 +85,9 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	}
 	
 	public String toString() {
+		if (isConcrete()) {
+			return type + " -> " + concreteValue;
+		}
 		return type + " -> " + target;
 	}
 
@@ -112,5 +118,21 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 		RelationshipTemplate clone = new RelationshipTemplate(this.getType(), this.getTarget());
 		clone.setConcreteValue(this.getConcreteValue());
 		return clone;
+	}
+	
+	@Override 
+	public int hashCode() {
+		if (hashCode == null) {
+			hashCode = this.toString().hashCode();
+		}
+		return hashCode;
+	}
+	
+	@Override 
+	public boolean equals(Object other) {
+		if (!(other instanceof RelationshipTemplate)) {
+			return false;
+		}
+		return this.hashCode() == ((RelationshipTemplate)other).hashCode();
 	}
 }
