@@ -33,6 +33,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
+	private static int MAX_HIERARCHY_DEPTH = 150;
+	
 	private boolean splitOutDisease = false;  //If you change this to true, don't check it in! See ISRS-1392.
 	
 	private static final String dataDir = "historic-data/";
@@ -102,7 +104,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				}*/
 				String active = c.isActive() ? "Y" : "N";
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
-				String hierarchy = getHierarchy(tc, c);
+				String hierarchy = getHierarchy(tc, c, new Stack<Concept>());
 				String IP = IPs.contains(c) ? "Y" : "N";
 				String sdDescendant = hasSdDescendant(tc, c);
 				String sdAncestor = hasSdAncestor(tc, c);
@@ -151,7 +153,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				if (parts.length == 2 && 
 						!StringUtils.isEmpty(parts[1]) && 
 						!semTagHierarchyMap.containsKey(parts[1])) {
-					String hierarchySCTID = getHierarchy(tc, c);
+					String hierarchySCTID = getHierarchy(tc, c, new Stack<Concept>());
 					if (!StringUtils.isEmpty(hierarchySCTID)) {
 						semTagHierarchyMap.put(parts[1], hierarchySCTID);
 					}
@@ -327,7 +329,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		return results;
 	}
 
-	private String getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {
+	private String getHierarchy(TransitiveClosure tc, Concept c, Stack<Concept> stack) throws TermServerScriptException {
 
 		if (c.equals(ROOT_CONCEPT)) {
 			return ROOT_CONCEPT.getConceptId();
@@ -338,9 +340,27 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		}
 
 		if (!c.isActive() || c.getDepth() == NOT_SET) {
-			Concept parent = getParentByISARelationships(c);
-			if (parent != null) {
-				return getHierarchy(tc, parent);
+			stack.push(c);
+			if (stack.size() > MAX_HIERARCHY_DEPTH) {
+				reportStackOverflow(stack);
+			} else {
+				Deque<Concept> parents = getParentsByISARelationships(c);
+				if (!parents.isEmpty()) {
+					Concept parent = parents.pop();
+					//Now if we've already looked at this parent, then that's not a safe to recurse on 
+					while (stack.contains(parent)) {
+						if (parents.isEmpty()) {
+							reportStackOverflow(stack);
+							parent = null;
+						} else {
+							parent = parents.pop();
+						}
+					}
+					
+					if (parent != null) {
+						return getHierarchy(tc, parent, stack);
+					}
+				}
 			}
 			
 			//Attempt to determine hierarchy from the semantic tag
@@ -371,8 +391,15 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		throw new TermServerScriptException("Unable to determine hierarchy for " + c);
 	}
 
-	private Concept getParentByISARelationships(Concept concept) throws TermServerScriptException {
-		Concept parent = null;
+	private void reportStackOverflow(Stack<Concept> stack) throws TermServerScriptException {
+		String stackStr = stack.stream()
+				.map(c -> c.getId())
+				.collect(Collectors.joining(", "));
+		error("Recursive loop encountered in hierarchy of: " + stackStr, null);
+	}
+
+	private Deque<Concept> getParentsByISARelationships(Concept concept) throws TermServerScriptException {
+		Deque<Concept> parents = new ArrayDeque<>();
 
 		Set<Relationship> relationships = gl.getConcept(concept.getId()).getRelationships();
 
@@ -380,24 +407,32 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		for (Relationship relationship : relationships) {
 			Concept relationshipType = relationship.getType();
 			if (relationshipType.equals(IS_A)) {
-				if (parent == null) {
-					parent = relationship.getTarget();
+				if (parents.isEmpty()) {
+					parents.push(relationship.getTarget());
 				} else {
+					Concept parent = parents.peekFirst();
 					Concept nextParent = relationship.getTarget();
+					
 					// Prefer active before considering the effective date
 					if ((!parent.isActive() && nextParent.isActive())) {
-						parent = nextParent;
+						parents.remove(nextParent);
+						parents.push(nextParent);
 					} else if (parent.isActive() && nextParent.isActive() || !parent.isActive() && !nextParent.isActive()) {
 						Integer comparison = SnomedUtils.compareEffectiveDate(parent.getEffectiveTime(),
 								nextParent.getEffectiveTime());
 						if (comparison != null && comparison == -1) {
-							parent = nextParent;
+							//Might see this parent more than one, take our best position
+							parents.remove(nextParent);
+							parents.push(nextParent);
 						}
+					} else {
+						//Otherwise, add to the back of the queue
+						parents.add(nextParent);
 					}
 				}
 			}
 		}
-		return parent;
+		return parents;
 	}
 
 	private void ouput(FileWriter fw, String... fields) throws IOException {
