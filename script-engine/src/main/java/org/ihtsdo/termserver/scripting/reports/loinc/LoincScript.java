@@ -34,12 +34,14 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	
 	//private Concept HasConceptCategorizationStatus;
 	
-	protected int FILE_IDX_LOINC_100 = 0;
-	protected int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
-	//private int FILE_IDX_LOINC_100_Primary = 2;
-	protected int FILE_IDX_LOINC_PARTS = 3;
-	protected int FILE_IDX_LOINC_FULL = 4;
-	protected int FILE_IDX_LOINC_DETAIL = 5;
+	protected static int FILE_IDX_LOINC_100 = 0;
+	protected static int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
+	//private static int FILE_IDX_LOINC_100_Primary = 2;
+	protected static int FILE_IDX_LOINC_PARTS = 3;
+	protected static int FILE_IDX_LOINC_FULL = 4;
+	protected static int FILE_IDX_LOINC_DETAIL = 5;
+	protected static int FILE_IDX_CONCEPT_IDS = 6;
+	protected static int FILE_IDX_DESC_IDS = 7;
 	
 	protected int additionalThreadCount = 0;
 	

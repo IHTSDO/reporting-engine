@@ -126,9 +126,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("61124-4")) {
+		/*if (loincNum.equals("61124-4")) {
 			TermServerScript.debug("here");
-		}
+		}*/
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {

@@ -88,8 +88,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
-	protected IdGenerator initialiseIdGenerator(String fileName, PartitionIdentifier partition) throws TermServerScriptException {
-		IdGenerator idGenerator = IdGenerator.initiateIdGenerator(fileName,partition);
+	protected IdGenerator initialiseIdGenerator(File file, PartitionIdentifier partition) throws TermServerScriptException {
+		String filePath = file == null ? "dummy" : file.getAbsolutePath();
+		return initialiseIdGenerator(filePath, partition);
+	}
+	
+	protected IdGenerator initialiseIdGenerator(String filePath, PartitionIdentifier partition) throws TermServerScriptException {
+		IdGenerator idGenerator = IdGenerator.initiateIdGenerator(filePath,partition);
 		idGenerator.setNamespace(nameSpace);
 		idGenerator.isExtension(isExtension);
 		return idGenerator;

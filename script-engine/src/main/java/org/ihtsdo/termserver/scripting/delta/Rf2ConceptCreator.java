@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class Rf2ConceptCreator extends DeltaGenerator {
 	
-	public static Rf2ConceptCreator build(TermServerScript clone) throws TermServerScriptException {
+	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile) throws TermServerScriptException {
 		Rf2ConceptCreator conceptCreator = new Rf2ConceptCreator();
 		if (clone != null) {
 			conceptCreator.setReportManager(clone.getReportManager());
@@ -29,9 +29,9 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		conceptCreator.initialiseOutputDirectory();
 		conceptCreator.initialiseFileHeaders();
 		
-		conceptCreator.conIdGenerator = conceptCreator.initialiseIdGenerator("dummy", PartitionIdentifier.CONCEPT);
-		conceptCreator.descIdGenerator = conceptCreator.initialiseIdGenerator("dummy", PartitionIdentifier.DESCRIPTION);
-		conceptCreator.relIdGenerator = conceptCreator.initialiseIdGenerator("dummy", PartitionIdentifier.RELATIONSHIP);
+		conceptCreator.conIdGenerator = conceptCreator.initialiseIdGenerator(conIdFile, PartitionIdentifier.CONCEPT);
+		conceptCreator.descIdGenerator = conceptCreator.initialiseIdGenerator(descIdFile, PartitionIdentifier.DESCRIPTION);
+		conceptCreator.relIdGenerator = conceptCreator.initialiseIdGenerator(relIdFile, PartitionIdentifier.RELATIONSHIP);
 	
 		return conceptCreator;
 	}
@@ -95,6 +95,7 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 				l.setActive(true);
 				l.setModuleId(d.getModuleId());
 				l.setDirty();
+				d.addLangRefsetEntry(l);
 			}
 		}
 	}

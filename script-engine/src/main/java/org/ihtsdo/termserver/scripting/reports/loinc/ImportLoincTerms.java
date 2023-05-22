@@ -60,7 +60,7 @@ public class ImportLoincTerms extends LoincScript {
 			report.init(args);
 			report.loadProjectSnapshot(false);
 			report.postInit();
-			report.conceptCreator = Rf2ConceptCreator.build(report);
+			report.conceptCreator = Rf2ConceptCreator.build(report, report.getInputFile(FILE_IDX_CONCEPT_IDS), report.getInputFile(FILE_IDX_DESC_IDS), null);
 			report.runReport();
 		} finally {
 			while (report.additionalThreadCount > 0) {
@@ -126,8 +126,8 @@ public class ImportLoincTerms extends LoincScript {
 			} catch (Exception e) {
 				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getLoincNum(), e);
 			}
-			conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 		}
+		conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 		
 		/*importIntoTask(successfullyModelled);
 		generateAlternateIdentifierFile(successfullyModelled);*/
