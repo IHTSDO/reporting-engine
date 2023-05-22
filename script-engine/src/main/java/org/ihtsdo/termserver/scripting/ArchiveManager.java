@@ -704,7 +704,7 @@ public class ArchiveManager implements ScriptConstants {
 			
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Concept_" )) {
-					info("Loading Concept " + fileType + " file.");
+					info("Loading Concept " + fileType + " file: " + fileName);
 					gl.loadConceptFile(is, isReleased);
 				} else if (fileName.contains("sct2_Relationship_" )) {
 					info("Loading Relationship " + fileType + " file.");

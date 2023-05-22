@@ -40,7 +40,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 4;
+	private Integer conceptsPerArchive = 50;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
@@ -58,9 +58,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
-			//delta.moduleId = "83821000000107"; //UK
-			//delta.moduleId = "999000011000000103"; //UK
-			delta.moduleId = "57091000202101";  //Norway module for medicines
+			//delta.moduleId = "83821000000107"; //UK Composition Module
+			delta.moduleId = "999000011000000103"; //UK Clinical Extension
+			//delta.moduleId = "57091000202101";  //Norway module for medicines
 			//delta.moduleId = "51000202101"; //Norway Module
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
