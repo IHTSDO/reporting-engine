@@ -1092,7 +1092,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP) {
 			RelationshipTemplate rt = new RelationshipTemplate(type,value);
 			RelationshipGroup g = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
-			rels = g.getRelationships(rt.getType());
+			rels = g.getRelationshipsWithType(rt.getType());
 			if (rels.size() > 0) {
 				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
 				return changesMade;

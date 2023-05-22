@@ -951,7 +951,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	
 	public static Concept getTarget(RelationshipGroup g, Concept[] types, boolean allowNewConcepts) throws TermServerScriptException {
 		for (Concept type : types) {
-			Set<Relationship> rels = g.getRelationships(type);
+			Set<Relationship> rels = g.getRelationshipsWithType(type);
 			if (rels.size() > 1) {
 				TermServerScript.warn(g + " has multiple " + type);
 			} else if (rels.size() == 1) {

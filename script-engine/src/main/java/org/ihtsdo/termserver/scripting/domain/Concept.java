@@ -251,6 +251,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			}
 			return preferredSynonym;
 		} catch (Exception e) {
+			TermServerScript.warn(this + ": " + e.getMessage());
 			return "";
 		}
 	}
@@ -1622,6 +1623,13 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public List<RelationshipGroup> getRelationshipGroups(CharacteristicType charType, Concept type) {
 		return getRelationshipGroups(charType).stream()
 				.filter(g -> g.containsType(type))
+				.collect(Collectors.toList());
+	}
+	
+	//Return any relationship groups that contain an attribute with the targetType
+	public List<RelationshipGroup> getRelationshipGroups(CharacteristicType charType, Concept type, Concept value) {
+		return getRelationshipGroups(charType).stream()
+				.filter(g -> g.containsTypeValue(type, value))
 				.collect(Collectors.toList());
 	}
 	

@@ -41,7 +41,7 @@ public class RelationshipGroup implements ScriptConstants {
 		return relationships;
 	}
 	
-	public Set<Relationship> getRelationships(Concept type) {
+	public Set<Relationship> getRelationshipsWithType(Concept type) {
 		Set<Relationship> matching = new HashSet<>();
 		for (Relationship r : relationships) {
 			if (r.getType().equals(type)) {
@@ -49,6 +49,36 @@ public class RelationshipGroup implements ScriptConstants {
 			}
 		}
 		return matching;
+	}
+	
+	public Set<Relationship> getRelationshipsWithTypeValue(Concept type, Concept value) {
+		Set<Relationship> matching = new HashSet<>();
+		for (Relationship r : relationships) {
+			if (r.getType().equals(type) && r.getTarget().equals(value)) {
+				matching.add(r);
+			}
+		}
+		return matching;
+	}
+	
+	public Relationship getRelationshipWithType(Concept type) {
+		Set<Relationship> relationships = getRelationshipsWithType(type);
+		if (relationships.isEmpty()) {
+			return null;
+		} else if (relationships.size() > 1) {
+			throw new IllegalStateException(this + " features multiple " + type);
+		}
+		return relationships.iterator().next();
+	}
+	
+	public Relationship getRelationshipWithTypeValue(Concept type, Concept value) {
+		Set<Relationship> relationships = getRelationshipsWithTypeValue(type, value);
+		if (relationships.isEmpty()) {
+			return null;
+		} else if (relationships.size() > 1) {
+			throw new IllegalStateException(this + " features multiple " + type);
+		}
+		return relationships.iterator().next();
 	}
 	
 	public Set<Relationship> getRelationships(ActiveState activeState) {
@@ -209,6 +239,12 @@ public class RelationshipGroup implements ScriptConstants {
 		}
 		return false;
 	}
+	
+	public boolean containsTypeValue(Concept type, Concept value) {
+		Relationship r = new Relationship(type, value);
+		return containsTypeValue(r);
+	}
+
 
 	public void removeRelationship(Relationship r) {
 		relationships.remove(r);
