@@ -73,7 +73,7 @@ public class AttributePartMapManager {
 							throw new TermServerScriptException("Part / Attribute BaseFile contains duplicate entry for " + partNum);
 						}
 						partsSeen.add(partNum);
-						Concept attributeValue = gl.getConcept(items[4]);
+						Concept attributeValue = gl.getConcept(items[4], false, true);
 						
 						LoincPart part = loincParts.get(partNum);
 						String partName = part == null ? "Unlisted" : part.getPartName();
@@ -91,7 +91,7 @@ public class AttributePartMapManager {
 			ts.report(TAB_RF2_PART_MAP_NOTES, "successfullValueReplacement",successfullValueReplacement);
 			ts.report(TAB_RF2_PART_MAP_NOTES, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
 		} catch (Exception e) {
-			throw new TermServerScriptException("At line " + lineNum, e);
+			throw new TermServerScriptException("Failed to read " + attributeMapFile + " at line " + lineNum, e);
 		}
 	}
 
