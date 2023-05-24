@@ -31,8 +31,10 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
 			delta.process();
-			delta.flushFiles(false, true); //Need to flush files before zipping
-			SnomedUtils.createArchive(new File(delta.outputDirName));
+			if (!dryRun) {
+				delta.flushFiles(false, true); //Need to flush files before zipping
+				SnomedUtils.createArchive(new File(delta.outputDirName));
+			}
 		} finally {
 			delta.finish();
 		}
