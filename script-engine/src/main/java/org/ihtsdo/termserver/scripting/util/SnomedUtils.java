@@ -1503,11 +1503,26 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return 0;
 	}
 	
+	
 	/**
 	 * @return a prioritised joined list of descriptions
 	 */
 	public static String getDescriptions(Concept c) {
-		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream().map(d -> d.getTerm()).collect(Collectors.joining(",\n"));
+		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+				.map(d -> d.getTerm()).collect(Collectors.joining(",\n"));
+	}
+	
+	public static String getDescriptions(Concept c, boolean includeDefinitions) {
+		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+				.filter(d -> includeDefinitions || !d.getType().equals(DescriptionType.TEXT_DEFINITION))
+				.map(d -> d.getTerm())
+				.collect(Collectors.joining(",\n"));
+	}
+	
+	public static Set<Description> getDescriptionsList(Concept c, boolean includeDefinitions) {
+		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+				.filter(d -> includeDefinitions || !d.getType().equals(DescriptionType.TEXT_DEFINITION))
+				.collect(Collectors.toSet());
 	}
 
 	public static Set<Concept> hasParents(Set<Concept> matchParents, Set<Concept> range, int limit) {

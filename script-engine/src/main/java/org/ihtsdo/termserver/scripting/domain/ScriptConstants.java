@@ -22,9 +22,6 @@ public interface ScriptConstants extends RF2Constants {
 	static final String INT = "INT";
 	static final String MS = "MS";
 	
-	//Top Level hierarchies
-	static Concept ORGANISM = new Concept ("410607006", "Organism (organism)");
-	
 	//Drugs and Substances
 	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
 	static Concept MEDICINAL_PRODUCT = new Concept ("763158003", "Medicinal product (product)"); 
@@ -73,7 +70,9 @@ public interface ScriptConstants extends RF2Constants {
 	static Concept UNIT = new Concept("767525000", "Unit (qualifier value)");
 	static Concept MILLION_UNIT = new Concept("396186001", "Million unit (qualifier value)");
 	
+	//Top Level hierarchies
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString(), "SNOMED CT Concept (SNOMED RT+CTV3)");
+	static Concept ORGANISM = new Concept ("410607006", "Organism (organism)");
 	static Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	static Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
 	static Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");

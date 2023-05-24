@@ -888,21 +888,31 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return reuseMe == null ? d : reuseMe;
 	}
 	
-	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, String info) throws TermServerScriptException {
-		//Do not perform a demotion by default
-		return replaceDescription(t, c, d, newTerm, indicator, false, info);
-	}
-	
 	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
 		//Do not perform a demotion by default
-		return replaceDescription(t, c, d, newTerm, indicator, false, "");
+		return replaceDescription(t, c, d, newTerm, indicator, false, null, null);
+	}
+	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, String info) throws TermServerScriptException {
+		//Do not perform a demotion by default
+		return replaceDescription(t, c, d, newTerm, indicator, false, info, null);
 	}
 	
 	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT) throws TermServerScriptException {
-		return replaceDescription(t, c, d, newTerm, indicator, demotePT, "");
+		return replaceDescription(t, c, d, newTerm, indicator, demotePT, "", null);
 	}
 	
 	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT, String info) throws TermServerScriptException {
+		//Do not perform a demotion by default
+		return replaceDescription(t, c, d, newTerm, indicator, demotePT, info, null);
+	}
+	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, String info, CaseSignificance cs) throws TermServerScriptException {
+		//Do not perform a demotion by default
+		return replaceDescription(t, c, d, newTerm, indicator, false, info, cs);
+	}	
+	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT, String info, CaseSignificance cs) throws TermServerScriptException {
 		Description replacement = null;
 		Description reuseMe = c.findTerm(newTerm);
 		
@@ -939,6 +949,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			reuseMe.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, reuseMe));
 		} else {
 			replacement = d.clone(null); //Includes acceptability and case significance
+			//Unless we're overriding the CaseSignificance
+			if (cs != null) {
+				replacement.setCaseSignificance(cs);
+			}
 			replacement.setTerm(newTerm);
 			c.addDescription(replacement);
 			report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement, info);

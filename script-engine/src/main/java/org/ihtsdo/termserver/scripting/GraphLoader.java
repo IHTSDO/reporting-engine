@@ -121,6 +121,9 @@ public class GraphLoader implements ScriptConstants {
 		
 		DEVICE.reset();
 		singleton.concepts.put(DEVICE.getConceptId(), DEVICE);
+		
+		ORGANISM.reset();
+		singleton.concepts.put(ORGANISM.getConceptId(), ORGANISM);
 	}
 
 	public Collection <Concept> getAllConcepts() {
