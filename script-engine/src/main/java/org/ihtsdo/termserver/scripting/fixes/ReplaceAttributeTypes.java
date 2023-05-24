@@ -27,9 +27,11 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  *  			363699004 |Direct device| -> 363710007 |Indirect device|
  *  			424361007 |Using substance| -> 363701004 |Direct substance|
  *  			Only where 260686004 |Method| = 129332006 |Irrigation - action|
+ *  QI-1257    424226004 |Using device (attribute)| --> 363699004 |Direct device (attribute)|
  */
 public class ReplaceAttributeTypes extends BatchFix {
-	String ecl = "<<  67889009 |Irrigation (procedure)| ";
+	//String ecl = "<<  67889009 |Irrigation (procedure)| ";
+	String ecl = "(<<62317000 |Prosthodontic procedure (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|) OR (<118817003 |Procedure on oral cavity (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|)";
 	Map<Concept, Concept> replaceTypesMap;
 	RelationshipTemplate addAttribute = null;
 	RelationshipTemplate whereAttributePresent = null;
@@ -45,7 +47,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
-			fix.selfDetermining = false;
+			fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -68,7 +70,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 		replaceTypesMap.put(gl.getConcept("704324001 |Process output (attribute)| "), 
 				gl.getConcept("1003735000 |Process acts on (attribute)| "));*/
 		
-		replaceTypesMap.put(gl.getConcept("405813007 |Procedure site - Direct|"), 
+		/*replaceTypesMap.put(gl.getConcept("405813007 |Procedure site - Direct|"), 
 				gl.getConcept("405814001 |Procedure site - Indirect|"));
 		
 		replaceTypesMap.put(gl.getConcept("363699004 |Direct device|"), 
@@ -78,7 +80,10 @@ public class ReplaceAttributeTypes extends BatchFix {
 				gl.getConcept("363701004 |Direct substance|"));
 		
 		whereAttributePresent = new RelationshipTemplate(gl.getConcept("260686004 |Method|"), 
-				gl.getConcept("129332006 |Irrigation - action|"));
+				gl.getConcept("129332006 |Irrigation - action|"));*/
+		
+		replaceTypesMap.put(gl.getConcept("424226004 |Using device (attribute)|"), 
+				gl.getConcept("363699004 |Direct device (attribute)|"));
 		super.postInit();
 	}
 
@@ -102,7 +107,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 		
 		//Work group at a time and ensure the group contains the required attribute - if specified
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			if (g.containsTypeValue(whereAttributePresent)) {
+			if (whereAttributePresent == null || g.containsTypeValue(whereAttributePresent)) {
 				for (Concept targetType : replaceTypesMap.keySet()) {
 					for (Relationship r : g.getRelationships(ActiveState.ACTIVE)) {
 						if (r.getType().equals(targetType)) {
