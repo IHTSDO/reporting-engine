@@ -45,15 +45,17 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
 		concept.setId(null);
 		populateIds(concept);
+		//Populate expression now because rels turn to axioms when we output
+		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		incrementSummaryInformation("Concepts created");
 		outputRF2(concept);  //Will only output dirty fields.
-		report(tabIdx, null, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, concept.toExpression(CharacteristicType.STATED_RELATIONSHIP), "OK");
+		report(tabIdx, null, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
 		return concept;
 	}
 
 	private void populateIds(Concept concept) throws TermServerScriptException {
 		convertAcceptabilitiesToRf2(concept);
-		for (Component c : SnomedUtils.getAllComponents(concept)) {
+		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
 			c.setDirty();
 			if (c.getId() == null) {
 				switch (c.getComponentType()) {
@@ -61,8 +63,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 						break;
 					case DESCRIPTION : setDescriptionId(c);
 						break;
-					case INFERRED_RELATIONSHIP : //No need to do anything here because 
-					case STATED_RELATIONSHIP : //we'll convert to an axiom
+					case INFERRED_RELATIONSHIP : //No need to do anything here because we'll convert 
+					case STATED_RELATIONSHIP : //stated to an axiom and we're not expecting any inferred
 						break;
 					default: c.setId(UUID.randomUUID().toString());
 				}

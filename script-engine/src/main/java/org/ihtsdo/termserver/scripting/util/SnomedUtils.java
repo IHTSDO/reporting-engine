@@ -2056,8 +2056,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return !hasModule;
 	}
-
+	
 	public static Collection<Component> getAllComponents(Concept c) {
+		return getAllComponents(c, false);
+	}
+
+	public static Collection<Component> getAllComponents(Concept c, boolean includeStatedRels) {
 		List<Component> components = new ArrayList<>();
 		
 		components.add(c);
@@ -2074,6 +2078,13 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		c.getRelationships().stream()
 			.filter(r -> r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP))
 			.forEach(components::add);
+		
+		if (includeStatedRels) {
+			//Not included by default because they're normally transient.  They are persisted in axioms
+			c.getRelationships().stream()
+			.filter(r -> r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP))
+			.forEach(components::add);
+		}
 		
 		//Descriptions and their associated indicators, associations and langrefstes
 		c.getDescriptions().stream()

@@ -38,6 +38,8 @@ public class ImportLoincTerms extends LoincScript {
 	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
 	public static final String TAB_IMPORT_STATUS = "Import Status";
 	
+	public static final String FSN_FAILURE = "FSN indicates failure";
+	
 	Rf2ConceptCreator conceptCreator;
 	
 	private static String[] tabNames = new String[] {
@@ -67,7 +69,9 @@ public class ImportLoincTerms extends LoincScript {
 				Thread.sleep(1000);
 			}
 			report.finish();
-			report.conceptCreator.finish();
+			if (report.conceptCreator != null) {
+				report.conceptCreator.finish();
+			}
 		}
 	}
 
@@ -90,7 +94,7 @@ public class ImportLoincTerms extends LoincScript {
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
 				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId",
-				"TaskId, Concept, Severity, Action, LoincNum, Expression, Status, , "
+				"Concept, Severity, Action, LoincNum, Descriptions, Expression, Status, , "
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
@@ -104,6 +108,7 @@ public class ImportLoincTerms extends LoincScript {
 
 	private void runReport() throws TermServerScriptException, InterruptedException {
 		//ExecutorService executor = Executors.newCachedThreadPool();
+		AttributePartMapManager.validatePartAttributeMap(gl, getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 		populateLoincNumMap();
 		loadLoincParts();
 		//We can look at the full LOINC file in parallel as it's not needed for modelling
@@ -113,7 +118,7 @@ public class ImportLoincTerms extends LoincScript {
 		attributePartMapManager = new AttributePartMapManager(this, loincParts);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
-		determineExistingConcepts(getTab(TAB_TOP_100));
+		//determineExistingConcepts(getTab(TAB_TOP_100));
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
 		LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
@@ -149,7 +154,7 @@ public class ImportLoincTerms extends LoincScript {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
 			LoincTemplatedConcept templatedConcept = doModeling(entry.getKey(), entry.getValue());
-			if (templatedConcept != null) {
+			if (templatedConcept != null && !templatedConcept.getConcept().hasIssue(FSN_FAILURE)) {
 				successfullyModelledConcepts.add(templatedConcept);
 			}
 		}
@@ -181,7 +186,7 @@ public class ImportLoincTerms extends LoincScript {
 			String fsn = templatedConcept.getConcept().getFsn();
 			boolean insufficientTermPopulation = fsn.contains("[");
 			if (insufficientTermPopulation) {
-				templatedConcept.getConcept().addIssue("FSN indicates failure to populate required slot: " + fsn, ",\n");
+				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
 			} else {
 				doProposedModelComparison(loincNum, templatedConcept);
 			}

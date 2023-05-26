@@ -26,7 +26,6 @@ public class AttributePartMapManager {
 	private Map<String, RelationshipTemplate> loincPartToAttributeMap;
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
-	private Concept component;
 	
 	private int unsuccessfullTypeReplacement = 0;
 	private int successfullTypeReplacement = 0;
@@ -38,6 +37,34 @@ public class AttributePartMapManager {
 		this.gl = ts.getGraphLoader();
 		this.loincParts = loincParts;
 		
+	}
+	
+	public static void validatePartAttributeMap(GraphLoader gl, File attributeMapFile) throws TermServerScriptException {
+		int lineNum = 0;
+		int failureCount = 0;
+		try {
+			TermServerScript.info("Validating Part / Attribute Map Base File: " + attributeMapFile);
+			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
+				String line;
+				while ((line = br.readLine()) != null) {
+					lineNum++;
+					if (lineNum > 1) {
+						String[] items = line.split("\t");
+						Concept attributeValue = gl.getConcept(items[4], false, false);
+						if (attributeValue == null) {
+							TermServerScript.warn("Part / Attribute Map Base File contains unknown concept " + items[4] + " at line " + lineNum);
+							failureCount++;
+						}
+					}
+				}
+			} 
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failure while reading " + attributeMapFile, e);
+		}
+		
+		if (failureCount > 0) {
+			throw new TermServerScriptException(failureCount + " failures while reading " + attributeMapFile);
+		}
 	}
 
 	public RelationshipTemplate getPartMappedAttributeForType(int idxTab, String loincNum, String loincPartNum, Concept attributeType) throws TermServerScriptException {
@@ -97,6 +124,8 @@ public class AttributePartMapManager {
 
 	public Concept replaceValueIfRequired(int tabIdx, Concept attributeValue, String partNum,
 			String partName, String partStatus) throws TermServerScriptException {
+		
+		
 		if (!attributeValue.isActive()) {
 			String hardCodedIndicator = " hardcoded";
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
@@ -147,8 +176,6 @@ public class AttributePartMapManager {
 	}
 
 	private void populateKnownMappings() throws TermServerScriptException {
-		component = gl.getConcept("246093002 |Component (attribute)|");
-		
 		knownReplacementMap.put(gl.getConcept("720309005 |Immunoglobulin G antibody to Streptococcus pneumoniae 43 (substance)|"), gl.getConcept("767402003 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 43 (substance)|"));
 		knownReplacementMap.put(gl.getConcept("720308002 |Immunoglobulin G antibody to Streptococcus pneumoniae 34 (substance)|"), gl.getConcept("767408004 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 34 (substance)|"));
 		knownReplacementMap.put(gl.getConcept("54708003 |Extended zinc insulin (substance)|"), gl.getConcept("10329000 |Zinc insulin (substance)|"));

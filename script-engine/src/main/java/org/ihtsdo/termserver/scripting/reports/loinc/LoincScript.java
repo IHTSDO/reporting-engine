@@ -116,7 +116,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 		}
 	}
 	
-	protected void determineExistingConcepts(int tabIdx) throws TermServerScriptException {
+/*	protected void determineExistingConcepts(int tabIdx) throws TermServerScriptException {
 		int total  = 0;
 		int existingConceptCount = 0;
 		try {
@@ -141,7 +141,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
-	}
+	}*/
 	
 	private boolean checkForExistingModelling(LoincTerm loincTerm, int tabIdx) throws TermServerScriptException {
 		//Do we have this loincNum
