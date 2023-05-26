@@ -68,6 +68,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	@Expose
 	private Set<Axiom> gciAxioms;
 	
+	@SerializedName("alternateIdentifiers")
+	@Expose
+	private Set<AlternateIdentifier> alternateIdentifiers;
+	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
@@ -1693,6 +1697,26 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			axiomGroups.add(g);
 		}
 		return groupsByAxiom;
+	}
+
+	public Set<AlternateIdentifier> getAlternateIdentifiers() {
+		return alternateIdentifiers;
+	}
+
+	public void setAlternateIdentifiers(Set<AlternateIdentifier> alternateIdentifiers) {
+		this.alternateIdentifiers = alternateIdentifiers;
+	}
+
+	public void addAlternateIdentifier(String id, String schemeId) {
+		if (alternateIdentifiers == null) {
+			alternateIdentifiers = new HashSet<AlternateIdentifier>();
+		}
+		AlternateIdentifier altId = new AlternateIdentifier();
+		altId.setAlternateIdentifier(id);
+		altId.setActive(true);
+		altId.setModuleId(getModuleId());
+		altId.setDirty();
+		alternateIdentifiers.add(altId);
 	}
 
 }

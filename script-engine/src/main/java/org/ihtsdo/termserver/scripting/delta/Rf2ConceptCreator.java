@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.ihtsdo.otf.RF2Constants.ReportActionType;
-import org.ihtsdo.otf.RF2Constants.Severity;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -66,6 +64,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 					case INFERRED_RELATIONSHIP : //No need to do anything here because we'll convert 
 					case STATED_RELATIONSHIP : //stated to an axiom and we're not expecting any inferred
 						break;
+					case ALTERNATE_IDENTIFIER :
+						break;  //Has its own ID.  RefCompId will be set via Concept
 					default: c.setId(UUID.randomUUID().toString());
 				}
 			}
@@ -78,6 +78,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		c.setId(conceptId);
 		c.getDescriptions().stream()
 			.forEach(d -> d.setConceptId(conceptId));
+		c.getAlternateIdentifiers().stream()
+			.forEach(a -> a.setReferencedComponentId(conceptId));
 	}
 	
 	private void setDescriptionId(Component component) throws TermServerScriptException {

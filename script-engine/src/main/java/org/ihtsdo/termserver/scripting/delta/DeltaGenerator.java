@@ -32,6 +32,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String descDeltaFilename;
 	protected String textDfnDeltaFilename;
 	protected String langDeltaFilename;
+	protected String altIdDeltaFilename;
 	protected String edition = "INT";
 	
 	protected String eclSubset = null;
@@ -51,6 +52,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
+	protected String[] altIdHeader = new String[] {"alternateIdentifier","effectiveTime","active","moduleId","identifierSchemeId","referencedComponentId"};
 	
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;
@@ -245,6 +247,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		fileMap.put(ComponentType.AXIOM, owlDeltaFilename);
 		writeToRF2File(owlDeltaFilename, owlHeader);
 		
+		altIdDeltaFilename = termDir + "sct2__IdentifierDelta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.ALTERNATE_IDENTIFIER, altIdDeltaFilename);
+		writeToRF2File(altIdDeltaFilename, altIdHeader);
+		
 		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.LANGREFSET, langDeltaFilename);
 		writeToRF2File(langDeltaFilename, langHeader);
@@ -294,7 +300,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			}
 		}
 	}
-
+	
 	protected void outputRF2(Relationship r) throws TermServerScriptException {
 		if (r.isDirty()) {
 			switch (r.getCharacteristicType()) {
@@ -333,6 +339,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
 			outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
+		}
+		
+		for (AlternateIdentifier a : c.getAlternateIdentifiers()) {
+			if (a.isDirty()) {
+				writeToRF2File(descDeltaFilename, a.toRF2());
+			}
 		}
 		
 		//Do we have Stated Relationships that need to be converted to axioms?

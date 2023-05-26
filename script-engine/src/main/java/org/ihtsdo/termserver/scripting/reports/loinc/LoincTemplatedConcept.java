@@ -137,6 +137,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			if (detailsIndicatePrimitiveConcept(loincNum)) {
 				templatedConcept.getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			}
+			templatedConcept.getConcept().addAlternateIdentifier(loincNum, SCTID_LOINC_CODE_SYSTEM);
 		}
 		return templatedConcept;
 	}

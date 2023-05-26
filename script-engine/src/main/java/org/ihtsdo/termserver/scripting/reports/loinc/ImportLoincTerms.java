@@ -28,14 +28,12 @@ public class ImportLoincTerms extends LoincScript {
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_All_Active_Lab_Parts.xlsx - LDT1_Parts.tsv" 
 	
-	public static final String TAB_TOP_100 = "Top 100";
 	public static final String TAB_TOP_20K = "Top 20K";
 	public static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
 	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
 	public static final String TAB_MODELING_ISSUES = "Modeling Issues";
 	public static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
 	public static final String TAB_MAP_ME = "Map Me!";
-	public static final String TAB_RF2_IDENTIFIER_FILE = "RF2 Identifier File";
 	public static final String TAB_IMPORT_STATUS = "Import Status";
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
@@ -43,14 +41,12 @@ public class ImportLoincTerms extends LoincScript {
 	Rf2ConceptCreator conceptCreator;
 	
 	private static String[] tabNames = new String[] {
-			TAB_TOP_100,
 			TAB_TOP_20K,
 			TAB_PART_MAPPING_DETAIL,
 			TAB_RF2_PART_MAP_NOTES,
 			TAB_MODELING_ISSUES,
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_MAP_ME,
-			TAB_RF2_IDENTIFIER_FILE,
 			TAB_IMPORT_STATUS };
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -87,13 +83,11 @@ public class ImportLoincTerms extends LoincScript {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
-				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
-				"alternateIdentifier,effectiveTime,active,moduleId,identifierSchemeId,referencedComponentId",
 				"Concept, Severity, Action, LoincNum, Descriptions, Expression, Status, , "
 		};
 
@@ -138,7 +132,7 @@ public class ImportLoincTerms extends LoincScript {
 		generateAlternateIdentifierFile(successfullyModelled);*/
 	}
 	
-	private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {
+	/*private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {
 		for (LoincTemplatedConcept ltc : ltcs) {
 			report(getTab(TAB_RF2_IDENTIFIER_FILE),
 					ltc.getLoincNum(),
@@ -148,7 +142,7 @@ public class ImportLoincTerms extends LoincScript {
 					SCTID_LOINC_CODE_SYSTEM,
 					ltc.getConcept().getId());
 		}
-	}
+	}*/
 	
 	private Set<LoincTemplatedConcept> doModeling() throws TermServerScriptException {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
