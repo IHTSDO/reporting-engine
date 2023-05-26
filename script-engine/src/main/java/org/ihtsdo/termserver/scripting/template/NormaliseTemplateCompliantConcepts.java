@@ -55,12 +55,12 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			exclusionWords = new ArrayList<>();
 		}
 		
-		exclusionWords.add("positive");
+		/*exclusionWords.add("positive");
 		exclusionWords.add("negative");
 		exclusionWords.add("present");
 		exclusionWords.add("absent");
-		exclusionWords.add("detected");
-		//exclusionWords.add("(disorder)");
+		exclusionWords.add("detected");*/
+		exclusionWords.add("(disorder)");
 		checkAllDescriptionsForExclusions = true;
 		
 		if (inclusionWords == null) {
@@ -444,12 +444,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
 				"Report Metadata, Detail, Detail", 
-				"SCTID, FSN, SemTag, Reason",
+				"SCTID, FSN, SemTag, Reason, Inferred Expression",
+				"SCTID, FSN, SemTag",
 				"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata",
 				"Excluded Concepts",
-				"Misaligned Concepts"};
+				"Misaligned Concepts",
+				"Perfected Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -614,6 +616,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		setQuiet(false);
 		addSummaryInformation("Concepts matching templates & no change required", noChangesRequired.size());
+		noChangesRequired.stream()
+			.forEach(c -> reportSafely(QUINARY_REPORT, c));
 		outputMetaData();
 		return asComponents(changesRequired);
 	}

@@ -276,7 +276,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (exclusions.contains(c)) {
 			if (exclusionReport != null) {
 				incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
-				report (exclusionReport, c, "Hierarchial exclusion");
+				report(exclusionReport, c, "Hierarchial exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
@@ -290,7 +290,7 @@ abstract public class TemplateFix extends BatchFix {
 						//So we're now on our 2nd one
 						if (exclusionReport != null) {
 							incrementSummaryInformation("Concepts excluded due to SD with multiple substantial role groups");
-							report (exclusionReport, c, "Multi-RG exclusion");
+							report (exclusionReport, c, "Multi-RG exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 						}
 						return true;
 					} else {
@@ -303,7 +303,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (!includeOrphanet && gl.isOrphanetConcept(c)) {
 			if (exclusionReport != null) {
 				incrementSummaryInformation("Orphanet concepts excluded");
-				report (exclusionReport, c, "Orphanet exclusion");
+				report (exclusionReport, c, "Orphanet exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
@@ -311,7 +311,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (StringUtils.isEmpty(c.getFsn())) {
 			if (exclusionReport != null) {
 				warn("Skipping concept with no FSN: " + c.getConceptId());
-				report (exclusionReport, c, "No FSN");
+				report (exclusionReport, c, "No FSN", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
@@ -324,7 +324,7 @@ abstract public class TemplateFix extends BatchFix {
 				if (exclusionReport != null) {
 					incrementSummaryInformation("Concepts excluded due to lexical match ");
 					incrementSummaryInformation("Concepts excluded due to lexical match (" + word + ")");
-					report (exclusionReport, c, "Lexical exclusion", word);
+					report (exclusionReport, c, "Lexical exclusion", word, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
 				return true;
 			}
@@ -332,7 +332,7 @@ abstract public class TemplateFix extends BatchFix {
 		
 		if (inclusionWords.size() > 0 && !containsInclusionWord(c)) {
 			incrementSummaryInformation("Concepts excluded due to lexical match failure");
-			report (exclusionReport, c, "Lexical inclusion failure");
+			report (exclusionReport, c, "Lexical inclusion failure", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			return true;
 		}
 		
@@ -340,7 +340,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (!includeComplexTemplates && isComplex(c)) {
 			if (exclusionReport != null) {
 				incrementSummaryInformation("Concepts excluded due to complexity");
-				report (exclusionReport, c, "Complex templates excluded");
+				report (exclusionReport, c, "Complex templates excluded", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}

@@ -1,6 +1,6 @@
 {
   "name": "Measurement Finding",
-  "domain": "(<  118245000 | Measurement finding (finding)|  OR <  366147009 | Finding of respiratory measurements (finding)|) MINUS << 64572001 |Disease|",
+  "domain": "(<  118245000 | Measurement finding (finding)|  OR <  366147009 | Finding of respiratory measurements (finding)|)",
   "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Measurement+%28finding%29+-+v0.2",
   "version": 2,
   "logicalTemplate": "404684003 |Clinical finding (finding)|  :  [[~1..1 @rolegroup]]{ [[~1..1]]  363714003 |Interprets (attribute)|  = [[+id(<  122869004 |Measurement procedure (procedure)|  OR <  363787002 |Observable entity (observable entity)| ) @interprets ]],[[~0..1]]  363713009 |Has interpretation (attribute)|  = [[+id(< 260245000 |Finding value (qualifier value)| ) @Interpretation]]  }"

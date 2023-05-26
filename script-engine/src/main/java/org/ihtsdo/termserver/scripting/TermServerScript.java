@@ -1247,6 +1247,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		return items;
 	}
+	
+	protected void reportSafely (int reportIdx, Concept c, Object... details) {
+		try {
+			report(reportIdx, c, details);
+		} catch (TermServerScriptException e) {
+			throw new IllegalStateException("Failed to write to report", e);
+		}
+	}
 
 	public void finish() throws TermServerScriptException {
 		info (BREAK);
