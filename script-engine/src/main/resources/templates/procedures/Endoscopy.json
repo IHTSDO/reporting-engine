@@ -1,0 +1,8 @@
+{
+  "name": "Endoscopy",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Endoscopy+%28procedure%29+-+Draft",
+  "version": 0.1,
+  "domain": "<< 423827005 |Endoscopy (procedure)| :  424226004 |<< Using device (attribute)| = << 24174009 |Bronchoscope, device (physical object)| ",
+  "logicalTemplate": "71388002 |Procedure (procedure)| :  [[~0..1]]{   [[~1..1]] 260686004 |Method (attribute)| = 129287005 |Incision - action (qualifier value)|,   [[~1..1]] 405813007 |Procedure site - Direct (attribute)| = [[+id(<<442083009 |Anatomical or acquired body structure (body structure)|)]]} [[~1..1]]{   [[~1..1]] 260686004 |Method (attribute)| = 129433002 |Inspection - action (qualifier value)|,   [[~1..1]] 405813007 |Procedure site - Direct (attribute)| = [[+id(<< 442083009 |Anatomical or acquired body structure (body structure)|) @bodyStructure]],   [[~1..1]] 424226004 |Using device (attribute)| = [[+id(<<37270008 |Endoscope, device (physical object)|) @endoscopy]]} [[~0..1]]{   [[~1..1]] 260686004 |Method (attribute)| = [[+id(<<129264002 |Action (qualifier value)|) @assistedProcedure]],   [[~0..1]] 405813007 |Procedure site - Direct (attribute)| = [[+id(<< 442083009 |Anatomical or acquired body structure (body structure)|)]],   [[~0..1]] 405814001 |Procedure site - Indirect (attribute)| = [[+id(<<442083009 |Anatomical or acquired body structure (body structure)|)]],   [[~0..1]] 363700003 |Direct morphology (attribute)| = [[+id(<< 49755003 |Morphologically abnormal structure (morphologic abnormality)|) @morphology]],   [[~1..1]] [[+id(<< 424226004 |Using device (attribute)|)]] = [[+id(<< 37270008 |Endoscope, device (physical object)|)]] } "
+}
+
