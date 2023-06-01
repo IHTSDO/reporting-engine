@@ -1700,7 +1700,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public Set<AlternateIdentifier> getAlternateIdentifiers() {
-		return alternateIdentifiers;
+		return alternateIdentifiers == null ? new HashSet<>() : alternateIdentifiers;
 	}
 
 	public void setAlternateIdentifiers(Set<AlternateIdentifier> alternateIdentifiers) {
