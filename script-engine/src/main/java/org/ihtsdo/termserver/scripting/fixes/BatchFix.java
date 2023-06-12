@@ -515,6 +515,20 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to initialise batch fix",e);
 		}
+		
+
+		if (!selfDetermining && getInputFile() == null) {
+			if (jobRun != null && jobRun.getParamValue(INPUT_FILE) != null) {
+				inputFiles.add(0,new File(jobRun.getParamValue(INPUT_FILE)));
+			} else {
+				warn("No valid batch import file detected in command line arguments, assuming self determining");
+				selfDetermining = true;
+			}
+		}
+		
+		if (!selfDetermining) {
+			info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
+		}
 	}
 	
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
@@ -545,15 +559,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				conceptThrottle = Integer.parseInt(response);
 			}
 		}
-
-		if (!selfDetermining && getInputFile() == null) {
-			if (jobRun != null && jobRun.getParamValue(INPUT_FILE) != null) {
-				inputFiles.add(0,new File(jobRun.getParamValue(INPUT_FILE)));
-			} else {
-				warn("No valid batch import file detected in command line arguments, assuming self determining");
-				selfDetermining = true;
-			}
-		}
 		
 		if (targetAuthor == null) {
 			if (jobRun != null && jobRun.getParamValue(AUTHOR) != null) {
@@ -567,10 +572,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			} else {
 				author_reviewer = new String[] { targetAuthor };
 			}
-		}
-		
-		if (!selfDetermining) {
-			info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
 		}
 		
 		info ("\nBatching " + taskSize + " concepts per task");

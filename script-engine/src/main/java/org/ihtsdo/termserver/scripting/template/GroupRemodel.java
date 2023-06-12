@@ -58,7 +58,6 @@ public class GroupRemodel extends TemplateFix {
 	
 	protected void init(String[] args) throws TermServerScriptException {
 		selfDetermining = true;
-		runStandAlone = true; 
 		classifyTasks = true;
 		populateEditPanel = true;
 		populateTaskDescription = true;

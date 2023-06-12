@@ -47,7 +47,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	protected void init(String[] args) throws TermServerScriptException {
 		reportNoChange = false;
 		selfDetermining = true;
-		runStandAlone = true;
 		classifyTasks = false;
 		summaryTabIdx = SECONDARY_REPORT;
 		

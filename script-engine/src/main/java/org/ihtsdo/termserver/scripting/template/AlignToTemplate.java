@@ -29,7 +29,6 @@ public class AlignToTemplate extends TemplateFix {
 		try {
 			app.subHierarchyStr = "128294001"; // |Chronic inflammatory disorder (disorder)|
 			app.selfDetermining = true;
-			app.runStandAlone = true;
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();

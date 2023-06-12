@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
-public class MisalignedConcepts extends TemplateFix implements ReportClass {
+public class TemplateCompliance extends TemplateFix implements ReportClass {
 	
 	private Map<Concept, List<String>> conceptDiagnosticsInferred = new HashMap<>();
 	private Map<Concept, List<String>> conceptDiagnosticsStated = new HashMap<>();
@@ -37,11 +37,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	List<Concept> alreadyReportAligned = new ArrayList<>();
 	List<Concept> alreadyReportedExcluded = new ArrayList<>();
 	
-	public MisalignedConcepts() {
+	public TemplateCompliance() {
 		super(null);
 	}
 
-	protected MisalignedConcepts(BatchFix clone) {
+	protected TemplateCompliance(BatchFix clone) {
 		super(clone);
 	}
 	
@@ -55,7 +55,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		params.put(INCLUDE_COMPLEX, "true");
 		params.put(INCLUDE_ORPHANET, "true");
 		params.put(KNOWN_COMPLETE, "false");
-		TermServerReport.run(MisalignedConcepts.class, args, params);
+		TermServerReport.run(TemplateCompliance.class, args, params);
 	}
 	
 	@Override
@@ -100,7 +100,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 		selfDetermining = true;
 		reportNoChange = false;
-		runStandAlone = true; 
+		//runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		summaryTabIdx = SECONDARY_REPORT;

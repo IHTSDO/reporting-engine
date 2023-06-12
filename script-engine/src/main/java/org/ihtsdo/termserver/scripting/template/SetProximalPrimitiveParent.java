@@ -41,7 +41,6 @@ public class SetProximalPrimitiveParent extends BatchFix {
 	protected void init(String[] args) throws TermServerScriptException {
 		reportNoChange = false;
 		selfDetermining = true;
-		runStandAlone = true;
 		classifyTasks = true;
 		summaryTabIdx = SECONDARY_REPORT;
 		super.init(args);
