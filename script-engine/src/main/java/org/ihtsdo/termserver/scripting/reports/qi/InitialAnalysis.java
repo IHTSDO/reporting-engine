@@ -160,7 +160,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 		
 		super.postInit(tabNames, columnHeadings, false);
 		setSubHierarchy();
-}
+	}
 	
 	public void setExclusions (String[] exclusionArr) throws TermServerScriptException {
 		exclusions = new HashSet<>();
