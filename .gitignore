@@ -6,7 +6,8 @@ secure/*.*
 resources/
 target
 bin
-resources/application-*.properties
+application*.properties*
+resources/application-*.properties*
 .*
 *.iml
 *.sh
