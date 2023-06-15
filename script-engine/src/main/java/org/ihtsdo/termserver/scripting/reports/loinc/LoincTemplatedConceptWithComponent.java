@@ -34,6 +34,17 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttrib = typeMap.get("COMPONENT");
+		
+		//We can't yet deal with "given"
+		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
+			getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName().endsWith(" given")) {
+			String issue = "Skipping concept using 'given'";
+			ts.report(getTab(TAB_IOI), issue, loincNum);
+			issues.add(issue);
+			attributes.add(null);
+			return attributes;
+		}
+		
 		if (CompNumPnIsSafe(loincNum) && true) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
@@ -54,10 +65,14 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 				}
 			}
 			
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN) ||
-				detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPONENT_PN);
-				slotTermMap.put("COMPONENT", componentDetail.getPartName());
+			if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
+				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART3_PN);
+				slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
+			}
+			
+			if (detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART4_PN);
+				slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
 			}
 		}
 		

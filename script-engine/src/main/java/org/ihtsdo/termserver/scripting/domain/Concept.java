@@ -1715,6 +1715,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		altId.setAlternateIdentifier(id);
 		altId.setActive(true);
 		altId.setModuleId(getModuleId());
+		altId.setIdentifierSchemeId(schemeId);
 		altId.setDirty();
 		alternateIdentifiers.add(altId);
 	}

@@ -34,6 +34,14 @@ AlternateIdentifier extends Component implements ScriptConstants {
 	public void setAlternateIdentifier(String alternateIdentifier) {
 		this.alternateIdentifier = alternateIdentifier;
 	}
+	
+	public String getId() {
+		return alternateIdentifier;
+	}
+
+	public void setId(String alternateIdentifier) {
+		this.alternateIdentifier = alternateIdentifier;
+	}
 
 	public String getIdentifierSchemeId() {
 		return identifierSchemeId;

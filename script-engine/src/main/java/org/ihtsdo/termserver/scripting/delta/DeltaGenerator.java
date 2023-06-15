@@ -247,7 +247,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		fileMap.put(ComponentType.AXIOM, owlDeltaFilename);
 		writeToRF2File(owlDeltaFilename, owlHeader);
 		
-		altIdDeltaFilename = termDir + "sct2__IdentifierDelta_"+edition+"_" + today + ".txt";
+		altIdDeltaFilename = termDir + "sct2_Identifier_Delta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.ALTERNATE_IDENTIFIER, altIdDeltaFilename);
 		writeToRF2File(altIdDeltaFilename, altIdHeader);
 		
@@ -343,7 +343,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		for (AlternateIdentifier a : c.getAlternateIdentifiers()) {
 			if (a.isDirty()) {
-				writeToRF2File(descDeltaFilename, a.toRF2());
+				writeToRF2File(altIdDeltaFilename, a.toRF2());
 			}
 		}
 		

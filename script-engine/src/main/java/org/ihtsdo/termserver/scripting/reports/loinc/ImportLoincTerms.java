@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * LE-3
  */
-public class ImportLoincTerms extends LoincScript {
+public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 	
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
@@ -28,26 +28,19 @@ public class ImportLoincTerms extends LoincScript {
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_All_Active_Lab_Parts.xlsx - LDT1_Parts.tsv" 
 	
-	public static final String TAB_TOP_20K = "Top 20K";
-	public static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
-	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
-	public static final String TAB_MODELING_ISSUES = "Modeling Issues";
-	public static final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
-	public static final String TAB_MAP_ME = "Map Me!";
-	public static final String TAB_IMPORT_STATUS = "Import Status";
-	
 	public static final String FSN_FAILURE = "FSN indicates failure";
 	
 	Rf2ConceptCreator conceptCreator;
 	
 	private static String[] tabNames = new String[] {
 			TAB_TOP_20K,
-			TAB_PART_MAPPING_DETAIL,
+			/*TAB_PART_MAPPING_DETAIL,*/
 			TAB_RF2_PART_MAP_NOTES,
 			TAB_MODELING_ISSUES,
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_MAP_ME,
-			TAB_IMPORT_STATUS };
+			TAB_IMPORT_STATUS,
+			TAB_IOI };
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ImportLoincTerms report = new ImportLoincTerms();
@@ -71,7 +64,7 @@ public class ImportLoincTerms extends LoincScript {
 		}
 	}
 
-	private int getTab(String tabName) throws TermServerScriptException {
+	public static int getTab(String tabName) throws TermServerScriptException {
 		for (int i = 0; i < tabNames.length; i++) {
 			if (tabNames[i].equals(tabName)) {
 				return i;
@@ -83,12 +76,13 @@ public class ImportLoincTerms extends LoincScript {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
+				/*"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ", */
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
-				"LoincPartNum, LoincPartName, PartStatus, Advice, Detail, Detail",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
-				"Concept, Severity, Action, LoincNum, Descriptions, Expression, Status, , "
+				"Concept, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
+				"Category, LoincNum, Detail, , , "
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
@@ -115,7 +109,7 @@ public class ImportLoincTerms extends LoincScript {
 		//determineExistingConcepts(getTab(TAB_TOP_100));
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
 		LoincTemplatedConcept.reportStats();
-		LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
+		//LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
 		LoincTemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
 		flushFiles(false, true);
 		for (LoincTemplatedConcept tc : successfullyModelled) {
@@ -156,7 +150,7 @@ public class ImportLoincTerms extends LoincScript {
 	}
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		/*if (loincNum.equals("31701-6")) {
+		/*if (loincNum.equals("7994-7")) {
 			debug("here");
 		}*/
 		
@@ -222,7 +216,7 @@ public class ImportLoincTerms extends LoincScript {
 		}
 		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
 				.map(d -> d.toString())
-				.collect(Collectors.joining(",\n"));
+				.collect(Collectors.joining("\n"));
 		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
 	}
 
@@ -233,7 +227,7 @@ public class ImportLoincTerms extends LoincScript {
 		info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
 	}
 	
-	private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	/*private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		//TODO Move this class to be a BatchFix so we don't need a plug in class
 		CreateConceptsPreModelled batchProcess = new CreateConceptsPreModelled(getReportManager(), getTab(TAB_IMPORT_STATUS), successfullyModelled);
 		batchProcess.setProject(new Project("LE","MAIN/SNOMEDCT-LOINCEXT/LE"));
@@ -242,5 +236,5 @@ public class ImportLoincTerms extends LoincScript {
 		String[] args = new String[] { "-a", "pwilliams", "-n", "500", "-p", "LE", "-d", "N", "-c", authenticatedCookie };
 		batchProcess.inflightInit(args);
 		batchProcess.runJob();
-	}
+	}*/
 }

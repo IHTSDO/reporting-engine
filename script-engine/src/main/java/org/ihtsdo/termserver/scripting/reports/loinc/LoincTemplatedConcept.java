@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincConstants {
+public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincConstants, LoincScriptConstants {
 	
 	private static final String semTag = " (observable entity)";
 	private static Set<String> partNumsMapped = new HashSet<>();
@@ -25,6 +25,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	private static int MAPPING_DETAIL_TAB = TERTIARY_REPORT;
 	private static int TAB_MODELING_ISSUES = QUINARY_REPORT;
 	private static int conceptsModelled = 0;
+	
+	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
 	
 	protected static TermServerScript ts;
 	protected static GraphLoader gl;
@@ -38,15 +40,18 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Concept conceptModelObjectAttrib;
 	protected static Concept precondition;
 	protected static Concept relativeTo;
-	protected static Set<String> skipPartTypes;
+	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
+	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
 	
-	protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
-	protected static int failedMappingAlreadySeenForOtherProperty = 0;
+	//protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
+	//protected static int failedMappingAlreadySeenForOtherProperty = 0;
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
 	protected static Map<String, LoincPart> loincParts;
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
+	
+	protected Set<ProcessingFlag> processingFlags = new HashSet<>();
 	
 	protected String loincNum;
 	protected Map<String, Concept> typeMap = new HashMap<>();
@@ -54,6 +59,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected Concept concept;
 	
 	protected Map<String, String> slotTermMap = new HashMap<>();
+	protected Map<String, String> slotTermAppendMap = new HashMap<>();
 	
 	public static void initialise(TermServerScript ts, GraphLoader gl, 
 			AttributePartMapManager attributePartMapManager,
@@ -69,11 +75,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
-		Set<String> removals = new HashSet<>(Arrays.asList());
+		Set<String> removals = new HashSet<>(Arrays.asList("specimen", "structure", "of", "at", "from"));
 		typeValueTermRemovalMap.put(DIRECT_SITE, removals);
 		
-		removals = new HashSet<>(Arrays.asList("specimen", "structure", "of", "at", "from",
-				"clade", "class", "division", "domain", "family", "genus", 
+		removals = new HashSet<>(Arrays.asList("technique"));
+		typeValueTermRemovalMap.put(TECHNIQUE, removals);
+		
+		removals = new HashSet<>(Arrays.asList("clade", "class", "division", "domain", "family", "genus", 
 				"infraclass", "infraclass", "infrakingdom", "infraorder", "infraorder", "kingdom", "order", 
 				"phylum", "species", "subclass", "subdivision", "subfamily", "subgenus", "subkingdom", 
 				"suborder", "subphylum", "subspecies", "superclass", "superdivision", "superfamily", 
@@ -85,8 +93,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		
 		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
 		
-		skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORSß"));
-		
 		percentAttribute = new RelationshipTemplate(gl.getConcept("246514001 |Units|"),
 				gl.getConcept(" 415067009 |Percentage unit|"));
 		conceptModelObjectAttrib = gl.getConcept("762705008 |Concept model object attribute|");
@@ -96,6 +102,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	protected LoincTemplatedConcept (String loincNum) {
 		this.loincNum = loincNum;
+	}
+	
+	protected int getTab(String tabName) throws TermServerScriptException {
+		return ImportLoincTerms.getTab(tabName);
 	}
 	
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
@@ -126,20 +136,60 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		/*if (loincNum.equals("61124-4")) {
-			TermServerScript.debug("here");
+		if (/*loincNum.equals("74384-9") ||*/ loincNum.equals("32051-5")) {
+			TermServerScript.debug("Check processing of Specimen");
+		}
+		
+		/*if (loincNum.equals("17938-2")) {
+			TermServerScript.debug("Check Modeling of Inheres");
 		}*/
 		
+		/*if (loincNum.equals("19254-2")) {
+			TermServerScript.debug("Should be included");
+		}*/
+		
+		/*if (loincNum.equals("16407-9")) {
+			TermServerScript.debug("Check feedback #3 FD");
+		}*/
+		
+		/*if (loincNum.equals("24104-2")) {
+			TermServerScript.debug("Check feedback #2 Divisors");
+		}*/
+		
+		/*if (loincNum.equals("85773-0")) {
+			TermServerScript.debug("Check terming xi - term without model");
+		}*/
+		
+		/*if (loincNum.equals("73146-3")) {
+			TermServerScript.debug("How does Sotalol get into FSN?");
+		}*/
+		
+		/*if (loincNum.equals("17929-1")) {
+			TermServerScript.debug("Check feedback #6 e.iii.6.ii.4");
+		}*/
+		
+		/*if (loincNum.equals("7994-7") || loincNum.equals("35876-2")) {
+			TermServerScript.debug("Check terming of component");
+		}*/
+		
+		/*if (loincNum.equals("23634-9")) {
+			TermServerScript.debug("Not expecting to see component, should be cut from file");
+		}*/
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
 			templatedConcept.populateParts(details);
 			templatedConcept.populateTerms(loincNum, details);
-			if (detailsIndicatePrimitiveConcept(loincNum)) {
+			if (detailsIndicatePrimitiveConcept(loincNum) || 
+					templatedConcept.hasProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE)) {
 				templatedConcept.getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			}
 			templatedConcept.getConcept().addAlternateIdentifier(loincNum, SCTID_LOINC_CODE_SYSTEM);
 		}
 		return templatedConcept;
+	}
+
+	public boolean hasProcessingFlag(ProcessingFlag flag) {
+		return processingFlags.contains(flag);
 	}
 
 	private void populateTerms(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
@@ -148,12 +198,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		Set<String> partTypeSeen = new HashSet<>();
 		
 		for (LoincDetail detail : details.values()) {
-			//We have multiple details for the compoment, so no need to try populate multiple times
+			//We have multiple details for the component, so no need to try populate multiple times
 			if (!partTypeSeen.contains(detail.getPartTypeName())) {
-				ptTemplateStr = populateTermTemplateFromLoincPart(ptTemplateStr, detail);
+				ptTemplateStr = populateTermTemplateFromAttribute(ptTemplateStr, detail);
 				partTypeSeen.add(detail.getPartTypeName());
 			}
 		}
+		//TODO Don't really need to do both of these things - consolidate
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
 		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
@@ -182,7 +233,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		concept.addDescription(colonDesc);
 	}
 
-	private String populateTermTemplateFromLoincPart(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {
+	private String populateTermTemplateFromAttribute(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {
 		if (skipPartTypes.contains(detail.getPartTypeName())) {
 			return ptTemplateStr;
 		}
@@ -195,30 +246,25 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(detail.getPartTypeName()));
 			ptTemplateStr = ptTemplateStr.replaceAll(templateItem, itemStr);
 		} else {
-			rt = getAttributeForLoincPart(NOT_SET, detail);
-			
-			//If we don't find it from the loinc part, can we work it out from the attribute mapping directly?
-			if (rt == null) {
-				Concept attributeType = typeMap.get(detail.getPartTypeName());
-				if (attributeType == null) {
-					TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName());
-				} else {
-					try {
-						Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-						if (rels.size() == 1) {
-							Relationship r = rels.iterator().next();
-							rt = new RelationshipTemplate(r);
-						}
-					} catch (Exception e) {
-						TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
+			Concept attributeType = typeMap.get(detail.getPartTypeName());
+			if (attributeType == null) {
+				TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName());
+			} else {
+				try {
+					Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+					if (rels.size() == 1) {
+						Relationship r = rels.iterator().next();
+						rt = new RelationshipTemplate(r);
 					}
+				} catch (Exception e) {
+					TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
 				}
 			}
 			
 			if (rt != null) {
-				ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr);
+				ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr, detail.getPartTypeName());
 			} else {
-				TermServerScript.debug("No attribute during FSN gen for " + detail);
+				//TermServerScript.debug("No attribute during FSN gen for " + detail);
 			}
 		}
 		return ptTemplateStr;
@@ -240,7 +286,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			} else {
 				Concept attributeType = typeMap.get(templateItem);
 				if (attributeType == null) {
-					//throw new TermServerScriptException("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName() + " while processing " + getLoincNum());
 					concept.addIssue("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
 					return ptTemplateStr;
 				}
@@ -252,22 +297,24 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 					throw new TermServerScriptException(rels.size() + " relationships for " + attributeType + " in " + getLoincNum());
 				}
 				RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
-				/*Concept attributeValue = rels.iterator().next().getTarget();
-				String prefTerm = StringUtils.deCapitalize(attributeValue.getPreferredSynonym());
-				ptTemplateStr = ptTemplateStr.replaceAll(regex, prefTerm);*/
-				ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr);
+				ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
 			}
 		}
 		return ptTemplateStr;
 	}
 
 
-	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr) throws TermServerScriptException {
+	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr, String partTypeName) throws TermServerScriptException {
 		//TODO Detect GB Spelling and break out another term
 		Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
 		String itemStr = targetPt.getTerm();
 		
 		itemStr = applyTermTweaking(rt, itemStr);
+		
+		//Do we need to append any values to this term
+		if (slotTermAppendMap.containsKey(partTypeName)) {
+			itemStr += " " + slotTermAppendMap.get(partTypeName);
+		}
 		//Can we make this lower case?
 		if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) || 
 				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
@@ -318,7 +365,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected String tidyUpTerm(String loincNum, String term) {
 		term = replaceAndWarn(loincNum, term, " at [TIME]");
 		term = replaceAndWarn(loincNum, term, " by [METHOD]");
-		term = replaceAndWarn(loincNum, term, " to [DIVISORS]");
 		term = replaceAndWarn(loincNum, term, " in [SYSTEM]");
 		term = replaceAndWarn(loincNum, term, " using [DEVICE]");
 		term = replaceAndWarn(loincNum, term, " [CHALLENGE]");
@@ -362,7 +408,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				attributesToAdd = determineComponentAttributes(loincNum, issues);
 				concept.addIssues(issues, ",\n");
 			} else {
-				attributesToAdd = Collections.singletonList(getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincDetail));
+				RelationshipTemplate rt = getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincDetail);
+				attributesToAdd = Collections.singletonList(rt);
+				//Now if we didn't find a map, then for non-critical parts, we'll used the loinc part name anyway
+				if (rt == null && useTypesInPrimitive.contains(loincDetail.getPartTypeName())) {
+					slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+					processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+				}
 			}
 			
 			partTypeSeen.add(partTypeName);
@@ -393,7 +445,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 					partNumsUnmapped.add(loincDetail.getPartNumber());
 					
 					//Record the fact that we failed to find a map on a per property basis
-					addFailedMapping(loincNum, loincDetail.getPartNumber());
+					//addFailedMapping(loincNum, loincDetail.getPartNumber());
 					
 					//Record the fact that we failed to find a map on a per part basis
 					partNumsMapped.add(loincDetail.getPartNumber());
@@ -449,7 +501,20 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			}
 			return null;
 		}
-		return attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincDetail.getPartNumber(), attributeType);
+		
+		if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && loincDetail.getPartName().toLowerCase().contains("specimen")) {
+			ts.report(getTab(TAB_IOI), "Allow use of 'specimen'", loincNum);
+			processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
+		}
+		
+		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincDetail.getPartNumber(), attributeType);
+		
+		//Rule 2.c  If we don't have a part mapping, use what we do get in the FSN
+		if (rt == null && !skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
+			slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+		}
+		
+		return rt;
 	}
 
 	private static LoincDetail getPartDetail(String loincNum, Map<String, LoincDetail> loincDetailMap, String partTypeName) throws TermServerScriptException {
@@ -560,12 +625,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return attributeAdded;
 	}
 	
-	protected void addFailedMapping(String loincNum, String partNum) throws TermServerScriptException {
+	/*protected void addFailedMapping(String loincNum, String partNum) throws TermServerScriptException {
 		//What is the property for this loincNum?
 		LoincDetail propertyDetail = loincDetailMap.get(loincNum).get(LoincDetail.PROPERTY);
 		String property = propertyDetail.getPartName();
 		
-		//Have we seen this partNum for any _other_ properties before?
+		/*Have we seen this partNum for any _other_ properties before?
 		for (String thisProperty : failedMappingsByProperty.keySet()) {
 			if (thisProperty.equals(property)) {
 				continue;
@@ -574,25 +639,25 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				failedMappingAlreadySeenForOtherProperty++;
 				return;
 			}
-		}
+		}*/
 		
-		//Have we seen any partNums for this property before
+		/*Have we seen any partNums for this property before
 		Set<String> partNums = failedMappingsByProperty.get(property);
 		if (partNums == null) {
 			partNums = new HashSet<>();
 			failedMappingsByProperty.put(property, partNums);
 		}
 		partNums.add(partNum);
-	}
+	}*/
 	
-	public static void reportFailedMappingsByProperty(int tabIdx) throws TermServerScriptException {
+	/*public static void reportFailedMappingsByProperty(int tabIdx) throws TermServerScriptException {
 		ts.report(tabIdx, "");
 		ts.report(tabIdx, "Failed Mapping Summary Counts per Property");
 		for (String property : failedMappingsByProperty.keySet()) {
 			ts.report(tabIdx, property, failedMappingsByProperty.get(property).size());
 		}
 		ts.report(tabIdx, "Failed Mapping Already Seen For Other Property", failedMappingAlreadySeenForOtherProperty);
-	}
+	}*/
 
 	public static void reportMissingMappings(int tabIdx) {
 		//This list needs to be sorted based on a rank + usage metric
