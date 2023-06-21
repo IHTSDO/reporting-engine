@@ -8,9 +8,9 @@
 	<packaging>pom</packaging>
 
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.4</version>
+		<groupId>org.snomed</groupId>
+		<artifactId>snomed-parent-bom</artifactId>
+		<version>1.0.10-SNAPSHOT</version>
 	</parent>
 
 	<modules>
@@ -20,16 +20,8 @@
 	</modules>
 
 	<properties>
-		<java.version>11</java.version>
-		<maven.compiler.source>${java.version}</maven.compiler.source>
-		<maven.compiler.target>${java.version}</maven.compiler.target>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
-		<otf.common.version>5.12.0-SNAPSHOT</otf.common.version>
-		<snomed-template-parser.version>2.0.0</snomed-template-parser.version>
-		<springfox-swagger.version>2.7.0</springfox-swagger.version>
-		<maven.test.skip>false</maven.test.skip>
 	</properties>
 
 	<repositories>

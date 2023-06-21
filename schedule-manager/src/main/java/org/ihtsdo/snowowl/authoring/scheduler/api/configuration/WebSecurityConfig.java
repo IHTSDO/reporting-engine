@@ -27,10 +27,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			"/",
 			"/version",
 			// Swagger API Docs:
-			"/swagger-ui.html",
-			"/swagger-resources/**",
-			"/v2/api-docs",
-			"/webjars/springfox-swagger-ui/**"
+			"/swagger-ui/**"
 	};
 
 	@Override

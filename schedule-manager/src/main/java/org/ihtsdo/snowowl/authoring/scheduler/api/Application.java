@@ -19,18 +19,16 @@ import org.springframework.jms.support.converter.MessageType;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.util.TimeZone;
 
-import static com.google.common.base.Predicates.not;
+import static java.util.function.Predicate.not;
 import static springfox.documentation.builders.PathSelectors.regex;
 
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
 @EntityScan({"org.snomed.otf.scheduler.domain"})
 @EnableJms
-@EnableSwagger2
 public class Application {
 
 	@Bean

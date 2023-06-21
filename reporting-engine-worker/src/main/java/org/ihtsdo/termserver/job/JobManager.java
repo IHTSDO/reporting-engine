@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.job.mq.Transmitter;
 import org.ihtsdo.termserver.scripting.JobClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.reflections.Reflections;
+import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
@@ -48,9 +49,9 @@ public class JobManager {
 		logger.info("Job Manager Initialising");
 		
 		//Now what jobs do I know about?
-		Reflections reflections = new Reflections("org.ihtsdo.termserver.scripting");
+		Reflections reflections = new Reflections(new ConfigurationBuilder().forPackages("org.ihtsdo.termserver.scripting"));
 		Set<Class<? extends JobClass>> jobClasses = reflections.getSubTypesOf(JobClass.class);
-		
+
 		logger.info("Job Manager detected {} job classes", jobClasses.size());
 		for (Class<? extends JobClass> jobClass : jobClasses) {
 			try {
