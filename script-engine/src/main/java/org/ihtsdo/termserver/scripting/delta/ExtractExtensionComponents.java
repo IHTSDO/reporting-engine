@@ -31,7 +31,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> noMoveRequired = new ArrayList<>();
 	private boolean includeDependencies = true;
 	
-	private boolean includeInferredParents = false;
+	private boolean includeInferredParents = true;
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
@@ -55,12 +55,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			delta.moduleId = "731000124108";  //US Module
+			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK Composition Module
 			//delta.moduleId = "999000011000000103"; //UK Clinical Extension
-			//delta.moduleId = "57091000202101";  //Norway module for medicines
+			delta.moduleId = "57091000202101";  //Norway module for medicines
 			//delta.moduleId = "51000202101"; //Norway Module
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
@@ -140,10 +140,28 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		//If we can fit everything we're loading into a single batch file, then we don't need
 		//to worry about what concepts go in what Zip file.
-		if (componentsOfInterest.size() < conceptsPerArchive) {
+		if (batchDelimitersDetected) {
+			assignConceptsToBatchesUsingDelimiter(componentsOfInterest);
+		} else if (componentsOfInterest.size() < conceptsPerArchive) {
 			archiveBatches.add(componentsOfInterest);
 		} else {
 			assignConceptsToBatches(componentsOfInterest);
+		}
+	}
+
+	private void assignConceptsToBatchesUsingDelimiter(List<Component> componentsOfInterest) {
+		List<Component> thisBatch = new ArrayList<>();
+		for (Component c : componentsOfInterest) {
+			if (c instanceof BatchEndMarker) {
+				archiveBatches.add(thisBatch);
+				thisBatch = new ArrayList<>();
+			} else {
+				thisBatch.add(c);
+			}
+		}
+		
+		if (!thisBatch.isEmpty()) {
+			archiveBatches.add(thisBatch);
 		}
 	}
 

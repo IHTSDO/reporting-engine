@@ -60,6 +60,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
 	
+	protected boolean batchDelimitersDetected = false;
+	
 	protected void init (String[] args) throws TermServerScriptException {
 		//We definitely need to finish saving a snapshot to disk before we start making changes
 		//Otherwise if we run multiple times, we'll pick up changes from a previous run.
@@ -400,6 +402,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 	@Override
 	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
+		if (lineItems[0].contentEquals(BatchEndMarker.NEW_TASK)) {
+			batchDelimitersDetected = true;
+			return Collections.singletonList(new BatchEndMarker());
+		}
+		
 		//Default implementation is to take the first column and try that as an SCTID
 		//Override for more complex implementation
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
