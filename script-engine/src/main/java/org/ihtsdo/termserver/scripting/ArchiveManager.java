@@ -507,7 +507,6 @@ public class ArchiveManager implements ScriptConstants {
 	
 	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
 		if (ts.getScriptName().equals("PackageComparisonReport")) {
-			TermServerScript.info("Getting builds configuration");
 			return getBuildArchiveDataLoader();
 		}
 		if (archiveDataLoader == null) {
