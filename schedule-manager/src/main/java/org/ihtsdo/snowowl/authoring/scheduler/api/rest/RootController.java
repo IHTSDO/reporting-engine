@@ -12,7 +12,12 @@ public class RootController {
 
 	@RequestMapping(path = "/", method = RequestMethod.GET)
 	public void getRoot(HttpServletResponse response) throws IOException {
-		response.sendRedirect("swagger-ui.html");
+		response.sendRedirect("swagger-ui/");
+	}
+
+	@RequestMapping(path = "/swagger-ui.html", method = RequestMethod.GET)
+	public void getRootOldSwaggerUrl(HttpServletResponse response) throws IOException {
+		response.sendRedirect("swagger-ui/");
 	}
 
 }
