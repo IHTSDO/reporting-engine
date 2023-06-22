@@ -79,7 +79,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		//Otherwise we'll use the default behaviour
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
 		if (prevRelease == null) {
-			super.doDefaultProjectSnapshotLoad(fsnOnly);
+			super.loadProjectSnapshot(fsnOnly);
 		} else {
 			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 			
