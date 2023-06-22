@@ -2,5 +2,6 @@
   "name": "Adverse [finding site] reaction caused by [agent]",
   "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Adverse+%5Bfinding+site%5D+reaction+caused+by+%5Bagent%5D%28disorder%29+-+In+progress",
   "version": 1,
+  "domain" : "< 281647001 |Adverse reaction (disorder)|",
   "logicalTemplate": "281647001 |Adverse reaction (disorder)|: [[~1..1]] { [[~0..1]] 363698007 |Finding site (attribute)| = [[+id(< 123037004 |Body structure (body structure)|) @site]], [[~1..1]] 246075003 |Causative agent (attribute)| = [[+id( << 105590001 |Substance (substance)| OR << 373873005 |Pharmaceutical / biologic product (product)|) @agent]] }"
 }

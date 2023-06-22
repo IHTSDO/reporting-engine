@@ -247,7 +247,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
 			populateTemplates(subsetECL, templateNames);
 	
-			subsetECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|"; //QI-406
 			templateNames = new String[] {	"templates/Adverse Reaction.json"};
 			populateTemplates(subsetECL, templateNames);
 	
@@ -281,10 +280,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	
 			subsetECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)| = << 107666005 |Fluid disturbance (morphologic abnormality)|"; //QI-525
 			templateNames = new String[] {	"templates/morphologies/Fluid disturbance.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 282100009 |Adverse reaction caused by substance (disorder)|";
-			templateNames = new String[] {	"templates/Adverse Reaction.json"};
 			populateTemplates(subsetECL, templateNames);
 	
 			subsetECL = "<< 419199007 |Allergy to substance (disorder)|";  //QI-609
