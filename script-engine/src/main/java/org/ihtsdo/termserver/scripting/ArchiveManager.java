@@ -21,6 +21,8 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
+import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader;
+import org.ihtsdo.termserver.scripting.dao.DataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -41,6 +43,9 @@ public class ArchiveManager implements ScriptConstants {
 
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;
+
+	@Autowired
+	private BuildArchiveDataLoader buildArchiveDataLoader;
 	
 	protected String dataStoreRoot = "";
 	protected GraphLoader gl;
@@ -223,7 +228,7 @@ public class ArchiveManager implements ScriptConstants {
 				} else {
 					TermServerScript.info("Loading dependency plus extension archives");
 					gl.reset();
-					File dependency = new File ("releases/" + ts.getDependencyArchive());
+					File dependency = new File("releases", ts.getDependencyArchive());
 					if (dependency.exists()) {
 						loadArchive(dependency, fsnOnly, "Snapshot", true);
 					} else {
@@ -242,16 +247,17 @@ public class ArchiveManager implements ScriptConstants {
 					currentlyHeldInMemory = null;
 				}
 			}
-			
+
 			//If the project specifies its a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
 				info("Project key ('" + ts.getProject().getKey() + "') identified as zip archive, loading Edition Archive");
 				loadEditionArchive = true;
 			}
-			
+
 			//Look for an expanded directory by preference
 			File snapshot = getSnapshotPath();
+
 			if (!snapshot.exists() && !snapshot.getName().endsWith(fileExt)) {
 				//Otherwise, do we have a zip file to play with?
 				snapshot = new File (snapshot.getPath() + fileExt);
@@ -499,16 +505,32 @@ public class ArchiveManager implements ScriptConstants {
 		snapshotGenerator.generateSnapshot(ts, dependency, previous, delta, snapshot);
 	}
 	
-	private ArchiveDataLoader getArchiveDataLoader() throws TermServerScriptException {
+	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
+		if (ts.getScriptName().equals("PackageComparisonReport")) {
+			TermServerScript.info("Getting builds configuration");
+			return getBuildArchiveDataLoader();
+		}
 		if (archiveDataLoader == null) {
 			if (appContext == null) {
-				TermServerScript.info("No ArchiveData loader configured, creating one locally...");
+				TermServerScript.info("No ArchiveDataLoader configured, creating one locally...");
 				archiveDataLoader = ArchiveDataLoader.create();
 			} else {
 				archiveDataLoader = appContext.getBean(ArchiveDataLoader.class);
 			}
 		}
 		return archiveDataLoader;
+	}
+
+	private DataLoader getBuildArchiveDataLoader() throws TermServerScriptException {
+		if (buildArchiveDataLoader == null) {
+			if (appContext == null) {
+				TermServerScript.info("No BuildArchiveDataLoader configured, creating one locally...");
+				buildArchiveDataLoader = BuildArchiveDataLoader.create();
+			} else {
+				buildArchiveDataLoader = appContext.getBean(BuildArchiveDataLoader.class);
+			}
+		}
+		return buildArchiveDataLoader;
 	}
 	
 	public File generateDelta(Project project) throws IOException, TermServerScriptException {

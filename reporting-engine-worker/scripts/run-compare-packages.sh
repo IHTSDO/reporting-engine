@@ -36,7 +36,7 @@ cp ${rootFolder}/scripts/compare-files.sh ${rootFolder}/builds/${runFolder}/comp
 # Run the compare script from the new folder
 cd ${rootFolder}/builds/${runFolder} || exit 1
 
-source compare-packages-parallel.sh "${previousName}" "${rootFolder}/builds/${previousZip}" "${currentName}" "${rootFolder}/builds/${currentZip}" -normaliseDates
+source compare-packages-parallel.sh "${previousName}" "${rootFolder}/releases/${previousZip}" "${currentName}" "${rootFolder}/releases/${currentZip}" -normaliseDates
 
 echo "Copy the results to S3"
 aws s3 cp ${rootFolder}/builds/${runFolder}/target/c s3://snomed-compares/${runFolder} --recursive

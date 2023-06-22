@@ -154,12 +154,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 											"Desc Inact",
 											"Refsets",
 											"Desc by Lang"};
-		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.add(ROOT_CONCEPT);
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
 		super.postInit(tabNames, columnHeadings, false);
 	}
+
 	public void runJob() throws TermServerScriptException {
 		info ("Loading Previous Data");
 		loadData(prevRelease);

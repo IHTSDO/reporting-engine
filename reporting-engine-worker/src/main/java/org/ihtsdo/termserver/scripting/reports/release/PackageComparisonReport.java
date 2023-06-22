@@ -13,14 +13,13 @@ import java.util.stream.Stream;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
-import org.ihtsdo.termserver.scripting.dao.BuildLoaderConfig;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This report executes shell scripts that download and compare the content of the two .zip release packages,
@@ -28,13 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  * except the bucket name is expected.
  * The result of the comparison is uploaded to S3 bucket snomed-compares.
  */
-public class PackageComparisonReport extends HistoricDataUser implements ReportClass { // extends TermServerReport
-	@Autowired
-	private BuildLoaderConfig buildLoaderConfig;
-
+public class PackageComparisonReport extends SummaryComponentStats implements ReportClass {
 	// Name of the starting script
 	private static final String SCRIPT_NAME = "run-compare-packages.sh";
-
 	private String previousReleasePath;
 	private String currentReleasePath;
 	
@@ -42,12 +37,15 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 		Map<String, String> params = new HashMap<>();
 
 		// Estonia release
-		params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-06-28T13:54:09/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20211130T120000Z.zip");
-		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
+		//params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
+		//params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
+		//params.put(PREV_DEPENDENCY, "international/international_edition_releases/2022-08-17T08:17:22/output-files/SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
+		//params.put(THIS_DEPENDENCY, "international/international_edition_releases/2023-02-16T09:12:41/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
+		//params.put(MODULES, "11000181102");
 
-		// Ireland release
-		//params.put(PREV_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-04-19T14:02:59/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20220421T120000Z.zip");
-		//params.put(THIS_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
+		// International
+		params.put(PREV_RELEASE, "international/international_edition_releases/2023-04-19T14:30:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
+		params.put(THIS_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
@@ -55,11 +53,11 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 	@Override
 	protected void preInit() {
 		// For running the report locally
-		runHeadless(5);
+		//runHeadless(5);
 	}
 
 	@Override
-	protected void init (JobRun run) throws TermServerScriptException {
+	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; // Release Stats
 		previousReleasePath = run.getParamValue(PREV_RELEASE);
 		currentReleasePath = run.getParamValue(THIS_RELEASE);
@@ -67,12 +65,58 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 	}
 
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {
+		/*String[] columnHeadings = new String[] {
 				"Filename, Added, Deleted, Updated, Inactivated, All", "Script Output"
 		};
 		String[] tabNames = new String[] {
 				"Comparison Summary", "Log"
+		};*/
+
+		String[] columnHeadings = new String[] {
+				"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, New SD, New P, Total Active, Total, Promoted",
+				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+				"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+				"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+				"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Concepts Affected, Total Active",
+				"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, New Inactive, Changed, Inactivations Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
+				"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Concepts Affected, Total Active",
+				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total, Concepts Affected, Total Active",
+				"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
+				"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, New Inactive, Total, Total Active",
+				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+				" , ,Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+				"Filename, Added, Deleted, Updated, Inactivated, All",
+				"Script Output"
 		};
+
+		String[] tabNames = new String[] {
+				"Concepts",
+				"Descriptions",
+				"Relationships",
+				"Concrete Rels",
+				"Axioms",
+				"LangRefSet",
+				"Inactivations",
+				"Hist Assoc",
+				"Text Defn",
+				"QI Scope",
+				"Desc Assoc",
+				"Desc CNC",
+				"Desc Inact",
+				"Refsets",
+				"Desc by Lang",
+				"Comparison Summary",
+				"Log"
+		};
+
+		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+		topLevelHierarchies.add(UNKNOWN_CONCEPT);
+		topLevelHierarchies.add(ROOT_CONCEPT);
+		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
+
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -81,7 +125,9 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 
 		JobParameters params = new JobParameters()
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.GOOGLE.name())
 				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.CSV.name())
@@ -98,16 +144,24 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 				.build();
 	}
 
-	// This report does not need to hold a snapshot in memory,
-	// so we override the default behaviour by having an empty method here.
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) || StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			throw new TermServerScriptException("Previous and current releases must be specified.");
+		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
+		TermServerScript.info("In loadProjectSnapshot method, prevDependency = " + prevDependency);
+		if (!StringUtils.isEmpty(prevDependency)) {
+			setDependencyArchive(prevDependency);
 		}
-		ArchiveDataLoader archiveDataLoader = ArchiveDataLoader.create(new BuildLoaderConfig());
-		archiveDataLoader.download(new File(previousReleasePath), new File("builds"));
-		archiveDataLoader.download(new File(currentReleasePath), new File("builds"));
+		super.loadProjectSnapshot(fsnOnly);
+	}
+
+	@Override
+	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
+		TermServerScript.info("In loadCurrentPosition method, thisDependency = " + thisDependency);
+		if (!StringUtils.isEmpty(thisDependency)) {
+			setDependencyArchive(thisDependency);
+		}
+		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
 
 	public void runJob() throws TermServerScriptException {
@@ -186,8 +240,9 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 		}
 
 		for (String line: output) {
-			report(SECONDARY_REPORT, line);
+			report(MAX_REPORT_TABS + SECONDARY_REPORT, line);
 		}
+		super.runJob();
 	}
 
 	private String doubleQuote(String arg) {
@@ -240,7 +295,7 @@ public class PackageComparisonReport extends HistoricDataUser implements ReportC
 				}
 			}
 			int total = created.size() + deleted.size() + updated.size() + inactivated.size();
-			report(PRIMARY_REPORT, filename, created.size(), deleted.size(), updated.size(), inactivated.size(), total);
+			report(MAX_REPORT_TABS + PRIMARY_REPORT, filename, created.size(), deleted.size(), updated.size(), inactivated.size(), total);
 		} catch (IOException | IndexOutOfBoundsException | TermServerScriptException e) {
 			error("Error processing file: " + filename, e);
 		}

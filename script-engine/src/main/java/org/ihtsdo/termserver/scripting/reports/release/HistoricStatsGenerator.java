@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -91,6 +92,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			
 			File f = new File(dataDir + project.getKey() + ".tsv");
 			info("Creating dataFile: " + f.getAbsolutePath());
+			Files.createDirectories(f.toPath().getParent());
 			f.createNewFile();
 			fw = new FileWriter(f);
 			

@@ -18,9 +18,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ArchiveDataLoader {
+public class ArchiveDataLoader implements DataLoader {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceDataLoader.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveDataLoader.class);
 
 	private ArchiveLoaderConfig archiveLoaderConfig;
 
@@ -47,6 +47,7 @@ public class ArchiveDataLoader {
 		}
 	}
 
+	@Override
 	public void download (File archive) throws TermServerScriptException {
 		if (s3Manager.isUseCloud()) {
 			try {
