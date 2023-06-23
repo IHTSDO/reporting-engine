@@ -51,15 +51,15 @@ public class BuildArchiveDataLoader implements DataLoader {
 		Path targetFilePath = archive.toPath();
 		Path sourceFilePath = targetFilePath.subpath(1, archive.toPath().getNameCount());
 
-		TermServerScript.info(targetFilePath.toString()); //
-		TermServerScript.info(sourceFilePath.toString()); //
+		TermServerScript.info("Target filepath: " + targetFilePath.toString()); //
+		TermServerScript.info("Source filepath: " + sourceFilePath.toString()); //
+
+		TermServerScript.info("isUseCloud = " + s3Manager.isUseCloud());
 
 		if (s3Manager.isUseCloud()) {
 			try {
 				// Create all directories if needed (no exception is thrown if some or all already exist)
 				Files.createDirectories(targetFilePath.getParent());
-
-				TermServerScript.info(targetFilePath.getParent().toString()); //
 
 				ResourceManager resourceManager = s3Manager.getResourceManager();
 

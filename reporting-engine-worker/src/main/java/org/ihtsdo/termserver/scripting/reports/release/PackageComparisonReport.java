@@ -43,9 +43,13 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(THIS_DEPENDENCY, "international/international_edition_releases/2023-02-16T09:12:41/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
 		//params.put(MODULES, "11000181102");
 
-		// International
-		params.put(PREV_RELEASE, "international/international_edition_releases/2023-04-19T14:30:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
-		params.put(THIS_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		// International on dev
+		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-06T05:13:11/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
+		params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
+
+		// International on prod
+		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-04-19T14:30:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
+		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
@@ -65,13 +69,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	public void postInit() throws TermServerScriptException {
-		/*String[] columnHeadings = new String[] {
-				"Filename, Added, Deleted, Updated, Inactivated, All", "Script Output"
-		};
-		String[] tabNames = new String[] {
-				"Comparison Summary", "Log"
-		};*/
-
 		String[] columnHeadings = new String[] {
 				"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, New SD, New P, Total Active, Total, Promoted",
 				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
@@ -146,20 +143,28 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+		TermServerScript.info("In loadProjectSnapshot method, PREV_RELEASE = " + getJobRun().getParamValue(PREV_RELEASE));
+		TermServerScript.info("In loadProjectSnapshot method, PREV_DEPENDENCY = " + getJobRun().getParamValue(PREV_DEPENDENCY));
+
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-		TermServerScript.info("In loadProjectSnapshot method, prevDependency = " + prevDependency);
 		if (!StringUtils.isEmpty(prevDependency)) {
 			setDependencyArchive(prevDependency);
-		}
+
+			TermServerScript.info("In loadProjectSnapshot method, setting dependency archive to " + prevDependency);
+ 		}
 		super.loadProjectSnapshot(fsnOnly);
 	}
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+		TermServerScript.info("In loadCurrentPosition method, THIS_RELEASE = " + getJobRun().getParamValue(THIS_RELEASE));
+		TermServerScript.info("In loadCurrentPosition method, THIS_DEPENDENCY = " + getJobRun().getParamValue(THIS_DEPENDENCY));
+
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-		TermServerScript.info("In loadCurrentPosition method, thisDependency = " + thisDependency);
 		if (!StringUtils.isEmpty(thisDependency)) {
 			setDependencyArchive(thisDependency);
+
+			TermServerScript.info("In loadCurrentPosition method, setting dependency archive to " + thisDependency);
 		}
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}

@@ -257,7 +257,7 @@ public class ArchiveManager implements ScriptConstants {
 
 			//Look for an expanded directory by preference
 			File snapshot = getSnapshotPath();
-
+			TermServerScript.info("Snapshot path " + snapshot.getPath());
 			if (!snapshot.exists() && !snapshot.getName().endsWith(fileExt)) {
 				//Otherwise, do we have a zip file to play with?
 				snapshot = new File (snapshot.getPath() + fileExt);
@@ -506,6 +506,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
+		TermServerScript.info("In getArchiveLoader method, scriptName = " + ts.getScriptName());
 		if (ts.getScriptName().equals("PackageComparisonReport")) {
 			return getBuildArchiveDataLoader();
 		}
@@ -521,6 +522,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	private DataLoader getBuildArchiveDataLoader() throws TermServerScriptException {
+		TermServerScript.info("In getBuildArchiveDataLoader method");
 		if (buildArchiveDataLoader == null) {
 			if (appContext == null) {
 				TermServerScript.info("No BuildArchiveDataLoader configured, creating one locally...");
