@@ -224,7 +224,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			}
 
 			// Process resulting diff files
-			Path diffDir = Path.of("builds/" + uploadFolder + "/target/c");
+			Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
 			try (Stream<Path> stream = Files.list(diffDir)) {
 				stream.filter(file -> !Files.isDirectory(file))
@@ -235,7 +235,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						.forEach(filename -> processFile(diffDir.toString(), filename));
 			}
 
-			Files.walk(Path.of("builds/" + uploadFolder))
+			Files.walk(Path.of("results", uploadFolder))
 					.sorted(Comparator.reverseOrder())
 					.map(Path::toFile)
 					.forEach(File::delete);
