@@ -43,7 +43,10 @@ public class GraphLoader implements ScriptConstants {
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
 	
-	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMap = new HashMap<>();
+	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapPreCoord = new HashMap<>();
+	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapPostCoord = new HashMap<>();
+	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapAll = new HashMap<>();
+	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapNewPreCoord = new HashMap<>();
 	private Map<Concept, MRCMDomain> mrcmDomainMap = new HashMap<>();
 
 	private boolean detectNoChangeDelta = false;
@@ -157,7 +160,10 @@ public class GraphLoader implements ScriptConstants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap= null;
 		duplicateLangRefsetIdsReported = new HashSet<>();
-		mrcmAttributeRangeMap = new HashMap<>();
+		mrcmAttributeRangeMapPreCoord = new HashMap<>();
+		mrcmAttributeRangeMapPostCoord = new HashMap<>();
+		mrcmAttributeRangeMapAll = new HashMap<>();
+		mrcmAttributeRangeMapNewPreCoord = new HashMap<>();
 		mrcmDomainMap = new HashMap<>();
 		
 		System.gc();
@@ -1280,13 +1286,47 @@ public class GraphLoader implements ScriptConstants {
 					ar.setReleased(isReleased);
 				}
 				Concept refComp = getConcept(ar.getReferencedComponentId());
-				mrcmAttributeRangeMap.put(refComp, ar);
+				String contentTypeId = lineItems[MRCM_ATTRIB_CONTENT_TYPE];
+				switch(contentTypeId) {
+					case SCTID_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPreCoord, refComp, ar);
+					break;
+					case SCTID_POST_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPostCoord, refComp, ar);
+					break;
+					case SCTID_ALL_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapAll, refComp, ar);
+					break;
+					case SCTID_NEW_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapNewPreCoord, refComp, ar);
+					break;
+					default : throw new TermServerScriptException("Unrecognised content type in MRCM Attribute Range File: " + contentTypeId);
+				}
 			} else {
 				isHeaderLine = false;
 			}
 		}
 	}
 	
+	private void addToMRCMAttributeMap(Map<Concept, MRCMAttributeRange> mrcmAttribMap, Concept refComp, MRCMAttributeRange ar) throws TermServerScriptException {
+		//Do we already have an entry for this referencedCompoment id?
+		if (mrcmAttribMap.containsKey(refComp)) {
+			MRCMAttributeRange existing = mrcmAttribMap.get(refComp);
+			//If it's the same NOT the same id, we have a problem if the existing one is active
+			if (!existing.getId().equals(ar.getId()) && existing.isActive()) {
+				String contentType = translateContentType(ar.getContentTypeId());
+				throw new TermServerScriptException("Multiple members for " + refComp + contentType + " in MRCM Attribute Range File");
+			}
+		}
+		mrcmAttribMap.put(refComp, ar);
+	}
+
+	private String translateContentType(String contentTypeId) throws TermServerScriptException {
+		switch (contentTypeId) {
+			case SCTID_PRE_COORDINATED_CONTENT : return " Pre-coordinated content ";
+			case SCTID_POST_COORDINATED_CONTENT : return " Post-coordinated content ";
+			case SCTID_ALL_CONTENT : return " All SNOMED content ";
+			case SCTID_NEW_PRE_COORDINATED_CONTENT : return " New Pre-coordinated content ";
+			default : throw new TermServerScriptException ("Unrecognised MRCM content type encountered: " + contentTypeId);
+		}
+	}
+
 	public void loadMRCMDomainFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
@@ -1671,8 +1711,20 @@ public class GraphLoader implements ScriptConstants {
 		return maxEffectiveTime;
 	}
 
-	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMap() {
-		return mrcmAttributeRangeMap;
+	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapPreCoord() {
+		return mrcmAttributeRangeMapPreCoord;
+	}
+	
+	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapPostCoord() {
+		return mrcmAttributeRangeMapPostCoord;
+	}
+	
+	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapAll() {
+		return mrcmAttributeRangeMapAll;
+	}
+	
+	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapNewPreCoord() {
+		return mrcmAttributeRangeMapNewPreCoord;
 	}
 
 	public Map<Concept, MRCMDomain> getMrcmDomainMap() {

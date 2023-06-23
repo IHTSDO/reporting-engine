@@ -1555,7 +1555,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void checkMRCMAttributeRanges() throws TermServerScriptException {
-		checkMRCMTerms("MRCM Attribute Range", gl.getMrcmAttributeRangeMap().values(), MRCMAttributeRange.additionalFieldNames);
+		checkMRCMTerms("MRCM Attribute Range", gl.getMrcmAttributeRangeMapPreCoord().values(), MRCMAttributeRange.additionalFieldNames);
+		checkMRCMTerms("MRCM Attribute Range", gl.getMrcmAttributeRangeMapPostCoord().values(), MRCMAttributeRange.additionalFieldNames);
 	}
 	
 	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers, String[] additionalFieldNames) throws TermServerScriptException {

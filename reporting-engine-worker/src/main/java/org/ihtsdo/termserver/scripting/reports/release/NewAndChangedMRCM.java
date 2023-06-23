@@ -52,7 +52,10 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	
 	public void runJob() throws TermServerScriptException {
 		reportRefsetUpdates(PRIMARY_REPORT, gl.getMrcmDomainMap());
-		reportRefsetUpdates(SECONDARY_REPORT, gl.getMrcmAttributeRangeMap());
+		reportRefsetUpdates(SECONDARY_REPORT, gl.getMrcmAttributeRangeMapPreCoord());
+		reportRefsetUpdates(SECONDARY_REPORT, gl.getMrcmAttributeRangeMapPostCoord());
+		reportRefsetUpdates(SECONDARY_REPORT, gl.getMrcmAttributeRangeMapAll());
+		reportRefsetUpdates(SECONDARY_REPORT, gl.getMrcmAttributeRangeMapNewPreCoord());
 	}
 
 	private void reportRefsetUpdates(int tabIdx, Map<Concept,? extends RefsetMember> mrcmMap) throws TermServerScriptException {

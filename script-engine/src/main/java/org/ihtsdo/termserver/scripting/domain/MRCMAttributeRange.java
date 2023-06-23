@@ -50,6 +50,10 @@ public class MRCMAttributeRange extends RefsetMember implements ScriptConstants 
 		setField(ATTRIBUTE_RULE, rule);
 	}
 	
+	public String getContentTypeId() {
+		return getField(CONTENT_TYPE_ID);
+	}
+	
 	//Note that because Java does not support polymorphism of variables, only methods,
 	//we need to call this method to pick up the field names of descendant types.
 	public String[] getAdditionalFieldNames() {
