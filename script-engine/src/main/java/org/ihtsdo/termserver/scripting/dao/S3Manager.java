@@ -124,4 +124,9 @@ public class S3Manager {
             throw new TermServerScriptException (message,e);
         }
     }
+
+    // For debugging
+    public StandAloneResourceConfig getStandAloneResourceConfig() {
+        return standAloneResourceConfig;
+    }
 }

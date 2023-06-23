@@ -61,10 +61,16 @@ public class BuildArchiveDataLoader implements DataLoader {
 				// Create all directories if needed (no exception is thrown if some or all already exist)
 				Files.createDirectories(targetFilePath.getParent());
 
+				TermServerScript.info("Resource configuration: " + s3Manager.getStandAloneResourceConfig().toString());
+
 				ResourceManager resourceManager = s3Manager.getResourceManager();
+
+				TermServerScript.info("Resource manager: " + resourceManager.toString());
 
 				try (InputStream input = resourceManager.readResourceStream(sourceFilePath.toString());
 					 OutputStream output = new FileOutputStream(archive)) {
+					TermServerScript.info("Downloading source " + sourceFilePath + " from S3");
+
 					TermServerScript.info("Downloading " + sourceFilePath + " from S3");
 					IOUtils.copy(input, output);
 					TermServerScript.info("Download complete");
