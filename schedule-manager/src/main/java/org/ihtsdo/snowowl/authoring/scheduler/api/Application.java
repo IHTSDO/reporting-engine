@@ -22,9 +22,6 @@ import springfox.documentation.spring.web.plugins.Docket;
 
 import java.util.TimeZone;
 
-import static java.util.function.Predicate.not;
-import static springfox.documentation.builders.PathSelectors.regex;
-
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
 @EntityScan({"org.snomed.otf.scheduler.domain"})
@@ -76,7 +73,7 @@ public class Application {
 		return new Docket(DocumentationType.SWAGGER_2)
 				.select()
 				.apis(RequestHandlerSelectors.any())
-				.paths(not(regex("/error")))
+				.apis(RequestHandlerSelectors.basePackage("org.ihtsdo.snowowl.authoring.scheduler.api"))
 				.build();
 	}
 
