@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -23,11 +24,14 @@ public class IdGenerator implements ScriptConstants{
 	private BufferedReader availableSctIds;
 	private int dummySequence = 100;
 	private boolean useDummySequence = false;
-	int idsAssigned = 0;
+	private int idsAssigned = 0;
 	private String namespace = "";
 	private boolean isExtension = false;
 	private PartitionIdentifier partitionIdentifier;
 	private int runForwardCount = 0;
+	
+	private boolean useValidSequence = false;
+	private long validSequence = 0;
 	
 	static private String ID_CONFIG = "running_id_config.txt";
 	static private boolean configFileReset = false;
@@ -35,6 +39,10 @@ public class IdGenerator implements ScriptConstants{
 	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
 		if (sctidFilename.toLowerCase().equals("dummy")) {
 			return new IdGenerator(p);
+		}
+		
+		if (StringUtils.isNumeric(sctidFilename)) {
+			return new IdGenerator(p, Long.parseLong(sctidFilename));
 		}
 		
 		File sctIdFile = new File (sctidFilename);
@@ -61,6 +69,12 @@ public class IdGenerator implements ScriptConstants{
 		useDummySequence = true;
 	}
 	
+	private IdGenerator(PartitionIdentifier p, long sequence) {
+		partitionIdentifier = p;
+		useValidSequence = true;
+		validSequence = sequence;
+	}
+	
 	private static void runForward (IdGenerator idGen) throws NumberFormatException, IOException {
 		//Is there a config file to consider? If not, do nothing.
 		File idConfigFile = new File (ID_CONFIG);
@@ -82,6 +96,11 @@ public class IdGenerator implements ScriptConstants{
 		if (useDummySequence) {
 			idsAssigned++;
 			return getDummySCTID();
+		}
+		
+		if (useValidSequence) {
+			idsAssigned++;
+			return getGeneratedValidSCTID();
 		}
 		
 		String sctId;
@@ -113,13 +132,23 @@ public class IdGenerator implements ScriptConstants{
 		}
 	}
 	
+	private String getGeneratedValidSCTID() throws TermServerScriptException  {
+		try {
+			String sctIdBase = ++validSequence + namespace + (isExtension?"1":"0") + partitionIdentifier.ordinal();
+			String checkDigit = new VerhoeffCheckDigit().calculate(sctIdBase);
+			return sctIdBase + checkDigit;
+		} catch (CheckDigitException e) {
+			throw new TermServerScriptException ("Failed to generate valid sctid",e);
+		}
+	}
+	
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
 	}	
 	
 	public String finish() throws FileNotFoundException {
 		try {
-			if (!useDummySequence) {
+			if (!useDummySequence && !useValidSequence) {
 				availableSctIds.close();
 			}
 		} catch (Exception e){}
@@ -141,7 +170,7 @@ public class IdGenerator implements ScriptConstants{
 		if (dummySequence > 100) {
 			ofWhich = " of which " + (dummySequence - 100) + " were dummy.";
 		}
-		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids" + ofWhich;
+		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids in namespace " + namespace + " " + ofWhich;
 	}
 	
 	public void isExtension(boolean b) {

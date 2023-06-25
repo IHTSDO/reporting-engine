@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class Rf2ConceptCreator extends DeltaGenerator {
@@ -34,15 +35,15 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		return conceptCreator;
 	}
 
-	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts) throws TermServerScriptException {
+	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts, String enforceModule) throws TermServerScriptException {
 		for (Concept concept : concepts) {
-			writeConceptToRF2(tabIdx, concept, "");
+			writeConceptToRF2(tabIdx, concept, "", enforceModule);
 		}
 	}
 
-	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
+	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info, String enforceModule) throws TermServerScriptException {
 		concept.setId(null);
-		populateIds(concept);
+		populateIds(concept, enforceModule);
 		//Populate expression now because rels turn to axioms when we output
 		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		incrementSummaryInformation("Concepts created");
@@ -51,9 +52,12 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		return concept;
 	}
 
-	private void populateIds(Concept concept) throws TermServerScriptException {
+	private void populateIds(Concept concept, String enforceModule) throws TermServerScriptException {
 		convertAcceptabilitiesToRf2(concept);
 		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
+			if (enforceModule != null) {
+				c.setModuleId(enforceModule);
+			}
 			c.setDirty();
 			if (c.getId() == null) {
 				switch (c.getComponentType()) {
@@ -61,8 +65,11 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 						break;
 					case DESCRIPTION : setDescriptionId(c);
 						break;
-					case INFERRED_RELATIONSHIP : //No need to do anything here because we'll convert 
-					case STATED_RELATIONSHIP : //stated to an axiom and we're not expecting any inferred
+					case INFERRED_RELATIONSHIP : 
+						setRelationshipId(c);
+					case STATED_RELATIONSHIP : 
+						//No need to do anything here because we'll convert 
+						//stated to an axiom and we're not expecting any inferred
 						break;
 					case ALTERNATE_IDENTIFIER :
 						break;  //Has its own ID.  RefCompId will be set via Concept
@@ -78,6 +85,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		c.setId(conceptId);
 		c.getDescriptions().stream()
 			.forEach(d -> d.setConceptId(conceptId));
+		c.getRelationships().stream()
+			.forEach(d -> d.setSourceId(conceptId));
 		c.getAlternateIdentifiers().stream()
 			.forEach(a -> a.setReferencedComponentId(conceptId));
 	}
@@ -88,6 +97,12 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		d.setId(descId);
 		d.getLangRefsetEntries().stream()
 			.forEach(l -> l.setReferencedComponentId(descId));
+	}
+	
+	private void setRelationshipId(Component component) throws TermServerScriptException {
+		Relationship r = (Relationship)component;
+		String relId = relIdGenerator.getSCTID();
+		r.setId(relId);
 	}
 
 	private void convertAcceptabilitiesToRf2(Concept concept) throws TermServerScriptException {
@@ -113,5 +128,17 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		File archive = SnomedUtils.createArchive(new File(outputDirName));
 		report(tabIdx, "");
 		report(tabIdx, ReportActionType.INFO, "Created " + archive.getName());
+	}
+
+	public void copyStatedRelsToInferred(Concept c) {
+		for (Relationship statedRel : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			Relationship infRel = statedRel.clone();
+			infRel.setCharacteristicType(CharacteristicType.INFERRED_RELATIONSHIP);
+			infRel.setAxiom(null);
+			infRel.setAxiomEntry(null);
+			infRel.setDirty();
+			infRel.setModuleId(c.getModuleId());
+			c.addRelationship(infRel);
+		}
 	}
 }

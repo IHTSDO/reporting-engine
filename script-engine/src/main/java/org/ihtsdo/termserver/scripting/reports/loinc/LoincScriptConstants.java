@@ -4,7 +4,7 @@ public interface LoincScriptConstants {
 	
 	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE }
 
-	public static final String TAB_TOP_20K = "Top 20K";
+	//public static final String TAB_TOP_20K = "Top 20K";
 	//public static final String TAB_PART_MAPPING_DETAIL = "Part Mapping Detail";
 	public static final String TAB_RF2_PART_MAP_NOTES = "RF2 Part Map Notes";
 	public static final String TAB_MODELING_ISSUES = "Modeling Issues";

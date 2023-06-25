@@ -191,7 +191,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 					if (targettedProperties.contains(loincTerm.getProperty())) {
 						hasTargettedPropertyNotIn20K++;
 					}
-				} else {
+				} else if (tabIdx != NOT_SET){
 					if (checkForExistingModelling(loincTerm, tabIdx)) {
 						existingConceptCount++;
 					} else {
@@ -203,14 +203,15 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 					}
 				}
 			}
-			report(tabIdx,"");
-			report(tabIdx,"Summary:");
-			report(tabIdx,"Already exists", existingConceptCount);
-			report(tabIdx,"Does not exist", notExistingConceptCount);
-			report(tabIdx,"");
-			report(tabIdx,"Has Targetted Property in Top 20K", hasTargettedPropertyIn20K);
-			report(tabIdx,"Has Targetted Property not in Top 20K", hasTargettedPropertyNotIn20K);
-			
+			if (tabIdx != NOT_SET) {
+				report(tabIdx,"");
+				report(tabIdx,"Summary:");
+				report(tabIdx,"Already exists", existingConceptCount);
+				report(tabIdx,"Does not exist", notExistingConceptCount);
+				report(tabIdx,"");
+				report(tabIdx,"Has Targetted Property in Top 20K", hasTargettedPropertyIn20K);
+				report(tabIdx,"Has Targetted Property not in Top 20K", hasTargettedPropertyNotIn20K);
+			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_FULL), e);
 		} finally {

@@ -42,6 +42,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Concept relativeTo;
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
+	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
+	
 	
 	//protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
 	//protected static int failedMappingAlreadySeenForOtherProperty = 0;
@@ -136,9 +138,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (/*loincNum.equals("74384-9") ||*/ loincNum.equals("32051-5")) {
+		/*if (loincNum.equals("74384-9") || loincNum.equals("32051-5")) {
 			TermServerScript.debug("Check processing of Specimen");
-		}
+		}*/
 		
 		/*if (loincNum.equals("17938-2")) {
 			TermServerScript.debug("Check Modeling of Inheres");
@@ -175,6 +177,11 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		/*if (loincNum.equals("23634-9")) {
 			TermServerScript.debug("Not expecting to see component, should be cut from file");
 		}*/
+		
+		/*if (loincNum.equals("94839-8")) {
+			TermServerScript.debug("Not expecting to see Direct Site mapped");
+		}*/
+		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
 			templatedConcept.populateParts(details);
@@ -396,6 +403,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			if (partTypeSeen.contains(partTypeName)) {
 				continue;
 			}
+			if (skipLDTColumnNames.contains(loincDetail.getLDTColumnName())) {
+				continue;
+			}
 			
 			boolean isComponent = partTypeName.equals("COMPONENT");
 			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
@@ -425,12 +435,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 						TermServerScript.debug("Here also");
 					}
 					mapped++;
-					ts.report(MAPPING_DETAIL_TAB,
+					/*ts.report(MAPPING_DETAIL_TAB,
 						loincNum,
 						loincDetail.getPartNumber(),
 						"Mapped OK",
 						loincDetail.getPartName(),
-						rt);
+						rt);*/
 					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
 				} else {
 					unmapped++;

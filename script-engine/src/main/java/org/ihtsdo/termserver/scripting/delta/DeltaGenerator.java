@@ -66,7 +66,21 @@ public abstract class DeltaGenerator extends TermServerScript {
 		//We definitely need to finish saving a snapshot to disk before we start making changes
 		//Otherwise if we run multiple times, we'll pick up changes from a previous run.
 		SnapshotGenerator.setRunAsynchronously(false);
+		initialiseGenerators(args);
+		
+		super.init(args);
+		if (!dryRun) {
+			initialiseOutputDirectory();
+		} else {
+			info("Dry run, no output expected");
+		}
+	}
+	
+	public void initialiseGenerators(String[] args) throws TermServerScriptException {
 		for (int x=0; x<args.length; x++) {
+			if (args[x].equals("-nS")) {
+				nameSpace = args[++x];
+			}
 			if (args[x].equals("-m")) {
 				moduleId = args[++x];
 			}
@@ -82,13 +96,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 			if (args[x].equals("-e")) {
 				eclSubset = args[++x];
 			}
-		}
-		
-		super.init(args);
-		if (!dryRun) {
-			initialiseOutputDirectory();
-		} else {
-			info("Dry run, no output expected");
 		}
 	}
 	
@@ -359,6 +366,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 				a.setModuleId(moduleId);
 				a.setDirty();
 				c.getAxiomEntries().add(a);
+			}
+			
+			//Now output inferred relationships
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
+				outputRF2(r);
 			}
 		} else {
 			for (Relationship r : c.getRelationships()) {

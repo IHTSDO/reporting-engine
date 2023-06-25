@@ -7,11 +7,8 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.fixes.CreateConceptsPreModelled;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -33,7 +30,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	Rf2ConceptCreator conceptCreator;
 	
 	private static String[] tabNames = new String[] {
-			TAB_TOP_20K,
+			/*TAB_TOP_20K,*/
 			/*TAB_PART_MAPPING_DETAIL,*/
 			TAB_RF2_PART_MAP_NOTES,
 			TAB_MODELING_ISSUES,
@@ -52,6 +49,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			report.loadProjectSnapshot(false);
 			report.postInit();
 			report.conceptCreator = Rf2ConceptCreator.build(report, report.getInputFile(FILE_IDX_CONCEPT_IDS), report.getInputFile(FILE_IDX_DESC_IDS), null);
+			report.conceptCreator.initialiseGenerators(new String[]{"-nS","1010000", "-iR", "16470", "-m", "11010000107"});
 			report.runReport();
 		} finally {
 			while (report.additionalThreadCount > 0) {
@@ -75,7 +73,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,
+				/*"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,*/
 				/*"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ", */
 				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
 				"LoincNum, LoincName, Issues, ",
@@ -101,7 +99,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		loadLoincParts();
 		//We can look at the full LOINC file in parallel as it's not needed for modelling
 		//executor.execute(() -> loadFullLoincFile());
-		loadFullLoincFile(getTab(TAB_TOP_20K));
+		loadFullLoincFile(NOT_SET/*getTab(TAB_TOP_20K)*/);
 		loadLoincDetail();
 		attributePartMapManager = new AttributePartMapManager(this, loincParts);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
@@ -115,7 +113,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		for (LoincTemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {
-				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getLoincNum());
+				conceptCreator.copyStatedRelsToInferred(concept);
+				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getLoincNum(), SCTID_LOINC_EXTENSION_MODULE);
 			} catch (Exception e) {
 				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getLoincNum(), e);
 			}
