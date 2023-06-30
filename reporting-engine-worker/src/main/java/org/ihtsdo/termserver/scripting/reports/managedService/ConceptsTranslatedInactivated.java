@@ -58,7 +58,7 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 					.withDefaultValue(false)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
 				.withName("Inactivated Translated Concepts")
 				.withDescription("This report lists translated International concepts which have been inactivated in the latest release along with historically associated replacements which may or may not hold translations.  The issue count here is the total number of concepts inactivated where the replacements require a translation.")
 				.withProductionStatus(ProductionStatus.PROD_READY)

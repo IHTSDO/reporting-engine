@@ -55,7 +55,7 @@ public class MultipleModuleAxioms extends TermServerReport implements ReportClas
 				.add(FILTER_CORE).withType(Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
 				.withName("Multiple Module Axioms")
 				.withDescription("This report lists concepts with active axioms in multiple modules")
 				.withParameters(params)

@@ -61,7 +61,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 					.withType(JobParameter.Type.ECL)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
 				.withName("Untranslated Concepts")
 				.withDescription("This report lists concepts (optionally filtered by ECL) which have no translation - " +
 				"specifically no descriptions in the default module of the project.")

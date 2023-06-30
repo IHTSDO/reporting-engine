@@ -75,7 +75,7 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 				.add(TRACK_DIALECT).withType(Type.DROPDOWN).withOptions("US", "GB")
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
 				.withName("Terms Missing Acceptability")
 				.withDescription("This reports lists all descriptions which are missing a lang refset acceptability in the default language reference set.")
 				.withProductionStatus(ProductionStatus.PROD_READY)

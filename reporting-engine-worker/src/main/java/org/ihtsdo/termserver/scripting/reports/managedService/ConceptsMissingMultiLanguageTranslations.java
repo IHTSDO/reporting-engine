@@ -79,7 +79,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 				.add(INCLUDE_INACTIVE_CONCEPTS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
 				.withName("Concepts Missing Multi-Language Translations")
 				.withDescription("This reports is for extensions that use multiple languages. It allows finding concepts that are missing a translation in at least one of the extension languages. To see a list of concepts without any translation, please refer to the untranslated concepts report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
