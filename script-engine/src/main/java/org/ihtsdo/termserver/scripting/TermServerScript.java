@@ -1389,11 +1389,15 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						}
 						reportName += spacer + subsetECL.subSequence(0, cutPoint);
 					} else {
-						Concept simpleECLRoot = gl.getConcept(subsetECL.replaceAll("<", "").trim());
-						if (simpleECLRoot.getDescriptions().size() > 0) {
-							reportName += spacer + simpleECLRoot.toStringPref();
+						if (subsetECL.equals("*")) {
+							reportName += spacer + "All_Concepts";
 						} else {
-							reportName += spacer + SnomedUtils.deconstructFSN(simpleECLRoot.getFsn())[0];
+							Concept simpleECLRoot = gl.getConcept(subsetECL.replaceAll("<", "").trim());
+							if (simpleECLRoot.getDescriptions().size() > 0) {
+								reportName += spacer + simpleECLRoot.toStringPref();
+							} else {
+								reportName += spacer + SnomedUtils.deconstructFSN(simpleECLRoot.getFsn())[0];
+							}
 						}
 					}
 				}
