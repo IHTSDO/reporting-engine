@@ -37,15 +37,17 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		Map<String, String> params = new HashMap<>();
 
 		// Estonia release
-		//params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
-		//params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
+		params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
+		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
 		//params.put(PREV_DEPENDENCY, "international/international_edition_releases/2022-08-17T08:17:22/output-files/SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
 		//params.put(THIS_DEPENDENCY, "international/international_edition_releases/2023-02-16T09:12:41/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		//params.put(MODULES, "11000181102");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
+		params.put(MODULES, "11000181102");
 
 		// International on dev
-		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-06T05:13:11/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
-		params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
+		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-06T05:13:11/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
+		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 
 		// International on prod
 		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-04-19T14:30:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
@@ -143,28 +145,28 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		TermServerScript.info("In loadProjectSnapshot method, PREV_RELEASE = " + getJobRun().getParamValue(PREV_RELEASE));
-		TermServerScript.info("In loadProjectSnapshot method, PREV_DEPENDENCY = " + getJobRun().getParamValue(PREV_DEPENDENCY));
+		TermServerScript.debug("In loadProjectSnapshot method, PREV_RELEASE = " + getJobRun().getParamValue(PREV_RELEASE));
+		TermServerScript.debug("In loadProjectSnapshot method, PREV_DEPENDENCY = " + getJobRun().getParamValue(PREV_DEPENDENCY));
 
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 		if (!StringUtils.isEmpty(prevDependency)) {
 			setDependencyArchive(prevDependency);
 
-			TermServerScript.info("In loadProjectSnapshot method, setting dependency archive to " + prevDependency);
+			TermServerScript.debug("In loadProjectSnapshot method, setting dependency archive to " + prevDependency);
  		}
 		super.loadProjectSnapshot(fsnOnly);
 	}
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		TermServerScript.info("In loadCurrentPosition method, THIS_RELEASE = " + getJobRun().getParamValue(THIS_RELEASE));
-		TermServerScript.info("In loadCurrentPosition method, THIS_DEPENDENCY = " + getJobRun().getParamValue(THIS_DEPENDENCY));
+		TermServerScript.debug("In loadCurrentPosition method, THIS_RELEASE = " + getJobRun().getParamValue(THIS_RELEASE));
+		TermServerScript.debug("In loadCurrentPosition method, THIS_DEPENDENCY = " + getJobRun().getParamValue(THIS_DEPENDENCY));
 
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
 		if (!StringUtils.isEmpty(thisDependency)) {
 			setDependencyArchive(thisDependency);
 
-			TermServerScript.info("In loadCurrentPosition method, setting dependency archive to " + thisDependency);
+			TermServerScript.debug("In loadCurrentPosition method, setting dependency archive to " + thisDependency);
 		}
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}

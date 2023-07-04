@@ -1,18 +1,11 @@
 package org.ihtsdo.termserver.scripting.dao;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.Configurator;
-
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -67,22 +60,19 @@ public class S3Manager {
                 return resourceManager;
             }
             try {
-                AWSCredentialsProvider awsCredProv;
-                if (awsKey == null || awsKey.isEmpty()) {
-                    awsCredProv = new EC2ContainerCredentialsProviderWrapper();
+                AmazonS3 s3Client;
+                if (StringUtils.isEmpty(awsKey)) {
+                    s3Client = AmazonS3ClientBuilder.standard().build();
                     TermServerScript.info("Connecting to S3 with EC2 environment configured credentials");
                 } else {
-                    AWSCredentials awsCreds = new BasicAWSCredentials(awsKey, awsSecretKey);
-                    awsCredProv = new AWSStaticCredentialsProvider(awsCreds);
+                    s3Client = AmazonS3ClientBuilder.standard()
+                            .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(awsKey, awsSecretKey)))
+                            .withRegion(region)
+                            .build();
                     TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
                     //AWS will still attempt to connect locally to discover its credentials, so let's only
                     //do debugging at "WARN"   See logback.xml file for configuration
                 }
-
-                AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                        .withCredentials(awsCredProv)
-                        .withRegion(region)
-                        .build();
                 SimpleStorageResourceLoader simpleStorageResourceLoader = new SimpleStorageResourceLoader(s3Client);
                 simpleStorageResourceLoader.setTaskExecutor(task -> {
                 });
@@ -92,7 +82,7 @@ public class S3Manager {
                 throw new TermServerScriptException(msg, t);
             }
         }
-        return  resourceManager;
+        return resourceManager;
     }
 
     public boolean isUseCloud() {

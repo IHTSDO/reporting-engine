@@ -1,8 +1,6 @@
 package org.ihtsdo.termserver.scripting.dao;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
@@ -68,29 +66,6 @@ public class ArchiveDataLoader implements DataLoader {
 		}
 	}
 
-	public void download (File archive, File targetDirectory) throws TermServerScriptException {
-		File target = new File(targetDirectory, archive.getPath());
-
-		if (s3Manager.isUseCloud()) {
-			try {
-				ResourceManager resourceManager = s3Manager.getResourceManager();
-
-				Files.createDirectories(Paths.get(target.getParent()));
-
-				try (InputStream input = resourceManager.readResourceStream(archive.getPath()); OutputStream out = new FileOutputStream(target)) {
-					TermServerScript.info("Downloading " + archive.getName() + " from S3");
-					IOUtils.copy(input, out);
-					TermServerScript.info("Download complete");
-				}
-			} catch (Throwable  t) {
-				final String msg = "Error when trying to download " + archive.getName() + " from S3 via :" +  archiveLoaderConfig;
-				throw new TermServerScriptException(msg, t);
-			}
-		} else {
-			LOGGER.info("ArchiveDataLoader set to local source. Will expect " + target.getPath() + " to be available.");
-		}
-	}
-
 	@Autowired
 	public void setArchiveLoaderConfig(ArchiveLoaderConfig archiveLoaderConfig) {
 		this.archiveLoaderConfig = archiveLoaderConfig;
@@ -108,15 +83,6 @@ public class ArchiveDataLoader implements DataLoader {
 
 		ArchiveLoaderConfig archiveLoaderConfig = new ArchiveLoaderConfig();
 		s3Manager = new S3Manager(archiveLoaderConfig, getConfigurationPrefix());
-		loader.setArchiveLoaderConfig(archiveLoaderConfig, s3Manager);
-		return loader;
-	}
-
-	public static ArchiveDataLoader create(ArchiveLoaderConfig archiveLoaderConfig) throws TermServerScriptException {
-		LOGGER.info("Creating ArchiveDataLoader based on local properties");
-		ArchiveDataLoader loader = new ArchiveDataLoader();
-
-		s3Manager = new S3Manager(archiveLoaderConfig, archiveLoaderConfig.getClass().getAnnotation(ConfigurationProperties.class).prefix());
 		loader.setArchiveLoaderConfig(archiveLoaderConfig, s3Manager);
 		return loader;
 	}
