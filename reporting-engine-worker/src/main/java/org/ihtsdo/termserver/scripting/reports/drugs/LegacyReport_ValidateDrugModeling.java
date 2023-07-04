@@ -25,7 +25,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-public class ValidateDrugModeling extends TermServerReport implements ReportClass {
+public class LegacyReport_ValidateDrugModeling extends TermServerReport implements ReportClass {
 	
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
@@ -63,7 +63,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
-		TermServerReport.run(ValidateDrugModeling.class, args, params);
+		TermServerReport.run(LegacyReport_ValidateDrugModeling.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -115,8 +115,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Drugs Validation")
-				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.")
+				.withName("Legacy Drugs Validation Report")
+				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.  No longer used.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.withParameters(params)
