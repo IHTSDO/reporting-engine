@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -54,6 +55,10 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 	}
 
 	public void runJob() throws TermServerScriptException {
+		if (StringUtils.isEmpty(subsetECL)) {
+			subsetECL = "*";
+		}
+		
 		List<Concept> concepts = SnomedUtils.sortFSN(findConcepts(subsetECL));
 		for (Concept c : concepts) {
 			if (!c.isActive() || 
