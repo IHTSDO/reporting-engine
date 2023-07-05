@@ -104,7 +104,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("MP/MPF Validation")
+				.withName("MP MPF Validation")
 				.withDescription("This report checks for a number of potential issues with MP/MPF concepts, as per RP-740.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)

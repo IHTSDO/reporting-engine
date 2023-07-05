@@ -371,7 +371,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 		
 		@Override
 		public String toString() {
-			return baseSubstance.toStringPref() + " as " + pharmDoseForm.toStringPref();
+			return baseSubstance.toStringPref() + " with dose form " + pharmDoseForm.toStringPref();
 		}
 	}
 	

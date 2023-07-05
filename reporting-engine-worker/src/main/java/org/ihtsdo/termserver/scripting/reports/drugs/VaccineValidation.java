@@ -115,7 +115,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Legacy Drugs Validation Report")
+				.withName("Vaccine Validation")
 				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.  No longer used.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
