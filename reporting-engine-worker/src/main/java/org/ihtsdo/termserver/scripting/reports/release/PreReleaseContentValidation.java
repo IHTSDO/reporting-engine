@@ -26,11 +26,14 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		
+		/*params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		params.put(MODULES, "45991000052106");
+		params.put(MODULES, "45991000052106");*/
 		TermServerReport.run(PreReleaseContentValidation.class, args, params);
 	}
 
@@ -60,6 +63,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		
 		origProject = run.getProject();
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
+			origProject = projectName;
 			projectName = run.getParamValue(THIS_RELEASE);
 			run.setProject(projectName);
 		}
@@ -83,7 +87,8 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		} else {
 			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 			
-			if (StringUtils.isEmpty(prevDependency)) {
+			//Don't look at branch metadata if we're working with zip archives
+			if (StringUtils.isEmpty(prevDependency) && !project.getKey().endsWith(".zip")) {
 				prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
 				if (StringUtils.isEmpty(prevDependency)) {
 					throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
@@ -93,7 +98,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			setDependencyArchive(prevDependency);
 			
 			thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-			if (StringUtils.isEmpty(thisDependency)) {
+			if (StringUtils.isEmpty(thisDependency) && !project.getKey().endsWith(".zip")) {
 				thisDependency = getProject().getMetadata().getDependencyPackage();
 			}
 			
@@ -102,7 +107,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				throw new TermServerScriptException("Module filter must be specified when working with published archives");
 			}
 			
-			if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
+			if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES)) && !project.getKey().endsWith(".zip")) {
 				String defaultModule = project.getMetadata().getDefaultModuleId();
 				if (StringUtils.isEmpty(defaultModule)) {
 					throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
@@ -119,6 +124,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		info("Setting dependency archive: " + thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		getJobRun().setProject(origProject);
 	}
 
 	public void postInit() throws TermServerScriptException {

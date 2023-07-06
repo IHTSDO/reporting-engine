@@ -1768,7 +1768,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected void setDependencyArchive(String dependencyArchive) {
 		this.dependencyArchive = dependencyArchive;
-		getArchiveManager(true).setLoadDependencyPlusExtensionArchive(true);
+		if (dependencyArchive != null) {
+			getArchiveManager(true).setLoadDependencyPlusExtensionArchive(true);
+		}
 	}
 
 	public ReportDataBroker getReportDataUploader() throws TermServerScriptException {
