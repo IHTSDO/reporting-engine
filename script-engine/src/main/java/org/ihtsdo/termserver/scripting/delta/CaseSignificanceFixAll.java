@@ -45,7 +45,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements ScriptCons
 			//We won't include the project export in our timings
 			delta.startTimer();
 			delta.process();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

@@ -51,7 +51,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
             app.postInit();
             app.validateScriptArguments();
             app.process();
-            app.flushFiles(false, true);
+            app.flushFiles(false);
             SnomedUtils.createArchive(new File(app.outputDirName));
         } finally {
             app.finish();

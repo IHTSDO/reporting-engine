@@ -157,7 +157,7 @@ public class InactivateLOINC extends BatchFix {
 			throw new TermServerScriptException(e);
 		}
 		
-		flushFiles(false, false);
+		flushFiles(false);
 	}
 
 	private String get(Map<String, List<String>> source, String key, int idx) {

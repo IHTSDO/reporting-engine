@@ -36,7 +36,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			delta.startTimer();
 			delta.process();
 			if (!dryRun) {
-				delta.flushFiles(false, true); //Need to flush files before zipping
+				delta.flushFiles(false); //Need to flush files before zipping
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			}
 		} finally {

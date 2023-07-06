@@ -1319,7 +1319,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		info(BREAK);
 		
-		flushFiles(true, false);
+		flushFiles(true);
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
@@ -1518,6 +1518,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		sb.append( severity + COMMA + actionType );
 		for (Object detail : details) {
+			if (detail == null) {
+				detail = "";
+			}
+			
 			if (detail instanceof Object[]) {
 				Object[] arr = (Object[]) detail;
 				for (Object obj : arr) {

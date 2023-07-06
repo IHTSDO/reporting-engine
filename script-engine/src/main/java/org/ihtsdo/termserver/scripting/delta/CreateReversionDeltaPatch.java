@@ -46,7 +46,7 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			delta.postInit();
 			delta.createReversionDeltaPatch();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

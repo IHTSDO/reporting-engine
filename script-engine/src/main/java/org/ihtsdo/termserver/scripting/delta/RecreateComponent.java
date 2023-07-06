@@ -23,7 +23,7 @@ public class RecreateComponent extends DeltaGenerator {
 			delta.newIdsRequired=false;
 			delta.init(args);
 			delta.recreateComponent();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

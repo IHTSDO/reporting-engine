@@ -59,7 +59,7 @@ public class SnapshotGenerator extends TermServerScript {
 			snapGen.loadArchive(snapGen.getInputFile(), false, "Delta", false);
 			snapGen.startTimer();
 			snapGen.outputRF2();
-			snapGen.flushFiles(false, false);
+			snapGen.flushFiles(false);
 			if (!snapGen.leaveArchiveUncompressed) {	
 				SnomedUtils.createArchive(new File(snapGen.outputDirName));
 			}

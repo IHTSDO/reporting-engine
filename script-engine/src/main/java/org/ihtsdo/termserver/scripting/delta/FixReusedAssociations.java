@@ -45,7 +45,7 @@ public class FixReusedAssociations extends DeltaGenerator implements ScriptConst
 			delta.getArchiveManager().setAllowStaleData(true);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.process();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

@@ -109,7 +109,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		LoincTemplatedConcept.reportStats();
 		//LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
 		LoincTemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
-		flushFiles(false, true);
+		flushFiles(false);
 		for (LoincTemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {

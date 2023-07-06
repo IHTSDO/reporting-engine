@@ -31,7 +31,7 @@ public class RevertNoChangeDelta extends DeltaGenerator {
 			app.postInit();
 			app.reportRevertedComponents();
 			app.outputModifiedComponents(true);
-			app.flushFiles(false, true); //Need to flush files before zipping
+			app.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(app.outputDirName));
 		} finally {
 			app.finish();

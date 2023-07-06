@@ -26,7 +26,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 			delta.loadProjectSnapshot(false); 
 			delta.postInit();
 			delta.process();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			if (!dryRun) {
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			} else {

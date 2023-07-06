@@ -213,7 +213,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			throw new TermServerScriptException(e);
 		}
 		
-		flushFiles(false, false);
+		flushFiles(false);
 	}
 	
 	private String getDetails(String loincNum) {
