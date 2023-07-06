@@ -61,7 +61,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Expected Result, Variance, Source, Further Details",
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
@@ -127,6 +127,10 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 				continue;
 			}
 			
+			if (c.getFsn().toLowerCase().contains("vaccine")) {
+				continue;
+			}
+			
 			DrugUtils.setConceptType(c);
 			
 			if (isCD(c)) {
@@ -152,19 +156,13 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			if (isMP(c) || isMPF(c)) {
 				//DRUGS-585
 				validateNoModifiedSubstances(c);
-				
-				//RP-199
-				checkForRedundantConcept(c);
+
 			}
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
 			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
 				validateTerming(c, allDrugTypes);
 			}
-			
-			//DRUGS-267
-			validateIngredientsAgainstBoSS(c);
-
 			
 			//DRUGS-296 
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
@@ -185,17 +183,6 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		}
 		info ("Drugs validation complete");
 	}
-
-	private void checkForRedundantConcept(Concept c) throws TermServerScriptException {
-		//MP / MP with no inferred descendants are not required
-		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
-		initialiseSummary(issueStr);
-		if (c.getDescendents(NOT_SET).size() == 0) {
-			report (c, issueStr);
-		}
-	}
-
-	
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
@@ -307,46 +294,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			}
 		}
 	}
-
-	private void validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
-		String issueStr  = "Active ingredient is a subtype of BoSS.  Expected modification.";
-		String issue2Str = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
-		initialiseSummary(issueStr);
-		initialiseSummary(issue2Str);
 		
-		Set<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
-		//Check BOSS attributes against active ingredients - must be in the same relationship group
-		Set<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
-		for (Relationship bRel : bossAttributes) {
-			incrementSummaryInformation("BoSS attributes checked");
-			boolean matchFound = false;
-			Concept boSS = bRel.getTarget();
-			for (Relationship iRel : ingredientRels) {
-				Concept ingred = iRel.getTarget();
-				if (bRel.getGroupId() == iRel.getGroupId()) {
-					boolean isSelf = boSS.equals(ingred);
-					boolean isSubType = gl.getDescendantsCache().getDescendents(boSS).contains(ingred);
-					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
-					
-					if (isSelf || isSubType || isModificationOf) {
-						matchFound = true;
-						if (isSubType) {
-							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
-							report (concept, issueStr, ingred, boSS);
-						} else if (isModificationOf) {
-							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
-						} else if (isSelf) {
-							incrementSummaryInformation("BoSS matches ingredient");
-						}
-					}
-				}
-			}
-			if (!matchFound) {
-				report (concept, issue2Str, boSS);
-			}
-		}
-	}
-	
 	private BaseMDF getBaseMDF(RelationshipGroup rg, Concept mdf) {
 		Concept boSS = rg.getValueForType(HAS_BOSS);
 		Concept pai =  rg.getValueForType(HAS_PRECISE_INGRED);
@@ -404,14 +352,14 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	private void checkForSemTagViolations(Concept c) throws TermServerScriptException {
 		String issueStr =  "Has higher level semantic tag than parent";
 		String issueStr2 = "Has semantic tag incompatible with that of parent";
-		String issueStr3 = "Has prohibited parent";
+		//String issueStr3 = "Has incorrect parent";
 		String issueStr4 = "Has parent with an incompatible semantic tag incompatible with that of parent";
 		String issueStr5 = "Has invalid parent / semantic tag combination";
 		String issueStr6 = "MPF-Only expected to have MPF (not only) and MP-Only as parents";
 		
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
-		initialiseSummary(issueStr3);
+		//initialiseSummary(issueStr3);
 		initialiseSummary(issueStr4);
 		initialiseSummary(issueStr5);
 		initialiseSummary(issueStr6);
@@ -426,7 +374,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		}
 		
 		if (isMPOnly(c)) {
-			validateParentSemTags(c, "(medicinal product)", issueStr2);
+			validateParentSemTags(c, "(medicinal product)", issueStr2, true);
 		} else if (isMPFOnly(c)) {
 			//Complex one this.   An MPF-Only should have at least one parent which is an MPF (not only)
 			//and at least one which is MP-Only. And no other parents.
@@ -470,7 +418,10 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 				.collect(Collectors.joining(", \n"));
 	}
 	
-	private void validateParentSemTags(Concept c, String requiredTag, String issueStr) throws TermServerScriptException {
+	private void validateParentSemTags(Concept c, String requiredTag, String issueStr, boolean anyParentAcceptable) throws TermServerScriptException {
+		boolean anyAcceptableParentFound = false;
+		List<String[]> failuresToReport = new ArrayList<>();
+		
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			String semTag = SnomedUtils.deconstructFSN(parent.getFsn())[1];
 			
@@ -485,7 +436,19 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			}
 			
 			if (!semTag.equals(requiredTag)) {
-				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+				if (!anyParentAcceptable) {
+					report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+				} else {
+					failuresToReport.add(new String[] {parent.getFsn(), " expected tag", requiredTag});
+				}
+			} else {
+				anyAcceptableParentFound = true;
+			}
+		}
+		
+		if (anyParentAcceptable && !anyAcceptableParentFound) {
+			for (String[] params : failuresToReport) {
+				report (c, issueStr, "parent", params);
 			}
 		}
 	}
@@ -501,8 +464,8 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	}
 	
 	private void compareTerms(Concept c, String termName, Description actual, Description expected) throws TermServerScriptException {
-		String issueStr = termName + " does not meet expectations";
-		String issue2Str = termName + " case significance does not meet expectations";
+		String issueStr = "Incorrect " + termName;
+		String issue2Str = "Incorrect " + termName + " case significance";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
@@ -523,14 +486,14 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		int maxLoop = (actuals.length>expecteds.length)?actuals.length:expecteds.length;
 		for (int x=0; x < maxLoop; x++) {
 			if (actuals.length > x) {
-				if (! expected.contains(actuals[x])) {
-					differences += actuals[x] + " vs ";
+				if (!expected.contains(actuals[x])) {
+					differences += "\"" + actuals[x] + "\" vs \"";
 				}
 			}
 			
 			if (expecteds.length > x) {
-				if (! actual.contains(expecteds[x])) {
-					differences += expecteds[x] + " ";
+				if (!actual.contains(expecteds[x])) {
+					differences += expecteds[x] + "\" ";
 				}
 			}
 		}
@@ -588,7 +551,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			report(c, issueStr);
 		}
 		
-		issueStr = "Unexpected attribute type used";
+		issueStr = "Incorrect attribute type used";
 		if (isMP(c) || isMPF(c)) {
 			Concept[] allowedAttributes = isMP(c) ? mpValidAttributes : mpfValidAttributes;
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -617,7 +580,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			}
 		}
 		
-		issueStr = "Precise MP/MPF must feature exactly one count of base";
+		issueStr = "MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 

@@ -99,7 +99,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 
 	private void validateDrugsModeling() throws TermServerScriptException {
 		double conceptsConsidered = 0;
-		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
+		//for (Concept c : Arrays.asList(gl.getConcept("1153521005"), gl.getConcept("1230256001"))) {
 		for (Concept c : allDrugs) {
 			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
 				continue;

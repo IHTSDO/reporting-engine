@@ -140,7 +140,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				continue;
 			}
 			
-			if (!c.getFsn().startsWith("Vaccine")) {
+			if (!c.getFsn().toLowerCase().contains("vaccine")) {
 				continue;
 			}
 			
