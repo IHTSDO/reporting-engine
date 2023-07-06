@@ -271,6 +271,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 						}
 					}
 				}
+				flushFiles(false);
 			} catch (Exception e) {
 				throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
 			}
@@ -932,8 +933,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					Map<String, Acceptability> ptAcceptMap = d.getAcceptabilityMap();
 					d.setAcceptabilityMap(reuseMe.getAcceptabilityMap());
 					reuseMe.setAcceptabilityMap(ptAcceptMap);
-					report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe, info);
-					return reuseMe;
+					report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists as PT, acceptablity swapped: ", reuseMe, info);
+					if (demotePT) {
+						return reuseMe;
+					}
 				} else {
 					report(t, origConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active", reuseMe, info);
 					//Have we in fact asked for no change? Return unchanged if so
