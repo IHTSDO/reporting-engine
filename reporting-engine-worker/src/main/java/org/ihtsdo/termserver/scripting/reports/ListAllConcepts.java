@@ -45,7 +45,7 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List all Concepts")
-				.withDescription("This report lists all concepts that match a given ECL, with descriptions, parents and the inferred expression included." +
+				.withDescription("This report lists all concepts that match a given ECL, with descriptions, parents and the inferred expression included. " +
 						"The issues count will show the number of concepts reported.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
