@@ -155,7 +155,16 @@ public class RelationshipGroup implements ScriptConstants {
 		for (Relationship lhs : this.getRelationships()) {
 			//Can we find a matching relationship.  We're sure of source, so just check type and target
 			for (Relationship rhs : otherGroup.getRelationships()) {
-				if (lhs.getType().equals(rhs.getType()) && lhs.getTarget().equals(rhs.getTarget())) {
+				//If one is concrete and the other is not, then they cannot be equal
+				if ((lhs.isConcrete() && !rhs.isConcrete()) ||
+						!lhs.isConcrete() && rhs.isConcrete()) {
+					continue;
+				}
+				
+				if (((lhs.isConcrete() && rhs.isConcrete()) &&
+						lhs.getType().equals(rhs.getType()) && lhs.getConcreteValue().equals(rhs.getConcreteValue()))) {
+					continue nextLhsRel;
+				} else if (lhs.getType().equals(rhs.getType()) && lhs.getTarget().equals(rhs.getTarget())) {
 					continue nextLhsRel;
 				}
 			}
