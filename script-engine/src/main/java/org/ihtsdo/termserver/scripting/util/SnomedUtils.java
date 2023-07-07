@@ -2,10 +2,8 @@ package org.ihtsdo.termserver.scripting.util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
-import org.ihtsdo.otf.RF2Constants.ActiveState;
-import org.ihtsdo.otf.RF2Constants.CharacteristicType;
-import org.ihtsdo.otf.RF2Constants.DefinitionStatus;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -63,12 +61,13 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return errorMsg;
 	}
 
-	public static void isValid(String sctId, PartitionIdentifier partitionIdentifier,
+	public static boolean isValid(String sctId, PartitionIdentifier partitionIdentifier,
 			boolean errorIfInvalid) throws TermServerScriptException {
 		String errMsg = isValid(sctId,partitionIdentifier);
 		if (errorIfInvalid && errMsg != null) {
 			throw new TermServerScriptException(errMsg);
 		}
+		return errMsg == null;
 	}
 	
 	public static String toString(Map<String, Acceptability> acceptabilityMap) {
@@ -2412,5 +2411,19 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			expression += group.isGrouped() ? " }" : "";
 		}
 		return expression;
+	}
+
+	public static String correctRoundedCheckDigit(String sctId) throws TermServerScriptException {
+		if (!SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT, false)) {
+			String idWithoutCheck = sctId.substring(0, sctId.length() -1);
+			try {
+				String msg = sctId + " rounding failure corrected to: ";
+				sctId = idWithoutCheck + verhoeffCheck.calculate(idWithoutCheck);
+				System.err.println(msg + sctId);
+			} catch (CheckDigitException e) {
+				throw new TermServerScriptException(e);
+			}
+		}
+		return sctId;
 	}
 }

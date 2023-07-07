@@ -53,6 +53,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
 	private boolean firstTaskCreated = false;
+	protected boolean correctRoundedSCTIDs = false;
 	public static String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
 	public String taskPrefix = null;
 	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
@@ -1620,6 +1621,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			throws TermServerScriptException {
 		//Default implementation is to take the first column and try that as an SCTID
 		//Override for more complex implementation
+		if (correctRoundedSCTIDs) {
+			lineItems[0] = SnomedUtils.correctRoundedCheckDigit(lineItems[0]);
+		}
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 	
