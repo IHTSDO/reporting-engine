@@ -17,9 +17,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * - Add Attribute value 704325000 |Relative to (attribute)| 48583005 |Immunoglobulin E (substance)|
  */
 public class ReplaceAttributeValuesDriven extends BatchFix {
-	
-	Map<Concept, Concept> replacementValuesMap;
-	RelationshipTemplate addAttribute;
+	private Concept targetType;
+	private Map<Concept, Concept> replacementValuesMap;
+	private RelationshipTemplate addAttribute;
 	
 	protected ReplaceAttributeValuesDriven(BatchFix clone) {
 		super(clone);
@@ -33,6 +33,8 @@ public class ReplaceAttributeValuesDriven extends BatchFix {
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
 			fix.selfDetermining = false;
+			fix.correctRoundedSCTIDs = true;
+			fix.runStandAlone = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -44,10 +46,12 @@ public class ReplaceAttributeValuesDriven extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replacementValuesMap = new HashMap<>();
-		replacementValuesMap.put(gl.getConcept("118586006 |Ratio (property) (qualifier value)| "), 
+		/*replacementValuesMap.put(gl.getConcept("118586006 |Ratio (property) (qualifier value)| "), 
 				gl.getConcept("784316008 |Arbitrary fraction (property) (qualifier value)|"));
 		addAttribute = new RelationshipTemplate(gl.getConcept("704325000 |Relative to (attribute)| "),
-				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));
+				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));*/
+		targetType = gl.getConcept("424226004 |Using device (attribute)|");
+		replacementValuesMap.put(gl.getConcept("79068005 |Needle, device|"), gl.getConcept("706681000 |Aspiration needle|"));
 		super.postInit();
 	}
 
@@ -70,14 +74,18 @@ public class ReplaceAttributeValuesDriven extends BatchFix {
 		int changesMade = 0;
 		for (Concept targetTarget : replacementValuesMap.keySet()) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				if (r.getTarget().equals(targetTarget)) {
+				if (r.getType().equals(targetType) && r.getTarget().equals(targetTarget)) {
 					Relationship replacement = r.clone();
 					replacement.setTarget(replacementValuesMap.get(targetTarget));
 					changesMade += replaceRelationship(t, c, r, replacement);
 				}
 			}
 		}
-		changesMade += addRelationship(t, c, addAttribute, SnomedUtils.getFirstFreeGroup(c));
+		
+		if (addAttribute != null) {
+			changesMade += addRelationship(t, c, addAttribute, SnomedUtils.getFirstFreeGroup(c));
+		}
+		
 		return changesMade;
 	}
 }
