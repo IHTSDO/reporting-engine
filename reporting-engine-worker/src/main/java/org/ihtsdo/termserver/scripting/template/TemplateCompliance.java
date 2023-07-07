@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -19,7 +20,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.*;
-import org.springframework.util.StringUtils;
 
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
@@ -47,13 +47,12 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< 263063009 |Fracture dislocation of joint (disorder)|");
-		//params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~0..1]]{[[~1..1]]  363702006 |Has focus (attribute)|  = [[+id(<< 399269003 |Arthropathy (disorder)| )]]}[[~1..1]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id( << 129287005 |Incision - action (qualifier value)| )]],[[~1..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<<  39352004 |Joint structure (body structure)| )]],[[~0..1]]  260507000 |Access (attribute)| = [[+id(< 309795001 |Surgical access values (qualifier value)| )]]}[[~0..*]]{[[~1..1]]  260686004 |Method (attribute)|  = [[+id(<< 129284003 |Surgical action (qualifier value)| )]],[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<<  91723000 |Anatomical structure (body structure)| )]],[[~0..1]]  405814001 |Procedure site - Indirect (attribute)|  = [[+id(<<  91723000 |Anatomical structure (body structure)| )]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id (<< 105590001 |Substance (substance)| )]],[[~0..1]]  363699004 |Direct device (attribute)|  = [[+id(<  49062001 |Device (physical object)| )]],[[~0..1]]  363700003 |Direct morphology (attribute)|  = [[+id(<<  49755003 |Morphologically abnormal structure (morphologic abnormality)| )]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id(<< 261217004 |Substance (attribute)| )]]}");
-		params.put(TEMPLATE_NAME, "Fracture dislocation of [body structure] (disorder) - v1.0");
-		//params.put(TEMPLATE_NAME, "Fracture%20dislocation%20of%20%5Bbody%20structure%5D%20(disorder)%20-%20v1.0");
+		params.put(ECL, "<<1285534001 |Procedure on gingiva and supporting structure of tooth (procedure)|");
+		params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..* @roleGroup]] { [[~0..1]] 260686004 |Method (attribute)| = [[ +id ( < 129264002 |Action (qualifier value)| ) @procedure ]], [[~1..1]] [[ +id (<< 363704007 |Procedure site (attribute)| ) @Proceduresite ]] = [[ +id ( << 54308001 |Structure of gum and supporting structure of tooth (body structure)| ) @PeriodontalStructure ]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[ +id (<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363701004 |Direct substance (attribute)| = [[+id (<< 105590001 |Substance (substance)| ) @Directsubstance]], [[~0..1]] 363699004 |Direct device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Directdevice]], [[~0..1]] 424226004 |Using device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Usingdevice]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 105590001 |Substance (substance)| ) @Usingsubstance]] }, [[~0..1 @roleGroup2]] {[[~0..1]] 363702006 |Has focus (attribute)| = [[ +id ( << 105995000 |Disorder of teeth AND/OR supporting structures (disorder)| ) @Hasfocus ]]}, [[~0..* @roleGroup3]] { [[~0..1]] 260686004 |Method (attribute)| = [[ +id ( < 129264002 |Action (qualifier value)| ) @procedure2 ]], [[~0..1]] [[ +id (<< 363704007 |Procedure site (attribute)| ) @Proceduresite ]] = [[ +id ( < 442083009 |Anatomical or acquired body structure (body structure)| ) @PeriodontalStructure2 ]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[ +id (<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology2 ]], [[~0..1]] 363701004 |Direct substance (attribute)| = [[+id (<< 105590001 |Substance (substance)| ) @Directsubstance2]], [[~0..1]] 363699004 |Direct device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Directdevice2]], [[~0..1]] 424226004 |Using device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Usingdevice2]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 105590001 |Substance (substance)| ) @Usingsubstance2]] }");
+		//params.put(TEMPLATE_NAME, "Fracture dislocation of [body structure] (disorder) - v1.0");
 		
-		params.put(INCLUDE_COMPLEX, "true");
-		params.put(INCLUDE_ORPHANET, "true");
+		params.put(INCLUDE_COMPLEX, "false");
+		params.put(INCLUDE_ORPHANET, "false");
 		params.put(KNOWN_COMPLETE, "false");
 		TermServerReport.run(TemplateCompliance.class, args, params);
 	}
@@ -404,8 +403,9 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		templateNames = new String[] { "templates/procedures/Imaging Guided Biopsy.json" };
 		
 		templateNames = new String[] { "templates/procedures/Needle Biopsy.json" };
-		*/
+		
 		templateNames = new String[] { "templates/Allergic Disease.json" };
+		*/
 		super.init((String[])null);
 	}
 	
@@ -415,7 +415,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				"Report Metadata, , ", 
 				"SCTID, FSN, SEMTAG, SEVERITY, ACTION_TYPE, IsComplex, IsOrphanet, Template Diagnostic",
 				"SCTID, FSN, SEMTAG, SEVERITY, ACTION_TYPE, IsComplex, IsOrphanet, Template Diagnostic",
-				"SCTID, FSN, SemTag, Reason", 
+				"SCTID, FSN, SemTag, Reason, , ,", 
 				"SCTID, FSN, SemTag, Template Aligned"};
 		String[] tabNames = new String[] {
 				"Misaligned Inferred",

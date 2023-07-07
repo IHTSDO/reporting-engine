@@ -51,6 +51,10 @@ public class DescendantsCache implements ScriptConstants {
 
 		//Ensure we're working with the local copy rather than TS JSON
 		Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
+		if (localConcept == null || localConcept.isActive() == null) {
+			throw new TermServerScriptException("Attempt to obtain descendants of non-existent concept: " + c.getConceptId());
+		}
+		
 		if (!localConcept.isActive()) {
 			throw new TermServerScriptException(c + " is inactive. Unlikely you want to find its decendants");
 		}
