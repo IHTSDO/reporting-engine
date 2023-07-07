@@ -1308,10 +1308,15 @@ public class GraphLoader implements ScriptConstants {
 		//Do we already have an entry for this referencedCompoment id?
 		if (mrcmAttribMap.containsKey(refComp)) {
 			MRCMAttributeRange existing = mrcmAttribMap.get(refComp);
-			//If it's the same NOT the same id, we have a problem if the existing one is active
-			if (!existing.getId().equals(ar.getId()) && existing.isActive()) {
+			//If this one is inactive and there is an existing one active with a different id, then 
+			//we'll just keep the existing one.
+			if (!existing.getId().equals(ar.getId()) && existing.isActive() && !ar.isActive()) {
+				return;
+			}
+			//If it's the same NOT the same id, we have a problem if the existing one is also active
+			if (!existing.getId().equals(ar.getId()) && existing.isActive() && ar.isActive()) {
 				String contentType = translateContentType(ar.getContentTypeId());
-				throw new TermServerScriptException("Multiple members for " + refComp + contentType + " in MRCM Attribute Range File");
+				throw new TermServerScriptException("Multiple active members for " + refComp + contentType + " in MRCM Attribute Range File");
 			}
 		}
 		mrcmAttribMap.put(refComp, ar);
