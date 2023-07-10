@@ -432,9 +432,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/Toxic due to plant.json" };
 		templateNames = new String[] { "templates/procedures/Intubation.json" };
 		templateNames = new String[] { "templates/finding/Measurement Finding.json" };
+		templateNames = new String[] { "templates/procedures/Endoscopy.json" };
 		*/
 		
-		templateNames = new String[] { "templates/procedures/Endoscopy.json" };
+		templateNames = new String[] { "templates/procedures/Periodontal.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
