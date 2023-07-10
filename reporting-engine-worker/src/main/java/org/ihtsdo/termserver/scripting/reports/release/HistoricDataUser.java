@@ -72,8 +72,10 @@ public class HistoricDataUser extends TermServerReport {
 		}
 		
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
+		String prevDependencyRelease = null;
 		if (StringUtils.isEmpty(prevRelease)) {
 			prevRelease = getProject().getMetadata().getPreviousPackage();
+			prevDependencyRelease = getProject().getMetadata().getPreviousDependencyPackage();
 		}
 		
 		getProject().setKey(prevRelease);
@@ -83,6 +85,13 @@ public class HistoricDataUser extends TermServerReport {
 		try {
 			ArchiveManager mgr = getArchiveManager(true);
 			mgr.setLoadEditionArchive(true);
+			if (prevDependencyRelease != null) {
+				setDependencyArchive(prevDependencyRelease);
+				mgr.setLoadDependencyPlusExtensionArchive(true);
+			} else {
+				mgr.setLoadDependencyPlusExtensionArchive(false);
+			}
+			
 			mgr.loadSnapshot(fsnOnly);
 			
 			previousEffectiveTime = gl.getCurrentEffectiveTime();

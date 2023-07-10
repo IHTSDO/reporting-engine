@@ -26,9 +26,9 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
+		/*params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		/*params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
@@ -116,8 +116,16 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		info("Setting dependency archive: " + thisDependency);
-		setDependencyArchive(thisDependency);
+		//If working with an inflight MS project, grab the dependency from metadata
+		if (thisDependency == null && StringUtils.isEmpty(jobRun.getParamValue(THIS_RELEASE))) {
+			thisDependency = getProject().getMetadata().getDependencyPackage();
+		}
+		
+		if (thisDependency != null) {
+			info("Setting dependency archive: " + thisDependency);
+			setDependencyArchive(thisDependency);
+		}
+		
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 		getJobRun().setProject(origProject);
 	}
