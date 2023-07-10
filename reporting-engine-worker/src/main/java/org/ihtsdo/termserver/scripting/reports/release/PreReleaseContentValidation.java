@@ -28,7 +28,6 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		Map<String, String> params = new HashMap<>();
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		
 		/*params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
@@ -63,9 +62,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		
 		origProject = run.getProject();
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
-			origProject = projectName;
-			projectName = run.getParamValue(THIS_RELEASE);
-			run.setProject(projectName);
+			run.setProject(run.getParamValue(THIS_RELEASE));
 		}
 		
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
@@ -79,8 +76,6 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		//If we're working with zip packages, we'll use the HistoricDataGenerator
-		//Otherwise we'll use the default behaviour
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
 		if (prevRelease == null) {
 			super.loadProjectSnapshot(fsnOnly);
