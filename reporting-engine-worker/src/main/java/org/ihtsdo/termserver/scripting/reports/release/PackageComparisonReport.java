@@ -138,7 +138,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				.withDescription("This report compares two packages (zip archives) using Unix scripts with output captured into usual Google Sheets")
 				.withParameters(params)
 				.withTag(INT).withTag(MS)
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withExpectedDuration(40)
 				.build();
 	}
