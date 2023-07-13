@@ -648,7 +648,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT : return InactivationIndicator.NOT_SEMANTICALLY_EQUIVALENT;
 			case SCTID_INACT_COMPONENT_MEANING_UNKNOWN : return InactivationIndicator.COMPONENT_MEANING_UNKNOWN;
-			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASS_DERIVED_COMPONENT;
+			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
 			case SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR : return InactivationIndicator.GRAMMATICAL_DESCRIPTION_ERROR;
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
 		}
@@ -662,7 +662,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_ASSOC_SAME_AS_REFSETID : return Association.SAME_AS;
 			case SCTID_ASSOC_MOVED_TO_REFSETID : return Association.MOVED_TO;
 			case SCTID_ASSOC_POSS_EQUIV_REFSETID : return Association.POSS_EQUIV_TO;
-			case SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID : return Association.PARTIALLY_EQUIV_TO;
+			case SCTID_ASSOC_PART_EQUIV_REFSETID : return Association.PARTIALLY_EQUIV_TO;
 			case SCTID_ASSOC_ALTERNATIVE_REFSETID : return Association.ALTERNATIVE;
 			case SCTID_ASSOC_REFERS_TO_REFSETID : return Association.REFERS_TO;
 			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID : return Association.ANATOMY_STRUC_ENTIRE;
@@ -1731,7 +1731,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				case (SCTID_ASSOC_SAME_AS_REFSETID) : targets.getSameAs().add(target);
 														break;	
 				case (SCTID_ASSOC_POSS_EQUIV_REFSETID) : targets.getPossEquivTo().add(target);
-														break;	
+														break;
+				case (SCTID_ASSOC_PART_EQUIV_REFSETID) : targets.getPartEquivTo().add(target);
+				break;	
 			}
 		}
 	}
