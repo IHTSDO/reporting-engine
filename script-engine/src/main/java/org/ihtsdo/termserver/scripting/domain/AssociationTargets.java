@@ -23,6 +23,10 @@ public class AssociationTargets {
 	@Expose
 	private Set<String> possEquivTo = new HashSet<>();
 	
+	@SerializedName("PARTIALLY_EQUIVALENT_TO")
+	@Expose
+	private Set<String> partEquivTo = new HashSet<>();
+	
 	@SerializedName("SAME_AS")
 	@Expose
 	private Set<String> sameAs = new HashSet<>();
@@ -57,6 +61,14 @@ public class AssociationTargets {
 
 	public void setPossEquivTo(Set<String> possEquivTo) {
 		this.possEquivTo = possEquivTo;
+	}
+	
+	public Set<String> getPartEquivTo() {
+		return partEquivTo;
+	}
+
+	public void setPartEquivTo(Set<String> partEquivTo) {
+		this.partEquivTo = partEquivTo;
 	}
 	
 	public Set<String> getSameAs() {
@@ -95,6 +107,9 @@ public class AssociationTargets {
 		return possEquivTo(Collections.singleton(c));
 	}
 	
+	public static AssociationTargets partEquivTo(Concept c) {
+		return partEquivTo(Collections.singleton(c));
+	}
 
 	public static AssociationTargets possEquivTo(Set<Concept> replacements) {
 		AssociationTargets targets = new AssociationTargets();
@@ -102,6 +117,15 @@ public class AssociationTargets {
 				.map(c -> c.getId())
 				.collect(Collectors.toSet());
 		targets.setPossEquivTo(targetSet);
+		return targets;
+	}
+	
+	public static AssociationTargets partEquivTo(Set<Concept> replacements) {
+		AssociationTargets targets = new AssociationTargets();
+		Set<String> targetSet = replacements.stream()
+				.map(c -> c.getId())
+				.collect(Collectors.toSet());
+		targets.setPartEquivTo(targetSet);
 		return targets;
 	}
 	
@@ -156,6 +180,10 @@ public class AssociationTargets {
 			total += possEquivTo.size();
 		}
 		
+		if (partEquivTo != null) {
+			total += partEquivTo.size();
+		}
+		
 		if (sameAs != null) {
 			total += sameAs.size();
 		}
@@ -181,6 +209,7 @@ public class AssociationTargets {
 		int beforeCount = size();
 		replacedBy.remove(conceptId);
 		possEquivTo.remove(conceptId);
+		partEquivTo.remove(conceptId);
 		sameAs.remove(conceptId);
 		wasA.remove(conceptId);
 		movedTo.remove(conceptId);
@@ -192,6 +221,7 @@ public class AssociationTargets {
 	public void clear() {
 		replacedBy.clear();
 		possEquivTo.clear();
+		partEquivTo.clear();
 		sameAs.clear();
 		wasA.clear();
 		movedTo.clear();
@@ -202,6 +232,7 @@ public class AssociationTargets {
 		String str = "";
 		str += toString("WasA: ", wasA, gl, true);
 		str += toString("PossEquivTo: ", possEquivTo, gl, (str.isEmpty()));
+		str += toString("PartEquivTo: ", partEquivTo, gl, (str.isEmpty()));
 		str += toString("SameAs: ", sameAs, gl, (str.isEmpty()));
 		str += toString("ReplacedBy: ", replacedBy, gl, (str.isEmpty()));
 		str += toString("Moved To: ", movedTo, gl, (str.isEmpty()));
@@ -230,7 +261,8 @@ public class AssociationTargets {
 		return (wasA.size() > 0 && (
 				sameAs.size() > 0 ||
 				replacedBy.size() > 0 ||
-				possEquivTo.size() > 0));
+				possEquivTo.size() > 0||
+				partEquivTo.size() > 0));
 	}
 
 	public void clearWasA() {
@@ -247,6 +279,10 @@ public class AssociationTargets {
 
 	public void addPossEquivTo(Set<String> equivs) {
 		possEquivTo.addAll(equivs);
+	}
+	
+	public void addPartEquivTo(Set<String> equivs) {
+		partEquivTo.addAll(equivs);
 	}
 
 	public Set<String> getRefersTo() {

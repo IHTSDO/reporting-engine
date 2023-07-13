@@ -1841,6 +1841,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		Set<String> assocs = new HashSet<>(inactiveConcept.getAssociationTargets().getReplacedBy());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getAlternatives());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
+		assocs.addAll(inactiveConcept.getAssociationTargets().getPartEquivTo());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getSameAs());
 		if (assocs.size() == 0) {
 			if (isIsA) {

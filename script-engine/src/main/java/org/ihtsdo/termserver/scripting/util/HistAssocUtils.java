@@ -157,6 +157,8 @@ public class HistAssocUtils implements ScriptConstants {
 			return InactivationIndicator.OUTDATED;
 		} else if (targets.getPossEquivTo().size() > 0) {
 			return InactivationIndicator.AMBIGUOUS;
+		} else if (targets.getPartEquivTo().size() > 0) {
+			return InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
 		}
 		//Haven't found what we're looking for?  Keep whatever is current
 		return currentIndicator;

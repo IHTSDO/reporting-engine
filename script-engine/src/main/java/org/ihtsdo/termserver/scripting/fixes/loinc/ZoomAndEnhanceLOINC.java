@@ -502,6 +502,13 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 					.collect(Collectors.toList());
 		}
 		
+		assocs = inactiveConcept.getAssociationTargets().getPartEquivTo();
+		if (assocs.size() > 0) {
+			return assocs.stream()
+					.map(s -> gl.getConceptSafely(s))
+					.collect(Collectors.toList());
+		}
+		
 		return new ArrayList<>();
 	}
 
