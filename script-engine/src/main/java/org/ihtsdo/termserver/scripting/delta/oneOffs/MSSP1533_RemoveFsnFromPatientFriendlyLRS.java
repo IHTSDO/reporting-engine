@@ -29,7 +29,7 @@ public class MSSP1533_RemoveFsnFromPatientFriendlyLRS extends DeltaGenerator {
 			delta.loadProjectSnapshot(false);
 			delta.postInit();
 			delta.process();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
