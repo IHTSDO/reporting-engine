@@ -14,16 +14,19 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 	
+	public static String US_MODULE = "731000124108";
+	public static String NO_MODULE = "51000202101";
+	
 	boolean includeLegacyIssues = false;
 	Set<RefsetMember> mentioned = new HashSet<>();
-	String intReleaseBranch="MAIN/2022-01-31";
+	String intReleaseBranch="MAIN/2023-06-30";
 	Map<String, RefsetMember> intReleaseRefsetMembers = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		UnfixableLangRefsetDuplicates delta = new UnfixableLangRefsetDuplicates();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.moduleId = "51000202101";
+			delta.moduleId = US_MODULE;
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
