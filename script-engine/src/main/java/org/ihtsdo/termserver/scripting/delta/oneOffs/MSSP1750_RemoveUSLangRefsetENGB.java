@@ -32,7 +32,7 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
 			delta.process();
-			delta.flushFiles(false, true); //Need to flush files before zipping
+			delta.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
