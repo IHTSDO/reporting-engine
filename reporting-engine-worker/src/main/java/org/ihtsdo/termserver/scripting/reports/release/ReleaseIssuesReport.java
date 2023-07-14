@@ -1480,8 +1480,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void validateTermsInField(String partName, Concept c, RefsetMember rm, String fieldName) throws TermServerScriptException {
 		String issueStr = partName + " refset field " + fieldName + " contains inactive or unknown concept";
 		String issueStr2 = partName + " refset field " + fieldName + " contains out of date FSN";
+		String issueStr3 = partName + " refset field " + fieldName + " is malformed";
+		String issueStr4 = partName + " refset field " + fieldName + " concept missing preferred term";
+		
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
+		initialiseSummary(issueStr3);
+		initialiseSummary(issueStr4);
 		
 		//Is this field all numeric?  Check concept exists if so
 		String field = rm.getField(fieldName);
@@ -1500,12 +1505,19 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				Concept refConcept = gl.getConcept(matcher.group(1), false, false);
 				if (refConcept == null || !refConcept.isActive()) {
 					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
-				}
-				String fsn = matcher.group(3);
-				if (!refConcept.getFsn().equals(fsn)) {
-					//Sometimes we use the PT.  Check on the rules for when we use each one.
-					if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
-						report (c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
+				} else {
+					if (refConcept.getPreferredSynonym(US_ENG_LANG_REFSET) == null) {
+						report (c, issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+					} else {
+						String fsn = matcher.group(3);
+						if (fsn == null) {
+							report (c, issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+						} else if (!refConcept.getFsn().equals(fsn)) {
+							//Sometimes we use the PT.  Check on the rules for when we use each one.
+							if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
+								report (c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
+							}
+						}
 					}
 				}
 			}
