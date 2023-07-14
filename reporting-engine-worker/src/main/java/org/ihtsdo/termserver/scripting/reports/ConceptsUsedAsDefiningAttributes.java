@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -47,7 +47,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(SELECT_CONCEPTS_ECL);
-		outOfScopeECL = run.getMandatoryParamValue(OUT_OF_SCOPE_ECL);
+		outOfScopeECL = run.getParamValue(OUT_OF_SCOPE_ECL);
 		includeDescendants = run.getParameters().getMandatoryBoolean(INCLUDE_DESCENDANTS);
 		statedViewOnly = run.getParameters().getMandatoryBoolean(STATED_VIEW_ONLY);
 		String filterConceptsRegExStr = run.getParamValue(FILTER_CONCEPTS_REGEX);
@@ -86,7 +86,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 				.add(FILTER_CONCEPTS_REGEX).withType(JobParameter.Type.STRING)
 				.add(INCLUDE_DESCENDANTS).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(true)
 				.add(STATED_VIEW_ONLY).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
-				.add(OUT_OF_SCOPE_ECL).withType(JobParameter.Type.ECL).withMandatory()
+				.add(OUT_OF_SCOPE_ECL).withType(JobParameter.Type.ECL)
 				.build();
 		
 		return new Job()
