@@ -19,6 +19,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * */
 public class InitialAnalysis extends TermServerReport implements org.ihtsdo.termserver.scripting.ReportClass {
 	
+	private static final int MAX_CONCEPTS = 10000; 
 	Collection<Concept> conceptsToAnalyse;
 	Set<Concept> exclusions = new HashSet<>();
 	public Map<Concept, Integer> intermediatePrimitives;
@@ -63,9 +64,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 			TermServerReport.run(InitialAnalysis.class, args, params);
 		} */
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<< " + ROOT_CONCEPT);
-		//params.put(SUB_HIERARCHY, "75258004 |Food poisoning (disorder)|");
-		params.put(SUB_HIERARCHY, "11429006 |Consultation (procedure)|");
+		params.put(ECL, "<< 11429006 |Consultation (procedure)|");
 		TermServerReport.run(InitialAnalysis.class, args, params);
 	}
 	
@@ -105,10 +104,9 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(SUB_HIERARCHY)
-					.withType(JobParameter.Type.CONCEPT)
 				.add(ECL)
 					.withType(JobParameter.Type.ECL)
+					.withMandatory()
 				.build();
 		
 		return new Job()
@@ -138,18 +136,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	public void postInit() throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  // QI/Initial Analysis
 		
-		subHierarchyStr = this.jobRun.getParamValue(SUB_HIERARCHY);
 		subsetECL = this.jobRun.getParamValue(ECL);
-		
-		if (subHierarchyStr != null && (subsetECL == null || subsetECL.trim().isEmpty())) {
-			Concept subHierarchyConcept = gl.getConcept(subHierarchyStr, false, true);  //Validate concept exists
-			if (subHierarchyConcept.getDepth() <= 1 ) {
-				throw new TermServerScriptException("Report cannot be run on top level hierarchies");
-			}
-			subsetECL = "<<" + subHierarchyStr;
-		} else if (subHierarchyStr == null && subsetECL == null ) {
-			throw new TermServerScriptException("Either subhierarchy or ECL must be specified");
-		}
 		
 		String[] columnHeadings = new String[] {	"SCTID, FSN, SemTag, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents",
 													"SCTID, FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy",
@@ -185,10 +172,14 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	}
 	
 	public void setSubHierarchy() throws TermServerScriptException {
-		this.conceptsToAnalyse = new ArrayList<>(findConcepts(subsetECL));
+		conceptsToAnalyse = new ArrayList<>(findConcepts(subsetECL));
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();
+		
+		if (conceptsToAnalyse.size() > MAX_CONCEPTS) {
+			throw new TermServerScriptException("ECL selection returned " + conceptsToAnalyse.size() + " concepts.  Refine ECL to select less than 10K");
+		}
 	}
 
 	public void setSubHierarchy(Set<Concept> concepts) {
