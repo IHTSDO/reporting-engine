@@ -16,6 +16,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class ListAllConcepts extends TermServerReport implements ReportClass {
 	
+	private static final int MAX_CONCEPTS = 10000;
+	
 	public static String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	private boolean newConceptsOnly = false;
 	
@@ -46,7 +48,7 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List all Concepts")
 				.withDescription("This report lists all concepts that match a given ECL, with descriptions, parents and the inferred expression included. " +
-						"The issues count will show the number of concepts reported.")
+						"The issues count will show the number of concepts reported.  This report is limited to 10K concept selections.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -60,6 +62,11 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 		}
 		
 		List<Concept> concepts = SnomedUtils.sortFSN(findConcepts(subsetECL));
+		
+		if (concepts.size() > MAX_CONCEPTS) {
+			throw new TermServerScriptException(concepts.size() + " concepts selected.  Please modify ECL selection to < " + MAX_CONCEPTS);
+		}
+		
 		for (Concept c : concepts) {
 			if (!c.isActive() || 
 					(newConceptsOnly && c.isReleased())) {
