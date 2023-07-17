@@ -1631,6 +1631,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return ArchiveManager.getArchiveManager(this, appContext, forceReuse);
 	}
 	
+	public boolean hasInputFile() {
+		return hasInputFile(0);
+	}
+	
 	public boolean hasInputFile(int n) {
 		return getInputFile(n) != null;
 	}

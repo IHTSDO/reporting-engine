@@ -1,16 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -25,7 +19,7 @@ import com.google.common.io.Files;
  * QI-300 List concepts selected by ECL, filtered lexically 
  * which have an incoming historical association pointing to them.
  */
-public class IncomingAssociationReport extends TermServerScript implements ReportClass {
+public class IncomingAssociationReport extends TermServerReport implements ReportClass {
 	
 	public static String TEXT_MATCH = "Text Match";
 	List<String> textMatches;
@@ -65,7 +59,7 @@ public class IncomingAssociationReport extends TermServerScript implements Repor
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		if (getInputFile() != null) {
+		if (hasInputFile()) {
 			loadExclusions();
 		}
 		super.postInit();
