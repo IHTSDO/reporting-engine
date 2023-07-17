@@ -281,13 +281,15 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		nextConcept:
 		//for (final Concept c : Collections.singleton(gl.getConcept("601000119109"))) {	
 		for (final Concept c : gl.getAllConcepts()) {
+			boolean hasChanges = SnomedUtils.hasChanges(c);
 			for (Description d : c.getDescriptions()) {
 				/*if (d.getId().equals("61401000195115")) {
 						debug("here");
 				}*/
 				
 				//Too many of these in the international edition - discuss elsewhere
-				if (project.getBranchPath().contains("SNOMEDCT-")) {
+				//OK we'll do them if they've been touched in this authoring cycle
+				if (project.getBranchPath().contains("SNOMEDCT-") || hasChanges) {
 					//Switch to just process those 
 					if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 						processMe.add(c);

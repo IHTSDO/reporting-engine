@@ -1934,6 +1934,10 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return c.getModuleId().equals(SCTID_CORE_MODULE)
 				|| c.getModuleId().equals(SCTID_MODEL_MODULE);
 	}
+	
+	public static boolean hasChanges(Concept c) {
+		return hasChangesSinceIncludingSubComponents(c, null, true);
+	}
 
 	public static boolean hasChangesSinceIncludingSubComponents(Concept c, String fromET,  boolean inclusiveDate) {
 		if (hasChangesSince((Component)c, fromET, inclusiveDate)) {
