@@ -82,7 +82,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					.withDefaultValue(false)
 				.add(UNPROMOTED_CHANGES_ONLY)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(false)
+					.withDefaultValue(true)
 				.build();
 
 		return new Job()
