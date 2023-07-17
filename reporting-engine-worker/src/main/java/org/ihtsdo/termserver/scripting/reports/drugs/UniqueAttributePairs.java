@@ -117,11 +117,8 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 						countInstance(boSSPai, c, boSS, pAI);
 					}
 				}
-				
-				
 			}
 		}
-		
 	}
 
 	private void countInstance(AtomicLongMap<String> countMap, Concept c, Concept... values) {
@@ -158,12 +155,20 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 		}
 	}
 	
-	private String[] splitEntry(String entry) {
+	private String[] splitEntry(String entry) throws TermServerScriptException {
 		List<String> columns = new ArrayList<>();
 		for (String conceptStr : entry.split("~")) {
-			int cutIdx = conceptStr.indexOf(PIPE_CHAR);
-			columns.add(conceptStr.substring(0, cutIdx));
-			columns.add(conceptStr.substring(cutIdx +1).replace("|", ""));
+			if (conceptStr.equals("null")) {
+				columns.add("");
+				columns.add("");
+			} else {
+				int cutIdx = conceptStr.indexOf(PIPE_CHAR);
+				if (cutIdx == NOT_FOUND) {
+					throw new TermServerScriptException("Unable to separate FSN in " + entry);
+				}
+				columns.add(conceptStr.substring(0, cutIdx));
+				columns.add(conceptStr.substring(cutIdx +1).replace("|", ""));
+			}
 		}
 		return columns.toArray(new String[] {});
 	}
