@@ -21,8 +21,14 @@ import com.google.common.io.Files;
  * Lists all case sensitive terms that do not have capital letters after the first letter
  * UPDATE: We'll also load in the existing cs_words.txt file instead of hardcoding a list of proper nouns.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSensitivity extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSensitivity.class);
+
 	List<Concept> targetHierarchies = new ArrayList<>();
 	List<Concept> excludeHierarchies = new ArrayList<>();
 	Map<String, Description> sourcesOfTruth = new HashMap<>();
@@ -53,7 +59,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		loadCSWords();
-		info ("Processing exclusions");
+		LOGGER.info ("Processing exclusions");
 		targetHierarchies.add(ROOT_CONCEPT);
 		//targetHierarchies.add(gl.getConcept("771115008"));
 		excludeHierarchies.add(SUBSTANCE);
@@ -113,8 +119,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
-		info ("Complete");
-		debug("Processing cs words file");
+		LOGGER.info ("Complete");
+		LOGGER.debug("Processing cs words file");
 		for (String line : lines) {
 			//Split the line up on tabs
 			String[] items = line.split(TAB);
@@ -151,7 +157,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
 			//Sorting is doing String creation and manipulation multiple times for each concept
 			//We'll let the user do the sorting in the spreadsheet output if they want.
-			/*info ("Sorting descendants: " + targetHierarchy);
+			/*LOGGER.info ("Sorting descendants: " + targetHierarchy);
 			Collections.sort(hiearchyDescendants, new Comparator<Concept>() {
 				@Override
 				public int compare(Concept c1, Concept c2) {
@@ -160,13 +166,13 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						String sortOn2 = SnomedUtils.deconstructFSN(c2.getFsn())[1] + c2.getFsn();
 						return sortOn1.compareTo(sortOn2);
 					} catch (Exception e) {
-						warn(e.toString() + " sorting " + c1 + " and " + c2);
+						LOGGER.warn(e.toString() + " sorting " + c1 + " and " + c2);
 					}
 					return c1.getConceptId().compareTo(c2.getConceptId());
 				}
 			});*/
 			
-			info ("Checking case significance in target hierarchy: " + targetHierarchy);
+			LOGGER.info ("Checking case significance in target hierarchy: " + targetHierarchy);
 			
 			int count = 0;
 			nextConcept:
@@ -180,7 +186,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				}
 				
 				if (c.getConceptId().equals("322280009")) {
-//					debug ("Temp - check here");
+//					LOGGER.debug ("Temp - check here");
 				}
 				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
 					continue;
@@ -244,7 +250,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					}
 				}
 			}
-			info ("Completed hierarchy: " + targetHierarchy);
+			LOGGER.info ("Completed hierarchy: " + targetHierarchy);
 			
 		}
 	}

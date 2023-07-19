@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SnapshotGenerator extends TermServerScript {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SnapshotGenerator.class);
+
 	protected String outputDirName = "output";
 	protected String packageRoot;
 	protected String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
@@ -72,14 +78,14 @@ public class SnapshotGenerator extends TermServerScript {
 		setQuiet(true);
 		init(newLocation, false);
 		if (dependencySnapshot != null) {
-			info("Loading dependency snapshot " + dependencySnapshot);
+			LOGGER.info("Loading dependency snapshot " + dependencySnapshot);
 			loadArchive(dependencySnapshot, false, "Snapshot", true);
 		}
 		
-		info("Loading previous snapshot " + previousSnapshot);
+		LOGGER.info("Loading previous snapshot " + previousSnapshot);
 		loadArchive(previousSnapshot, false, "Snapshot", true);
 		
-		info("Loading delta " + delta);
+		LOGGER.info("Loading delta " + delta);
 		loadArchive(delta, false, "Delta", false);
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
 		//The disk copy will save time when we run again for the same project
@@ -104,7 +110,7 @@ public class SnapshotGenerator extends TermServerScript {
 	
 	protected void init (File newLocation, boolean addTodaysDate) throws TermServerScriptException {
 		//Make sure the Graph Loader is clean
-		info("Snapshot Generator ensuring Graph Loader is clean");
+		LOGGER.info("Snapshot Generator ensuring Graph Loader is clean");
 		gl.reset();
 		if (!skipSave) {
 			File outputDir = new File (outputDirName);
@@ -121,7 +127,7 @@ public class SnapshotGenerator extends TermServerScript {
 				packageRoot = outputDirName + File.separator + newLocation;
 				packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
 			}
-			info("Outputting data to " + packageDir);
+			LOGGER.info("Outputting data to " + packageDir);
 			initialiseFileHeaders();
 		}
 	}
@@ -256,7 +262,7 @@ public class SnapshotGenerator extends TermServerScript {
 			this.ts = ts;
 		}
 		public void run() {
-			debug("Writing RF2 Snapshot to disk" + (leaveArchiveUncompressed?".":" and compressing."));
+			LOGGER.debug("Writing RF2 Snapshot to disk" + (leaveArchiveUncompressed?".":" and compressing."));
 			try {
 				//Tell our parent that a child is working so it doesn't try and
 				//start processing something else.
@@ -266,9 +272,9 @@ public class SnapshotGenerator extends TermServerScript {
 				if (!leaveArchiveUncompressed) {	
 					SnomedUtils.createArchive(new File(outputDirName));
 				}
-				debug("Completed writing RF2 Snapshot to disk");
+				LOGGER.debug("Completed writing RF2 Snapshot to disk");
 			} catch (Exception e) {
-				error ("Failed to write archive to disk",e);
+				LOGGER.error ("Failed to write archive to disk",e);
 			} finally {
 				ts.asyncSnapshotCacheInProgress(false);
 			}

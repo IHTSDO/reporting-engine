@@ -12,8 +12,14 @@ import java.util.zip.ZipInputStream;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FlatFileLoader implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FlatFileLoader.class);
+
 	Map<String, String[]> componentMap = new HashMap<>();
 	
 	public static void println (String msg) {

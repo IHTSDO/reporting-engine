@@ -22,8 +22,14 @@ import com.google.common.collect.HashBiMap;
 /**
  * Look through all LOINC expressions and fix whatever needs worked on
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ZoomAndEnhanceLOINC extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ZoomAndEnhanceLOINC.class);
+
 	enum REL_PART {Type, Target};
 	
 	private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
@@ -95,7 +101,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		};
 		super.postInit(tabNames, columnHeadings, false);
 		
-		info("Mapping current LOINC content");
+		LOGGER.info("Mapping current LOINC content");
 		loadFiles();
 		expectedTypeChanges.add(gl.getConcept("704318007 |Property type (attribute)|"));
 	}
@@ -109,7 +115,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		Set<String> checkReplacementAvailable = new HashSet<>();
 		try {
 			//Load the LOINC file
-			info ("Loading " + loincFile);
+			LOGGER.info ("Loading " + loincFile);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(loincFile))) {
 				String origline;
@@ -145,7 +151,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 								String duplicates = allLoincNums.stream()
 										.filter(s -> !s.equals(loincNum))
 										.collect(Collectors.joining(", "));
-								debug ("Duplicate keys " + loincNum + " = '" + fsn + "' with " + duplicates);
+								LOGGER.debug ("Duplicate keys " + loincNum + " = '" + fsn + "' with " + duplicates);
 							}
 							
 							//A duplicate FSN will usually have a later replacement with a new LOINCNum
@@ -197,7 +203,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		
 		try {
 			//Load the Refset Expression file
-			info ("Loading " + publishedRefsetFile);
+			LOGGER.info ("Loading " + publishedRefsetFile);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(publishedRefsetFile))) {
 				String line;
@@ -442,9 +448,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		for (String pair : expression.split(",")) {
 			String[] parts = pair.split("=");
 			if (attributeMap.containsValue(parts[1])) {
-				debug (c + " has two attributes with target " + parts[1] + ": " + parts[0] + " + " + attributeMap.inverse().get(parts[1]));
+				LOGGER.debug (c + " has two attributes with target " + parts[1] + ": " + parts[0] + " + " + attributeMap.inverse().get(parts[1]));
 			} else if (attributeMap.containsKey(parts[0])) {
-				debug (c + " has two attribute types " + parts[0]);
+				LOGGER.debug (c + " has two attribute types " + parts[0]);
 			} else {
 				attributeMap.put(parts[0], parts[1]);
 			}

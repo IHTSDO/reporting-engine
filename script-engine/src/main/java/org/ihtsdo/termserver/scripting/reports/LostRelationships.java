@@ -9,8 +9,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LostRelationships extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LostRelationships.class);
+
 	Set<Concept> modifiedConcepts;
 	Set<Concept> descendentOfProductRole;
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
@@ -24,7 +30,7 @@ public class LostRelationships extends TermServerScript{
 			report.populateProdRoleDesc();
 			report.detectLostRelationships();
 		} catch (Exception e) {
-			info("Failed to produce Lost Relationship Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Lost Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -40,15 +46,15 @@ public class LostRelationships extends TermServerScript{
 		//Work through our set of modified concepts and if a relationship of a type has 
 		//been inactivated, ensure that we have another relationship of the same time 
 		//that replaces it.
-		info("Examining " + modifiedConcepts.size() + " modified concepts");
+		LOGGER.info("Examining " + modifiedConcepts.size() + " modified concepts");
 		nextConcept:
 		for (Concept thisConcept : modifiedConcepts) {
 			//Only working with product concepts
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				warn(msg);
+				LOGGER.warn(msg);
 			} else if (!thisConcept.getFsn().contains("(product)")) {
-				debug ("Skipping " + thisConcept);
+				LOGGER.debug ("Skipping " + thisConcept);
 				continue;
 			}
 			//Only looking at relationships that have changed in this release, so pass current effective time
@@ -58,11 +64,11 @@ public class LostRelationships extends TermServerScript{
 					String msg = thisConcept + " has no replacement for lost relationship " + thisRel;
 					if (!thisConcept.isActive()) {
 						msg += " but is inactive.";
-						debug (msg);
+						LOGGER.debug (msg);
 						report (thisConcept, thisRel);
 						continue nextConcept;
 					}
-					warn (msg);
+					LOGGER.warn (msg);
 					report (thisConcept, thisRel);
 				}
 			}

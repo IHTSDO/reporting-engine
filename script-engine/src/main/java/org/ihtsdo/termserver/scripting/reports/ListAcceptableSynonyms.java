@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 /**
  * DRUGS-453 A report to list acceptable synonyms from a subset of concepts 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ListAcceptableSynonyms extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ListAcceptableSynonyms.class);
+
 	List<Component> conceptsOfInterest = new ArrayList<Component>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -27,7 +33,7 @@ public class ListAcceptableSynonyms extends TermServerReport {
 			report.conceptsOfInterest = report.processFile();
 			report.listAcceptableSynonyms();
 		} catch (Exception e) {
-			info("Failed to ListAcceptableSynonyms due to " + e.getMessage());
+			LOGGER.info("Failed to ListAcceptableSynonyms due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

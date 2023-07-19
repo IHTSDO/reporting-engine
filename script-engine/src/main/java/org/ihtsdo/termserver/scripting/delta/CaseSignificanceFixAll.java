@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * ISRS-302
  * 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceFixAll extends DeltaGenerator implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFixAll.class);
+
 	public enum Mode{ REPORT_ONLY, SILENT_CHANGE, REPORT_CHANGE };
 	public Mode mode;
 
@@ -53,7 +59,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements ScriptCons
 	}
 	
 	private void process() throws TermServerScriptException {
-		info("Processing...");
+		LOGGER.info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {
 				normalizeCaseSignificance(c, false);

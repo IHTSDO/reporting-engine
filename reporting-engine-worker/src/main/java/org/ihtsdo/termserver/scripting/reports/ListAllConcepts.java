@@ -14,8 +14,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ListAllConcepts extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ListAllConcepts.class);
+
 	private static final int MAX_CONCEPTS = 10000;
 	
 	public static String NEW_CONCEPTS_ONLY = "New Concepts Only";

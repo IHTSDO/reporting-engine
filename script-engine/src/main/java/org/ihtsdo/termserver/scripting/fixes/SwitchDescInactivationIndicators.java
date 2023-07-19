@@ -12,8 +12,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /* ISRS-1257
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SwitchDescInactivationIndicators extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SwitchDescInactivationIndicators.class);
+
 	protected SwitchDescInactivationIndicators(final BatchFix clone) {
 		super(clone);
 	}
@@ -79,7 +85,7 @@ public class SwitchDescInactivationIndicators extends BatchFix {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
@@ -91,7 +97,7 @@ public class SwitchDescInactivationIndicators extends BatchFix {
 				}
 			}
 		}
-		info("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 	

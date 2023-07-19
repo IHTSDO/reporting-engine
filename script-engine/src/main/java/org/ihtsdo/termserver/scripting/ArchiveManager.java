@@ -39,7 +39,7 @@ public class ArchiveManager implements ScriptConstants {
 	
 	static ArchiveManager singleton;
 	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
+	protected static Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
 
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;
@@ -125,7 +125,7 @@ public class ArchiveManager implements ScriptConstants {
 		String branchPath = project.getBranchPath();
 		String server = "uknown";
 		try {
-			debug ("Checking TS branch metadata: " + branchPath);
+			LOGGER.debug ("Checking TS branch metadata: " + branchPath);
 			server = ts.getTSClient().getUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//If metadata is empty, or missing previous release, recover parent
@@ -142,7 +142,7 @@ public class ArchiveManager implements ScriptConstants {
 			return branch;
 		} catch (Exception e) {
 			if (e.getMessage().contains("[404] Not Found")) {
-				debug ("Unable to find branch " + branchPath);
+				LOGGER.debug ("Unable to find branch " + branchPath);
 				return null;
 			}
 			throw new TermServerScriptException("Failed to recover " + project + " from TS (" + server + ") due to " + e.getMessage(),e);
@@ -202,7 +202,7 @@ public class ArchiveManager implements ScriptConstants {
 			if (!releases.get(0).getEffectiveDate().toString().equals(previousRelease)) {
 				throw new TermServerScriptException("Check here - unexpected previous release: " +  releases.get(0).getEffectiveDate() + " expected " + previousRelease);
 			}
-			logger.info("Detected previous branch: {}", releases.get(0).getBranchPath());
+			LOGGER.info("Detected previous branch: {}", releases.get(0).getBranchPath());
 			return releases.get(0).getBranchPath();
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to recover previous branch due to " + e.getMessage(),e);
@@ -251,7 +251,7 @@ public class ArchiveManager implements ScriptConstants {
 			//If the project specifies its a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
-				info("Project key ('" + ts.getProject().getKey() + "') identified as zip archive, loading Edition Archive");
+				LOGGER.info("Project key ('" + ts.getProject().getKey() + "') identified as zip archive, loading Edition Archive");
 				loadEditionArchive = true;
 			}
 
@@ -270,7 +270,7 @@ public class ArchiveManager implements ScriptConstants {
 					TermServerScript.info(snapshot + " not found locally in " + cwd + ", attempting to download from S3.");
 					getArchiveDataLoader().download(snapshot);
 				} catch (TermServerScriptException e) {
-					info("Could not find " + snapshot.getName() + " in S3.");
+					LOGGER.info("Could not find " + snapshot.getName() + " in S3.");
 				}
 			}
 			
@@ -303,9 +303,9 @@ public class ArchiveManager implements ScriptConstants {
 					(populatePreviousTransativeClosure && gl.getPreviousTC() == null)) {
 				
 				if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
-					info("Generating fresh snapshot because 'released' flag must be populated");
+					LOGGER.info("Generating fresh snapshot because 'released' flag must be populated");
 				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
-					info("Generating fresh snapshot because previous transative closure must be populated");
+					LOGGER.info("Generating fresh snapshot because previous transative closure must be populated");
 				}
 				generateSnapshot(ts.getProject());
 				releasedFlagPopulated=true;
@@ -314,12 +314,12 @@ public class ArchiveManager implements ScriptConstants {
 				//We might already have this project in memory
 				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject()) && 
 						(populateReleasedFlag == false || (populateReleasedFlag && releasedFlagPopulated))) {
-					info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
+					LOGGER.info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
 					gl.makeReady();
 				} else {
 					if (currentlyHeldInMemory != null) {
 						//Make sure the Graph Loader is clean if we're loading a different project
-						info(currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
+						LOGGER.info(currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
 						gl.reset();
 						System.gc();
 						releasedFlagPopulated = false;
@@ -327,12 +327,12 @@ public class ArchiveManager implements ScriptConstants {
 					//Do we also need a fresh snapshot here so we can have the 'released' flag?
 					//If we're loading an edition archive then that is - by definition all released.
 					if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
-						info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
+						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
 						generateSnapshot (ts.getProject());
 						releasedFlagPopulated=true;
 					} else {
-						info ("Loading snapshot archive contents into memory: " + snapshot);
+						LOGGER.info ("Loading snapshot archive contents into memory: " + snapshot);
 						try {
 							//This archive is 'current state' so we can't know what is released or not
 							//Unless it's an edition archive
@@ -376,10 +376,10 @@ public class ArchiveManager implements ScriptConstants {
 			String msg = ExceptionUtils.getExceptionCause("Unable to load " + ts.getProject(), e);
 			throw new TermServerScriptException (msg, e);
 		}
-		info("Snapshot loading complete, checking integrity");
+		LOGGER.info("Snapshot loading complete, checking integrity");
 		checkIntegrity(fsnOnly);
 		
-		info("Setting all components to be clean");
+		LOGGER.info("Setting all components to be clean");
 		gl.getAllConcepts().stream()
 			.flatMap(c -> SnomedUtils.getAllComponents(c).stream())
 			.forEach(Component::setClean);
@@ -392,11 +392,11 @@ public class ArchiveManager implements ScriptConstants {
 		
 		if (isRunIntegrityChecks()) {
 			//Ensure that every active parent other than root has at least one parent in both views
-			debug("Ensuring all concepts have parents and depth if required.");
+			LOGGER.debug("Ensuring all concepts have parents and depth if required.");
 			StringBuffer integrityFailureMessage = new StringBuffer();
 			for (Concept c : gl.getAllConcepts()) {
 				/*if (c.getId().equals("15747361000119104")) {
-					debug("here");
+					LOGGER.debug("here");
 				}*/
 				if (integrityCheckIgnoreList.contains(c.getId())) {
 					continue;
@@ -437,13 +437,13 @@ public class ArchiveManager implements ScriptConstants {
 			if (integrityFailureMessage.length() > 0) {
 				throw new UnrecoverableTermServerScriptException(integrityFailureMessage.toString());
 			}
-			info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");
+			LOGGER.info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");
 		}
 		
 		if (!fsnOnly) {  
 			//Check that we've got some descriptions to be sure we've not been given
 			//a malformed, or classification style archive.
-			debug("Checking first 100 concepts for integrity");
+			LOGGER.debug("Checking first 100 concepts for integrity");
 			List<Description> first100Descriptions = gl.getAllConcepts()
 					.stream()
 					.limit(100)
@@ -452,7 +452,7 @@ public class ArchiveManager implements ScriptConstants {
 			if (first100Descriptions.size() < 100) {
 				throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
 			}
-			debug("Integrity check complete");
+			LOGGER.debug("Integrity check complete");
 		}
 	}
 
@@ -588,7 +588,7 @@ public class ArchiveManager implements ScriptConstants {
 			//Do we have a release effective time as a project?  Or a branch release
 			String releaseBranch = detectReleaseBranch(projectTaskKey);
 			if (releaseBranch != null) {
-				info ("Release branch determined to be numeric: " + releaseBranch);
+				LOGGER.info ("Release branch determined to be numeric: " + releaseBranch);
 				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
 			} else  {
 				return new File (dataStoreRoot + "snapshots/" + projectTaskKey + "_" + ts.getEnv());
@@ -721,60 +721,60 @@ public class ArchiveManager implements ScriptConstants {
 			String fileName = path.getFileName().toString();
 			
 			if (fileName.contains("._")) {
-				//info("Skipping " + fileName);
+				//LOGGER.info("Skipping " + fileName);
 				return;
 			}
 			
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Concept_" )) {
-					info("Loading Concept " + fileType + " file: " + fileName);
+					LOGGER.info("Loading Concept " + fileType + " file: " + fileName);
 					gl.loadConceptFile(is, isReleased);
 				} else if (fileName.contains("sct2_Relationship_" )) {
-					info("Loading Relationship " + fileType + " file.");
+					LOGGER.info("Loading Relationship " + fileType + " file.");
 					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
 					if (populateHierarchyDepth) {
-						info("Calculating concept depth...");
+						LOGGER.info("Calculating concept depth...");
 						gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 					}
 				} else if (fileName.contains("sct2_StatedRelationship_" )) {
-					info("Loading StatedRelationship " + fileType + " file.");
+					LOGGER.info("Loading StatedRelationship " + fileType + " file.");
 					gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
 				} else if (fileName.contains("sct2_RelationshipConcrete" )) {
-					info("Loading Concrete Relationship " + fileType + " file.");
+					LOGGER.info("Loading Concrete Relationship " + fileType + " file.");
 					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
 				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
-					info("Loading Axiom " + fileType + " refset file.");
+					LOGGER.info("Loading Axiom " + fileType + " refset file.");
 					gl.loadAxioms(is, isDelta, isReleased);
 				} else if (fileName.contains("sct2_Description_" )) {
-					info("Loading Description " + fileType + " file.");
+					LOGGER.info("Loading Description " + fileType + " file.");
 					int count = gl.loadDescriptionFile(is, fsnOnly, isReleased);
-					info("Loaded " + count + " descriptions.");
+					LOGGER.info("Loaded " + count + " descriptions.");
 				} else if (fileName.contains("sct2_TextDefinition_" )) {
-					info("Loading Text Definition " + fileType + " file.");
+					LOGGER.info("Loading Text Definition " + fileType + " file.");
 					gl.loadDescriptionFile(is, fsnOnly, isReleased);
 				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-					info("Loading Concept Inactivation Indicator " + fileType + " file.");
+					LOGGER.info("Loading Concept Inactivation Indicator " + fileType + " file.");
 					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-					info("Loading Description Inactivation Indicator " + fileType + " file.");
+					LOGGER.info("Loading Description Inactivation Indicator " + fileType + " file.");
 					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
+					LOGGER.info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
-					info("Loading Historical Association File: " + fileName);
+					LOGGER.info("Loading Historical Association File: " + fileName);
 					gl.loadHistoricalAssociationFile(is, isReleased);
 				} else if (fileName.contains("MRCMDomain")) {
-					info("Loading MRCM Domain File: " + fileName);
+					LOGGER.info("Loading MRCM Domain File: " + fileName);
 					gl.loadMRCMDomainFile(is, isReleased);
 				} else if (fileName.contains("MRCMAttributeRange")) {
-					info("Loading MRCM AttributeRange File: " + fileName);
+					LOGGER.info("Loading MRCM AttributeRange File: " + fileName);
 					gl.loadMRCMAttributeRangeFile(is, isReleased);
 				}
 				//If we're loading all terms, load the language refset as well
 				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
-					info("Loading " + fileType + " Language Reference Set File - " + fileName);
+					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
 					gl.loadLanguageFile(is, isReleased);
 				}
 			}

@@ -26,8 +26,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * TermServer browser API, with tasks grouped by criteria specified by 
  * the concrete class (or just randomly if run directly)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Rf2Player extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Rf2Player.class);
+
 	protected Map<String, ConceptChange> changingConcepts = new HashMap<String, ConceptChange>();
 	protected Map<String, Description> changingDescriptions = new HashMap<String, Description>();
 	protected Set<Concept> deltaModifications = new HashSet<Concept>();
@@ -56,9 +62,9 @@ public class Rf2Player extends BatchFix {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			loadProjectSnapshot(false);
 			startTimer();
-			info ("Processing delta");
+			LOGGER.info ("Processing delta");
 			processDelta();
-			info ("Grouping changes into tasks");
+			LOGGER.info ("Grouping changes into tasks");
 			processFile();
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to play Rf2Archive", e);
@@ -80,7 +86,7 @@ public class Rf2Player extends BatchFix {
 						if (rf2File != null) {
 							processRf2Delta(zis, rf2File, fileName);
 						} else {
-							info ("Skipping unrecognised file: " + fileName);
+							LOGGER.info ("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();
@@ -108,7 +114,7 @@ public class Rf2Player extends BatchFix {
 
 	private void processRf2Delta(InputStream is, ComponentType rf2File, String fileName) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
-		info ("Processing " + fileName);
+		LOGGER.info ("Processing " + fileName);
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeader = true;

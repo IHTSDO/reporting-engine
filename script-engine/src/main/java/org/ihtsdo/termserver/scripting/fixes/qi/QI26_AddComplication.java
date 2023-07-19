@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Also (possibly in combination)
  * After relationship → PPP of Sequela
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QI26_AddComplication extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(QI26_AddComplication.class);
+
 	Concept newProximalPrimitiveParent = COMPLICATION;
 	List<Concept> acceptablePPPs;
 	
@@ -71,7 +77,7 @@ public class QI26_AddComplication extends BatchFix {
 		//Find all descendants of 404684003 |Clinical finding (finding)| 
 		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
 			/*if (c.getConceptId().equals("238794007")) {
-				debug ("Check 238794007 |Ischemic foot ulcer (disorder)|");
+				LOGGER.debug ("Check 238794007 |Ischemic foot ulcer (disorder)|");
 			}*/
 			//which have Due To = Clinical Finding
 			if (SnomedUtils.getSubsumedRelationships(c, DUE_TO, CLINICAL_FINDING, CharacteristicType.INFERRED_RELATIONSHIP, gl.getAncestorsCache()).size() > 0) {

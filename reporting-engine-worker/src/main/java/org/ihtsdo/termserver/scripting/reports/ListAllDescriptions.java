@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * See FD#25496
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ListAllDescriptions extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ListAllDescriptions.class);
+
 	private static String DESCRIPTION_PER_LINE = "Description Per Line";
 	private Set<Concept> alreadyReported = new HashSet<>();
 	private boolean descriptionPerLine = false;

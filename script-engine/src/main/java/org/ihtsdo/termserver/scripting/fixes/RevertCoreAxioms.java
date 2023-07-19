@@ -5,10 +5,10 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.springframework.util.StringUtils;
 
 /*
  * When a core axiom has been modified in an extension (due to merge issues)
@@ -18,8 +18,14 @@ import org.springframework.util.StringUtils;
  * inconsistencies are not stored against axioms with no effective time, in which 
  * case we have a reconcilliation problem.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RevertCoreAxioms.class);
+
 	Map<String, RefsetMember> changeMap = new HashMap<>();
 
 	protected RevertCoreAxioms(BatchFix clone) {
@@ -43,7 +49,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 	@Override
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
-		debug ("Processing " + c);
+		LOGGER.debug ("Processing " + c);
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			if (!a.isActive() && StringUtils.isEmpty(a.getEffectiveTime())) {
 				RefsetMember currentMember = loadRefsetMember(a.getId());
@@ -81,7 +87,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		info ("Checking " + toCheck + " axioms");
+		LOGGER.info ("Checking " + toCheck + " axioms");
 		
 		int checked = 0;
 		for (Concept c : gl.getAllConcepts()) {
@@ -90,12 +96,12 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 					//Recover this axiom from the previous release and see if it's been changed
 					changeMap.put(a.getId(), loadPreviousRefsetMember(a.getId()));
 					if (++checked % 100 == 0) {
-						debug ("Completed " + checked + " / " + toCheck);
+						LOGGER.debug ("Completed " + checked + " / " + toCheck);
 					}
 				}
 			}
 		}
-		info (allAffected.size() + " concepts affected");
+		LOGGER.info (allAffected.size() + " concepts affected");
 		return new ArrayList<Component>(allAffected);
 	}
 }

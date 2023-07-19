@@ -22,8 +22,14 @@ import java.util.stream.Collectors;
 /**
  * INFRA-
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AttributeValueCounts extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AttributeValueCounts.class);
+
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	public static final String IGNORE_ECL = "Ignore Concepts ECL";
 	public static final String MIN_SIZE_INTEREST = "Minimum Size";
@@ -106,7 +112,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		Concept[] types = new Concept[] {targetAttributeType};
 		ancestorCache = gl.getAncestorsCache();
 		descendentCache = gl.getDescendantsCache();
-		info ("Analyzing " + subsetECL);
+		LOGGER.info ("Analyzing " + subsetECL);
 		ignoreConcepts = new HashSet<>(findConcepts(ignoreConceptsECL));
 		for (Concept c : findConcepts(subsetECL)) {
 			//Find all the target values for the specified attribute type
@@ -138,7 +144,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		}
 		
 		//TODO We're also interested in the primitive concepts above this attribute value.
-		info ("Outputting counts");
+		LOGGER.info ("Outputting counts");
 		Set<Concept> targets = new HashSet<>(valueCounts.asMap().keySet());
 		if (!targets.isEmpty()) {
 			//Now work through the list, from top to bottom

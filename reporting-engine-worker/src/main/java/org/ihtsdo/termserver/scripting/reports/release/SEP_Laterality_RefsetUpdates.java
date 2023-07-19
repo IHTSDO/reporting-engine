@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * FRI-353 List changes made in the current authoring cycle to SEP and Laterality Refsets
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SEP_Laterality_RefsetUpdates extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SEP_Laterality_RefsetUpdates.class);
+
 	public static final String SCTID_SE_REFSETID = "734138000";
 	public static final String SCTID_SP_REFSETID = "734139008";
 	public static final String SCTID_LAT_REFSETID = "723264001";

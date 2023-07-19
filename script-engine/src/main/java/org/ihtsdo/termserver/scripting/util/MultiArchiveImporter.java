@@ -20,8 +20,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * @author peter
  *
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MultiArchiveImporter extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
+
 	private final static String taskPrefix = "INFRA-9531 ";
 
 	protected MultiArchiveImporter(BatchFix clone) {
@@ -43,16 +49,16 @@ public class MultiArchiveImporter extends BatchFix {
 	}
 
 	private void importArchives() throws TermServerScriptException {
-		info("Processing all archives in " + getInputFile());
+		LOGGER.info("Processing all archives in " + getInputFile());
 		String[] dirListing = getInputFile().list();
 		Arrays.sort(dirListing, NumberAwareStringComparator.INSTANCE);
 		for (String archiveStr : dirListing){
 			File thisArchive = new File(getInputFile() + File.separator + archiveStr);
 			if (thisArchive.getPath().endsWith(".zip")) {
-				info("Processing: " + thisArchive);
+				LOGGER.info("Processing: " + thisArchive);
 				importArchive(thisArchive);
 			} else {
-				info("Skipping non archive: " + thisArchive);
+				LOGGER.info("Skipping non archive: " + thisArchive);
 			}
 		}
 	}
@@ -68,14 +74,14 @@ public class MultiArchiveImporter extends BatchFix {
 				tsClient.importArchive(task.getBranchPath(), ImportType.DELTA, thisArchive);
 				updateTask(task);
 				if (classifyTasks) {
-					info ("Classifying " + task);
+					LOGGER.info ("Classifying " + task);
 					Classification classification = scaClient.classify(task.getKey());
-					debug(classification);
+					LOGGER.debug(classification.toString());
 					tsClient.waitForCompletion(task.getBranchPath(), classification);
 				}
 			}
 		} catch (Exception e) {
-			error("Failure to import " + thisArchive, e);
+			LOGGER.error("Failure to import " + thisArchive, e);
 			result = e.toString();
 		}
 		report(PRIMARY_REPORT, task.getKey(), thisArchive.getName(), result);

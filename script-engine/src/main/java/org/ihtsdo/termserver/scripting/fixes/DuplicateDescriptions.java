@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /* INFRA-4133 Fix issue of multiple descriptions with the same term - unpublished and active
  * Also seeing empty terms and "GBTERM:null"
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateDescriptions.class);
+
 	Set<Description> duplicateDescriptions = new HashSet<>();
 	
 	protected DuplicateDescriptions(BatchFix clone) {
@@ -64,7 +70,7 @@ public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		Set<String> termsKnown = new HashSet<>();
 		
@@ -87,7 +93,7 @@ public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 			}
 		}
 		
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

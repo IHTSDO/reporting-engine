@@ -19,7 +19,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * For INFRA-9963 we only need to splice in new Common French descriptions to a published Swiss package
  * @author peter
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SliceReleaseArchive.class);
 
 	Set<String> knownDescriptions = new HashSet<>();
 	//Not useful because we don't have description rows for the refset members we're deleteing
@@ -49,7 +55,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -66,7 +72,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	}
 	
 	protected void initialiseFileHeaders() throws TermServerScriptException {
-		info("Skipping initialisation of usual delta output files");
+		LOGGER.info("Skipping initialisation of usual delta output files");
 	}
 	
 	private  void outputSummaryCounts() throws TermServerScriptException {
@@ -84,17 +90,17 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	}
 
 	private void output(String fileName, String msg, int data) throws TermServerScriptException {
-		info(fileName + ": " + msg + " - " + data);
+		LOGGER.info(fileName + ": " + msg + " - " + data);
 		report(PRIMARY_REPORT, fileName, msg, data);
 	}
 
 	public void process() throws TermServerScriptException, IOException {
 		firstPass();
-		info(knownDescriptions.size() + " descriptions are known");
-		//info(descriptionConceptMap.size() + " descriptions are mapped to concepts");
+		LOGGER.info(knownDescriptions.size() + " descriptions are known");
+		//LOGGER.info(descriptionConceptMap.size() + " descriptions are mapped to concepts");
 		//Set<String> concepts = new HashSet<>(descriptionConceptMap.values());
-		//info(concepts.size() + " concepts have descriptions");	
-		info("Second Pass " + getInputFile());
+		//LOGGER.info(concepts.size() + " concepts have descriptions");	
+		LOGGER.info("Second Pass " + getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -111,7 +117,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Processing " + getInputFile());
+		LOGGER.info("Finished Processing " + getInputFile());
 		getRF2Manager().flushFiles(false);
 	}
 	
@@ -126,12 +132,12 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		
 		if (type == null || !isFileOfInterest(pathStr, type)) {
 			report(PRIMARY_REPORT, pathStr, Severity.LOW, ReportActionType.NO_CHANGE, targetFile);
-			info("Passing through " + pathStr);
+			LOGGER.info("Passing through " + pathStr);
 			FileUtils.copyToFile(is, targetFile);
 		} else {
 			SummaryCount summaryCount = new SummaryCount();
 			summaryCounts.put(path.getFileName().toString(), summaryCount);
-			info("Slicing " + pathStr);
+			LOGGER.info("Slicing " + pathStr);
 			processLangFile(pathStr, is, targetFile, summaryCount);
 		}
 	}
@@ -176,7 +182,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	}
 
 	private void firstPass() throws IOException, TermServerScriptException {
-		info("Loading " + getInputFile());
+		LOGGER.info("Loading " + getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -193,7 +199,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + getInputFile());
+		LOGGER.info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {
@@ -205,7 +211,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 			
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Description_" ) || fileName.contains("sct2_Text" )) {
-					info("Loading Description " + fileType + " file.");
+					LOGGER.info("Loading Description " + fileType + " file.");
 					loadDescriptionFile(is);
 				}
 			}

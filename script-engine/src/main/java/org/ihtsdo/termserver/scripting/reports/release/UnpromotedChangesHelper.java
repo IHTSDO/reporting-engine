@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UnpromotedChangesHelper implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(UnpromotedChangesHelper.class);
+
 	TermServerScript ts;
 	Map<String, String> unpromotedChangesMap;
 

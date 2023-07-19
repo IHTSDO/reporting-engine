@@ -25,8 +25,14 @@ import com.google.common.io.Files;
 /**
  * Reports all terms that contain the specified text
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class WordUsageReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(WordUsageReport.class);
+
 	Map<String, Usage> wordUsage = new LinkedHashMap<String, Usage>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -39,7 +45,7 @@ public class WordUsageReport extends TermServerScript{
 			report.loadWords();
 			report.reportWordUsage();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -48,14 +54,14 @@ public class WordUsageReport extends TermServerScript{
 
 	private void loadWords() throws IOException {
 		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-		info ("Loading words of interest from " + getInputFile());
+		LOGGER.info ("Loading words of interest from " + getInputFile());
 		for (String line : lines) {
 			wordUsage.put(line, new Usage());
 		}
 	}
 
 	private void reportWordUsage() throws TermServerScriptException {
-		info ("Loading words of interest from " + getInputFile());
+		LOGGER.info ("Loading words of interest from " + getInputFile());
 		Collection<Concept> concepts = GraphLoader.getGraphLoader().getAllConcepts();
 		for (Map.Entry<String, Usage> wordUsageEntry : wordUsage.entrySet()) {
 			//We'll add a space to the word to ensure we don't have partial matches
@@ -75,7 +81,7 @@ public class WordUsageReport extends TermServerScript{
 					wordUsageEntry.getValue().registerUsage(c);
 				}
 			}
-			info("- " + wordUsageEntry.getValue().instances);
+			LOGGER.info("- " + wordUsageEntry.getValue().instances);
 			report (word, wordUsageEntry.getValue());
 		}
 		addSummaryInformation("Concepts checked", concepts.size());

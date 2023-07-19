@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *  relationship inactivated.  There are 27 of these. 
  *
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class INFRA5796_RemoveParentLexical extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA5796_RemoveParentLexical.class);
+
 	String ecl = "<< 12456005 |Iatrogenic disorder (disorder)| ";
 	String searchTerm = "iatrogenic";
 	

@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * SUBST-226 Checks substance terming against spreadsheet
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SubstanceINN extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SubstanceINN.class);
+
 	//Map<String, INNSet> innMap = new HashMap<>();
 	List<INNSet> allINN = new ArrayList<>();
 	Description BLANK = new Description (null);
@@ -32,7 +38,7 @@ public class SubstanceINN extends TermServerReport {
 			report.postLoadInit();
 			report.runSubstanceINNReport();
 		} catch (Exception e) {
-			info("Failed to produce SubstanceINNReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce SubstanceINNReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -49,7 +55,7 @@ public class SubstanceINN extends TermServerReport {
 			INNSet innSet = findINNSetMatch(subst);
 			if (innSet != null) {
 				if (subst.getConceptId().equals("58202007")) {
-					debug ("Debug Here");
+					LOGGER.debug ("Debug Here");
 				}
 				validateAgainstInnSet(subst, innSet);
 			} else {

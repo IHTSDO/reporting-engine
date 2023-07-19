@@ -16,8 +16,14 @@ import com.google.common.io.Files;
 /*
  * INFRA-6069 List of organisms to move to Vet extension
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MoveConceptsDriven.class);
+
 	private String moveListFileStr = "G:/My Drive/020_BatchScripting/2020/infra-6069-mkii.txt";
 	private String newLocationStr = "416516009|Extension Namespace {1000009} (namespace concept)|";
 	private Set<String> moveList = new HashSet<>();
@@ -110,12 +116,12 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		Set<Concept> processMe = new LinkedHashSet<>();  //Order is important because descendants must be added first
 		for (String sctId : moveList) {
 			addComponentsToProcess(gl.getConcept(sctId), processMe);
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		return new ArrayList<Component>(processMe);
 	}
 	

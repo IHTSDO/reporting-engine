@@ -16,8 +16,14 @@ For DRUGS-422, DRUGS-434, DRUGS-435, DRUGS-447
 Driven by a text file of concepts, move specified concepts to exist under
 a new parent concept and remodel Terms.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NormalizeDrugs extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugs.class);
+
 	Relationship newParentRel;
 	String newParent = "763158003"; // |Medicinal product (product)| 
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);

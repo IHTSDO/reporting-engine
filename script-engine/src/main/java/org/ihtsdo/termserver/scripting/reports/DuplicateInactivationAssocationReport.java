@@ -16,8 +16,14 @@ import org.springframework.util.StringUtils;
  * Where a concept has duplicate inactivation indicators, list those along with the
  * historical associations (so we know which ones to delete!)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DuplicateInactivationAssocationReport extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateInactivationAssocationReport.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		DuplicateInactivationAssocationReport report = new DuplicateInactivationAssocationReport();
 		try {
@@ -27,7 +33,7 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 			report.loadProjectSnapshot(false);  
 			report.reportMatchingInactivations();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -35,7 +41,7 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 	}
 
 	private void reportMatchingInactivations() throws TermServerScriptException {
-		info ("Scanning all concepts...");
+		LOGGER.info ("Scanning all concepts...");
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
 		
 		/*
@@ -59,12 +65,12 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 			}
 			incrementSummaryInformation("Concepts reported");
 		}
-		info ("Now checking descriptions..");
+		LOGGER.info ("Now checking descriptions..");
 		//Or possibly there's an issue with descriptions?
 		//For a change we're interested in inactive concepts!
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getConceptId().equals("14816004")) {  
-			//	debug("CheckHere - Desc 1221136011");
+			//	LOGGER.debug("CheckHere - Desc 1221136011");
 			}
 			List<Description> descriptionsOfInterest = c.getDescriptions().stream()
 					.filter(d -> d.getInactivationIndicatorEntries(ActiveState.BOTH).size() > 1)

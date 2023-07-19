@@ -18,8 +18,14 @@ import com.google.common.io.Files;
  * QI
  * Report changes made in this authoring cycle for specific sub-hierarchies.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GenerateWorkDoneStatsWithTempateTypes.class);
+
 	List<Concept> subHierarchies;
 	List<Concept> targetValues;
 	Concept targetType = ASSOC_MORPH;
@@ -54,7 +60,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			report.postLoadInit();
 			report.generateWorkDoneStats();
 		} catch (Exception e) {
-			info("Failed to produce work done report due to " + e.getMessage());
+			LOGGER.info("Failed to produce work done report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -65,7 +71,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		subHierarchies = new ArrayList<>();
 		targetValues = new ArrayList<>();
 		
-		info ("Loading " + getInputFile());
+		LOGGER.info ("Loading " + getInputFile());
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
@@ -116,7 +122,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		for (Concept subsetDefn : defnList) {
 			int[] templateTypeTotal = new int[TemplateType.values().length];
 			//int[] templateTypeModified = new int[TemplateType.values().length];
-			debug ("Analysing subset defined via : " + subsetDefn);
+			LOGGER.debug ("Analysing subset defined via : " + subsetDefn);
 			Collection<Concept> subset;
 			if (workWithTargetValues) {
 				String ecl = "<< 64572001 |Disease (disorder)| : " + targetType + " = << " + subsetDefn;
@@ -167,7 +173,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		List<Concept> theseExclusions = exclusionMap.get(subHierarchyStart);
 		if (theseExclusions != null) {
 			for (Concept thisExclusion : theseExclusions) {
-				info ("For " + subHierarchyStart + " removing " + thisExclusion);
+				LOGGER.info ("For " + subHierarchyStart + " removing " + thisExclusion);
 				subSet.removeAll(gl.getDescendantsCache().getDescendentsOrSelf(thisExclusion));
 			}
 		}

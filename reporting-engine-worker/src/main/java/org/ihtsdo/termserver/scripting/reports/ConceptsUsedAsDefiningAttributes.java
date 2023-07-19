@@ -19,7 +19,14 @@ import java.util.stream.Collectors;
  * Optionally include descendants of the attributes found
  * Optionally just look at Stated Modeling (otherwise both)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsUsedAsDefiningAttributes extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsUsedAsDefiningAttributes.class);
+
 	public static final String SELECT_CONCEPTS_ECL = "Select Concepts ECL";
 	public static final String FILTER_CONCEPTS_REGEX = "Filter Concepts RegEx";	
 	public static final String INCLUDE_DESCENDANTS = "Include Descendants";
@@ -103,7 +110,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 	public void runJob() throws TermServerScriptException {
 		//First find the concepts that we're working with here
 		List<Concept> attributeValuesOfInterest = getAttributeValuesOfInterest();
-		info("Collected " + attributeValuesOfInterest.size() + " attribute values of interest");
+		LOGGER.info("Collected " + attributeValuesOfInterest.size() + " attribute values of interest");
 		Set<Concept> reported = new HashSet<>();
 		List<Concept> activeConcepts = gl.getAllConcepts().stream()
 				.filter(Concept::isActive)

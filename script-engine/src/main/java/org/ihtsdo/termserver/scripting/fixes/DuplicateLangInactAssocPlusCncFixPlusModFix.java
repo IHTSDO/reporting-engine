@@ -22,8 +22,14 @@ import org.springframework.web.client.RestClientResponseException;
  * ISRS-1257 Detect CNC indicators on descriptions that have been made inactive and remove
  * MSSP-1571 Detect refset members that apply to extension components but have been created in the core module
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateLangInactAssocPlusCncFixPlusModFix.class);
+
 	String defaultModuleId = null;
 	
 	protected DuplicateLangInactAssocPlusCncFixPlusModFix(final BatchFix clone) {
@@ -80,13 +86,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		int changesMade = 0;
 		
 		/*if (c.getId().equals("359592009")) {
-			debug ("here");
+			LOGGER.debug ("here");
 		}*/
 		
 		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
-				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete);
 				if (!dryRun) {
 					try {
@@ -111,7 +117,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		duplicatePairs = getDuplicateRefsetMembers(c, c.getAssociationEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
-				debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 				if (!dryRun) {
 					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
@@ -136,14 +142,14 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		
 		for (final Description d : c.getDescriptions()) {
 			/*if (d.getId().equals("2966088011")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			
 			//Langrefset entries should be checked, regardless if the description is inScope or not
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				if (duplicatePair.isDeleting()) {
-					debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
+					LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
 					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 					if (!dryRun) {
 						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
@@ -165,7 +171,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				if (duplicatePair.isDeleting()) {
-					debug((dryRun?"Dry Run (so not) r":"R") + "emoving duplicate: " + duplicatePair.delete);
+					LOGGER.debug((dryRun?"Dry Run (so not) r":"R") + "emoving duplicate: " + duplicatePair.delete);
 					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
 					if (!dryRun) {
 						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
@@ -190,7 +196,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			
 			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 				/*if (d.getId().equals("3902340014")) {
-					debug("here");
+					LOGGER.debug("here");
 				}*/
 				Description dLoaded = loaded.getDescription(d.getDescriptionId());
 				//We'll set the indicator directly on the description in the browser object
@@ -259,7 +265,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				r.duplicates(sibling) &&
 				!sibling.isActive()) {
 				sibling.setActive(true);
-				debug((dryRun?"Dry Run, not ":"") + "Reactivating published: " + sibling);
+				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Reactivating published: " + sibling);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REACTIVATED, sibling);
 				if (!dryRun) {
 					tsClient.updateRefsetMember(sibling, t.getBranchPath());
@@ -274,7 +280,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		// Work through all inactive concepts and check the inactivation indicators on
 		// active descriptions
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		setQuiet(true);
 		final List<Component> processMe = new ArrayList<Component>();
 		
@@ -284,7 +290,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			boolean hasChanges = SnomedUtils.hasChanges(c);
 			for (Description d : c.getDescriptions()) {
 				/*if (d.getId().equals("61401000195115")) {
-						debug("here");
+						LOGGER.debug("here");
 				}*/
 				
 				//Too many of these in the international edition - discuss elsewhere
@@ -336,7 +342,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			}
 		}
 		setQuiet(false);
-		info("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 	
@@ -369,7 +375,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		List<DuplicatePair> duplicatePairs = new ArrayList<>();
 		for (final RefsetMember thisEntry : refsetMembers) {
 			/*if (thisEntry.getId().equals("7816cc67-b074-4bb3-993d-ce8487e23e0a")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			// Check against every other entry
 			for (final RefsetMember thatEntry : refsetMembers) {
@@ -389,19 +395,19 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						
 						if (intRM != null && extRM != null) {
 							if (intRM.isActive() && !extRM.isActive() && StringUtils.isEmpty(extRM.getEffectiveTime())) {
-								warn("Inactivated refsetmember in extension.  As good as it gets: " + extRM);
+								LOGGER.warn("Inactivated refsetmember in extension.  As good as it gets: " + extRM);
 							}
 						}
 						
 						// Only a problem historically if they're both active
 						if (thisEntry.isActive() && thatEntry.isActive()) {
-							warn("Both entries are released and active! " + thisEntry + " + " + thatEntry);
+							LOGGER.warn("Both entries are released and active! " + thisEntry + " + " + thatEntry);
 						}
 						
 						//That said, if one or both of them have a null effective time, then it LOOKS like we 
 						//created something redundant in the last authoring cycle.
 						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) || StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-							warn("Previously released entry(s) have lost effective time: " + thisEntry + " + " + thatEntry);
+							LOGGER.warn("Previously released entry(s) have lost effective time: " + thisEntry + " + " + thatEntry);
 							//Have we modified a previously active refset member such that it's now a duplicate with a previously inactive one?
 							//In this case we need to revert the active one back to it's previous value, inactive it
 							//and resurrect the previously inactive value instead
@@ -410,13 +416,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							
 							//If both have been released, and we've recently made one inactive, then that's as good as it gets.  Skip
 							if (duplicationRecentlyResolved(thisEntry, thatEntry)) {
-								warn("Previous duplication appears to have been resolved (recent inactivation) between " + thisEntry + " and " + thatEntry);
+								LOGGER.warn("Previous duplication appears to have been resolved (recent inactivation) between " + thisEntry + " and " + thatEntry);
 								continue;
 							}
 							
 							//With reuse, it's possible for them both to be inactive also!
 							if (!thisEntry.isActive() && !thatEntry.isActive()) {
-								warn("Both entries are released, both inactive, but have been modified! " + thisEntry + " + " + thatEntry);
+								LOGGER.warn("Both entries are released, both inactive, but have been modified! " + thisEntry + " + " + thatEntry);
 								//In this case it doesn't matter which one we revert.  Take 'this'
 								duplicatePair = new DuplicatePair().modify(previousThis);
 							} else {
@@ -469,12 +475,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					} else {
 						// Only a problem historically if they're both active
 						if (thisEntry.isActive() && thatEntry.isActive()) {
-							warn("Both entries look published and active! " + thisEntry.getEffectiveTime());
+							LOGGER.warn("Both entries look published and active! " + thisEntry.getEffectiveTime());
 						}
 					}
 				}
 				if (duplicatePair != null) {
-					debug(duplicatePair);
+					LOGGER.debug(duplicatePair.toString());
 					duplicatePairs.add(duplicatePair);
 				}
 			}
@@ -529,7 +535,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			}
 		}
 		if (!lhsMatches && !rhsMatches) {
-			warn ("Neither refset members featured target or value " + lhs + " vs " + rhs);
+			LOGGER.warn ("Neither refset members featured target or value " + lhs + " vs " + rhs);
 			return null;
 		}
 		if (matching) {
@@ -541,7 +547,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private RefsetMember chooseActive(RefsetMember thisEntry, RefsetMember thatEntry, boolean active) {
 		if ((thisEntry.isActive() && thatEntry.isActive()) ||
 			(!thisEntry.isActive() && !thatEntry.isActive())) {
-			warn("Unable to find one active member of pair " + thisEntry + " vs " + thatEntry);
+			LOGGER.warn("Unable to find one active member of pair " + thisEntry + " vs " + thatEntry);
 			return null;
 		}
 		

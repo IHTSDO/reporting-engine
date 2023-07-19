@@ -21,8 +21,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * - with associated Acceptability - adding the word "Entire" and
  * inactivate the existing terms.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AddEntire extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AddEntire.class);
+
 	enum MODE { FSN_PT, SYN };
 	private MODE mode = null;
 	

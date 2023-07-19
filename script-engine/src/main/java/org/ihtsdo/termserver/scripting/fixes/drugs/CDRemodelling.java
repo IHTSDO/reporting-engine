@@ -27,8 +27,14 @@ DRUGS-496 (Pattern 3b - Creams and Drops)
 2019 Work
 DRUGS-668 
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CDRemodelling.class);
+
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
 	Map<Description, Concept> substanceMap = new HashMap<>();
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
@@ -74,7 +80,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	public void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		if (getInputFile(1) == null) {
-			warn ("No input file specified to verify terms");
+			LOGGER.warn ("No input file specified to verify terms");
 		} else {
 			termVerifier = new TermVerifier(getInputFile(1),this);
 			termVerifier.init();
@@ -299,7 +305,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
 		
 		if (c.getConceptId().equals("377496003") || c.getConceptId().equals("377496003") ) {
-			debug("Debug here!");
+			LOGGER.debug("Debug here!");
 		}
 		
 		//Is this the first time we've seen this concept?
@@ -340,7 +346,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 			
 			StrengthUnit numerator = new StrengthUnit(Double.parseDouble(items[6]), DrugUtils.findUnitOfMeasure(items[7]));
 			if (DrugUtils.normalizeStrengthUnit(numerator)) {
-				warn ("Normalized Strength of " + c + ": " + numerator);
+				LOGGER.warn ("Normalized Strength of " + c + ": " + numerator);
 			}
 			
 			//Is this a number we have as a concept?

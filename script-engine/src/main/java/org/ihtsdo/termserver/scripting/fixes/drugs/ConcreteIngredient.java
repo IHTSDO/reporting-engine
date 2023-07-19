@@ -3,7 +3,13 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConcreteIngredient {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConcreteIngredient.class);
 
 	public Concept doseForm;
 	public Concept substance;

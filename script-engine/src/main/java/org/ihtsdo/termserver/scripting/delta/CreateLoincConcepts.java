@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateLoincConcepts extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CreateLoincConcepts.class);
+
 	DefinitionStatus defStatus = DefinitionStatus.FULLY_DEFINED;
 	Map<LoincElement, Concept> loincAttributes;
 	Relationship isAObservable;
@@ -76,10 +82,10 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			header = br.readLine();
 		}
 		if (header.contains("Technique")) {
-			info ("LOINC file format identified as 99-2");
+			LOGGER.info ("LOINC file format identified as 99-2");
 			is99_2 = true;
 		} else {
-			info ("LOINC file format identified as 99-1");
+			LOGGER.info ("LOINC file format identified as 99-1");
 		}
 		loincAttributes = new HashMap<>();
 		loincAttributes.put(LoincElement.Component, gl.getConcept(246093002L));
@@ -109,7 +115,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		for (Component thisConcept : newConcepts) {
 			outputRF2((Concept)thisConcept);
 		}
-		info("\nOutputting complete");
+		LOGGER.info("\nOutputting complete");
 		return null;
 	}
 

@@ -9,8 +9,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MismatchedRelationships extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MismatchedRelationships.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;
 	
@@ -22,7 +28,7 @@ public class MismatchedRelationships extends TermServerScript{
 			report.loadProjectSnapshot(false);
 			report.detectMismatchedRelationships();
 		} catch (Exception e) {
-			info("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -34,12 +40,12 @@ public class MismatchedRelationships extends TermServerScript{
 		//attribute type, report if the inferred relationship does not
 		//match the inferred one.
 		Concept targetAttribute = gl.getConcept(targetAttributeType);
-		info("Checking " + gl.getAllConcepts().size() + " concepts for mismatched " + targetAttribute);
+		LOGGER.info("Checking " + gl.getAllConcepts().size() + " concepts for mismatched " + targetAttribute);
 		int mismatchedRelationships = 0;
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				warn(msg);
+				LOGGER.warn(msg);
 			}
 			Set<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			Set<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
@@ -63,7 +69,7 @@ public class MismatchedRelationships extends TermServerScript{
 				}
 			}
 		}
-		info("Detected " + mismatchedRelationships + " mismatched Relationships");
+		LOGGER.info("Detected " + mismatchedRelationships + " mismatched Relationships");
 	}
 	
 	@Override

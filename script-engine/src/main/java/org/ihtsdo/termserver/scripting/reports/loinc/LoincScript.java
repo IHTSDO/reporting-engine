@@ -21,7 +21,13 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincScript extends TermServerScript implements LoincConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
 
 	protected static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
@@ -59,7 +65,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	}
 	
 	protected void loadLoincDetail() {
-		info ("Loading Loinc Detail: " + getInputFile(FILE_IDX_LOINC_DETAIL));
+		LOGGER.info ("Loading Loinc Detail: " + getInputFile(FILE_IDX_LOINC_DETAIL));
 		BufferedReader in = null;
 		try {
 			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_DETAIL)));
@@ -83,7 +89,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 				count++;
 				line = in.readLine();
 			}
-			info("Loaded " + count + " details for " + loincDetailMap.size() + " loincNums");
+			LOGGER.info("Loaded " + count + " details for " + loincDetailMap.size() + " loincNums");
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_DETAIL), e);
 		} finally {
@@ -96,7 +102,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	}
 	
 	protected void loadLoincParts() throws TermServerScriptException {
-		info ("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
+		LOGGER.info ("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_PARTS)));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
@@ -110,7 +116,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 				}
 				loincParts.put(loincPart.getPartNumber(), loincPart);
 			}
-			info("Loaded " + loincParts.size() + " loinc parts.");
+			LOGGER.info("Loaded " + loincParts.size() + " loinc parts.");
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_PARTS), e);
 		}
@@ -120,7 +126,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 		int total  = 0;
 		int existingConceptCount = 0;
 		try {
-			info ("Loading " + getInputFile(FILE_IDX_LOINC_100));
+			LOGGER.info ("Loading " + getInputFile(FILE_IDX_LOINC_100));
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100)))) {
 				String line;
@@ -169,7 +175,7 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	
 	protected void loadFullLoincFile(int tabIdx) {
 		additionalThreadCount++;
-		info ("Loading Full Loinc: " + getInputFile(FILE_IDX_LOINC_FULL));
+		LOGGER.info ("Loading Full Loinc: " + getInputFile(FILE_IDX_LOINC_FULL));
 		loincNumToLoincTermMap = new HashMap<>();
 		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {

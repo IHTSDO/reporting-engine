@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * INFRA-2133
  * Class to replace relationships with alternatives
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ModelCongenitalAbnormality extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ModelCongenitalAbnormality.class);
+
 	String subHierarchyStr = "276654001"; // | Congenital malformation (disorder) |
 	//String subHierarchyStr = "66091009"; //  |Congenital disease (disorder)|
 	Concept findingSite;
@@ -48,7 +54,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -79,7 +85,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		
 		addRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
 		
-		info("Finding relationships to add...");
+		LOGGER.info("Finding relationships to add...");
 		Concept valueSubHierarchy = gl.getConcept("21390004"); //|Developmental anomaly (morphologic abnormality)
 		Set<Concept> valuesToMatch = valueSubHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 		for (Concept thisValue : valuesToMatch) {
@@ -88,7 +94,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	}
 	
 	private void process() throws TermServerScriptException {
-		info("Processing...");
+		LOGGER.info("Processing...");
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 		concepts.add(subHierarchy);  //Descendants and Self
@@ -216,7 +222,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 			f.setActive(false);
 			report (c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated group 0 finding site: " + f);
 		} else {
-			warn ("Failed to move finding site for " + c);
+			LOGGER.warn ("Failed to move finding site for " + c);
 		}
 		return changesMade;
 	}
@@ -246,7 +252,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		//Which occurrences are we missing?
 		allParentOccurrenceTargets.removeAll(existingOccurrenceTargets);
 		if (allParentOccurrenceTargets.size() > 1) {
-			warn (concept + " is gaining " + allParentOccurrenceTargets.size() + " occurrances");
+			LOGGER.warn (concept + " is gaining " + allParentOccurrenceTargets.size() + " occurrances");
 		}
 		
 		for (Concept requiredOccurrenceTarget : allParentOccurrenceTargets) {

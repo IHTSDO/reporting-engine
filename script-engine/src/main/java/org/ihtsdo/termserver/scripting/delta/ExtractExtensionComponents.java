@@ -24,8 +24,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * into the core module.
  * TODO Load in the MRCM and properly populate the Never Group attributes
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ExtractExtensionComponents extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
+
 	private List<Component> allIdentifiedConcepts;
 	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
@@ -84,7 +90,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
-		info ("Select an environment for live secondary checking ");
+		LOGGER.info ("Select an environment for live secondary checking ");
 		for (int i=0; i < environments.length; i++) {
 			println("  " + i + ": " + environments[i]);
 		}
@@ -196,7 +202,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			descendantsToImport.retainAll(componentsOfInterest);
 			if (descendantsToImport.size() > 0) {
 				alsoImportingDescendants = true;
-				info(c + " has " + descendantsToImport.size() + " descendants to import");
+				LOGGER.info(c + " has " + descendantsToImport.size() + " descendants to import");
 				if (descendantsToImport.size() >= conceptsPerArchive) {
 					//We'll need to load this concept in it's own import and promote to the project 
 					//so it's available as a parent for subsequent loads
@@ -240,14 +246,14 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					Set<Concept> thisBatch = parentChildMap.get(batchParent);
 					thisBatch.add(bestMerge);
 					thisBatch.addAll(parentChildMap.get(bestMerge));
-					info ("Adding " + bestMerge + "(" + (parentChildMap.get(bestMerge).size() + 1) + ") to batch with parent " + batchParent);
+					LOGGER.info ("Adding " + bestMerge + "(" + (parentChildMap.get(bestMerge).size() + 1) + ") to batch with parent " + batchParent);
 					parentChildMap.remove(bestMerge);
 				}
 			} while (bestMerge != null);
 		}
 		
 		//Now allocate the footloose concepts to fill up existing or new batches
-		info("Allocating " + footlooseConcepts.size() + " loose concepts to " + parentChildMap.size() + " existing batches");
+		LOGGER.info("Allocating " + footlooseConcepts.size() + " loose concepts to " + parentChildMap.size() + " existing batches");
 		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
 			int thisBatchSize = parentChildMap.get(batchParent).size() + 1;
 			if (thisBatchSize >= conceptsPerArchive) {
@@ -270,13 +276,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		//Add these batches into our queue, as we log the size of each one
-		info("Batches Formed:");
+		LOGGER.info("Batches Formed:");
 		int batchNo = 0;
 		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
 			List<Component> thisBatch = new ArrayList<>();
 			thisBatch.add(batchParent);
 			thisBatch.addAll(parentChildMap.get(batchParent));
-			info(++batchNo + ": " + batchParent + " - " +  thisBatch.size());
+			LOGGER.info(++batchNo + ": " + batchParent + " - " +  thisBatch.size());
 			archiveBatches.add(thisBatch);
 		}
 		
@@ -286,20 +292,20 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			thisBatch.add(footlooseConcepts.remove());
 			if (thisBatch.size() == conceptsPerArchive) {
 				archiveBatches.add(thisBatch);
-				info(++batchNo + ": No Hierarchy - " + thisBatch.size());
+				LOGGER.info(++batchNo + ": No Hierarchy - " + thisBatch.size());
 				thisBatch = new ArrayList<>();
 			}
 		}
 		
 		if (thisBatch.size() > 0) {
 			archiveBatches.add(thisBatch);
-			info(++batchNo + ": No Hierarchy - " + thisBatch.size());
+			LOGGER.info(++batchNo + ": No Hierarchy - " + thisBatch.size());
 		}
 		
 		long totalConceptsInBatches = archiveBatches.stream()
 				.flatMap(l -> l.stream())
 				.count();
-		info("Total concepts pre-processed into batches: " + totalConceptsInBatches);
+		LOGGER.info("Total concepts pre-processed into batches: " + totalConceptsInBatches);
 		
 		if ((int)totalConceptsInBatches != componentsOfInterest.size()) {
 			throw new TermServerScriptException("Expected to allocated " + componentsOfInterest.size() + " concepts.");
@@ -325,7 +331,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (archiveBatches != null) {
 			int batchNum = 1;
 			while (!archiveBatches.isEmpty()) {
-				info ("Processing archive batch " + batchNum++);
+				LOGGER.info ("Processing archive batch " + batchNum++);
 				process(archiveBatches.remove());
 				createOutputArchive();
 				gl.setAllComponentsClean();
@@ -356,11 +362,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> process(List<Component> componentsToProcess) throws TermServerScriptException {
 		addSummaryInformation("Concepts specified", componentsToProcess.size());
 		initialiseSummaryInformation("Unexpected dependencies included");
-		info ("Extracting specified concepts");
+		LOGGER.info ("Extracting specified concepts");
 		for (Component thisComponent : componentsToProcess) {
 			Concept thisConcept = (Concept)thisComponent;
 			/*if (thisConcept.getId().equals("445028008")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
@@ -400,7 +406,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		boolean conceptAlreadyTransferred = false;
 		
 		/*if (c.getConceptId().equals("1255997005")) {
-			debug("Here: " + c);
+			LOGGER.debug("Here: " + c);
 		}*/
 		
 		//Have we already attempted to move this concept?  Don't try again
@@ -459,7 +465,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
 					} else {
 						String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
-						warn(msg);
+						LOGGER.warn(msg);
 						report(c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
 					}
 				}
@@ -487,7 +493,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
 				//However, don't move inactive descriptions if they don't already exist at the target location
 				if (!d.isActive() && conceptOnTS.getDescription(d.getId()) == null) {
-					info("Skipping inactive description, not existing in target location: " + d);
+					LOGGER.info("Skipping inactive description, not existing in target location: " + d);
 					continue;
 				}
 				
@@ -555,7 +561,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				relationshipAlreadyMoved = true;
 			} else {
 				if (r.isActive() && !r.fromAxiom()) {
-					info ("Unexpected active stated relationship not from axiom: "+ r);
+					LOGGER.info ("Unexpected active stated relationship not from axiom: "+ r);
 				}
 				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
 					subComponentsMoved = true;
@@ -693,7 +699,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					}
 				}
 			} else {
-				warn ("No Axiom Representation found for : " + c + " : " + a.getOwlExpression());
+				LOGGER.warn ("No Axiom Representation found for : " + c + " : " + a.getOwlExpression());
 			}
 		} catch (ConversionException e) {
 			throw new TermServerScriptException("Failed to convert axiom for " + c , e);

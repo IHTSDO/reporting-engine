@@ -18,8 +18,14 @@ For Jim.  In the Clinical Findings hierarchy, find concepts starting "On Examina
 and "Complaining of X" and see if they have X on its own as a parent
 
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(OnExamination_or_ComplainingOf.class);
+
 	String[] itemsOfInterest = new String[] { "On examination - ", "Complaining of "};
 	String targetHierarchy = "404684003"; // |Clinical finding (finding)|
 	//String except = "64572001"; // |Disease (disorder)|
@@ -125,7 +131,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		Collection<Concept> checkMe = gl.getConcept(targetHierarchy).getDescendents(NOT_SET);
 		List<Component> processMe = new ArrayList<>();
 		
@@ -140,7 +146,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 				print(".");
 			}
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

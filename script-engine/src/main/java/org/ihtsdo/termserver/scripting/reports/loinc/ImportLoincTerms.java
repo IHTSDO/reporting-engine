@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * LE-3
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
+
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
@@ -150,7 +156,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		/*if (loincNum.equals("7994-7")) {
-			debug("here");
+			LOGGER.debug("here");
 		}*/
 		
 		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
@@ -223,7 +229,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
 			loincNumToSnomedConceptMap.put(LoincUtils.getLoincNumFromDescription(c), c);
 		}
-		info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
+		LOGGER.info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
 	}
 	
 	/*private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {

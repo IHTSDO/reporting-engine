@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * Reports all concepts in the LOINC module that feature some attribute + value
  * INFRA-4793
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincMatchingAttributes extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincMatchingAttributes.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		LoincMatchingAttributes report = new LoincMatchingAttributes();
 		try {
@@ -36,7 +42,7 @@ public class LoincMatchingAttributes extends TermServerScript{
 		for (Concept c : gl.getAllConcepts()) {
 			boolean attributeTypeDetected = false;
 			if (c.isActive() && c.getModuleId().equals(SCTID_LOINC_EXTENSION_MODULE)) {
-				//debug(c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				//LOGGER.debug(c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (r.isActive() && r.getType().equals(targetType)) {
 						report(c, r);
@@ -56,8 +62,8 @@ public class LoincMatchingAttributes extends TermServerScript{
 				loincInactive++;
 			}
 		}
-		info ("LOINC concepts not using direct site: " + noAttributeTypeDetected);
-		info ("LOINC concepts inactive: " + loincInactive);
+		LOGGER.info ("LOINC concepts not using direct site: " + noAttributeTypeDetected);
+		LOGGER.info ("LOINC concepts inactive: " + loincInactive);
 	}
 
 }

@@ -23,7 +23,13 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import java.util.HashSet;
 import java.util.Set;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CrossoverUtils implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CrossoverUtils.class);
 
 	 /* The Enum TEST_RESULTS.
 	 */

@@ -25,8 +25,14 @@ Can you assign the associated authoring tasks to me for review and promotion (pl
 
 If any of the concepts has description(s) that don't follow the above noted patterns, I would like a report of all of them (including Concept ID, FSN, Description) for manual review.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CTR19_CaseSensitivity.class);
+
 	String[] textsToMatch = new String[] { "Clade","Class","Division",
 			"Domain","Family","Genus","Infraclass",
 			"Infraclass","Infrakingdom","Infraorder",
@@ -64,7 +70,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 		try {
 			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "foo desc", null, null);
 		} catch (Exception e) {
-			debug ("Exception " + e);
+			LOGGER.debug ("Exception " + e);
 		}
 		
 		try {
@@ -72,7 +78,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 			//testClient = testClient.clone();
 			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "bar desc", null, null);
 		} catch (Exception e) {
-			debug ("Exception " + e);
+			LOGGER.debug ("Exception " + e);
 		}
 	}
 
@@ -94,7 +100,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 		int changesMade = 0;
 		
 		if (c.getConceptId().equals("106783002")) {
-			//debug ("Debug Me!");
+			//LOGGER.debug ("Debug Me!");
 		}
 		//First given that FSN is <Taxon> X, what is X?
 		String X = findX(c.getFsn());

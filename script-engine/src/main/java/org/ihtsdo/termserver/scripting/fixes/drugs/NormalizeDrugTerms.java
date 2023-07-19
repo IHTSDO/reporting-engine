@@ -24,8 +24,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * DRUGS-562 - Editorial Guide updated for Structure and Disposition Groupers
  * DRUGS-786 - Batch terming update
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugTerms.class);
+
 	String subHierarchyStr = MEDICINAL_PRODUCT.getConceptId();
 	//static Map<String, String> replacementMap = new HashMap<String, String>();
 	private List<String> exceptions = new ArrayList<>();
@@ -105,7 +111,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants 
 	}
 	*/
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		debug("Identifying concepts to process");
+		LOGGER.debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
 		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
@@ -130,7 +136,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants 
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
 		termGenerator.setQuiet(false);
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);

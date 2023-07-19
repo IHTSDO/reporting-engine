@@ -12,9 +12,6 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
 
-import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
-
 /*
 Checks that all inactive concepts have no more than one active inactivation indicator, and attempts to 
 inactivate the surplus.

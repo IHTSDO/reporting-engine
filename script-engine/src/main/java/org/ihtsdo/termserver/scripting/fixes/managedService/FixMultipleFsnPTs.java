@@ -20,8 +20,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * come through from INT, but there is no instruction to inactivated the existing ones, so 
  * we end up with multiple FSNs & PTs
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FixMultipleFsnPTs.class);
+
 	Set<Description> duplicateDescriptions = new HashSet<>();
 	
 	protected FixMultipleFsnPTs(BatchFix clone) {
@@ -136,7 +142,7 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		
 		nextConcept:
@@ -160,7 +166,7 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 			}
 		}
 		
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

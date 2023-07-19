@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DrugBatchFix.class);
+
 	static Map<String, String> wordSubstitution = new HashMap<String, String>();
 	static {
 		wordSubstitution.put("acetaminophen", "paracetamol");

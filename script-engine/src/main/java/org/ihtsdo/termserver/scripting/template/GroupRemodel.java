@@ -26,8 +26,14 @@ import com.google.common.io.Files;
  * into group 1.  Skip any cases of multiple attributes types with values that are not in 
  * the same subhierarchy.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GroupRemodel extends TemplateFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GroupRemodel.class);
+
 	Set<Concept> groupedAttributeTypes = new HashSet<>();
 	Set<Concept> ungroupedAttributeTypes = new HashSet<>();
 	Set<Concept> formNewGroupAround = new HashSet<>();
@@ -49,7 +55,7 @@ public class GroupRemodel extends TemplateFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to Group Remodel due to " + e.getMessage());
+			LOGGER.info("Failed to Group Remodel due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
@@ -284,7 +290,7 @@ public class GroupRemodel extends TemplateFix {
 		groups = shuffleDown(groups);
 		
 		if (groups.size() < 2) {
-			debug ("Debug Here!");
+			LOGGER.debug ("Debug Here!");
 		}
 		
 		//Now if we have multiple template groups, align those to any existing attributes
@@ -572,7 +578,7 @@ public class GroupRemodel extends TemplateFix {
 		for (Relationship removeRel : removeRelationships) {
 			if (removeRel.getType().equals(type)) {
 				values.remove(removeRel.getTarget());
-				debug("Removed potential relationship " + removeRel);
+				LOGGER.debug("Removed potential relationship " + removeRel);
 			}
 		}
 		
@@ -597,12 +603,12 @@ public class GroupRemodel extends TemplateFix {
 					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved to group " + group.getGroupId() + ": " + ungroupedRel);
 					return CHANGE_MADE;
 				} else if (ungroupedRels.size() > 1) {
-					warn ("Consider this case");
+					LOGGER.warn ("Consider this case");
 				}
 			}
 			Concept value = values.iterator().next();
 			if (value == null) {
-				warn ("Should not be null");
+				LOGGER.warn ("Should not be null");
 			}
 			//If this relationship type/value doesn't already exist in this group, stated, add it
 			Relationship r = new Relationship (c, type, value, group.getGroupId());
@@ -635,7 +641,7 @@ public class GroupRemodel extends TemplateFix {
 		//Actually, we could just skip them in the first place.
 		/*if (type.equals(FINDING_SITE) && (( c.getRelationships(charType, type, disjointAttributeValues.get(0), UNGROUPED, ActiveState.ACTIVE).size() > 0) ||
 				c.getRelationships(charType, type, disjointAttributeValues.get(1), UNGROUPED, ActiveState.ACTIVE).size() > 0 )) {
-			debug ("Finding site in group 0, not forming 2nd group: " + c );
+			LOGGER.debug ("Finding site in group 0, not forming 2nd group: " + c );
 			return NO_CHANGES_MADE;
 		}*/
 		
@@ -645,7 +651,7 @@ public class GroupRemodel extends TemplateFix {
 			if (a.getValue() != null && a.getType().equals(type.getConceptId())) {
 				for (Concept value : values) {
 					if (a.getValue().equals(value.getConceptId())) {
-						debug ( type + "= " + value + " specified in template, no additional group required." );
+						LOGGER.debug ( type + "= " + value + " specified in template, no additional group required." );
 						return NO_CHANGES_MADE;
 					}
 				}
@@ -663,7 +669,7 @@ public class GroupRemodel extends TemplateFix {
 			int changesMade = 0;
 			for (Concept value : affinitySorted) {
 				if (groupId >= groups.size()) {
-					warn("Check here!");
+					LOGGER.warn("Check here!");
 				}
 				
 				if (value != null) {
@@ -815,7 +821,7 @@ public class GroupRemodel extends TemplateFix {
 			} catch (Exception e) {
 				throw new TermServerScriptException("Unable to read already processed concepts from " + alreadyProcessedFile, e);
 			}
-			info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
+			LOGGER.info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
 		}
 		
 		for (Concept c : findConcepts(subsetECL)) {
@@ -864,7 +870,7 @@ public class GroupRemodel extends TemplateFix {
 	protected boolean isExcluded(Concept c, boolean quiet) throws TermServerScriptException {
 		if (skipMultipleUngroupedFindingSites) {
 			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {
-				warn("Excluding due to multiple ungrouped finding sites: " + c);
+				LOGGER.warn("Excluding due to multiple ungrouped finding sites: " + c);
 				return true;
 			}
 		}
@@ -896,7 +902,7 @@ public class GroupRemodel extends TemplateFix {
 		for (Concept unchanged : noChangesMade) {
 			report ((Task)null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
 		}
-		info("First pass attempt at remodel complete, " + firstPassComplete.size() + " concepts identified to change from an initial " + processMe.size() + ". " + noChangesMade.size() + " had no changes.");
+		LOGGER.info("First pass attempt at remodel complete, " + firstPassComplete.size() + " concepts identified to change from an initial " + processMe.size() + ". " + noChangesMade.size() + " had no changes.");
 		return firstPassComplete;
 	}
 

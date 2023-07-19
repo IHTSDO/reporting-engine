@@ -21,8 +21,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MP_MPF_Validation extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MP_MPF_Validation.class);
+
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
@@ -115,7 +121,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		populateSummaryTab();
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void validateDrugsModeling() throws TermServerScriptException {
@@ -139,7 +145,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete " + (int)percComplete);
 			}
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
@@ -181,7 +187,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			//RP-175
 			validateAttributeRules(c);
 		}
-		info ("Drugs validation complete");
+		LOGGER.info ("Drugs validation complete");
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -305,7 +311,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		}
 		
 		if (ingredBases.size() != 1) {
-			debug("Unable to obtain single BoSS from " + rg.toString());
+			LOGGER.debug("Unable to obtain single BoSS from " + rg.toString());
 			return null;
 		} else {
 			Concept base = ingredBases.iterator().next();
@@ -339,7 +345,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
-			debug ("Debug here - hit a null");
+			LOGGER.debug ("Debug here - hit a null");
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
@@ -408,7 +414,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			}
 		}
 		//throw new TermServerScriptException("Unable to find semantic tag level for: " + c);
-		error("Unable to find semantic tag level for: " + c, null);
+		LOGGER.error("Unable to find semantic tag level for: " + c, (Exception)null);
 		return NOT_SET;
 	}
 
@@ -620,7 +626,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		debug ("Loading " + fileName );
+		LOGGER.debug ("Loading " + fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			boolean isHeader = true;

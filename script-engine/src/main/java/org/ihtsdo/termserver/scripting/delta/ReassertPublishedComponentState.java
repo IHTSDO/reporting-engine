@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * MSSP-1661 Need to reassert various components back to their previously published state,
  * but restricted to those exact components
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReassertPublishedComponentState extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedComponentState.class);
+
 	/*String[] componentsToProcess = new String[] {
 		"5169695010",
 		"5090569016",
@@ -85,7 +91,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}

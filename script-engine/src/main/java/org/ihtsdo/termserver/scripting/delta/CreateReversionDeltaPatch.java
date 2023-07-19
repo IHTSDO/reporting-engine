@@ -17,8 +17,14 @@ import com.google.common.io.Files;
  * state of those components from some prior state.
  * In this case setting -p SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateReversionDeltaPatch extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CreateReversionDeltaPatch.class);
+
 	//If this array is empty, we'll attempt to load from file specified in -f parameter
 	private String[] componentIds; /* = new String[] 
 	{
@@ -62,7 +68,7 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 		for (String componentId : componentIds) {
 			Component c = gl.getComponent(componentId);
 			if (c == null) {
-				warn("Did not find component: " + componentId);
+				LOGGER.warn("Did not find component: " + componentId);
 			} else {
 				c.setDirty();
 				Concept concept = gl.getComponentOwner(componentId);
@@ -82,7 +88,7 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 	}
 
 	private void loadComponentsToProcess() throws TermServerScriptException {
-		debug ("Loading " + getInputFile() );
+		LOGGER.debug ("Loading " + getInputFile() );
 		try {
 			componentIds = Files.readLines(getInputFile(), Charsets.UTF_8).toArray(new String[0]);
 		} catch (IOException e) {

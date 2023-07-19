@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * DRUGS-244 Report where the number of stated attributes of a given type does not equal
  * the number of inferred.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CardinalityMismatch extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CardinalityMismatch.class);
+
 	Concept attributeType = HAS_DISPOSITION;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -24,7 +30,7 @@ public class CardinalityMismatch extends TermServerReport {
 			report.loadProjectSnapshot(true);  
 			report.finMultipleModifications();
 		} catch (Exception e) {
-			info("Failed to produce MultipleModifications due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			LOGGER.info("Failed to produce MultipleModifications due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

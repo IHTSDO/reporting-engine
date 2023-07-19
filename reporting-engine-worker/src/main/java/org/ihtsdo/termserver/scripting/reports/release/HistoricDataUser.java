@@ -253,7 +253,7 @@ public class HistoricDataUser extends TermServerReport {
 
 	@Override
 	protected boolean inScope(Component c) {
-		//If we've specified some modules explicitly, then allow those to 
+		//If we've specified some modules explicitly, then allow those to
 		//take precidence
 		if (moduleFilter != null && moduleFilter.size() > 0) {
 			return moduleFilter.contains(c.getModuleId());

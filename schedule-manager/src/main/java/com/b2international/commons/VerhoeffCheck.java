@@ -19,8 +19,14 @@ package com.b2international.commons;
  * Implementation of the Verhoeff algorithm.
  * 
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class VerhoeffCheck {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(VerhoeffCheck.class);
+
 	/**
 	 * Represents the multiplication table.
 	 */

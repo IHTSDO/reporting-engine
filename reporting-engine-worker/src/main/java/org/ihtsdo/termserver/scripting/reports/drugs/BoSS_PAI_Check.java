@@ -15,8 +15,14 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(BoSS_PAI_Check.class);
+
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
@@ -94,7 +100,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		populateSummaryTab();
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void validateDrugsModeling() throws TermServerScriptException {
@@ -109,7 +115,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete " + (int)percComplete);
 			}
 			
 			//DRUGS-267
@@ -125,7 +131,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 				checkForPaiGroupers(c);
 			}
 		}
-		info ("Drugs validation complete");
+		LOGGER.info ("Drugs validation complete");
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -246,7 +252,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 		}
 		
 		if (ingredBases.size() != 1) {
-			debug("Unable to obtain single BoSS from " + rg.toString());
+			LOGGER.debug("Unable to obtain single BoSS from " + rg.toString());
 			return null;
 		} else {
 			Concept base = ingredBases.iterator().next();
@@ -268,7 +274,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 			BaseMDF baseMDF = getBaseMDF(rg, mdf);
 			
 			if (baseMDF == null) {
-				debug("Failed to obtain baseMDF in " + concept);
+				LOGGER.debug("Failed to obtain baseMDF in " + concept);
 				continue;
 			}
 			
@@ -281,7 +287,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 			BoSSPAI boSSPAI = new BoSSPAI(boSS, pai);
 			Set<RelationshipGroup> relGroups = baseMDFMap.get(baseMDF);
 			if (relGroups == null) {
-				debug("Unable to find stored relGroups against " + baseMDF + " from " + concept);
+				LOGGER.debug("Unable to find stored relGroups against " + baseMDF + " from " + concept);
 			} else {
 				String mismatchingDetails = "";
 				Set<BoSSPAI> bossPAIcombosReported = new HashSet<>();

@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * INFRA-5421 'Fix for 7672 instances of:
  * 'An active preferred term matching a FSN on an inactive concept must have same case significance'
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix_INFRA_5421.class);
+
 	String[] knownLowerCase = new String[] { "mm", "nm" };
 	CaseSensitivityUtils csUtils = new CaseSensitivityUtils();
 	
@@ -132,7 +138,7 @@ public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements ScriptCo
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();
-		info ("Identifying incorrect case signficance settings");
+		LOGGER.info ("Identifying incorrect case signficance settings");
 		for (Concept c : gl.getAllConcepts()) {
 			//Looking for PTs on inactive concept which matches FSN but does not have the same case sig
 			if (!c.isActive()) {
@@ -153,7 +159,7 @@ public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements ScriptCo
 				}
 			}
 		}
-		debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

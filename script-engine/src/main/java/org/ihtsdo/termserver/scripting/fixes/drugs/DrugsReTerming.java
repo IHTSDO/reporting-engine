@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.util.*;
 	Makes modifications to terms, driven by an input CSV file
 	See DRUGS-291
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DrugsReTerming.class);
+
 	String[] author_reviewer = new String[] {targetAuthor};
 	
 	protected DrugsReTerming(BatchFix clone) {

@@ -11,8 +11,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.collect.Iterables;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UpsertMetadata extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(UpsertMetadata.class);
+
 	private static String EXPECTED_EXTENSION_MODULES = "expectedExtensionModules";
 	
 	protected UpsertMetadata(BatchFix clone) {
@@ -42,15 +48,15 @@ public class UpsertMetadata extends BatchFix implements ScriptConstants{
 			if (cs.getLatestVersion() == null) {
 				continue;
 			}
-			info("Processing " + cs);
+			LOGGER.info("Processing " + cs);
 			//Recover that particular branch
 			Branch b = tsClient.getBranch(cs.getBranchPath());
 			Metadata m = b.getMetadata();
 			if (m.getDefaultModuleId() == null) {
-				info("Skipping " + b + " due to missing default moduleId");
+				LOGGER.info("Skipping " + b + " due to missing default moduleId");
 				continue;
 			}
-			info("Default moduleId: " + m.getDefaultModuleId());
+			LOGGER.info("Default moduleId: " + m.getDefaultModuleId());
 			List<String> expectedExtensionModules = List.of(m.getDefaultModuleId());
 			if (cs.getShortName().equals("SNOMEDCT-NO")) {
 				expectedExtensionModules = List.of("57101000202106", "51000202101", "57091000202101");

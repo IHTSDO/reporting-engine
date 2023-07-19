@@ -18,7 +18,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * SCTQA-321 replace teletherapy with "external beam radiation therapy" in FSNs
  * INFRA-6454 replace "anulus fibrosus" with "annulus fibrosus" and retain original as synonym
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RetermConcept extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RetermConcept.class);
 
 	private Map<String, String> termMap = new HashMap<>();
 	
@@ -56,7 +62,7 @@ public class RetermConcept extends BatchFix {
 		int changesMade = 0;
 		try {
 			/*if (concept.getId().equals("399116007")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = modifyDescriptions(task, loadedConcept);
@@ -118,7 +124,7 @@ public class RetermConcept extends BatchFix {
 		}
 		
 		if (replacement.equals(d.getTerm())) {
-			debug("Failed to replace term in " + c);
+			LOGGER.debug("Failed to replace term in " + c);
 		} else {
 			replaceDescription(t, c, d, replacement, null, true, "");  //Yes demote PTs
 			return CHANGE_MADE;

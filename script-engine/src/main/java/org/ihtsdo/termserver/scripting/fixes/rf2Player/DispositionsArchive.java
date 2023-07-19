@@ -25,8 +25,14 @@ import com.google.common.collect.Multimap;
  * Splits an RF2 Archive of changes into tasks by destination of 
  * "Has Disposition" attribute.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DispositionsArchive extends Rf2Player implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DispositionsArchive.class);
+
 	Map<Concept, String> conceptToDispositionMap = new HashMap<Concept, String>();
 	Set<Concept> hasNoDisposition = new HashSet<Concept>();	
 	Set<Concept> inactivations = new HashSet<Concept>();
@@ -66,7 +72,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 					task.add(concept);
 				}
 				String bucketName = bucketId.contains("+")?bucketId : gl.getConcept(bucketId).toString();
-				info(bucketName + ": " + task.size());
+				LOGGER.info(bucketName + ": " + task.size());
 			} else {
 				//Clone to prevent editing of collection while looping thorugh it.
 				splitBucketIntoNeighbourhoods(batch, bucketId, new ArrayList<Concept>(dispositionBuckets.get(bucketId)));
@@ -85,22 +91,22 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 		addSummaryInformation("CONCEPTS_NO_DISPOSITION", hasNoDisposition.size());
 		
 		for (Task t : batch.getTasks()) {
-			info (t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+			LOGGER.info (t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		
-		info ("\n\n" + BREAK);
-		info ("Large Dispositions are: ");
+		LOGGER.info ("\n\n" + BREAK);
+		LOGGER.info ("Large Dispositions are: ");
 		for (String bucketId : dispositionBuckets.keySet()) {
 			Collection<Concept> thisBucket = dispositionBuckets.get(bucketId);
 			if (thisBucket.size() > taskSize) {
-				info (gl.getConcept(bucketId) + ": " + thisBucket.size());
+				LOGGER.info (gl.getConcept(bucketId) + ": " + thisBucket.size());
 			}
 		}
 		
 		filterBatch(batch);
 		
 		for (Task t : batch.getTasks()) {
-			info ("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+			LOGGER.info ("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		return batch;
 	}
@@ -132,7 +138,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 			//Now see how many other concepts we'll add if we include it's ancestor's descendants
 			//This recursive function will keep calling until the task is full
 			addAncestorContribution(currentFocus, task, remainingConceptsToGroup);
-			info ("Batch of " + initialSize + " split into " + task.getComponents().size());
+			LOGGER.info ("Batch of " + initialSize + " split into " + task.getComponents().size());
 		}
 	}
 

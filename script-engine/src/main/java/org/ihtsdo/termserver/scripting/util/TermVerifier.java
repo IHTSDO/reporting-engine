@@ -23,8 +23,14 @@ import com.google.common.io.Files;
  * @author Peter
  *
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TermVerifier implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TermVerifier.class);
+
 	Map<Concept, String[]> conceptTermsMap;
 	
 	public static int idx_sctid = 0;

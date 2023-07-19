@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * LOINC-382 List Primitive LOINC concepts
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class PrimitiveLoinc extends TermServerScript {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(PrimitiveLoinc.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		PrimitiveLoinc report = new PrimitiveLoinc();
 		try {
@@ -31,7 +37,7 @@ public class PrimitiveLoinc extends TermServerScript {
 	private void reportMatchingConcepts() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getModuleId() == null) {
-				warn ("Invalid concept loaded through reference? " + c.getId());
+				LOGGER.warn ("Invalid concept loaded through reference? " + c.getId());
 			} else if (c.isActive() && 
 					c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE) &&
 					c.isPrimitive()) {

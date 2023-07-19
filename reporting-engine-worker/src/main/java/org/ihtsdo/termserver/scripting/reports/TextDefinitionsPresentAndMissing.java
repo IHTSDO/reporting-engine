@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TextDefinitionsPresentAndMissing extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TextDefinitionsPresentAndMissing.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(ECL, "<< 1222584008 |American Joint Committee on Cancer allowable value|");

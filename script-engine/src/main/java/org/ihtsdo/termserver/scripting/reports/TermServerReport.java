@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
 import org.snomed.otf.scheduler.domain.JobRun;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class TermServerReport extends TermServerScript {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TermServerReport.class);
+
 	public static final String IP = "IP";
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
 	
@@ -32,7 +38,7 @@ public abstract class TermServerReport extends TermServerScript {
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (unpromotedChangesOnly) {
 			unpromotedChangesHelper = new UnpromotedChangesHelper(this);
-			info("Populating map of unpromoted change components");
+			LOGGER.info("Populating map of unpromoted change components");
 			unpromotedChangesHelper.populateUnpromotedChangesMap(project);
 		}
 		super.postInit(tabNames, columnHeadings, csvOutput);

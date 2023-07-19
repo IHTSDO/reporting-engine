@@ -43,8 +43,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  *
  * RP-568 Inactivation reason "Concept Moved Elsewhere" will no longer be used, neither will association "Moved To"
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ValidateInactivationsWithAssociations.class);
+
 	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;
 	public static final String CARDINALITY_ISSUE = "Cardinality constraint breached.  Expected ";
@@ -411,7 +417,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			}
 		} else {
 			if (c.getRelationships().size() > 0) {
-				warn ("Unable to determine historical parent of " + c);
+				LOGGER.warn ("Unable to determine historical parent of " + c);
 			}
 		}
 	}*/

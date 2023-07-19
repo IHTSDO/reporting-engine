@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * SUBST-230
 Inactivates stated relationships where a more specific relationship exists
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateRedundantStatedRelationships extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateRedundantStatedRelationships.class);
+
 	
 	protected InactivateRedundantStatedRelationships(BatchFix clone) {
 		super(clone);
@@ -93,7 +99,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 				}
 			}
 		}
-		debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

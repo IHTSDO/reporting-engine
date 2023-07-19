@@ -25,8 +25,14 @@ import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 /**
  * RP-288 
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SummaryComponentStats extends HistoricDataUser implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStats.class);
+
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_CD = 3, TAB_AXIOMS = 4,
 			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
 			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13,
@@ -117,7 +123,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
-		info(String.format("Running report with runIntegrityChecks set to %b", runIntegrityChecks));
+		LOGGER.info(String.format("Running report with runIntegrityChecks set to %b", runIntegrityChecks));
 		getArchiveManager().setRunIntegrityChecks(runIntegrityChecks);
 		super.init(run);
 	}
@@ -162,11 +168,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	public void runJob() throws TermServerScriptException {
-		info ("Loading Previous Data");
+		LOGGER.info ("Loading Previous Data");
 		loadData(prevRelease);
-		info ("Analysing Data");
+		LOGGER.info ("Analysing Data");
 		analyzeConcepts();
-		info ("Outputting Results");
+		LOGGER.info ("Outputting Results");
 		outputResults();
 		
 		//Do we need to also produce a release summary file in S3?
@@ -174,16 +180,16 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			try {
 				generateReleaseSummaryFile();
 			} catch (Exception e) {
-				error("Failed to generate Release Summary File", e);
+				LOGGER.error("Failed to generate Release Summary File", e);
 			}
 		}
-		info ("Cleaning Up");
+		LOGGER.info ("Cleaning Up");
 		prevData = null;
 		summaryDataMap = null;
 		refsetDataMap = null;
 		topLevelHierarchies = null;
 		System.gc();
-		info ("Complete");
+		LOGGER.info ("Complete");
 	}
 
 	@Override
@@ -197,11 +203,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeConcepts() throws TermServerScriptException {
-		info ("Analysing concepts");
+		LOGGER.info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
 			/*if (c.getId().equals("1908008") || c.getId().equals("1010625007") || c.getId().equals("8661000119102")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			Datum datum = prevData.get(c.getConceptId());
 			//Is this concept in scope?  Even if its not, some of its components might be.
@@ -364,7 +370,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void analyzeDescriptions(Concept c, Concept topLevel, Datum datum, Boolean wasActive, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
 			/*if (d.getId().equals("3770564011")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			//If the description is not in the target module, skip it.
 			//TODO We can count promoted descriptions also
@@ -456,7 +462,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		for (Component component : components) {
 			/*if (component.getId().equals("8f7a882f-b4e7-43d1-81e8-d2cfae503000") ||
 					component.getId().equals("b6507605-25fa-4a0b-88d1-26327247da86")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			if (moduleFilter != null && !moduleFilter.contains(component.getModuleId())) {
 				continue;
@@ -479,7 +485,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					/*if (component instanceof RefsetMember) {
 						RefsetMember refsetMember = (RefsetMember) component;
 						if (refsetMember.getRefsetId().equals("900000000000509007")) {
-							debug("here");
+							LOGGER.debug("here");
 						}
 					}*/
 					incrementCounts(component, counts, IDX_NEW);
@@ -822,7 +828,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// i.e. SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z => SnomedCT_InternationalRF2_PRODUCTION_20220731
 			return input.replaceAll(dateBefore, dateAfter);
 		} catch (ParseException e) {
-			warn(String.format("Cannot remove time code from %s", input));
+			LOGGER.warn(String.format("Cannot remove time code from %s", input));
 		}
 
 		// Return original as default

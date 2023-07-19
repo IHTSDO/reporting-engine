@@ -12,7 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSensitivityUtils implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
+
 	Map<String, Description> sourcesOfTruth = new HashMap<>();
 	List<String> properNouns = new ArrayList<>();
 	Map<String, List<String>> properNounPhrases = new HashMap<>();
@@ -24,7 +31,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	public void init() throws TermServerScriptException {
 		loadCSWords();
-		info ("Processing sources of truth");
+		LOGGER.info ("Processing sources of truth");
 		List<Concept> sourceOfTruthHierarchies = new ArrayList<>();
 		sourceOfTruthHierarchies.add(SUBSTANCE);
 		sourceOfTruthHierarchies.add(ORGANISM);
@@ -46,7 +53,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public void loadCSWords() throws TermServerScriptException {
-		info("Loading " + inputFile + "...");
+		LOGGER.info("Loading " + inputFile + "...");
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException("Cannot read: " + inputFile);
 		}
@@ -56,8 +63,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
 		}
-		info ("Complete");
-		info("Processing cs words file");
+		LOGGER.info ("Complete");
+		LOGGER.info("Processing cs words file");
 		for (String line : lines) {
 			//Split the line up on tabs
 			String[] items = line.split(TAB);

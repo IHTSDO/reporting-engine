@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * Reports concepts (from a list supplied) that DO NOT have the specified 
  * attribute of interest
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MissingAttributeReport extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingAttributeReport.class);
+
 	List<Component> concepts;
 	Concept attributeType;
 	
@@ -27,7 +33,7 @@ public class MissingAttributeReport extends TermServerReport {
 			report.postLoadInit();
 			report.runMissingAttributeReport();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

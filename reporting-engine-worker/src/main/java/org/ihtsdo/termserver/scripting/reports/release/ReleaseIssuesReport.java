@@ -60,8 +60,14 @@ import com.google.common.io.Files;
  RP-553 Add check for zero sized space
  RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
+
 	Concept subHierarchy = ROOT_CONCEPT;
 	private static final String FULL_STOP = ".";
 	String[] knownAbbrevs = new String[] {	"ser","ss","subsp",
@@ -224,16 +230,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		info("Checking " + gl.getAllConcepts().size() + " concepts...");
+		LOGGER.info("Checking " + gl.getAllConcepts().size() + " concepts...");
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConceptsSorted = allConceptsSorted.stream()
 				.filter(c -> c.isActive())
 				.collect(Collectors.toList());
-		info("Sorted " + allConceptsSorted.size() + " concepts");
-		info("Detecting recently touched concepts");
+		LOGGER.info("Sorted " + allConceptsSorted.size() + " concepts");
+		LOGGER.info("Detecting recently touched concepts");
 		populateRecentlyTouched();
 		
-		info("...modules are appropriate (~10 seconds)");
+		LOGGER.info("...modules are appropriate (~10 seconds)");
 		parentsInSameModule();
 		if (isMS()) {
 			unexpectedComponentModulesMS();
@@ -244,7 +250,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			unexpectedAxiomModules();
 		}
 		
-		info("...description rules");
+		LOGGER.info("...description rules");
 		fullStopInSynonym();
 		missingFSN_PT();
 		unexpectedCharacters();
@@ -264,44 +270,44 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			dueWithoutTo();
 		}
 
-		info("...duplicate semantic tags");
+		LOGGER.info("...duplicate semantic tags");
 		duplicateSemanticTags();
 		
-		info("...parent hierarchies (~20 seconds)");
+		LOGGER.info("...parent hierarchies (~20 seconds)");
 		parentsInSameTopLevelHierarchy();
 		
-		info("...axiom integrity");
+		LOGGER.info("...axiom integrity");
 		axiomIntegrity();
 		noStatedRelationships();
 		
-		info("...Disease semantic tag rule");
+		LOGGER.info("...Disease semantic tag rule");
 		diseaseIntegrity();
 		
-		info("...Text definition dialect checks");
+		LOGGER.info("...Text definition dialect checks");
 		if (!isMS()) {
 			textDefinitionDialectChecks();
 		}
 		
-		info("...Nested brackets check");
+		LOGGER.info("...Nested brackets check");
 		nestedBracketCheck();
 		
-		info("...Modelling rules check");
+		LOGGER.info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
 		validateAttributeTypeValueModellingRules();
 		neverGroupTogether();
 		domainMustNotUseType();
 		
-		info("...Deprecation rules");
+		LOGGER.info("...Deprecation rules");
 		checkDeprecatedHierarchies();
 		
-		info("...MRCM validation");
+		LOGGER.info("...MRCM validation");
 		checkMRCMDomain();
 		checkMRCMAttributeRanges();
 		
-		info("Checks complete, creating summary tag");
+		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void inappropriateModuleJumping() throws TermServerScriptException {
@@ -309,7 +315,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issueStr2 = "Component module jumped without parent";
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
-		info("Started inappropriateModuleJumping check");
+		LOGGER.info("Started inappropriateModuleJumping check");
 		for (Concept concept : allConceptsSorted) {
 			/*if (concept.getId().equals("434701000124101")) {
 				logger.debug("here");
@@ -378,7 +384,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					//module without their parent object - concept or description
 					Component owningObject = SnomedUtils.getParentComponent(c, gl);
 					if (owningObject == null) {
-						warn("Could not determine owner of " + c);
+						LOGGER.warn("Could not determine owner of " + c);
 					} else if (!hasChangedModule(owningObject)) {
 						if (owningObject.getModuleId().equals(SCTID_CF_MOD) && 
 								isExpectedModuleJumpException(c, previousState, currentState)) {
@@ -398,7 +404,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
-		info("Completed inappropriateModuleJumping check");
+		LOGGER.info("Completed inappropriateModuleJumping check");
 	}
 
 	private boolean isExpectedModuleJumpException(Component c, String[] previousState, String[] currentState) {
@@ -454,7 +460,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.getModuleId() == null) {
-				warn ("Encountered concept with no module defined: " + c);
+				LOGGER.warn ("Encountered concept with no module defined: " + c);
 				continue;
 			}
 			if (!c.getModuleId().equals(SCTID_CORE_MODULE) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
@@ -511,14 +517,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedComponentModulesMS() throws TermServerScriptException {
 		String issueStr ="Unexpected extension component module";
 		initialiseSummary(issueStr);
-		info("Checking " + allConceptsSorted.size() + " for unexpected component modules");
+		LOGGER.info("Checking " + allConceptsSorted.size() + " for unexpected component modules");
 		for (Concept c : allConceptsSorted) {
 			/*if (c.getId().equals("52792009")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			for (Component comp: SnomedUtils.getAllComponents(c)) {
 				/*if (comp.getId().equals("80983393-ed14-4223-aa15-815e439bac62")) {
-					debug("here");
+					LOGGER.debug("here");
 				}*/
 				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
 					String msg = "Default module " + defaultModule + " vs component module " + comp.getModuleId();
@@ -855,7 +861,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedLangCodeMS() throws TermServerScriptException {
 		//We need a branch to be able to run this query
 		if (getArchiveManager().isLoadDependencyPlusExtensionArchive()) {
-			info("Unable to determine appropriate langCode for LangRefsets when working with archive package");
+			LOGGER.info("Unable to determine appropriate langCode for LangRefsets when working with archive package");
 			return;
 		}
 		String issueStr = "Langrefset's description has unexpected langCode";
@@ -1048,7 +1054,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//First pass through all active concepts to find semantic tags
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.getFSNDescription() == null) {
-				warn("No FSN Description found for concept " + c.getConceptId());
+				LOGGER.warn("No FSN Description found for concept " + c.getConceptId());
 				continue;
 			}
 			if (c.isActive()) {
@@ -1065,7 +1071,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		
-		info ("Collected " + knownSemanticTags.size() + " distinct semantic tags");
+		LOGGER.info ("Collected " + knownSemanticTags.size() + " distinct semantic tags");
 		
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
@@ -1081,7 +1087,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				continue;
 			}
 			if (c.getFSNDescription() == null) {
-				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
+				LOGGER.warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
 				continue;
 			}
 			String legacy = getLegacyIndicator(c.getFSNDescription());
@@ -1302,7 +1308,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							}
 						}
 					} catch (ConversionException e) {
-						error ("Failed to convert: " + a, e);
+						LOGGER.error ("Failed to convert: " + a, e);
 					}
 				}
 			}
@@ -1377,7 +1383,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (c.isActive()) {
 				List<Description> textDefns = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
 				if (textDefns.size() > 2) {
-					warn (c + " has " + textDefns.size() + " active text definitions - check for compatibility");
+					LOGGER.warn (c + " has " + textDefns.size() + " active text definitions - check for compatibility");
 				}
 				boolean hasUS = false;
 				boolean hasGB = false;
@@ -1396,7 +1402,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						bothDialectTextDefns.add(textDefn);
 					}
 					if (!isUS && !isGB) {
-						warn ("Text definition is not preferred in either dialect: " + textDefn);
+						LOGGER.warn ("Text definition is not preferred in either dialect: " + textDefn);
 					}
 				}
 				if ((hasUS && !hasGB) || (hasGB && !hasUS)) {
@@ -1415,7 +1421,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		
 		List<String> lines;
-		debug ("Loading us/gb terms");
+		LOGGER.debug ("Loading us/gb terms");
 		try {
 			lines = Files.readLines(new File("resources/us-to-gb-terms-map.txt"), Charsets.UTF_8);
 		} catch (IOException e) {
@@ -1425,7 +1431,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				.map(l -> new DialectPair(l))
 				.collect(Collectors.toList());
 		
-		debug ("Checking " + bothDialectTextDefns.size() + " both-dialect text definitions against " + dialectPairs.size() + " dialect pairs");
+		LOGGER.debug ("Checking " + bothDialectTextDefns.size() + " both-dialect text definitions against " + dialectPairs.size() + " dialect pairs");
 		
 		nextDescription:
 		for (Description textDefn : bothDialectTextDefns) {

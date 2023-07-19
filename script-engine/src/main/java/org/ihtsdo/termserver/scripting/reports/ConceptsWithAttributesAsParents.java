@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Update: Added column to say what was inferred - the parent, attribute or both
  * SUBST-260
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsWithAttributesAsParents extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsWithAttributesAsParents.class);
+
 	Concept attributeType;
 	List<Concept> ignoreTypes;
 	
@@ -31,7 +37,7 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 			report.postInit();
 			report.runConceptsWithAttributesAsParentsReport();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Report all active concepts using a particular attribute type
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsUsingAttribute extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsUsingAttribute.class);
+
 	Concept attributeType;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -23,7 +29,7 @@ public class ConceptsUsingAttribute extends TermServerReport {
 			report.postInit();
 			report.runConceptsUsingAttributeReport();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsUsingAttribute Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce ConceptsUsingAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

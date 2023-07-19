@@ -9,8 +9,14 @@ import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class NegativeDeltaGenerator extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NegativeDeltaGenerator.class);
+
 	String[] conHeader = new String[] {"id","effectiveTime","deletionEffectiveTime","active", "deletionActive","moduleId","definitionStatusId"};
 	String[] descHeader = new String[] {"id","effectiveTime","deletionEffectiveTime","active", "deletionActive","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	String[] relHeader = new String[] {"id","effectiveTime","deletionEffectiveTime","active", "deletionActive","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};

@@ -19,8 +19,14 @@ import com.google.common.io.Files;
  * QI-300 List concepts selected by ECL, filtered lexically 
  * which have an incoming historical association pointing to them.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class IncomingAssociationReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(IncomingAssociationReport.class);
+
 	public static String TEXT_MATCH = "Text Match";
 	List<String> textMatches;
 	Set<Concept> exclusions = new HashSet<>();
@@ -66,7 +72,7 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 	}
 
 	public void runJob() throws TermServerScriptException {
-		info ("Scanning concepts...");
+		LOGGER.info ("Scanning concepts...");
 		for (Concept c : findConcepts(subsetECL)) {
 			if (inScope(c)) {
 				for (AssociationEntry entry : gl.usedAsHistoricalAssociationTarget(c)) {

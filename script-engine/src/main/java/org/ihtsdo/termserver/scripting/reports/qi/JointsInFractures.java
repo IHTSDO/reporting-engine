@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * QI-10
  * Reports all joints appearing as finding sites in fracture of bone
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JointsInFractures extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(JointsInFractures.class);
+
 	Concept subHierarchy;
 	Set<Concept> boneStructures;
 	Set<Concept> jointStructures;
@@ -29,7 +35,7 @@ public class JointsInFractures extends TermServerReport {
 			report.postLoadInit();
 			report.runJointsInFracturesReport();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -67,7 +73,7 @@ public class JointsInFractures extends TermServerReport {
 					report (c, joint, boneStructures.contains(joint)? "Y":"N", bones, other);
 					//Most interesting case would be a joint without any sort of bone
 					if (bones.isEmpty() && !boneStructures.contains(joint)) {
-						warn("Interesting case: " + c + " with joint: " + joint);
+						LOGGER.warn("Interesting case: " + c + " with joint: " + joint);
 					}
 				}
 			}

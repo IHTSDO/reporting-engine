@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * Look through all LOINC expressions and fix whatever needs worked on
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LOINCStats extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LOINCStats.class);
+
 	private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
 	//private static String publishedRefsetFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
 	
@@ -65,7 +71,7 @@ public class LOINCStats extends TermServerReport {
 				.collect(Collectors.toMap(c -> getLoincNumFromDescriptionSafely(c), c -> c));
 		
 		if (currentContentMap.containsKey(ERROR)) {
-			error("One or more concepts did not specify a LOINCNum", null);
+			LOGGER.error("One or more concepts did not specify a LOINCNum", (Exception)null);
 		}
 		
 		//First work through the published map to see what's changed
@@ -193,7 +199,7 @@ public class LOINCStats extends TermServerReport {
 		refsetFileMap = new HashMap<>();
 		try {
 			//Load the Refset Expression file
-			info ("Loading " + publishedRefsetFile);
+			LOGGER.info ("Loading " + publishedRefsetFile);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(publishedRefsetFile))) {
 				String line;

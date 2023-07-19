@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * TODO Check refset components also.
  * TODO Create a report of the "dirty" components output
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RevertNoChangeDelta extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RevertNoChangeDelta.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RevertNoChangeDelta app = new RevertNoChangeDelta();
 		try {

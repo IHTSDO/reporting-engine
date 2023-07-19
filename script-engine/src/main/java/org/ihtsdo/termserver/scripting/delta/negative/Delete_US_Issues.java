@@ -18,8 +18,14 @@ import com.google.common.io.Files;
 /**
  * Class to reactivate langrefset entries when they have been inactivated after the international edition has activated ones for the same concept
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Delete_US_Issues.class);
+
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 
 	static final String deletionEffectiveTime = "20170901";
@@ -54,7 +60,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptCo
 		}
 		
 		if (!fileLoaded) {
-			info ("Failed to concepts affected.  Specify path with 'z' command line parameter");
+			LOGGER.info ("Failed to concepts affected.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 	}
@@ -63,7 +69,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptCo
 		try {
 			File affectedConceptFile = new File(fileName);
 			List<String> lines = Files.readLines(affectedConceptFile, Charsets.UTF_8);
-			info ("Loading selected Concepts from " + fileName);
+			LOGGER.info ("Loading selected Concepts from " + fileName);
 			for (String line : lines) {
 				affectedConcepts.add(gl.getConcept(line));
 			}
@@ -73,7 +79,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptCo
 	}
 
 	private void process() throws TermServerScriptException {
-		info ("Processing concepts to find issues with US acceptability.");
+		LOGGER.info ("Processing concepts to find issues with US acceptability.");
 		//First touch all concepts who were erroneously inactivated to remove those rows
 		//Only if the concept is still 
 		for (Concept concept : affectedConcepts) {

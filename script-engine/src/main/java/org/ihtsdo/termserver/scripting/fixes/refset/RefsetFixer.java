@@ -7,8 +7,14 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class RefsetFixer extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RefsetFixer.class);
+
 	protected RefsetFixer(BatchFix clone) {
 		super(clone);
 	}

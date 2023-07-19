@@ -25,8 +25,14 @@ import org.snomed.otf.scheduler.domain.*;
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TemplateCompliance extends TemplateFix implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TemplateCompliance.class);
+
 	private Map<Concept, List<String>> conceptDiagnosticsInferred = new HashMap<>();
 	private Map<Concept, List<String>> conceptDiagnosticsStated = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
@@ -188,7 +194,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
 		}
-		info ("Loaded user specified template: " + template);
+		LOGGER.info ("Loaded user specified template: " + template);
 	}
 
 	protected void localRunInit() throws TermServerScriptException {

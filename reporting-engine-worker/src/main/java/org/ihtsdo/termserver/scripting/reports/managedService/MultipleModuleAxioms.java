@@ -18,8 +18,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-456 Report to find concepts in the core module that have active
  * axioms in the target module
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MultipleModuleAxioms extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MultipleModuleAxioms.class);
+
 	public static String FILTER_CORE = "Ignore original core concepts";
 	private boolean ignoreOriginalCore = true;
 	

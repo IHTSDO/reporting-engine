@@ -18,7 +18,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Watch that this is a partial implementation that will be added to as the need arrises.
  * For INFRA-9963 we only need to splice in new Common French descriptions to a published Swiss package
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SpliceDeltaIntoReleaseArchive.class);
 
 	public static String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
 	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
@@ -54,7 +60,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -71,7 +77,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 	}
 	
 	protected void initialiseFileHeaders() throws TermServerScriptException {
-		info("Skipping initialisation of usual delta output files");
+		LOGGER.info("Skipping initialisation of usual delta output files");
 	}
 	
 	private  void outputSummaryCounts() throws TermServerScriptException {
@@ -87,7 +93,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 
 	public void process() throws TermServerScriptException, IOException {
 		loadDelta();
-		info("Processing " + getInputFile(1));
+		LOGGER.info("Processing " + getInputFile(1));
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile(1)));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -104,7 +110,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + getInputFile(1));
+		LOGGER.info("Finished Loading " + getInputFile(1));
 		getRF2Manager().flushFiles(false);
 	}
 	
@@ -118,12 +124,12 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		ExtractType type = SnomedUtils.getExtractType(pathStr);
 		
 		if (pathStr.contains("fr_CH")) {
-			debug("here");
+			LOGGER.debug("here");
 		}
 		
 		if (type == null || !isFileOfInterest(pathStr, type)) {
 			report(PRIMARY_REPORT, pathStr, Severity.LOW, ReportActionType.NO_CHANGE, targetFile);
-			info("Passing through " + pathStr);
+			LOGGER.info("Passing through " + pathStr);
 			FileUtils.copyToFile(is, targetFile);
 		} else {
 			SummaryCount summaryCount = new SummaryCount();
@@ -133,10 +139,10 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 			//If it's Snapshot, we pass through unless we detect a row where we have an entry for that id, and also
 			//top up with new rows that haven't been used at the end.
 			if (type == ExtractType.SNAPSHOT) {
-				info("Splicing " + pathStr);
+				LOGGER.info("Splicing " + pathStr);
 				processSnapshotFile(pathStr, is, targetFile, descriptionMap, summaryCount);
 			} else if (type == ExtractType.FULL) {
-				info("Appending to " + pathStr);
+				LOGGER.info("Appending to " + pathStr);
 				FileUtils.copyToFile(is, targetFile);
 				for (String[] columns : descriptionMap.values()) {
 					writeToRF2File(targetFile.getAbsolutePath(), columns);
@@ -201,7 +207,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 	}
 
 	private void loadDelta() throws IOException, TermServerScriptException {
-		info("Loading " + getInputFile());
+		LOGGER.info("Loading " + getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -218,7 +224,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + getInputFile());
+		LOGGER.info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {
@@ -230,13 +236,13 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 			
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Description_" )) {
-					info("Loading Description " + fileType + " file.");
+					LOGGER.info("Loading Description " + fileType + " file.");
 					loadDescriptionFile(is);
 				} /*else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
+					LOGGER.info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 					loadInactivationIndicatorFile(is);
 				} else if (fileName.contains("Language")) {
-					info("Loading " + fileType + " Language Reference Set File - " + fileName);
+					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
 					loadLanguageFile(is);
 				}*/
 			}

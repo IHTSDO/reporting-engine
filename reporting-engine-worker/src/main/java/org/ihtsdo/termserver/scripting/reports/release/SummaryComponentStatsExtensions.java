@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportConfiguration.*;
 /**
  * RP-390 Summary Component Stats for Extensions
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SummaryComponentStatsExtensions extends SummaryComponentStats {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStatsExtensions.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		
@@ -127,7 +133,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		info("Setting dependency archive: " + thisDependency);
+		LOGGER.info("Setting dependency archive: " + thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}

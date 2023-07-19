@@ -25,8 +25,14 @@ import com.google.common.collect.Multiset;
  * that are used in the definition of other concepts.
  * DRUGS-445
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsUsedInDefinitionsReport.class);
+
 	String hierarchy = "49062001"; // |Device (physical object)|
 	Concept attributeType = null; // Not currently needed because concepts coming from file
 	Set<Concept> ignoredHierarchies;
@@ -40,7 +46,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportConceptsUsedInDefinition();
 		} catch (Exception e) {
-			info("Failed to validate laterality due to " + e.getMessage());
+			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -53,13 +59,13 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		//Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
 		List<Component> sourceConcepts = processFile();
 		
-		info ("Active source concepts number " + sourceConcepts.size());
+		LOGGER.info ("Active source concepts number " + sourceConcepts.size());
 		Multiset<String> tags = HashMultiset.create();
 		for (Concept thisConcept : filterActive(gl.getAllConcepts())) {
 			//What hierarchy is this concept in?
 			Concept thisHierarchy = SnomedUtils.getTopLevel(thisConcept);
 			if (thisHierarchy == null) {
-				debug ("Unable to determine top level hierarchy for: "  + thisConcept);
+				LOGGER.debug ("Unable to determine top level hierarchy for: "  + thisConcept);
 			}
 			//Skip ignored hierarchies
 			if (ignoredHierarchies.contains(thisHierarchy)) {
@@ -85,7 +91,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		}
 		
 		for (String tag : tags.elementSet()) {
-			info ("\t" + tag + ": " + tags.count(tag));
+			LOGGER.info ("\t" + tag + ": " + tags.count(tag));
 		}
 	}
 

@@ -11,8 +11,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * This class attempts to answer the question: If you KNOW a concept is a member of 
  * some subhierarchy, how do you trace a path from one to the other?
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AncestryPath extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AncestryPath.class);
+
 	Concept subHierarchy;
 	Concept conceptOfInterest;
 	
@@ -24,7 +30,7 @@ public class AncestryPath extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runReport();
 		} catch (Exception e) {
-			info("Failed to produce StatedNotInferred Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce StatedNotInferred Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -35,7 +41,7 @@ public class AncestryPath extends TermServerReport {
 		subHierarchy = gl.getConcept("416462003 |Wound (disorder)|");
 		conceptOfInterest = gl.getConcept("283755007 |Dog bite of dorsum of hand (disorder)|");
 		if (!gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).contains(conceptOfInterest)) {
-			warn(conceptOfInterest + " is not subsumed by " + subHierarchy);
+			LOGGER.warn(conceptOfInterest + " is not subsumed by " + subHierarchy);
 		} else {
 			pathWalk(conceptOfInterest);
 		}
@@ -50,7 +56,7 @@ public class AncestryPath extends TermServerReport {
 			for (Concept parent : currentLocation.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Does this parent lead to the top of the subhierarchy?
 				if (pathWalk(parent)) {
-					info (parent.toString());
+					LOGGER.info (parent.toString());
 					report (parent);
 					return true;
 				}

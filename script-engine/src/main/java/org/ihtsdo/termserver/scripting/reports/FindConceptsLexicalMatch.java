@@ -19,8 +19,14 @@ import com.google.common.collect.Sets;
 /**
  * SUBST-322 Report to find substances that match the entries in a file
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FindConceptsLexicalMatch extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FindConceptsLexicalMatch.class);
+
 	//Map of first words to terms to descriptions.  Everything stored lower case.
 	Map<String, Map<String, Description>> termsByFirstWord = new HashMap<>();
 	
@@ -60,7 +66,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 	
 	public void postInit() throws TermServerScriptException {
 		//Create various maps of terms
-		info ("Mapping current descriptions");
+		LOGGER.info ("Mapping current descriptions");
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				String term = removeStopWords(d.getTerm());;
@@ -76,7 +82,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 					//What have we seen before?  If it's the same concept, don't worry
 					Description existingDesc = termMap.get(term);
 					if (!existingDesc.getConceptId().equals(d.getConceptId())) {
-						warn("Duplicate term between " + existingDesc + " and " + d);
+						LOGGER.warn("Duplicate term between " + existingDesc + " and " + d);
 					}
 				}
 				termMap.put(term, d);
@@ -92,7 +98,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 				}
 			}
 		}
-		info ("Description map complete");
+		LOGGER.info ("Description map complete");
 		super.postInit();
 	}
 	
@@ -142,7 +148,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 			Concept c = gl.getConcept(d.getConceptId());
 			report (0, null, items[0], items[1], c, null, d);
 			matchFound = true;
-			info (line + " - exact match");
+			LOGGER.info (line + " - exact match");
 			incrementSummaryInformation("Exact Match");
 		}
 		
@@ -163,7 +169,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		
 		if (!matchFound) {
 			report (0, null, items[0], items[1], null, null, null);
-			info (line + " - no match");
+			LOGGER.info (line + " - no match");
 			incrementSummaryInformation("No Match");
 		}
 	}
@@ -179,7 +185,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 			if (termMap!= null && termMap.containsKey(term)) {
 				Description d = termMap.get(term);
 				Concept c = gl.getConcept(d.getConceptId());
-				info (source[0] + " " + source[1] + " - Exact out-of-order Match: " + d);
+				LOGGER.info (source[0] + " " + source[1] + " - Exact out-of-order Match: " + d);
 				report (0, null, source[0], source[1], null, c, d);
 				matchFound = true;
 			}
@@ -192,7 +198,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		boolean matchFound = false;
 		List<Combination> wordCombinations = sortedCombinations(new HashSet<String>(Arrays.asList(words)));
 		if (wordCombinations.size() > 1000) {
-			debug ("Getting intractable here! " + source[0]);
+			LOGGER.debug ("Getting intractable here! " + source[0]);
 		}
 		
 		nextCombination:
@@ -223,7 +229,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 					.map(c -> c.toString())
 					.limit(5)
 					.collect(Collectors.joining(",\n"));
-			info (source[0] + " " + source[1] + " - best effort match: " + matchingConcepts);
+			LOGGER.info (source[0] + " " + source[1] + " - best effort match: " + matchingConcepts);
 			report (0, null, source[0], source[1], null, null, matchingWords, matchingConcepts);
 			matchFound = true;
 			break;

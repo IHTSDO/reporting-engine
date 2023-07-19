@@ -22,8 +22,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NewAndChangedComponents extends HistoricDataUser implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NewAndChangedComponents.class);
+
 	private Set<Concept> newConcepts = new HashSet<>();
 	private Set<Concept> inactivatedConcepts = new HashSet<>();
 	private Set<Concept> defStatusChanged = new HashSet<>();
@@ -155,7 +161,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		info("Setting dependency archive: " + thisDependency);
+		LOGGER.info("Setting dependency archive: " + thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
@@ -253,7 +259,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	
 	public void runJob() throws TermServerScriptException {
 		if (loadHistoricallyGeneratedData) {
-			info ("Loading Previous Data");
+			LOGGER.info ("Loading Previous Data");
 			loadData(prevRelease);
 		}
 		examineConcepts();
@@ -271,7 +277,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			report (PRIMARY_REPORT, "Word matches", QUOTE + jobRun.getParamValue(WORD_MATCHES) + QUOTE);
 		}
 		traceabilityService.tidyUp();
-		info ("Job complete");
+		LOGGER.info ("Job complete");
 	}
 	
 	public void examineConcepts() throws TermServerScriptException { 
@@ -281,13 +287,13 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		long notChanged = 0;
 		long notInScope = 0;
 		
-		info("Determining concepts of interest");
+		LOGGER.info("Determining concepts of interest");
 		Collection<Concept> conceptsOfInterest = determineConceptsOfInterest();
 		
-		info("Examining " +  conceptsOfInterest.size() + " concepts of interest");
+		LOGGER.info("Examining " +  conceptsOfInterest.size() + " concepts of interest");
 		for (Concept c : conceptsOfInterest) {
 			/*if (c.getId().equals("58851000052104")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
@@ -500,15 +506,15 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			conceptsExamined++;
 			double perc = ((double)conceptsExamined / (double)conceptsOfInterest.size()) * 100;
 			if (perc >= lastPercentageReported + 10) {
-				info ("Examined " + String.format("%.2f", perc) + "%");
+				LOGGER.info ("Examined " + String.format("%.2f", perc) + "%");
 				lastPercentageReported = perc;
 			}
 		}
 		
-		info ("Not Released: " + notReleased);
-		info ("Not Changed: " + notChanged);
-		info ("Not In Scope " +  notInScope);
-		info ("Total examined: " + conceptsOfInterest.size());
+		LOGGER.info ("Not Released: " + notReleased);
+		LOGGER.info ("Not Changed: " + notChanged);
+		LOGGER.info ("Not In Scope " +  notInScope);
+		LOGGER.info ("Total examined: " + conceptsOfInterest.size());
 	}
 
 	private Boolean isReleased(Concept c, Component comp, ComponentType type) throws TermServerScriptException {
@@ -552,7 +558,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	private Collection<Concept> determineConceptsOfInterest() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest;
 		if (!StringUtils.isEmpty(subsetECL)) {
-			info("Running Concepts Changed report against subset: " + subsetECL);
+			LOGGER.info("Running Concepts Changed report against subset: " + subsetECL);
 			conceptsOfInterest = new ArrayList<>(findConcepts(subsetECL));
 		} else {
 			conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
@@ -589,7 +595,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(newConcepts);
 		superSet.addAll(defStatusChanged);
 		superSet.addAll(inactivatedConcepts);
-		debug ("Creating concept report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport(SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -601,7 +607,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		superSet.addAll(hasNewInferredRelationships);
 		superSet.addAll(hasLostInferredRelationships);
-		debug ("Creating relationship report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			report(TERTIARY_REPORT, c,
@@ -615,7 +621,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasNewAxioms);
 		superSet.addAll(hasChangedAxioms);
 		superSet.addAll(hasLostAxioms);
-		debug ("Creating axiom report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating axiom report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			populateTraceabilityAndReport(QUATERNARY_REPORT, c,
@@ -631,7 +637,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasChangedDescriptions);
 		superSet.addAll(hasLostDescriptions);
 		superSet.addAll(hasChangedAcceptabilityDesc);
-		debug ("Creating description report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating description report for " + superSet.size() + " concepts");
 		boolean includeTraceability = superSet.size() < MAX_ROWS_FOR_TRACEABILITY ? true : false;
 		
 		if (forceTraceabilityPopulation) {
@@ -667,7 +673,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		superSet.addAll(hasChangedAssociations);
 		superSet.addAll(hasChangedInactivationIndicators);
-		debug ("Creating association report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport(SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -678,7 +684,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
-		debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			report (SEPTENARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -691,7 +697,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasChangedTextDefn);
 		superSet.addAll(hasLostTextDefn);
 		superSet.addAll(hasChangedAcceptabilityTextDefn);
-		debug ("Creating text defn report for " + superSet.size() + " concepts");
+		LOGGER.debug ("Creating text defn report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport(DENARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -740,7 +746,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	}
 
 	private void determineUniqueCountAndTraceability() {
-		debug("Determining unique count");
+		LOGGER.debug("Determining unique count");
 		HashSet<Concept> superSet = new HashSet<>();
 		superSet.addAll(newConcepts);
 		superSet.addAll(inactivatedConcepts);

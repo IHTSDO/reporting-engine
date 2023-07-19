@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * ORGANISMS-1
  * Inactivate descriptions - driven by list.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateDescriptions extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateDescriptions.class);
+
 	Map<Concept, List<Description>> inactivations = new HashMap<>();
 	
 	protected InactivateDescriptions(BatchFix clone) {
@@ -88,7 +94,7 @@ public class InactivateDescriptions extends BatchFix implements ScriptConstants 
 						inactivations.put(c, inactivationList);
 					}
 				} else {
-					warn ("Already inactive: " + d);
+					LOGGER.warn ("Already inactive: " + d);
 					return null;
 				}
 				break;

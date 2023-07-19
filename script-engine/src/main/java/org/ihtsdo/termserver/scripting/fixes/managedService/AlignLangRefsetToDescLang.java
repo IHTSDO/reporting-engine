@@ -17,8 +17,14 @@ import com.google.common.collect.HashBiMap;
 /*
 MSSP-860 Address issue with language refset entries referring to description in wrong language
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AlignLangRefsetToDescLang.class);
+
 	BiMap<String, String> refsetLangMap = HashBiMap.create();
 	BiMap<String, String> gpRefsetLangMap = HashBiMap.create();
 	Map<String, String> allRefsets = new HashMap<>();
@@ -72,7 +78,7 @@ public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstan
 						} else {
 							//What was the acceptability of this entry
 							Acceptability origAccept = SnomedUtils.translateAcceptability(l.getAcceptabilityId());
-							debug("here");
+							LOGGER.debug("here");
 							Description loadedDescription = c.getDescription(d.getId());
 							Map<String, Acceptability> acceptabilityMap = loadedDescription.getAcceptabilityMap();
 							acceptabilityMap.remove(l.getRefsetId());
@@ -123,7 +129,7 @@ public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstan
 					//Does this description have language refset entries in the wrong refset?
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						if (!allRefsets.containsKey(l.getRefsetId())) {
-							debug ("Unexpected language refset: " + gl.getConcept(l.getRefsetId()));
+							LOGGER.debug ("Unexpected language refset: " + gl.getConcept(l.getRefsetId()));
 						}
 						if (!allRefsets.get(l.getRefsetId()).equals(d.getLang())) {
 							conceptsToProcess.add(c);

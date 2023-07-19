@@ -22,8 +22,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Addition of 42752001 |Due to (attribute)|= This needs to be a hernia concept but which one changes depending on what the hernia concept is e.g.196835005 |Obstruction co-occurrent and due to femoral hernia (disorder)| needs to be due to the femoral hernia. If the hernia was recurrent it would be a recurrent <x> hernia. If it's not feasible to do in a batch then I'll do manually.
  * Can we do in batches of 10? Or can we do this in batches per hernia type perhaps- would that help with the due to issue?
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QI75_HerniaRemodel extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(QI75_HerniaRemodel.class);
+
 	Concept hWithO;
 	Concept hWithG;
 	Relationship complicationParent;
@@ -67,7 +73,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 			String term = SnomedUtils.deconstructFSN(c.getFsn())[0].toLowerCase();
 			typesOfHernia.put(term, c);
 		}
-		info("Mapped " + typesOfHernia.size() + " types of hernia");
+		LOGGER.info("Mapped " + typesOfHernia.size() + " types of hernia");
 	}
 
 	@Override

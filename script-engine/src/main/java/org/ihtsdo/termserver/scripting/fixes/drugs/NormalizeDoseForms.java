@@ -17,8 +17,14 @@ DRUGS-514
 Replace topical, ophthalmic and respiratory MPFs with cutaneous, ocular and pulmonary
 Inactivate and replace concept
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeDoseForms.class);
+
 	Map<String, Concept> doseFormMap;
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
@@ -111,7 +117,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		debug("Identifying concepts to process");
+		LOGGER.debug("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<>();
 		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
 			SnomedUtils.populateConceptType(c);

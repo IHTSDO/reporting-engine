@@ -24,8 +24,14 @@ import com.google.common.collect.Iterables;
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  * Update: RP-139
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AllTemplateCompliance extends AllKnownTemplates implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AllTemplateCompliance.class);
+
 	Set<Concept> alreadyCounted = new HashSet<>();
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 	int totalTemplateMatches = 0;
@@ -92,7 +98,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
 				String msg = "Inactive or Non-existent domain: " + invalidTemplateDomain;
-				warn (msg + " in template: " + t.getName());
+				LOGGER.warn (msg + " in template: " + t.getName());
 				report(TERTIARY_REPORT, t.getName(), msg);
 			}
 			domainTemplates.remove(invalidTemplateDomain);
@@ -103,10 +109,10 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 			String subsetECL = entry.getKey();
 			try {
 				List<Template> templates = entry.getValue();
-				info ("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
+				LOGGER.info ("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
 				examineSubset(subsetECL, templates);
 			} catch (Exception e) {
-				error ("Exception while processing domain " + subsetECL, e);
+				LOGGER.error ("Exception while processing domain " + subsetECL, e);
 			}
 		}
 		reportKPIs();
@@ -137,7 +143,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	}
 
 	private long calculateInScopeConcepts() throws TermServerScriptException {
-		info ("Obtaining count of concepts that are 'in scope'");
+		LOGGER.info ("Obtaining count of concepts that are 'in scope'");
 		int inScopeCount = 0;
 		Concept[] inScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
 											PHARM_BIO_PRODUCT, PROCEDURE,
@@ -152,7 +158,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 					.stream()
 					.filter(c -> inModuleScope(c))
 					.collect(Collectors.toSet());
-			info(subHierarchy + " contains " + concepts.size() + " concepts (in target module).");
+			LOGGER.info(subHierarchy + " contains " + concepts.size() + " concepts (in target module).");
 			allInScopeConcepts = ImmutableSet.copyOf(Iterables.concat(allInScopeConcepts, concepts));
 		}
 		//Now only count those concepts that have some non-ISA inferred attributes
@@ -168,7 +174,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		DescendantsCache cache = DescendantsCache.getDescendentsCache();
 		Collection<Concept> subset = findConcepts(ecl);
 		if (subset.size() == 0) {
-			warn ("No concepts found in subset defined by '" + ecl + "' skipping");
+			LOGGER.warn ("No concepts found in subset defined by '" + ecl + "' skipping");
 			return;
 		}
 		int subsetSize = subset.size();

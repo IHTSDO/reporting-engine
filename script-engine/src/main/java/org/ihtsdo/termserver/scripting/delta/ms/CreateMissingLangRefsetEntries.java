@@ -11,7 +11,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * ISRS-867 Concepts have FSNs in DK that have no langrefset entry in the expected module
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateMissingLangRefsetEntries extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CreateMissingLangRefsetEntries.class);
 
 	String langRefsetId = "554461000005103";
 	
@@ -32,7 +38,7 @@ public class CreateMissingLangRefsetEntries extends DeltaGenerator implements Sc
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}

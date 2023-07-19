@@ -5,7 +5,13 @@ import us.monoid.web.Content;
 
 import java.io.UnsupportedEncodingException;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RestyHelper {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RestyHelper.class);
 
 	public static final String UTF_8 = "UTF-8";
 

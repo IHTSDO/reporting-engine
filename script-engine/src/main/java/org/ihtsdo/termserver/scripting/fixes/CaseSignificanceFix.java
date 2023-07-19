@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
@@ -16,8 +12,6 @@ import org.ihtsdo.termserver.scripting.util.NounHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 /**
  * Addresses case significance issues in the target sub-hierarchy
@@ -28,8 +22,14 @@ import com.google.common.io.Files;
  * SUBST-289 Many substance terms have a single letter - either a single lower 
  * case letter or a single upper case letter - case sensitivity needs to reflect these.
  **/
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix.class);
+
 	boolean unpublishedContentOnly = false;
 	Concept subHierarchy = SUBSTANCE;
 
@@ -141,7 +141,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 		int changesMade = 0;
 		
 		if (c.getConceptId().equals("102777002")) {
-			debug("Check Here");
+			LOGGER.debug("Check Here");
 		}
 		boolean greekLetterFound = false;
 		
@@ -227,7 +227,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();
-		info ("Identifying incorrect case signficance settings");
+		LOGGER.info ("Identifying incorrect case signficance settings");
 		this.setQuiet(true);
 		for (Concept concept : subHierarchy.getDescendents(NOT_SET)) {
 			/*if (!concept.getConceptId().equals("130867000")) {
@@ -245,7 +245,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
 		this.setQuiet(false);
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);

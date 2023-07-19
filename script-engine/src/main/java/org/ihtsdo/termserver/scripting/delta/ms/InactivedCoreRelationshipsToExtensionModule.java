@@ -23,7 +23,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * 
  * MSSP-1288 Norway again
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivedCoreRelationshipsToExtensionModule.class);
 
 	//String effectiveTime = "20211015";
 	String targetEffectiveTime = null;
@@ -47,7 +53,7 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}

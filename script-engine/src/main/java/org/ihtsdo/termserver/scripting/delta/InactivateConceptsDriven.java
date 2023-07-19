@@ -13,7 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateConceptsDriven extends DeltaGenerator implements ScriptConstants{
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsDriven.class);
+
 	private Set<Concept> conceptsToInactivate;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -30,7 +37,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 			if (!dryRun) {
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			} else {
-				info("Dry run mode.  Skipping creation of archive");
+				LOGGER.info("Dry run mode.  Skipping creation of archive");
 			}
 		} finally {
 			delta.finish();
@@ -97,7 +104,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 					String[] items = line.split(TAB);
 					conceptsToInactivate.add(gl.getConcept(items[0]));
 				} catch (Exception e) {
-					warn("Failed to parse line: " + line);
+					LOGGER.warn("Failed to parse line: " + line);
 				}
 			}
 		} catch (Exception e) {

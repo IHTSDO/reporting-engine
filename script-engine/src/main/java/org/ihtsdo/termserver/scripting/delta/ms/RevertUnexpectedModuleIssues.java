@@ -26,8 +26,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * effective time.  So we need a snapshot export to fix it, because the delta won't give
  * you any component that still has an effective tim
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RevertUnexpectedModuleIssues extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RevertUnexpectedModuleIssues.class);
+
 	String intReleaseBranch="MAIN/2022-01-31";
 	String extReleaseBranch="MAIN/SNOMEDCT-SE/2021-11-30";
 	List<String> intReleaseDates = new ArrayList<>();
@@ -59,7 +65,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -83,7 +89,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 		for (Concept c : gl.getAllConcepts()) {
 			boolean doOutputRF2 = false;
 			/*if (c.getId().equals("65391000052100")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			Concept published = null;
 			if (hasModifiedCoreComponent(c)) {
@@ -181,7 +187,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				//Do we have this already or do we need to load it specially?
 				Component publishedComponent = publishedMap.get(component.getId());
 				if (published != null && publishedComponent == null) {
-					debug("Recovering published version of " + component);
+					LOGGER.debug("Recovering published version of " + component);
 					publishedComponent = loadMember(component.getId());
 				}
 				
@@ -196,7 +202,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 						componentModified = true;
 						continue;
 					} else {
-						warn("Unable to obtain published version of " + component);
+						LOGGER.warn("Unable to obtain published version of " + component);
 						continue;
 					}
 				}
@@ -212,7 +218,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 					component.setEffectiveTime(publishedComponent.getEffectiveTime());
 					report(c, ReportActionType.EFFECTIVE_TIME_REVERTED, component.getComponentType(), component);
 					if (component.fieldComparison(publishedComponent, true).size() > 0) {
-						debug("Check Me: " + component + " vs " + publishedComponent);
+						LOGGER.debug("Check Me: " + component + " vs " + publishedComponent);
 					}
 				}
 				component.setDirty();

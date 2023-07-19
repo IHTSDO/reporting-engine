@@ -17,8 +17,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /*
 DRUGS-617 For matching concepts, clone, remodel withouse presentation and replace
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CloneRemodelAndReplace.class);
+
 	//All of SNOMED - see if these concepts are used anywhere
 	Set<Concept> allStatedTargets = new HashSet<>();
 	Set<Concept> allInferredTargets = new HashSet<>();
@@ -155,14 +161,14 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		debug("Identifying concepts to process");
+		LOGGER.debug("Identifying concepts to process");
 		//We're looking for concepts with both concentration and presentation strength
 		List<Concept> allAffected = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)
 				.stream()
 				.filter(c -> c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HPSNV, ActiveState.ACTIVE).size() > 0)
 				.filter(c -> c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HCSNV, ActiveState.ACTIVE).size() > 0)
 				.collect(Collectors.toList());
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
 		
 		//We'll populate the first ingredient as the issue, and then sort on issue to ensure
 		//like concepts are batched together

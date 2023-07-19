@@ -17,7 +17,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Example TS Task: MAIN/2017-01-31/SNOMEDCT-US/USTEST/USTEST-6002
  * INFRA-1232
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateDuplicateRelationships extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateRelationships.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivateDuplicateRelationships delta = new InactivateDuplicateRelationships();
@@ -35,7 +41,7 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}

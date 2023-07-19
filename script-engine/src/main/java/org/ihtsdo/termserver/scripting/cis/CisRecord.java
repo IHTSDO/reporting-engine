@@ -6,8 +6,14 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CisRecord {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CisRecord.class);
+
 	static DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(DateTimeZone.UTC);
 	
 	private Long sctid;

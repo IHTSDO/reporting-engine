@@ -6,7 +6,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Ingredient {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Ingredient.class);
 
 	public Concept doseForm;
 	public Concept substance;

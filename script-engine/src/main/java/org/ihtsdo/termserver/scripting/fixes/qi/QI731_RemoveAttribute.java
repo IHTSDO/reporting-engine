@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 /**
  * QI-731 Remove specified attribute from matching ECL
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QI731_RemoveAttribute extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(QI731_RemoveAttribute.class);
+
 	String ecl = "<< 125605004 |Fracture of bone (disorder)| : 42752001 |Due to (attribute)| = 773760007 |Traumatic event (event)|";
 	RelationshipTemplate removeMe;
 	

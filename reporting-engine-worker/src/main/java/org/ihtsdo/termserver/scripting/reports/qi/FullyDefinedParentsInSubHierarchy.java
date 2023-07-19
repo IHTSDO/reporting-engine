@@ -20,8 +20,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * SUBST-153 Also uses this report.
  * RP-240 Make available in Reporting Platform
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FullyDefinedParentsInSubHierarchy.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, "105590001"); // Substance

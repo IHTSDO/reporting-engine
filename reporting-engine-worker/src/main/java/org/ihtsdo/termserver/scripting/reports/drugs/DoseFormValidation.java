@@ -19,8 +19,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DoseFormValidation extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DoseFormValidation.class);
+
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
@@ -82,7 +88,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		populateSummaryTab();
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void validateDrugsModeling() throws TermServerScriptException {
@@ -97,7 +103,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete " + (int)percComplete);
 			}
 			
 			//DRUGS-784
@@ -105,7 +111,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 				validateAcceptableDoseForm(c);
 			}
 		}
-		info ("Drugs validation complete");
+		LOGGER.info ("Drugs validation complete");
 	}
 	
 
@@ -160,7 +166,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		debug ("Loading " + fileName );
+		LOGGER.debug ("Loading " + fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			boolean isHeader = true;

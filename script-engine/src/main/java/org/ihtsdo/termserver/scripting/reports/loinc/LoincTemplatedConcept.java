@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincConstants, LoincScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
+
 	private static final String semTag = " (observable entity)";
 	private static Set<String> partNumsMapped = new HashSet<>();
 	private static Set<String> partNumsUnmapped = new HashSet<>();

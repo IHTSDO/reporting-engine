@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * from |Cataract (morphologic abnormality)| to |Abnormally opaque structure (morphologic abnormality)|
  * DEVICES-152 Update to replace a set of attributes type/values
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplaceAttributes extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributes.class);
+
 	Map<RelationshipTemplate, RelationshipTemplate> replacementMap;
 	
 	protected ReplaceAttributes(BatchFix clone) {
@@ -122,7 +128,7 @@ public class ReplaceAttributes extends BatchFix {
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> allAffected = new ArrayList<>();
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
@@ -133,7 +139,7 @@ public class ReplaceAttributes extends BatchFix {
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
 	}

@@ -17,8 +17,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * Lists all active descriptions that have no acceptability
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsMovingElsewhere extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsMovingElsewhere.class);
+
 	private Map<Concept, String> knownNamespaceExtensionMap = new HashMap<>();
 	private static String THIS_RELEASE = "This Release";
 	private Map<Concept, Integer> moveSummaryMap = new HashMap<>();
@@ -59,7 +65,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 		knownNamespaceExtensionMap.put(gl.getConcept("370137002 |Extension Namespace {1000000}"), "UK Extension");
 		if (loadPublishedPackage) {
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			info ("Detected this effective time as " + thisEffectiveTime);
+			LOGGER.info ("Detected this effective time as " + thisEffectiveTime);
 		}
 	}
 	
@@ -94,12 +100,12 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 			}
 		}
 		populateSummaryTab();
-		warn (missingIndicatorCount + " inactive concepts have no inactivation indicator");
+		LOGGER.warn (missingIndicatorCount + " inactive concepts have no inactivation indicator");
 	}
 	
 	private boolean inScope(Concept c) {
 		if (c.getInactivationIndicator() == null) {
-			warn (c + " has no inactivation indicator");
+			LOGGER.warn (c + " has no inactivation indicator");
 			missingIndicatorCount++;
 			return false;
 		}

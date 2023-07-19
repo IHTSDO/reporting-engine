@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 SUBST-267 Remove stated relationships of a given attribute type where the classifier is 
 already removing them.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RemoveRedundantRelationships extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RemoveRedundantRelationships.class);
+
 	Concept subHierarchy = SUBSTANCE;
 	Concept attributeType = HAS_DISPOSITION;
 	
@@ -73,7 +79,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendents(NOT_SET);
 		for (Concept c : subHierarchy) {
@@ -87,7 +93,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 		}
 		addSummaryInformation("Concepts checked", subHierarchy.size());
 		processMe.sort(Comparator.comparing(Concept::getFsn));
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		return asComponents(processMe);
 	}
 

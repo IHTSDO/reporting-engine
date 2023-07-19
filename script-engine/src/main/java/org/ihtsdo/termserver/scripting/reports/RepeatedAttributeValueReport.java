@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 /**
  * Reports all terms that contain the specified text
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RepeatedAttributeValueReport extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RepeatedAttributeValueReport.class);
+
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetAttributeStr = "127489000"; // |Has active ingredient (attribute)|
 	String matchText = "+"; 
@@ -26,7 +32,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runRepeatedAttributeValueReport();
 		} catch (Exception e) {
-			info("Failed to produce RepeatedAttributeValueReport Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce RepeatedAttributeValueReport Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -35,7 +41,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 
 	private void runRepeatedAttributeValueReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		info ("Validating all relationships");
+		LOGGER.info ("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
 			if (c.isActive()) {

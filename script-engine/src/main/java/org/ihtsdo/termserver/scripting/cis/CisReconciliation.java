@@ -16,8 +16,14 @@ import org.springframework.util.StringUtils;
 
 import com.google.common.collect.Iterables;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CisReconciliation extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CisReconciliation.class);
+
 	public static String AVAILABLE = "Available";
 	public static String RESERVED = "Reserved";
 	public static String DEPRECATED = "Deprecated";
@@ -42,7 +48,7 @@ public class CisReconciliation extends TermServerReport {
 			report.reconcileDbAgainstSnapshot();
 			report.takeCorrectiveAction();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -63,7 +69,7 @@ public class CisReconciliation extends TermServerReport {
 }
 
 	private void importDbState() throws IOException {
-		info("Importing DB State");
+		LOGGER.info("Importing DB State");
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		int row = 0;
@@ -78,10 +84,10 @@ public class CisReconciliation extends TermServerReport {
 								CisRecord cr = CisRecord.create(line.split("\t"));
 								cisRecords.put(cr.getSctid(), cr);
 								if (++row % 1000000 == 0) {
-									info("Imported " + row + " cis records");
+									LOGGER.info("Imported " + row + " cis records");
 								}
 							}
-							info("Imported " + row + " cis records - complete.");
+							LOGGER.info("Imported " + row + " cis records - complete.");
 							ze = zis.getNextEntry();
 						}
 					}
@@ -96,7 +102,7 @@ public class CisReconciliation extends TermServerReport {
 	}
 
 	private void reconcileDbAgainstSnapshot() throws IOException, TermServerScriptException {
-		info("Commencing reconcilliation");
+		LOGGER.info("Commencing reconcilliation");
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile(1)));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -104,7 +110,7 @@ public class CisReconciliation extends TermServerReport {
 				if (!ze.isDirectory()) {
 					final String fileName = StringUtils.getFilename(ze.getName());
 					if (fileName.contains("sct2") && fileName.contains("Snapshot")) {
-						info("Processing " + fileName);
+						LOGGER.info("Processing " + fileName);
 						BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
 						String line;
 						int row = 0;
@@ -114,7 +120,7 @@ public class CisReconciliation extends TermServerReport {
 									String sctId = fields[0];
 									if (sctId.contains("-")) {
 										//Axioms have a UUID - skip this file
-										info("Skipping " + fileName);
+										LOGGER.info("Skipping " + fileName);
 										break;
 									}
 									String effectiveTime = fields[1];
@@ -122,10 +128,10 @@ public class CisReconciliation extends TermServerReport {
 								}
 								
 								if (++row % 1000000 == 0) {
-									info("Processed " + row + " records in " + fileName);
+									LOGGER.info("Processed " + row + " records in " + fileName);
 								}
 						}
-						info("Processed " + row + " records in " + fileName);
+						LOGGER.info("Processed " + row + " records in " + fileName);
 					}
 				}
 				ze = zis.getNextEntry();
@@ -170,13 +176,13 @@ public class CisReconciliation extends TermServerReport {
 	
 	
 	private void takeCorrectiveAction() throws TermServerScriptException {
-		info("Taking corrective action...");
+		LOGGER.info("Taking corrective action...");
 		if (missingIds.size() > 0) {
 			throw new TermServerScriptException("Wasn't expecting to see missing Ids");
 		}
 		
 		/* No need to add to audit.  This is taken care of by a trigger on the sctId table
-		info("Adding audit information");
+		LOGGER.info("Adding audit LOGGER.information");
 		for (String currentStatus : wrongStatusMap.keySet()) {
 			report(QUATERNARY_REPORT, "");
 			report(QUATERNARY_REPORT, " -- Audit for " + currentStatus);
@@ -188,7 +194,7 @@ public class CisReconciliation extends TermServerReport {
 			}
 		}*/
 		
-		info("Updating incorrect statuses...");
+		LOGGER.info("Updating incorrect statuses...");
 		for (String currentStatus : wrongStatusMap.keySet()) {
 			report(QUATERNARY_REPORT, "");
 			report(QUATERNARY_REPORT, " -- Updates for " + currentStatus);

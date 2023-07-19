@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Note use of int array rather than MultiSet because it initialises to 0 so we have an column 
  * entry whether or not a semantic tag gets used in a hierarchy.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SemanticTagsMatrix extends TermServerReport{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SemanticTagsMatrix.class);
+
 	List<Concept> topLevelHierarchies;
 	Map<String, int[]> tagToUsageMap;
 	
@@ -31,7 +37,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 			report.outputResultsYX();
 			report.outputWithoutCounts();
 		} catch (Exception e) {
-			info("Failed to validate laterality due to " + e.getMessage());
+			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -48,7 +54,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (int h=0; h < topLevelHierarchies.size(); h++) {
 			Set<Concept> descendents = topLevelHierarchies.get(h).getDescendents(NOT_SET);
-			info (topLevelHierarchies.get(h) + " - total: " + descendents.size());
+			LOGGER.info (topLevelHierarchies.get(h) + " - total: " + descendents.size());
 			String topTag = SnomedUtils.deconstructFSN(topLevelHierarchies.get(h).getFsn())[1];
 			for (Concept c : descendents) {
 				String tag = SnomedUtils.deconstructFSN(c.getFsn())[1];
@@ -67,11 +73,11 @@ public class SemanticTagsMatrix extends TermServerReport{
 	private void checkForAnomoly(String topTag, String thisTag, Concept c) {
 		//Some hierarchies only expect to use a single semantic tag
 		if (topTag.equals("(product)") && thisTag.equals("(substance)")) {
-			info ("Anomaly found in " + topTag + " hierarchy: " + c);
+			LOGGER.info ("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 		
 		if (topTag.equals("(substance)") && thisTag.equals("(product)")) {
-			info ("Anomaly found in " + topTag + " hierarchy: " + c);
+			LOGGER.info ("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 	}
 
@@ -127,7 +133,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 					hierarchiesFeatured++;
 				}
 			}
-			info (row.toString());
+			LOGGER.info (row.toString());
 		}
 		
 	}

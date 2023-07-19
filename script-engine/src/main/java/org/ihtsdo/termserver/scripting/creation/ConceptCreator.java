@@ -8,8 +8,14 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 	
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class ConceptCreator implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptCreator.class);
+
 	ConceptCreationPattern conceptPattern;
 	List<String> inspirations = new ArrayList<>();
 	GraphLoader gl = GraphLoader.getGraphLoader();

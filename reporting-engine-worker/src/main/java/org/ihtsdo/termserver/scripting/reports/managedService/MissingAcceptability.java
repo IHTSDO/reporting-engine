@@ -17,8 +17,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * RP-565
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MissingAcceptability extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingAcceptability.class);
+
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
 	private static final String TRACK_DIALECT = "Track dialect";
 
@@ -59,7 +65,7 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 		try {
 			defaultLangRefset = project.getMetadata().getDefaultLangRefset();
 		} catch (IllegalStateException e) {
-			error("Failed to determine default LangRefset.  Assuming en-us.",e);
+			LOGGER.error("Failed to determine default LangRefset.  Assuming en-us.",e);
 			defaultLangRefset = US_ENG_LANG_REFSET;
 		}
 		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions"};

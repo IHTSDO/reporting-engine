@@ -34,8 +34,14 @@ and r.effectiveTime = (
 );
 
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceConcepts.class);
+
 	Concept subHierarchy;
 	Set<Concept> replaceConcepts;
 	Map<Concept, List<Concept>> originalParents;
@@ -70,7 +76,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		subHierarchy = gl.getConcept("770654000 |TEMPORARY parent for CDs that are not updated (product)|");
 	
 		//Load in our IS_A relationship from the before time of the long long ago
-		info ("Loading IS_A relationships from some previous release");
+		LOGGER.info ("Loading IS_A relationships from some previous release");
 		originalParents = new HashMap<>();
 		try {
 			for (String line : FileUtils.readLines(new File(orignalParentsFileName))) {
@@ -165,7 +171,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 								.stream()
 								.map(AssociationEntry::toString)
 								.collect(Collectors.joining(",\n"));
-						warn ("Multiple associations for " + c + ": " + assocStr);
+						LOGGER.warn ("Multiple associations for " + c + ": " + assocStr);
 						List<Concept> assocTargets = assocs.stream()
 								.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
 								.collect(Collectors.toList());
@@ -187,7 +193,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		int changesMade = 0;
 		//First we must - recursively - inactivate all the children, in the same task
 		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			info ("Adding " + child + " into task for inactivation as child of " + c);
+			LOGGER.info ("Adding " + child + " into task for inactivation as child of " + c);
 			t.addAfter(child, c);
 			changesMade += inactivateConcept(t, child);
 		}

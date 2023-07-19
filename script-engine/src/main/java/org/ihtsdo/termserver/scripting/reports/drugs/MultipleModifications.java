@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * DRUGS-506 List Substances that have more than one modification attribute
  * DRUGS-476 Similar, list CDs that have ingredient which has multiple modifications
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MultipleModifications extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MultipleModifications.class);
+
 	Set<Concept> substancesWithMultipleModifications = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -30,7 +36,7 @@ public class MultipleModifications extends TermServerReport {
 			report.findMultipleModifications();
 			report.findCDsWithMultipleModifications();
 		} catch (Exception e) {
-			info("Failed to produce MultipleModifications due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			LOGGER.info("Failed to produce MultipleModifications due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

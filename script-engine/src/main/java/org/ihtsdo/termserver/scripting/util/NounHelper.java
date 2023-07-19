@@ -14,8 +14,14 @@ import org.snomed.otf.script.Script;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NounHelper implements RF2Constants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NounHelper.class);
+
 	private static NounHelper singleton = null;
 
 	public List<String> properNouns = new ArrayList<>();

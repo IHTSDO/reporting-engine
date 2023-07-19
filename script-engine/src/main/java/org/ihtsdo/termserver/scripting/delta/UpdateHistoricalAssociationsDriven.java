@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /* INFRA-10432 Update On Examination historical associations based on a spreadsheet.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
+
 	private Map<Concept, Concept> replacementMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -100,11 +106,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					Concept replacement = gl.getConcept(items[2]);
 					Concept existing = replacementMap.get(inactive);
 					if (existing != null && !existing.equals(replacement)) {
-						warn("Map replacement for inactive " + inactive + " was " + existing + " now " + replacement);
+						LOGGER.warn("Map replacement for inactive " + inactive + " was " + existing + " now " + replacement);
 					}
 					replacementMap.put(inactive, replacement);
 				} catch (Exception e) {
-					warn("Failed to parse line: " + line);
+					LOGGER.warn("Failed to parse line: " + line);
 				}
 			}
 		} catch (Exception e) {

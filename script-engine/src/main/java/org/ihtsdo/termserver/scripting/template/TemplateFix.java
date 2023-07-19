@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 abstract public class TemplateFix extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TemplateFix.class);
+
 	protected Set<Concept> exclusions;
 	protected List<String> exclusionWords;
 	protected boolean checkAllDescriptionsForExclusions = false;
@@ -55,7 +61,7 @@ abstract public class TemplateFix extends BatchFix {
 				Template t = loadLocalTemplate(id, templateNames[x]);
 				subsetECL = t.getDomain();
 				validateTemplate(t);
-				info ("Validated template: " + templateNames[x]);
+				LOGGER.info ("Validated template: " + templateNames[x]);
 			}
 		}
 	}
@@ -63,7 +69,7 @@ abstract public class TemplateFix extends BatchFix {
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		initTemplatesAndExclusions();
 		super.postInit(tabNames, columnHeadings, csvOutput);
-		info ("Post initialisation complete, with multiple tabs");
+		LOGGER.info ("Post initialisation complete, with multiple tabs");
 	}
 	
 	private void importExplicitExclusions() throws TermServerScriptException {
@@ -78,7 +84,7 @@ abstract public class TemplateFix extends BatchFix {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
-		debug("Processing Explicit Exclusions File");
+		LOGGER.debug("Processing Explicit Exclusions File");
 		for (String line : lines) {
 			String sctId = line.split(TAB)[0];
 			Concept excluded = gl.getConcept(sctId, false, true);  //Validate concept exists
@@ -90,7 +96,7 @@ abstract public class TemplateFix extends BatchFix {
 	public void postInit() throws TermServerScriptException {
 		initTemplatesAndExclusions();
 		super.postInit();
-		info ("Post initialisation complete");
+		LOGGER.info ("Post initialisation complete");
 	}
 	
 	private void initTemplatesAndExclusions() throws TermServerScriptException {
@@ -105,14 +111,14 @@ abstract public class TemplateFix extends BatchFix {
 				Template t = loadLocalTemplate(id, templateNames[x]);
 				validateTemplate(t);
 				templates.add(t);
-				info ("Loaded template: " + t);
+				LOGGER.info ("Loaded template: " + t);
 				
 				if (StringUtils.isEmpty(subsetECL)) {
 					subsetECL = t.getDomain();
-					info("Subset ECL set to " + subsetECL);
+					LOGGER.info("Subset ECL set to " + subsetECL);
 				}
 			}
-			info(templates.size() + " Templates loaded successfully");
+			LOGGER.info(templates.size() + " Templates loaded successfully");
 		}
 		
 		if (exclusions == null) {
@@ -124,7 +130,7 @@ abstract public class TemplateFix extends BatchFix {
 		}
 
 		for (String thisExclude : excludeHierarchies) {
-			info("Setting exclusion of " + thisExclude + " subHierarchy.");
+			LOGGER.info("Setting exclusion of " + thisExclude + " subHierarchy.");
 			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
 		}
 		
@@ -150,7 +156,7 @@ abstract public class TemplateFix extends BatchFix {
 			exclusionWords.add("with");
 			exclusionWords.add("without");
 		} else {
-			warn ("Including complex templates");
+			LOGGER.warn ("Including complex templates");
 		}
 		
 		complexTemplateAttributes = new ArrayList<>();
@@ -230,11 +236,11 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Set<Concept> misalignedConcepts, Integer exclusionReport, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		info ("Examining " + concepts.size() + " concepts against template " + t);
+		LOGGER.info ("Examining " + concepts.size() + " concepts against template " + t);
 		int conceptsExamined = 0;
 		for (Concept c : concepts) {
 			if (!c.isActive()) {
-				warn ("Ignoring inactive concept returned by ECL: " + c);
+				LOGGER.warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
 			if (!isExcluded(c, exclusionReport)) {
@@ -244,7 +250,7 @@ abstract public class TemplateFix extends BatchFix {
 					if (conceptToTemplateMap.containsKey(c)) {
 						Template existing = conceptToTemplateMap.get(c);
 						Template moreSpecific = t.getId() > existing.getId() ? t : existing; 
-						warn( c + "matches two templates: " + t.getId() + " & " + existing.getId() + " using most specific " + moreSpecific.getId());
+						LOGGER.warn( c + "matches two templates: " + t.getId() + " & " + existing.getId() + " using most specific " + moreSpecific.getId());
 						conceptToTemplateMap.put(c, moreSpecific);
 					} else {
 						conceptToTemplateMap.put(c, t);
@@ -310,7 +316,7 @@ abstract public class TemplateFix extends BatchFix {
 		
 		if (StringUtils.isEmpty(c.getFsn())) {
 			if (exclusionReport != null) {
-				warn("Skipping concept with no FSN: " + c.getConceptId());
+				LOGGER.warn("Skipping concept with no FSN: " + c.getConceptId());
 				report (exclusionReport, c, "No FSN", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
@@ -388,7 +394,7 @@ abstract public class TemplateFix extends BatchFix {
 	}
 	
 	protected void outputMetaData() throws TermServerScriptException {
-		info("Outputting metadata tab");
+		LOGGER.info("Outputting metadata tab");
 		String user = jobRun == null ? "System" : jobRun.getUser();
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
 		writeToReportFile (SECONDARY_REPORT, QUOTE + "Run against: " + subsetECL + QUOTE);

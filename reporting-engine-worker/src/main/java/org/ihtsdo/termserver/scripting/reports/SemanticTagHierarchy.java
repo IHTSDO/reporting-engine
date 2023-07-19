@@ -17,8 +17,14 @@ import org.snomed.otf.scheduler.domain.JobType;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SemanticTagHierarchy extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SemanticTagHierarchy.class);
+
 	Map<String, Map<String, Concept>> semanticTagHierarchy = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -52,10 +58,10 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 
 	public void runJob() throws TermServerScriptException {
 		//Work out the path of semantic tags with examples
-		info ("Generating Semantic Tag Hierarchy report");
+		LOGGER.info ("Generating Semantic Tag Hierarchy report");
 		Set<Concept> concepts = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy);
 		
-		info ("Examining all concepts to determine tag hierarchy");
+		LOGGER.info ("Examining all concepts to determine tag hierarchy");
 		for (Concept c : concepts) {
 			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
@@ -63,7 +69,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			}
 			//Have we seen this semantic tag before?
 			if (c.getFsn() == null) {
-				warn(c + " encountered without a semantic tag");
+				LOGGER.warn(c + " encountered without a semantic tag");
 				continue;
 			}
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
@@ -80,7 +86,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 					continue;
 				}
 				if (StringUtils.isEmpty(child.getFsn())) {
-					warn ("Encountered concept without FSN during traversal: " + c);
+					LOGGER.warn ("Encountered concept without FSN during traversal: " + c);
 					continue;
 				}
 				String childSemTag = SnomedUtils.deconstructFSN(child.getFsn())[1];
@@ -90,7 +96,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			}
 		}
 		
-		info ("Encountered: " + semanticTagHierarchy.size() + " child tags across " + concepts.size() + " concepts");
+		LOGGER.info ("Encountered: " + semanticTagHierarchy.size() + " child tags across " + concepts.size() + " concepts");
 		
 		//Start with the top level hierarchy and go from there
 		outputHierarchialStructure(SnomedUtils.deconstructFSN(subHierarchy.getFsn())[1], 0);

@@ -16,8 +16,14 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ValidateSubstanceModeling extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ValidateSubstanceModeling.class);
+
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
@@ -54,7 +60,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	public void runJob() throws TermServerScriptException {
 		validateSubstancesModeling();
 		populateSummaryTab();
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
@@ -75,7 +81,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 			validateDisposition(concept);
 			checkForBadWords(concept);  //DRUGS-93
 		}
-		info ("Substances validation complete.");
+		LOGGER.info ("Substances validation complete.");
 	}
 	
 	//Ensure that all stated dispositions exist as inferred, and visa-versa

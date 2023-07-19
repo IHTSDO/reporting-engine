@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TemplateUtils implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TemplateUtils.class);
+
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
 	public static boolean SLOT_NAME_WARNING_MADE = false;

@@ -31,8 +31,14 @@ import com.google.common.io.Files;
 		and af.effectiveTime = (select max(`effectivetime`) from associationrefset_f af2 where ad.id = af2.id and effectiveTime < 20190131)
 		and ( not ad.refsetid = af.refsetid OR not ad.referencedComponentid = af.referencedComponentid OR not ad.targetComponentid = af.targetComponentid )
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FixReusedAssociations extends DeltaGenerator implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FixReusedAssociations.class);
+
 	enum IDX { ORIG_ID, NEW_ACTIVE, NEW_REFSETID, NEW_SCTID, NEW_TARGET, ORIG_EFFECTIVE_TIME,
 		ORIG_ACTIVE, ORIG_REFSETID, ORIG_TARGET }
 	

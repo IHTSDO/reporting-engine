@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DuplicateSimpleRefsetEntriesFix extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateSimpleRefsetEntriesFix.class);
+
 	private static String simpleRefsetId = "723264001"; // Lateralisable body structure reference set
 	Map<Concept, Set<RefsetMember>> duplicateMembers = new HashMap<>();
 	Map<Concept, RefsetMember> conceptsSeen = new HashMap<>(); //These are our first encounter, which we'll retain
@@ -61,7 +67,7 @@ public class DuplicateSimpleRefsetEntriesFix extends BatchFix {
 	
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		//We're only recovering Refset Members with no effective time
 		//So this class won't work with new members duplicating with historic ones.
 		for (RefsetMember rm : tsClient.findRefsetMembers(project.getBranchPath(), simpleRefsetId, true)) {

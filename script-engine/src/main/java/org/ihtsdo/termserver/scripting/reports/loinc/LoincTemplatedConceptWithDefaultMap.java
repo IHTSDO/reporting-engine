@@ -5,7 +5,13 @@ import java.util.List;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincTemplatedConceptWithDefaultMap extends LoincTemplatedConcept {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithDefaultMap.class);
 
 	private LoincTemplatedConceptWithDefaultMap(String loincNum) {
 		super(loincNum);

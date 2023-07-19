@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Attempts to find matching acids ("x acid") and bases ("--ate")
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SubstanceAcidWithBase extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SubstanceAcidWithBase.class);
+
 	String subHierarchyStr = "105590001";  // Substance (substance)
 	Set<Concept> reported = new HashSet<Concept>();
 	
@@ -33,11 +39,11 @@ public class SubstanceAcidWithBase extends TermServerScript{
 			report.additionalReportColumns = " SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
-			info("Generating Report");
+			LOGGER.info("Generating Report");
 			report.reportAcidsWithBases();
-			info("Processing Complete");
+			LOGGER.info("Processing Complete");
 		} catch (Exception e) {
-			info("Failed to produce SubstanceAcidWithBase Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce SubstanceAcidWithBase Report due to " + e.getMessage());
 			e.printStackTrace();
 		} 
 	}
