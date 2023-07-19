@@ -2,7 +2,13 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import com.google.gson.annotations.Expose;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReleaseSummaryDetail implements Comparable<ReleaseSummaryDetail> {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseSummaryDetail.class);
 
 	@Expose
 	private String effectiveTime;

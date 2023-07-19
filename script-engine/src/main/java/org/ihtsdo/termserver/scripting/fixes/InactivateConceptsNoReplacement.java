@@ -21,8 +21,14 @@ import com.google.common.io.Files;
  * 
  * INFRA-4865 Hist assoc will be MOVED TO -> UK
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateConceptsNoReplacement extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsNoReplacement.class);
+
 	//InactivationIndicator inactivationIndicator = InactivationIndicator.AMBIGUOUS;
 	InactivationIndicator inactivationIndicator = InactivationIndicator.MOVED_ELSEWHERE;
 	
@@ -102,7 +108,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
-		debug("Processing Historic Replacements File");
+		LOGGER.debug("Processing Historic Replacements File");
 		for (String line : lines) {
 			//Split the line up on tabs
 			String[] items = line.split(TAB);
@@ -117,7 +123,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 						Concept conceptFromDesc = gl.findConcept(replacementSCTID);
 						if (conceptFromDesc != null) {
 							replacementSCTID = conceptFromDesc.getConceptId();
-							warn("Looked up replacement " + conceptFromDesc);
+							LOGGER.warn("Looked up replacement " + conceptFromDesc);
 						} else {
 							report ((Task)null, inactivatedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "FSN of replacement doesn't exist in current environment. ", replacementSCTID);
 							continue;
@@ -252,7 +258,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
 			Concept incoming = gl.getConcept(assoc.getReferencedComponentId());
 			if (incoming.getId().equals("140506004")) {
-				debug("here");
+				LOGGER.debug("here");
 			}
 			//Does the concept we're inactivating have a concepts designated to rewire to?
 			if (incomingHistAssocReplacements.containsKey(c)) {
@@ -270,7 +276,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		Set<Concept> processMe = new HashSet<>();
 		
 		for (Concept hierarchy : targetHierarchies) {
@@ -278,7 +284,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 				addComponentsToProcess(c, processMe);
 			}
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		return new ArrayList<Component>(processMe);
 	}
 	

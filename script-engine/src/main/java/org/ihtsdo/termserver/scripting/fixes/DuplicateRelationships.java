@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /* INFRA-3449 Fix issue when the same relationship exists as both active and inactive
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DuplicateRelationships extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateRelationships.class);
+
 	protected DuplicateRelationships(BatchFix clone) {
 		super(clone);
 	}
@@ -81,7 +87,7 @@ public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find concepts with two relationships the same triple + group, but different Ids
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		
 		//Code to protect us from SCTIDs changing between released and TS files is 
@@ -119,7 +125,7 @@ public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 			}
 		}
 		*/
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

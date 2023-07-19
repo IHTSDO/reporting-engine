@@ -27,8 +27,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * except the bucket name is expected.
  * The result of the comparison is uploaded to S3 bucket snomed-compares.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class PackageComparisonReport extends SummaryComponentStats implements ReportClass {
-	// Name of the starting script
+
+	private static Logger LOGGER = LoggerFactory.getLogger(PackageComparisonReport.class);
+
 	private static final String SCRIPT_NAME = "run-compare-packages.sh";
 	private String previousReleasePath;
 	private String currentReleasePath;
@@ -207,7 +213,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				reader.lines().forEach(line -> {
 					output.add(line);
-					info(line);
+					LOGGER.info(line);
 				});
 			}
 
@@ -218,7 +224,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				if (exitValue != 0) {
 					throw new TermServerScriptException("Script execution failed with exit code: " + exitValue);
 				}
-				info("Script execution finished successfully");
+				LOGGER.info("Script execution finished successfully");
 				output.add("Diff files for '" + previousRelease.getPath() + "' and '" + currentRelease.getPath() + "' are uploaded to s3://snomed-compares/" + uploadFolder);
 			} else {
 				// Process timed out
@@ -243,7 +249,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					.forEach(File::delete);
 
 		} catch (IOException | InterruptedException | TermServerScriptException e) {
-			error("Report execution failed", e);
+			LOGGER.error("Report execution failed", e);
 		}
 
 		for (String line: output) {
@@ -304,7 +310,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			int total = created.size() + deleted.size() + updated.size() + inactivated.size();
 			report(MAX_REPORT_TABS + PRIMARY_REPORT, filename, created.size(), deleted.size(), updated.size(), inactivated.size(), total);
 		} catch (IOException | IndexOutOfBoundsException | TermServerScriptException e) {
-			error("Error processing file: " + filename, e);
+			LOGGER.error("Error processing file: " + filename, e);
 		}
 	}
 

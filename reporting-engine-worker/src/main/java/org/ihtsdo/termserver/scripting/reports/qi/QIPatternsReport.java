@@ -24,8 +24,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-234 Ungrouped crossovers
  * RP-235 Intermediate primitive concepts that have sufficiently defined supertypes and subtypes.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QIPatternsReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(QIPatternsReport.class);
+
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;
 	String previousPreviousRelease;
@@ -65,20 +71,20 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 
 	public void runJob() throws TermServerScriptException {
 		
-		info ("Checking structural integrity");
+		LOGGER.info ("Checking structural integrity");
 		if (checkStructuralIntegrity()) {
-			info("Checking for crossovers");
+			LOGGER.info("Checking for crossovers");
 			checkForRoleGroupCrossovers();
 			checkForUngroupedCrossovers();
 			
-			info("Checking for Intermediate Primitives...");
+			LOGGER.info("Checking for Intermediate Primitives...");
 			checkForIPs();
 		}
 			
-		info("Checks complete, creating summary tag");
+		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
@@ -146,7 +152,7 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 		Set<GroupPair> processedPairs = new HashSet<>();
 		for (Concept c : gl.getAllConcepts()) {
 			/*if (c.getConceptId().equals("10311005")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
 			//We only need to worry about concepts with >1 role group

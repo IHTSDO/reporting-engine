@@ -20,12 +20,17 @@ import org.springframework.jms.support.converter.MessageType;
 
 import java.util.TimeZone;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
 @ComponentScan(basePackages = {"org.ihtsdo.termserver.job", "org.ihtsdo.termserver.scripting", "org.snomed.otf.scheduler.domain"})
 @EnableJms
 public class Application  {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Application.class);
+
 	static TermServerScript job;
 	
 	@Bean

@@ -9,7 +9,13 @@ import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DescendantsCache implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DescendantsCache.class);
 
 	private static DescendantsCache singleton = null;
 	private static DescendantsCache singletonStated = null;

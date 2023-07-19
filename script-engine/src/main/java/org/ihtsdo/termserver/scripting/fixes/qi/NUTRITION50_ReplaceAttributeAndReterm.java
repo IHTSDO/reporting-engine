@@ -15,7 +15,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * NUTRITION-50 Batch change of estimated/measured nutritional intake observable content
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NUTRITION50_ReplaceAttributeAndReterm extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NUTRITION50_ReplaceAttributeAndReterm.class);
 
 	private Set<String> exclusionTexts;
 	private RelationshipTemplate addTemplate;

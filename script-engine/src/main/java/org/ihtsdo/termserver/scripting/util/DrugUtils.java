@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DrugUtils implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DrugUtils.class);
+
 	public static final String CD = "(clinical drug)";
 	public static final String MP = "(medicinal product)";
 	public static final String MPF = "(medicinal product form)";

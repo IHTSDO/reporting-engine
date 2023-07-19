@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /*
  * Removes a substring from all active Terms, where matched in context for a given subHierarchy
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RemoveSubstringFromNewTerms.class);
+
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();
 	//static final String match = "mg/1 each oral tablet";
@@ -82,7 +88,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConst
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		for (Concept c : allPotential) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.getTerm().contains(match)) {
@@ -91,7 +97,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConst
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 

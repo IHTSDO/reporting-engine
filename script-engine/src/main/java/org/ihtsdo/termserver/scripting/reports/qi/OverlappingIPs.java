@@ -6,8 +6,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * QI-61
  * Obtain a number of intermediate primitive reports, and work out what the overlap is
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class OverlappingIPs extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(OverlappingIPs.class);
+
 	/* TODO ON REQUEST: Modify this code to work with ECL rather than subhierarchies
 	Map<String, Concept> shortNames = new HashMap<>();
 	Map<Concept, List<Concept>> subHierarchyIpMap = new HashMap<>();
@@ -24,7 +30,7 @@ public class OverlappingIPs extends TermServerReport {
 			report.postLoadInit();
 			report.run();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -68,10 +74,10 @@ public class OverlappingIPs extends TermServerReport {
 
 
 	private void run() throws TermServerScriptException {
-		info ("Calculating IP Overlap in " + subHierarchies.size() + " sub-hierarchies");
+		LOGGER.info ("Calculating IP Overlap in " + subHierarchies.size() + " sub-hierarchies");
 		startTimer();
 		for (Concept subHierarchy : subHierarchies) {
-			info ("Identifying IPs in " + subHierarchy);
+			LOGGER.info ("Identifying IPs in " + subHierarchy);
 			intermediatePrimitivesReport.setSubHierarchy(subHierarchy.getConceptId());
 			intermediatePrimitivesReport.reportConceptsAffectedByIntermediatePrimitives();
 			List<Concept> ips = new ArrayList<>(intermediatePrimitivesReport.intermediatePrimitives.keySet());

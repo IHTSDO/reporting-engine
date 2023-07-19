@@ -13,7 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * LOINC-383 List LOINC concepts where some associated specimen has been modified
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RecentSpecimenChanges extends TermServerScript {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RecentSpecimenChanges.class);
+
 	Collection<Concept> targetAttributes = null;
 	String sinceEffectiveDate = "20180131";
 	
@@ -35,7 +42,7 @@ public class RecentSpecimenChanges extends TermServerScript {
 	private void reportMatchingConcepts() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getModuleId() == null) {
-				warn ("Invalid concept loaded through reference? " + c.getId());
+				LOGGER.warn ("Invalid concept loaded through reference? " + c.getId());
 			} else if (c.isActive() && 
 					c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE) &&
 					hasRecentlyModifiedTargetAttribute(c)) {

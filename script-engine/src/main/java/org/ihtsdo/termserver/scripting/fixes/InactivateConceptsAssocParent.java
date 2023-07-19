@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -16,7 +15,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * one of the existing parents of the concept.
  * QI-778 - Overdose of undetermined intent
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateConceptsAssocParent extends BatchFix implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsAssocParent.class);
 
 	private InactivationIndicator inactivationIndicator = InactivationIndicator.DUPLICATE;
 	//private static String eclSubset = "<< 269736006 |Poisoning of undetermined intent (disorder)| ";
@@ -219,7 +224,7 @@ public class InactivateConceptsAssocParent extends BatchFix implements ScriptCon
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		return new ArrayList<Component>(findConcepts(eclSubset));
 	}
 	

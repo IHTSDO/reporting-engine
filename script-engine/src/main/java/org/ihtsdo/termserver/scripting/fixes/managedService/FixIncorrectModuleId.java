@@ -20,8 +20,14 @@ moduleid of the concept, descriptions and relationships all match
 the default.   Note that unlike other fixes, this does not create a 
 new task, but targets existing tasks. 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FixIncorrectModuleId.class);
+
 	Map<String, Task> knownTasks = new HashMap<String, Task>();
 	Set<TaskConcept> processMe = new HashSet<TaskConcept>();
 	String intendedModuleId;
@@ -44,7 +50,7 @@ public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		intendedModuleId = project.getMetadata().getDefaultModuleId();
-		info ("Identified correct module to be " + intendedModuleId);
+		LOGGER.info ("Identified correct module to be " + intendedModuleId);
 	}
 	
 
@@ -83,7 +89,7 @@ public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 
 	private void loadEntriesToFix() throws IOException, TermServerScriptException {
 		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-		info ("Loading affected description ids from " + getInputFile());
+		LOGGER.info ("Loading affected description ids from " + getInputFile());
 		for (String line : lines) {
 			String trimmedLine = line.trim();
 			if (trimmedLine.isEmpty()) {

@@ -20,7 +20,8 @@ import com.google.common.util.concurrent.AtomicLongMap;
  */
 public class NewDescriptions extends TermServerReport implements ReportClass {
 	
-	Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static Logger LOGGER = LoggerFactory.getLogger(NewDescriptions.class);
+	
 	AtomicLongMap<String> componentCounts = AtomicLongMap.create();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -94,19 +95,19 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 					throw new TermServerScriptException ("Integrity Faiure. " + c + " has no Semantic Tag");
 				}
 			} else if (c.getFsn() == null || c.getSemTag() == null){
-				warn ("Inactive concept " + c.getId() + " has a missing or malformed FSN");
+				LOGGER.warn ("Inactive concept " + c.getId() + " has a missing or malformed FSN");
 				ignore.add(c);
 			}
 		}
 		conceptsOfInterest.removeAll(ignore);
-		debug("Sorting...");
+		LOGGER.debug("Sorting...");
 		conceptsOfInterest.sort(Comparator.comparing(Concept::getSemTag).thenComparing(Concept::getFsn));
-		debug("Sorted.");
+		LOGGER.debug("Sorted.");
 		
 		List<Description> unpromotedDescriptions = null;
 		if (jobRun.getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY)) {
 			unpromotedDescriptions = tsClient.getUnpromotedDescriptions(project.getBranchPath(), true);
-			info("Recovered " + unpromotedDescriptions.size() + " unpromoted descriptions");
+			LOGGER.info("Recovered " + unpromotedDescriptions.size() + " unpromoted descriptions");
 		}
 		
 		for (Concept c : conceptsOfInterest) {

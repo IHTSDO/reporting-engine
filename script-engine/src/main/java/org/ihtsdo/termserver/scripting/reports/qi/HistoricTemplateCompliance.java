@@ -22,8 +22,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  * Update: RP-139
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HistoricTemplateCompliance extends AllKnownTemplates implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HistoricTemplateCompliance.class);
+
 	Set<Concept> alreadyCounted = new HashSet<>();
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 	int totalTemplateMatches = 0;
@@ -98,7 +104,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
-				warn ("Inactive or Non-existent domain: " + invalidTemplateDomain + " in template: " + t.getName());
+				LOGGER.warn ("Inactive or Non-existent domain: " + invalidTemplateDomain + " in template: " + t.getName());
 			}
 			domainTemplates.remove(invalidTemplateDomain);
 		}
@@ -107,10 +113,10 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			String subsetECL = entry.getKey();
 			try {
 				List<Template> templates = entry.getValue();
-				info ("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
+				LOGGER.info ("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
 				examineSubset(subsetECL, templates);
 			} catch (Exception e) {
-				error ("Exception while processing domain " + subsetECL, e);
+				LOGGER.error ("Exception while processing domain " + subsetECL, e);
 			}
 		}
 		
@@ -126,7 +132,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 		TransitiveClosure tc = gl.generateTransativeClosure();
 		
 		File f = new File(dataDir + dataFileId  + "_conceptData.tsv");
-		info("Reading historic data file " + f);
+		LOGGER.info("Reading historic data file " + f);
 		Set<String> previouslyAligned = new HashSet<>();
 		try {
 			Scanner scanner = new Scanner(f);
@@ -173,7 +179,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 	
 	private void comparePreviousTemplateData() throws TermServerScriptException {
 		File f = new File(dataDir + dataFileId  + "_templateData.tsv");
-		info("Reading historic data file " + f);
+		LOGGER.info("Reading historic data file " + f);
 		Set<String> previousTemplates= new HashSet<>();
 		try {
 			Scanner scanner = new Scanner(f);
@@ -204,7 +210,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			//Create the historic-data directory if required
 			File dataDirFile = new File(dataDir);
 			if (!dataDirFile.exists()) {
-				info("Creating directory to store historic data analysis: " + dataDir);
+				LOGGER.info("Creating directory to store historic data analysis: " + dataDir);
 				boolean success = dataDirFile.mkdir();
 				if (!success) {
 					throw new TermServerScriptException("Failed to create " + dataDirFile.getAbsolutePath());
@@ -213,23 +219,23 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			
 			dataFileId = project.getKey();
 			File f = new File(dataDir + dataFileId  + "_conceptData.tsv");
-			info("Creating dataFile: " + f.getAbsolutePath());
+			LOGGER.info("Creating dataFile: " + f.getAbsolutePath());
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
 			TransitiveClosure tc = gl.generateTransativeClosure();
-			debug ("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug ("Outputting Data to " + f.getAbsolutePath());
 			for (AlignedConcept ac : alignedConceptMap.values()) {
 				fw.append(ac.serialize(getHierarchy(tc, ac.c)));
 			}
 			fw.close();
 			
 			f = new File(dataDir + dataFileId  + "_templateData.tsv");
-			info("Creating dataFile: " + f.getAbsolutePath());
+			LOGGER.info("Creating dataFile: " + f.getAbsolutePath());
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
-			debug ("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug ("Outputting Data to " + f.getAbsolutePath());
 			for (TemplateData td : templateDataMap.values()) {
 				fw.append(td.serialize());
 			}
@@ -267,7 +273,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 	private void examineSubset(String ecl, List<Template> templates) throws TermServerScriptException {
 		Collection<Concept> subset = findConcepts(ecl);
 		if (subset.size() == 0) {
-			warn ("No concepts found in subset defined by '" + ecl + "' skipping");
+			LOGGER.warn ("No concepts found in subset defined by '" + ecl + "' skipping");
 			return;
 		}
 		

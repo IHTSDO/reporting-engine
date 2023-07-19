@@ -17,7 +17,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * Check for duplicate terms (PT only by default) within the same hierarchy.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DuplicateTermsInSubhierarchy extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateTermsInSubhierarchy.class);
+
 	public static String NEW_ISSUES_ONLY = "New Issues Only";
 	public static String PT_ONLY = "Preferred Terms Only";
 	boolean newIssuesOnly = true;
@@ -71,7 +78,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		//Am I working through multiple subHierarchies, or targeting one?
 		if (subHierarchy == null || subHierarchy.equals(ROOT_CONCEPT)) {
 			for (Concept majorHierarchy : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
-				info ("Reporting " + majorHierarchy);
+				LOGGER.info ("Reporting " + majorHierarchy);
 				reportDuplicateDescriptions(majorHierarchy);
 			}
 		} else {

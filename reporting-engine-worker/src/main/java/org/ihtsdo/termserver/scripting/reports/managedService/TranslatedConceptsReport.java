@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * RP-548 / MSSP-1306
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TranslatedConceptsReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TranslatedConceptsReport.class);
+
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
 	//private static final String VERBOSE_OUTPUT = "Verbose Output";

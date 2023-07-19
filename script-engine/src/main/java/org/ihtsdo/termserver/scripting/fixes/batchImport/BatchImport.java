@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import java.io.*;
 import java.util.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BatchImport extends BatchFix implements BatchJobClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(BatchImport.class);
+
 	private static final String[] LATERALITY = new String[] { "left", "right"};
 	Map<String, Concept> conceptsLoaded;
 	private BatchImportFormat format;
@@ -94,11 +100,11 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		int minViableColumns = format.getHeaders().length;
 		for (CSVRecord thisRow : rows) {
 			if (thisRow.getRecordNumber() % 50 == 0) {
-				info("Row " + thisRow.getRecordNumber());
+				LOGGER.info("Row " + thisRow.getRecordNumber());
 			}
 			
 			/*if (thisRow.getRecordNumber() == 69) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			if (thisRow.size() >= minViableColumns) {
 				try {
@@ -211,7 +217,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		for (Component thisComponent : task.getComponents()) {
 			BatchImportConcept biConcept = (BatchImportConcept)thisComponent;
 			if (thisComponent.getId() == null) {
-				warn(biConcept + " did not get assigned an SCTID - load failed?");
+				LOGGER.warn(biConcept + " did not get assigned an SCTID - load failed?");
 				continue;
 			}
 			Concept thisConcept = conceptsLoaded.get(thisComponent.getId());

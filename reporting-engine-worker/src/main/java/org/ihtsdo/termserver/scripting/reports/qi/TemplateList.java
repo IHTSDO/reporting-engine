@@ -19,7 +19,14 @@ import java.util.stream.Collectors;
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  * CDI-52 Update report to successfully run against projects with concrete values.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TemplateList extends AllKnownTemplates implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TemplateList.class);
+	
 	final static String defaultTemplateServiceUrl = "https://dev-snowstorm.ihtsdotools.org/template-service";
 	//final static String defaultTemplateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
 	
@@ -97,7 +104,7 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 					//Did this template come from QI or the Template Service
 					report (PRIMARY_REPORT, domainStr, template.getName(), template.getSource(), template.getDocumentation());
 				} catch (Exception e) {
-					error ("Exception while processing template " + domainStr, e);
+					LOGGER.error ("Exception while processing template " + domainStr, e);
 					report (SECONDARY_REPORT, template, e);
 				}
 			}

@@ -12,7 +12,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /*
  * DEVICES-114 Concepts were given attributes as self grouped, which need to be changed to ungrouped
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MoveRoleGroup extends BatchFix implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MoveRoleGroup.class);
+
 	Set<Concept> targetAttributeValues;
 	CharacteristicType charType = CharacteristicType.STATED_RELATIONSHIP;
 	
@@ -72,7 +79,7 @@ public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			for (Concept value : targetAttributeValues) {
@@ -82,7 +89,7 @@ public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

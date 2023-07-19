@@ -20,8 +20,14 @@ a parent concept.
 Optionally Reassign orphaned children to their grandparents.
 
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MoveConcepts extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MoveConcepts.class);
+
 	String parentNewLocation = "770654000"; // |TEMPORARY parent for CDs that are not updated (product)|
 	//String parentNewLocation = "763087004"; //|TEMPORARY parent for concepts representing roles (product)
 	//String parentNewLocation = "763019005"; // ** UAT **  |TEMPORARY parent for concepts representing roles (product)
@@ -289,7 +295,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.isActive()) {
-			warn (c + " is not active, skipping");
+			LOGGER.warn (c + " is not active, skipping");
 			return null;
 		}
 		//c.setConceptType(ConceptType.THERAPEUTIC_ROLE);

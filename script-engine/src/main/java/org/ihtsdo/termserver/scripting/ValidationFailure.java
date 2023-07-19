@@ -5,7 +5,13 @@ import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ValidationFailure extends TermServerScriptException implements RF2Constants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ValidationFailure.class);
 
 	private static final long serialVersionUID = 9031426261460131112L;
 	

@@ -9,8 +9,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ElasticSearchClient {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ElasticSearchClient.class);
+
 	private String serverUrl;
 	private RestTemplate restTemplate;
 	

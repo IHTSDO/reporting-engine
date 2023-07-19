@@ -20,8 +20,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * This is useful when exporting a delta from an unversioned branch where
  * MAIN has in fact been versioned eg recovering QI2019 into QIJUL19
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RemoveNoChangeRows extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RemoveNoChangeRows.class);
+
 	File deltaToFilter;
 	//Concept hierarchyOfInterest = CLINICAL_FINDING;
 	Concept hierarchyOfInterest = BODY_STRUCTURE;
@@ -76,10 +82,10 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 						String fileName = p.getFileName().toString();
 						ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 						if (componentType != null && !fileName.startsWith("._")) {
-							info ("Processing " + fileName);
+							LOGGER.info ("Processing " + fileName);
 							processFixDeltaFile(zis, componentType);
 						} else {
-							info ("Skipping unrecognised file: " + fileName);
+							LOGGER.info ("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();
@@ -120,7 +126,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		String id = lineItems[IDX_ID];
 		
 		/*if (id.equals("10011096023") || id.equals("3727472012")) {
-			debug ("Check released unchanged component");
+			LOGGER.debug ("Check released unchanged component");
 		}*/
 		
 		//Do we know about this component in the release?
@@ -132,7 +138,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		}
 		
 		if (existingComponent == null) {
-			debug ("New " + componentType + ": " + id);
+			LOGGER.debug ("New " + componentType + ": " + id);
 			incrementSummaryInformation("New Component - " + componentType);
 			return lineItems;
 		}
@@ -180,7 +186,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 				topLevel = SnomedUtils.getHighestAncestorBefore(owner, ROOT_CONCEPT);
 			} catch (Exception e) {
 				if (lineItems[IDX_ACTIVE].equals(ACTIVE_FLAG)) {
-					warn ("Failed to find top level of active " + owner);
+					LOGGER.warn ("Failed to find top level of active " + owner);
 				}
 			}
 			if (topLevel != null) {
@@ -191,7 +197,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 			} else {
 				//Can we work out the semantic tag and check that?
 				if (owner.getFsn() == null) {
-					warn ("No FSN available for " + owner);
+					LOGGER.warn ("No FSN available for " + owner);
 					return true;
 				}
 				String semTag = SnomedUtils.deconstructFSN(owner.getFsn())[1];
@@ -201,11 +207,11 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 						return true;
 					}
 				} else {
-					warn ("Failed to find topLevel or semtag for " + owner + ": " + String.join(", ", lineItems));
+					LOGGER.warn ("Failed to find topLevel or semtag for " + owner + ": " + String.join(", ", lineItems));
 				}
 			}
 		} else {
-			warn ("Failed to find owner of " + componentType + ": " + String.join(", ", lineItems));
+			LOGGER.warn ("Failed to find owner of " + componentType + ": " + String.join(", ", lineItems));
 		}
 		return false;
 	}

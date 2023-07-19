@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Rf2ConceptCreator extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Rf2ConceptCreator.class);
+
 	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile) throws TermServerScriptException {
 		Rf2ConceptCreator conceptCreator = new Rf2ConceptCreator();
 		if (clone != null) {

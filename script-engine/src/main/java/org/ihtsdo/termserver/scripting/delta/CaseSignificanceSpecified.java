@@ -15,7 +15,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * ISRS-302
  * 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceSpecified extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceSpecified.class);
 
 	String newEffectiveTime = "20180131";
 	

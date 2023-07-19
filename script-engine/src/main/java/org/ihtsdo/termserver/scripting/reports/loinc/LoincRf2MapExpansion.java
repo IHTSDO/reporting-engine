@@ -13,8 +13,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincRf2MapExpansion extends LoincScript implements LoincConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
+
 	public static final String TAB_RF2_MAP = "RF2 Map";
 	
 	private static String[] tabNames = new String[] { TAB_RF2_MAP };

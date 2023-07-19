@@ -15,8 +15,14 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
  * SUBST-246 list all substances with parents, modifications, dispositions and say if it's used 
  * as an ingredient in a product, in which case we'll say it's already been reviewed.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ListSubstancesWithModificationsAndDispositions extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ListSubstancesWithModificationsAndDispositions.class);
+
 	Set<Concept> substancesUsedInProducts;
 	int maxParents = 0;
 	int maxModifications = 0;
@@ -30,7 +36,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 			report.loadProjectSnapshot(true);  
 			report.findBaseWithModifications();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -102,9 +108,9 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 			incrementSummaryInformation("Substances reported");
 		}
 		
-		warn ("Max Parents = " + maxParents);
-		warn ("Max Modifications = " + maxModifications);
-		warn ("Max Dispositions = " + maxDispositions);
+		LOGGER.warn ("Max Parents = " + maxParents);
+		LOGGER.warn ("Max Modifications = " + maxModifications);
+		LOGGER.warn ("Max Dispositions = " + maxDispositions);
 	}
 
 }

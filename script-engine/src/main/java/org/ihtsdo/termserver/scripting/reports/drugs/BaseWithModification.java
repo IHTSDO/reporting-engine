@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Investigating cases where we have a product with both a base and a modification of the same substances.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BaseWithModification extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(BaseWithModification.class);
+
 	Concept[] type = new Concept[] {IS_MODIFICATION_OF};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -24,7 +30,7 @@ public class BaseWithModification extends TermServerReport {
 			report.loadProjectSnapshot(true);  
 			report.findBaseWithModifications();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

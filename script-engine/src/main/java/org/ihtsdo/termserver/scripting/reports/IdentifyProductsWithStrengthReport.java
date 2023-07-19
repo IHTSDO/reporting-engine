@@ -24,8 +24,14 @@ import com.google.common.collect.Multiset;
 /**
  * Reports all concepts that appear to have ingredients, with strength / concentration.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class IdentifyProductsWithStrengthReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(IdentifyProductsWithStrengthReport.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
@@ -52,7 +58,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			List<Component> authorIdentified = report.processFile();
 			report.identifyProductsWithStrength(authorIdentified);
 		} catch (Exception e) {
-			info("Failed to validate laterality due to " + e.getMessage());
+			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -65,7 +71,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		//use a number of criteria to determine if concept is a product with strength.
 		Set<Concept> products = gl.getConcept("373873005").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);  //|Pharmaceutical / biologic product (product)|
 		Set<Component> remainingFromList = new HashSet<Component> (authorIdentifiedList);
-		info ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
+		LOGGER.info ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
 		int bothIdentified = 0;
 		int lexOnly = 0;
 		int authorOnly = 0;
@@ -89,19 +95,19 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			}
 		}
 		
-		info ("\n\nMatching Counts\n===============");
-		info ("Both agree: " + bothIdentified);
-		info ("Lexical only: " + lexOnly);
-		info ("Author only: " + authorOnly);
+		LOGGER.info ("\n\nMatching Counts\n===============");
+		LOGGER.info ("Both agree: " + bothIdentified);
+		LOGGER.info ("Lexical only: " + lexOnly);
+		LOGGER.info ("Author only: " + authorOnly);
 		
-		info("\nOn list but not active in hierarchy (" + remainingFromList.size() + ") : ");
+		LOGGER.info("\nOn list but not active in hierarchy (" + remainingFromList.size() + ") : ");
 		for (Component lostConcept : remainingFromList) {
-			info ("  " + lostConcept);
+			LOGGER.info ("  " + lostConcept);
 		}
 		
-		info("\n Strength/Unit combinations: " + strengthUnitCombos.elementSet().size());
+		LOGGER.info("\n Strength/Unit combinations: " + strengthUnitCombos.elementSet().size());
 		for (String strengthUnit : strengthUnitCombos.elementSet()) {
-			info ("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
+			LOGGER.info ("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
 		}
 	}
 

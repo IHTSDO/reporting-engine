@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
  * is changed from 118170007 |Specimen source identity (attribute)| to 370133003 |Specimen substance (attribute)| 
  * with the value remaining the same
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SwitchAttributeTypeWithValueInRange extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SwitchAttributeTypeWithValueInRange.class);
+
 	String targetECL = "<< 123038009 |Specimen (specimen)| : 118170007 |Specimen source identity (attribute)| = << 260787004 |Physical object (physical object)| ";
 	Concept findType;
 	Concept replaceType;

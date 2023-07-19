@@ -18,8 +18,14 @@ import com.google.common.io.Files;
  * Given a number of sub-hierarchies, find the highest concepts (with a count of descendants)
  * that are not contained by those sub hierarchies
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsNotAccountedFor extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsNotAccountedFor.class);
+
 	Set<Concept> accountedForHierarchies = new HashSet<>();
 	Set<Concept> accountedForHierarchiesExpanded = new HashSet<>();
 	Set<Concept> notAccountedForHierarchies = new HashSet<>();

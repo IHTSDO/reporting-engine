@@ -28,8 +28,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *to determine which fields have been changed and produce a merged view.
  *With the current delta taking "trump" if a change conflicts.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MergeDeltas extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MergeDeltas.class);
+
 	FlatFileLoader currentDelta = new FlatFileLoader();
 	File fixDeltaFile;
 	Long publishedEffectiveTime = 20180131L;
@@ -87,10 +93,10 @@ public class MergeDeltas extends DeltaGenerator {
 						String fileName = p.getFileName().toString();
 						ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 						if (componentType != null && !fileName.startsWith("._")) {
-							info ("Processing " + fileName);
+							LOGGER.info ("Processing " + fileName);
 							processFixDeltaFile(zis, componentType);
 						} else {
-							info ("Skipping unrecognised file: " + fileName);
+							LOGGER.info ("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();

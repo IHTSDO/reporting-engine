@@ -27,8 +27,14 @@ SUBST-265
 	1) All concepts that have "is modification" and are not leaf concepts. 
 	2) All concepts that are target of is modification and have stated children. (Replacing DRUGS-453)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsWithOrTargetsOfAttribute.class);
+
 	Concept subHierarchy;
 	Concept attributeType;
 	
@@ -48,7 +54,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 			report.runModifiedNotLeaf();
 			report.runModifcationTargetWithChildren();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

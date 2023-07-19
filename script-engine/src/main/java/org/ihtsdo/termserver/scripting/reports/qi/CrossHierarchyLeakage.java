@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * Find concepts in the subhierarchy which have an inferred parent that is _outside_ of the 
  * ie where the subhierarchy is not a neat triangle, but is seeping into other subhierarchies.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CrossHierarchyLeakage extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CrossHierarchyLeakage.class);
+
 	Concept subHierarchy;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -30,7 +36,7 @@ public class CrossHierarchyLeakage extends TermServerReport {
 			report.runCrossHierarchyLeakageReport();
 			//report.runMultipleParentsReport();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

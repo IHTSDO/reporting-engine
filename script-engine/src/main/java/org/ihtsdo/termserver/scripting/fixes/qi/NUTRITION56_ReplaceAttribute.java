@@ -15,7 +15,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * NUTRITION-56 Batch change of Modified substance diet 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NUTRITION56_ReplaceAttribute extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NUTRITION56_ReplaceAttribute.class);
 
 	//private RelationshipTemplate addTemplate;
 	private RelationshipTemplate matchTemplate;

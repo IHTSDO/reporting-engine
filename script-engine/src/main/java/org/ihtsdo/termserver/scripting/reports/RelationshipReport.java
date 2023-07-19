@@ -11,8 +11,14 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RelationshipReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RelationshipReport.class);
+
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	Concept filterOnType = null; 
@@ -27,7 +33,7 @@ public class RelationshipReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportActiveRelationships();
 		} catch (Exception e) {
-			info("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -36,12 +42,12 @@ public class RelationshipReport extends TermServerScript{
 	
 	private void reportActiveRelationships() throws TermServerScriptException {
 		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
-		info("Examining " + conceptsToExamine.size() + " concepts");
+		LOGGER.info("Examining " + conceptsToExamine.size() + " concepts");
 		int reportedRelationships = 0;
 		for (Concept thisConcept : conceptsToExamine) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				warn(msg);
+				LOGGER.warn(msg);
 			}
 			Set<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			
@@ -52,8 +58,8 @@ public class RelationshipReport extends TermServerScript{
 				}
 			}
 		}
-		info("Reported " + reportedRelationships + " active Stated Relationships");
-		info("Graph loader log: \n" + gl.log);
+		LOGGER.info("Reported " + reportedRelationships + " active Stated Relationships");
+		LOGGER.info("Graph loader log: \n" + gl.log);
 	}
 	
 	protected void report (Concept c, Relationship r) throws TermServerScriptException {

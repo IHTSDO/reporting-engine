@@ -18,8 +18,14 @@ For concepts with the relevant semantic tags,
 find instances of specified attributes which exist as inferred but not as stated, 
 and repeat them as stated relationships
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RestateInferredAsStated extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RestateInferredAsStated.class);
+
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetSemanticTag = "(medicinal product form)";
 	List<Concept> attributesOfInterest = new ArrayList<Concept>();
@@ -52,7 +58,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 		
 		try {
 			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-			info ("Loading concepts agreed for change from " + getInputFile());
+			LOGGER.info ("Loading concepts agreed for change from " + getInputFile());
 			for (String line : lines) {
 				conceptsAgreedToChange.add(gl.getConcept(line.trim()));
 			}
@@ -129,7 +135,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 				}
 			}
 		}
-		info (allAffected.size() + " concepts affected.");
+		LOGGER.info (allAffected.size() + " concepts affected.");
 		return new ArrayList<Component>(allAffected);
 	}
 
@@ -140,7 +146,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 		for (Relationship inferred : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (attributesOfInterest.contains(inferred.getType())) {
 				if (inferred.getGroupId() != 0) {
-					info ("Relationship being compared is not group 0: " + inferred);
+					LOGGER.info ("Relationship being compared is not group 0: " + inferred);
 				}
 				boolean statedMatchFound = false;
 				for (Relationship stated : thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {

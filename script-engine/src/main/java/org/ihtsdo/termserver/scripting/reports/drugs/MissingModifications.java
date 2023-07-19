@@ -20,8 +20,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * relationships where the base name matches and the child has a modification word, but 
  * does not have a modification attribute
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MissingModifications extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingModifications.class);
+
 	Set<String> modificationPhrases = new HashSet<>();
 	Map<Concept, Concept> substancesProductMap = new HashMap<>();
 	
@@ -35,7 +41,7 @@ public class MissingModifications extends TermServerReport {
 			report.findModificationWords();
 			report.findMissingModifications();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -54,7 +60,7 @@ public class MissingModifications extends TermServerReport {
 	}
 
 	private void findModificationWords() throws TermServerScriptException {
-		debug ("Finding modification words");
+		LOGGER.debug ("Finding modification words");
 		for (Concept substance : gl.getDescendantsCache().getDescendentsOrSelf(SUBSTANCE)) {
 			//What is my X?
 			String baseName = SnomedUtils.deconstructFSN(substance.getFsn())[0];
@@ -67,7 +73,7 @@ public class MissingModifications extends TermServerReport {
 						incrementSummaryInformation("Modification words: " + modificationPhrase);
 						modificationPhrases.add(modificationPhrase);
 					} catch (Exception e) {
-						warn ("Unable to remove base name " + baseName + " from modification " + modName);
+						LOGGER.warn ("Unable to remove base name " + baseName + " from modification " + modName);
 					}
 				}
 			}
@@ -87,7 +93,7 @@ public class MissingModifications extends TermServerReport {
 	private void findMissingModifications() throws TermServerScriptException {
 		for (Concept substance : gl.getDescendantsCache().getDescendentsOrSelf(SUBSTANCE)) {
 			if (substance.getConceptId().equals("396061008")) {
-				debug("Checkpoint");
+				LOGGER.debug("Checkpoint");
 			}
 			String baseName = SnomedUtils.deconstructFSN(substance.getFsn())[0];
 			//Do I have any immediate stated or inferred children which start with my X which are not a modification of me?
@@ -101,7 +107,7 @@ public class MissingModifications extends TermServerReport {
 						exisitingPhrase = modificationPhrases.contains(modificationPhrase);
 						hasModification = childSubstance.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE).size() > 0;
 					} catch (Exception e) {
-						warn ("Unable to remove base name " + baseName + " from child " + childName);
+						LOGGER.warn ("Unable to remove base name " + baseName + " from child " + childName);
 					}
 					Concept exampleProduct = substancesProductMap.get(childSubstance);
 					report (childSubstance, substance, exisitingPhrase, hasModification, exampleProduct);

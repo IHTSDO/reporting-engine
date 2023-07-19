@@ -14,8 +14,14 @@ import com.google.gson.stream.JsonReader;
 
 import net.rcarz.jiraclient.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JiraHelper {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(JiraHelper.class);
+
 	JiraClient client;
 	JiraConfig config;
 	public static final String TASK = "Task";

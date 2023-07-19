@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * DRUGS-463 A report to identify Medicinal Products where the 
  * active ingredient is itself a modification of another substance
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ModifiedActiveIngredients extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ModifiedActiveIngredients.class);
+
 	Concept subHierarchy;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -25,7 +31,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 			report.postLoadInit();
 			report.runModifiedActiveIngredientsReport();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

@@ -13,8 +13,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 For APDS-335, QI-234 (QI-99)
 Replace all relationships of one specified type / value for another
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplaceRelationship extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceRelationship.class);
+
 	Concept findAttribute;
 	Concept replaceAttribute;
 	
@@ -33,7 +39,7 @@ public class ReplaceRelationship extends BatchFix implements ScriptConstants{
 			fix.populateTaskDescription = false;  //Going above some limit
 			fix.populateEditPanel = false; //Going above some limit
 			fix.validateConceptOnUpdate = false;
-			warn("Description and Edit panel not being populated due to task size");
+			LOGGER.warn("Description and Edit panel not being populated due to task size");
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -95,7 +101,7 @@ public class ReplaceRelationship extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		info ("Detected " + allAffected.size() + " concepts to modify");
+		LOGGER.info ("Detected " + allAffected.size() + " concepts to modify");
 		return new ArrayList<Component>(allAffected);
 	}
 

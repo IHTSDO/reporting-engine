@@ -15,8 +15,14 @@ import java.util.*;
 /**
  * ISP-36 Simple list of concepts based on ECL
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SimpleConceptList extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SimpleConceptList.class);
+
 	public static String LANG_REFSETS = "LangRefsets";
 	public List<Concept> langRefsets = new ArrayList<>();
 	

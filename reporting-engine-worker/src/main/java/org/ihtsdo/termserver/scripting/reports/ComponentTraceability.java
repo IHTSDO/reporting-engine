@@ -16,8 +16,14 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ComponentTraceability extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ComponentTraceability.class);
+
 	public static String COMPONENT_IDS = "Component Ids";
 	TraceabilityService traceabilityService;
 	List<String> componentIds;
@@ -108,7 +114,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 			countIssue(null, rowsReported);
 		}
 		traceabilityService.tidyUp();
-		info ("Job complete");
+		LOGGER.info ("Job complete");
 	}
 	
 }

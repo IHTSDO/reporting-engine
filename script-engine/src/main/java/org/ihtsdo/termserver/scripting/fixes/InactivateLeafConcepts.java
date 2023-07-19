@@ -8,12 +8,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
-
-import us.monoid.json.JSONObject;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 /*
  * DRUGS-321, DRUGS-479

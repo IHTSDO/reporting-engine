@@ -21,8 +21,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *Used from SE Translation.  Namespace 1000052
  *Updated for Belgium.  Namespace 1000172
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GenerateTranslation extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GenerateTranslation.class);
+
 	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
 	enum KnownTranslations { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
@@ -178,7 +184,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				msg += ", " + term;
 			}
 			//throw new TermServerScriptException("Expected to find 1 x US preferred term, found " + terms.size() + msg);
-			warn(currentState + " - expected to find 1 x US preferred term, found " + terms.size() + msg);
+			LOGGER.warn(currentState + " - expected to find 1 x US preferred term, found " + terms.size() + msg);
 		}
 		return terms.iterator().next();
 	}

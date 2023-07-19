@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
  * @author Peter
  *
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AlignToTemplate extends TemplateFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AlignToTemplate.class);
+
 
 	protected AlignToTemplate(BatchFix clone) {
 		super(clone);
@@ -34,7 +40,7 @@ public class AlignToTemplate extends TemplateFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to align concepts to template due to " + e.getMessage());
+			LOGGER.info("Failed to align concepts to template due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
@@ -44,7 +50,7 @@ public class AlignToTemplate extends TemplateFix {
 	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(subHierarchyStr);
 		templates.add(loadLocalTemplate('A', "Chronic Inflammatory Disorder.json"));
-		info(templates.size() + " Templates loaded successfully");
+		LOGGER.info(templates.size() + " Templates loaded successfully");
 		super.postInit();
 	}
 

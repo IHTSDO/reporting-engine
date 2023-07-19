@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * where we should instead have just modified the group number, deleted the 
  * new relationship and reactivate/shift the original relationship
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ShiftRelationshipGroupId.class);
+
 	boolean unpublishedContentOnly = true;
 	
 	protected ShiftRelationshipGroupId(BatchFix clone) {
@@ -53,7 +59,7 @@ public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstant
 			if (!r.isReleased()) {
 				Set<Relationship> inactiveMatches = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.INACTIVE);
 				if (inactiveMatches.size() > 1) {
-					warn (c + " has multiple inactive matching relationships");
+					LOGGER.warn (c + " has multiple inactive matching relationships");
 					//TODO If we have a few of these, we could select the brand new one
 				} else if (inactiveMatches.size() == 1) {
 					Relationship inactiveMatch = inactiveMatches.iterator().next();
@@ -86,7 +92,7 @@ public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstant
 				}
 			}
 		}
-		debug("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug("Identified " + processMe.size() + " concepts to process");
 		this.setQuiet(false);
 		return processMe;
 	}

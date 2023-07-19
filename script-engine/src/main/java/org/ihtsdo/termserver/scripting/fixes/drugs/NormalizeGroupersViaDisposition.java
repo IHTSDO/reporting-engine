@@ -17,7 +17,7 @@ Driven by a text file of concepts, add the active ingredient (disposition) speci
 Normalize the terms (using the disposition) and set the semantic tag to (product)
 */
 public class NormalizeGroupersViaDisposition extends DrugBatchFix implements ScriptConstants{
-	
+
 	Map<String, String> substancesMap = new HashMap<>();
 	Relationship newParentRel;
 	String newParent = "763158003"; // |Medicinal product (product)| 

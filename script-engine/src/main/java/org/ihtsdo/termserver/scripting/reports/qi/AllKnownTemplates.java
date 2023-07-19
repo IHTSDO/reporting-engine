@@ -12,8 +12,14 @@ import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class AllKnownTemplates extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AllKnownTemplates.class);
+
 	TemplateServiceClient tsc;
 	Map<String, List<Template>> domainTemplates = new HashMap<>();
 	boolean singleTemplateMode = false;
@@ -573,10 +579,10 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template template = new Template(id++, lt, templateName);
-			info ("Loading template " + templateName + " from TS to run against subset: " + ct.getDomain());
+			LOGGER.info ("Loading template " + templateName + " from TS to run against subset: " + ct.getDomain());
 			
 			if (ct.getDomain() == null) {
-				warn("TS template " + templateName + " is not saying what domain it applies to");
+				LOGGER.warn("TS template " + templateName + " is not saying what domain it applies to");
 			}
 			//Have we seen this subset before?
 			List<Template> templates = domainTemplates.get(ct.getDomain());
@@ -594,7 +600,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	private void populateTemplates(String ecl, String[] templateNames) throws TermServerScriptException {
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
-				info ("Loading template: " + templateNames[x]);
+				LOGGER.info ("Loading template: " + templateNames[x]);
 				try {
 					ConceptTemplate ct = tsc.loadLocalConceptTemplate(templateNames[x]);
 					LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());

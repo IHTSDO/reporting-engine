@@ -15,8 +15,14 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 For DRUGS-482
 Add ingredient counts where required.  Algorithm described in DRUGS-476.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class IngredientCounts extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(IngredientCounts.class);
+
 	protected IngredientCounts(BatchFix clone) {
 		super(clone);
 	}

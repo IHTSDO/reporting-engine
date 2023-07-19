@@ -22,8 +22,14 @@ import java.util.stream.Collectors;
 /**
  * INFRA-
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LexicalModellingMismatch extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LexicalModellingMismatch.class);
+
 	public static final String WORDS = "Words";
 	public static final String NOT_WORDS = "Not Words";
 	public static final String FSN_ONLY = "Check FSNs Only";

@@ -11,8 +11,14 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SEPRefsetGenerator extends RefsetGenerator{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SEPRefsetGenerator.class);
+
 	String subHierchyStr = "91723000";  // |Anatomical structure (body structure)|
 	public static final String STRUCTURE = "structure";  //Currently a lot of X structure as well as Structure Of X so compare lower case
 	public static final String ENTIRE = "Entire ";

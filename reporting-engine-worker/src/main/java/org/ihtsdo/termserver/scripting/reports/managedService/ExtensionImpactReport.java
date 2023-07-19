@@ -22,8 +22,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * FRI-254 A number of what were originally SQL queries now converted into a user-runnable
  * report
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ExtensionImpactReport extends HistoricDataUser implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ExtensionImpactReport.class);
+
 	private static String INTERNATIONAL_RELEASE = "Proposed International Release Archive";
 	
 	private String incomingDataKey;
@@ -76,7 +82,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		boolean compareTwoSnapshots = false; 
 		previousTransitiveClosureNeeded = false;
-		info("International Release data being imported, wiping Graph Loader for safety.");
+		LOGGER.info("International Release data being imported, wiping Graph Loader for safety.");
 		getArchiveManager(true).reset(false);
 		Project previousProject = project.clone();
 		//boolean loadEditionArchive = false;
@@ -113,7 +119,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		thisDependency = project.getMetadata().getDependencyPackage();
-		info("Setting dependency archive: " + thisDependency);
+		LOGGER.info("Setting dependency archive: " + thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(false, fsnOnly);
 	}
@@ -158,10 +164,10 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	public void runJob() throws TermServerScriptException {
 		//We've always loaded historic data as 'prev' but in this case, we're looking the release that
 		//we're about to upgrade to.  So we'll give that a more appropriate name
-		info ("Loading Previous Data");
+		LOGGER.info ("Loading Previous Data");
 		incomingData = loadData(incomingDataKey); 
 		
-		info("Populating map of all concepts used in stated modelling");
+		LOGGER.info("Populating map of all concepts used in stated modelling");
 		populateStatedModellingMap();
 		
 		//Executor executor = Executors.newFixedThreadPool(7);
@@ -169,7 +175,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		//Work through the top level hierarchies
 		List<Concept> topLevelHierarchies = SnomedUtils.sort(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
 		for (Concept topLevelConcept : topLevelHierarchies) {
-			info("Processing - " + topLevelConcept);
+			LOGGER.info("Processing - " + topLevelConcept);
 			Set<String> thisHierarchy = getHierarchy(topLevelConcept);
 			
 			reportInactivations(topLevelConcept, thisHierarchy, columnNames[0]);
@@ -182,7 +188,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	}
 
 	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
-		info("Reporting Inactivations");
+		LOGGER.info("Reporting Inactivations");
 		int inactivatedWithInferredExtensionChildren = 0;
 		int inactivatedUsedInStatedModelling = 0;
 		int inactivatedUsedAsStatedParent = 0;
@@ -230,7 +236,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 
 	private void reportTranslations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
-		info("Reporting Translations Required");
+		LOGGER.info("Reporting Translations Required");
 		int newConceptCount = 0;
 		int changedFSNCount = 0;
 		int changedFSNCountNoCurrent = 0;

@@ -16,8 +16,14 @@ import com.google.common.util.concurrent.AtomicLongMap;
 /**
  * RP-462 Report to find unrelated attribute values
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UnrelatedAttributeValues extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(UnrelatedAttributeValues.class);
+
 	private static String ATTRIBUTE_TYPE = "Attribute Type";
 	private AtomicLongMap<Concept> grandParentLeagueChart = AtomicLongMap.create();
 	private Concept targetAttributeType;
@@ -70,7 +76,7 @@ public class UnrelatedAttributeValues extends TermServerReport implements Report
 		reportMostPopularGrandParents();
 		long totalRelationships = grandParentLeagueChart.sum();
 		sufficentRelationships = (int)(totalRelationships * 0.05d);
-		info ("Lower limit of popularity would be " + sufficentRelationships + " out of total available: " + totalRelationships);
+		LOGGER.info ("Lower limit of popularity would be " + sufficentRelationships + " out of total available: " + totalRelationships);
 		reportOutliers();
 	}
 

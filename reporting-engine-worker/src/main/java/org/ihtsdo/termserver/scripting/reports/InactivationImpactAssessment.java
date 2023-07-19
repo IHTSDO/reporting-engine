@@ -23,8 +23,14 @@ import java.util.stream.Collectors;
  * DEVICES-92, QI-784
  * CDI-52 Update to run successfully against projects with concrete values
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivationImpactAssessment extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivationImpactAssessment.class);
+
 	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
 	private static String CONCEPT_INACTIVATIONS = "Concepts to inactivate";
 	private static String INCLUDE_INFERRED = "Include Inferred Relationships";
@@ -57,7 +63,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	public void postInit() throws TermServerScriptException {
 		referenceSets = findConcepts(REFSET_ECL);
 		removeEmptyAndNoScopeRefsets();
-		info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
+		LOGGER.info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Issue, Detail, Additional Detail"};
@@ -177,7 +183,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	}
 
 	private void checkRefsetUsage() throws TermServerScriptException {
-		debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against " + referenceSets.size() + " refsets");
+		LOGGER.debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against " + referenceSets.size() + " refsets");
 		for (Concept refset : referenceSets) {
 			int conceptsProcessed = 0;
 			do {
@@ -201,7 +207,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	}
 	
 	private void checkRefsetUsageECL() throws TermServerScriptException {
-		debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against " + referenceSets.size() + " refsets");
+		LOGGER.debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against " + referenceSets.size() + " refsets");
 		for (Concept refset : referenceSets) {
 			String ecl = "^" + refset.getId() + " AND ( " + selectionCriteria + " )"; 
 			for (Concept c : findConcepts(ecl)) {
@@ -211,9 +217,9 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	}
 
 	private void checkHighVolumeUsage() throws TermServerScriptException {
-		debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against High Usage SCTIDs");
+		LOGGER.debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against High Usage SCTIDs");
 		String fileName = "resources/HighVolumeSCTIDs.txt";
-		debug ("Loading " + fileName );
+		LOGGER.debug ("Loading " + fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			for (String line : lines) {

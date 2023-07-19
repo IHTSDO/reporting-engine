@@ -14,8 +14,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptsMissingMultiLanguageTranslations extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsMissingMultiLanguageTranslations.class);
+
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
 	//private static final String INCLUDE_UNTRANSLATED_CONCEPTS = "Include untranslated concepts";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";

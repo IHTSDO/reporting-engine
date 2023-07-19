@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RelationshipsWithTarget extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RelationshipsWithTarget.class);
+
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	Set<Concept> filterOnTarget = new HashSet<Concept>();
@@ -33,7 +39,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 			report.init2(); //Setup needed after data loaded
 			report.reportRelationshipsWithTarget();
 		} catch (Exception e) {
-			info("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -42,12 +48,12 @@ public class RelationshipsWithTarget extends TermServerScript{
 	
 	private void reportRelationshipsWithTarget() throws TermServerScriptException {
 		Collection<Concept> allConcepts =  gl.getAllConcepts();
-		info("Examining " + allConcepts.size() + " concepts");
+		LOGGER.info("Examining " + allConcepts.size() + " concepts");
 		int reportedRelationships = 0;
 		for (Concept thisConcept : allConcepts) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				warn(msg);
+				LOGGER.warn(msg);
 			}
 			
 			Set<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
@@ -58,8 +64,8 @@ public class RelationshipsWithTarget extends TermServerScript{
 				}
 			}
 		}
-		info("Reported " + reportedRelationships + " active Stated Relationships");
-		info("Graph loader log: \n" + gl.log);
+		LOGGER.info("Reported " + reportedRelationships + " active Stated Relationships");
+		LOGGER.info("Graph loader log: \n" + gl.log);
 	}
 	
 	protected void report (Concept c, Relationship r) throws TermServerScriptException {
@@ -123,8 +129,8 @@ public class RelationshipsWithTarget extends TermServerScript{
 	
 	public void init2() throws TermServerScriptException {
 		String response = null;
-		info ("Filter target example: 105590001 |Substance (substance)|");
-		info ("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
+		LOGGER.info ("Filter target example: 105590001 |Substance (substance)|");
+		LOGGER.info ("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
 				
 		while (response == null) {
 			print ("Filter for attribute target descendent or self of: ");
@@ -134,7 +140,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
 				filterOnTarget.addAll(filteringTargets); //descendant
 				filterOnTarget.add(hierarchy);  //and self
-				info ("\nFiltering for target descendents of " + hierarchy + " - " + filteringTargets.size());
+				LOGGER.info ("\nFiltering for target descendents of " + hierarchy + " - " + filteringTargets.size());
 				response = null;
 			}
 		}

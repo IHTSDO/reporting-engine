@@ -16,7 +16,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Class to inactivate duplicated active inactivation indicators
  * INFRA-1232
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateDuplicateInactivationIndicators extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateInactivationIndicators.class);
 
 	public static String SCTID_ERRONEOUS = "900000000000485001";
 	public static String SCTID_DUPLICATE = "900000000000482003";

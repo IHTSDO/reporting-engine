@@ -17,11 +17,17 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.script.Script;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ArchiveValidator extends Script {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ArchiveValidator.class);
+
 	public static void main(String[] args) throws IOException, TermServerScriptException {
 		if (args.length == 0) {
-			info("Usage:  ArchiveValidator <archive location");
+			LOGGER.info("Usage:  ArchiveValidator <archive location");
 			System.exit(1);
 		}
 		
@@ -55,7 +61,7 @@ public class ArchiveValidator extends Script {
 	private static void loadFile(Path path, InputStream is)  {
 		try {
 			String fileName = path.getFileName().toString();
-			info("Checking " + fileName);
+			LOGGER.info("Checking " + fileName);
 			BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 			String line;
 			boolean isHeaderLine = true;
@@ -65,7 +71,7 @@ public class ArchiveValidator extends Script {
 				}
 			}
 		} catch (Exception e) {
-			error("Failed to load " + path, e);
+			LOGGER.error("Failed to load " + path, e);
 		}
 	}
 

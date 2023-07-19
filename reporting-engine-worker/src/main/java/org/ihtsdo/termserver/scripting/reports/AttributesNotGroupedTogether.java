@@ -14,8 +14,14 @@ import java.util.*;
 /**
  * INFRA-9656 Request for list of concepts where causative agent and finding site are present but not grouped together.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AttributesNotGroupedTogether extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AttributesNotGroupedTogether.class);
+
 	public static String ATTRIBUTE_A = "Attribute A";
 	public static String ATTRIBUTE_B = "Attribute B";
 	public static String CHAR_TYPE = "Characteristic Type";

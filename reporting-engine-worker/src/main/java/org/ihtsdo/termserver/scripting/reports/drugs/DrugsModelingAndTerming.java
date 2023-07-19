@@ -25,8 +25,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DrugsModelingAndTerming extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DrugsModelingAndTerming.class);
+
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
@@ -118,7 +124,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
 		populateSummaryTab();
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void validateDrugsModeling() throws TermServerScriptException {
@@ -135,11 +141,11 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete " + (int)percComplete);
 			}
 			
 			/*if (c.getId().equals("714209004")) {
-				debug ("here");
+				LOGGER.debug ("here");
 			}*/
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
@@ -212,7 +218,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				checkMissingDoseFormGrouper(c);
 			}
 		}
-		info ("Drugs validation complete");
+		LOGGER.info ("Drugs validation complete");
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
@@ -612,7 +618,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		}
 		
 		if (ingredBases.size() != 1) {
-			debug("Unable to obtain single BoSS from " + rg.toString());
+			LOGGER.debug("Unable to obtain single BoSS from " + rg.toString());
 			return null;
 		} else {
 			Concept base = ingredBases.iterator().next();
@@ -646,7 +652,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
-			debug ("Debug here - hit a null");
+			LOGGER.debug ("Debug here - hit a null");
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
@@ -1122,7 +1128,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			}
 		}
 		//throw new TermServerScriptException("Unable to find semantic tag level for: " + c);
-		error("Unable to find semantic tag level for: " + c, null);
+		LOGGER.error("Unable to find semantic tag level for: " + c, (Exception)null);
 		return NOT_SET;
 	}
 	
@@ -1139,7 +1145,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		debug ("Loading " + fileName );
+		LOGGER.debug ("Loading " + fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			boolean isHeader = true;

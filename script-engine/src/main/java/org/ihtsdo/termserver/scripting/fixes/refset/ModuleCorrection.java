@@ -13,7 +13,13 @@ import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ModuleCorrection.class);
 
 	String wrongModule = "900000000000207008";
 	String rightModule = "554471000005108";  //DK
@@ -30,12 +36,12 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		app.init(args);
 		app.loadEntriesToFix();
 		app.doFix();
-		info ("Processing complete.");
+		LOGGER.info ("Processing complete.");
 	}
 	
 	private void loadEntriesToFix() throws IOException {
 		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-		info ("Loading affected description ids from " + getInputFile());
+		LOGGER.info ("Loading affected description ids from " + getInputFile());
 		for (String line : lines) {
 			descIds.add(line);
 		}
@@ -46,7 +52,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 			try {
 				fixRefsetEntry(descId);
 			} catch (Exception e) {
-				info ("Unable to fix refsetEntry " + descId + " due to " + e);
+				LOGGER.info ("Unable to fix refsetEntry " + descId + " due to " + e);
 			}
 		}
 	}
@@ -67,13 +73,13 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 			}
 			r.setModuleId(rightModule);
 		} else {
-			info ("No change required - "+ r.getId() + " for " + descId);
+			LOGGER.info ("No change required - "+ r.getId() + " for " + descId);
 			return;
 		}
 		
 		//Save
 		tsClient.updateRefsetMember(project.getBranchPath(), r, (forceEffectiveTime != null));
-		info ("Fixed " + r.getId() + " for " + descId);
+		LOGGER.info ("Fixed " + r.getId() + " for " + descId);
 	}
 
 	@Override

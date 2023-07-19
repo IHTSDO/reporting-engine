@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * FD19947 Get all descendants for two concepts (de-duplicate
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SubHierarchyConceptsReport extends TermServerReport{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SubHierarchyConceptsReport.class);
+
 	Concept[] subHierarchies;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -23,7 +29,7 @@ public class SubHierarchyConceptsReport extends TermServerReport{
 			report.postLoadInit();
 			report.reportConcepts();
 		} catch (Exception e) {
-			info("Failed to produce Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

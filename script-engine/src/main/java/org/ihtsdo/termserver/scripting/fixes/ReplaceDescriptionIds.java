@@ -16,8 +16,14 @@ import com.google.common.io.Files;
 /*
  * Deletes Descriptions and recreates them identically with new SCTIDS
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceDescriptionIds.class);
+
 	Set<String> descIds = new HashSet<String>();
 	protected ReplaceDescriptionIds(BatchFix clone) {
 		super(clone);
@@ -46,7 +52,7 @@ public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 	private void loadDescIds() throws TermServerScriptException {
 		try {
 			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-			info ("Loading description ids from " + getInputFile());
+			LOGGER.info ("Loading description ids from " + getInputFile());
 			for (String line : lines) {
 				descIds.add(line);
 			}
@@ -90,17 +96,17 @@ public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 
 	protected ArrayList<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		for (String descId : descIds) {
 			Description d = gl.getDescription(descId);
 			if (d.getConceptId() != null) {
 				allAffected.add(gl.getConcept(d.getConceptId(), false, true));
 			} else {
-				info (descId + " was not linked to a concept.");
+				LOGGER.info (descId + " was not linked to a concept.");
 			}
 		}
-		info("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 

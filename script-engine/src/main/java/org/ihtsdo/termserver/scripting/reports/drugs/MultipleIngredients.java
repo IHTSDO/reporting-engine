@@ -15,8 +15,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * @author Peter
  *
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MultipleIngredients extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MultipleIngredients.class);
+
 	ConceptType[] validTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 	String[] falsePositives = new String[] { "gastro-resistant and prolonged-release" };
 	
@@ -28,7 +34,7 @@ public class MultipleIngredients extends TermServerReport {
 			report.loadProjectSnapshot(true);  
 			report.finMultipleModifications();
 		} catch (Exception e) {
-			info("Failed to produce MultipleIngredients due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
+			LOGGER.info("Failed to produce MultipleIngredients due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

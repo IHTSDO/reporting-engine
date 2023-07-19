@@ -11,8 +11,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class RefsetGenerator extends TermServerScript {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RefsetGenerator.class);
+
 	private String outputName;  //Should be controlled by combination of other values eg refsetShape/Name
 	protected String edition = "INT";
 	protected String refsetShape;
@@ -52,7 +58,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 			outputName = outputNameBase + "_" + (++increment) ;
 		}
 		outputName = outputName + ".txt";
-		info ("Outputting data to " + outputName);
+		LOGGER.info ("Outputting data to " + outputName);
 		initialiseFileHeaders();
 	}
 	

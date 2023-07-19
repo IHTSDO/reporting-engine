@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Reports all concepts in a hierarchy that are used in the definition of other concepts.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RequiringProxPrimModellingReport extends TermServerReport{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RequiringProxPrimModellingReport.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String publishedArchive;
 	//String[] hierarchies = {"404684003", "71388002", "243796009"};
@@ -32,7 +38,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 			boolean reportAll = true; //Report all concepts whether they require remodelling or not
 			report.reportRequiringProxPrimModelling(reportAll);
 		} catch (Exception e) {
-			info("Report failed due to " + e.getMessage());
+			LOGGER.info("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -49,7 +55,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			LOGGER.info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			for (Concept thisConcept : allActiveFD) {
 				Set<Concept> parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP);
 				boolean hasFDParent = false;
@@ -81,11 +87,11 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 					ok++;
 				}
 			}
-			info ("\tHas FD Parent: " + fdParentCount);
-			info ("\tHas no differentia: " + noDifferentiaCount);
-			info ("\tHas multiple parents: " + multipleParentsCount);
-			info ("\tRequires remodelling: " + requireProxPrimModellingCount);
-			info ("\tIs OK: " + ok);
+			LOGGER.info ("\tHas FD Parent: " + fdParentCount);
+			LOGGER.info ("\tHas no differentia: " + noDifferentiaCount);
+			LOGGER.info ("\tHas multiple parents: " + multipleParentsCount);
+			LOGGER.info ("\tRequires remodelling: " + requireProxPrimModellingCount);
+			LOGGER.info ("\tIs OK: " + ok);
 		}
 		
 	}

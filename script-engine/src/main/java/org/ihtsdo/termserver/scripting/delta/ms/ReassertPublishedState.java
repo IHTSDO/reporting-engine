@@ -15,8 +15,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * INFRA-8273 Need to reassert various components back to their previously published state
  * NOTE: Run this script against a release archive
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReassertPublishedState extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedState.class);
+
 	String processMe = "372440000, 384786009";
 	String intReleaseBranch="MAIN/2022-01-31";
 	
@@ -38,7 +44,7 @@ public class ReassertPublishedState extends DeltaGenerator {
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}

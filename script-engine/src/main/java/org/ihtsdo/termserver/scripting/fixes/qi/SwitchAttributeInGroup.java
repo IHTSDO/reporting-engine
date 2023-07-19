@@ -20,8 +20,14 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
  * { 363698007 |Finding site (attribute)| = 113276009 |Intestinal structure (body structure)|, 116676008 |Associated morphology (attribute)| = 26036001 |Obstruction (morphologic abnormality)| }
  * The value for finding site needs to change to 783798004 |Structure of lumen of intestine (body structure)|
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SwitchAttributeInGroup extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SwitchAttributeInGroup.class);
+
 	String subHierarchy = "81060008"; // |Intestinal obstruction (disorder)| 
 	RelationshipTemplate findRel;
 	RelationshipTemplate replaceRel;

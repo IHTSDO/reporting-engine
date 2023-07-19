@@ -16,7 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * INFRA-10767 Combine role groups containing Incision + drainage methods
  * into a single role group using the combined value - 56783008 |Incision AND drainage (procedure)|
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MergeAttributeTypes extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MergeAttributeTypes.class);
+
 	Concept findAttributeTypeA;
 	Concept findAttributeTypeB;
 	Concept replacementAttributeType;
@@ -103,7 +110,7 @@ public class MergeAttributeTypes extends BatchFix {
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		return SnomedUtils.sort(findConcepts(subsetECL)).stream()
 			.filter(c -> meetsProcessingCriteria(c))
 			.collect(Collectors.toList());
@@ -111,7 +118,7 @@ public class MergeAttributeTypes extends BatchFix {
 	
 	private boolean meetsProcessingCriteria(Concept c) {
 		if (c.getId().equals("284181007")) {
-			debug("here");
+			LOGGER.debug("here");
 		}
 		try {
 			RelationshipGroup[] groupAB = identifyABGroup(c);

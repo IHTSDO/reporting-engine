@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /*
 INFRA-6803 Fix fallout from transfer from other module
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FixWrongModuleId extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FixWrongModuleId.class);
+
 	String findModule = "1145237009";
 	String replaceModule = "900000000000207008";
 	
@@ -58,7 +64,7 @@ public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 		int changesMade = 0;
 		
 		if (c.getId().equals("373120008")) {
-			debug("here");
+			LOGGER.debug("here");
 		}
 		
 		if (c.getModuleId().contentEquals(findModule)) {

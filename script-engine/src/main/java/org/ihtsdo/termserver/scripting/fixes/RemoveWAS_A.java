@@ -15,8 +15,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RemoveWAS_A extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RemoveWAS_A.class);
+
 	BrowserClient browserClient;
 	Set<Concept> allActiveConcepts;
 	
@@ -135,18 +141,18 @@ public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<>();
 		for (Concept c : gl.getAllConcepts()) {
 			//Any concepts with a historical association WAS A is of interest
 			if (getWAS_A(c).size() > 0) {
 				if (c.isActive()) {
-					warn (c + " is active with an active historical association");
+					LOGGER.warn (c + " is active with an active historical association");
 				}
 				processMe.add(c);
 			}
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 	

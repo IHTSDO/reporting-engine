@@ -18,7 +18,13 @@ import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GraphLoader implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();

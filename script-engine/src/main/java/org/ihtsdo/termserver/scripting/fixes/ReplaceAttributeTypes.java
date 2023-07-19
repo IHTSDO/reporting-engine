@@ -29,8 +29,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  *  			Only where 260686004 |Method| = 129332006 |Irrigation - action|
  *  QI-1257    424226004 |Using device (attribute)| --> 363699004 |Direct device (attribute)|
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplaceAttributeTypes extends BatchFix {
-	//String ecl = "<<  67889009 |Irrigation (procedure)| ";
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeTypes.class);
+
 	String ecl = "(<<62317000 |Prosthodontic procedure (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|) OR (<118817003 |Procedure on oral cavity (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|)";
 	Map<Concept, Concept> replaceTypesMap;
 	RelationshipTemplate addAttribute = null;
@@ -127,7 +133,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		
 		//First report those which we are NOT going to process
 		findConcepts(ecl).stream()

@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Reports concepts that are primitive, and have both fully defined ancestors and descendants 
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class IntermediatePrimitivesReport extends TermServerReport{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(IntermediatePrimitivesReport.class);
+
 	List<Concept> topLevelHierarchies;
 	CharacteristicType targetCharType = CharacteristicType.STATED_RELATIONSHIP;
 	//CharacteristicType targetCharType = CharacteristicType.INFERRED_RELATIONSHIP;
@@ -31,7 +37,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 			report.getTopLevelHierarchies();
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -52,7 +58,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 
 	private void reportIntermediatePrimitives() throws TermServerScriptException {
 		int rowsReported = 0;
-		info ("Scanning all concepts...");
+		LOGGER.info ("Scanning all concepts...");
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept thisHierarchy : topLevelHierarchies) {
 			int hierarchyIpCount = 0;
@@ -62,7 +68,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 					hierarchyIpCount += checkConceptForIntermediatePrimitive(c);
 				}
 			}
-			info(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendents.size());
+			LOGGER.info(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendents.size());
 			rowsReported += hierarchyIpCount;
 		}
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());

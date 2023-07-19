@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * Reports all concepts that have been defined (stated) using one or more 
  * Fully Defined Parents
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HierarchyConceptsNotInFileReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsNotInFileReport.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
@@ -38,7 +44,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 			}
 			report.inHierarchyAndNotFile(conceptsInFile, conceptsInFile2);
 		} catch (Exception e) {
-			info("Failed to validate laterality due to " + e.getMessage());
+			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -50,7 +56,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		//also in the supplied file
 		Concept sourceHierarchy = gl.getConcept(hierarchy);
 		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
-		info ("Active source concepts number " + sourceConcepts.size());
+		LOGGER.info ("Active source concepts number " + sourceConcepts.size());
 		
 		for (Concept c : sourceConcepts) {
 			if (!conceptsInFile.contains(c)) {

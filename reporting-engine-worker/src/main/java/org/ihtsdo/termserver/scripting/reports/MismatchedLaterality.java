@@ -20,7 +20,14 @@ import java.util.Set;
  * FSN or visa versa
  * CDI-52 Update report to successfully run against projects with concrete values.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MismatchedLaterality.class);
+	
 	Set<String> hierarchies = new HashSet<>();
 	Set<Concept> reportedSuspect = new HashSet<>();
 	Map<String, Concept> fsnMap = new HashMap<>();
@@ -72,7 +79,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
 		hierarchies.add("< 123037004 |Body structure (body structure)|");
 		
-		info("Populating FSN map for all concepts");
+		LOGGER.info("Populating FSN map for all concepts");
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				fsnMap.put(c.getFsn().toLowerCase(), c);

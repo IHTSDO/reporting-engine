@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /*
 SCTQA-135 Address inconsistency in "Influenza Virus" in all major hierarchies
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReTermInfluenza extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReTermInfluenza.class);
+
 	public static final String INFLUENZA = "Influenza";
 	public static final String PARAINFLUENZA = "Parainfluenza";
 	public static final String INFLUENZAE = "influenzae";
@@ -97,7 +103,7 @@ public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 			}
 		}
 		if (changesMade == 0) {
-			warn ("No changes made to " + c);
+			LOGGER.warn ("No changes made to " + c);
 		}
 		return changesMade;
 	}
@@ -126,7 +132,7 @@ public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		warn ("No changes made to Immunoglobulin: " + c);
+		LOGGER.warn ("No changes made to Immunoglobulin: " + c);
 		return NO_CHANGES_MADE;
 	}
 

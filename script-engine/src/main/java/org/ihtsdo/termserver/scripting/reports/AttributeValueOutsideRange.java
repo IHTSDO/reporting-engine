@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
  * Report of concepts which use a particular attribute type, but where the value
  * is outside of a particular range
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AttributeValueOutsideRange extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AttributeValueOutsideRange.class);
+
 	Concept attributeType;
 	Set<Concept> acceptableRange;
 	Concept subHierarchy;
@@ -28,7 +34,7 @@ public class AttributeValueOutsideRange extends TermServerReport {
 			report.postInit();
 			report.runAttributeValueOutsideRangeReport();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -51,7 +57,7 @@ public class AttributeValueOutsideRange extends TermServerReport {
 					report (c, "Unacceptable target value", r.toString());
 					incrementSummaryInformation("Issues reported");
 				} else {
-					debug ("Acceptable: " + r);
+					LOGGER.debug ("Acceptable: " + r);
 					incrementSummaryInformation(r.getTarget().toString());
 					incrementSummaryInformation("Attributes within range");
 				}

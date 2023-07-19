@@ -22,8 +22,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
  * SYSTEM     --> 718497002 |Inherent location (attribute)|
  * 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincPart {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincPart.class);
+
 	public enum LoincStatus {ACTIVE, DEPRECATED};
 
 	private String partNumber;	

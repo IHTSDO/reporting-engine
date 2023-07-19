@@ -9,8 +9,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CodeSystemMetadataPopulation extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CodeSystemMetadataPopulation.class);
+
 	protected CodeSystemMetadataPopulation(BatchFix clone) {
 		super(clone);
 	}

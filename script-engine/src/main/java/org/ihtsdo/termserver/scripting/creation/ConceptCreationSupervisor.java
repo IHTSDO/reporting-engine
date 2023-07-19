@@ -7,7 +7,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptCreationSupervisor implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptCreationSupervisor.class);
 
 	private static ConceptCreationSupervisor singleton = null;
 	List<ConceptCreator> creators = new ArrayList<>();

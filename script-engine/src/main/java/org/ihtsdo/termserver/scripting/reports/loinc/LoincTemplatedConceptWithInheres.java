@@ -8,8 +8,14 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
+
 	private LoincTemplatedConceptWithInheres(String loincNum) {
 		super(loincNum);
 	}

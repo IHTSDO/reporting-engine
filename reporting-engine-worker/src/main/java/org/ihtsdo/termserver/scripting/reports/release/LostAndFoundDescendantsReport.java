@@ -19,7 +19,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LostAndFoundDescendantsReport extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LostAndFoundDescendantsReport.class);
 	private static String COUNT_NEW_AS_GAINED = "Count new concepts as gained";
 	
 	private AncestorsCache cache;
@@ -94,10 +100,10 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		int lastPercReported = 0;
 		int conceptsProcessed = 0;
 		
-		info("Sorting concepts of interest...");
+		LOGGER.info("Sorting concepts of interest...");
  		for (Concept c : SnomedUtils.sort(conceptsOfInterest)) {
  			if (conceptsProcessed == 0) {
- 				info("Sorting complete.");
+ 				LOGGER.info("Sorting complete.");
  			}
  			if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
  				continue;
@@ -110,7 +116,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
  			
  			int percCompleted = (int)((++conceptsProcessed/(double)conceptsOfInterest.size())*100);
  			if (percCompleted >= lastPercReported + 5) {
- 				info (percCompleted + "% complete.");
+ 				LOGGER.info (percCompleted + "% complete.");
  				lastPercReported = percCompleted;
  			}
 			Set<Long> gainedDescendants = getGainedDescendants(c);

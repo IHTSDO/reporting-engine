@@ -2,7 +2,13 @@ package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import org.apache.commons.csv.CSVRecord;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincTerm {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincTerm.class);
 
 	private String loincNum;
 	private String component;

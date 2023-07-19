@@ -8,8 +8,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class TermGenerator implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TermGenerator.class);
+
 	protected TermServerScript parent;
 	
 	protected boolean quiet;

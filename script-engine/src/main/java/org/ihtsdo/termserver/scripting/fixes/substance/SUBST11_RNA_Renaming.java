@@ -17,8 +17,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * SUSBT-11 Rename descendants of 118251005 | Microbial ribosomal ribonucleic acid (substance)
  * as per terming guidelines:  https://confluence.ihtsdotools.org/display/IAP/4.5+Deoxyribonucleic+acid+and+ribonucleic+acid
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SUBST11_RNA_Renaming extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SUBST11_RNA_Renaming.class);
+
 	Concept subHierarchy;
 	Map<String, Concept> organisms = new HashMap<>();
 	
@@ -205,7 +211,7 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 				
 		}
 		setQuiet(false);
-		info ("Remodelling required for " + conceptsToProcess.size() + " concepts");
+		LOGGER.info ("Remodelling required for " + conceptsToProcess.size() + " concepts");
 		return asComponents(conceptsToProcess);
 	}
 

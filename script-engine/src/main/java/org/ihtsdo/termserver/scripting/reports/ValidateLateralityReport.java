@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * Reports all concepts that have been defined (stated) using one or more 
  * Fully Defined Parents
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ValidateLateralityReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ValidateLateralityReport.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ValidateLateralityReport report = new ValidateLateralityReport();
 		try {
@@ -24,7 +30,7 @@ public class ValidateLateralityReport extends TermServerScript{
 			List<Component> lateralizable = report.processFile();
 			report.validateLaterality(lateralizable);
 		} catch (Exception e) {
-			info("Failed to validate laterality due to " + e.getMessage());
+			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

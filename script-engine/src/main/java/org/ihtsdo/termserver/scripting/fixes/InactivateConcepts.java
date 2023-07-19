@@ -292,10 +292,10 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			return null;
 		}
 		
+		/*
 		Concept replacement = null;
-		int idxReplacement = 1;
-		
-		/*if (lineItems.length > 2) {
+		int idxReplacement = 1;		 
+		if (lineItems.length > 2) {
 			idxReplacement = 2;
 			//In this case, column 1 will be in inactivation reason
 			String strInact = lineItems[1];
@@ -332,12 +332,12 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//Give C an issue of one of it's parents to try to batch sibling concepts together
 		c.setIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
 		
-		if (replacement != null) {
+		/*if (replacement != null) {
 			replacements.put(c, replacement);
 			return Collections.singletonList(c);
 		} else if (!expectReplacements){
 			return Collections.singletonList(c);
-		}
+		}*/
 		return null;
 	}
 }

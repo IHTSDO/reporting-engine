@@ -12,8 +12,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.annotations.Expose;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReleaseSummary {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseSummary.class);
+
 	@Expose
 	private String[] columnHeadings;
 	

@@ -21,8 +21,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * MAINT-224 Check for full stop in descriptions other than text definitions
  * SUBST-314 Converting to ReportClass and also list arbitrary attribute
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TermContainsXReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TermContainsXReport.class);
+
 	String[] textsToMatch = null;
 	String[] textsToAvoid = null;
 	boolean reportConceptOnceOnly = true;
@@ -143,7 +149,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		for (Concept c : conceptsOfInterest) {
 			boolean atLeastOneTermMatched = false;
 			/*if (c.getId().equals("307651005")) {
-				debug("Here");
+				LOGGER.debug("Here");
 			}*/
 			if (c.isActive()) {
 				if (whiteListedConceptIds.contains(c.getId())) {
@@ -224,11 +230,11 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		}
 	
 		if (textsToMatch != null && Arrays.asList(textsToMatch).contains("TEST_WATCHER")) {
-			info("Testing watcher functionality.  Pausing for 15 minutes");
+			LOGGER.info("Testing watcher functionality.  Pausing for 15 minutes");
 			try {
 				Thread.sleep(15 * 60 * 1000);
 			} catch(Exception e) {
-				info("Watcher Testing interrupted prematurely");
+				LOGGER.info("Watcher Testing interrupted prematurely");
 			}
 		}
 		

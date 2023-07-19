@@ -19,8 +19,14 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
  * TODO Enhance GraphLoader to read in MRCM to determine never grouped attributes
  * to pass in to axiomService constructor
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AxiomUtils implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AxiomUtils.class);
+
 	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<>());
 
 	public static Set<org.ihtsdo.termserver.scripting.domain.Relationship> getRHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {

@@ -22,8 +22,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * QI-1019 List inactivated concepts from 20180131 to current
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivatedConceptsByRelease extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivatedConceptsByRelease.class);
+
 	List<String> releaseETs;
 	private static int startYear = 2018;
 	private static String startET = "20180131";

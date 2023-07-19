@@ -5,15 +5,21 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader.DuplicatePair;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
+
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DuplicateLangRefsetsFix extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateLangRefsetsFix.class);
+
 	protected DuplicateLangRefsetsFix(BatchFix clone) {
 		super(clone);
 	}
@@ -68,7 +74,7 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 	
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		return new ArrayList<>(gl.getDuplicateLangRefsetEntriesMap().keySet());
 	}
 

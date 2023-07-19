@@ -21,8 +21,14 @@ import org.springframework.util.StringUtils;
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReleaseStats extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseStats.class);
+
 	public static final String THIS_RELEASE = "This Release";
 	public static final String MODULES = "Modules";
 	protected Set<Concept> statedIntermediatePrimitives;
@@ -56,22 +62,22 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	
 	public void runJob() throws TermServerScriptException {
 		
-		info("Reporting General Release Stats");
+		LOGGER.info("Reporting General Release Stats");
 		reportGeneralReleaseStats();
 		
-		info("Checking for role group crossovers");
+		LOGGER.info("Checking for role group crossovers");
 		reportRoleGroupCrossovers();
 		
-		info("Checking for ungrouped crossovers");
+		LOGGER.info("Checking for ungrouped crossovers");
 		reportUngroupedCrossovers();
 		
-		info("Checking for Stated Intermediate Primitives");
+		LOGGER.info("Checking for Stated Intermediate Primitives");
 		countIPs(CharacteristicType.STATED_RELATIONSHIP, SENARY_REPORT);
 		
-		info("Checking for Intermediate Primitives");
+		LOGGER.info("Checking for Intermediate Primitives");
 		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUINARY_REPORT);
 		
-		info("Calculating Fully Defined %");
+		LOGGER.info("Calculating Fully Defined %");
 		countSD(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
 	}
 

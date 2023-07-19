@@ -8,8 +8,14 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConceptCreationPattern implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptCreationPattern.class);
+
 	String semTag;
 	String termPattern;
 	Strategy strategyForY;

@@ -18,8 +18,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * QI-1208 Replace 6920004 |Defect (morphologic abnormality)| with 783804002 |Abnormal communication (morphologic abnormality)|
  * QI-1221 For Direct Morphologies, replace 6920004 |Defect (morphologic abnormality)| with 783804002 |Abnormal communication (morphologic abnormality)|
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReplaceAttributeValues extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeValues.class);
+
 	Map<Concept, Concept> replacementMap;
 	Concept restrictToType = null;
 	//String ecl = "< 363787002 |Observable entity| : * = 86049000 |Malignant neoplasm, primary (morphologic abnormality)|";
@@ -113,7 +119,7 @@ public class ReplaceAttributeValues extends BatchFix {
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> allAffected = new ArrayList<>();
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		
 		List<Concept> concepts = SnomedUtils.sort(findConcepts(ecl));
 		
@@ -129,7 +135,7 @@ public class ReplaceAttributeValues extends BatchFix {
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
 	}

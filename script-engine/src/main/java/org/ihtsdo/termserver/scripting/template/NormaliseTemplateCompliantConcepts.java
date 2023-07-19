@@ -19,8 +19,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent - if it matches the template expectation
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NormaliseTemplateCompliantConcepts extends TemplateFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NormaliseTemplateCompliantConcepts.class);
+
 	boolean allowCompromisePPP = false;
 
 	public NormaliseTemplateCompliantConcepts(BatchFix clone) {
@@ -37,7 +43,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
+			LOGGER.info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
@@ -572,7 +578,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> alignedConcepts = new HashSet<>();
 		Set<Concept> misalignedConcepts = new HashSet<>();
 		
-		info ("Identifying concepts aligned to template");
+		LOGGER.info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
 			//Are we finding concepts to process, or are they stated in a file?
 			Collection<Concept> potentialMatches;

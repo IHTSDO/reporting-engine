@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincUtils implements RF2Constants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincUtils.class);
+
 	public static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	public static String CORRELATION_PREFIX = "Correlation ID:";
 

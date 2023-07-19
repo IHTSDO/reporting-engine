@@ -28,8 +28,14 @@ xxxxxx |Structure of hair follicle of upper limb (body structure)|
   xxxxxxx |Structure of hair follicle of upper arm (body structure)|   <-- Target Concept
     xxxxxx |Entire hair follicle of upper arm (body structure)|
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HairFollicleCreator extends ConceptCreator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HairFollicleCreator.class);
+
 	private static HairFollicleCreator singleton = null;
 	public static HairFollicleCreator getHairFollicleCreator() {
 		if (singleton == null) {

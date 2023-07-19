@@ -28,8 +28,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-230 Existing sufficiently defined concepts that 
  * gained a stated primitive parent and lost active inferred descendant(s)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class KPIPatternsReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(KPIPatternsReport.class);
+
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;
 	String previousPreviousRelease;
@@ -85,19 +91,19 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 
 	public void runJob() throws TermServerScriptException {
 		
-		info ("Checking structural integrity");
+		LOGGER.info ("Checking structural integrity");
 		if (checkStructuralIntegrity()) {
-			info("Checking for problematic patterns...");
+			LOGGER.info("Checking for problematic patterns...");
 			
-			info("Checking for redundancies...");
+			LOGGER.info("Checking for redundancies...");
 			checkRedundantlyStatedParents();
 			checkRedundantlyStatedUngroupedRoles();
 			checkRedundantlyStatedGroups();
 		
-			info ("Building current Transitive Closure");
+			LOGGER.info ("Building current Transitive Closure");
 			tc = gl.generateTransativeClosure();
 			
-			info("Checking for historical patterns 11 & 21");
+			LOGGER.info("Checking for historical patterns 11 & 21");
 			if (previousPreviousRelease != null) {
 				checkCreatedButDuplicate();
 				checkPattern11();  //...a very specific situation
@@ -108,10 +114,10 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		} else {
 			report(null, "Structural integrity test failed.  Report execution terminated early");
 		}
-		info("Checks complete, creating summary tag");
+		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
-		info("Summary tab complete, all done.");
+		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
@@ -133,7 +139,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		boolean isOK = true;
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getId().equals("897596000")) {
-				debug("here");
+				LOGGER.debug("here");
 			}
 			if (c.isReleased() == null) {
 				String detail = "";
@@ -290,7 +296,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		
  		for (Concept c : gl.getAllConcepts()) {
  			/*if (c.getId().equals("1163463008")) {
- 				debug("here");
+ 				LOGGER.debug("here");
  			}*/
 			//Filter for active concepts that have already been published and are sufficiently defined.
 			if (c.isActive() && c.isReleased() &&

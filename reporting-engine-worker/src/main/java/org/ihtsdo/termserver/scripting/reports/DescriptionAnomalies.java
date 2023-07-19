@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * Lists all active descriptions that have no acceptability
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DescriptionAnomalies extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DescriptionAnomalies.class);
+
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {

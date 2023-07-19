@@ -20,8 +20,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * How many IPs became SD
  * How many IPs were inactivated)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HistoricComparison extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HistoricComparison.class);
+
 	public static final String START_RELEASE = "Start Release";
 	public static final String END_RELEASE = "End Release";
 	private String endRelease;
@@ -70,7 +76,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		info ("Populating historic data");
+		LOGGER.info ("Populating historic data");
 		populateHistoricData();
 		
 		//Now load in the end release

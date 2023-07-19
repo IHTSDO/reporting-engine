@@ -22,8 +22,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Reports all concepts using Prox Prim modelling that have more groups in the 
  * inferred form, than the stated
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(IncreasedProxPrimInferredComplexityReport.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
@@ -36,7 +42,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIncreasedComplexity();
 		} catch (Exception e) {
-			info("Report failed due to " + e.getMessage());
+			LOGGER.info("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -48,7 +54,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			LOGGER.info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			
 			for (Concept thisConcept : allActiveFD) {
 				Set<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
@@ -57,7 +63,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 					//How many groups do we have in the stated and inferred forms?
 					int statedGroups = countGroups(thisConcept, CharacteristicType.STATED_RELATIONSHIP);
 					int inferredGroups = countGroups(thisConcept, CharacteristicType.INFERRED_RELATIONSHIP);
-					info (thisConcept + ":  s=" + statedGroups + ", i=" + inferredGroups);
+					LOGGER.info (thisConcept + ":  s=" + statedGroups + ", i=" + inferredGroups);
 					if (inferredGroups > statedGroups) {
 						report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1]);
 					}

@@ -17,8 +17,14 @@ import org.springframework.util.StringUtils;
  * semantic tag that have
  * Note that because we also work with inactive concepts, no subhierarchy is specified
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FindNewClones extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FindNewClones.class);
+
 	public static final String TARGET_SEMTAG = "Target SemTag";
 	public static final String SOURCE_SEMTAG = "Source SemTag";
 	public static final String IGNORE_TEXT = "Ignore Text";
@@ -58,7 +64,7 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 	public void runJob() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getConceptId().equals("157485009") || c.getConceptId().equals("781488002")) {
-				//warn ("Debug Here");
+				//LOGGER.warn ("Debug Here");
 			}
 			//Do we match the ECL?
 			if (!checkEclCompliance(c, jobRun.getMandatoryParamValue(ATTRIBUTE_ECL))) {

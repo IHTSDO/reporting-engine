@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * MSSP-1169 Fix DK Capitalization issues
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceFixForLanguage extends DeltaGenerator implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFixForLanguage.class);
+
 	private List<String> exceptions = new ArrayList<>();
 	private boolean expectFirstLetterCapitalization = false;
 	private String longDash = Character.toString((char)150);
@@ -58,7 +64,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	}
 	
 	private void process() throws TermServerScriptException {
-		info("Processing...");
+		LOGGER.info("Processing...");
 		
 		knownEntireTermCaseSensitive = processFile();
 		
@@ -74,8 +80,8 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			}
 		}
 		
-		info("Processing Complete");
-		info("Skipped " + skippedDueToNotStartingWithLetter + " due to not starting with a letter");
+		LOGGER.info("Processing Complete");
+		LOGGER.info("Skipped " + skippedDueToNotStartingWithLetter + " due to not starting with a letter");
 	}
 
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {

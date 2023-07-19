@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * Reports instances of more than one attributes of a given type
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AttributeCardinalityReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AttributeCardinalityReport.class);
+
 	List<String> criticalErrors = new ArrayList<String>();
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetAttributeStr = "411116001"; // |Has manufactured dose form (attribute)|
@@ -30,19 +36,19 @@ public class AttributeCardinalityReport extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runAttributeCardinalityReport();
 		} catch (Exception e) {
-			info("Failed to produce AttributeCardinalityReport Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce AttributeCardinalityReport Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				info (err);
+				LOGGER.info (err);
 			}
 		}
 	}
 
 	private void runAttributeCardinalityReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		info ("Validating all relationships");
+		LOGGER.info ("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
 			if (c.isActive()) {

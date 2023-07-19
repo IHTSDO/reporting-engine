@@ -7,7 +7,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TransitiveClosure implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(TransitiveClosure.class);
 
 	Map<Long, Set<Long>> ancestorMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
 	Map<Long, Set<Long>> descendantMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());

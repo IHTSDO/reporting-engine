@@ -6,8 +6,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BatchImportExpression implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(BatchImportExpression.class);
+
 	public static final String FULLY_DEFINED = "===";
 	public static final String PRIMITVE = "<<<";
 	public static final String PIPE = "|";

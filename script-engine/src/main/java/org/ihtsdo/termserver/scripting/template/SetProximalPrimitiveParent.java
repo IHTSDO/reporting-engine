@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * Set Proximal Primitive Parent where possible
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SetProximalPrimitiveParent extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SetProximalPrimitiveParent.class);
+
 	Concept focusConcept = null;
 
 	protected SetProximalPrimitiveParent(BatchFix clone) {
@@ -31,7 +37,7 @@ public class SetProximalPrimitiveParent extends BatchFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to complete fix due to " + e.getMessage());
+			LOGGER.info("Failed to complete fix due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();

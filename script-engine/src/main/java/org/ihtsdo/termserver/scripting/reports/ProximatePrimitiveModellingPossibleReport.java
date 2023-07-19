@@ -21,8 +21,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Reports if concepts could potentially be promimal primitive modelled ie FD to top of hierarchy
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ProximatePrimitiveModellingPossibleReport.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String publishedArchive;
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
@@ -35,7 +41,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			info("Report failed due to " + e.getMessage());
+			LOGGER.info("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -54,7 +60,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			LOGGER.info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			
 			for (Concept thisConcept : allActiveFD) {
 				boolean alreadyModelledCorrectly = false;
@@ -85,10 +91,10 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 				}
 				report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1], alreadyModelledCorrectly, fdToTop, immedPrimParent, notImmediatePrimitive);
 			}
-			info ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
-			info ("\tFully defined to subhierarchy top: " + fdToTopCount);
-			info ("\tHas immediate primitive parent: " + immedPrimParentCount);
-			info ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
+			LOGGER.info ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
+			LOGGER.info ("\tFully defined to subhierarchy top: " + fdToTopCount);
+			LOGGER.info ("\tHas immediate primitive parent: " + immedPrimParentCount);
+			LOGGER.info ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
 		}
 		
 	}

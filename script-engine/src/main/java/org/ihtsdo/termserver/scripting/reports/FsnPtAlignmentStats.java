@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * RP-542 Get stats broken down by major hierarchy on what FSNs align with their PTs
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FsnPtAlignmentStats extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FsnPtAlignmentStats.class);
+
 	DecimalFormat df = new DecimalFormat("##.#%");
 	boolean includeDetail = false;
 	

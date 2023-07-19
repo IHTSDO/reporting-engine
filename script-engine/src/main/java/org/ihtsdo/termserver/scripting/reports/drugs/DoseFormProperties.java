@@ -22,8 +22,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Has dose form release characteristic (id, PT), 
  * Has dose form transformation (id, PT)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DoseFormProperties extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DoseFormProperties.class);
+
 	public static final String THIS_RELEASE = "This Release";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {

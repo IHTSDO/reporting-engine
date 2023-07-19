@@ -23,8 +23,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * which also has an active association
  * Run a query to find inactive concepts using WAS A as the Association type for LIMITED, OUTDATED or ERRONEOUS inactivation reasons.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivationAssocationReport extends TermServerScript implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivationAssocationReport.class);
+
 	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations Only";
 	String[] targetInactivationReasons = new String[] {SCTID_INACT_LIMITED, SCTID_INACT_OUTDATED, SCTID_INACT_ERRONEOUS};
 	String[] targetAssocationRefsetIds = new String[] {SCTID_ASSOC_WAS_A_REFSETID};
@@ -60,7 +66,7 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 
 	public void runJob() throws TermServerScriptException {
 		int rowsReported = 0;
-		info ("Scanning all concepts...");
+		LOGGER.info ("Scanning all concepts...");
 		for (Concept c : gl.getAllConcepts()) {
 			//For a change we're interested in inactive concepts!
 			if (!c.isActive()) {

@@ -8,6 +8,9 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Updated for SUBST-153
  * Reports all concepts that have been defined (stated) using one or more 
@@ -17,7 +20,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 // Improved version is org.ihtsdo.termserver.scripting.reports.qi.FullyDefinedParentsInSubHierarchy
 // Which lists all the parents along with the calculated Proximal Primitive Parents
 public class FdParentsReport extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FdParentsReport.class);
+
 	String subHierarchy = "105590001"; // |Substance (substance)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -28,7 +33,7 @@ public class FdParentsReport extends TermServerReport {
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportFdParents();
 		} catch (Exception e) {
-			info("Failed to produce FdParentsReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce FdParentsReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

@@ -15,8 +15,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * QI-4 Reports a number of quality measures across a set of concepts selected via 
  * an ECL constraint.
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GnarlyFactorCalculationECL extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GnarlyFactorCalculationECL.class);
+
 	InitialAnalysis intermediatePrimitivesReport;
 	InferredGroupsNotStated inferredGroupsNotStatedReport;
 	SplitRoleGroupsWithRepeatedAttributes splitRoleGroupsWithRepeatedAttributes;
@@ -35,7 +41,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 			report.identifyGroupersByAttribute(report.processFile());
 			report.run();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -57,14 +63,14 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 			int expansionSize = expansion.size();
 			Relationship optimalECL =  ecl;
 			if ( expansionSize == 0) {
-				warn (ecl + " matched no concepts.  Skipping");
+				LOGGER.warn (ecl + " matched no concepts.  Skipping");
 				continue;
 			} else if ( expansionSize > lowerLimit) {
-				warn (ecl + " already has " + expansionSize + " members.  Adding.");
+				LOGGER.warn (ecl + " already has " + expansionSize + " members.  Adding.");
 			} else {
 				optimalECL = findOptimalECL(ecl, 0);
 				if (optimalECL == null || optimalECL.getTarget() == null) {
-					warn ("Failed to find optimal grouper from " + ecl); 
+					LOGGER.warn ("Failed to find optimal grouper from " + ecl); 
 				} 
 			}
 		}
@@ -90,7 +96,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 				bestParent = parent;
 				bestParentCount = descCount;
 			} else if (descCount == 0) {
-				warn ("ECL found no concepts for " + r + ", returning");
+				LOGGER.warn ("ECL found no concepts for " + r + ", returning");
 				return null;
 			}
 		}
@@ -109,7 +115,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 				modified.setTarget(parent);
 				//Do we already have this ECL mapped?  No need to request again if so.
 				if (expansionMap.containsKey(modified)) {
-					info ("Have already recovered " + modified);
+					LOGGER.info ("Have already recovered " + modified);
 					return modified;
 				}
 				Relationship thisAncestorRel = findOptimalECL(modified, hopCount + 1);
@@ -140,7 +146,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 	}
 
 	private void run() throws TermServerScriptException {
-		info ("Calculating Gnarly Factor in " + expansionMap.size() + " ECLs");
+		LOGGER.info ("Calculating Gnarly Factor in " + expansionMap.size() + " ECLs");
 		int x = 0;
 		for (Relationship ecl : expansionMap.keySet()) {
 			Set<Concept> eclConcepts = new HashSet<>(expansionMap.get(ecl));
@@ -167,7 +173,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 				print(".");
 			}
 		}
-		info("");
+		LOGGER.info("");
 	}
 	
 	private String calculateTotalFDsUnderIPs(Set<Concept> subHierarchy, Set<Concept> intermediatePrimitives) throws TermServerScriptException {
@@ -193,7 +199,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 		Concept type = gl.getConcept(items[0]);
 		Concept target = gl.getConcept(items[1]);
 		if (type == null || target == null) {
-			warn ("Unable to parse input file for " + item);
+			LOGGER.warn ("Unable to parse input file for " + item);
 			return null;
 		}
 		Relationship r = new Relationship (null, type, target, UNGROUPED);

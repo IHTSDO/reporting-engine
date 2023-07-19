@@ -7,8 +7,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithComponent.class);
+
 	private LoincTemplatedConceptWithComponent(String loincNum) {
 		super(loincNum);
 	}

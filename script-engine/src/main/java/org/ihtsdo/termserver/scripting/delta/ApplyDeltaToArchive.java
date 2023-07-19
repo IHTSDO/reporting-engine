@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * ISRS-1256 Requirement to update an existing archive with a Delta
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ApplyDeltaToArchive extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ApplyDeltaToArchive.class);
+
 	Map<String, Map<String, String>> deltaArchiveMap = new HashMap<>();
 	Map<String, String> originalFileNames = new HashMap<>();
 	Set<String> filesProcessed = new HashSet<>();
@@ -56,17 +62,17 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 						}
 						if (fileName.contains("Delta")) {
 							if (fileName.contains("Language")) {
-								info("Skipping all Language files eg " + fileName);
+								LOGGER.info("Skipping all Language files eg " + fileName);
 							} else {
 								String fileNameShort = getFileNameShort(fileName, "Delta");
 								ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 								if (componentType != null && !fileName.startsWith("._")) {
-									info ("Processing " + fileName);
+									LOGGER.info ("Processing " + fileName);
 									Map<String, String> fileMap = processFixDeltaFile(zis, componentType);
 									deltaArchiveMap.put(fileNameShort, fileMap);
 									originalFileNames.put(fileNameShort, fileName);
 								} else {
-									info ("Skipping unrecognised file: " + fileName);
+									LOGGER.info ("Skipping unrecognised file: " + fileName);
 								}
 							}
 						}
@@ -136,7 +142,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 							} else if (fileName.contains("Snapshot")) {
 								processSnapshot(fileName, zis);
 							} else {
-								info ("Skipping unrecognised file: " + fileName);
+								LOGGER.info ("Skipping unrecognised file: " + fileName);
 							}
 						}
 					ze = zis.getNextEntry();
@@ -164,7 +170,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 		
 		//Now do we have any rows to add from the delta?
 		if (fileNameShort.contains("Lang") && !fileNameShort.contains("-fr_")) {
-			warn(fileType + " processing, suppressing LangRefset from Delta: " + fileNameShort);
+			LOGGER.warn(fileType + " processing, suppressing LangRefset from Delta: " + fileNameShort);
 		} else if (deltaArchiveMap.containsKey(fileNameShort)) {
 			for (String deltaLine : deltaArchiveMap.get(fileNameShort).values()) {
 				writeToRF2File(targetFileName, deltaLine);
@@ -218,17 +224,17 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 			//Then we're going to not include those in the Snapshot
 			if (fileNameShort.equals("der2_cRefset_Language-fr-ch_")) {
 				suppressContent = deltaArchiveMap.get("der2_cRefset_Language-fr_");
-				warn("Skipping CF content in fr-ch where same id modified in fr ");
+				LOGGER.warn("Skipping CF content in fr-ch where same id modified in fr ");
 			} else {
-				warn("No content found to merge for " + fileNameShort);
+				LOGGER.warn("No content found to merge for " + fileNameShort);
 			}
 		} else {
 			//WARNING WORKAROUND - Not including other langrefsets 
 			if (fileNameShort.contains("Lang") && !fileNameShort.contains("-fr_")) {
-				warn("Snapshot processing, suppressing LangRefset from Delta: " + fileNameShort);
+				LOGGER.warn("Snapshot processing, suppressing LangRefset from Delta: " + fileNameShort);
 				deltaFileContent = null;
 			} else {
-				info("Merging delta from " + fileNameShort + " to " + fileName);
+				LOGGER.info("Merging delta from " + fileNameShort + " to " + fileName);
 			}
 		}
 		String line;
@@ -240,7 +246,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				String id = lineItems[IDX_ID];
 				if (suppressContent != null && suppressContent.containsKey(id)) {
-					info("Switching fr-ch line back to ch : " + line);
+					LOGGER.info("Switching fr-ch line back to ch : " + line);
 				} else if (deltaFileContent != null && deltaFileContent.containsKey(id)) {
 					writeToRF2File(targetFileName, deltaFileContent.get(id));
 				} else {
@@ -271,7 +277,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 		for (String fileShortName : deltaArchiveMap.keySet()) {
 			if (!filesProcessed.contains(fileShortName)) {
 				String origFileName = originalFileNames.get(fileShortName);
-				warn("Did not merge delta from " + fileShortName + " --> " + origFileName);
+				LOGGER.warn("Did not merge delta from " + fileShortName + " --> " + origFileName);
 			}
 		}
 	}

@@ -19,8 +19,14 @@ import org.ihtsdo.termserver.scripting.util.*;
  * So P/N will become P/A
  * UPDATE:  Only run against substances that are used as ingredients in products
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(PreferredAcceptableDialectCombo.class);
+
 	String subHierarchy = "105590001 |Substance (substance)|"; 
 	String[] exclusions = new String[] { "312435005 |Industrial and household substance (substance)|",
 										"762766007 |Edible substance (substance)|"};
@@ -104,7 +110,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
 		for (Concept c : gl.getConcept(subHierarchy).getDescendents(NOT_SET)) {
@@ -112,7 +118,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 				continue;
 			}
 			if (c.getConceptId().equals("126071000")) {
-				//debug("Debug here");
+				//LOGGER.debug("Debug here");
 			}
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				//If we only have one acceptability indicator, then it's a P/N situation
@@ -122,7 +128,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 				}
 			}
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

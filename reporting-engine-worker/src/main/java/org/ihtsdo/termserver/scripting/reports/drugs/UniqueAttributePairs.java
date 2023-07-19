@@ -18,8 +18,14 @@ import com.google.common.util.concurrent.AtomicLongMap;
 /**
  * RP-200 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UniqueAttributePairs extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(UniqueAttributePairs.class);
+
 	private AtomicLongMap<String> presFormUnit = AtomicLongMap.create();
 	private AtomicLongMap<String> concFormUnit = AtomicLongMap.create();
 	private AtomicLongMap<String> presNumDenomUnits = AtomicLongMap.create();

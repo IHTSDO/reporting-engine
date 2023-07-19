@@ -24,8 +24,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Is modification attribute value (If multiple, create multiple rows. 
  * If doesn't exist, leave empty).
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Hydrates extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Hydrates.class);
+
 	String matchText = "hydrate" ;
 	Concept subHierarchy = SUBSTANCE;
 	
@@ -39,7 +45,7 @@ public class Hydrates extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportDescriptionContainsX();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

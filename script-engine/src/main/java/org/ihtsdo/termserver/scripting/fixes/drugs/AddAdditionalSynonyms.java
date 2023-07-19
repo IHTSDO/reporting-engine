@@ -11,6 +11,9 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /*
  * Create additional acceptable synonyms to address US/GB spelling variations.
  */
@@ -18,7 +21,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 //This class is insufficient because it doesn't account for the substances already
 //having us/gb variance.  We'll need to enhance the TermGenerator class to address this.
 public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AddAdditionalSynonyms.class);
+
 	protected AddAdditionalSynonyms(BatchFix clone) {
 		super(clone);
 	}
@@ -88,7 +93,7 @@ public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
 		this.setQuiet(false);
 		return processMe;
 	}

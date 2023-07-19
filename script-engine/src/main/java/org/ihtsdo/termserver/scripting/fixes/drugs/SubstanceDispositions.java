@@ -26,8 +26,14 @@ The next level down get reparented with the grandparent instead of the dispositi
 
 The NEXT level down will keep the existing parents and just gain the disposition attribute.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SubstanceDispositions extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SubstanceDispositions.class);
+
 	Map<Concept, List<Concept>> conceptDispositionMap = new HashMap<>();
 	BiMap<Concept, Concept> topLevelSubstances = HashBiMap.create();
 	

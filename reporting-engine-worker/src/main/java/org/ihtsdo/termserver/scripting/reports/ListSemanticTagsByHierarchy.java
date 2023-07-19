@@ -19,8 +19,14 @@ import com.google.common.collect.Multiset;
 /**
  * Lists all semantic tags used in each of the top level hierarchies.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ListSemanticTagsByHierarchy extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ListSemanticTagsByHierarchy.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());

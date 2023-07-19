@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * We will usually use "Non Conformance to Editorial Policy" as the indicator, since no
  * historical association is required in this case.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MissingInactivationIndicatorsFix extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingInactivationIndicatorsFix.class);
+
 	String targetSemanticTag = "(product)";
 	
 	protected MissingInactivationIndicatorsFix(BatchFix clone) {
@@ -76,7 +82,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : gl.getAllConcepts()) {
 		//for (Concept c : Collections.singleton(gl.getConcept("347118002"))) {
@@ -87,7 +93,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 				}
 			}
 		}
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

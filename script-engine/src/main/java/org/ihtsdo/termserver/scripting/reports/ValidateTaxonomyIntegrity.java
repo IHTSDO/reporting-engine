@@ -18,8 +18,14 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 /**
  * Reports all terms that contain the specified text
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ValidateTaxonomyIntegrity extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ValidateTaxonomyIntegrity.class);
+
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String matchText = "+"; 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
@@ -31,7 +37,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.validateTaxonomyIntegrity();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -40,7 +46,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 
 	private void validateTaxonomyIntegrity() throws TermServerScriptException {
 		Collection<Concept> concepts = gl.getAllConcepts();
-		info ("Validating all concepts");
+		LOGGER.info ("Validating all concepts");
 		long issuesEncountered = 0;
 		long conceptsValidated = 0;
 		for (Concept c : concepts) {

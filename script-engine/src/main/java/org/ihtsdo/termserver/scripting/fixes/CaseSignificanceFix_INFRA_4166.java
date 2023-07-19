@@ -14,8 +14,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /*
  * INFRA-4166 Modify case significance from CS to cI where descriptions starts with non-alpha character
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceFix_INFRA_4166 extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix_INFRA_4166.class);
+
 	String[] knownLowerCase = new String[] { "mm", "nm" };
 	
 	protected CaseSignificanceFix_INFRA_4166(BatchFix clone) {
@@ -84,7 +90,7 @@ public class CaseSignificanceFix_INFRA_4166 extends BatchFix implements ScriptCo
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();
-		info ("Identifying incorrect case signficance settings");
+		LOGGER.info ("Identifying incorrect case signficance settings");
 		for (Concept concept : gl.getAllConcepts()) {
 			if (concept.isActive()) {
 				for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
@@ -96,7 +102,7 @@ public class CaseSignificanceFix_INFRA_4166 extends BatchFix implements ScriptCo
 				}
 			}
 		}
-		debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

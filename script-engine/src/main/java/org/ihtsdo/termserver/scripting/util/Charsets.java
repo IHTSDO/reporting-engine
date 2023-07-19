@@ -1,5 +1,11 @@
 package org.ihtsdo.termserver.scripting.util;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Charsets {
-	public static final java.nio.charset.Charset UTF_8 = java.nio.charset.Charset.forName("UTF-8");
+
+	private static Logger LOGGER = LoggerFactory.getLogger(Charsets.class);
+
 }

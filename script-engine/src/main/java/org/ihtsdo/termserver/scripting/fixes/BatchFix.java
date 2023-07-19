@@ -27,8 +27,14 @@ import us.monoid.json.*;
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
  * in tasks created on the specified project
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class BatchFix extends TermServerScript implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(BatchFix.class);
+
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
@@ -203,18 +209,18 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 				//If we don't have any concepts in this task eg this is 100% ME file, then skip
 				if (task.size() == 0) {
-					info ("Skipping Task " + task.getSummary() + " - no concepts to process");
+					LOGGER.info ("Skipping Task " + task.getSummary() + " - no concepts to process");
 					continue;
 				} else if (selfDetermining && restartPosition > 1 && currentTaskNum < restartPosition) {
 					//For self determining projects we'll restart based on a task count, rather than the line number in the input file
-					info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
+					LOGGER.info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
 					continue;
 				} else if (restartFromTask != NOT_SET && currentTaskNum < restartFromTask) {
 					//For file driven batches, we'll use the r2 restartFromTask setting
-					info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartFromTask);
+					LOGGER.info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartFromTask);
 					continue;
 				} else if (task.size() > (taskSize + wiggleRoom)) {
-					warn (task + " contains " + task.size() + " concepts");
+					LOGGER.warn (task + " contains " + task.size() + " concepts");
 				}
 				
 				String xOfY =  (currentTaskNum) + " of " + batch.getTasks().size();
@@ -226,12 +232,12 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					}
 					task.setBranchPath(this.getProject().getBranchPath());
 					task.setPreExistingTask(true);
-					info ( (dryRun?"Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
+					LOGGER.info ( (dryRun?"Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
 					
 				} else {
 					//Create a task for this batch of concepts
 					createTask(task);
-					info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
+					LOGGER.info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
 					incrementSummaryInformation("Tasks created",1);
 				}
 				
@@ -254,21 +260,21 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					
 					Classification classification = null;
 					if (classifyTasks) {
-						info ("Classifying " + task);
+						LOGGER.info ("Classifying " + task);
 						classification = scaClient.classify(task.getKey());
-						debug(classification);
+						LOGGER.debug(classification.toString());
 					}
 					if (validateTasks) {
-						info ("Validating " + task);
+						LOGGER.info ("Validating " + task);
 						Status status = scaClient.validate(task.getKey());
-						debug(status);
+						LOGGER.debug(status.toString());
 					}
 					
 					if (classification != null) {
 						try {
 							tsClient.waitForCompletion(task.getBranchPath(), classification);
 						} catch (Exception e) {
-							error("Failed to wait for classification " + classification, e);
+							LOGGER.error("Failed to wait for classification " + classification, e);
 						}
 					}
 				}
@@ -278,7 +284,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 			
 			if (processingLimit > NOT_SET && currentTaskNum >= processingLimit) {
-				info ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
+				LOGGER.info ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
 				break;
 			}
 		}
@@ -291,7 +297,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected void createTask(Task task) throws TermServerScriptException, InterruptedException {
 		if (!dryRun) {
 			if (firstTaskCreated) {
-				debug ("Letting TS catch up - " + taskThrottle + "s nap.");
+				LOGGER.debug ("Letting TS catch up - " + taskThrottle + "s nap.");
 				Thread.sleep(taskThrottle * 1000);
 			} else {
 				firstTaskCreated = true;
@@ -300,14 +306,14 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			int taskCreationAttempts = 0; 
 			while (!taskCreated) {
 				try{
-					debug ("Creating jira task on project: " + project);
+					LOGGER.debug ("Creating jira task on project: " + project);
 					String taskDescription;
 					if (populateTaskDescription && task.size() <= 150) {
 						taskDescription = task.getDescriptionHTML();
 					} else {
 						taskDescription = DEFAULT_TASK_DESCRIPTION;
 						if (task.size() > 150 && populateTaskDescription) {
-							warn ("Task size " + task.size() + ", cannot populate Jira ticket description, even though populateTaskDescription flag set to true.");
+							LOGGER.warn ("Task size " + task.size() + ", cannot populate Jira ticket description, even though populateTaskDescription flag set to true.");
 							populateTaskDescription = false;
 						}
 					}
@@ -316,7 +322,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 						taskSummary = taskPrefix + taskSummary;
 					}
 					task.setKey(scaClient.createTask(project.getKey(), taskSummary, taskDescription));
-					debug ("Creating task branch in terminology server: " + task);
+					LOGGER.debug ("Creating task branch in terminology server: " + task);
 					task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
 					tsClient.setAuthorFlag(task.getBranchPath(), "batch-change", "true");
 					taskCreated = true;
@@ -329,14 +335,14 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					if (taskCreationAttempts >= 3) {
 						throw new TermServerScriptException("Maxed out failure attempts", e);
 					}
-					warn ("Task creation failed (" + e.getMessage() + "), retrying...");
+					LOGGER.warn ("Task creation failed (" + e.getMessage() + "), retrying...");
 				}
 			}
 		} else {
 			task.setKey(project + "-" + getNextDryRunNum());
 			//If we're running in debug mode, the task path will not exist so use the project instead
 			task.setBranchPath(project.getBranchPath());
-			info("Dry run task creation: " + task.getKey());
+			LOGGER.info("Dry run task creation: " + task.getKey());
 		}
 	}
 
@@ -359,7 +365,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			incrementSummaryInformation("Total changes made", changesMade);
 		} catch (ValidationFailure f) {
 			if (++validationCount > maxFailures) { 
-				warn ("Validation failures now " + validationCount);
+				LOGGER.warn ("Validation failures now " + validationCount);
 			}
 			report (f);
 		} catch (InterruptedException | TermServerScriptException e) {
@@ -383,11 +389,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				}
 				scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
 			} else if (populateEditPanel) {
-				debug("Unable to populate edit panel due to high task size: " + task.size());
+				LOGGER.debug("Unable to populate edit panel due to high task size: " + task.size());
 			}
 		} catch (Exception e) {
 			String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
-			warn (msg);
+			LOGGER.warn (msg);
 			report(task, null, Severity.LOW, ReportActionType.API_ERROR, msg);
 		}
 	}
@@ -408,7 +414,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		
 		if (taskAuthor != null && !taskAuthor.isEmpty()) {
 			String reviewMsg = task.getReviewer() == null? "" : " into review for " + task.getReviewer(); 
-			debug("Assigning " + task + " to " + taskAuthor + reviewMsg);
+			LOGGER.debug("Assigning " + task + " to " + taskAuthor + reviewMsg);
 		}
 		
 		scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, taskAuthor, task.getReviewer());
@@ -496,7 +502,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				isTaskSize = false;
 			} else if (isLimit) {
 				processingLimit = Integer.parseInt(thisArg);
-				info ("Limiting number of tasks being created to " + processingLimit);
+				LOGGER.info ("Limiting number of tasks being created to " + processingLimit);
 				isLimit = false;
 			}
 		}
@@ -523,13 +529,13 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			if (jobRun != null && jobRun.getParamValue(INPUT_FILE) != null) {
 				inputFiles.add(0,new File(jobRun.getParamValue(INPUT_FILE)));
 			} else {
-				warn("No valid batch import file detected in command line arguments, assuming self determining");
+				LOGGER.warn("No valid batch import file detected in command line arguments, assuming self determining");
 				selfDetermining = true;
 			}
 		}
 		
 		if (!selfDetermining) {
-			info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
+			LOGGER.info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
 		}
 	}
 	
@@ -576,7 +582,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 		}
 		
-		info ("\nBatching " + taskSize + " concepts per task");
+		LOGGER.info ("\nBatching " + taskSize + " concepts per task");
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) throws TermServerScriptException {
@@ -924,7 +930,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 		if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && 
 				!StringUtils.isCaseSensitive(newTerm)) {
-			//debug ("Check case sensitivity here");
+			//LOGGER.debug ("Check case sensitivity here");
 		}
 
 		if (reuseMe != null) {
@@ -1208,7 +1214,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
 		//Special handling for acetaminophen
 		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN) || trimmedFSN.toLowerCase().contains(PARACETAMOL)) {
-			info ("Doing ACETAMINOPHEN processing for " + concept);
+			LOGGER.info ("Doing ACETAMINOPHEN processing for " + concept);
 		} else {
 			for (Description pref : preferredTerms) {
 				if (!pref.getTerm().equals(trimmedFSN)) {
@@ -1249,7 +1255,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			mp.addBodyPart(attachment);
 			Transport.send(msg);
 		} catch (MessagingException | FileNotFoundException | UnsupportedEncodingException e) {
-			info ("Failed to send email " + e.getMessage());
+			LOGGER.info ("Failed to send email " + e.getMessage());
 		}
 	}
 
@@ -1304,7 +1310,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				t.addAfter(child, original);
 				incrementSummaryInformation("Total children repointed to cloned concepts");
 			} else {
-				warn ("Locally loaded ontology thought " + concept + " had stated child " + child + " but TS disagreed.");
+				LOGGER.warn ("Locally loaded ontology thought " + concept + " had stated child " + child + " but TS disagreed.");
 			}
 		}
 		
@@ -1781,7 +1787,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Group of larger size appears redundant - check!");
 						groupToRemove = originalGroup;
 					} else {
-						warn ("DEBUG HERE, Redundancy in " + c);
+						LOGGER.warn ("DEBUG HERE, Redundancy in " + c);
 					}
 					
 					if (groupToRemove != null && groupToRemove.size() > 0) {

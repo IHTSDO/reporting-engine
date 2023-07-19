@@ -25,8 +25,14 @@ Also, if the base has any disposition, this will be copied into the modified con
 Input file structure:  SourceId	SourceTerm	AttributeName	TargetId	TargetTerm
 UPDATE: CONCEPT	FSN	BASE
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FlattenHierarchy extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FlattenHierarchy.class);
+
 	Map<String,String> expectedTargetMap = new HashMap<>();
 	Concept isModificationOf;
 	Concept hasDisposition;
@@ -266,11 +272,11 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 				//Recursively work up and down and across hierarchy to group near concepts together
 				allocateConceptToTask(task, thisConcept, unallocated);
 				if (task.size() == 0) {
-					warn ("Failed to allocate " + thisConcept + " to a task, adding anyway.");
+					LOGGER.warn ("Failed to allocate " + thisConcept + " to a task, adding anyway.");
 					task.add(thisConcept);
 					unallocated.remove(thisConcept);
 				}
-				debug (task + " (" + task.size() + ")");
+				LOGGER.debug (task + " (" + task.size() + ")");
 				task = batch.addNewTask(author_reviewer);
 			}
 		}
@@ -278,7 +284,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
 		addSummaryInformation(CONCEPTS_TO_PROCESS, allConcepts);
 		for (Task t : batch.getTasks()) {
-			debug (t + " (" + t.size() + ")");
+			LOGGER.debug (t + " (" + t.size() + ")");
 		}
 		return batch;
 	}
@@ -296,7 +302,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 			task.addAll(asComponents(siblings));
 			unallocated.removeAll(siblings);
 		} else {
-			warn ("Unable to add " + siblings.size() + " siblings of " + thisConcept + " to task " + task);
+			LOGGER.warn ("Unable to add " + siblings.size() + " siblings of " + thisConcept + " to task " + task);
 		}
 		
 		//Work down the hierarchy from the siblings to try to include as many as possible
@@ -311,7 +317,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 					task.addAll(asComponents(descendants));
 					unallocated.removeAll(descendants);
 					} else {
-						warn ("Unable to add " + descendants.size() + " descendants of " + sibling + " to task " + task);
+						LOGGER.warn ("Unable to add " + descendants.size() + " descendants of " + sibling + " to task " + task);
 					}
 				}
 			}
@@ -336,7 +342,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 						task.addAll(asComponents(ancestors));
 						unallocated.removeAll(ancestors);
 					} else {
-						warn ("Unable to add " + ancestors.size() + " ancestors of " + sibling + " to task " + task);
+						LOGGER.warn ("Unable to add " + ancestors.size() + " ancestors of " + sibling + " to task " + task);
 					}
 				}
 			}
@@ -366,9 +372,9 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 				if (sibling.getFsn().split(" ")[0].equals(newTarget.getFsn().split(" ")[0])) {
 					allConcepts.add(sibling);
 					expectedTargetMap.put(sibling.getConceptId(), newTargetSctid);
-					warn ("Including " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget);
+					LOGGER.warn ("Including " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget);
 				} else {
-					warn ("Skipping " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget + " due to name mismatch.");
+					LOGGER.warn ("Skipping " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget + " due to name mismatch.");
 				}
 			}
 		}

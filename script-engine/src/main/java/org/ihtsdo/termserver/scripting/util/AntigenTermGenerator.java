@@ -10,8 +10,14 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AntigenTermGenerator extends TermGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AntigenTermGenerator.class);
+
 	List<String> nonRedundantTerms; 
 	
 	public AntigenTermGenerator (TermServerScript parent) {

@@ -13,8 +13,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * SUBST-287 Ensure case sensitivity correct: organism in term - antibody and antigen (et al.)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class OrganismsInSubstances extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(OrganismsInSubstances.class);
+
 	Concept subHierarchy = ROOT_CONCEPT;
 	Map<String, Description> organismNames;
 	Set<Concept> substancesUsedInProducts;
@@ -30,7 +36,7 @@ public class OrganismsInSubstances extends TermServerReport {
 			report.postInit();
 			report.reportOrganismsInSubstances();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -53,7 +59,7 @@ public class OrganismsInSubstances extends TermServerReport {
 		skipOrganisms.add("asp");
 		skipOrganisms.add("ani");
 		
-		info("Mapping organism names");
+		LOGGER.info("Mapping organism names");
 		organismNames = new HashMap<>();
 		for (Concept organism : ORGANISM.getDescendents(NOT_SET)) {
 			for (Description d : organism.getDescriptions(ActiveState.ACTIVE)) {
@@ -75,7 +81,7 @@ public class OrganismsInSubstances extends TermServerReport {
 	}
 
 	private void reportOrganismsInSubstances() throws TermServerScriptException {
-		info ("Looking for organisms used in substances used in products");
+		LOGGER.info ("Looking for organisms used in substances used in products");
 		
 		for (Concept substance : substancesUsedInProducts) {
 			//Check all preferred terms

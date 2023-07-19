@@ -18,8 +18,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NormaliseConcepts extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
+
 	Concept ppp;
 	Boolean useStatedECL = true;
 	//private String ecl = "<< 66191007 |Transient arthropathy (disorder)|";
@@ -49,7 +55,7 @@ public class NormaliseConcepts extends BatchFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
+			LOGGER.info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
@@ -187,7 +193,7 @@ public class NormaliseConcepts extends BatchFix {
 		CharacteristicType charType = useStatedECL ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
 		for (Concept concept : findConcepts(ecl, true, charType)) {
 			/*if (concept.getId().equals("428979007")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			//Make changes to a clone of the concept so we don't affect our local copy
 			Concept clone = concept.cloneWithIds();

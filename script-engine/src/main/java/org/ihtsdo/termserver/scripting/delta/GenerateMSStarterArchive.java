@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  *Created for Belgium.  Namespace 1000172
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GenerateMSStarterArchive extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GenerateMSStarterArchive.class);
+
 	KnownExtensions thisExtension = KnownExtensions.BELGIUM;
 	enum KnownExtensions { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();

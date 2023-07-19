@@ -2,8 +2,14 @@ package org.ihtsdo.termserver.scripting.reports.loinc;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincDetail {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincDetail.class);
+
 	public static String COMPONENT_PN = "COMPONENT_PN";
 	public static String COMPONENTCORE_PN = "COMPONENTCORE_PN";
 	public static String COMPSUBPART1_PN = "COMPSUBPART1_PN";

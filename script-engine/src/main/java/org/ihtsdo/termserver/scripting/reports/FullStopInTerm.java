@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * MAINT-224 Check for full stop in descriptions other than text definitions
  * Allow for numbers and abbreviations
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FullStopInTerm extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FullStopInTerm.class);
+
 	String[] knownAbbrevs = new String[] { "ser","ss","subsp",
 								"f","E", "var", "St"};
 	boolean reportConceptOnceOnly = true;
@@ -28,7 +34,7 @@ public class FullStopInTerm extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportDescriptionContainsX();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

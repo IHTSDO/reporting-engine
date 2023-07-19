@@ -8,8 +8,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AncestorsCache implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(AncestorsCache.class);
+
 	private static AncestorsCache singleton = null;
 	private static AncestorsCache singletonStated = null;
 	

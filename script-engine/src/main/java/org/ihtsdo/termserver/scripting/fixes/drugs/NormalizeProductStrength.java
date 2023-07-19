@@ -24,8 +24,14 @@ Use milligram if value is <1000; if > then convert to gram
 
 Or if value is < 1 switch to the next smaller unit and multiple the value by 1000.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NormalizeProductStrength extends DrugBatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeProductStrength.class);
+
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected NormalizeProductStrength(BatchFix clone) {
@@ -146,7 +152,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements ScriptCons
 		}
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		setQuiet(false);
-		info (processMe.size() + " concepts to process");
+		LOGGER.info (processMe.size() + " concepts to process");
 		return asComponents(processMe);
 	}
 	

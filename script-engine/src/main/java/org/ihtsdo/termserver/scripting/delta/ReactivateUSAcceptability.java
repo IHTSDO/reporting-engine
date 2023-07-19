@@ -9,11 +9,16 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Class to reactivate langrefset entries when they have been inactivated after the international edition has activated ones for the same concept
  */
 @Deprecated
 public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReactivateUSAcceptability.class);
 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 	
@@ -34,7 +39,7 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptC
 	}
 
 	private void process() throws TermServerScriptException {
-		info ("Processing concepts to find issues with US acceptability.");
+		LOGGER.info ("Processing concepts to find issues with US acceptability.");
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			fixFsnAcceptability(concept);
 			if (concept.isModified()) {

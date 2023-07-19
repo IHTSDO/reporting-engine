@@ -14,8 +14,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivatedConcepts extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivatedConcepts.class);
+
 	static final String RELEASE = "Release Package";
 	static final String SEMTAG_FILTER_PARAM = "Filter for SemTag";
 	private String prevRelease;
@@ -104,11 +110,11 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		prevRelease = getJobRun().getParamValue(RELEASE);
 		if (!StringUtils.isEmpty(prevRelease)) {
-			info ("Loading previously published package: " + prevRelease);
+			LOGGER.info ("Loading previously published package: " + prevRelease);
 			getProject().setKey(prevRelease);
 			super.loadProjectSnapshot(fsnOnly);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			info ("Detected this effective time as " + thisEffectiveTime);
+			LOGGER.info ("Detected this effective time as " + thisEffectiveTime);
 		} else {
 			super.loadProjectSnapshot(fsnOnly);
 		}

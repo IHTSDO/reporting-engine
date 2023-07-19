@@ -32,8 +32,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * See HistoricStatsAnalyzer for analysis.
  * NB Used by Summary Component Stats as well as HistoricStatsAnalyzer
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HistoricStatsGenerator.class);
+
 	private static int MAX_HIERARCHY_DEPTH = 150;
 	
 	private boolean splitOutDisease = false;  //If you change this to true, don't check it in! See ISRS-1392.
@@ -77,13 +83,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		try {
 			TransitiveClosure tc = gl.generateTransativeClosure();
 			
-			info("Creating map of semantic tag hierarchies");
+			LOGGER.info("Creating map of semantic tag hierarchies");
 			populateSemTagHierarchyMap(tc);
 			
 			//Create the historic-data directory if required
 			File dataDirFile = new File(dataDir);
 			if (!dataDirFile.exists()) {
-				info("Creating directory to store historic data analysis: " + dataDir);
+				LOGGER.info("Creating directory to store historic data analysis: " + dataDir);
 				boolean success = dataDirFile.mkdir();
 				if (!success) {
 					throw new TermServerScriptException("Failed to create " + dataDirFile.getAbsolutePath());
@@ -91,18 +97,18 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 			
 			File f = new File(dataDir + project.getKey() + ".tsv");
-			info("Creating dataFile: " + f.getAbsolutePath());
+			LOGGER.info("Creating dataFile: " + f.getAbsolutePath());
 			Files.createDirectories(f.toPath().getParent());
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
-			debug ("Determining all IPs");
+			LOGGER.debug ("Determining all IPs");
 			Set<Concept> IPs = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
 		
-			debug ("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug ("Outputting Data to " + f.getAbsolutePath());
 			for (Concept c : gl.getAllConcepts()) {
 				/*if (c.getId().equals("16711071000119107")) {
-					debug("here");
+					LOGGER.debug("here");
 				}*/
 				String active = c.isActive() ? "Y" : "N";
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
@@ -397,7 +403,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		String stackStr = stack.stream()
 				.map(c -> c.getId())
 				.collect(Collectors.joining(", "));
-		error("Recursive loop encountered in hierarchy of: " + stackStr, null);
+		LOGGER.error("Recursive loop encountered in hierarchy of: " + stackStr, (Exception)null);
 	}
 
 	private Deque<Concept> getParentsByISARelationships(Concept concept) throws TermServerScriptException {

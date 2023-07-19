@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * DRUGS-289
  * Report to ensure that any given ingredient across all products is always represented using the same units.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class UnitConsistency extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(UnitConsistency.class);
+
 	//For each ingredient, for each unit, list the products that use it.
 	Map<Concept, Map<Concept, List<Concept>>> ingredientUnitExamples = new HashMap<>();
 	Concept[] ingredient_types = new Concept[] { HAS_ACTIVE_INGRED, HAS_PRECISE_INGRED };
@@ -32,7 +38,7 @@ public class UnitConsistency extends TermServerReport {
 			report.findAllIngredientUnits();
 			report.reportInconsistentUnits();
 		} catch (Exception e) {
-			info("Failed to produce UnitConsistency Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce UnitConsistency Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -40,7 +46,7 @@ public class UnitConsistency extends TermServerReport {
 	}
 
 	private void findAllIngredientUnits() throws TermServerScriptException {
-		info("Finding all ingredient units");
+		LOGGER.info("Finding all ingredient units");
 		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
 			//We're only interested in clinical drugs if we're talking about units
 			SnomedUtils.populateConceptType(c);
@@ -54,7 +60,7 @@ public class UnitConsistency extends TermServerReport {
 				//If we don't find an ingredient, we might have got confusion with a relationship moving group and inactivating.
 				//Load the concept in this case and retry
 				if (i == null && g.getGroupId() > 0) {
-					warn ("Possible inactivation confusion in " + c + " loading from termserver");
+					LOGGER.warn ("Possible inactivation confusion in " + c + " loading from termserver");
 					c = loadConcept(c, project.getBranchPath());
 					i = getTarget (c, ingredient_types, g.getGroupId(), cType);
 				}
@@ -64,7 +70,7 @@ public class UnitConsistency extends TermServerReport {
 					Concept unit = getTarget (c, unit_types, g.getGroupId(), cType);
 					
 					if (unit == null) {
-						warn (c + " has no unit specified for ingredient " + i + " in group " + g.getGroupId());
+						LOGGER.warn (c + " has no unit specified for ingredient " + i + " in group " + g.getGroupId());
 					} else {
 						//Have we seen this ingredient before?
 						Map<Concept, List<Concept>> unitExamples = ingredientUnitExamples.get(i);

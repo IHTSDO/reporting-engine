@@ -5,16 +5,22 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.springframework.util.StringUtils;
 
 /*
  * INFRA-4196 When an axiom has been inactivated in this release, revert it to its
  * previous state from the previous release
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RevertInactiveAxioms.class);
+
 	Map<String, RefsetMember> changeMap = new HashMap<>();
 
 	protected RevertInactiveAxioms(BatchFix clone) {
@@ -38,7 +44,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 	@Override
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
-		debug ("Processing " + c);
+		LOGGER.debug ("Processing " + c);
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			if (!a.isActive() && StringUtils.isEmpty(a.getEffectiveTime())) {
 				RefsetMember currentMember = loadRefsetMember(a.getId());
@@ -78,7 +84,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		info ("Checking " + toCheck + " axioms");
+		LOGGER.info ("Checking " + toCheck + " axioms");
 		
 		int checked = 0;
 		for (Concept c : gl.getAllConcepts()) {
@@ -92,7 +98,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 					}
 					String previousAxiom = prevRefsetMember.getField("owlExpression");
 					if (!previousAxiom.equals(a.getOwlExpression())) {
-						debug ("Detected inactivated + modified axiom for " + c +  ": " + a.getId());
+						LOGGER.debug ("Detected inactivated + modified axiom for " + c +  ": " + a.getId());
 						allAffected.add(c);
 						if (changeMap.containsKey(a.getId())) {
 							throw new TermServerScriptException("Duplicate UUID: " + a.getId());
@@ -100,12 +106,12 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 						changeMap.put(a.getId(), prevRefsetMember);
 					}
 					if (++checked % 100 == 0) {
-						debug ("Completed " + checked + " / " + toCheck);
+						LOGGER.debug ("Completed " + checked + " / " + toCheck);
 					}
 				}
 			}
 		}
-		info (allAffected.size() + " concepts affected");
+		LOGGER.info (allAffected.size() + " concepts affected");
 		return new ArrayList<Component>(allAffected);
 	}
 }

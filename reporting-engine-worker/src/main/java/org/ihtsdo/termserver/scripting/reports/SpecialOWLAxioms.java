@@ -79,7 +79,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 			}
 			
 			/*if (c.getId().equals("1148749005")) {
-				debug("Here");
+				LOGGER.debug("Here");
 			}*/
 			String defnStat = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			

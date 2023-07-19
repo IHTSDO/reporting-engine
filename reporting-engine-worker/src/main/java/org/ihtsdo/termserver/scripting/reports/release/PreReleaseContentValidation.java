@@ -19,11 +19,17 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * FRI-254 A number of what were originally SQL queries now converted into a user-runnable
  * report
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class PreReleaseContentValidation extends HistoricDataUser implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidation.class);
+
 	private List<Concept> allActiveConceptsSorted;
 	private List<Concept> allInactiveConceptsSorted;
-	
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 
@@ -61,12 +67,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
 			run.setProject(run.getParamValue(THIS_RELEASE));
 		}
-		
+
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
 					.collect(Collectors.toList());
 		}
-		
+
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 	}
@@ -77,70 +83,70 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		if (getJobRun() != null) {
 			getJobRun().setProject(origProject);
 		}
-		
+
 		String[] columnHeadings = new String[] {"Summary Item, Count",
-												"SCTID, FSN, SemTag, New Hierarchy, Old Hierarchy", 
-												"SCTID, FSN, SemTag, Old FSN, Difference",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag, Defn Status Change",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag, Text Definition",
-												"SCTID, FSN, SemTag"};
+				"SCTID, FSN, SemTag, New Hierarchy, Old Hierarchy",
+				"SCTID, FSN, SemTag, Old FSN, Difference",
+				"SCTID, FSN, SemTag",
+				"SCTID, FSN, SemTag",
+				"SCTID, FSN, SemTag, Defn Status Change",
+				"SCTID, FSN, SemTag",
+				"SCTID, FSN, SemTag, Text Definition",
+				"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Summary Counts",
-											"Hierarchy Switches", 
-											"FSN Changes",
-											"Inactivated",
-											"Reactivated",
-											"DefnStatus",
-											"New FSNs",
-											"Text Defn",
-											"ICD-O"};
+				"Hierarchy Switches",
+				"FSN Changes",
+				"Inactivated",
+				"Reactivated",
+				"DefnStatus",
+				"New FSNs",
+				"Text Defn",
+				"ICD-O"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
 	public void runJob() throws TermServerScriptException {
-		
+
 		allActiveConceptsSorted = gl.getAllConcepts().stream()
 				.filter(c -> c.isActive())
 				.filter(c -> inScope(c))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
-		
+
 		allInactiveConceptsSorted =gl.getAllConcepts().stream()
 				.filter(c -> !c.isActive())
 				.filter(c -> inScope(c))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
-		
-		info ("Loading Previous Data");
+
+		LOGGER.info ("Loading Previous Data");
 		loadData(prevRelease);
-		
-		info("Reporting Top Level Hierarchy Switch");
+
+		LOGGER.info("Reporting Top Level Hierarchy Switch");
 		topLevelHierarchySwitch();
-		
-		info("Checking for fsn changes");
+
+		LOGGER.info("Checking for fsn changes");
 		checkForFsnChange();
-		
-		info("Checking for inactivated concepts");
+
+		LOGGER.info("Checking for inactivated concepts");
 		checkForInactivatedConcepts();
-		
-		info("Checking for reactivated concepts");
+
+		LOGGER.info("Checking for reactivated concepts");
 		checkForReactivatedConcepts();
-		
-		info("Checking for Definition Status Change");
+
+		LOGGER.info("Checking for Definition Status Change");
 		checkForDefinitionStatusChange();
-		
-		info("Checking for New FSNs");
+
+		LOGGER.info("Checking for New FSNs");
 		checkForNewFSNs();
-		
-		info("Check for New / Changed Text Definitions");
+
+		LOGGER.info("Check for New / Changed Text Definitions");
 		checkForUpsertedTextDefinitions();
-		
-		info("Check for ICD-O changes");
+
+		LOGGER.info("Check for ICD-O changes");
 		checkForICDOChanges();
-		
-		info("Compiling Summary Counts");
+
+		LOGGER.info("Compiling Summary Counts");
 		compileSummaryCounts();
 	}
 
@@ -163,7 +169,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			}
 		}
 	}
-	
+
 	private void checkForFsnChange() throws TermServerScriptException {
 		String summaryItem = "FSN Changes";
 		initialiseSummaryInformation(summaryItem);
@@ -182,7 +188,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			}
 		}
 	}
-	
+
 	private void checkForInactivatedConcepts() throws TermServerScriptException {
 		String summaryItem = "Inactivated Concepts";
 		initialiseSummaryInformation(summaryItem);
@@ -220,13 +226,13 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			}
 		}
 	}
-	
+
 	private void checkForDefinitionStatusChange() throws TermServerScriptException {
 		String summaryItem1 = "Definition Status Change SD->P";
 		initialiseSummaryInformation(summaryItem1);
 		String summaryItem2 = "Definition Status Change P->SD";
 		initialiseSummaryInformation(summaryItem2);
-		
+
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
@@ -243,7 +249,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			}
 		}
 	}
-	
+
 	private void checkForNewFSNs() throws TermServerScriptException {
 		String summaryItem = "New FSNs";
 		initialiseSummaryInformation(summaryItem);
@@ -261,7 +267,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			}
 		}
 	}
-	
+
 	private void checkForUpsertedTextDefinitions() throws TermServerScriptException {
 		String summaryItem = "Text Definitions new / changed";
 		initialiseSummaryInformation(summaryItem);
@@ -270,12 +276,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				for (Description textDefn : c.getDescriptions(null, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE)) {
 					//Is this text definition in the delta?  Check null or current effective time
 					if (StringUtils.isEmpty(textDefn.getEffectiveTime()) ||
-						(thisEffectiveTime != null && textDefn.getEffectiveTime().equals(thisEffectiveTime))) {
+							(thisEffectiveTime != null && textDefn.getEffectiveTime().equals(thisEffectiveTime))) {
 						report (OCTONARY_REPORT, c, textDefn);
 						incrementSummaryInformation(summaryItem);
 					}
 				}
-				
+
 			} catch (Exception e) {
 				report (OCTONARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
@@ -294,7 +300,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				incrementSummaryInformation(projectKey);
 			}
 		}
-		
+
 		msg = "Active concepts with active inactivation reason";
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {

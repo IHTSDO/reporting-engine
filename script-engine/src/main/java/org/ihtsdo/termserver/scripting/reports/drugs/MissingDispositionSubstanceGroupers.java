@@ -16,8 +16,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Report to find dispositions that are not used by a substance disposition groupers
  * Identified by having "mechanism of action" in term.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MissingDispositionSubstanceGroupers extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingDispositionSubstanceGroupers.class);
+
 	List<Component> concepts;
 	Concept attributeType;
 	Map<Concept, Set<Concept>> dispositionSubstanceMap;
@@ -32,7 +38,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 			report.postLoadInit();
 			report.runMissingDispositionsReport();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -55,16 +61,16 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 				
 				//Is this a grouper concept?
 				if (c.getFsn().contains("mechanism of action")) {
-					//debug ("Adding grouper " + c + " to disposition " + disposition);
+					//LOGGER.debug ("Adding grouper " + c + " to disposition " + disposition);
 					if (dispositionGrouperMap.containsKey(disposition)) {
 						//Ignore the one with multiple dispositions
 						if (c.getFsn().contains(" and ")) {
-							warn ("Ignoring multi-disposition substance " + c + " in favour of " + dispositionGrouperMap.get(disposition));
+							LOGGER.warn ("Ignoring multi-disposition substance " + c + " in favour of " + dispositionGrouperMap.get(disposition));
 						} else if (dispositionGrouperMap.get(disposition).getFsn().contains(" and ")) {
-							warn ("Ignoring multi-disposition substance " + dispositionGrouperMap.get(disposition) + " in favour of " + c);
+							LOGGER.warn ("Ignoring multi-disposition substance " + dispositionGrouperMap.get(disposition) + " in favour of " + c);
 							dispositionGrouperMap.put(disposition, c); //Replace existing mapping
 						} else {
-						 warn (disposition + " has already been given grouper: " + dispositionGrouperMap.get(disposition) + " now also " + c);
+						 LOGGER.warn (disposition + " has already been given grouper: " + dispositionGrouperMap.get(disposition) + " now also " + c);
 						}
 					} else {
 						dispositionGrouperMap.put(disposition, c);
@@ -89,7 +95,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 				incrementSummaryInformation("Missing groupers reported");
 				report (disposition, usedByStr);
 			} else {
-				debug (disposition + " -> " + dispositionGrouperMap.get(disposition));
+				LOGGER.debug (disposition + " -> " + dispositionGrouperMap.get(disposition));
 			}
 			incrementSummaryInformation("Dispositions checked");
 		}

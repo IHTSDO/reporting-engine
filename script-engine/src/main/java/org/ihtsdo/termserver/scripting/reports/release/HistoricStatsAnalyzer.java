@@ -26,8 +26,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * How many SD concepts have become P, thereby becoming IP
  * How many brand new immediately IPs have been added
   * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HistoricStatsAnalyzer extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HistoricStatsAnalyzer.class);
+
 	//String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
 	//											"20190731", "MAIN" };
 	private static String packageTemplate = "SnomedCT_InternationalRF2_PRODUCTION_#DATE#T120000Z.zip";
@@ -78,9 +84,9 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 			if (prevData != null) {
 				for (String hierarchyStr : thisData.keySet()) {
 					if (!StringUtils.isNumeric(hierarchyStr)) {
-						debug("here");
+						LOGGER.debug("here");
 					}
-					info ("Analysing data from " + releasesToAnalyse[i] + " hierarchy " + gl.getConcept(hierarchyStr));
+					LOGGER.info ("Analysing data from " + releasesToAnalyse[i] + " hierarchy " + gl.getConcept(hierarchyStr));
 					runAnalysis((i - 1) * 2, hierarchyStr);
 					runPercAnalysis(((i -1) * 2) + 1, hierarchyStr);
 				}
@@ -102,7 +108,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 					throw new TermServerScriptException("Unable to load historic data: " + dataFile + " nor " + release + ".tsv");
 				}
 			}
-			info ("Loading " + dataFile);
+			LOGGER.info ("Loading " + dataFile);
 			BufferedReader br = new BufferedReader(new FileReader(dataFile));
 			int lineNumber = 0;
 			String line = "";
@@ -170,33 +176,33 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		}
 
 		//1. What's our active start count?
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream().filter(d -> d.isActive).count();
 		
 		//2. Concepts added
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		Set<Datum> newConcepts = new HashSet<>(thisHierarchy.values());
 		Set<Datum> existingConcepts = new HashSet<>(prevHierarchy.values());
-		debug ("data cloned");
+		LOGGER.debug ("data cloned");
 		newConcepts.removeAll(existingConcepts);
 		results[column++] = (long) newConcepts.size();
 		
 		//3. Concepts Inactivated.  Find concepts in prev that are active, where this concept
 		//is not active
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isActive && !getConcept(d.conceptId, hierarchyStr, thisData).isActive)
 				.count();
 		
 		//4. P made SD.  Find concepts in prev release that are not SD, that are SD in this release
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isSD && getConcept(d.conceptId, hierarchyStr, thisData).isSD)
 				.count();
 		
 		//5. SD made P.  Find concepts in prev release that are  SD, that are not SD in this release
 		//And also the the concept is still active
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isSD && 
 						!getConcept(d.conceptId, hierarchyStr, thisData).isSD && 
@@ -204,32 +210,32 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				.count();
 						
 		//6. SD Inactivated.  Find concepts in prev release that are  SD, that are now inactive
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isSD && !getConcept(d.conceptId, hierarchyStr, thisData).isActive)
 				.count();
 		
 		//7. SD Added
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = newConcepts.stream().filter(d -> d.isSD).count();
 		
 		//8. Check alignement
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = "Check";
 		
 		//9. How many IPs do we have to start with?
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream().filter(d -> d.isIP).count();
 		
 		//10. IPs removed total
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP)
 				.count();
 		
 		//11. IPs Added total. All current IPs that either did not exist at all, or 
 		//were not IPs
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = thisHierarchy.values().stream()
 				.filter(d -> d.isIP && 
 						( getConcept(d.conceptId, hierarchyStr, prevData) == null ||
@@ -237,21 +243,21 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				.count();
 		
 		//12. How many IPs do we finish up with?
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = thisHierarchy.values().stream().filter(d -> d.isIP).count();
 		
 		//13. IPs brand new.  Use our collection of new concepts to count these
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = newConcepts.stream().filter(d -> d.isIP).count();
 		
 		//14. IPs inactivated.  IPs in the prev release that are now inactive
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isActive)
 				.count();
 		
 		//15. IPs made SD
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP 
 						&& getConcept(d.conceptId, hierarchyStr, thisData).isSD)
@@ -259,7 +265,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		
 		//16. IPs No Longer - lost SD ancestor. So still active, but no SD ancestor
 		//Also check that it's still primitive, else it will have been counted elsewhere
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
 						&& !getConcept(d.conceptId, hierarchyStr, thisData).hasSdAncestor
@@ -269,7 +275,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		
 		//17. IPs No Longer - lost SD descendant
 		//Also check that it's still primitive, else it will have been counted elsewhere
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
 						&& !getConcept(d.conceptId, hierarchyStr, thisData).hasSdDescendant
@@ -279,7 +285,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		
 		//18. IPs No Longer - lost either
 		//Also check that it's still primitive, else it will have been counted elsewhere
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isIP && !getConcept(d.conceptId, hierarchyStr, thisData).isIP
 						&& (!getConcept(d.conceptId, hierarchyStr, thisData).hasSdAncestor
@@ -289,14 +295,14 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				.count();
 		
 		//19. Check alignement
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = "Check";
 		
 		//For these next few, filter out the cases where it was previously not an IP
 		//because it was SD.  We'll count them at the end.
 		
 		//20. New IPs gained SD descendant. So without SD descendant and is now IP 
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isIP && !d.isSD
 						&& !d.hasSdDescendant 
@@ -304,7 +310,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				.count();
 		
 		//21. New IPs gained SD ancestor, So without SD ancestor and is now IP
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isIP  && !d.isSD
 						&& !d.hasSdAncestor
@@ -312,7 +318,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				.count();
 		
 		//22. New IPs gained SD either
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> !d.isIP && !d.isSD 
 						&& (!d.hasSdAncestor || !d.hasSdDescendant) 
@@ -320,7 +326,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				.count();
 		
 		//23. New IPs switched from SD to P
-		debug ("Item " + (column + 1));
+		LOGGER.debug ("Item " + (column + 1));
 		results[column++] = prevHierarchy.values().stream()
 				.filter(d -> d.isSD &&
 						getConcept(d.conceptId, hierarchyStr, thisData).isIP
@@ -333,7 +339,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		} else {
 			hierarchy = new Concept(hierarchyStr);
 		}
-		debug ("Outputting data");
+		LOGGER.debug ("Outputting data");
 		report (tabIdx, hierarchy, results);
 	}
 	
@@ -379,7 +385,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		} else {
 			hierarchy = new Concept(hierarchyStr);
 		}
-		debug ("Outputting data");
+		LOGGER.debug ("Outputting data");
 		report (tabIdx, hierarchy, results);
 	}
 
@@ -412,7 +418,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 					//that's fine, it's been reactivated
 					if (datum != null && !hierarchyStr.contains("Unknown")) {
 						try {
-							warn (conceptId + " expected in " + gl.getConcept(hierarchyStr) + " but found in " + gl.getConcept(datum.hierarchy));
+							LOGGER.warn (conceptId + " expected in " + gl.getConcept(hierarchyStr) + " but found in " + gl.getConcept(datum.hierarchy));
 						} catch (TermServerScriptException e) {
 							e.printStackTrace();
 						}
@@ -421,7 +427,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 				}
 			}
 			if (data != prevData) {
-				warn ("Concept " + conceptId + " not found in any subHierarchy");
+				LOGGER.warn ("Concept " + conceptId + " not found in any subHierarchy");
 			}
 		}
 		return null;

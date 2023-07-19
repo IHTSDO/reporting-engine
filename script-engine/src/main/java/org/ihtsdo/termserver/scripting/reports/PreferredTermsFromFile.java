@@ -19,8 +19,14 @@ import com.google.common.io.Files;
 /**
  * Reports all concepts that contains an international term without the national equivalent, or vis versa.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class PreferredTermsFromFile extends TermServerScript{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(PreferredTermsFromFile.class);
+
 	String matchText = "+";
 	List<Concept> conceptFilter;
 	
@@ -32,7 +38,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportPreferredTerms();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -71,7 +77,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		}
 		
 		if (!fileLoaded) {
-			info ("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
+			LOGGER.info ("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 	}
@@ -80,7 +86,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		try {
 			File nationalTerms = new File(fileName);
 			List<String> lines = Files.readLines(nationalTerms, Charsets.UTF_8);
-			info ("Loading selected Concepts from " + fileName);
+			LOGGER.info ("Loading selected Concepts from " + fileName);
 			conceptFilter = new ArrayList<Concept>();
 			for (String line : lines) {
 				conceptFilter.add(gl.getConcept(line));

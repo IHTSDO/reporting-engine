@@ -13,300 +13,307 @@ import java.util.*;
 /**
  * Produce Delta archive containing components reverted to their parent version.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RevertComponentToParentVersion extends DeltaGenerator {
-    /**
-     * State of the component on this branch will be used to determine whether the component should be restored.
-     */
-    private static final String BRANCH_PARENT = ""; // Give me a value, i.e. MAIN/SNOMEDCT-NO
 
-    /**
-     * State of the component on this branch will be used to determine whether the component should be restored.
-     */
-    private static final String BRANCH_CHILD = ""; // Give me a value, i.e. MAIN/SNOMEDCT-NO/NO8
+	private static Logger LOGGER = LoggerFactory.getLogger(RevertComponentToParentVersion.class);
 
-    /**
-     * Identifiers of ReferenceSetMembers that may be reverted.
-     */
-    private static final List<String> REVERT_MEMBERS = List.of(
-            // Give me a value, i.e. 97678dc2-560b-5dc3-ac2d-e5b6e5c76a6b
-    );
+	/*
+	 * State of the component on this branch will be used to determine whether the component should be restored.
+	 */
+	private static final String BRANCH_PARENT = ""; // Give me a value, i.e. MAIN/SNOMEDCT-NO
 
-    /**
-     * Identifiers of Descriptions that may be reverted.
-     */
-    private static final List<String> REVERT_DESCRIPTIONS = List.of(
-            // Give me a value, i.e. 3502010019
-    );
-    
-    private static boolean forceOutput = false;
+	/**
+	 * State of the component on this branch will be used to determine whether the component should be restored.
+	 */
+	private static final String BRANCH_CHILD = ""; // Give me a value, i.e. MAIN/SNOMEDCT-NO/NO8
 
-    public static void main(String[] args) throws Exception {
-        RevertComponentToParentVersion app = new RevertComponentToParentVersion();
-        try {
-            String now = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            app.getArchiveManager().setPopulateReleasedFlag(true);
-            app.newIdsRequired = false;
-            app.packageDir = "output" + File.separator + "Delta_" + now + File.separator;
-            app.init(args);
-            app.postInit();
-            app.validateScriptArguments();
-            app.process();
-            app.flushFiles(false);
-            SnomedUtils.createArchive(new File(app.outputDirName));
-        } finally {
-            app.finish();
-        }
-    }
+	/**
+	 * Identifiers of ReferenceSetMembers that may be reverted.
+	 */
+	private static final List<String> REVERT_MEMBERS = List.of(
+			// Give me a value, i.e. 97678dc2-560b-5dc3-ac2d-e5b6e5c76a6b
+	);
 
-    public void postInit() throws TermServerScriptException {
-        String[] columnHeadings = new String[]{
-                "Id, Type",
-                "Id, Type, Revert Reason",
-                "Id, Type, Ignored Reason"
-        };
+	/**
+	 * Identifiers of Descriptions that may be reverted.
+	 */
+	private static final List<String> REVERT_DESCRIPTIONS = List.of(
+			// Give me a value, i.e. 3502010019
+	);
+	
+	private static boolean forceOutput = false;
 
-        String[] tabNames = new String[]{
-                "Components Requested",
-                "Components Reverted",
-                "Components Ignored"
-        };
+	public static void main(String[] args) throws Exception {
+		RevertComponentToParentVersion app = new RevertComponentToParentVersion();
+		try {
+			String now = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+			app.getArchiveManager().setPopulateReleasedFlag(true);
+			app.newIdsRequired = false;
+			app.packageDir = "output" + File.separator + "Delta_" + now + File.separator;
+			app.init(args);
+			app.postInit();
+			app.validateScriptArguments();
+			app.process();
+			app.flushFiles(false);
+			SnomedUtils.createArchive(new File(app.outputDirName));
+		} finally {
+			app.finish();
+		}
+	}
 
-        super.postInit(tabNames, columnHeadings, false);
-    }
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[]{
+				"Id, Type",
+				"Id, Type, Revert Reason",
+				"Id, Type, Ignored Reason"
+		};
 
-    private void validateScriptArguments() throws TermServerScriptException {
-        if (Objects.equals(BRANCH_PARENT, "")) {
-            throw new TermServerScriptException("BRANCH_PARENT required.");
-        }
+		String[] tabNames = new String[]{
+				"Components Requested",
+				"Components Reverted",
+				"Components Ignored"
+		};
 
-        if (Objects.equals(BRANCH_CHILD, "")) {
-            throw new TermServerScriptException("BRANCH_CHILD required.");
-        }
+		super.postInit(tabNames, columnHeadings, false);
+	}
 
-        if (Objects.equals(BRANCH_PARENT, BRANCH_CHILD)) {
-            throw new TermServerScriptException("BRANCH_PARENT and BRANCH_CHILD have the same value.");
-        }
-    }
+	private void validateScriptArguments() throws TermServerScriptException {
+		if (Objects.equals(BRANCH_PARENT, "")) {
+			throw new TermServerScriptException("BRANCH_PARENT required.");
+		}
 
-    private void process() throws Exception {
-        // Verify branches exist
-        Branch parentBranch = getBranchOrThrow(BRANCH_PARENT);
-        Branch childBranch = getBranchOrThrow(BRANCH_CHILD);
+		if (Objects.equals(BRANCH_CHILD, "")) {
+			throw new TermServerScriptException("BRANCH_CHILD required.");
+		}
 
-        processMembers(parentBranch, childBranch);
-        processDescriptions(parentBranch, childBranch);
-    }
+		if (Objects.equals(BRANCH_PARENT, BRANCH_CHILD)) {
+			throw new TermServerScriptException("BRANCH_PARENT and BRANCH_CHILD have the same value.");
+		}
+	}
 
-    private void processMembers(Branch parentBranch, Branch childBranch) throws Exception {
-        if (REVERT_MEMBERS.isEmpty()) {
-            return;
-        }
+	private void process() throws Exception {
+		// Verify branches exist
+		Branch parentBranch = getBranchOrThrow(BRANCH_PARENT);
+		Branch childBranch = getBranchOrThrow(BRANCH_CHILD);
 
-        // Collect members on both parent and child
-        Map<String, RefsetMember> parentMembers = getMembers(parentBranch.getPath(), REVERT_MEMBERS);
-        Map<String, RefsetMember> childMembers = getMembers(childBranch.getPath(), REVERT_MEMBERS);
+		processMembers(parentBranch, childBranch);
+		processDescriptions(parentBranch, childBranch);
+	}
 
-        if (childMembers.isEmpty()) {
-            return;
-        }
+	private void processMembers(Branch parentBranch, Branch childBranch) throws Exception {
+		if (REVERT_MEMBERS.isEmpty()) {
+			return;
+		}
 
-        // Produce Delta of reverted components
-        for (Map.Entry<String, RefsetMember> entrySet : childMembers.entrySet()) {
-            String memberId = entrySet.getKey();
-            RefsetMember childMember = entrySet.getValue();
-            RefsetMember parentMember = parentMembers.get(memberId);
+		// Collect members on both parent and child
+		Map<String, RefsetMember> parentMembers = getMembers(parentBranch.getPath(), REVERT_MEMBERS);
+		Map<String, RefsetMember> childMembers = getMembers(childBranch.getPath(), REVERT_MEMBERS);
 
-            report(0, memberId, "ReferenceSetMember");
-            if (parentMember == null) {
-                info(String.format("RefsetMember %s not found on parent and will be ignored by script.", memberId));
-                report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Doesn't exist on parent. Cannot be restored.");
-                continue;
-            }
+		if (childMembers.isEmpty()) {
+			return;
+		}
 
-            if (jumpedModule(childMember, parentMember)) {
-                report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have incorrectly jumped module.");
-                writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
-            } else if (illegalChangeOfAdditionalField(childMember, parentMember)) {
-                report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have an illegal additional field change.");
-                writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
-            } else if (forceOutput) {
-                report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "'ForcedOutput' set to true");
-                writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
-            } else {
-                report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Unknown fault.");
-            }
-        }
-    }
+		// Produce Delta of reverted components
+		for (Map.Entry<String, RefsetMember> entrySet : childMembers.entrySet()) {
+			String memberId = entrySet.getKey();
+			RefsetMember childMember = entrySet.getValue();
+			RefsetMember parentMember = parentMembers.get(memberId);
 
-    private void processDescriptions(Branch parentBranch, Branch childBranch) throws TermServerScriptException {
-        if (REVERT_DESCRIPTIONS.isEmpty()) {
-            return;
-        }
+			report(0, memberId, "ReferenceSetMember");
+			if (parentMember == null) {
+				LOGGER.info(String.format("RefsetMember %s not found on parent and will be ignored by script.", memberId));
+				report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Doesn't exist on parent. Cannot be restored.");
+				continue;
+			}
 
-        // Collect descriptions on both parent and child
-        Map<String, Description> parentDescriptions = getDescriptions(parentBranch.getPath(), REVERT_DESCRIPTIONS);
-        Map<String, Description> childDescriptions = getDescriptions(childBranch.getPath(), REVERT_DESCRIPTIONS);
+			if (jumpedModule(childMember, parentMember)) {
+				report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have incorrectly jumped module.");
+				writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
+			} else if (illegalChangeOfAdditionalField(childMember, parentMember)) {
+				report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "Looks to have an illegal additional field change.");
+				writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
+			} else if (forceOutput) {
+				report(SECONDARY_REPORT, memberId, "ReferenceSetMember", "'ForcedOutput' set to true");
+				writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
+			} else {
+				report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Unknown fault.");
+			}
+		}
+	}
 
-        if (childDescriptions.isEmpty()) {
-            return;
-        }
+	private void processDescriptions(Branch parentBranch, Branch childBranch) throws TermServerScriptException {
+		if (REVERT_DESCRIPTIONS.isEmpty()) {
+			return;
+		}
 
-        // Produce Delta of reverted components
-        for (Map.Entry<String, Description> entrySet : childDescriptions.entrySet()) {
-            String descriptionId = entrySet.getKey();
-            Description childDescription = entrySet.getValue();
-            Description parentDescription = parentDescriptions.get(descriptionId);
+		// Collect descriptions on both parent and child
+		Map<String, Description> parentDescriptions = getDescriptions(parentBranch.getPath(), REVERT_DESCRIPTIONS);
+		Map<String, Description> childDescriptions = getDescriptions(childBranch.getPath(), REVERT_DESCRIPTIONS);
 
-            report(PRIMARY_REPORT, descriptionId, "Description");
-            if (parentDescription == null) {
-                info(String.format("Description %s not found on parent and will be ignored by script.", descriptionId));
-                report(TERTIARY_REPORT, descriptionId, "Description", "Doesn't exist on parent. Cannot be restored.");
-                continue;
-            }
+		if (childDescriptions.isEmpty()) {
+			return;
+		}
 
-            if (lostEffectiveTime(childDescription, parentDescription)) {
-                report(SECONDARY_REPORT, descriptionId, "Description", "Looks to have lost effective time.");
-                writeToRF2File(descDeltaFilename, parentDescription.toRF2());
-            } else if (jumpedModule(childDescription, parentDescription)) {
-                report(SECONDARY_REPORT, descriptionId, "Description", "Looks to have jumped module.");
-                writeToRF2File(descDeltaFilename, parentDescription.toRF2());
-            } else {
-                report(TERTIARY_REPORT, descriptionId, "Description", "No fault detected, ignoring.");
-            }
-        }
-    }
+		// Produce Delta of reverted components
+		for (Map.Entry<String, Description> entrySet : childDescriptions.entrySet()) {
+			String descriptionId = entrySet.getKey();
+			Description childDescription = entrySet.getValue();
+			Description parentDescription = parentDescriptions.get(descriptionId);
 
-    private Map<String, Description> getDescriptions(String branchPath, List<String> descriptionIds) {
-        info(String.format("Fetching Descriptions for branch %s.", branchPath));
-        Map<String, Description> descriptions = new HashMap<>();
-        for (int x = 0; x < descriptionIds.size(); x++) {
-            String identifier = descriptionIds.get(x);
-            Description description = tsClient.getDescription(identifier, branchPath);
-            descriptions.put(description.getId(), description);
-            info(String.format("%s/%s Descriptions fetched.", x + 1, descriptionIds.size()));
-        }
+			report(PRIMARY_REPORT, descriptionId, "Description");
+			if (parentDescription == null) {
+				LOGGER.info(String.format("Description %s not found on parent and will be ignored by script.", descriptionId));
+				report(TERTIARY_REPORT, descriptionId, "Description", "Doesn't exist on parent. Cannot be restored.");
+				continue;
+			}
 
-        return descriptions;
-    }
+			if (lostEffectiveTime(childDescription, parentDescription)) {
+				report(SECONDARY_REPORT, descriptionId, "Description", "Looks to have lost effective time.");
+				writeToRF2File(descDeltaFilename, parentDescription.toRF2());
+			} else if (jumpedModule(childDescription, parentDescription)) {
+				report(SECONDARY_REPORT, descriptionId, "Description", "Looks to have jumped module.");
+				writeToRF2File(descDeltaFilename, parentDescription.toRF2());
+			} else {
+				report(TERTIARY_REPORT, descriptionId, "Description", "No fault detected, ignoring.");
+			}
+		}
+	}
 
-    private Branch getBranchOrThrow(String branchPath) throws TermServerScriptException {
-        Branch branch = tsClient.getBranch(branchPath);
-        if (branch == null) {
-            throw new TermServerScriptException(String.format("Cannot find branch with path '%s'.", branchPath));
-        }
+	private Map<String, Description> getDescriptions(String branchPath, List<String> descriptionIds) {
+		LOGGER.info(String.format("Fetching Descriptions for branch %s.", branchPath));
+		Map<String, Description> descriptions = new HashMap<>();
+		for (int x = 0; x < descriptionIds.size(); x++) {
+			String identifier = descriptionIds.get(x);
+			Description description = tsClient.getDescription(identifier, branchPath);
+			descriptions.put(description.getId(), description);
+			LOGGER.info(String.format("%s/%s Descriptions fetched.", x + 1, descriptionIds.size()));
+		}
 
-        return branch;
-    }
+		return descriptions;
+	}
 
-    private Map<String, RefsetMember> getMembers(String branchPath, List<String> referenceSetMemberIds) {
-        info(String.format("Fetching RefsetMembers for branch %s.", branchPath));
-        Map<String, RefsetMember> refSetMembers = new HashMap<>();
-        for (int x = 0; x < referenceSetMemberIds.size(); x++) {
-            String identifier = referenceSetMemberIds.get(x);
-            RefsetMember member = tsClient.getRefsetMember(identifier, branchPath);
-            refSetMembers.put(member.getId(), member);
-            info(String.format("%s/%s RefsetMembers fetched.", x + 1, referenceSetMemberIds.size()));
-        }
+	private Branch getBranchOrThrow(String branchPath) throws TermServerScriptException {
+		Branch branch = tsClient.getBranch(branchPath);
+		if (branch == null) {
+			throw new TermServerScriptException(String.format("Cannot find branch with path '%s'.", branchPath));
+		}
 
-        return refSetMembers;
-    }
+		return branch;
+	}
 
-    private boolean jumpedModule(RefsetMember childMember, RefsetMember parentMember) {
-        boolean matchActive = Objects.equals(childMember.isActive(), parentMember.isActive());
-        boolean matchModule = Objects.equals(childMember.getModuleId(), parentMember.getModuleId());
-        boolean matchReleased = Objects.equals(childMember.getReleased(), parentMember.getReleased());
-        boolean matchReleasedEffectiveTime = Objects.equals(childMember.getReleasedEffectiveTime(), parentMember.getReleasedEffectiveTime());
-        boolean matchRefsetId = Objects.equals(childMember.getRefsetId(), parentMember.getRefsetId());
-        boolean matchReferencedComponentId = Objects.equals(childMember.getReferencedComponentId(), parentMember.getReferencedComponentId());
-        boolean matchAdditionalFields = Objects.equals(childMember.getAdditionalFields(), parentMember.getAdditionalFields());
-        boolean matchEffectiveTime = Objects.equals(childMember.getEffectiveTime(), parentMember.getEffectiveTime());
+	private Map<String, RefsetMember> getMembers(String branchPath, List<String> referenceSetMemberIds) {
+		LOGGER.info(String.format("Fetching RefsetMembers for branch %s.", branchPath));
+		Map<String, RefsetMember> refSetMembers = new HashMap<>();
+		for (int x = 0; x < referenceSetMemberIds.size(); x++) {
+			String identifier = referenceSetMemberIds.get(x);
+			RefsetMember member = tsClient.getRefsetMember(identifier, branchPath);
+			refSetMembers.put(member.getId(), member);
+			LOGGER.info(String.format("%s/%s RefsetMembers fetched.", x + 1, referenceSetMemberIds.size()));
+		}
 
-        if (!matchModule && !matchEffectiveTime) {
-            return matchActive && matchReleased && matchReleasedEffectiveTime && matchRefsetId && matchReferencedComponentId && matchAdditionalFields;
-        }
+		return refSetMembers;
+	}
 
-        return false;
-    }
+	private boolean jumpedModule(RefsetMember childMember, RefsetMember parentMember) {
+		boolean matchActive = Objects.equals(childMember.isActive(), parentMember.isActive());
+		boolean matchModule = Objects.equals(childMember.getModuleId(), parentMember.getModuleId());
+		boolean matchReleased = Objects.equals(childMember.getReleased(), parentMember.getReleased());
+		boolean matchReleasedEffectiveTime = Objects.equals(childMember.getReleasedEffectiveTime(), parentMember.getReleasedEffectiveTime());
+		boolean matchRefsetId = Objects.equals(childMember.getRefsetId(), parentMember.getRefsetId());
+		boolean matchReferencedComponentId = Objects.equals(childMember.getReferencedComponentId(), parentMember.getReferencedComponentId());
+		boolean matchAdditionalFields = Objects.equals(childMember.getAdditionalFields(), parentMember.getAdditionalFields());
+		boolean matchEffectiveTime = Objects.equals(childMember.getEffectiveTime(), parentMember.getEffectiveTime());
 
-    private boolean illegalChangeOfAdditionalField(RefsetMember childMember, RefsetMember parentMember) {
-        if (childMember.isActive()) {
-            return false;
-        }
+		if (!matchModule && !matchEffectiveTime) {
+			return matchActive && matchReleased && matchReleasedEffectiveTime && matchRefsetId && matchReferencedComponentId && matchAdditionalFields;
+		}
 
-        boolean matchActive = Objects.equals(childMember.isActive(), parentMember.isActive());
-        boolean matchModule = Objects.equals(childMember.getModuleId(), parentMember.getModuleId());
-        boolean matchReleased = Objects.equals(childMember.getReleased(), parentMember.getReleased());
-        boolean matchReleasedEffectiveTime = Objects.equals(childMember.getReleasedEffectiveTime(), parentMember.getReleasedEffectiveTime());
-        boolean matchRefsetId = Objects.equals(childMember.getRefsetId(), parentMember.getRefsetId());
-        boolean matchReferencedComponentId = Objects.equals(childMember.getReferencedComponentId(), parentMember.getReferencedComponentId());
-        boolean matchAdditionalFields = Objects.equals(childMember.getAdditionalFields(), parentMember.getAdditionalFields());
-        boolean matchEffectiveTime = Objects.equals(childMember.getEffectiveTime(), parentMember.getEffectiveTime());
+		return false;
+	}
 
-        if (!matchAdditionalFields && !matchEffectiveTime) {
-            return matchActive && matchModule && matchReleased && matchReleasedEffectiveTime && matchRefsetId && matchReferencedComponentId;
-        }
+	private boolean illegalChangeOfAdditionalField(RefsetMember childMember, RefsetMember parentMember) {
+		if (childMember.isActive()) {
+			return false;
+		}
 
-        return false;
-    }
+		boolean matchActive = Objects.equals(childMember.isActive(), parentMember.isActive());
+		boolean matchModule = Objects.equals(childMember.getModuleId(), parentMember.getModuleId());
+		boolean matchReleased = Objects.equals(childMember.getReleased(), parentMember.getReleased());
+		boolean matchReleasedEffectiveTime = Objects.equals(childMember.getReleasedEffectiveTime(), parentMember.getReleasedEffectiveTime());
+		boolean matchRefsetId = Objects.equals(childMember.getRefsetId(), parentMember.getRefsetId());
+		boolean matchReferencedComponentId = Objects.equals(childMember.getReferencedComponentId(), parentMember.getReferencedComponentId());
+		boolean matchAdditionalFields = Objects.equals(childMember.getAdditionalFields(), parentMember.getAdditionalFields());
+		boolean matchEffectiveTime = Objects.equals(childMember.getEffectiveTime(), parentMember.getEffectiveTime());
 
-    private boolean lostEffectiveTime(Description childDescription, Description parentDescription) {
-        boolean matchActive = Objects.equals(childDescription.isActive(), parentDescription.isActive());
-        boolean matchModule = Objects.equals(childDescription.getModuleId(), parentDescription.getModuleId());
-        boolean matchConceptId = Objects.equals(childDescription.getConceptId(), parentDescription.getConceptId());
-        boolean matchLanguageCode = Objects.equals(childDescription.getLang(), parentDescription.getLang());
-        boolean matchType = Objects.equals(childDescription.getType(), parentDescription.getType());
-        boolean matchCaseSignificance = Objects.equals(childDescription.getCaseSignificance(), parentDescription.getCaseSignificance());
-        boolean matchReleased = Objects.equals(childDescription.getReleased(), parentDescription.getReleased());
-        boolean matchEffectiveTime = Objects.equals(childDescription.getEffectiveTime(), parentDescription.getEffectiveTime());
+		if (!matchAdditionalFields && !matchEffectiveTime) {
+			return matchActive && matchModule && matchReleased && matchReleasedEffectiveTime && matchRefsetId && matchReferencedComponentId;
+		}
 
-        if (!matchEffectiveTime) {
-            return matchActive && matchModule && matchReleased && matchConceptId && matchLanguageCode && matchType && matchCaseSignificance;
-        }
+		return false;
+	}
 
-        return false;
-    }
+	private boolean lostEffectiveTime(Description childDescription, Description parentDescription) {
+		boolean matchActive = Objects.equals(childDescription.isActive(), parentDescription.isActive());
+		boolean matchModule = Objects.equals(childDescription.getModuleId(), parentDescription.getModuleId());
+		boolean matchConceptId = Objects.equals(childDescription.getConceptId(), parentDescription.getConceptId());
+		boolean matchLanguageCode = Objects.equals(childDescription.getLang(), parentDescription.getLang());
+		boolean matchType = Objects.equals(childDescription.getType(), parentDescription.getType());
+		boolean matchCaseSignificance = Objects.equals(childDescription.getCaseSignificance(), parentDescription.getCaseSignificance());
+		boolean matchReleased = Objects.equals(childDescription.getReleased(), parentDescription.getReleased());
+		boolean matchEffectiveTime = Objects.equals(childDescription.getEffectiveTime(), parentDescription.getEffectiveTime());
 
-    private boolean jumpedModule(Description childDescription, Description parentDescription) {
-        boolean matchActive = Objects.equals(childDescription.isActive(), parentDescription.isActive());
-        boolean matchModule = Objects.equals(childDescription.getModuleId(), parentDescription.getModuleId());
-        boolean matchConceptId = Objects.equals(childDescription.getConceptId(), parentDescription.getConceptId());
-        boolean matchLanguageCode = Objects.equals(childDescription.getLang(), parentDescription.getLang());
-        boolean matchType = Objects.equals(childDescription.getType(), parentDescription.getType());
-        boolean matchCaseSignificance = Objects.equals(childDescription.getCaseSignificance(), parentDescription.getCaseSignificance());
-        boolean matchReleased = Objects.equals(childDescription.getReleased(), parentDescription.getReleased());
-        boolean matchEffectiveTime = Objects.equals(childDescription.getEffectiveTime(), parentDescription.getEffectiveTime());
+		if (!matchEffectiveTime) {
+			return matchActive && matchModule && matchReleased && matchConceptId && matchLanguageCode && matchType && matchCaseSignificance;
+		}
 
-        if (!matchModule && !matchEffectiveTime) {
-            return matchActive && matchReleased && matchConceptId && matchLanguageCode && matchType && matchCaseSignificance;
-        }
+		return false;
+	}
 
-        return false;
-    }
+	private boolean jumpedModule(Description childDescription, Description parentDescription) {
+		boolean matchActive = Objects.equals(childDescription.isActive(), parentDescription.isActive());
+		boolean matchModule = Objects.equals(childDescription.getModuleId(), parentDescription.getModuleId());
+		boolean matchConceptId = Objects.equals(childDescription.getConceptId(), parentDescription.getConceptId());
+		boolean matchLanguageCode = Objects.equals(childDescription.getLang(), parentDescription.getLang());
+		boolean matchType = Objects.equals(childDescription.getType(), parentDescription.getType());
+		boolean matchCaseSignificance = Objects.equals(childDescription.getCaseSignificance(), parentDescription.getCaseSignificance());
+		boolean matchReleased = Objects.equals(childDescription.getReleased(), parentDescription.getReleased());
+		boolean matchEffectiveTime = Objects.equals(childDescription.getEffectiveTime(), parentDescription.getEffectiveTime());
 
-    private String getFileNameByRefsetId(String refsetId) throws TermServerScriptException {
-         //See RF2Constants for constants for these values
-        switch (refsetId) {
-            case "734138000": // |Anatomy structure and entire association reference set|
-            case "734139008": // |Anatomy structure and part association reference set|
-            case "1186921001": // |POSSIBLY REPLACED BY association reference set|
-            case "1186924009": // |PARTIALLY EQUIVALENT TO association reference set|
-            case "900000000000523009": // |POSSIBLY EQUIVALENT TO association reference set|
-            case "900000000000524003": // |MOVED TO association reference set|
-            case "900000000000525002": // |MOVED FROM association reference set|
-            case "900000000000526001": // |REPLACED BY association reference set|
-            case "900000000000527005": // |SAME AS association reference set|
-            case "900000000000528000": // |WAS A association reference set|
-            case "900000000000530003": // |ALTERNATIVE association reference set|
-            case "900000000000531004": // |REFERS TO concept association reference set|
-                return assocDeltaFilename;
-            case "900000000000490003": // |Description inactivation indicator reference set|
-            case "900000000000489007": // |Concept inactivation indicator reference set|
-                return attribValDeltaFilename;
-            case GB_ENG_LANG_REFSET:
-            case US_ENG_LANG_REFSET:
-                return langDeltaFilename;
-            default:
-                throw new TermServerScriptException(String.format("Cannot get filename for reference set '%s'", refsetId));
-        }
-    }
+		if (!matchModule && !matchEffectiveTime) {
+			return matchActive && matchReleased && matchConceptId && matchLanguageCode && matchType && matchCaseSignificance;
+		}
+
+		return false;
+	}
+
+	private String getFileNameByRefsetId(String refsetId) throws TermServerScriptException {
+		 //See RF2Constants for constants for these values
+		switch (refsetId) {
+			case "734138000": // |Anatomy structure and entire association reference set|
+			case "734139008": // |Anatomy structure and part association reference set|
+			case "1186921001": // |POSSIBLY REPLACED BY association reference set|
+			case "1186924009": // |PARTIALLY EQUIVALENT TO association reference set|
+			case "900000000000523009": // |POSSIBLY EQUIVALENT TO association reference set|
+			case "900000000000524003": // |MOVED TO association reference set|
+			case "900000000000525002": // |MOVED FROM association reference set|
+			case "900000000000526001": // |REPLACED BY association reference set|
+			case "900000000000527005": // |SAME AS association reference set|
+			case "900000000000528000": // |WAS A association reference set|
+			case "900000000000530003": // |ALTERNATIVE association reference set|
+			case "900000000000531004": // |REFERS TO concept association reference set|
+				return assocDeltaFilename;
+			case "900000000000490003": // |Description inactivation indicator reference set|
+			case "900000000000489007": // |Concept inactivation indicator reference set|
+				return attribValDeltaFilename;
+			case GB_ENG_LANG_REFSET:
+			case US_ENG_LANG_REFSET:
+				return langDeltaFilename;
+			default:
+				throw new TermServerScriptException(String.format("Cannot get filename for reference set '%s'", refsetId));
+		}
+	}
 }

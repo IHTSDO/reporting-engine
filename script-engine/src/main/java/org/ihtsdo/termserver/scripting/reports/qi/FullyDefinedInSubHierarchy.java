@@ -12,8 +12,14 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * QI-25
  * Find Sufficiently Defined concepts in a subhierarchy and list all ancestors
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FullyDefinedInSubHierarchy extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(FullyDefinedInSubHierarchy.class);
+
 	Concept subHierarchy;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -25,7 +31,7 @@ public class FullyDefinedInSubHierarchy extends TermServerReport {
 			report.postLoadInit();
 			report.runFullyDefinedInSubHierarchyReport();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

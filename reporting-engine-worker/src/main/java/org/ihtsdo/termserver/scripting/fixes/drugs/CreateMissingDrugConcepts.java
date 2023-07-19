@@ -36,8 +36,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * 
  * RP-723 Allowing report to have its claws back and actually create the concepts it proposes.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
+
 	DrugTermGeneratorCD termGenerator = new DrugTermGeneratorCD(this);
 	
 	Set<Concept> createMPFs = new HashSet<>();
@@ -123,7 +129,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 			/*if (c.getConceptId().equals("774384006")) {
-				debug("Here");
+				LOGGER.debug("Here");
 			}*/
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
@@ -254,7 +260,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		nextStraw:
 		for (Concept straw : haystack) {
 			/*if (straw.getConceptId().equals("774384006")) {
-				debug ("debug here also");
+				LOGGER.debug ("LOGGER.debug here also");
 			}*/
 			
 			//Do a simple sum check to see if we can rule out a match early doors
@@ -336,7 +342,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, ++groupId);
 			drug.addRelationship(ingredRel);
 			/*if (base.getId().equals("391769002")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 		}
 		return drug;
@@ -347,7 +353,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		debug("Identifying concepts to process");
+		LOGGER.debug("Identifying concepts to process");
 		List<Concept> allAffected = new ArrayList<Concept>();
 		termGenerator.setQuiet(true);
 		List<Concept> conceptsToProcess = MEDICINAL_PRODUCT.getDescendents(NOT_SET).stream()
@@ -448,13 +454,13 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 			} catch (Exception e) {
 				String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
 				report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
-				warn (msg);
+				LOGGER.warn (msg);
 				if (!msg.contains("has multiple modification attributes")) {
 					e.printStackTrace(new PrintStream(System.out));
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		termGenerator.setQuiet(false);
 		return new ArrayList<Component>(allAffected);

@@ -25,8 +25,14 @@ import com.google.common.io.Files;
  * 4. Where a word or phrase has a capital letter after the first letter, we can remove it since processing rules
  *    would already identify such as term as being case sensitive.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSensitivityTextFileEditor extends TermServerReport{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityTextFileEditor.class);
+
 	Set<String> organismTerms = new HashSet<>();
 	Set<String> substanceTerms = new HashSet<>();
 	Map<String, Description> allWordsUsedActively = new HashMap<>();
@@ -45,7 +51,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 			//report.getArchiveManager().allowStaleData = true;
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
-			info ("Modifying CS Words file...");
+			LOGGER.info ("Modifying CS Words file...");
 			report.processCSWordsFile();
 		} finally {
 			report.finish();
@@ -53,21 +59,21 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		info("Collecting organism terms...");
+		LOGGER.info("Collecting organism terms...");
 		for (Concept c : ORGANISM.getDescendents(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 				organismTerms.add(d.getTerm());
 			}
 		}
 		
-		info("Collecting substance terms...");
+		LOGGER.info("Collecting substance terms...");
 		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 				substanceTerms.add(d.getTerm());
 			}
 		}
 		
-		info("Collecting all words currently in use....");
+		LOGGER.info("Collecting all words currently in use....");
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -84,7 +90,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	}
 
 	private void processCSWordsFile() throws IOException, TermServerScriptException {
-		info ("Processing " + getInputFile());
+		LOGGER.info ("Processing " + getInputFile());
 		String timeStamp = df.format(new Date());
 		String outputFileName = getInputFile().getAbsolutePath().replace(".txt", "_" + timeStamp + ".txt");
 		File outputFile = new File(outputFileName);
@@ -103,9 +109,9 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 				linesWritten++;
 			}
 		}
-		info ("Lines read: " + lines.size());
-		info ("Lines written: " + linesWritten);
-		info ("Output file: " + outputFileName);
+		LOGGER.info ("Lines read: " + lines.size());
+		LOGGER.info ("Lines written: " + linesWritten);
+		LOGGER.info ("Output file: " + outputFileName);
 	}
 
 	private boolean processLine(String line, String lastLineWritten, String nextLine, File outputFile) throws TermServerScriptException, IOException {

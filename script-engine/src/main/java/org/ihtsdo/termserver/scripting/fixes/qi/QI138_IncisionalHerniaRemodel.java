@@ -19,8 +19,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * - Due to attribute target value needs to be changed from 34896006 |Incision (procedure)| to 271618001 |Impaired wound healing (finding)|.
  * - After attribute target value needs to be changed from 387713003 |Surgical procedure (procedure)| to 34896006 |Incision (procedure)|.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QI138_IncisionalHerniaRemodel extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(QI138_IncisionalHerniaRemodel.class);
+
 	Concept hWithO;
 	Concept hWithG;
 	Concept obstruction;
@@ -134,7 +140,7 @@ public class QI138_IncisionalHerniaRemodel extends BatchFix {
 			}
 		}
 		
-		info ("Counts for simple/obstruct/gangrene/both: " + groupOne.size() + "/" + groupTwo.size() + "/" + groupThree.size() + "/" + groupFour.size());
+		LOGGER.info ("Counts for simple/obstruct/gangrene/both: " + groupOne.size() + "/" + groupTwo.size() + "/" + groupThree.size() + "/" + groupFour.size());
 		return formIntoGroupedBatch(buckets);
 	}
 

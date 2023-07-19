@@ -15,7 +15,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Class to fix Case Significance issues.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CaseSignificanceFix extends DeltaGenerator implements ScriptConstants {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix.class);
 
 	private List<String> exceptions = new ArrayList<>();
 	
@@ -93,7 +99,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements ScriptConstan
 	}
 
 	private void process() throws TermServerScriptException {
-		info("Processing...");
+		LOGGER.info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {
 				if (exceptions.contains(c.getId())) {

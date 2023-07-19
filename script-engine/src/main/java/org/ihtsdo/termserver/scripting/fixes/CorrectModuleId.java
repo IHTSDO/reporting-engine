@@ -18,8 +18,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * from that of the host concept, correct that.
  * Applies to both active and inactive concepts.
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CorrectModuleId extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(CorrectModuleId.class);
+
 	protected CorrectModuleId(BatchFix clone) {
 		super(clone);
 	}
@@ -78,7 +84,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<Concept>();
 		setQuiet(true);
 		for (Concept c : ROOT_CONCEPT.getDescendents(NOT_SET)) {
@@ -90,7 +96,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 			}
 		}
 		setQuiet(false);
-		info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

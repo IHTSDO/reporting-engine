@@ -18,8 +18,14 @@ then as long as that word is not itself case sensitive (as per cs_words.txt)
 then make it small.
 Then check against case significance rules to see if it can be made "ci"
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(NumberLetterLowerCase.class);
+
 	CaseSensitivity csReport;
 	
 	protected NumberLetterLowerCase(BatchFix clone) {
@@ -133,7 +139,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 			c = c.cloneWithIds();
 			//if (c.getConceptId().equals("86884000")) {
 			if (c.getConceptId().equals("18344000")) {
-				debug ("Here");
+				LOGGER.debug ("Here");
 			}
 			
 			if (normaliseCase(null, c) > 0) {

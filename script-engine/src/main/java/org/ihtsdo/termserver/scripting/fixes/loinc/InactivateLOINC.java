@@ -21,8 +21,14 @@ import com.google.common.collect.HashBiMap;
 /**
  * LOINC-394 Inactivate LOINC concepts marked as deprecated
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactivateLOINC extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivateLOINC.class);
+
 	enum REL_PART {Type, Target};
 	
 	//private static String loincFile = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
@@ -82,7 +88,7 @@ public class InactivateLOINC extends BatchFix {
 		Set<String> checkReplacementAvailable = new HashSet<>();
 		try {
 			//Load the LOINC file
-			info ("Loading " + loincFile);
+			LOGGER.info ("Loading " + loincFile);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(loincFile))) {
 				String origline;
@@ -127,7 +133,7 @@ public class InactivateLOINC extends BatchFix {
 								String duplicates = allLoincNums.stream()
 										.filter(s -> !s.equals(loincNum))
 										.collect(Collectors.joining(", "));
-								debug ("Duplicate keys " + loincNum + " = '" + fsn + "' with " + duplicates);
+								LOGGER.debug ("Duplicate keys " + loincNum + " = '" + fsn + "' with " + duplicates);
 							}
 							
 							//A duplicate FSN will usually have a later replacement with a new LOINCNum

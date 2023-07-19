@@ -23,8 +23,14 @@ import com.google.common.util.concurrent.AtomicLongMap;
 /**
  * RP-370 List concepts being inactivated in this release which also appear in known refsets
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InactiveConceptInRefset extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactiveConceptInRefset.class);
+
 	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
 	private Collection<Concept> referenceSets;
 	private List<Concept> emptyReferenceSets;
@@ -58,7 +64,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		referenceSets = findConcepts(REFSET_ECL);
 		removeEmptyAndNoScopeRefsets();
-		info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
+		LOGGER.info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Count",
@@ -129,14 +135,14 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		}
 		
 		if (!extensionRefsetOnly) {
-			debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against High Usage SCTIDs");
+			LOGGER.debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against High Usage SCTIDs");
 			List<String> inactivatedConceptIds = inactivatedConcepts.stream().
 					map(c -> c.getId())
 					.collect(Collectors.toList());
 			checkHighVolumeUsage(inactivatedConceptIds);
 		}
 		
-		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
+		LOGGER.debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
 		String viableRefsetECL = referenceSets.stream()
 				.map(r -> r.getId())
 				.collect(Collectors.joining(" OR "));
@@ -166,7 +172,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			} catch (Exception e) {}
 			
 			count += inactiveConceptsSegment.size();
-			debug ("Checked " + count + " inactive concepts");
+			LOGGER.debug ("Checked " + count + " inactive concepts");
 		}
 		
 		//Output summary counts
@@ -194,7 +200,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		String fileName = "resources/HighVolumeSCTIDs.txt";
 		Concept hvu = new Concept("0","High Volume Usage (UK)");
 		hvu.setModuleId(SCTID_CORE_MODULE);
-		debug ("Loading " + fileName );
+		LOGGER.debug ("Loading " + fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			for (String line : lines) {

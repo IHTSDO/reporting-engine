@@ -13,8 +13,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /*
 DRUGS-593 Remove FSN Counterparts ie synonym whihc is the FSN without the semantic tag
 */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RemoveFSNCounterparts.class);
+
 	Concept subHierarchy = MEDICINAL_PRODUCT;
 	
 	protected RemoveFSNCounterparts(BatchFix clone) {
@@ -70,12 +76,12 @@ public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			if (c.getConceptId().equals("317265007")) {
-				//debug("debug here!");
+				//LOGGER.debug("LOGGER.debug here!");
 			}
 			if (c.getFsn().contains("(clinical drug)") && findCounterpart(c) != null) {
 				processMe.add(c);

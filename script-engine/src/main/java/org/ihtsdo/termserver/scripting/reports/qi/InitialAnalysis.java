@@ -17,8 +17,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * QI-222 Select concepts by ECL
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InitialAnalysis extends TermServerReport implements org.ihtsdo.termserver.scripting.ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InitialAnalysis.class);
+
 	private static final int MAX_CONCEPTS = 10000; 
 	Collection<Concept> conceptsToAnalyse;
 	Set<Concept> exclusions = new HashSet<>();
@@ -123,13 +129,13 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	
 	public void runJob() throws TermServerScriptException {
 		
-		info("Reviewing concepts affected by intermediate primitives");
+		LOGGER.info("Reviewing concepts affected by intermediate primitives");
 		reportConceptsAffectedByIntermediatePrimitives();
 		
-		info("Reporting IPs with analysis");
+		LOGGER.info("Reporting IPs with analysis");
 		reportTotalSDsUnderIPs();
 		
-		info("Reporting attribute usage counts");
+		LOGGER.info("Reporting attribute usage counts");
 		reportAttributeUsageCounts();
 	}
 	

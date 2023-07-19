@@ -26,8 +26,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Detect where a module change has been made but a concept remains inactive,
  * and revert it back to its original module
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
+
 	String revertToModule = "15561000146104";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -50,7 +56,7 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -77,7 +83,7 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 				continue;
 			}
 			if (++processedCount%100000==0) {
-				debug ("Processed: " + processedCount);
+				LOGGER.debug ("Processed: " + processedCount);
 			}
 			//Work through all the components for this concept
 			for (Component c : SnomedUtils.getAllComponents(concept)) {

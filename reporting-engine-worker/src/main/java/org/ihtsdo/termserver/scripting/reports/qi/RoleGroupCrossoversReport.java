@@ -16,8 +16,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-233 Role group crossovers
  * RP-632 Bring into own report and add ECL filtering.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RoleGroupCrossoversReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RoleGroupCrossoversReport.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "< 404684003 |Clinical finding|");
@@ -65,7 +71,7 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 		Set<GroupPair> processedPairs = new HashSet<>();
 		for (Concept c : subset) {
 			/*if (c.getConceptId().equals("10311005")) {
-				debug("here");
+				LOGGER.debug("here");
 			}*/
 			Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
 			//We only need to worry about concepts with >1 role group

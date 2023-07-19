@@ -34,8 +34,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * take an hour to obtain.  Actually the last time I ran this I didn't get the snapshot out programmatically
  * and with it taking so long it might be easier to just do it manually and pick up with wget
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReconcileSnapshot extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ReconcileSnapshot.class);
+
 	private Map<String, Component> remainingComponents;
 	private int componentsChecked = 0;
 	private int totalToCheck = 0;
@@ -75,18 +81,18 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	public void runJob() throws TermServerScriptException {
 		File exportedSnapshot = getInputFile();
 		if (exportedSnapshot == null) {
-			info ("Exporting Snapshot...");
+			LOGGER.info ("Exporting Snapshot...");
 			exportedSnapshot = getSnapshot();
 		} else {
-			info ("Loading snapshot " + exportedSnapshot);
+			LOGGER.info ("Loading snapshot " + exportedSnapshot);
 		}
 		
-		info("Generating local map of components");
+		LOGGER.info("Generating local map of components");
 		remainingComponents = gl.getComponentMap();
 		totalToCheck = remainingComponents.size();
-		info(totalToCheck + " components mapped");
+		LOGGER.info(totalToCheck + " components mapped");
 		
-		info("Validating " + exportedSnapshot);
+		LOGGER.info("Validating " + exportedSnapshot);
 		validateArchiveZip(exportedSnapshot);
 		reportRemainder();
 	}
@@ -100,7 +106,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		try {
 			snapshot = File.createTempFile("snapshot_export-", ".zip");
 			//snapshot.deleteOnExit();
-			warn("Downloading Snapshot to: " + snapshot.getCanonicalPath());
+			LOGGER.warn("Downloading Snapshot to: " + snapshot.getCanonicalPath());
 			getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.SNAPSHOT, snapshot, false);
 		} catch (TermServerScriptException |IOException e) {
 			throw new TermServerScriptException("Unable to obtain " + project.getKey() + " snapshot",e);
@@ -137,38 +143,38 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			String fileName = path.getFileName().toString();
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Concept_" )) {
-					info("Validating Concept " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Concept " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.CONCEPT);
 /*				} else if (fileName.contains("StatedRelationship_" )) {
-					info("Validating " + fileName);
+					LOGGER.info("Validating " + fileName);
 					validateComponentFile(is, ComponentType.STATED_RELATIONSHIP);*/
 				} else if (fileName.contains("Relationship_" )) {
-					info("Validating " + fileName);
+					LOGGER.info("Validating " + fileName);
 					validateComponentFile(is, ComponentType.INFERRED_RELATIONSHIP);
 				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
-					info("Validating Axiom " + fileType + " refset file: " + fileName);
+					LOGGER.info("Validating Axiom " + fileType + " refset file: " + fileName);
 					validateComponentFile(is, ComponentType.AXIOM);
 				} else if (fileName.contains("sct2_Description_" )) {
-					info("Validating Description " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Description " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.DESCRIPTION);
 				} else if (fileName.contains("sct2_TextDefinition_" )) {
-					info("Validating Text Definition " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Text Definition " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.TEXT_DEFINITION);
 				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-					info("Validating Concept Inactivation Indicator " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Concept Inactivation Indicator " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-					info("Validating Description Inactivation Indicator " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Description Inactivation Indicator " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					info("Validating Concept/Description Inactivation Indicators " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Concept/Description Inactivation Indicators " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
-					info("Validating Historical Association File: " + fileName);
+					LOGGER.info("Validating Historical Association File: " + fileName);
 					validateComponentFile(is, ComponentType.HISTORICAL_ASSOCIATION);
 				} else if (fileName.contains("Language")) {
-					info("Validating " + fileType + " Language Reference Set File - " + fileName);
+					LOGGER.info("Validating " + fileType + " Language Reference Set File - " + fileName);
 					validateComponentFile(is, ComponentType.LANGREFSET);
 				}
 			}
@@ -191,14 +197,14 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 				if (inScope(lineItems[IDX_MODULEID])) {
 					issueCount += validate(reportTabIdx, createComponent(componentType, lineItems));
 					if (++componentsChecked % 100000 == 0) {
-						debug("Checked " + componentsChecked + " / " + totalToCheck);
+						LOGGER.debug("Checked " + componentsChecked + " / " + totalToCheck);
 					}
 				}
 			} else {
 				isHeaderLine = false;
 			}
 		}
-		info (componentType + " reconciliation detected " + issueCount + " issues");
+		LOGGER.info (componentType + " reconciliation detected " + issueCount + " issues");
 		flushFilesSoft();
 	}
 	

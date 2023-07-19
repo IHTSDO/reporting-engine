@@ -26,8 +26,14 @@ import org.springframework.util.StringUtils;
  * TODO: For the overlapped concepts, indicate what we'd need to add (Substance, DoseForm) to SNOMED
  * TODO: Map the manufactured dose form to the appropriate presentation eg "Tablet"
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DrugSheetsAnalysis extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DrugSheetsAnalysis.class);
+
 	private List<File> drugSheets;
 	private Map<File, List<DrugLine>> fileLineMap;
 	private Set<String> requiredConcepts = new HashSet<>();
@@ -52,7 +58,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 			report.analyzeDrugSheets();
 			report.calculateOverlap();
 		} catch (Exception e) {
-			info("Failed to produce report due to " + e.getMessage());
+			LOGGER.info("Failed to produce report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -165,7 +171,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 			drugLine.concept.addRelationship(r);
 			report(currentTab, drugLine.sourceText, drugLine.concept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 		} catch (IllegalStateException e) {
-			error ("Failure while processing: " + line + ", specifically " + lastIngredient, e);
+			LOGGER.error ("Failure while processing: " + line + ", specifically " + lastIngredient, e);
 		}
 		return drugLine;
 	}

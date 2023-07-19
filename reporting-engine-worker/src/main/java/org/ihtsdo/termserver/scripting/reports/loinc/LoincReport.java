@@ -20,8 +20,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-171 List all new concepts in << 363787002 | Observable entity (observable entity)
  * and << 386053000 | Evaluation procedure (procedure)
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LoincReport extends TermServerReport implements ReportClass {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(LoincReport.class);
+
 	private Set<String> semTagExclusions = new HashSet<>();
 	private TraceabilityService traceabilityService;
 	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");

@@ -14,8 +14,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * @author Peter
  *
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RecreateComponent extends DeltaGenerator {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RecreateComponent.class);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RecreateComponent delta = new RecreateComponent();
 		try {

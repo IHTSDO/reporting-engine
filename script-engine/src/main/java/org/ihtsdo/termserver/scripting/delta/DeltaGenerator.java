@@ -17,8 +17,14 @@ import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobRun;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class DeltaGenerator extends TermServerScript {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(DeltaGenerator.class);
+
 	protected String outputDirName = "output";
 	protected String packageRoot;
 	protected String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
@@ -72,7 +78,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (!dryRun) {
 			initialiseOutputDirectory();
 		} else {
-			info("Dry run, no output expected");
+			LOGGER.info("Dry run, no output expected");
 		}
 	}
 	
@@ -122,7 +128,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		outputDirName = outputDir.getName();
 		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
 		packageDir = packageRoot + today + File.separator;
-		info ("Outputting data to " + packageDir);
+		LOGGER.info ("Outputting data to " + packageDir);
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
@@ -173,7 +179,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (projectName != null && projectName.endsWith(".zip")) {
 			String choice = dependencySpecified? "Y":"N";
 			if (!dependencySpecified) {
-				info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");
+				LOGGER.info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");
 				print ("Choice Y/N: ");
 				choice = STDIN.nextLine().trim();
 			}
@@ -208,7 +214,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		try {
 			super.finish();
 		} catch (Exception e) {
-			error("Failed to flush files.", e);
+			LOGGER.error("Failed to flush files.", e);
 		}
 		closeIdGenerators();
 	}
@@ -216,16 +222,16 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected void closeIdGenerators() {
 		try {
 			if (conIdGenerator != null) {
-				info(conIdGenerator.finish());
+				LOGGER.info(conIdGenerator.finish());
 			}
 			if (descIdGenerator != null) {
-				info(descIdGenerator.finish());
+				LOGGER.info(descIdGenerator.finish());
 			}
 			if (relIdGenerator != null) {
-				info(relIdGenerator.finish());
+				LOGGER.info(relIdGenerator.finish());
 			}
 		} catch (FileNotFoundException e) {
-			error ("Failed to close id generators",e);
+			LOGGER.error ("Failed to close id generators",e);
 		}
 	}
 
@@ -274,7 +280,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	protected void outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
-		info ("Outputting to RF2 in " + outputDirName + "...");
+		LOGGER.info ("Outputting to RF2 in " + outputDirName + "...");
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {
 				outputRF2((Concept)thisConcept, alwaysCheckSubComponents);

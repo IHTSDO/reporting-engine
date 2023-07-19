@@ -28,8 +28,14 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * DRUGS-558, DRUGS-585 : MP / MPF Concepts should be modelled using base substances.  Query
  * to report any that have ingredients which are "Modification Of"
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MissingDrugConcepts extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingDrugConcepts.class);
+
 	private static final String CD = "(clinical drug)";
 	private static final String MPF = "(medicinal product form)";
 	private static final String MP = "(medicinal product)";
@@ -53,7 +59,7 @@ public class MissingDrugConcepts extends TermServerReport {
 			//report.runIdentifyMissingDescendantReport(); //DRUGS-536
 			report.runIdentifyModified_MP_MPF_Report(); //DRUGS-558 DRUGS-585
 		} catch (Exception e) {
-			info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

@@ -5,18 +5,19 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
-import org.ihtsdo.termserver.scripting.GraphLoader.DuplicatePair;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RecoverTargetComponetIds extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(RecoverTargetComponetIds.class);
+
 	String previousReleaseBranch;
 	
 	protected RecoverTargetComponetIds(BatchFix clone) {
@@ -44,7 +45,7 @@ public class RecoverTargetComponetIds extends BatchFix {
 	public void postInit() throws TermServerScriptException {
 		String prevRelease = project.getMetadata().getPreviousRelease();
 		previousReleaseBranch = "MAIN/" + SnomedUtils.formatReleaseDate(prevRelease);
-		debug("Copying missing data from " + previousReleaseBranch);
+		LOGGER.debug("Copying missing data from " + previousReleaseBranch);
 		super.postInit();
 	}
 
@@ -70,7 +71,7 @@ public class RecoverTargetComponetIds extends BatchFix {
 	
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info ("Identifying concepts to process");
 		List<Component> componentsToProcess = new ArrayList<>();
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {

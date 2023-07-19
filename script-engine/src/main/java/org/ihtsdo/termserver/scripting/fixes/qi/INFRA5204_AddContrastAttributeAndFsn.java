@@ -16,7 +16,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * INFRA-5204 Add "Contrast" to FSN and attribute 
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class INFRA5204_AddContrastAttributeAndFsn extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA5204_AddContrastAttributeAndFsn.class);
 
 	private Set<String> exclusionTexts;
 	private RelationshipTemplate addTemplate;

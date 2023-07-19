@@ -18,8 +18,14 @@ import com.google.common.io.Files;
  * QI-76 Add support for running a report multiple times for different subhierarchies
  * Generating Jira tickets to receive each one.
  * */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MultiReportRunner extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MultiReportRunner.class);
+
 	ReportClass report; 
 	JiraHelper jira;
 	
@@ -30,7 +36,7 @@ public class MultiReportRunner extends TermServerReport {
 			report.loadProjectSnapshot(false); 
 			report.runMultipleReports();
 		} catch (Exception e) {
-			info("Failed to produce MutliReportRunner due to " + e.getMessage());
+			LOGGER.info("Failed to produce MutliReportRunner due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -44,7 +50,7 @@ public class MultiReportRunner extends TermServerReport {
 	
 	private void runMultipleReports() throws TermServerScriptException, IOException {
 		report.setReportManager(getReportManager());
-		info("Loading " + getInputFile());
+		LOGGER.info("Loading " + getInputFile());
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}

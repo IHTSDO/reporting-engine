@@ -11,8 +11,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * SUBST-267 Find any attributes that have been stated, which do not exactly
  * exist in the inferred form - ie the classifier has removed them as redundant.
  */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StatedNotInferred extends TermServerReport {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(StatedNotInferred.class);
+
 	Concept subHierarchy = SUBSTANCE;
 	Concept attributeType = HAS_DISPOSITION;
 	
@@ -24,7 +30,7 @@ public class StatedNotInferred extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runStatedNotInferredReport();
 		} catch (Exception e) {
-			info("Failed to produce StatedNotInferred Report due to " + e.getMessage());
+			LOGGER.info("Failed to produce StatedNotInferred Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -33,7 +39,7 @@ public class StatedNotInferred extends TermServerReport {
 
 	private void runStatedNotInferredReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendents(NOT_SET);
-		info ("Finding redundant relationships");
+		LOGGER.info ("Finding redundant relationships");
 		for (Concept c : subHierarchy) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				//How many of these do we have?
