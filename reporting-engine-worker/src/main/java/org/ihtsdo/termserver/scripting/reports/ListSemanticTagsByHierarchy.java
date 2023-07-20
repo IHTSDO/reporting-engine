@@ -2,11 +2,11 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Map.Entry;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -20,28 +20,32 @@ import com.google.common.collect.Multiset;
  * Lists all semantic tags used in each of the top level hierarchies.
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ListSemanticTagsByHierarchy extends TermServerReport implements ReportClass {
-
-	private static Logger LOGGER = LoggerFactory.getLogger(ListSemanticTagsByHierarchy.class);
+	
+	public static String INCLUDE_INT = "Include International Content";
+	
+	private boolean includeInt = false;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
-		TermServerReport.run(ListSemanticTagsByHierarchy.class, args);
+		params.put(INCLUDE_INT, "true");
+		TermServerReport.run(ListSemanticTagsByHierarchy.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
 		super.init(run);
-		headers="Hieararchy, SemTag, Count";
+		headers="Hieararchy, SemTag, Language, Count";
 		additionalReportColumns="";
+		includeInt = run.getMandatoryParamBoolean(INCLUDE_INT);
 	}
 
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(INCLUDE_INT).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.build();
+		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List Semantic Tags By Hierarchy")
@@ -49,6 +53,8 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 								"Note that since this report is not listing any problems, the 'Issues' count will always be 0.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
+				.withTag(MS)
+				.withParameters(params)
 				.build();
 	}
 
@@ -57,12 +63,31 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 		for (Concept topLevel : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
 			Set<Concept> descendents = topLevel.getDescendents(NOT_SET);
 			report (PRIMARY_REPORT, (Component)null, topLevel.toString(), "", descendents.size());
-			Multiset<String> tags = HashMultiset.create();
-			for (Concept thisDescendent : descendents) {
-				tags.add(SnomedUtils.deconstructFSN(thisDescendent.getFsn())[1]);
+			Map<String, Multiset<String>> languageMap = new HashMap<>();
+			for (Concept c : descendents) {
+				for (Description d : c.getDescriptions()) {
+					if(!includeInt && SnomedUtils.isInternational(d)) {
+						continue;
+					}
+					
+					if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
+						//Have we see this language before?
+						Multiset<String> tags = languageMap.get(d.getLang());
+						if (tags == null) {
+							tags = HashMultiset.create();
+							languageMap.put(d.getLang(), tags);
+						}
+						tags.add(SnomedUtils.deconstructFSN(d.getTerm())[1]);
+					}
+				}
 			}
-			for (String tag : tags.elementSet()) {
-				report (PRIMARY_REPORT, (Component)null, "", tag, tags.count(tag));
+			
+			for (Entry<String, Multiset<String>> entry : languageMap.entrySet()) {
+				String language = entry.getKey();
+				Multiset<String> tags = entry.getValue();
+				for (String tag : tags.elementSet()) {
+					report (PRIMARY_REPORT, (Component)null, "", tag, language, tags.count(tag));
+				}
 			}
 		}
 	}
