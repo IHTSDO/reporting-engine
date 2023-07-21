@@ -11,11 +11,17 @@ import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HistoricDataUser extends TermServerReport {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(HistoricDataUser.class);
 
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
-	
+
 	public static final String PREV_DEPENDENCY = "Previous Dependency";
 	public static final String THIS_DEPENDENCY = "This Dependency";
 
@@ -27,10 +33,10 @@ public class HistoricDataUser extends TermServerReport {
 	protected String prevRelease;
 	protected String prevDependency;
 	protected String thisDependency;
-	
+
 	protected String previousEffectiveTime;
 	boolean isPublishedReleaseAnalysis = false;
-	
+
 	protected String projectKey;
 	protected String origProject;
 	protected Map<String, Datum> prevData;
@@ -41,23 +47,23 @@ public class HistoricDataUser extends TermServerReport {
 	protected int topLevelHierarchyCount = 0;
 	protected String complexName;
 	protected boolean previousTransitiveClosureNeeded = true;
-	
+
 	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException {
 		super.loadProjectSnapshot(fsnOnly);
 	}
-	
+
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		boolean compareTwoSnapshots = false; 
+		boolean compareTwoSnapshots = false;
 		projectKey = getProject().getKey();
-		info("Historic data being imported, wiping Graph Loader for safety.");
+		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
 		getArchiveManager(true).reset(false);
-		
+
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
-			StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
+				StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
 			throw new TermServerScriptException("This release must be specified if previous release is.");
 		}
-		
+
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
 			compareTwoSnapshots = true;
 			projectKey = getJobRun().getParamValue(THIS_RELEASE);
@@ -65,19 +71,17 @@ public class HistoricDataUser extends TermServerReport {
 			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
 				throw new TermServerScriptException("Previous release must be specified if current release is.");
 			}
-			
+
 			if (projectKey.endsWith(".zip")) {
 				isPublishedReleaseAnalysis = true;
 			}
 		}
-		
+
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
-		String prevDependencyRelease = null;
 		if (StringUtils.isEmpty(prevRelease)) {
 			prevRelease = getProject().getMetadata().getPreviousPackage();
-			prevDependencyRelease = getProject().getMetadata().getPreviousDependencyPackage();
 		}
-		
+
 		getProject().setKey(prevRelease);
 		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
 		String task = getJobRun().getTask();
@@ -85,18 +89,11 @@ public class HistoricDataUser extends TermServerReport {
 		try {
 			ArchiveManager mgr = getArchiveManager(true);
 			mgr.setLoadEditionArchive(true);
-			if (prevDependencyRelease != null) {
-				setDependencyArchive(prevDependencyRelease);
-				mgr.setLoadDependencyPlusExtensionArchive(true);
-			} else {
-				mgr.setLoadDependencyPlusExtensionArchive(false);
-			}
-			
 			mgr.loadSnapshot(fsnOnly);
-			
+
 			previousEffectiveTime = gl.getCurrentEffectiveTime();
-			info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
-			
+			LOGGER.info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
+
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.setModuleFilter(moduleFilter);
 			statsGenerator.runJob();
@@ -107,9 +104,9 @@ public class HistoricDataUser extends TermServerReport {
 		}
 		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	};
-	
+
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		info ("Previous Data Generated, now loading 'current' position");
+		LOGGER.info ("Previous Data Generated, now loading 'current' position");
 		ArchiveManager mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
 			mgr.setLoadEditionArchive(true);
@@ -119,7 +116,7 @@ public class HistoricDataUser extends TermServerReport {
 			setProject(new Project(projectKey));
 			mgr.loadSnapshot(false);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			info ("Detected this effective time as " + thisEffectiveTime);
+			LOGGER.info ("Detected this effective time as " + thisEffectiveTime);
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
@@ -138,7 +135,7 @@ public class HistoricDataUser extends TermServerReport {
 			if (!dataFile.exists() || !dataFile.canRead()) {
 				throw new TermServerScriptException("Unable to load historic data: " + dataFile);
 			}
-			info ("Loading " + dataFile);
+			LOGGER.info ("Loading " + dataFile);
 			BufferedReader br = new BufferedReader(new FileReader(dataFile));
 			int lineNumber = 0;
 			String line = "";
@@ -162,7 +159,7 @@ public class HistoricDataUser extends TermServerReport {
 		}
 		return prevData;
 	}
-	
+
 	protected class Datum {
 		public long conceptId;
 		public String fsn;
@@ -192,12 +189,12 @@ public class HistoricDataUser extends TermServerReport {
 		public List<String> descInactivationIds;
 		public List<String> descInactivationIdsInact;
 		public List<String> histAssocTargets;
-		
+
 		@Override
 		public int hashCode () {
 			return hashCode;
 		}
-		
+
 		@Override
 		public boolean equals (Object o) {
 			if (o instanceof Datum) {
@@ -206,7 +203,7 @@ public class HistoricDataUser extends TermServerReport {
 			return false;
 		}
 	}
-	
+
 	Datum fromLine (String line) {
 		int idx = 0;
 		Datum datum = new Datum();
@@ -241,7 +238,7 @@ public class HistoricDataUser extends TermServerReport {
 		datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
 		return datum;
 	}
-	
+
 	@Override
 	public String getReportName() {
 		String reportName = super.getReportName();

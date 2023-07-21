@@ -26,22 +26,17 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		/*params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		params.put(MODULES, "45991000052106");*/
+
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+
 		TermServerReport.run(PreReleaseContentValidation.class, args, params);
 	}
 
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
@@ -59,7 +54,9 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
-		
+
+		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
+
 		origProject = run.getProject();
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
 			run.setProject(run.getParamValue(THIS_RELEASE));
@@ -72,62 +69,6 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
-	}
-	
-	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
-		if (prevRelease == null) {
-			super.loadProjectSnapshot(fsnOnly);
-		} else {
-			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-			
-			//Don't look at branch metadata if we're working with zip archives
-			if (StringUtils.isEmpty(prevDependency) && !project.getKey().endsWith(".zip")) {
-				prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
-				if (StringUtils.isEmpty(prevDependency)) {
-					throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
-				}
-			}
-			
-			setDependencyArchive(prevDependency);
-			
-			thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-			if (StringUtils.isEmpty(thisDependency) && !project.getKey().endsWith(".zip")) {
-				thisDependency = getProject().getMetadata().getDependencyPackage();
-			}
-			
-			if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_DEPENDENCY)) 
-					&& StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
-				throw new TermServerScriptException("Module filter must be specified when working with published archives");
-			}
-			
-			if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES)) && !project.getKey().endsWith(".zip")) {
-				String defaultModule = project.getMetadata().getDefaultModuleId();
-				if (StringUtils.isEmpty(defaultModule)) {
-					throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
-				}
-				moduleFilter = Collections.singletonList(defaultModule);
-			}
-			
-			super.loadProjectSnapshot(fsnOnly);
-		}
-	}
-
-	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		//If working with an inflight MS project, grab the dependency from metadata
-		if (thisDependency == null && StringUtils.isEmpty(jobRun.getParamValue(THIS_RELEASE))) {
-			thisDependency = getProject().getMetadata().getDependencyPackage();
-		}
-		
-		if (thisDependency != null) {
-			info("Setting dependency archive: " + thisDependency);
-			setDependencyArchive(thisDependency);
-		}
-		
-		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
-		getJobRun().setProject(origProject);
 	}
 
 	public void postInit() throws TermServerScriptException {
