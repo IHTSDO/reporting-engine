@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
@@ -21,51 +20,39 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
- * This report executes shell scripts that download and compare the content of the two .zip release packages,
- * stored in S3 bucket snomed-releases, which are specified as input report parameters - a full path to archives
- * except the bucket name is expected.
- * The result of the comparison is uploaded to S3 bucket snomed-compares.
- */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PackageComparisonReport extends SummaryComponentStats implements ReportClass {
-
-	private static Logger LOGGER = LoggerFactory.getLogger(PackageComparisonReport.class);
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(PackageComparisonReport.class);
 	private static final String SCRIPT_NAME = "run-compare-packages.sh";
+	private static final char LINE_DELETED_INDICATOR = '<';
+	private static final char LINE_CREATED_INDICATOR = '>';
+	private static final int TIMEOUT_MINUTES = 30;
+
 	private String previousReleasePath;
 	private String currentReleasePath;
-	
+	private Map<String, int[]> fileTotals = new TreeMap<>();
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 
 		// Estonia release
-		params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
-		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
-		//params.put(PREV_DEPENDENCY, "international/international_edition_releases/2022-08-17T08:17:22/output-files/SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
-		//params.put(THIS_DEPENDENCY, "international/international_edition_releases/2023-02-16T09:12:41/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(MODULES, "11000181102");
+		//params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
+		//params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
+		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
+		//params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
+		//params.put(MODULES, "11000181102");
 
 		// International on dev
 		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-06T05:13:11/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 
 		// International on prod
-		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-04-19T14:30:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
-		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
-	}
-
-	@Override
-	protected void preInit() {
-		// For running the report locally
-		//runHeadless(5);
 	}
 
 	@Override
@@ -93,8 +80,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 				" , ,Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
-				"Filename, Added, Deleted, Updated, Inactivated, All",
-				"Script Output"
+				"Filename, New, Changed, Inactivated, Reactivated, Total"
 		};
 
 		String[] tabNames = new String[] {
@@ -113,8 +99,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				"Desc Inact",
 				"Refsets",
 				"Desc by Lang",
-				"Comparison Summary",
-				"Log"
+				"File Comparison"
 		};
 
 		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
@@ -124,10 +109,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
 	@Override
 	public Job getJob() {
-
 		JobParameters params = new JobParameters()
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
@@ -151,28 +135,20 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		TermServerScript.debug("In loadProjectSnapshot method, PREV_RELEASE = " + getJobRun().getParamValue(PREV_RELEASE));
-		TermServerScript.debug("In loadProjectSnapshot method, PREV_DEPENDENCY = " + getJobRun().getParamValue(PREV_DEPENDENCY));
-
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 		if (!StringUtils.isEmpty(prevDependency)) {
+			LOGGER.info("Setting previous dependency archive to " + prevDependency);
 			setDependencyArchive(prevDependency);
-
-			TermServerScript.debug("In loadProjectSnapshot method, setting dependency archive to " + prevDependency);
  		}
 		super.loadProjectSnapshot(fsnOnly);
 	}
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		TermServerScript.debug("In loadCurrentPosition method, THIS_RELEASE = " + getJobRun().getParamValue(THIS_RELEASE));
-		TermServerScript.debug("In loadCurrentPosition method, THIS_DEPENDENCY = " + getJobRun().getParamValue(THIS_DEPENDENCY));
-
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
 		if (!StringUtils.isEmpty(thisDependency)) {
+			LOGGER.info("Setting dependency archive to " + thisDependency);
 			setDependencyArchive(thisDependency);
-
-			TermServerScript.debug("In loadCurrentPosition method, setting dependency archive to " + thisDependency);
 		}
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
@@ -181,7 +157,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
 			throw new TermServerScriptException("Windows operating system detected. This report can only run on Linux or MacOS.");
 		}
+		// Run SCS report first
+		LOGGER.info("Running SCS report");
+		super.runJob();
 
+		// Execute file comparison script
 		File previousRelease = new File(previousReleasePath);
 		File currentRelease = new File(currentReleasePath);
 
@@ -198,42 +178,52 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				doubleQuote(uploadFolder)
 		};
 
-		String command = "scripts/" + SCRIPT_NAME + " " + String.join(" ", scriptArguments);
+		String command = "scripts/" + SCRIPT_NAME + SPACE + String.join(SPACE, scriptArguments);
 
-		ProcessBuilder builder = new ProcessBuilder();
-		builder.redirectErrorStream(true);
-		builder.command("sh", "-c", command);
+		LOGGER.info("Starting script execution. Command: " + command);
+		executeScript(command);
+		LOGGER.info("Diff files for '" + previousRelease.getPath() + "' and '" + currentRelease.getPath() + "' are uploaded to s3://snomed-compares/" + uploadFolder);
 
-		List<String> output = new ArrayList<>();
+		processFiles(uploadFolder);
+		outputResults();
+	}
 
+	private void executeScript(String command) throws TermServerScriptException {
 		try {
 			// Execute scripts
+			ProcessBuilder builder = new ProcessBuilder();
+			builder.redirectErrorStream(true);
+			builder.command("sh", "-c", command);
+
 			Process process = builder.start();
 
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-				reader.lines().forEach(line -> {
-					output.add(line);
-					LOGGER.info(line);
-				});
+				reader.lines().forEach(line -> LOGGER.debug(line));
 			}
 
-			if (process.waitFor(30, TimeUnit.MINUTES)) {
+			if (process.waitFor(TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
 				// Process exited
 				int exitValue = process.exitValue();
 
 				if (exitValue != 0) {
-					throw new TermServerScriptException("Script execution failed with exit code: " + exitValue);
+					throw new TermServerScriptException("Script execution failed with exit code: " + exitValue + ", see log for details");
 				}
 				LOGGER.info("Script execution finished successfully");
-				output.add("Diff files for '" + previousRelease.getPath() + "' and '" + currentRelease.getPath() + "' are uploaded to s3://snomed-compares/" + uploadFolder);
 			} else {
 				// Process timed out
-				throw new TermServerScriptException("Script execution timed out");
+				throw new TermServerScriptException("Script execution timed out, timeout set to " + TIMEOUT_MINUTES + " minutes");
 			}
+		} catch (IOException | InterruptedException e) {
+			LOGGER.error("Script execution failed");
+			throw new TermServerScriptException(e);
+		}
+	}
 
-			// Process resulting diff files
-			Path diffDir = Path.of("results", uploadFolder, "target", "c");
+	private void processFiles(String uploadFolder) throws TermServerScriptException {
+		Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
+		try {
+			// Process snapshot diff files
 			try (Stream<Path> stream = Files.list(diffDir)) {
 				stream.filter(file -> !Files.isDirectory(file))
 						.map(Path::getFileName)
@@ -243,19 +233,99 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						.forEach(filename -> processFile(diffDir.toString(), filename));
 			}
 
-			Files.walk(Path.of("results", uploadFolder))
-					.sorted(Comparator.reverseOrder())
-					.map(Path::toFile)
-					.forEach(File::delete);
+			// Delete diff files
+			try (Stream<Path> stream = Files.walk(Path.of("results", uploadFolder))) {
+				stream.sorted(Comparator.reverseOrder())
+						.map(Path::toFile)
+						.forEach(File::delete);
+			}
+		} catch (IOException | RuntimeException e) {
+			LOGGER.error("Error processing diff files in " + uploadFolder);
+			throw new TermServerScriptException(e);
+		}
+	}
 
-		} catch (IOException | InterruptedException | TermServerScriptException e) {
-			LOGGER.error("Report execution failed", e);
+	private void outputResults() throws TermServerScriptException {
+		String previousFilename = null;
+		int[] langRefsetTotals = null;
+
+		for (Map.Entry<String, int[]> entry : fileTotals.entrySet()) {
+
+			String filename = entry.getKey();
+			int[] fileTotals = entry.getValue();
+
+			if (previousFilename != null && !filename.contains("der2_cRefset_Language")) {
+				report("Total:", langRefsetTotals);
+				reportSCS(languageSubTotals);
+				previousFilename = null;
+				langRefsetTotals = null;
+			}
+
+			report(filename, fileTotals);
+
+			if (filename.contains("sct2_Concept_")) {
+				reportSCS(totals[TAB_CONCEPTS]);
+
+			} else if (filename.contains("sct2_Description_")) {
+				reportSCS(descriptionStatsByLanguage.get(DESCRIPTION).get(getLanguage(filename)));
+
+			} else if (filename.contains("sct2_TextDefinition_")) {
+				reportSCS(descriptionStatsByLanguage.get(TEXT_DEFINITION).get(getLanguage(filename)));
+
+			} else if (filename.contains("sct2_Relationship_")) {
+				reportSCS(totals[TAB_RELS]);
+
+			} else if (filename.contains("sct2_RelationshipConcreteValues_")) {
+				reportSCS(totals[TAB_CD]);
+
+			} else if (filename.contains("sct2_sRefset_OWLExpression")) {
+				reportSCS(totals[TAB_AXIOMS]);
+
+			} else if (filename.contains("der2_cRefset_AttributeValue")) {
+				reportSCS(indicatorSubTotals);
+
+			} else if (filename.contains("der2_cRefset_Association")) {
+				reportSCS(associationSubTotals);
+
+			} else if (filename.contains("der2_cRefset_Language")) {
+				if (previousFilename == null) {
+					previousFilename = filename;
+					langRefsetTotals = new int[fileTotals.length];
+				}
+				for (int i = 0; i < fileTotals.length; i++) {
+					langRefsetTotals[i] += fileTotals[i];
+				}
+			}
+		}
+	}
+
+	private String getLanguage(String filename) {
+		String language = null;
+		if (filename.contains(DASH)) {
+			language = filename.substring(filename.indexOf(DASH)).substring(1, 3);
+		}
+		return language;
+	}
+
+	private void report(String filename, int[] subTotals) throws TermServerScriptException {
+		report(MAX_REPORT_TABS + PRIMARY_REPORT, filename, subTotals[0], subTotals[1], subTotals[2], subTotals[3], subTotals[4]);
+	}
+
+	private void reportSCS(int[] subTotals) throws TermServerScriptException {
+		int created, changed, inactivated, reactivated;
+
+		created = changed = inactivated = reactivated = 0;
+
+		if (subTotals != null) {
+			created = subTotals[IDX_NEW];
+			changed = subTotals[IDX_CHANGED] + subTotals[IDX_MOVED_MODULE] + subTotals[IDX_CHANGED_INACTIVE]; // + more?
+			inactivated = subTotals[IDX_INACT];
+			reactivated = subTotals[IDX_REACTIVATED];
 		}
 
-		for (String line: output) {
-			report(MAX_REPORT_TABS + SECONDARY_REPORT, line);
-		}
-		super.runJob();
+		int total = created + changed + inactivated + reactivated;
+
+		report(MAX_REPORT_TABS + PRIMARY_REPORT, "-- Summary Component Stats --", created, changed, inactivated, reactivated, total);
 	}
 
 	private String doubleQuote(String arg) {
@@ -263,10 +333,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private void processFile(String path, String filename) {
-		Map<String, String> deleted = new HashMap<>();
 		Map<String, String> created = new HashMap<>();
-		Map<String, ValuePair> updated = new HashMap<>();
+		Map<String, String> deleted = new HashMap<>();
+		Map<String, ValuePair> changed = new HashMap<>();
 		Map<String, ValuePair> inactivated = new HashMap<>();
+		Map<String, ValuePair> reactivated = new HashMap<>();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
 			String line;
@@ -274,32 +345,46 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			while ((line = br.readLine()) != null) {
 				char ch = line.charAt(0);
 
-				if (!(ch == '<' || ch == '>')) {
+				if (!(ch == LINE_DELETED_INDICATOR || ch == LINE_CREATED_INDICATOR)) {
 					continue;
 				}
 
 				// Start from index = 2 to exclude "<" or ">" and the following space and
 				// split into an id part (key) and the rest (value)
-				String[] cols = line.substring(2).split("\t", 2);
+				String[] cols = line.substring(2).split(FIELD_DELIMITER, 2);
 
 				String key = cols[0];
 				String value = cols[1];
 
 				switch (ch) {
-					case '<':
+					case LINE_DELETED_INDICATOR:
 						// Previous release entry
-						deleted.put(key, value);
-						break;
-
-					case '>':
-						// Current release entry
-						if (deleted.containsKey(key)) {
-							String previousValue = deleted.remove(key);
-							ValuePair valuePair = new ValuePair(previousValue, value);
+						/*if (created.containsKey(key)) {
+							String newValue = created.remove(key);
+							ValuePair valuePair = new ValuePair(value, newValue);
 							if (valuePair.isInactivated()) {
 								inactivated.put(key, valuePair);
+							} else if (valuePair.isReactivated()) {
+								reactivated.put(key, valuePair);
 							} else {
-								updated.put(key, valuePair);
+								changed.put(key, valuePair);
+							}
+						} else {*/
+							deleted.put(key, value);
+						//}
+						break;
+
+					case LINE_CREATED_INDICATOR:
+						// Current release entry
+						if (deleted.containsKey(key)) {
+							String oldValue = deleted.remove(key);
+							ValuePair valuePair = new ValuePair(oldValue, value);
+							if (valuePair.isInactivated()) {
+								inactivated.put(key, valuePair);
+							} else if (valuePair.isReactivated()) {
+								reactivated.put(key, valuePair);
+							} else {
+								changed.put(key, valuePair);
 							}
 						} else {
 							created.put(key, value);
@@ -307,10 +392,22 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						break;
 				}
 			}
-			int total = created.size() + deleted.size() + updated.size() + inactivated.size();
-			report(MAX_REPORT_TABS + PRIMARY_REPORT, filename, created.size(), deleted.size(), updated.size(), inactivated.size(), total);
-		} catch (IOException | IndexOutOfBoundsException | TermServerScriptException e) {
-			LOGGER.error("Error processing file: " + filename, e);
+
+			assert deleted.size() == 0;
+
+			int total = created.size() + changed.size() + inactivated.size() + reactivated.size();
+
+			fileTotals.put(filename, new int[] {
+					created.size(),
+					changed.size(),
+					inactivated.size(),
+					reactivated.size(),
+					total
+			});
+
+		} catch (IOException | IndexOutOfBoundsException e) {
+			LOGGER.error("Error processing file: " + filename);
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -320,7 +417,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		// Stripped id is the same for the pair of values
 
 		// Index of the "active" indicator column in the value string
-		static final int DIFF_IDX_ACTIVE = 1;
+		static final int DIFF_IDX_ACTIVE = IDX_ACTIVE - 1;
 
 		String previousValue;
 		String currentValue;
@@ -333,8 +430,15 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		boolean isInactivated() {
 			// Split previous and current value strings into parts (columns) and
 			// compare their second column, i.e. "active" indicator
-			return "1".equals(previousValue.split("\t")[DIFF_IDX_ACTIVE]) &&
-					"0".equals(currentValue.split("\t")[DIFF_IDX_ACTIVE]);
+			return ACTIVE_FLAG.equals(previousValue.split(FIELD_DELIMITER)[DIFF_IDX_ACTIVE]) &&
+					INACTIVE_FLAG.equals(currentValue.split(FIELD_DELIMITER)[DIFF_IDX_ACTIVE]);
+		}
+
+		boolean isReactivated() {
+			// Split previous and current value strings into parts (columns) and
+			// compare their second column, i.e. "active" indicator
+			return INACTIVE_FLAG.equals(previousValue.split(FIELD_DELIMITER)[DIFF_IDX_ACTIVE]) &&
+					ACTIVE_FLAG.equals(currentValue.split(FIELD_DELIMITER)[DIFF_IDX_ACTIVE]);
 		}
 	}
 }

@@ -49,12 +49,20 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 	static List<DescriptionType> TEXT_DEFN;
 	static List<DescriptionType> NOT_TEXT_DEFN;
+
+	static final String DESCRIPTION = "Description";
+	static final String TEXT_DEFINITION = "Text Defn";
+
 	List<Concept> topLevelHierarchies;
 	File debugFile;
-	
-	private int[][] totals;
-	private Map<String, Map<String, int[]>> descriptionStatsByLanguage = new HashMap<>();
-	
+
+	protected int[][] totals;
+	protected Map<String, Map<String, int[]>> descriptionStatsByLanguage = new HashMap<>();
+
+	protected int[] associationSubTotals = new int[DATA_WIDTH];
+	protected int[] languageSubTotals = new int[DATA_WIDTH];
+	protected int[] indicatorSubTotals = new int[DATA_WIDTH];
+
 	Concept[] QIScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
 			PHARM_BIO_PRODUCT, PROCEDURE,
 			SITN_WITH_EXP_CONTXT, SPECIMEN,
@@ -352,7 +360,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 	
 	private int[] getDescriptionByLanguageArray (DescriptionType type, String lang) {
-		String statBucket = (type == DescriptionType.TEXT_DEFINITION ? "Text Defn" : "Description");
+		String statBucket = (type == DescriptionType.TEXT_DEFINITION ? TEXT_DEFINITION : DESCRIPTION);
 		Map<String, int[]> statsByLanguage = descriptionStatsByLanguage.get(statBucket);
 		if (statsByLanguage == null) {
 			statsByLanguage = new HashMap<>();
@@ -628,9 +636,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		
 		//Refset data is not broken down by major hierarchy
 		//Split into each type of refset with sub totals
-		outputRefsetData(TAB_REFSET, "association", totals);
-		outputRefsetData(TAB_REFSET, "language", totals);
-		outputRefsetData(TAB_REFSET, "indicator", totals);
+		associationSubTotals = outputRefsetData(TAB_REFSET, "association", totals);
+		languageSubTotals = outputRefsetData(TAB_REFSET, "language", totals);
+		indicatorSubTotals = outputRefsetData(TAB_REFSET, "indicator", totals);
 		
 		outputDescriptionByLanguage(TAB_DESC_BY_LANG, totals);
 		
@@ -639,7 +647,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 	
-	private void outputRefsetData(int tabIdx, String filter, int[][] totals) throws TermServerScriptException {
+	private int[] outputRefsetData(int tabIdx, String filter, int[][] totals) throws TermServerScriptException {
 		int[] subTotals = new int[DATA_WIDTH];
 		Concept subTotalConcept = new Concept("","  SubTotal");
 		for (Map.Entry<String, int[]> entry : refsetDataMap.entrySet()) {
@@ -654,6 +662,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 		report(tabIdx, subTotalConcept, subTotals);
 		report(tabIdx, "");
+		return subTotals;
 	}
 	
 	private void outputDescriptionByLanguage(int tabIdx, int[][] totals) throws TermServerScriptException {
