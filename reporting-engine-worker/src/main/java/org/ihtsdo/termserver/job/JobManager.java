@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.job;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 import javax.annotation.PostConstruct;
@@ -17,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 @Component
 public class JobManager {
@@ -42,7 +43,7 @@ public class JobManager {
 
 	@PostConstruct
 	public void init(){
-		if (knownJobs.size() > 0) {
+		if (!knownJobs.isEmpty()) {
 			LOGGER.info("Job Manager rejecting attempt at 2nd initialisation");
 			return;
 		}
@@ -57,30 +58,34 @@ public class JobManager {
 			try {
 				//Is this a thing we can actually instantiate?
 				if (!jobClass.isInterface()) {
-					Job thisJob = jobClass.newInstance().getJob();
+					Job thisJob = constructJob(jobClass);
 					LOGGER.info("Registering known job: {}", thisJob.getName());
 					knownJobs.put(thisJob.getName(), jobClass);
 					expectedDurations.put(thisJob.getName(), thisJob.getExpectedDuration());
 				} else {
 					LOGGER.info("Ignoring interface {}", jobClass);
 				}
-			} catch (IllegalAccessException | InstantiationException e) {
+			} catch (ReflectiveOperationException e) {
 				LOGGER.error("Failed to register job {}", jobClass, e);
-			} 
+			}
 		}
 		
 		if (buildProperties != null) {
 			buildVersion = buildProperties.getVersion();
 		}
 	}
-	
-	public Job getJob (String jobName) {
+
+	private static Job constructJob(Class<? extends JobClass> jobClass) throws ReflectiveOperationException {
+		return jobClass.getDeclaredConstructor().newInstance().getJob();
+	}
+
+	public Job constructJob(String jobName) {
 		//Do I know about this job?
 		Class<? extends JobClass> jobClass = knownJobs.get(jobName);
 		if (jobClass != null) {
 			try {
-				return jobClass.newInstance().getJob();
-			} catch (IllegalAccessException | InstantiationException e) {
+				return constructJob(jobClass);
+			} catch (ReflectiveOperationException e) {
 				TermServerScript.warn("Unable to instantiate job: " + jobName);
 			}
 		}
@@ -107,15 +112,15 @@ public class JobManager {
 					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
 				} else {
 					try {
-						if (ensureJobValid(jobRun, jobClass.newInstance().getJob())) {
-							JobClass thisJob = jobClass.newInstance();
+						if (ensureJobValid(jobRun, constructJob(jobClass))) {
+							JobClass thisJob = jobClass.getDeclaredConstructor().newInstance();
 							jobRun.setStatus(JobStatus.Running);
 							transmitter.send(this, jobRun);
 							
 							JobWatcher watcher = new JobWatcher(expectedDurations.get(jobRun.getJobName()), jobRun, transmitter);
 							watcherThread = new Thread(watcher, jobRun.getJobName() + " watcher thread");
 							watcherThread.start();
-							
+
 							thisJob.instantiate(jobRun, applicationContext);
 						} else {
 							jobRun.setStatus(JobStatus.Failed);
@@ -170,7 +175,7 @@ public class JobManager {
 	private void transmitMetadata() {
 		for (Map.Entry<String, Class<? extends JobClass>> knownJobClass : knownJobs.entrySet()) {
 			try {
-				Job thisJob = knownJobClass.getValue().newInstance().getJob();
+				Job thisJob = constructJob(knownJobClass.getValue());
 				
 				//Some jobs shouldn't see the light of day.
 				//TODO Make this code environment aware so it allows testing status in Dev and UAT
@@ -206,9 +211,10 @@ public class JobManager {
 					thisJob.setCategory(jobCategory);
 				}
 				thisJob.getCategory().setType(indicatedType);
-			} catch (IllegalAccessException | InstantiationException e) {
+
+			} catch (ReflectiveOperationException e) {
 				LOGGER.error("Unable to return metadata on {}",knownJobClass.getKey(), e);
-			} 
+			}
 		}
 		JobMetadata metadata = new JobMetadata();
 		metadata.setJobTypes(new ArrayList<>(knownJobTypes.values()));

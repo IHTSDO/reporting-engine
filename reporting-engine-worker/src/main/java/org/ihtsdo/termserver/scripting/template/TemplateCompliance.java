@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -181,7 +182,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				logicalTemplate = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				templateName = template;
 			} else if (template.startsWith("{") || template.startsWith("[")) {
-				ConceptTemplate ct = tsc.loadLocalConceptTemplate("User Defined Template",IOUtils.toInputStream(template));
+				ConceptTemplate ct = tsc.loadLocalConceptTemplate("User Defined Template",IOUtils.toInputStream(template, "UTF-8"));
 				logicalTemplate = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				templateName = "User supplied json block";
 			} else {

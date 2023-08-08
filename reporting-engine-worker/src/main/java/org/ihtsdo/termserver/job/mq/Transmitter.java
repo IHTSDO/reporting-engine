@@ -57,7 +57,7 @@ public class Transmitter {
 		//We also need to only return parameters that the job indicated it can handle
 		//Can only do this for jobs we know about however!
 		//We'll also re-assert the specified parameter order at this time, in case it's been lost
-		Job job = jobManager.getJob(run.getJobName());
+		Job job = jobManager.constructJob(run.getJobName());
 		if (run.getParameters() != null && job != null) {
 			//Ensure all jobs allow the project to be chosen
 			Set<String> paramKeys = new HashSet<>(run.getParameters().keySet());

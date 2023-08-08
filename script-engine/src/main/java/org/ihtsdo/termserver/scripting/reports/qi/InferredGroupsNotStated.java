@@ -199,9 +199,9 @@ public class InferredGroupsNotStated extends TermServerReport {
 	
 	public void incrementInstanceCount(Concept key, int incrementAmount) {
 		if (!instancesPerSubHierarchy.containsKey(key)) {
-			instancesPerSubHierarchy.put (key, new Integer(0));
+			instancesPerSubHierarchy.put (key, 0);
 		}
-		int newValue = ((Integer)instancesPerSubHierarchy.get(key)).intValue() + incrementAmount;
+		int newValue = instancesPerSubHierarchy.get(key) + incrementAmount;
 		instancesPerSubHierarchy.put(key, newValue);
 	}
 	

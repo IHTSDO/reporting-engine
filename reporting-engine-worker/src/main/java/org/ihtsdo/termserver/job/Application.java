@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.ihtsdo.termserver.job.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.springframework.boot.WebApplicationType;
@@ -37,7 +38,8 @@ public class Application  {
 	public ObjectMapper objectMapper() {
 		final ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-		final ISO8601DateFormat df = new ISO8601DateFormat();
+
+		final StdDateFormat df = new StdDateFormat();
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
 		objectMapper.setDateFormat(df);
 		objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);

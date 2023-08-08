@@ -10,9 +10,11 @@ import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import com.google.gson.Gson;
+
+import static org.springframework.util.StringUtils.countOccurrencesOf;
 
 public class EclCache implements ScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(EclCache.class);
@@ -164,7 +166,7 @@ public class EclCache implements ScriptConstants {
 			return true;
 		}
 		
-		if (StringUtils.countOccurrencesOf(ecl, "|") > 2) {
+		if (countOccurrencesOf(ecl, "|") > 2) {
 			isSimple = false;
 		} else {
 			//Need to strip out all FSNs that might contain odd characters
