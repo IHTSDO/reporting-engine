@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincMatchingAttributes extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincMatchingAttributes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincMatchingAttributes.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		LoincMatchingAttributes report = new LoincMatchingAttributes();

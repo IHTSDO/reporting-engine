@@ -42,13 +42,13 @@ public class RecreateConceptFromBranch implements RF2Constants {
 	Concept concept = new Concept(conceptId);
 	
 	protected ElasticSearchClient es;
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecreateConceptFromBranch.class);
 	private AxiomRelationshipConversionService axiomService;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		RecreateConceptFromBranch app = new RecreateConceptFromBranch();
 		if (args.length < 1) {
-			app.logger.info("Usage:  -e <elasticsearch url>");
+			LOGGER.info("Usage:  -e <elasticsearch url>");
 			System.exit(-1);
 		}
 		
@@ -73,7 +73,7 @@ public class RecreateConceptFromBranch implements RF2Constants {
 		System.out.println(allDocs);
 		//TODO check the total returned that it's not > 100 or we'll be missing something
 		for (Map<String,Object> doc : allDocs) {
-			logger.info("Processing document {}", doc);
+			LOGGER.info("Processing document {}", doc);
 			Map<String, Object> component = (Map<String, Object>)doc.get("_source");
 			JsonElement jsonElement = gson.toJsonTree(component);
 			String type = (String)doc.get("_type");
@@ -98,7 +98,7 @@ public class RecreateConceptFromBranch implements RF2Constants {
 	}
 
 	private void processConcept(JsonElement jsonElement) {
-		logger.info("Processing component {}", jsonElement);
+		LOGGER.info("Processing component {}", jsonElement);
 		Concept c = gson.fromJson(jsonElement, Concept.class);
 		populateStandardFields(c, concept);
 		DefinitionStatus defStat = c.getDefinitionStatus();
@@ -119,10 +119,10 @@ public class RecreateConceptFromBranch implements RF2Constants {
 	}
 
 	private void processRefsetMember(JsonElement jsonElement) throws TermServerScriptException {
-		logger.info("Processing component {}", jsonElement);
+		LOGGER.info("Processing component {}", jsonElement);
 		RefsetMember rm = gson.fromJson(jsonElement, RefsetMember.class);
 		if (rm.getRefsetId().equals("900000000000456007")) {
-			logger.info("Skipping RefsetDescriptor {}",rm.getId());
+			LOGGER.info("Skipping RefsetDescriptor {}",rm.getId());
 			return;
 		}
 		switch (rm.getOnlyAdditionalFieldName()) {
@@ -142,7 +142,7 @@ public class RecreateConceptFromBranch implements RF2Constants {
 			populateStandardFields(rm, axiom);
 			concept.getClassAxioms().add(axiom);
 		} catch (ConversionException | TermServerScriptException e) {
-			logger.error("Failed to recover axioms " + rm);
+			LOGGER.error("Failed to recover axioms " + rm);
 		}
 	}
 

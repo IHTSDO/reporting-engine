@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BoSS_PAI_Check.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BoSS_PAI_Check.class);
 
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";

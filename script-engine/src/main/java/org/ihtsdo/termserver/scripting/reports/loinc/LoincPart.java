@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincPart {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincPart.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincPart.class);
 
 	public enum LoincStatus {ACTIVE, DEPRECATED};
 

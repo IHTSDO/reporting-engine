@@ -10,26 +10,26 @@ public class TimerUtil {
 	private final String timerName;
 	private final long start;
 	private long lastCheck;
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger LOGGER = LoggerFactory.getLogger(TimerUtil.class);
 
 	public TimerUtil(String timerName) {
 		this.timerName = timerName;
 		this.start = new Date().getTime();
 		lastCheck = start;
-		logger.info("Timer {}: started", timerName);
+		LOGGER.info("Timer {}: started", timerName);
 	}
 
 	public void checkpoint(String name) {
 		final long now = new Date().getTime();
 		float millisTaken = now - lastCheck;
 		lastCheck = now;
-		logger.info("Timer {}: {} took {} seconds", timerName, name, millisTaken / 1000f);
+		LOGGER.info("Timer {}: {} took {} seconds", timerName, name, millisTaken / 1000f);
 	}
 
 	public void finish() {
 		final long now = new Date().getTime();
 		float millisTaken = now - start;
-		logger.info("Timer {}: total took {} seconds", timerName, millisTaken / 1000f);
+		LOGGER.info("Timer {}: total took {} seconds", timerName, millisTaken / 1000f);
 	}
 
 	public static void main(String[] args) throws InterruptedException {

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class AttributeCardinalityReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AttributeCardinalityReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AttributeCardinalityReport.class);
 
 	List<String> criticalErrors = new ArrayList<String>();
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 // Which lists all the parents along with the calculated Proximal Primitive Parents
 public class FdParentsReport extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FdParentsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FdParentsReport.class);
 
 	String subHierarchy = "105590001"; // |Substance (substance)|
 	

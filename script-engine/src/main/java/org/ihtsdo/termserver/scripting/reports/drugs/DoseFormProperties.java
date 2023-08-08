@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class DoseFormProperties extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DoseFormProperties.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DoseFormProperties.class);
 
 	public static final String THIS_RELEASE = "This Release";
 	

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 //having us/gb variance.  We'll need to enhance the TermGenerator class to address this.
 public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AddAdditionalSynonyms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AddAdditionalSynonyms.class);
 
 	protected AddAdditionalSynonyms(BatchFix clone) {
 		super(clone);

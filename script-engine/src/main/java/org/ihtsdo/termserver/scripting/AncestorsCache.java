@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public class AncestorsCache implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AncestorsCache.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AncestorsCache.class);
 
 	private static AncestorsCache singleton = null;
 	private static AncestorsCache singletonStated = null;

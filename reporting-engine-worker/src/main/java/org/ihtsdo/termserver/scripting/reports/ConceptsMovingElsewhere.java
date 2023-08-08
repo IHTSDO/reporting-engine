@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsMovingElsewhere extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsMovingElsewhere.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsMovingElsewhere.class);
 
 	private Map<Concept, String> knownNamespaceExtensionMap = new HashMap<>();
 	private static String THIS_RELEASE = "This Release";

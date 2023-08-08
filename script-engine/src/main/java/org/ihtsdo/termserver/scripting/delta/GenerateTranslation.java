@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class GenerateTranslation extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(GenerateTranslation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateTranslation.class);
 
 	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
 	enum KnownTranslations { SWEDEN, BELGIUM };

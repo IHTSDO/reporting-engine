@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateRedundantStatedRelationships extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateRedundantStatedRelationships.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateRedundantStatedRelationships.class);
 
 	
 	protected InactivateRedundantStatedRelationships(BatchFix clone) {

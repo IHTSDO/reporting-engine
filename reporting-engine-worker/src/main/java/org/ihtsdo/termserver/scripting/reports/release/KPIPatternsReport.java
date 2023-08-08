@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 public class KPIPatternsReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(KPIPatternsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(KPIPatternsReport.class);
 
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;

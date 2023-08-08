@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ListAllConcepts extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ListAllConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ListAllConcepts.class);
 
 	private static final int MAX_CONCEPTS = 10000;
 	

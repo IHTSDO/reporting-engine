@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AlignLangRefsetToDescLang.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AlignLangRefsetToDescLang.class);
 
 	BiMap<String, String> refsetLangMap = HashBiMap.create();
 	BiMap<String, String> gpRefsetLangMap = HashBiMap.create();

@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
 
 	String revertToModule = "15561000146104";
 	

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsWithParents extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsWithParents.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsWithParents.class);
 
 	private static final String TERMS_FILTER = "Filter for terms";
 	private static final String EXAMPLE_MAIN_PARAM_ECL = "<< 1144725004";

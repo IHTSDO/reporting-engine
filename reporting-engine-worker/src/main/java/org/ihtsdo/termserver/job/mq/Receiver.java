@@ -14,16 +14,16 @@ public class Receiver {
 	
 	@Autowired
 	JobManager jobManager;
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Receiver.class);
+
 	@JmsListener(destination = "${schedule.manager.queue.request}")
 	public void receiveMessage(JobRun jobRun) {
 		String cookieStart = "AuthToken Missing";
 		if (!StringUtils.isEmpty(jobRun.getAuthToken()) && jobRun.getAuthToken().length() > 20) {
 			cookieStart = jobRun.getAuthToken().substring(0,20);
 		}
-		logger.info("Received request to run {} with parameters: {} and authToken starting: {}", jobRun, jobRun.getParameters(), cookieStart);
+		LOGGER.info("Received request to run {} with parameters: {} and authToken starting: {}", jobRun, jobRun.getParameters(), cookieStart);
 		jobManager.run(jobRun);
 	}
 

@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSensitivityTextFileEditor extends TermServerReport{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityTextFileEditor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityTextFileEditor.class);
 
 	Set<String> organismTerms = new HashSet<>();
 	Set<String> substanceTerms = new HashSet<>();

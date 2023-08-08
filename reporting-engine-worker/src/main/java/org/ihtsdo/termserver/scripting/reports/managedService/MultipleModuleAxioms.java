@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class MultipleModuleAxioms extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MultipleModuleAxioms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultipleModuleAxioms.class);
 
 	public static String FILTER_CORE = "Ignore original core concepts";
 	private boolean ignoreOriginalCore = true;

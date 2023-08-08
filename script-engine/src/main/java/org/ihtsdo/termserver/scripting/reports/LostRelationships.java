@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class LostRelationships extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LostRelationships.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LostRelationships.class);
 
 	Set<Concept> modifiedConcepts;
 	Set<Concept> descendentOfProductRole;

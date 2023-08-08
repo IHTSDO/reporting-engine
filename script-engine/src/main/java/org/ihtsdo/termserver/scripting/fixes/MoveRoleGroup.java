@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MoveRoleGroup.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MoveRoleGroup.class);
 
 	Set<Concept> targetAttributeValues;
 	CharacteristicType charType = CharacteristicType.STATED_RELATIONSHIP;

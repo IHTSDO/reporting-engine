@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class RefsetGenerator extends TermServerScript {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RefsetGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RefsetGenerator.class);
 
 	private String outputName;  //Should be controlled by combination of other values eg refsetShape/Name
 	protected String edition = "INT";

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class QI731_RemoveAttribute extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(QI731_RemoveAttribute.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(QI731_RemoveAttribute.class);
 
 	String ecl = "<< 125605004 |Fracture of bone (disorder)| : 42752001 |Due to (attribute)| = 773760007 |Traumatic event (event)|";
 	RelationshipTemplate removeMe;

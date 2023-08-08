@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
 
 	Concept subHierarchy = ROOT_CONCEPT;
 	private static final String FULL_STOP = ".";

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ConceptCreator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptCreator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptCreator.class);
 
 	ConceptCreationPattern conceptPattern;
 	List<String> inspirations = new ArrayList<>();

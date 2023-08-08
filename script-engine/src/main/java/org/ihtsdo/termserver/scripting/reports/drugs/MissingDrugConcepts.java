@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 public class MissingDrugConcepts extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MissingDrugConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MissingDrugConcepts.class);
 
 	private static final String CD = "(clinical drug)";
 	private static final String MPF = "(medicinal product form)";

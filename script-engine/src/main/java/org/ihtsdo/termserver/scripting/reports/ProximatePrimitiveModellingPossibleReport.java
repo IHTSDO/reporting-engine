@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ProximatePrimitiveModellingPossibleReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ProximatePrimitiveModellingPossibleReport.class);
 
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String publishedArchive;

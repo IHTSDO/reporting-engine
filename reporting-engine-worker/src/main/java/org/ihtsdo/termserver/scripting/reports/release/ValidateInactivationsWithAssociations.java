@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ValidateInactivationsWithAssociations.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateInactivationsWithAssociations.class);
 
 	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;

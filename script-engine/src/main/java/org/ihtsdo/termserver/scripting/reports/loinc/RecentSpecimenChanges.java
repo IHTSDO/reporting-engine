@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class RecentSpecimenChanges extends TermServerScript {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RecentSpecimenChanges.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecentSpecimenChanges.class);
 
 	Collection<Concept> targetAttributes = null;
 	String sinceEffectiveDate = "20180131";

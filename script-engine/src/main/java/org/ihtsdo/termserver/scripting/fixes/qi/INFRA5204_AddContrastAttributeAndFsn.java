@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class INFRA5204_AddContrastAttributeAndFsn extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(INFRA5204_AddContrastAttributeAndFsn.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA5204_AddContrastAttributeAndFsn.class);
 
 	private Set<String> exclusionTexts;
 	private RelationshipTemplate addTemplate;

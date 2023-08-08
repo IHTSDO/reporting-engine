@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class CreateMissingLangRefsetEntries extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CreateMissingLangRefsetEntries.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingLangRefsetEntries.class);
 
 	String langRefsetId = "554461000005103";
 	

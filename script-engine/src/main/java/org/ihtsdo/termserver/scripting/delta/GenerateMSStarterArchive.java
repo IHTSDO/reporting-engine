@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class GenerateMSStarterArchive extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(GenerateMSStarterArchive.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateMSStarterArchive.class);
 
 	KnownExtensions thisExtension = KnownExtensions.BELGIUM;
 	enum KnownExtensions { SWEDEN, BELGIUM };

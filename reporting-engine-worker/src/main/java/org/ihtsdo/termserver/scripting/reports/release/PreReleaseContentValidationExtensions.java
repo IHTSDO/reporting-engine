@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class PreReleaseContentValidationExtensions extends PreReleaseContentValidation {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidationExtensions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidationExtensions.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();

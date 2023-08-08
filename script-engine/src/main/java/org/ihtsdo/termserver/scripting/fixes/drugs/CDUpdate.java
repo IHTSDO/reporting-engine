@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class CDUpdate extends DrugBatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CDUpdate.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CDUpdate.class);
 
 	static final int MINIMAL_DRUG_MODELLING = 8;
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);

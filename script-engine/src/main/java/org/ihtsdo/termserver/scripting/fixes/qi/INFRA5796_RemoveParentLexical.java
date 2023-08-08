@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class INFRA5796_RemoveParentLexical extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(INFRA5796_RemoveParentLexical.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA5796_RemoveParentLexical.class);
 
 	String ecl = "<< 12456005 |Iatrogenic disorder (disorder)| ";
 	String searchTerm = "iatrogenic";

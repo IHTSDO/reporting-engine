@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class DrugUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DrugUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DrugUtils.class);
 
 	public static final String CD = "(clinical drug)";
 	public static final String MP = "(medicinal product)";

@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class SubHierarchyConceptsReport extends TermServerReport{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SubHierarchyConceptsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SubHierarchyConceptsReport.class);
 
 	Concept[] subHierarchies;
 	

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class ModifiedActiveIngredients extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ModifiedActiveIngredients.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ModifiedActiveIngredients.class);
 
 	Concept subHierarchy;
 	

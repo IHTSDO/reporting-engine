@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(GenerateWorkDoneStatsWithTempateTypes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateWorkDoneStatsWithTempateTypes.class);
 
 	List<Concept> subHierarchies;
 	List<Concept> targetValues;

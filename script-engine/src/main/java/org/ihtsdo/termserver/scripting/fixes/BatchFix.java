@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class BatchFix extends TermServerScript implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BatchFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchFix.class);
 
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;

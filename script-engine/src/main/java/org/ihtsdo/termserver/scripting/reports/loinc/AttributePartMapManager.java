@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class AttributePartMapManager {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
 
 	private static int NOT_SET = -1;
 	

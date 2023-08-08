@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class NormalizeDrugs extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugs.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugs.class);
 
 	Relationship newParentRel;
 	String newParent = "763158003"; // |Medicinal product (product)| 

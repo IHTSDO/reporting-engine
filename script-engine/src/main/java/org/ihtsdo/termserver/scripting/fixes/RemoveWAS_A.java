@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RemoveWAS_A.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveWAS_A.class);
 
 	BrowserClient browserClient;
 	Set<Concept> allActiveConcepts;

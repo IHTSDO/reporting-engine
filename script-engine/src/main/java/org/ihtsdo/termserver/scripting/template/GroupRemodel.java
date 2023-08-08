@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class GroupRemodel extends TemplateFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(GroupRemodel.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GroupRemodel.class);
 
 	Set<Concept> groupedAttributeTypes = new HashSet<>();
 	Set<Concept> ungroupedAttributeTypes = new HashSet<>();

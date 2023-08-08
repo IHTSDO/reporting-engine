@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsWithAttributesAsParents extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsWithAttributesAsParents.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsWithAttributesAsParents.class);
 
 	Concept attributeType;
 	List<Concept> ignoreTypes;

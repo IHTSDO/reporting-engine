@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DrugsReTerming.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DrugsReTerming.class);
 
 	String[] author_reviewer = new String[] {targetAuthor};
 	

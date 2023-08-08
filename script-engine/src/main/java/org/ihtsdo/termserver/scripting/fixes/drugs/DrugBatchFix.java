@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DrugBatchFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DrugBatchFix.class);
 
 	static Map<String, String> wordSubstitution = new HashMap<String, String>();
 	static {

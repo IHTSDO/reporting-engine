@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class AlignToTemplate extends TemplateFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AlignToTemplate.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AlignToTemplate.class);
 
 
 	protected AlignToTemplate(BatchFix clone) {

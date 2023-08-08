@@ -8,14 +8,14 @@ import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQConnectionFac
 
 public class ActiveMQConnectionFactoryForAutoscaling implements ActiveMQConnectionFactoryCustomizer {
 
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ActiveMQConnectionFactoryForAutoscaling.class);
+
 	@Override
 	public void customize(ActiveMQConnectionFactory factory) {
 		ActiveMQPrefetchPolicy prefetchPolicy = new ActiveMQPrefetchPolicy();
 		//Autoscaling only effective if we consume one message at a time.
 		prefetchPolicy.setQueuePrefetch(0);
 		factory.setPrefetchPolicy(prefetchPolicy);
-		logger.info("Prefetch policy set to '0' for autoscaling");
+		LOGGER.info("Prefetch policy set to '0' for autoscaling");
 	}
 }

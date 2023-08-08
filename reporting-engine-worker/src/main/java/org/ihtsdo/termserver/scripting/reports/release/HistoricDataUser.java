@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class HistoricDataUser extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HistoricDataUser.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricDataUser.class);
 
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";

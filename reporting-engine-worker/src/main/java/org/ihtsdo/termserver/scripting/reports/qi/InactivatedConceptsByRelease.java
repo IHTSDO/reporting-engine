@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivatedConceptsByRelease extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivatedConceptsByRelease.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivatedConceptsByRelease.class);
 
 	List<String> releaseETs;
 	private static int startYear = 2018;

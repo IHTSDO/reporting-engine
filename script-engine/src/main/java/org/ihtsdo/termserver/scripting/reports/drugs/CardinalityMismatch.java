@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class CardinalityMismatch extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CardinalityMismatch.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CardinalityMismatch.class);
 
 	Concept attributeType = HAS_DISPOSITION;
 	

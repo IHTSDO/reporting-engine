@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class ExtendedLocale implements Serializable {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ExtendedLocale.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExtendedLocale.class);
 
 	private static final Pattern EXTENDED_LOCALE_PATTERN = Pattern.compile("([a-zA-Z]{2})(-([a-zA-Z]{2}))?(-x-([1-9][0-9]{5,17}))?");
 

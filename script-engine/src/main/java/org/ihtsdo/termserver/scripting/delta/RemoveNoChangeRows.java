@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class RemoveNoChangeRows extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RemoveNoChangeRows.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveNoChangeRows.class);
 
 	File deltaToFilter;
 	//Concept hierarchyOfInterest = CLINICAL_FINDING;

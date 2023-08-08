@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 public class MergeDeltas extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MergeDeltas.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MergeDeltas.class);
 
 	FlatFileLoader currentDelta = new FlatFileLoader();
 	File fixDeltaFile;

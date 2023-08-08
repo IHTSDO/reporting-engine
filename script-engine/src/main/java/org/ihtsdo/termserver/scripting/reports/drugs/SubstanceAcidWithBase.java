@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class SubstanceAcidWithBase extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SubstanceAcidWithBase.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SubstanceAcidWithBase.class);
 
 	String subHierarchyStr = "105590001";  // Substance (substance)
 	Set<Concept> reported = new HashSet<Concept>();

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivedCoreRelationshipsToExtensionModule.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivedCoreRelationshipsToExtensionModule.class);
 
 	//String effectiveTime = "20211015";
 	String targetEffectiveTime = null;

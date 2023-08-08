@@ -18,7 +18,7 @@ INFRA-8024 Move an attribute out of a group to be self grouped
 */
 public class SelfGroupAttributes extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SelfGroupAttributes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SelfGroupAttributes.class);
 	public static final String ecl = "<< 437481000124109 |Amino acid modified diet (regime/therapy)| OR << 435581000124102 |Carbohydrate modified diet (regime/therapy)| OR << 435671000124101 |Cholesterol modified diet (regime/therapy)| OR << 1055204001 |Fat and oil modified diet (regime/therapy)| OR << 1156315004 |Plant fiber modified diet (regime/therapy)| OR << 435781000124109 |Mineral modified diet (regime/therapy)| OR << 1052337007 |Protein and protein derivative modified diet (regime/therapy)| OR << 435811000124106 |Vitamin modified diet (regime/therapy)| OR << 435701000124100 |Energy modified diet (regime/therapy)|";
 	
 	Concept targetAttributeType;

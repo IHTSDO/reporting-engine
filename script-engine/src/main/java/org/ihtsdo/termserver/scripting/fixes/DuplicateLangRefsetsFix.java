@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class DuplicateLangRefsetsFix extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateLangRefsetsFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateLangRefsetsFix.class);
 
 	protected DuplicateLangRefsetsFix(BatchFix clone) {
 		super(clone);

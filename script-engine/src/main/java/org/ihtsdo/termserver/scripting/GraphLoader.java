@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class GraphLoader implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();

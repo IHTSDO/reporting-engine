@@ -56,12 +56,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 	String terminologyServerUrl;
 	
 	static final JobRun metadataRequest = JobRun.create("METADATA", null);
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static final Logger LOGGER = LoggerFactory.getLogger(ScheduleServiceImpl.class);
 
 	@PostConstruct
 	public void init() {
-		logger.info("Recovering previously saved Job Schedules from repository");
+		LOGGER.info("Recovering previously saved Job Schedules from repository");
 		//Schedule all known cron jobs in memory
 		for (JobSchedule jobSchedule : jobScheduleRepository.findAll()) {
 			scheduleJob(jobSchedule);
@@ -123,7 +122,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
 		jobRun.setWhiteList(job.getWhiteListConcepts(jobRun.getcodeSystemShortname()));
-		logger.info("Whitelisting {} concepts for {} in codeSystem", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getcodeSystemShortname());
+		LOGGER.info("Whitelisting {} concepts for {} in codeSystem", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getcodeSystemShortname());
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
@@ -143,7 +142,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 				
 				Integer displayOrder = job.getParameters().get(parameterKey).getDisplayOrder();
 				if (displayOrder == null) {
-					logger.warn(jobRun.getJobName() + " parameter " + parameterKey + " does not specify a display order");
+					LOGGER.warn(jobRun.getJobName() + " parameter " + parameterKey + " does not specify a display order");
 					displayOrder = 0;
 				}
 				jobRun.getParameters().get(parameterKey).setDisplayOrder(displayOrder);
@@ -151,12 +150,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 		}
 		if (StringUtils.isEmpty(jobRun.getProject())) {
 			jobRun.setProject("MAIN");
-			logger.warn("Failed to find Project parameter, defaulting to MAIN");
+			LOGGER.warn("Failed to find Project parameter, defaulting to MAIN");
 		}
 
 		JobRun savedJobRun = jobRunRepository.save(jobRun);
 		jobRun.setId(savedJobRun.getId());
-		logger.info("Running job: {}", jobRun);
+		LOGGER.info("Running job: {}", jobRun);
 		transmitter.send(jobRun);
 		return jobRun;
 	}
@@ -203,7 +202,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
 	@Override
 	public void initialise() {
-		logger.info("Sending request for metadata");
+		LOGGER.info("Sending request for metadata");
 		transmitter.send(metadataRequest);
 	}
 
@@ -223,23 +222,23 @@ public class ScheduleServiceImpl implements ScheduleService {
 			if (savedJob.isPresent()) {
 				JobStatus existingStatus = savedJob.get().getStatus();
 				if (existingStatus.equals(JobStatus.Complete) || existingStatus.equals(JobStatus.Failed)) {
-					logger.error("Job already at status {}, ignoring response {}", existingStatus, jobRun);
+					LOGGER.error("Job already at status {}, ignoring response {}", existingStatus, jobRun);
 					return;
 				}
 				//We need to grab the ID of the saved parameters objects 
 				//so we can update the correct one in the db, otherwise we save a fresh copy
 				jobRun.getParameters().setId(savedJob.get().getParameters().getId());
 			}
-			logger.info("Saving job response: {}", jobRun);
+			LOGGER.info("Saving job response: {}", jobRun);
 			jobRunRepository.save(jobRun);
 		} catch (Exception e) {
-			logger.error("Unable to process response for jobRun '{}'", jobRun, e);
+			LOGGER.error("Unable to process response for jobRun '{}'", jobRun, e);
 		}
 	}
 
 	@Override
 	public void processMetadata(JobMetadata metadata) {
-		logger.info("Processing metadata for {} job types",metadata.getJobTypes().size());
+		LOGGER.info("Processing metadata for {} job types",metadata.getJobTypes().size());
 		for (JobType jobType : metadata.getJobTypes()) {
 			try {
 				//Do we know about this jobType?
@@ -249,7 +248,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 				}
 				
 				//What categories are contained?
-				logger.info("Processing metadata for {} categories in type '{}'",jobType.getCategories().size(), jobType.getName());
+				LOGGER.info("Processing metadata for {} categories in type '{}'",jobType.getCategories().size(), jobType.getName());
 				for (JobCategory jobCategory : jobType.getCategories()) {
 					//Do we know about this job category?
 					String categoryName = jobCategory.getName();
@@ -259,19 +258,19 @@ public class ScheduleServiceImpl implements ScheduleService {
 						knownCategory = jobCategoryRepository.save(jobCategory);
 					}
 					
-					logger.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
+					LOGGER.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
 					for (Job job : jobCategory.getJobs()) {
 						job.setCategory(knownCategory);
 
 						//Do we know about this job already
 						Job knownJob = jobRepository.findByName(job.getName());
 						if (knownJob == null) {
-							logger.info("Saving job: " + job);
+							LOGGER.info("Saving job: " + job);
 						} else {
 							job.setId(knownJob.getId());
 							//Whitelists are maintained by schedule manager, so retain
 							job.setWhiteListMap(knownJob.getWhiteListMap());
-							logger.info("Updating job: " + job);
+							LOGGER.info("Updating job: " + job);
 						}
 						
 						//We protect the json from having parent links and redundant keys, 
@@ -288,16 +287,16 @@ public class ScheduleServiceImpl implements ScheduleService {
 					savedJobs.removeAll(jobCategory.getJobs());
 					//All the jobs we're left with were not represented in the metadata, so hide
 					for (Job withdrawnJob : savedJobs) {
-						logger.info("Marking job as withdrawn/hidden: {}", withdrawnJob);
+						LOGGER.info("Marking job as withdrawn/hidden: {}", withdrawnJob);
 						withdrawnJob.setProductionStatus(Job.ProductionStatus.HIDEME);
 						jobRepository.save(withdrawnJob);
 					}
 				}
 			} catch (Exception e) {
-				logger.error("Unable to process metadata", e);
+				LOGGER.error("Unable to process metadata", e);
 			}
 		}
-		logger.info("Metadata processing complete");
+		LOGGER.info("Metadata processing complete");
 	}
 
 	@Override
@@ -305,10 +304,10 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Do we have this job?
 		JobRun jobRun = getJobRun(typeName, jobName, runId);
 		if (jobRun == null) {
-			logger.error("Unable to delete. JobRun with id {} not found.", runId);
+			LOGGER.error("Unable to delete. JobRun with id {} not found.", runId);
 			return false;
 		}
-		logger.info("Deleting JobRun {}", jobRun);
+		LOGGER.info("Deleting JobRun {}", jobRun);
 		jobRunRepository.delete(jobRun);
 		return true;
 	}
@@ -333,16 +332,16 @@ public class ScheduleServiceImpl implements ScheduleService {
 		
 		WhiteList whiteList = null;
 		if (whiteListConcepts == null || whiteListConcepts.size() == 0) {
-			logger.info("Removing all whitelisted concepts for job: {}", jobName);
+			LOGGER.info("Removing all whitelisted concepts for job: {}", jobName);
 		} else {
-			logger.info("Whitelisting {} concepts for job: {}", whiteListConcepts.size(), jobName);
+			LOGGER.info("Whitelisting {} concepts for job: {}", whiteListConcepts.size(), jobName);
 			//If this job doesn't have a whitelist for this code system then we'll need to save it first so
 			//that it has an identifier - TODO I'm sure this can be improved, hibernate should take care of this
 			whiteList = job.getWhiteList(codeSystemShortname);
 			if (whiteList == null) {
 				whiteList = new WhiteList(codeSystemShortname, null);
 				whiteList = whiteListRepository.save(whiteList);
-				logger.info("Provisional save of whitelist {}", whiteList.getId());
+				LOGGER.info("Provisional save of whitelist {}", whiteList.getId());
 				whiteList.setConcepts(whiteListConcepts);
 			} else {
 				whiteList.getConcepts().retainAll(whiteListConcepts);

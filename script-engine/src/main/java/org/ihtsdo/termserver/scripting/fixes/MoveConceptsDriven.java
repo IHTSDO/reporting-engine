@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MoveConceptsDriven.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MoveConceptsDriven.class);
 
 	private String moveListFileStr = "G:/My Drive/020_BatchScripting/2020/infra-6069-mkii.txt";
 	private String newLocationStr = "416516009|Extension Namespace {1000009} (namespace concept)|";

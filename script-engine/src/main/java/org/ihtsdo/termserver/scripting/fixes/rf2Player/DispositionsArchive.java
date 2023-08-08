@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DispositionsArchive.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DispositionsArchive.class);
 
 	Map<Concept, String> conceptToDispositionMap = new HashMap<Concept, String>();
 	Set<Concept> hasNoDisposition = new HashSet<Concept>();	

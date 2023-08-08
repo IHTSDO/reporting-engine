@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class MissingInactivationIndicatorsFix extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MissingInactivationIndicatorsFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MissingInactivationIndicatorsFix.class);
 
 	String targetSemanticTag = "(product)";
 	

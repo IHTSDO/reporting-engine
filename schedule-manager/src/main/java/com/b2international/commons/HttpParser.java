@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 public class HttpParser {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HttpParser.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HttpParser.class);
 
     // Arrays used by isToken(), isHex()
     private static final boolean isToken[] = new boolean[128];

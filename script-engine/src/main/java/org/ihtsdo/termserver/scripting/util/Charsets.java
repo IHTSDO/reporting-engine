@@ -6,6 +6,6 @@ import org.slf4j.LoggerFactory;
 
 public class Charsets {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Charsets.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Charsets.class);
 
 }

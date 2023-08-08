@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceFix_INFRA_4166 extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix_INFRA_4166.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix_INFRA_4166.class);
 
 	String[] knownLowerCase = new String[] { "mm", "nm" };
 	

@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincScript extends TermServerScript implements LoincConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
 
 	protected static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();

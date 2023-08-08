@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class DuplicateInactivationAssocationReport extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateInactivationAssocationReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateInactivationAssocationReport.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		DuplicateInactivationAssocationReport report = new DuplicateInactivationAssocationReport();

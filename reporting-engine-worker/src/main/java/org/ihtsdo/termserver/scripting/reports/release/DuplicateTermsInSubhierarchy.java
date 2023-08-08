@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class DuplicateTermsInSubhierarchy extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateTermsInSubhierarchy.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateTermsInSubhierarchy.class);
 
 	public static String NEW_ISSUES_ONLY = "New Issues Only";
 	public static String PT_ONLY = "Preferred Terms Only";

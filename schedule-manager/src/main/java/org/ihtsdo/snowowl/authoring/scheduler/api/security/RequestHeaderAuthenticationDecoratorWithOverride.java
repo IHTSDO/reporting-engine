@@ -11,7 +11,7 @@ public class RequestHeaderAuthenticationDecoratorWithOverride extends org.ihtsdo
 	private String overrideRoles;
 	private String overrideToken;
 
-	private static final Logger logger = LoggerFactory.getLogger(RequestHeaderAuthenticationDecoratorWithOverride.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RequestHeaderAuthenticationDecoratorWithOverride.class);
 
 	public RequestHeaderAuthenticationDecoratorWithOverride(String overrideUsername, String overrideRoles, String overrideToken) {
 		this.overrideUsername = overrideUsername;
@@ -22,7 +22,7 @@ public class RequestHeaderAuthenticationDecoratorWithOverride extends org.ihtsdo
 	@Override
 	protected String getUsername(HttpServletRequest request) {
 		if (!Strings.isNullOrEmpty(overrideUsername)) {
-			logger.warn("Using authentication override username {}", overrideUsername);
+			LOGGER.warn("Using authentication override username {}", overrideUsername);
 			return overrideUsername;
 		} else {
 			return super.getUsername(request);
@@ -32,7 +32,7 @@ public class RequestHeaderAuthenticationDecoratorWithOverride extends org.ihtsdo
 	@Override
 	protected String getRoles(HttpServletRequest request) {
 		if (!Strings.isNullOrEmpty(overrideRoles)) {
-			logger.warn("Using authentication override roles {}", overrideRoles);
+			LOGGER.warn("Using authentication override roles {}", overrideRoles);
 			return overrideRoles;
 		} else {
 			return super.getRoles(request);
@@ -42,7 +42,7 @@ public class RequestHeaderAuthenticationDecoratorWithOverride extends org.ihtsdo
 	@Override
 	protected String getToken(HttpServletRequest request) {
 		if (!Strings.isNullOrEmpty(overrideToken)) {
-			logger.warn("Using authentication override token supplied from configuration"); // We don't log the token
+			LOGGER.warn("Using authentication override token supplied from configuration"); // We don't log the token
 			return overrideToken;
 		} else {
 			return super.getToken(request);

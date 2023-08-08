@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class AttributesNotGroupedTogether extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AttributesNotGroupedTogether.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AttributesNotGroupedTogether.class);
 
 	public static String ATTRIBUTE_A = "Attribute A";
 	public static String ATTRIBUTE_B = "Attribute B";

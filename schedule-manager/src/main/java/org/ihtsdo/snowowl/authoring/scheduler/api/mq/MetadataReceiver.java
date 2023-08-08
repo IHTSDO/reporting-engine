@@ -11,15 +11,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MetadataReceiver {
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(MetadataReceiver.class);
+
 	@Autowired
 	ScheduleService service;
 	
 	@JmsListener(destination = "${schedule.manager.queue.metadata}")
 	public void receiveMessage(JobMetadata metadata) {
-		logger.info("Received metadata for {} jobs", metadata.getJobTypes().size());
+		LOGGER.info("Received metadata for {} jobs", metadata.getJobTypes().size());
 		service.processMetadata(metadata);
 	}
 

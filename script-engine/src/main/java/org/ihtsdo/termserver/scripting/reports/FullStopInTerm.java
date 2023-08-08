@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class FullStopInTerm extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FullStopInTerm.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FullStopInTerm.class);
 
 	String[] knownAbbrevs = new String[] { "ser","ss","subsp",
 								"f","E", "var", "St"};

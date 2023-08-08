@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class ExtractExtensionComponents extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
 
 	private List<Component> allIdentifiedConcepts;
 	private Set<Component> allModifiedConcepts = new HashSet<>();

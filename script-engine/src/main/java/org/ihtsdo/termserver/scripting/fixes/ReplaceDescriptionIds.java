@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceDescriptionIds.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceDescriptionIds.class);
 
 	Set<String> descIds = new HashSet<String>();
 	protected ReplaceDescriptionIds(BatchFix clone) {

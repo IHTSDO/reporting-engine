@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateDescriptions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateDescriptions.class);
 
 	Set<Description> duplicateDescriptions = new HashSet<>();
 	

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateConceptsAssocParent extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsAssocParent.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsAssocParent.class);
 
 	private InactivationIndicator inactivationIndicator = InactivationIndicator.DUPLICATE;
 	//private static String eclSubset = "<< 269736006 |Poisoning of undetermined intent (disorder)| ";

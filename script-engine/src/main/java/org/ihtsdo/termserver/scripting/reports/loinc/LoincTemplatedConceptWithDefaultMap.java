@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincTemplatedConceptWithDefaultMap extends LoincTemplatedConcept {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithDefaultMap.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithDefaultMap.class);
 
 	private LoincTemplatedConceptWithDefaultMap(String loincNum) {
 		super(loincNum);

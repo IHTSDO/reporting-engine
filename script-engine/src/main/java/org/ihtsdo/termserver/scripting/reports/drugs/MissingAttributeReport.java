@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class MissingAttributeReport extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MissingAttributeReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MissingAttributeReport.class);
 
 	List<Component> concepts;
 	Concept attributeType;

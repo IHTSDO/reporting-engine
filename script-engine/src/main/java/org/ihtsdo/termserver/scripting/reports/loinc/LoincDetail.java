@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincDetail {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincDetail.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincDetail.class);
 
 	public static String COMPONENT_PN = "COMPONENT_PN";
 	public static String COMPONENTCORE_PN = "COMPONENTCORE_PN";

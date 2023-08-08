@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class DescriptionAnomalies extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DescriptionAnomalies.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DescriptionAnomalies.class);
 
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	

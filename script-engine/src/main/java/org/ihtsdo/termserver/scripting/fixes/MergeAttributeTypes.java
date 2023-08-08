@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class MergeAttributeTypes extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MergeAttributeTypes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MergeAttributeTypes.class);
 
 	Concept findAttributeTypeA;
 	Concept findAttributeTypeB;

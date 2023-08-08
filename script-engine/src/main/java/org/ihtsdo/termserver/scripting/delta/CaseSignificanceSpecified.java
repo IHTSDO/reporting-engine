@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceSpecified extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceSpecified.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceSpecified.class);
 
 	String newEffectiveTime = "20180131";
 	

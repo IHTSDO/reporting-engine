@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class ValidateLateralityReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ValidateLateralityReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateLateralityReport.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ValidateLateralityReport report = new ValidateLateralityReport();

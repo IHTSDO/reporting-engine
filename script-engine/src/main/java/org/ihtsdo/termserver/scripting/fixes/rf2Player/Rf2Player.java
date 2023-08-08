@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class Rf2Player extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Rf2Player.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Rf2Player.class);
 
 	protected Map<String, ConceptChange> changingConcepts = new HashMap<String, ConceptChange>();
 	protected Map<String, Description> changingDescriptions = new HashMap<String, Description>();

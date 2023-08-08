@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class SUBST11_RNA_Renaming extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SUBST11_RNA_Renaming.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SUBST11_RNA_Renaming.class);
 
 	Concept subHierarchy;
 	Map<String, Concept> organisms = new HashMap<>();

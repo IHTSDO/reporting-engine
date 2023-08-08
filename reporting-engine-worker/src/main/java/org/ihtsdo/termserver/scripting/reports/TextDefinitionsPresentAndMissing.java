@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class TextDefinitionsPresentAndMissing extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TextDefinitionsPresentAndMissing.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TextDefinitionsPresentAndMissing.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, Object> params = new HashMap<>();

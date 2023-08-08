@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SliceReleaseArchive.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SliceReleaseArchive.class);
 
 	Set<String> knownDescriptions = new HashSet<>();
 	//Not useful because we don't have description rows for the refset members we're deleteing

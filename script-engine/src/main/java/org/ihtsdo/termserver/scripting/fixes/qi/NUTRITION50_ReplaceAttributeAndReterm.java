@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class NUTRITION50_ReplaceAttributeAndReterm extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NUTRITION50_ReplaceAttributeAndReterm.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NUTRITION50_ReplaceAttributeAndReterm.class);
 
 	private Set<String> exclusionTexts;
 	private RelationshipTemplate addTemplate;

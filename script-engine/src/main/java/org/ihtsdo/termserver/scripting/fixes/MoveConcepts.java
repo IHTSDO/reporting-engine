@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class MoveConcepts extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MoveConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MoveConcepts.class);
 
 	String parentNewLocation = "770654000"; // |TEMPORARY parent for CDs that are not updated (product)|
 	//String parentNewLocation = "763087004"; //|TEMPORARY parent for concepts representing roles (product)

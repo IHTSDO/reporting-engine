@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class AncestryPath extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AncestryPath.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AncestryPath.class);
 
 	Concept subHierarchy;
 	Concept conceptOfInterest;

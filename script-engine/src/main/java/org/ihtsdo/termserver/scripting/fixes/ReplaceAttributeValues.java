@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReplaceAttributeValues extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeValues.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeValues.class);
 
 	Map<Concept, Concept> replacementMap;
 	Concept restrictToType = null;

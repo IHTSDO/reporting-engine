@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeDoseForms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormalizeDoseForms.class);
 
 	Map<String, Concept> doseFormMap;
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);

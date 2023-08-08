@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class RevertNoChangeDelta extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RevertNoChangeDelta.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNoChangeDelta.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RevertNoChangeDelta app = new RevertNoChangeDelta();

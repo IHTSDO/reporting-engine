@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceFixAll extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFixAll.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFixAll.class);
 
 	public enum Mode{ REPORT_ONLY, SILENT_CHANGE, REPORT_CHANGE };
 	public Mode mode;

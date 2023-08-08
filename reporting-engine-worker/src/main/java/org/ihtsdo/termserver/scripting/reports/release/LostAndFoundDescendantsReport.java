@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class LostAndFoundDescendantsReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LostAndFoundDescendantsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LostAndFoundDescendantsReport.class);
 	private static String COUNT_NEW_AS_GAINED = "Count new concepts as gained";
 	
 	private AncestorsCache cache;

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class SemanticTagsMatrix extends TermServerReport{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SemanticTagsMatrix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SemanticTagsMatrix.class);
 
 	List<Concept> topLevelHierarchies;
 	Map<String, int[]> tagToUsageMap;

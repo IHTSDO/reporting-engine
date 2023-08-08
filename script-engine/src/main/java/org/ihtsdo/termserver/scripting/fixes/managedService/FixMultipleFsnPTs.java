@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FixMultipleFsnPTs.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FixMultipleFsnPTs.class);
 
 	Set<Description> duplicateDescriptions = new HashSet<>();
 	

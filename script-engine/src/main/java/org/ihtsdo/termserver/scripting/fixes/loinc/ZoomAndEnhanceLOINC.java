@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class ZoomAndEnhanceLOINC extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ZoomAndEnhanceLOINC.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ZoomAndEnhanceLOINC.class);
 
 	enum REL_PART {Type, Target};
 	

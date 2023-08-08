@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public class ClosureCache implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ClosureCache.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClosureCache.class);
 
 	static ClosureCache singleton = null;
 	private GraphLoader gl = null;

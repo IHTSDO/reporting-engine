@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class TranslatedConceptsReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TranslatedConceptsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TranslatedConceptsReport.class);
 
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";

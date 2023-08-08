@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivatedConcepts extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivatedConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivatedConcepts.class);
 
 	static final String RELEASE = "Release Package";
 	static final String SEMTAG_FILTER_PARAM = "Filter for SemTag";

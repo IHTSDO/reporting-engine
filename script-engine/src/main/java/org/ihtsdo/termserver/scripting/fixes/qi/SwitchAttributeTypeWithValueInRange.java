@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class SwitchAttributeTypeWithValueInRange extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SwitchAttributeTypeWithValueInRange.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SwitchAttributeTypeWithValueInRange.class);
 
 	String targetECL = "<< 123038009 |Specimen (specimen)| : 118170007 |Specimen source identity (attribute)| = << 260787004 |Physical object (physical object)| ";
 	Concept findType;

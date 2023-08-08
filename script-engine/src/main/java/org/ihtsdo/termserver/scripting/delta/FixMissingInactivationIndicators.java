@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class FixMissingInactivationIndicators extends DeltaGenerator implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FixMissingInactivationIndicators.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FixMissingInactivationIndicators.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		FixMissingInactivationIndicators delta = new FixMissingInactivationIndicators();

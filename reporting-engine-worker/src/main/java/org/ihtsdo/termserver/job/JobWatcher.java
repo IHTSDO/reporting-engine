@@ -12,8 +12,8 @@ import org.springframework.web.client.RestTemplate;
 
 public class JobWatcher implements Runnable {
 	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(JobWatcher.class);
+
 	int timeout;
 	JobRun jobRun;
 	Transmitter transmitter;
@@ -27,7 +27,7 @@ public class JobWatcher implements Runnable {
 	@Override
 	public void run() {
 		try {
-			logger.debug("JobWatcher starting for " + jobRun.getJobName() + " expecting completion within " + timeout + " minutes");
+			LOGGER.debug("JobWatcher starting for " + jobRun.getJobName() + " expecting completion within " + timeout + " minutes");
 			Thread.sleep(timeout * 60 * 1000);
 			SnomedServiceException sse = new SnomedServiceException();
 			Map<String, Object> configuration = new HashMap<>();
@@ -40,7 +40,7 @@ public class JobWatcher implements Runnable {
 			sse.setConfiguration(configuration);
 			transmitter.send(sse);
 		} catch (InterruptedException e) {
-			logger.debug("JobWatcher standing down for job: " + jobRun.getJobName());
+			LOGGER.debug("JobWatcher standing down for job: " + jobRun.getJobName());
 		}
 	}
 
@@ -55,7 +55,7 @@ public class JobWatcher implements Runnable {
 			String instance = rt.getForObject("http://169.254.169.254/latest/meta-data/public-hostname", String.class);
 			machineDetails.put("EC2 Instance", instance);
 		} catch (Exception e) {
-			logger.error("Failed to recover EC2 IP information", e);
+			LOGGER.error("Failed to recover EC2 IP information", e);
 			try {
 				InetAddress inetAddress = InetAddress.getLocalHost();
 				machineDetails.put("IPV4",inetAddress.getHostAddress());

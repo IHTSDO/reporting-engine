@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class CodeSystemMetadataPopulation extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CodeSystemMetadataPopulation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CodeSystemMetadataPopulation.class);
 
 	protected CodeSystemMetadataPopulation(BatchFix clone) {
 		super(clone);

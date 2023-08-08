@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class MissingDispositionSubstanceGroupers extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MissingDispositionSubstanceGroupers.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MissingDispositionSubstanceGroupers.class);
 
 	List<Component> concepts;
 	Concept attributeType;

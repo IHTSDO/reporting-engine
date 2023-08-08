@@ -21,9 +21,9 @@ public class Transmitter {
 	
 	@Autowired
 	private JmsTemplate jmsTemplate;
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Transmitter.class);
+
 	@Value("${schedule.manager.queue.response}")
 	String responseQueueName;
 	
@@ -49,7 +49,7 @@ public class Transmitter {
 		//RP-594 We might have more information than we can digest in the debugInfo
 		String debugInfo = run.getDebugInfo();
 		if (debugInfo != null && debugInfo.length() >= MAX_TEXT_LENGTH) {
-			logger.warn("Full debug message truncated to 64K characters\n {}", debugInfo);
+			LOGGER.warn("Full debug message truncated to 64K characters\n {}", debugInfo);
 			debugInfo = debugInfo.substring(0, Math.min(debugInfo.length(), MAX_TEXT_LENGTH)) + "...[truncated at source]";
 			run.setDebugInfo(debugInfo);
 		}
@@ -74,24 +74,24 @@ public class Transmitter {
 		//Transmit in a new thread so that we receive a separate transaction.   Otherwise the 'running' status
 		//won't be sent until the job is complete
 		executorService.execute(() -> {
-				logger.info("Transmitting response: {}", run);
+				LOGGER.info("Transmitting response: {}", run);
 				jmsTemplate.convertAndSend(responseQueueName, clone);
 		});
 	}
 	
 	public void send (JobMetadata metadata) {
-		logger.info("Transmitting metadata for " + metadata.getJobTypes().size() + " job types:");
+		LOGGER.info("Transmitting metadata for " + metadata.getJobTypes().size() + " job types:");
 		for (JobType type : metadata.getJobTypes()) {
-			logger.info ("  {}:", type.getName());
+			LOGGER.info ("  {}:", type.getName());
 			for (JobCategory category : type.getCategories()) {
-				logger.info("\t{} : {} jobs", category.getName(), category.getJobs().size());
+				LOGGER.info("\t{} : {} jobs", category.getName(), category.getJobs().size());
 			}
 		}
 		jmsTemplate.convertAndSend(metadataQueueName, metadata);
 	}
 	
 	public void send (SnomedServiceException serviceAlert) {
-		logger.info("Transmitting service alert: " + serviceAlert);
+		LOGGER.info("Transmitting service alert: " + serviceAlert);
 		jmsTemplate.convertAndSend(serviceAlertQueueName, serviceAlert);
 	}
 

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class NounHelper implements RF2Constants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NounHelper.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NounHelper.class);
 
 	private static NounHelper singleton = null;
 

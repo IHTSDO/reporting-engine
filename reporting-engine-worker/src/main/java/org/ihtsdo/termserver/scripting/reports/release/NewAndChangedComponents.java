@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class NewAndChangedComponents extends HistoricDataUser implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NewAndChangedComponents.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NewAndChangedComponents.class);
 
 	private Set<Concept> newConcepts = new HashSet<>();
 	private Set<Concept> inactivatedConcepts = new HashSet<>();

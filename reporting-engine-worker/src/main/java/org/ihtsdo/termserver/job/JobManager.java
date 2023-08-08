@@ -23,9 +23,9 @@ import org.springframework.util.StringUtils;
 public class JobManager {
 	
 	static final String METADATA = "METADATA";
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(JobManager.class);
+
 	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
 	Map<String, JobType> knownJobTypes = new HashMap<>();
 	Map<String, Integer> expectedDurations = new HashMap<>();
@@ -43,29 +43,29 @@ public class JobManager {
 	@PostConstruct
 	public void init(){
 		if (knownJobs.size() > 0) {
-			logger.info("Job Manager rejecting attempt at 2nd initialisation");
+			LOGGER.info("Job Manager rejecting attempt at 2nd initialisation");
 			return;
 		}
-		logger.info("Job Manager Initialising");
+		LOGGER.info("Job Manager Initialising");
 		
 		//Now what jobs do I know about?
 		Reflections reflections = new Reflections(new ConfigurationBuilder().forPackages("org.ihtsdo.termserver.scripting"));
 		Set<Class<? extends JobClass>> jobClasses = reflections.getSubTypesOf(JobClass.class);
 
-		logger.info("Job Manager detected {} job classes", jobClasses.size());
+		LOGGER.info("Job Manager detected {} job classes", jobClasses.size());
 		for (Class<? extends JobClass> jobClass : jobClasses) {
 			try {
 				//Is this a thing we can actually instantiate?
 				if (!jobClass.isInterface()) {
 					Job thisJob = jobClass.newInstance().getJob();
-					logger.info("Registering known job: {}", thisJob.getName());
+					LOGGER.info("Registering known job: {}", thisJob.getName());
 					knownJobs.put(thisJob.getName(), jobClass);
 					expectedDurations.put(thisJob.getName(), thisJob.getExpectedDuration());
 				} else {
-					logger.info("Ignoring interface {}", jobClass);
+					LOGGER.info("Ignoring interface {}", jobClass);
 				}
 			} catch (IllegalAccessException | InstantiationException e) {
-				logger.error("Failed to register job {}", jobClass, e);
+				LOGGER.error("Failed to register job {}", jobClass, e);
 			} 
 		}
 		
@@ -195,7 +195,7 @@ public class JobManager {
 					knownJobTypes.put(indicatedType.getName(), indicatedType);
 				}
 				if (thisJob.getCategory() == null) {
-					logger.error("Job '{}' does not indicate its category.  Unable to transmit.",thisJob.getName());
+					LOGGER.error("Job '{}' does not indicate its category.  Unable to transmit.",thisJob.getName());
 				} else {
 					JobCategory jobCategory = jobType.getCategory(thisJob.getCategory().getName());
 					if (jobCategory == null) {
@@ -207,7 +207,7 @@ public class JobManager {
 				}
 				thisJob.getCategory().setType(indicatedType);
 			} catch (IllegalAccessException | InstantiationException e) {
-				logger.error("Unable to return metadata on {}",knownJobClass.getKey(), e);
+				LOGGER.error("Unable to return metadata on {}",knownJobClass.getKey(), e);
 			} 
 		}
 		JobMetadata metadata = new JobMetadata();

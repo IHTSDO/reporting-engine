@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class ValidationFailure extends TermServerScriptException implements RF2Constants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ValidationFailure.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidationFailure.class);
 
 	private static final long serialVersionUID = 9031426261460131112L;
 	

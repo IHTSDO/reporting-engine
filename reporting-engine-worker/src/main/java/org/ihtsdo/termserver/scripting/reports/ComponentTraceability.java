@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class ComponentTraceability extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ComponentTraceability.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ComponentTraceability.class);
 
 	public static String COMPONENT_IDS = "Component Ids";
 	TraceabilityService traceabilityService;

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStatsExtensions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStatsExtensions.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();

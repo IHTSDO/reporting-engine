@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsWithOrTargetsOfAttribute.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsWithOrTargetsOfAttribute.class);
 
 	Concept subHierarchy;
 	Concept attributeType;

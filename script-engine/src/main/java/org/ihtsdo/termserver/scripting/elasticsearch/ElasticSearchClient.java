@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticSearchClient {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ElasticSearchClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchClient.class);
 
 	private String serverUrl;
 	private RestTemplate restTemplate;

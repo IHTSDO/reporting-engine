@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincRf2MapExpansion extends LoincScript implements LoincConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
 
 	public static final String TAB_RF2_MAP = "RF2 Map";
 	

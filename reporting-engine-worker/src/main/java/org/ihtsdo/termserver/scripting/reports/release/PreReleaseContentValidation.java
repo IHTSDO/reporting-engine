@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class PreReleaseContentValidation extends HistoricDataUser implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidation.class);
 
 	private List<Concept> allActiveConceptsSorted;
 	private List<Concept> allInactiveConceptsSorted;

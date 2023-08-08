@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RevertUnexpectedModuleIssues.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RevertUnexpectedModuleIssues.class);
 
 	String intReleaseBranch="MAIN/2022-01-31";
 	String extReleaseBranch="MAIN/SNOMEDCT-SE/2021-11-30";

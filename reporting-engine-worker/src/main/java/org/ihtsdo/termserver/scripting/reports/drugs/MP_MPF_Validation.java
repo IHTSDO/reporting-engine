@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MP_MPF_Validation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MP_MPF_Validation.class);
 
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
 
 	private LoincTemplatedConceptWithInheres(String loincNum) {
 		super(loincNum);

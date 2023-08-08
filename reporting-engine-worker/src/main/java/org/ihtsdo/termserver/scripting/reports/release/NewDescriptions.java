@@ -20,7 +20,7 @@ import com.google.common.util.concurrent.AtomicLongMap;
  */
 public class NewDescriptions extends TermServerReport implements ReportClass {
 	
-	private static Logger LOGGER = LoggerFactory.getLogger(NewDescriptions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NewDescriptions.class);
 	
 	AtomicLongMap<String> componentCounts = AtomicLongMap.create();
 	

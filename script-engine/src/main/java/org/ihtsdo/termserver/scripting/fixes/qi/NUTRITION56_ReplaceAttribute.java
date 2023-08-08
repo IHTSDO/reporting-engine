@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class NUTRITION56_ReplaceAttribute extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NUTRITION56_ReplaceAttribute.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NUTRITION56_ReplaceAttribute.class);
 
 	//private RelationshipTemplate addTemplate;
 	private RelationshipTemplate matchTemplate;

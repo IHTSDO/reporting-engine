@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class CisReconciliation extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CisReconciliation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CisReconciliation.class);
 
 	public static String AVAILABLE = "Available";
 	public static String RESERVED = "Reserved";

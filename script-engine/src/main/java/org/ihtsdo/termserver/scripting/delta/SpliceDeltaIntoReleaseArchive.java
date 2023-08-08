@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SpliceDeltaIntoReleaseArchive.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SpliceDeltaIntoReleaseArchive.class);
 
 	public static String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
 	public static String SCTID_CF_MOD = "11000241103";   //Common French Module

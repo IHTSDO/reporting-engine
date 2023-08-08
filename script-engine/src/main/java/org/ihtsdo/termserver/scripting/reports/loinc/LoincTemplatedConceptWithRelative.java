@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithRelative.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithRelative.class);
 
 	private LoincTemplatedConceptWithRelative(String loincNum) {
 		super(loincNum);

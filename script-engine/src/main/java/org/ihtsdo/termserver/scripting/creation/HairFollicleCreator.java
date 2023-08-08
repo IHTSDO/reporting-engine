@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 public class HairFollicleCreator extends ConceptCreator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HairFollicleCreator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HairFollicleCreator.class);
 
 	private static HairFollicleCreator singleton = null;
 	public static HairFollicleCreator getHairFollicleCreator() {

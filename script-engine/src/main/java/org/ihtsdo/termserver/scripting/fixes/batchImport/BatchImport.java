@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class BatchImport extends BatchFix implements BatchJobClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BatchImport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImport.class);
 
 	private static final String[] LATERALITY = new String[] { "left", "right"};
 	Map<String, Concept> conceptsLoaded;

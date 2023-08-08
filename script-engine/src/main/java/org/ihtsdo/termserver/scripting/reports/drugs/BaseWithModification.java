@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class BaseWithModification extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BaseWithModification.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BaseWithModification.class);
 
 	Concept[] type = new Concept[] {IS_MODIFICATION_OF};
 	

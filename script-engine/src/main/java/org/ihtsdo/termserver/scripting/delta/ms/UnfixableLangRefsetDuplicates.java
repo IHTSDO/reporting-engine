@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(UnfixableLangRefsetDuplicates.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UnfixableLangRefsetDuplicates.class);
 
 	public static String US_MODULE = "731000124108";
 	public static String NO_MODULE = "51000202101";

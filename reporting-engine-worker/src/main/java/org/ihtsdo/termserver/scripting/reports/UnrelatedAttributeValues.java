@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class UnrelatedAttributeValues extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(UnrelatedAttributeValues.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UnrelatedAttributeValues.class);
 
 	private static String ATTRIBUTE_TYPE = "Attribute Type";
 	private AtomicLongMap<Concept> grandParentLeagueChart = AtomicLongMap.create();

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FixIncorrectModuleId.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FixIncorrectModuleId.class);
 
 	Map<String, Task> knownTasks = new HashMap<String, Task>();
 	Set<TaskConcept> processMe = new HashSet<TaskConcept>();

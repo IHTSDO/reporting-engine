@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactiveConceptInRefset extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactiveConceptInRefset.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactiveConceptInRefset.class);
 
 	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
 	private Collection<Concept> referenceSets;

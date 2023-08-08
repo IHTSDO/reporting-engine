@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class BatchImportExpression implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BatchImportExpression.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportExpression.class);
 
 	public static final String FULLY_DEFINED = "===";
 	public static final String PRIMITVE = "<<<";

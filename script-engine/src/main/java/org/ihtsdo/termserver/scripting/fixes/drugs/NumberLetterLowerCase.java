@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NumberLetterLowerCase.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NumberLetterLowerCase.class);
 
 	CaseSensitivity csReport;
 	

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateRedundantStatedRelationshipsViaDelta.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateRedundantStatedRelationshipsViaDelta.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivateRedundantStatedRelationshipsViaDelta delta = new InactivateRedundantStatedRelationshipsViaDelta();

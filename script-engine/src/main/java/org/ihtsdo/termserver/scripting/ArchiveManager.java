@@ -38,8 +38,7 @@ import org.springframework.stereotype.Service;
 public class ArchiveManager implements ScriptConstants {
 	
 	static ArchiveManager singleton;
-	
-	protected static Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
 
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;

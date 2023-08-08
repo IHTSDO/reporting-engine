@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class MultiArchiveImporter extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
 	private final static String taskPrefix = "INFRA-9531 ";
 

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsTranslatedInactivated extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsTranslatedInactivated.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsTranslatedInactivated.class);
 
 	private String intEffectiveTime;
 	boolean includeLegacyIssues = false;

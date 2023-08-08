@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateLOINC extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(UpdateLOINC.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateLOINC.class);
 
 	enum REL_PART {Type, Target};
 	

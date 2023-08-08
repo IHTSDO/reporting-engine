@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ModuleCorrection.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ModuleCorrection.class);
 
 	String wrongModule = "900000000000207008";
 	String rightModule = "554471000005108";  //DK

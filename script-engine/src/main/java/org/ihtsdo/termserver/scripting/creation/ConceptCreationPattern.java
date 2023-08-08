@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptCreationPattern implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptCreationPattern.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptCreationPattern.class);
 
 	String semTag;
 	String termPattern;

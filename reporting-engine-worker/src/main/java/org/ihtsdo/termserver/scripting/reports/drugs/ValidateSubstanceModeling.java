@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class ValidateSubstanceModeling extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ValidateSubstanceModeling.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateSubstanceModeling.class);
 
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();

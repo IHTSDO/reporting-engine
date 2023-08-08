@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptCreationSupervisor implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptCreationSupervisor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptCreationSupervisor.class);
 
 	private static ConceptCreationSupervisor singleton = null;
 	List<ConceptCreator> creators = new ArrayList<>();

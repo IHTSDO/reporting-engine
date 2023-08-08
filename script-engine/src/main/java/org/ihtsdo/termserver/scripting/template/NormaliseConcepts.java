@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class NormaliseConcepts extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
 
 	Concept ppp;
 	Boolean useStatedECL = true;

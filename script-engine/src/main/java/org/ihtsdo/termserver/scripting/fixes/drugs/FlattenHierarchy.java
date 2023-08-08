@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FlattenHierarchy.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FlattenHierarchy.class);
 
 	Map<String,String> expectedTargetMap = new HashMap<>();
 	Concept isModificationOf;

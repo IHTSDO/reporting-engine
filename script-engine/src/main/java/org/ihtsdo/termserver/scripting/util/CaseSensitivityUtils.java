@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSensitivityUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
 
 	Map<String, Description> sourcesOfTruth = new HashMap<>();
 	List<String> properNouns = new ArrayList<>();

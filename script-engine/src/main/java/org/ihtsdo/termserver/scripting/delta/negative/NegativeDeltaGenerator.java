@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class NegativeDeltaGenerator extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NegativeDeltaGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NegativeDeltaGenerator.class);
 
 	String[] conHeader = new String[] {"id","effectiveTime","deletionEffectiveTime","active", "deletionActive","moduleId","definitionStatusId"};
 	String[] descHeader = new String[] {"id","effectiveTime","deletionEffectiveTime","active", "deletionActive","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};

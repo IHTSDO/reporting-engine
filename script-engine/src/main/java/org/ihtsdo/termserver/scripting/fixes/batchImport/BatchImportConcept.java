@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class BatchImportConcept extends Concept {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BatchImportConcept.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportConcept.class);
 
 	private CSVRecord row;
 	private BatchImportExpression expression;

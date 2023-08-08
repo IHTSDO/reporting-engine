@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class TemplateCompliance extends TemplateFix implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TemplateCompliance.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateCompliance.class);
 
 	private Map<Concept, List<String>> conceptDiagnosticsInferred = new HashMap<>();
 	private Map<Concept, List<String>> conceptDiagnosticsStated = new HashMap<>();

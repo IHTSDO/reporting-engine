@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReplaceAttributeTypes extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeTypes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeTypes.class);
 
 	String ecl = "(<<62317000 |Prosthodontic procedure (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|) OR (<118817003 |Procedure on oral cavity (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|)";
 	Map<Concept, Concept> replaceTypesMap;

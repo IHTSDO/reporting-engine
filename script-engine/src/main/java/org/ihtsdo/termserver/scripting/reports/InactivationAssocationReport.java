@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivationAssocationReport extends TermServerScript implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivationAssocationReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivationAssocationReport.class);
 
 	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations Only";
 	String[] targetInactivationReasons = new String[] {SCTID_INACT_LIMITED, SCTID_INACT_OUTDATED, SCTID_INACT_ERRONEOUS};

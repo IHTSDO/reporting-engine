@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class CreateReversionDeltaPatch extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CreateReversionDeltaPatch.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CreateReversionDeltaPatch.class);
 
 	//If this array is empty, we'll attempt to load from file specified in -f parameter
 	private String[] componentIds; /* = new String[] 

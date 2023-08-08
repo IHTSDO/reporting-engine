@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class RoleGroupCrossoversReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RoleGroupCrossoversReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RoleGroupCrossoversReport.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();

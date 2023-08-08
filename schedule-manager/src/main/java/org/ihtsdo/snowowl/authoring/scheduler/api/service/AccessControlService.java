@@ -18,19 +18,19 @@ public class AccessControlService {
 	private Map<String, UserProjects> cache = new HashMap<>();
 	
 	AuthoringServicesClient authoringServices;
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(AccessControlService.class);
+
 	public Set<String> getProjects(String username, String serverUrl, String authToken) {
 		if (!cache.containsKey(username) || cache.get(username).isExpired()) {
 			UserProjects userProjects = getUserProjects(username, serverUrl, authToken);
 			userProjects.addCodeSystems();
-			logger.info("Caching {}'s access to projects {}", username, userProjects.getProjects());
+			LOGGER.info("Caching {}'s access to projects {}", username, userProjects.getProjects());
 			cache.put(username, userProjects);
 			//If the list of projects is only 1 long (ie MAIN) then we've probably a problem with 
 			//configuration for that user.  Force expiry of the visible project list in this case
 			if (userProjects.size() <= 1) {
-				logger.info("User has access to {} projects.  Suspected configuration issue.  Expiring cache.", userProjects.size());
+				LOGGER.info("User has access to {} projects.  Suspected configuration issue.  Expiring cache.", userProjects.size());
 				userProjects.expire();
 			}
 		}

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class IngredientCounts extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(IngredientCounts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(IngredientCounts.class);
 
 	protected IngredientCounts(BatchFix clone) {
 		super(clone);

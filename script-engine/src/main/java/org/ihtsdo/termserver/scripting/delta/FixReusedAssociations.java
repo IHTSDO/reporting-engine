@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 public class FixReusedAssociations extends DeltaGenerator implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FixReusedAssociations.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FixReusedAssociations.class);
 
 	enum IDX { ORIG_ID, NEW_ACTIVE, NEW_REFSETID, NEW_SCTID, NEW_TARGET, ORIG_EFFECTIVE_TIME,
 		ORIG_ACTIVE, ORIG_REFSETID, ORIG_TARGET }

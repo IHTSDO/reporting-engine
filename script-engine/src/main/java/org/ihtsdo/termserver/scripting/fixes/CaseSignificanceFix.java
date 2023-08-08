@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix.class);
 
 	boolean unpublishedContentOnly = false;
 	Concept subHierarchy = SUBSTANCE;

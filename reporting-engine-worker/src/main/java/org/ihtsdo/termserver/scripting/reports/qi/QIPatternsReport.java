@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class QIPatternsReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(QIPatternsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(QIPatternsReport.class);
 
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;

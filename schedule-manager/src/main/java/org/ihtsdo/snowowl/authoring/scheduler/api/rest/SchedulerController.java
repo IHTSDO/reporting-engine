@@ -45,9 +45,9 @@ public class SchedulerController {
 
 	@Value("${schedule.manager.terminology.server.uri}")
 	String terminologyServerUrl;
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerController.class);
+
 	private static final String X_AUTH_TOK = "X-AUTH-token";
 	private static final String X_AUTH_USER = "X-AUTH-username";
 
@@ -73,7 +73,7 @@ public class SchedulerController {
 			if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(userName)) {
 				throw new BusinessServiceException("Failed to recover authentication details from HTTP headers");
 			} else {
-				logger.warn("Auth token not recovered from headers, using locally supplied override for user: {}", userName);
+				LOGGER.warn("Auth token not recovered from headers, using locally supplied override for user: {}", userName);
 			}
 		}
 

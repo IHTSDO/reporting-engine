@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugTerms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugTerms.class);
 
 	String subHierarchyStr = MEDICINAL_PRODUCT.getConceptId();
 	//static Map<String, String> replacementMap = new HashMap<String, String>();

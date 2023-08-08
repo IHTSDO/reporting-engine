@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class CorrectModuleId extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CorrectModuleId.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CorrectModuleId.class);
 
 	protected CorrectModuleId(BatchFix clone) {
 		super(clone);

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class IntermediatePrimitivesReport extends TermServerReport{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(IntermediatePrimitivesReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediatePrimitivesReport.class);
 
 	List<Concept> topLevelHierarchies;
 	CharacteristicType targetCharType = CharacteristicType.STATED_RELATIONSHIP;
