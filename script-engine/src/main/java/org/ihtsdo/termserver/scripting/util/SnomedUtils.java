@@ -2099,7 +2099,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		
 		//Descriptions and their associated indicators, associations and langrefstes
 		c.getDescriptions().stream()
-		.forEach(components::add);
+			.forEach(components::add);
 		
 		c.getDescriptions().stream()
 		.flatMap(d ->  d.getLangRefsetEntries().stream())
@@ -2112,6 +2112,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		c.getDescriptions().stream()
 			.flatMap(d ->  d.getAssociationEntries().stream())
 			.forEach(components::add);
+
+		components.addAll(c.getOtherRefsetMembers());
 		
 		return components;
 	}
