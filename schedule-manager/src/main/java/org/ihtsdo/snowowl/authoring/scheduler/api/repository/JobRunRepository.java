@@ -28,6 +28,6 @@ public interface JobRunRepository extends CrudRepository<JobRun, UUID> {
 	" AND status IN (?2)")
 	Page<JobRun> findByStatusSinceDate(Date sinceDate, Set<JobStatus> statusFilter, Pageable pageable);
 
-	@Query(nativeQuery=true, value="SELECT * FROM job_run WHERE job_name = :jobName ORDER BY parameters_id DESC LIMIT 1")
+	@Query(nativeQuery=true, value="SELECT * FROM job_run WHERE result_url IS NOT NULL AND job_name = :jobName AND status = 3 ORDER BY parameters_id DESC LIMIT 1")
 	Optional<JobRun> findLastRunByJobName(@Param("jobName") String jobName);
 }
