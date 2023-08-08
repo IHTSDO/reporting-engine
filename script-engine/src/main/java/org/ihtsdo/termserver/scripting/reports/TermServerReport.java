@@ -23,7 +23,8 @@ public abstract class TermServerReport extends TermServerScript {
 
 	public static final String IP = "IP";
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
-	
+	private final Map<String, Integer> issueSummaryMap = new HashMap<>();
+
 	protected boolean unpromotedChangesOnly = false;
 	
 	protected UnpromotedChangesHelper unpromotedChangesHelper;
@@ -161,5 +162,53 @@ public abstract class TermServerReport extends TermServerScript {
 			}
 		}
 		return false;
+	}
+
+	protected void populateSummaryTabAndTotal() {
+		issueSummaryMap.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), e.getValue()));
+
+		int total = issueSummaryMap.values().stream().mapToInt(Integer::intValue).sum();
+		reportSafely(SECONDARY_REPORT, (Component) null, "TOTAL", total);
+	}
+
+	protected void initialiseSummary(String issue) {
+		issueSummaryMap.merge(issue, 0, Integer::sum);
+	}
+
+	protected boolean report(Concept c, Object... details) throws TermServerScriptException {
+		//Are we filtering this report to only concepts with unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return false;
+		}
+
+		//First detail is the issue
+		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		countIssue(c);
+		return report(PRIMARY_REPORT, c, details);
+	}
+
+	protected Object isActive(Component c1, Component c2) {
+		return (c1.isActive() ? "Y" : "N") + "/" + (c2 == null ? "" : (c2.isActive() ? "Y" : "N"));
+	}
+
+	protected void reportAndIncrementSummary(Concept concept, boolean isLegacy, Object... details) throws TermServerScriptException {
+		boolean reported = report(concept, details);
+		incrementSummary(reported, isLegacy);
+	}
+
+	private void incrementSummary(boolean reported, boolean isLegacy) {
+		if (reported) {
+			incrementSummaryInformation((isLegacy ? "Legacy" : "Fresh") + " Issues Reported");
+		}
+	}
+
+	protected String getLegacyIndicator(Component c) {
+		return isLegacySimple(c) ? "Y" : "N";
+	}
+
+	protected boolean isLegacySimple(Component c) {
+		return !(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty());
 	}
 }
