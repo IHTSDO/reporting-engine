@@ -227,7 +227,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			nextDescription:
 			for (Description d : c.getDescriptions()) {
 				if (inScope(d)) {
-					String cdLegacy = (isLegacy?"Y":"N") + "/" + (isLegacy(d)?"Y":"N"); 
+					String cdLegacy = (isLegacy?"Y":"N") + "/" + (getLegacyIndicator(d));
 					//What are we looking at here?
 					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
 							.map(i->i.toString())
