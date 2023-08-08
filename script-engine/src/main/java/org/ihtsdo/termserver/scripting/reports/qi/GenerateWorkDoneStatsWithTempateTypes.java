@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,8 @@ import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
@@ -76,7 +79,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
 		
-		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+		List<String> lines = Files.readLines(getInputFile(), UTF_8);
 		for (String line : lines) {
 			if (!line.trim().isEmpty()) {
 				String[] concepts = line.split(COMMA);

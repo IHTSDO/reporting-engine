@@ -2,15 +2,17 @@ package org.ihtsdo.snowowl.authoring.scheduler.api.configuration;
 
 import org.ihtsdo.snowowl.authoring.scheduler.api.security.RequestHeaderAuthenticationDecoratorWithOverride;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 
 @Configuration
 @EnableWebSecurity
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig {
 	@Value("${ims-security.required-role}")
 	private String requiredRole;
 
@@ -30,8 +32,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			"/swagger-ui/**"
 	};
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
+
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf().disable();
 		http.addFilterBefore(new RequestHeaderAuthenticationDecoratorWithOverride(overrideUsername, overrideRoles, overrideToken), FilterSecurityInterceptor.class);
 
@@ -46,6 +49,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 					.anyRequest().authenticated()
 					.and().httpBasic();
 		}
+		return http.build();
 	}
 
 	public String getOverrideToken() {

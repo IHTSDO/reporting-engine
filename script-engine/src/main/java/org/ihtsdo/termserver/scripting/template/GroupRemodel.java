@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -224,7 +225,7 @@ public class GroupRemodel extends TemplateFix {
 		//Record that we've looked at this file
 		if (alreadyProcessedFile != null) {
 			try {
-				FileUtils.writeStringToFile(alreadyProcessedFile, loadedConcept.toString()+"\n", true);
+				FileUtils.writeStringToFile(alreadyProcessedFile, loadedConcept.toString()+"\n", StandardCharsets.UTF_8,true);
 			} catch (IOException e) {
 				throw new TermServerScriptException("Failed to record already processed in " + alreadyProcessedFile,e);
 			}

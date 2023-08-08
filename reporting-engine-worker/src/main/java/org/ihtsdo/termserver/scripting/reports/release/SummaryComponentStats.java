@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -28,6 +29,8 @@ import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class SummaryComponentStats extends HistoricDataUser implements ReportClass {
 
@@ -575,7 +578,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				append = false;
 			}
 			String line = c.getId() + TAB + statType + "\n";
-			FileUtils.writeStringToFile(debugFile, line, append);
+			FileUtils.writeStringToFile(debugFile, line, UTF_8, append);
 		} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}

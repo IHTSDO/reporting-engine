@@ -41,11 +41,11 @@ import com.google.gson.GsonBuilder;
 public class TermServerClient {
 	
 	public enum ExtractType {
-		DELTA, SNAPSHOT, FULL;
+		DELTA, SNAPSHOT, FULL
 	}
 	
 	public enum ImportType {
-		DELTA, SNAPSHOT, FULL;
+		DELTA, SNAPSHOT, FULL
 	}
 
 	public enum ExportType {
@@ -112,11 +112,10 @@ public class TermServerClient {
 				LOGGER.debug("Recovering branch information from " + url);
 				return restTemplate.getForObject(url, Branch.class);
 			} catch (RestClientException e) {
-				if (++retry < 3) {
-					System.err.println("Problem recovering branch information.   Retrying after a nap...");
-					try { Thread.sleep(1000 * 5); } catch (Exception i) {}
-				} else {
-					throw new TermServerScriptException(translateRestClientException(e));
+				retry++;
+				System.err.println("Problem recovering branch information.   Retrying after a nap...");
+				try { Thread.sleep(1000 * 5); } catch (Exception exception) {
+					// do nothing
 				}
 			}
 		}
@@ -465,19 +464,6 @@ public class TermServerClient {
 
 	private String initiateExport(Map<String, Object> exportRequest) throws TermServerScriptException {
 		try {
-			/*JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
-			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
-			if (exportLocationURLObj == null) {
-				String actualResponse = "Unable to parse response";
-				try {
-					actualResponse = jsonResponse.toObject().toString();
-				} catch (Exception e) {}
-				throw new TermServerScriptException("Failed to obtain location of export.  Instead received: " + actualResponse);
-			} else {
-				logger.info ("Export location recovered: {}",exportLocationURLObj.toString());
-			}
-			return exportLocationURLObj.toString() + "/archive";*/
-			
 			HttpEntity<?> entity = new HttpEntity<>(exportRequest, headers ); // for request
 			HttpEntity<String> response = restTemplate.exchange(url + "/exports", HttpMethod.POST, entity, String.class);
 			return response.getHeaders().get("Location").get(0);

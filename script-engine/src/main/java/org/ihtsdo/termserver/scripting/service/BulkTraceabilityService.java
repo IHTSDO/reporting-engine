@@ -12,12 +12,14 @@ import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
 import org.snomed.otf.traceability.domain.ConceptChange;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 public class BulkTraceabilityService implements TraceabilityService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkTraceabilityService.class);
@@ -114,12 +116,12 @@ public class BulkTraceabilityService implements TraceabilityService {
 					info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
 				}
 				
-				if (StringUtils.isEmpty(info[1])) {
+				if (isEmpty(info[1])) {
 					continue;  //Skip blanks
 				}
 				for (ReportRow row : getRelevantReportRows(activity, conceptIds)) {
 					//Preference for any branch that matches our filter, or the more recent update if both do
-					if (row.traceabilityInfo != null && !StringUtils.isEmpty(row.traceabilityInfo[1])) {
+					if (row.traceabilityInfo != null && !isEmpty(row.traceabilityInfo[1])) {
 						row.traceabilityInfo = chooseBestInfo(branchFilter, row.traceabilityInfo, info);
 					} else {
 						row.traceabilityInfo = info;

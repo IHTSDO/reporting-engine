@@ -74,19 +74,16 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 	}
 
 	private int countGroups(Concept c, CharacteristicType cType) {
-		Set<Integer> groupNumbersActive = new HashSet<Integer>();
+		Set<Integer> groupNumbersActive = new HashSet<>();
 		Set<Relationship> attributes = c.getRelationships(cType, ActiveState.ACTIVE) ;
 		for (Relationship r : attributes){
-			Integer groupNum = new Integer((int)r.getGroupId());
-			if (!groupNumbersActive.contains(groupNum)) {
-				groupNumbersActive.add(groupNum);
-			}
+			groupNumbersActive.add(r.getGroupId());
 		}
 		return groupNumbersActive.size();
 	}
 
 	private Set<Concept> filterActiveFD(Set<Concept> fullSet) {
-		Set <Concept> activeConcepts = new HashSet<Concept>();
+		Set <Concept> activeConcepts = new HashSet<>();
 		for (Concept thisConcept : fullSet ) {
 			if (thisConcept.isActive() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				activeConcepts.add(thisConcept);

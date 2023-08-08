@@ -1790,13 +1790,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				jobRun.setParameter(entry.getKey(), entry.getValue());
 			}
 		}
-		JobClass job = null;
+		JobClass job;
 		try {
-			job = jobClazz.newInstance();
-		} catch ( InstantiationException | IllegalAccessException e) {
+			job = jobClazz.getDeclaredConstructor().newInstance();
+		} catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
 		}
-		job.instantiate(jobRun, (ApplicationContext)null);
+		job.instantiate(jobRun, null);
 	}
 
 	protected String getDependencyArchive() {

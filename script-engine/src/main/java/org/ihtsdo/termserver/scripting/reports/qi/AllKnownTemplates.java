@@ -10,7 +10,7 @@ import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 
 import org.slf4j.Logger;

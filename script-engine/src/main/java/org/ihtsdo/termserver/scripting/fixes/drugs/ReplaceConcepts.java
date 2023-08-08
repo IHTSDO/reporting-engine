@@ -79,7 +79,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		LOGGER.info ("Loading IS_A relationships from some previous release");
 		originalParents = new HashMap<>();
 		try {
-			for (String line : FileUtils.readLines(new File(orignalParentsFileName))) {
+			for (String line : FileUtils.readLines(new File(orignalParentsFileName), "UTF-8")) {
 				String[] items = line.split(TAB);
 				Concept child = gl.getConcept(items[REL_IDX_SOURCEID]);
 				Concept parent = gl.getConcept(items[REL_IDX_DESTINATIONID]);
@@ -206,7 +206,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		//First we'll do the concepts to move as priority components, and then we'll
 		//inactivate all the remainder.
 		try {
-			for (String line : FileUtils.readLines(new File(replaceConceptsFileName))) {
+			for (String line : FileUtils.readLines(new File(replaceConceptsFileName), "UTF-8")) {
 				String[] items = line.split(TAB);
 				Concept c = gl.getConcept(items[0]);
 				c.setIssue("MOVE");  //This ensures we get a new batch for moves vs inactivations

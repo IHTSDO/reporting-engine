@@ -86,7 +86,7 @@ public class IdGenerator implements ScriptConstants{
 		//Is there a config file to consider? If not, do nothing.
 		File idConfigFile = new File (ID_CONFIG);
 		if (idConfigFile.canRead()) {
-			for (String line : FileUtils.readLines(idConfigFile)) {
+			for (String line : FileUtils.readLines(idConfigFile, "UTF-8")) {
 				String[] lineItems = line.split(TAB);
 				if (lineItems[0].equals(idGen.partitionIdentifier.toString())) {
 					idGen.runForwardCount = Integer.parseInt(lineItems[1]);
