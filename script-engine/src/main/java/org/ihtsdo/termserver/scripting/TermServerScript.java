@@ -18,6 +18,8 @@ import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
@@ -31,6 +33,18 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public abstract class TermServerScript extends Script implements ScriptConstants {
+	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerScript.class);
+	public static final String COMMAND_LINE_USAGE = "Usage: java <VM_ARGUMENTS> <TSScriptClass> " +
+			"[-a author] " +
+			"[-c <authenticatedCookie>] " +
+			"[-d <Y/N>] " +
+			"[-f <batch file Location>] " +
+			"[-m <modules>] " +
+			"[-n <taskSize>] " +
+			"[-p <projectName>] " +
+			"[-r2 <restart position>] " +
+			"[-headless <env_number>] " +
+			"[-task <taskKey>]";
 
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
@@ -258,7 +272,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (!loadingRelease) {
-			info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath());
+			LOGGER.info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath());
 			//If we're loading a CodeSystem eg MAIN/SNOMEDCT-SE then we will have to recover the metadata from the branch instead
 			if (project.getMetadata() == null) {
 				Branch branch = tsClient.getBranch(project.getBranchPath());
@@ -503,38 +517,57 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected static JobRun createJobRunFromArgs(String jobName, String[] args) {
-		JobRun jobRun = JobRun.create(jobName, null);
 		if (args.length < 2) {
-			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-task <taskKey>] -f <batch file Location>");
-			info(" d - dry run");
+			LOGGER.info(COMMAND_LINE_USAGE);
 			System.exit(-1);
 		}
-		
-		for (int i=0; i < args.length; i++) {
-			if (args[i].equals("-p")) {
-				jobRun.setProject(args[i+1]);
-			} else if (args[i].equals("-c")) {
-				jobRun.setAuthToken(args[i+1]);
-			} else if (args[i].equals("-d")) {
-				jobRun.setParameter(DRY_RUN, args[i+1]);
-			} else if (args[i].equals("-f")) {
-				jobRun.setParameter(INPUT_FILE, args[i+1]);
-			} else if (args[i].equals("-a")) {
-				jobRun.setParameter(AUTHOR, args[i+1]);
-				jobRun.setUser(args[i+1]);
-			} else if (args[i].equals("-n")) {
-				jobRun.setParameter(CONCEPTS_PER_TASK, args[i+1]);
-			} else if (args[i].equals("-m")) {
-				jobRun.setParameter(MODULES, args[i+1]);
-			} else if (args[i].equals("-r2")) {
-				jobRun.setParameter(RESTART_FROM_TASK, args[i+1]);
-			} else if (args[i].equals("-c")) {
-				jobRun.setAuthToken(args[i+1]);
-			} else if (args[i].equals("-task")) {
-				jobRun.setTask(args[i+1]);
+
+		JobRun jobRun = JobRun.create(jobName, null);
+
+		int argNumber = 0;
+		while (argNumber < args.length - 1) {
+			String parameter = args[argNumber + 1];
+
+			switch (args[argNumber]) {
+				case "-p":
+					jobRun.setProject(parameter);
+					break;
+				case "-c":
+					jobRun.setAuthToken(parameter);
+					break;
+				case "-d":
+					jobRun.setParameter(DRY_RUN, parameter);
+					break;
+				case "-f":
+					jobRun.setParameter(INPUT_FILE, parameter);
+					break;
+				case "-a":
+					jobRun.setParameter(AUTHOR, parameter);
+					jobRun.setUser(parameter);
+					break;
+				case "-n":
+					jobRun.setParameter(CONCEPTS_PER_TASK, parameter);
+					break;
+				case "-m":
+					jobRun.setParameter(MODULES, parameter);
+					break;
+				case "-r2":
+					jobRun.setParameter(RESTART_FROM_TASK, parameter);
+					break;
+				case "-task":
+					jobRun.setTask(parameter);
+					break;
+				case "-headless":
+					headlessEnvironment = Integer.valueOf(parameter);
+					break;
+				default:
+					LOGGER.error(COMMAND_LINE_USAGE);
+					throw new IllegalArgumentException("Unknown parameter: " + parameter);
 			}
+
+			argNumber += 2;
 		}
-		
+
 		return jobRun;
 	}
 	
@@ -1317,7 +1350,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		recordSummaryText("Finished at: " + endTime);
 		
-		info(BREAK);
+		LOGGER.info(BREAK);
 		
 		flushFiles(true);
 	}
@@ -1820,7 +1853,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public List<Component> getConceptsInReview() throws TermServerScriptException {
-		info("Recovering list of review concepts from " + project.getBranchPath());
+		LOGGER.info("Recovering list of review concepts from " + project.getBranchPath());
 		Review review = tsClient.getReview(project.getBranchPath());
 		if (true);
 		return review.getChangedConcepts().stream()
