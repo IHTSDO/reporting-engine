@@ -59,6 +59,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
 	private boolean releasedFlagPopulated = false;
 	private boolean runIntegrityChecks = true;
+	private boolean loadOtherReferenceSets = false;
 	private final List<String> integrityCheckIgnoreList = List.of(
 			"21000241105", // |Common French language reference set|
 			"763158003" // |Medicinal product (product)| Gets created as a constant, but does exist before 20180731
@@ -119,7 +120,16 @@ public class ArchiveManager implements ScriptConstants {
 	public static void print (Object msg) {
 		System.out.print (msg.toString());
 	}
-	
+
+
+	public boolean isLoadOtherReferenceSets() {
+		return loadOtherReferenceSets;
+	}
+
+	public void setLoadOtherReferenceSets(boolean loadOtherReferenceSets) {
+		this.loadOtherReferenceSets = loadOtherReferenceSets;
+	}
+
 	protected Branch loadBranch(Project project) throws TermServerScriptException {
 		String branchPath = project.getBranchPath();
 		String server = "uknown";
@@ -725,6 +735,8 @@ public class ArchiveManager implements ScriptConstants {
 			}
 			
 			if (fileName.contains(fileType)) {
+				boolean loadTheReferenceSet = false;
+
 				if (fileName.contains("sct2_Concept_" )) {
 					LOGGER.info("Loading Concept " + fileType + " file: " + fileName);
 					gl.loadConceptFile(is, isReleased);
@@ -770,11 +782,16 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (fileName.contains("MRCMAttributeRange")) {
 					LOGGER.info("Loading MRCM AttributeRange File: " + fileName);
 					gl.loadMRCMAttributeRangeFile(is, isReleased);
+				} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
+					loadTheReferenceSet = true;
 				}
+
 				//If we're loading all terms, load the language refset as well
 				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
 					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
 					gl.loadLanguageFile(is, isReleased);
+				} else if (loadTheReferenceSet) {
+					gl.loadReferenceSets(is, fileName);
 				}
 			}
 		} catch (TermServerScriptException | IOException e) {

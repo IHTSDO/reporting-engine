@@ -26,6 +26,7 @@ import java.util.*;
  *
  * <p>This report needs to:</p>
  *
+ * <ul>
  * <li>It needs to be a separate report called "Refset members with invalid referenced components".</li>
  * <li>It must present the list of refset members that have inactive referenced components.</li>
  * <li>The SAC needs to validate ONLY the derivative content that is being promoted at that time (using moduleID + refsetID fields) - NOT all other derivatives for that product.</li>
@@ -34,6 +35,7 @@ import java.util.*;
  * <li>e.g: if Estonia are promoting changes to their "eesti Abo Veregrupi Klassifikaator Simple Refset", then the validation should check only that refset content, and not all 30+ other Estonian refsets.</li>
  * <li>For the International Authoring, this should be an Optional SAC. </li>
  * <li>For Managed Service Authoring, this should be a Mandatory SAC. </li>
+ * </ul>
  */
 public class RefsetMembersWithInvalidReferencedComponents extends TermServerReport implements ReportClass {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RefsetMembersWithInvalidReferencedComponents.class);
@@ -70,17 +72,19 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	public Job getJob() {
 		JobParameters jobParameters = new JobParameters()
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
-				.withType(JobParameter.Type.BOOLEAN)
-				.withDefaultValue(false)
-				.add(UNPROMOTED_CHANGES_ONLY)
-				.withType(JobParameter.Type.BOOLEAN)
-				.withDefaultValue(false)
-				.add(REPORT_OUTPUT_TYPES)
-				.withType(JobParameter.Type.HIDDEN)
-				.withDefaultValue(false)
-				.add(REPORT_FORMAT_TYPE)
-				.withType(JobParameter.Type.HIDDEN)
-				.withDefaultValue(false)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
+				.add(NEW_CONCEPTS_ONLY)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
+				.add(MODULES) // Blank means all modules.
+					.withType(JobParameter.Type.STRING)
+//				.add(REPORT_OUTPUT_TYPES)
+//					.withType(JobParameter.Type.HIDDEN)
+//					.withDefaultValue(false)
+//				.add(REPORT_FORMAT_TYPE)
+//					.withType(JobParameter.Type.HIDDEN)
+//					.withDefaultValue(false)
 				.build();
 
 		return new Job()
@@ -94,6 +98,12 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 				.build();
 	}
 
+	/**
+	 * Initializes the report for execution.  Ensures that the other reference sets are loaded.
+	 *
+	 * @param run the job run object
+	 * @throws TermServerScriptException if there is an error initializing the report
+	 */
 	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = RELEASE_VALIDATION_FOLDER_ID;
 		super.init(run);
@@ -111,10 +121,11 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	public void runJob() throws TermServerScriptException {
 		LOGGER.info("Running report \"{}\"", REPORT_NAME);
 
-		LOGGER.info("Checking {} concepts...", gl.getAllConcepts().size());
-		sortedListOfConcepts = SnomedUtils.sort(gl.getAllConcepts());
+		var allConcepts = gl.getAllConcepts();
+		LOGGER.info("Checking {} concepts...", allConcepts.size());
+		sortedListOfConcepts = SnomedUtils.sort(allConcepts);
 
-		checkForInactiveReferenceComponentId();
+		checkForMembersWithInvalidReferenceComponents();
 
 		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTabAndTotal();
@@ -122,7 +133,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
-	private void checkForInactiveReferenceComponentId() throws TermServerScriptException {
+	private void checkForMembersWithInvalidReferenceComponents() throws TermServerScriptException {
 		LOGGER.info("   Checking: {}", ISSUE_TITLE);
 		initialiseSummary(ISSUE_TITLE);
 

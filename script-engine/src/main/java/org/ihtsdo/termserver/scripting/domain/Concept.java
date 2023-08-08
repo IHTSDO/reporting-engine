@@ -98,7 +98,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
-	
+	private Set<RefsetMember> otherRefsetMembers = new HashSet<>();
+
 	public void reset() {
 		assertionFailures = new ArrayList<String>();
 		statedRelationshipGroups = null;
@@ -1720,4 +1721,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		alternateIdentifiers.add(altId);
 	}
 
+	public Set<RefsetMember> getOtherRefsetMembers() {
+		return otherRefsetMembers;
+	}
+
+	public void setOtherRefsetMembers(Set<RefsetMember> otherRefsetMembers) {
+		this.otherRefsetMembers = otherRefsetMembers;
+	}
 }
