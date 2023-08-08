@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
 
 	private Map<Concept, Concept> replacementMap = new HashMap<>();
 	

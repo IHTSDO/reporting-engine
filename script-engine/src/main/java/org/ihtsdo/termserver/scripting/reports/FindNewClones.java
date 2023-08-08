@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class FindNewClones extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FindNewClones.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FindNewClones.class);
 
 	public static final String TARGET_SEMTAG = "Target SemTag";
 	public static final String SOURCE_SEMTAG = "Source SemTag";

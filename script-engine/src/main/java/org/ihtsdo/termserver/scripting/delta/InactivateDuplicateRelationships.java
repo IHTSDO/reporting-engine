@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateDuplicateRelationships extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateRelationships.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateRelationships.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivateDuplicateRelationships delta = new InactivateDuplicateRelationships();

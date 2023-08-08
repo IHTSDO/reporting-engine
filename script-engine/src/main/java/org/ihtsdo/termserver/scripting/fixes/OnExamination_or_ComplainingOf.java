@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(OnExamination_or_ComplainingOf.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OnExamination_or_ComplainingOf.class);
 
 	String[] itemsOfInterest = new String[] { "On examination - ", "Complaining of "};
 	String targetHierarchy = "404684003"; // |Clinical finding (finding)|

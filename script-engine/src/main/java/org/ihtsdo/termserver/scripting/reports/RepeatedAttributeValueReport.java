@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class RepeatedAttributeValueReport extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RepeatedAttributeValueReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RepeatedAttributeValueReport.class);
 
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetAttributeStr = "127489000"; // |Has active ingredient (attribute)|

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateLangInactAssocPlusCncFixPlusModFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateLangInactAssocPlusCncFixPlusModFix.class);
 
 	String defaultModuleId = null;
 	

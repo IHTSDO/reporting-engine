@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class CreateLoincConcepts extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CreateLoincConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CreateLoincConcepts.class);
 
 	DefinitionStatus defStatus = DefinitionStatus.FULLY_DEFINED;
 	Map<LoincElement, Concept> loincAttributes;

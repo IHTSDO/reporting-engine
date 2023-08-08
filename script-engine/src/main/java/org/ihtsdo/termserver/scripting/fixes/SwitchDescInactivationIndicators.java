@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class SwitchDescInactivationIndicators extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SwitchDescInactivationIndicators.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SwitchDescInactivationIndicators.class);
 
 	protected SwitchDescInactivationIndicators(final BatchFix clone) {
 		super(clone);

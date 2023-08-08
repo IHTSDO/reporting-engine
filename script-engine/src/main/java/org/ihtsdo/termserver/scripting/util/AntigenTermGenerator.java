@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class AntigenTermGenerator extends TermGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AntigenTermGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AntigenTermGenerator.class);
 
 	List<String> nonRedundantTerms; 
 	

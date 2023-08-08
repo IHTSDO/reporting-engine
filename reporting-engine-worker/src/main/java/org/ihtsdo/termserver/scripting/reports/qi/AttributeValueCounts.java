@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class AttributeValueCounts extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AttributeValueCounts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AttributeValueCounts.class);
 
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	public static final String IGNORE_ECL = "Ignore Concepts ECL";

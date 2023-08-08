@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsUsedAsDefiningAttributes extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsUsedAsDefiningAttributes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsUsedAsDefiningAttributes.class);
 
 	public static final String SELECT_CONCEPTS_ECL = "Select Concepts ECL";
 	public static final String FILTER_CONCEPTS_REGEX = "Filter Concepts RegEx";	

@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincTerm {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincTerm.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTerm.class);
 
 	private String loincNum;
 	private String component;

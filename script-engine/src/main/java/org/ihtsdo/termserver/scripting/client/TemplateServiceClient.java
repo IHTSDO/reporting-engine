@@ -25,9 +25,8 @@ import com.fasterxml.jackson.databind.*;
  * Client can either load a template from the template service, or from a local resource
  */
 public class TemplateServiceClient {
-	
-	Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateServiceClient.class);
+
 	private static String TEMPLATES = "/templates/";
 	
 	private final HttpHeaders headers;

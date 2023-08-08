@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class TransitiveClosure implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TransitiveClosure.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TransitiveClosure.class);
 
 	Map<Long, Set<Long>> ancestorMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
 	Map<Long, Set<Long>> descendantMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());

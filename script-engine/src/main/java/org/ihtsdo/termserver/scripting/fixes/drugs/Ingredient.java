@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class Ingredient {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Ingredient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Ingredient.class);
 
 	public Concept doseForm;
 	public Concept substance;

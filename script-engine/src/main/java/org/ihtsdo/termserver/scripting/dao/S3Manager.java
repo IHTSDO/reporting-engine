@@ -16,9 +16,6 @@ import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
 
 public class S3Manager {
-	
-	Logger logger = LoggerFactory.getLogger(this.getClass());
-
     private String region;
     private String awsKey;
     private String awsSecretKey;

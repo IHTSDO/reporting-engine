@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class FlatFileLoader implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FlatFileLoader.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FlatFileLoader.class);
 
 	Map<String, String[]> componentMap = new HashMap<>();
 	

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class HistoricTemplateCompliance extends AllKnownTemplates implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HistoricTemplateCompliance.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricTemplateCompliance.class);
 
 	Set<Concept> alreadyCounted = new HashSet<>();
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();

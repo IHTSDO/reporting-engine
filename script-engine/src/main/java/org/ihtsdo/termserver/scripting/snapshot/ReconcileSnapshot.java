@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReconcileSnapshot.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReconcileSnapshot.class);
 
 	private Map<String, Component> remainingComponents;
 	private int componentsChecked = 0;

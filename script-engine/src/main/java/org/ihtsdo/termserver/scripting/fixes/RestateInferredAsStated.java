@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class RestateInferredAsStated extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RestateInferredAsStated.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RestateInferredAsStated.class);
 
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetSemanticTag = "(medicinal product form)";

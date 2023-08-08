@@ -36,8 +36,8 @@ public class SingleTraceabilityService implements TraceabilityService {
 		unacceptableUsernames.add("pwilliams");
 		unacceptableUsernames.add("tcooksey");
 	}
-	
-	static Logger logger = LoggerFactory.getLogger(SingleTraceabilityService.class);
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SingleTraceabilityService.class);
 	private static int WORKER_COUNT = 4;
 	
 	private TraceabilityServiceClient client;
@@ -70,7 +70,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 	
 	public void tidyUp() {
 		if (workers == null) {
-			logger.info("No traceability workers have been created, skipping tidy up.");
+			LOGGER.info("No traceability workers have been created, skipping tidy up.");
 		} else {
 			for (Worker worker : workers) {
 				worker.shutdown();
@@ -122,7 +122,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		} else {
 			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(row, intOnly, branchPrefix);
 			if (traceabilityInfo.size() == 0) {
-				logger.warn("Failed to recover any traceability information for concept {}", row.c.getConceptId());
+				LOGGER.warn("Failed to recover any traceability information for concept {}", row.c.getConceptId());
 			}
 			
 			for (Activity activity : traceabilityInfo) {
@@ -150,7 +150,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 			}
 			
 			if (row.traceabilityInfo == null) {
-				logger.warn("Failed to find any traceability information for {} can't even look up task", row.c);
+				LOGGER.warn("Failed to find any traceability information for {} can't even look up task", row.c);
 			} else {
 				if (row.traceabilityInfo[IDX_USERNAME] == null
 						|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME])
@@ -173,7 +173,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 					String taskKey = branch.substring(branch.lastIndexOf("/")+1);
 					//Do we infact have a project here?
 					if (!taskKey.contains("-")) {
-						logger.warn("Cannot retrieve author details from project: " + branch);
+						LOGGER.warn("Cannot retrieve author details from project: " + branch);
 						return;
 					}
 					jiraIssue = jiraHelper.getJiraTicket(taskKey);
@@ -193,7 +193,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 					jiraIssueMap.put(branch, jiraIssue);
 				}
 			} catch (Exception e) {
-				logger.error("Unable to recover task information related to " + info[IDX_BRANCH],e);
+				LOGGER.error("Unable to recover task information related to " + info[IDX_BRANCH],e);
 				//Store this failure so that we don't try to recover it again.
 				jiraIssueMap.put(branch, null);
 			}
@@ -238,7 +238,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 	
 	
 	private class Worker implements Runnable {
-		private Logger logger = LoggerFactory.getLogger(SingleTraceabilityService.class);
+		private final Logger LOGGER_WORKER = LoggerFactory.getLogger(Worker.class);
 		private Queue<ReportRow> queue = new LinkedBlockingQueue<>();
 		boolean shutdownPending = false;
 		boolean isRunning = false;
@@ -258,30 +258,30 @@ public class SingleTraceabilityService implements TraceabilityService {
 		@Override
 		public void run() {
 			isRunning = true;
-			logger.debug("Worker {} is running", workerId);
+			LOGGER_WORKER.debug("Worker {} is running", workerId);
 			try {
 				while (true) {
 					if (shutdownPending) {
-						logger.debug("Worker {} shutting down", workerId);
+						LOGGER_WORKER.debug("Worker {} shutting down", workerId);
 						System.gc();
 						isRunning = false;
 						break;
 					} else if (queue.isEmpty()) {
-						logger.debug("Processing queue is empty, worker {} sleeping for 5 seconds", workerId);
+						LOGGER_WORKER.debug("Processing queue is empty, worker {} sleeping for 5 seconds", workerId);
 						try {
 							Thread.sleep(1000 * 5);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
 					} else {
-						logger.debug("Worker {}'s queue contains " + queue.size() + " rows to process", workerId);
+						LOGGER_WORKER.debug("Worker {}'s queue contains " + queue.size() + " rows to process", workerId);
 					}
 					while(queue.size() > 0) {
 						ReportRow row = queue.remove();
 						try {
 							process(row);
 						} catch (TermServerScriptException e) {
-							logger.error("Worker {} Failed to process row {} ", workerId, row, e);
+							LOGGER_WORKER.error("Worker {} Failed to process row {} ", workerId, row, e);
 						}
 					}
 				}
@@ -304,7 +304,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 			//back down below our limit
 			queue.add(row);
 			if (queue.size() > SingleTraceabilityService.MAX_PENDING_SIZE) {
-				logger.debug("Worker {} queue now {} holding caller until reduced ...", this.workerId, queue.size());
+				LOGGER_WORKER.debug("Worker {} queue now {} holding caller until reduced ...", this.workerId, queue.size());
 				while (queue.size() > SingleTraceabilityService.MIN_PENDING_SIZE) {
 					try {
 						Thread.sleep(1000 * 5);
@@ -316,7 +316,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 						throw new TermServerScriptException("Worker queue size is " + queue.size() +", but worker is not running");
 					}
 				}
-				logger.debug("Worker {} queue now {} resuming processing ...", this.workerId, queue.size());
+				LOGGER_WORKER.debug("Worker {} queue now {} resuming processing ...", this.workerId, queue.size());
 			}
 			return true;
 		}
@@ -338,8 +338,8 @@ public class SingleTraceabilityService implements TraceabilityService {
 					try {
 						row.traceabilityInfo[IDX_COMMIT_DATE] = ((ZonedDateTime)row.traceabilityInfo[IDX_COMMIT_DATE]).format(dateFormatter);
 					} catch (Exception e) {
-						logger.error("Formatting error on '" + row.traceabilityInfo[IDX_COMMIT_DATE] + "' " + ExceptionUtils.getExceptionCause("", e), workerId);
-						logger.error(ExceptionUtils.getStackTrace(e));
+						LOGGER_WORKER.error("Formatting error on '" + row.traceabilityInfo[IDX_COMMIT_DATE] + "' " + ExceptionUtils.getExceptionCause("", e), workerId);
+						LOGGER_WORKER.error(ExceptionUtils.getStackTrace(e));
 					}
 				}
 			}
@@ -356,7 +356,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 		}
 
 		public void setFailureReaason(String failureReaason) {
-			logger.error(failureReaason);
+			LOGGER_WORKER.error(failureReaason);
 			this.failureReaason = failureReaason;
 		}
 	}
@@ -364,12 +364,12 @@ public class SingleTraceabilityService implements TraceabilityService {
 	@Override
 	public void flush() throws TermServerScriptException {
 		if (workers == null) {
-			logger.info("No traceability workers have been created, skipping shut down.");
+			LOGGER.info("No traceability workers have been created, skipping shut down.");
 		} else {
 			for (Worker worker : workers) {
 				worker.shutdown();
 				if (worker.isRunning()) {
-					logger.debug("Waiting for worker to shut down");
+					LOGGER.debug("Waiting for worker to shut down");
 					while (worker.isRunning()) {
 						try {
 							Thread.sleep(1000);
@@ -377,7 +377,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 							e.printStackTrace();
 						}
 					}
-					logger.info("Worker confirmed shutdown");
+					LOGGER.info("Worker confirmed shutdown");
 				}
 			}
 		}

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
 
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";

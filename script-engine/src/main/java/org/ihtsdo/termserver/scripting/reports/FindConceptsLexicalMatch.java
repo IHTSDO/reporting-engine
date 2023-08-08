@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class FindConceptsLexicalMatch extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FindConceptsLexicalMatch.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FindConceptsLexicalMatch.class);
 
 	//Map of first words to terms to descriptions.  Everything stored lower case.
 	Map<String, Map<String, Description>> termsByFirstWord = new HashMap<>();

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class RevertComponentToParentVersion extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RevertComponentToParentVersion.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RevertComponentToParentVersion.class);
 
 	/*
 	 * State of the component on this branch will be used to determine whether the component should be restored.

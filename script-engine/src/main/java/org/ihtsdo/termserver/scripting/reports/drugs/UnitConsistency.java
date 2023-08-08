@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class UnitConsistency extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(UnitConsistency.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UnitConsistency.class);
 
 	//For each ingredient, for each unit, list the products that use it.
 	Map<Concept, Map<Concept, List<Concept>>> ingredientUnitExamples = new HashMap<>();

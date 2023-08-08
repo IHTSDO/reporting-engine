@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class BanUsanReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BanUsanReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BanUsanReport.class);
 
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String matchText = "+";

@@ -20,8 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BulkTraceabilityService implements TraceabilityService {
-	
-	static Logger logger = LoggerFactory.getLogger(BulkTraceabilityService.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BulkTraceabilityService.class);
 
 	TraceabilityServiceClient client;
 	TermServerScript ts;
@@ -96,14 +95,14 @@ public class BulkTraceabilityService implements TraceabilityService {
 			}
 		}
 		conceptIds.removeAll(populatedFromCache);
-		logger.info("Recovered cached information for " + populatedFromCache.size() + " concepts (cache size: " + traceabilityInfoCache.size() + ")");
+		LOGGER.info("Recovered cached information for " + populatedFromCache.size() + " concepts (cache size: " + traceabilityInfoCache.size() + ")");
 		
 		//Anything left, we'll make a call to traceability to return
 		if (conceptIds.size() > 0) {
 			branchFilter = "/" + branchFilter;
 			List<Activity> traceabilityInfo = robustlyRecoverTraceabilityInfo(conceptIds);
 			if (traceabilityInfo.size() == 0) {
-				logger.warn("Failed to recover any traceability information for {} concepts", conceptIds.size());
+				LOGGER.warn("Failed to recover any traceability information for {} concepts", conceptIds.size());
 			}
 			for (Activity activity : traceabilityInfo) {
 				Object[] info = new Object[3];

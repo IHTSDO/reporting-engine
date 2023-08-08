@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class JiraHelper {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(JiraHelper.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JiraHelper.class);
 
 	JiraClient client;
 	JiraConfig config;

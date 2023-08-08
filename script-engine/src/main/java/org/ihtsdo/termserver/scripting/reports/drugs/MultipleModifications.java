@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class MultipleModifications extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MultipleModifications.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultipleModifications.class);
 
 	Set<Concept> substancesWithMultipleModifications = new HashSet<>();
 	

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class RemoveRedundantRelationships extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RemoveRedundantRelationships.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveRedundantRelationships.class);
 
 	Concept subHierarchy = SUBSTANCE;
 	Concept attributeType = HAS_DISPOSITION;

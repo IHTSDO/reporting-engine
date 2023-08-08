@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class DrugTermGeneratorCD extends TermGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DrugTermGeneratorCD.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DrugTermGeneratorCD.class);
 
 	private TermServerScript parent;
 	private boolean quiet = false;

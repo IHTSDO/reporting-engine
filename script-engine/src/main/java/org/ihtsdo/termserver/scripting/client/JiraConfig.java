@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 public class JiraConfig {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(JiraConfig.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JiraConfig.class);
 
 	String username;
 	String jiraUrl;

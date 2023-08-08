@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class HistoricComparison extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HistoricComparison.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricComparison.class);
 
 	public static final String START_RELEASE = "Start Release";
 	public static final String END_RELEASE = "End Release";

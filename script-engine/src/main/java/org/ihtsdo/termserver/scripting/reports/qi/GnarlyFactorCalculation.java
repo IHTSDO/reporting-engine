@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class GnarlyFactorCalculation extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(GnarlyFactorCalculation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GnarlyFactorCalculation.class);
 
 	List<Concept> subHierarchies;
 	InitialAnalysis intermediatePrimitivesReport;

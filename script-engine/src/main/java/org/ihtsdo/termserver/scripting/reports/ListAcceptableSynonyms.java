@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ListAcceptableSynonyms extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ListAcceptableSynonyms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ListAcceptableSynonyms.class);
 
 	List<Component> conceptsOfInterest = new ArrayList<Component>();
 	

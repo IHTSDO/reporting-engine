@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 public class RandomWords {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RandomWords.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RandomWords.class);
 
 	public static String generate() {
 		String words = "";

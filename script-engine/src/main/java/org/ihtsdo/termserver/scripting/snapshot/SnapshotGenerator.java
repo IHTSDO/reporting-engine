@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class SnapshotGenerator extends TermServerScript {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SnapshotGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnapshotGenerator.class);
 
 	protected String outputDirName = "output";
 	protected String packageRoot;

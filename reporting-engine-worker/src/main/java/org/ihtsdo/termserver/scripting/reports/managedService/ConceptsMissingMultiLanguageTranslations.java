@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsMissingMultiLanguageTranslations extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsMissingMultiLanguageTranslations.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsMissingMultiLanguageTranslations.class);
 
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
 	//private static final String INCLUDE_UNTRANSLATED_CONCEPTS = "Include untranslated concepts";

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class ExtensionImpactReport extends HistoricDataUser implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ExtensionImpactReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionImpactReport.class);
 
 	private static String INTERNATIONAL_RELEASE = "Proposed International Release Archive";
 	

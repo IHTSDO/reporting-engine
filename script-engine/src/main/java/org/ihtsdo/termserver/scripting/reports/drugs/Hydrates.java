@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class Hydrates extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Hydrates.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Hydrates.class);
 
 	String matchText = "hydrate" ;
 	Concept subHierarchy = SUBSTANCE;

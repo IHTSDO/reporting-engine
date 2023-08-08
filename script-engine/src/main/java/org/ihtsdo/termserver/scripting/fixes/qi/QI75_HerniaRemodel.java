@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class QI75_HerniaRemodel extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(QI75_HerniaRemodel.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(QI75_HerniaRemodel.class);
 
 	Concept hWithO;
 	Concept hWithG;

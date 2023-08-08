@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class ArchiveValidator extends Script {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ArchiveValidator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveValidator.class);
 
 	public static void main(String[] args) throws IOException, TermServerScriptException {
 		if (args.length == 0) {

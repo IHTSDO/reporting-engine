@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.client;
 import java.io.IOException;
 
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
-import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.WhitelistItem;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.slf4j.Logger;
@@ -20,9 +19,6 @@ import com.fasterxml.jackson.databind.*;
  * Client can either load a template from the template service, or from a local resource
  */
 public class AuthoringAcceptanceGatewayClient {
-	
-	Logger logger = LoggerFactory.getLogger(this.getClass());
-	
 	private static String AAG = "/authoring-acceptance-gateway/";
 	
 	private final HttpHeaders headers;

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FixWrongModuleId.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FixWrongModuleId.class);
 
 	String findModule = "1145237009";
 	String replaceModule = "900000000000207008";

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceFix extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix.class);
 
 	private List<String> exceptions = new ArrayList<>();
 	

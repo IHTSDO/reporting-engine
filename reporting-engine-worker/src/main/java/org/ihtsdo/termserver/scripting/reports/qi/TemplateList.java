@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class TemplateList extends AllKnownTemplates implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TemplateList.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateList.class);
 	
 	final static String defaultTemplateServiceUrl = "https://dev-snowstorm.ihtsdotools.org/template-service";
 	//final static String defaultTemplateServiceUrl = "https://authoring.ihtsdotools.org/template-service";

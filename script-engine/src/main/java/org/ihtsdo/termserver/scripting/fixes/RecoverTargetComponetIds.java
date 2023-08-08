@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class RecoverTargetComponetIds extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RecoverTargetComponetIds.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecoverTargetComponetIds.class);
 
 	String previousReleaseBranch;
 	

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class FsnPtAlignmentStats extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FsnPtAlignmentStats.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FsnPtAlignmentStats.class);
 
 	DecimalFormat df = new DecimalFormat("##.#%");
 	boolean includeDetail = false;

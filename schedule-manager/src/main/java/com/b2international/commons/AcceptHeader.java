@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class AcceptHeader<T> implements Comparable<AcceptHeader<T>> {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AcceptHeader.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AcceptHeader.class);
 
     private final T value;
     private final double quality;

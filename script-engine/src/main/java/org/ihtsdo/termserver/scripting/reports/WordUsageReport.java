@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class WordUsageReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(WordUsageReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(WordUsageReport.class);
 
 	Map<String, Usage> wordUsage = new LinkedHashMap<String, Usage>();
 	

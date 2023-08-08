@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Delete_US_Issues.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Delete_US_Issues.class);
 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 

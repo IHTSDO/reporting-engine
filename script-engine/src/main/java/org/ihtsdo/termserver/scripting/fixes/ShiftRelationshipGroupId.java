@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ShiftRelationshipGroupId.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ShiftRelationshipGroupId.class);
 
 	boolean unpublishedContentOnly = true;
 	

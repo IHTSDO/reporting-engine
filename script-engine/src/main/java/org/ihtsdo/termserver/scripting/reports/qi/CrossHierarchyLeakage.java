@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class CrossHierarchyLeakage extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CrossHierarchyLeakage.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CrossHierarchyLeakage.class);
 
 	Concept subHierarchy;
 	

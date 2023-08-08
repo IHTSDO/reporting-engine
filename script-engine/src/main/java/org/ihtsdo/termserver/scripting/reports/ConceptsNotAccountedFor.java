@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsNotAccountedFor extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsNotAccountedFor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsNotAccountedFor.class);
 
 	Set<Concept> accountedForHierarchies = new HashSet<>();
 	Set<Concept> accountedForHierarchiesExpanded = new HashSet<>();

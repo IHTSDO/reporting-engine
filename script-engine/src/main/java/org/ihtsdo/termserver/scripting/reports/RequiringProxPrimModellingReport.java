@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class RequiringProxPrimModellingReport extends TermServerReport{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RequiringProxPrimModellingReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RequiringProxPrimModellingReport.class);
 
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String publishedArchive;

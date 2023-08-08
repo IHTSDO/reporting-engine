@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateConceptsNoReplacement extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsNoReplacement.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsNoReplacement.class);
 
 	//InactivationIndicator inactivationIndicator = InactivationIndicator.AMBIGUOUS;
 	InactivationIndicator inactivationIndicator = InactivationIndicator.MOVED_ELSEWHERE;

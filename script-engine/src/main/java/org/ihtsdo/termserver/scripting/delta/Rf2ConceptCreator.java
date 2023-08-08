@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class Rf2ConceptCreator extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Rf2ConceptCreator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Rf2ConceptCreator.class);
 
 	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile) throws TermServerScriptException {
 		Rf2ConceptCreator conceptCreator = new Rf2ConceptCreator();

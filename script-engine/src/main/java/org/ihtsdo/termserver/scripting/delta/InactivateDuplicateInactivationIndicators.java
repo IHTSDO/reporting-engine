@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateDuplicateInactivationIndicators extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateInactivationIndicators.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateInactivationIndicators.class);
 
 	public static String SCTID_ERRONEOUS = "900000000000485001";
 	public static String SCTID_DUPLICATE = "900000000000482003";

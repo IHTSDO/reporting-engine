@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateConceptsDriven extends DeltaGenerator implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsDriven.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsDriven.class);
 
 	private Set<Concept> conceptsToInactivate;
 	

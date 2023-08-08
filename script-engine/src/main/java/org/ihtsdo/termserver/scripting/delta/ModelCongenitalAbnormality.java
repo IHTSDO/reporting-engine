@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class ModelCongenitalAbnormality extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ModelCongenitalAbnormality.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ModelCongenitalAbnormality.class);
 
 	String subHierarchyStr = "276654001"; // | Congenital malformation (disorder) |
 	//String subHierarchyStr = "66091009"; //  |Congenital disease (disorder)|

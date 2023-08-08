@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReleaseSummary {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseSummary.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseSummary.class);
 
 	@Expose
 	private String[] columnHeadings;

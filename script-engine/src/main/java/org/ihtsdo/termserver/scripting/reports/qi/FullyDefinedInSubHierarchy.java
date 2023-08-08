@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class FullyDefinedInSubHierarchy extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FullyDefinedInSubHierarchy.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FullyDefinedInSubHierarchy.class);
 
 	Concept subHierarchy;
 	

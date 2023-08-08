@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class LexicalModellingMismatch extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LexicalModellingMismatch.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LexicalModellingMismatch.class);
 
 	public static final String WORDS = "Words";
 	public static final String NOT_WORDS = "Not Words";

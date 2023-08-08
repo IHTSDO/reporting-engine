@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(FullyDefinedParentsInSubHierarchy.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FullyDefinedParentsInSubHierarchy.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();

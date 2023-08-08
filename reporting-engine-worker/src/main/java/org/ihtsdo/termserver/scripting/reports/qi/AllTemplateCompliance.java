@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class AllTemplateCompliance extends AllKnownTemplates implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AllTemplateCompliance.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AllTemplateCompliance.class);
 
 	Set<Concept> alreadyCounted = new HashSet<>();
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();

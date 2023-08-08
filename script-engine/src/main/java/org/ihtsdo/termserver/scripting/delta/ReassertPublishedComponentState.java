@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReassertPublishedComponentState extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedComponentState.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedComponentState.class);
 
 	/*String[] componentsToProcess = new String[] {
 		"5169695010",

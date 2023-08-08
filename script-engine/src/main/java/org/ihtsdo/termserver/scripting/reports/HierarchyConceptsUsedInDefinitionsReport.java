@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsUsedInDefinitionsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsUsedInDefinitionsReport.class);
 
 	String hierarchy = "49062001"; // |Device (physical object)|
 	Concept attributeType = null; // Not currently needed because concepts coming from file

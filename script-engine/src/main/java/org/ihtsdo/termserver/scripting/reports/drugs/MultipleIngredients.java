@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class MultipleIngredients extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MultipleIngredients.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultipleIngredients.class);
 
 	ConceptType[] validTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 	String[] falsePositives = new String[] { "gastro-resistant and prolonged-release" };

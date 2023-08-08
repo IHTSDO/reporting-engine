@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class MissingAcceptability extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MissingAcceptability.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MissingAcceptability.class);
 
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
 	private static final String TRACK_DIALECT = "Track dialect";

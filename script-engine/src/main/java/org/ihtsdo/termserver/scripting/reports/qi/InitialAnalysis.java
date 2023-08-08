@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class InitialAnalysis extends TermServerReport implements org.ihtsdo.termserver.scripting.ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InitialAnalysis.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InitialAnalysis.class);
 
 	private static final int MAX_CONCEPTS = 10000; 
 	Collection<Concept> conceptsToAnalyse;

@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class NormalizeProductStrength extends DrugBatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NormalizeProductStrength.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormalizeProductStrength.class);
 
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	

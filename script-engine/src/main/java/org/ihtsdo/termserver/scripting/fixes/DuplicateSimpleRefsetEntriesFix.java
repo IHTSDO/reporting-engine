@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class DuplicateSimpleRefsetEntriesFix extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DuplicateSimpleRefsetEntriesFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateSimpleRefsetEntriesFix.class);
 
 	private static String simpleRefsetId = "723264001"; // Lateralisable body structure reference set
 	Map<Concept, Set<RefsetMember>> duplicateMembers = new HashMap<>();

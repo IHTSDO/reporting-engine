@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceFixForLanguage extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFixForLanguage.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFixForLanguage.class);
 
 	private List<String> exceptions = new ArrayList<>();
 	private boolean expectFirstLetterCapitalization = false;

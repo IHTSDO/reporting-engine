@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class RecreateComponent extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RecreateComponent.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RecreateComponent.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RecreateComponent delta = new RecreateComponent();

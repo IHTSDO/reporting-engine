@@ -42,7 +42,7 @@ public class OAuthCredentials implements ICredentials {
 	private final String consumerKey;
 	private final PrivateKey privateKey;
 
-	private static Logger logger = LoggerFactory.getLogger(OAuthCredentials.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OAuthCredentials.class);
 
 	public OAuthCredentials(String username, String consumerKey, PrivateKey privateKey) {
 		this.username = username;
@@ -65,7 +65,7 @@ public class OAuthCredentials implements ICredentials {
 			HttpRequestBase requestBase = (HttpRequestBase) request;
 			try {
 				final String uri = requestBase.getRequestLine().getUri();
-				logger.debug("Initial uri {}", uri);
+				LOGGER.debug("Initial uri {}", uri);
 
 				// Gather OAuth params
 				final URIBuilder uriBuilder = new URIBuilder(uri);
@@ -85,7 +85,7 @@ public class OAuthCredentials implements ICredentials {
 				String timestamp = OAUTH_TIMESTAMP + "%3D" + params.get(OAUTH_TIMESTAMP) + "%26";
 				baseString = baseString.replace(timestamp, timestamp + "oauth_token%3D%26");
 
-				logger.debug("baseString {}", baseString);
+				LOGGER.debug("baseString {}", baseString);
 				final OAuthParameters oauthParameters = new OAuthParameters();
 				for (String key : params.keySet()) {
 					oauthParameters.addCustomBaseParameter(key, params.get(key));
@@ -96,13 +96,13 @@ public class OAuthCredentials implements ICredentials {
 				uriBuilder.setParameters(mapToNameValuePairs(params));
 
 				final URI signedUri = uriBuilder.build();
-				logger.debug("Signed uri {}", signedUri);
+				LOGGER.debug("Signed uri {}", signedUri);
 				requestBase.setURI(signedUri);
 			} catch (OAuthException | URISyntaxException e) {
-				logger.error("Failed to sign jira http request.", e);
+				LOGGER.error("Failed to sign jira http request.", e);
 			}
 		} else {
-			logger.error("Failed to sign jira http request. Can only sign HttpRequestBase requests but got {}", request.getClass().getName());
+			LOGGER.error("Failed to sign jira http request. Can only sign HttpRequestBase requests but got {}", request.getClass().getName());
 		}
 	}
 
@@ -138,7 +138,7 @@ public class OAuthCredentials implements ICredentials {
 	public static PrivateKey getPrivateKey(String privKeyPath) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 		final File privateKeyFile = new File(privKeyPath);
 		if (!privateKeyFile.isFile()) {
-			logger.error("Failed to load private key using path {}", privKeyPath);
+			LOGGER.error("Failed to load private key using path {}", privKeyPath);
 			throw new FileNotFoundException("Private key not found.");
 		}
 

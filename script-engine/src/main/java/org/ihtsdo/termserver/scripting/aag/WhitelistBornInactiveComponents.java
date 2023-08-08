@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class WhitelistBornInactiveComponents extends TermServerScript {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(WhitelistBornInactiveComponents.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(WhitelistBornInactiveComponents.class);
 
 	public static String assertionId = "2b193a88-8dab-4d19-b995-b556ed59398d";
 	//public static String assertionText = "New inactive states follow active states in the DESCRIPTION snapshot.";

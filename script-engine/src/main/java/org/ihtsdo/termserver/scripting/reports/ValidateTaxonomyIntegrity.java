@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class ValidateTaxonomyIntegrity extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ValidateTaxonomyIntegrity.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateTaxonomyIntegrity.class);
 
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String matchText = "+"; 

@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class AxiomUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AxiomUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AxiomUtils.class);
 
 	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<>());
 

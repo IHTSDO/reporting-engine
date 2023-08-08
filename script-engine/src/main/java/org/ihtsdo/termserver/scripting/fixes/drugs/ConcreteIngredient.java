@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConcreteIngredient {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConcreteIngredient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConcreteIngredient.class);
 
 	public Concept doseForm;
 	public Concept substance;

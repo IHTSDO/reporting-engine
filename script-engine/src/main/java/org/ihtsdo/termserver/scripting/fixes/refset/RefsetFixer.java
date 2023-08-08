@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class RefsetFixer extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RefsetFixer.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RefsetFixer.class);
 
 	protected RefsetFixer(BatchFix clone) {
 		super(clone);

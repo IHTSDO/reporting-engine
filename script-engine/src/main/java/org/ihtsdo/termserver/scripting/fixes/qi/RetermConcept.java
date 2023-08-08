@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class RetermConcept extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RetermConcept.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RetermConcept.class);
 
 	private Map<String, String> termMap = new HashMap<>();
 	

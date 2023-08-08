@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class TermContainsXReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TermContainsXReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TermContainsXReport.class);
 
 	String[] textsToMatch = null;
 	String[] textsToAvoid = null;

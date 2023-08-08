@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class HistoricStatsAnalyzer extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HistoricStatsAnalyzer.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricStatsAnalyzer.class);
 
 	//String[] releasesToAnalyse = new String[] { "20180131", "20180731", "20190131",
 	//											"20190731", "MAIN" };

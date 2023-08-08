@@ -16,9 +16,6 @@ import org.snomed.otf.traceability.domain.ComponentChange;
 import org.snomed.otf.traceability.domain.ConceptChange;
 
 public class MultiDetailTraceabilityService implements TraceabilityService {
-	
-	static Logger logger = LoggerFactory.getLogger(MultiDetailTraceabilityService.class);
-
 	TraceabilityServiceClient client;
 	TermServerScript ts;
 	String onBranch = null;

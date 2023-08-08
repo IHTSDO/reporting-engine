@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RemoveFSNCounterparts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveFSNCounterparts.class);
 
 	Concept subHierarchy = MEDICINAL_PRODUCT;
 	

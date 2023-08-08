@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 
 public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
 
 	DrugTermGeneratorCD termGenerator = new DrugTermGeneratorCD(this);
 	

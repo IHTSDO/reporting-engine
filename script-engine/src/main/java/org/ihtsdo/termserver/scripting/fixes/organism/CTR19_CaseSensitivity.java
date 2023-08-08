@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CTR19_CaseSensitivity.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CTR19_CaseSensitivity.class);
 
 	String[] textsToMatch = new String[] { "Clade","Class","Division",
 			"Domain","Family","Genus","Infraclass",

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReTermInfluenza.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReTermInfluenza.class);
 
 	public static final String INFLUENZA = "Influenza";
 	public static final String PARAINFLUENZA = "Parainfluenza";

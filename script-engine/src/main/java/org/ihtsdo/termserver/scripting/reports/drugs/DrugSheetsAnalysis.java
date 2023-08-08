@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class DrugSheetsAnalysis extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DrugSheetsAnalysis.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DrugSheetsAnalysis.class);
 
 	private List<File> drugSheets;
 	private Map<File, List<DrugLine>> fileLineMap;

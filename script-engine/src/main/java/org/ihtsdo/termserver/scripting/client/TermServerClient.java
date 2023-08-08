@@ -42,14 +42,14 @@ public class TermServerClient {
 	
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
-	};
+	}
 	
 	public enum ImportType {
 		DELTA, SNAPSHOT, FULL;
-	};
+	}
 
 	public enum ExportType {
-		PUBLISHED, UNPUBLISHED, MIXED;
+		PUBLISHED, UNPUBLISHED, MIXED
 	}
 	
 	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
@@ -73,7 +73,7 @@ public class TermServerClient {
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerClient.class);
 	public static boolean supportsIncludeUnpublished = true;
 
 	public TermServerClient(String serverUrl, String cookie) {
@@ -109,7 +109,7 @@ public class TermServerClient {
 		while (retry < 3) {
 			try {
 				String url = getBranchesPath(branchPath);
-				logger.debug("Recovering branch information from " + url);
+				LOGGER.debug("Recovering branch information from " + url);
 				return restTemplate.getForObject(url, Branch.class);
 			} catch (RestClientException e) {
 				if (++retry < 3) {
@@ -126,7 +126,7 @@ public class TermServerClient {
 	public List<Branch> getBranchChildren(String branchPath) throws TermServerScriptException {
 		try {
 			String url = getBranchesPath(branchPath) + "/children?immediateChildren=true";
-			logger.debug("Recovering branch child information from " + url);
+			LOGGER.debug("Recovering branch child information from " + url);
 			ResponseEntity<List<Branch>> response = restTemplate.exchange(
 					url,
 					HttpMethod.GET,
@@ -141,7 +141,7 @@ public class TermServerClient {
 	public List<CodeSystemVersion> getCodeSystemVersions(String codeSystem) throws TermServerScriptException {
 		try {
 			String url = this.url + "/codesystems/" + codeSystem + "/versions?showFutureVersions=true";
-			logger.debug("Recovering codesystem versions from " + url);
+			LOGGER.debug("Recovering codesystem versions from " + url);
 			return restTemplate.getForObject(url, CodeSystemVersionCollection.class).getItems();
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
@@ -162,7 +162,7 @@ public class TermServerClient {
 	public Concept createConcept(Concept c, String branchPath) throws TermServerScriptException {
 		try {
 			Concept newConcept =  restTemplate.postForObject(getConceptBrowserPath(branchPath), new HttpEntity<>(c, headers), Concept.class);
-			logger.info("Created concept: " + newConcept + " with " + c.getDescriptions().size() + " descriptions.");
+			LOGGER.info("Created concept: " + newConcept + " with " + c.getDescriptions().size() + " descriptions.");
 			return newConcept;
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -183,13 +183,13 @@ public class TermServerClient {
 							Concept.class);
 					c = response.getBody();
 					updatedOK = true;
-					logger.info("Updated concept " + c.getConceptId());
+					LOGGER.info("Updated concept " + c.getConceptId());
 				} catch (Exception e) {
 					tries++;
 					if (tries >= MAX_TRIES) {
 						throw new TermServerScriptException("Failed to update concept: " + c + " after " + tries + " attempts due to " + e.getMessage(), e);
 					}
-					logger.debug("Update of concept failed, trying again....",e);
+					LOGGER.debug("Update of concept failed, trying again....",e);
 					Thread.sleep(30*1000); //Give the server 30 seconds to recover
 				}
 			}
@@ -212,7 +212,7 @@ public class TermServerClient {
 	public void deleteConcept(String sctId, String branchPath) throws TermServerScriptException {
 		try {
 			restTemplate.delete(getConceptsPath(sctId, branchPath));
-			logger.info("Deleted concept " + sctId + " from " + branchPath);
+			LOGGER.info("Deleted concept " + sctId + " from " + branchPath);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to delete concept: " + sctId, e);
 		}
@@ -282,7 +282,7 @@ public class TermServerClient {
 			jsonObject.put("name", branchName);
 			resty.json(url + "/branches", RestyHelper.content(jsonObject, JSON_CONTENT_TYPE));
 			final String branchPath = parent + "/" + branchName;
-			logger.info("Created branch {}", branchPath);
+			LOGGER.info("Created branch {}", branchPath);
 			for (SnowOwlClientEventListener eventListener : eventListeners) {
 				eventListener.branchCreated(branchPath);
 			}
@@ -299,7 +299,7 @@ public class TermServerClient {
 			json.put("target", target);
 			final String message = "Merging " + source + " to " + target;
 			json.put("commitComment", message);
-			logger.info(message);
+			LOGGER.info(message);
 			resty.json(url + "/merges", RestyHelper.content(json, JSON_CONTENT_TYPE));
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -309,7 +309,7 @@ public class TermServerClient {
 	public void deleteBranch(String branchPath) throws TermServerScriptException {
 		try {
 			resty.json(url + "/branches/" + branchPath, Resty.delete());
-			logger.info("Deleted branch {}", branchPath);
+			LOGGER.info("Deleted branch {}", branchPath);
 		} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
@@ -384,7 +384,7 @@ public class TermServerClient {
 	}
 
 	public JSONArray getMergeReviewDetails(String mergeReviewId) throws TermServerScriptException {
-		logger.info("Getting merge review {}", mergeReviewId);
+		LOGGER.info("Getting merge review {}", mergeReviewId);
 		try {
 			return resty.json(getMergeReviewUrl(mergeReviewId) + "/details").array();
 		} catch (Exception e) {
@@ -399,7 +399,7 @@ public class TermServerClient {
 	public void saveConceptMerge(String mergeReviewId, JSONObject mergedConcept) throws TermServerScriptException {
 		try {
 			String id = ConceptHelper.getConceptId(mergedConcept);
-			logger.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
+			LOGGER.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
 			resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, JSON_CONTENT_TYPE));
 		} catch (JSONException | IOException e) {
 			throw new TermServerScriptException(e);
@@ -409,7 +409,7 @@ public class TermServerClient {
 	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation, boolean unpromotedChangesOnly)
 			throws TermServerScriptException {
 		Map<String, Object> exportRequest = prepareExportRequest(branchPath, effectiveDate, exportType, extractType, unpromotedChangesOnly);
-		logger.info ("Initiating export with {}", exportRequest);
+		LOGGER.info ("Initiating export with {}", exportRequest);
 		String exportLocationURL = initiateExport(exportRequest);
 		//INFRA-1489 Workaround
 		if (!exportLocationURL.startsWith("https://")) {
@@ -488,8 +488,8 @@ public class TermServerClient {
 	
 	private File recoverExportedArchive(String exportLocationURL,  final File saveLocation) throws TermServerScriptException {
 		try {
-			logger.info("Recovering exported archive from {}", exportLocationURL);
-			logger.info("Saving exported archive to {}", saveLocation);
+			LOGGER.info("Recovering exported archive from {}", exportLocationURL);
+			LOGGER.info("Saving exported archive to {}", saveLocation);
 			RequestCallback requestCallback = request -> request.getHeaders()
 					.setAccept(Arrays.asList(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL));
 			restTemplate.execute(exportLocationURL + "/archive", HttpMethod.GET, requestCallback, clientHttpResponse -> {
@@ -499,7 +499,7 @@ public class TermServerClient {
 			if (saveLocation.length() == 0) {
 				throw new RestClientException("Archive recovered as 0 bytes");
 			}
-			logger.debug("Extract recovery complete");
+			LOGGER.debug("Extract recovery complete");
 			return saveLocation;
 		} catch (RestClientException e) {
 			throw new TermServerScriptException("Unable to recover exported archive from " + exportLocationURL, e);
@@ -511,7 +511,7 @@ public class TermServerClient {
 		Map<String, Object> importRequest = new HashMap<>();
 		importRequest.put("type", importType);
 		importRequest.put("branchPath", branchPath);
-		logger.info ("Creating import job with {}", importRequest);
+		LOGGER.info ("Creating import job with {}", importRequest);
 		String importJobLocation = initiateImport(importRequest);
 		try {
 			importArchive(importJobLocation, archive);
@@ -522,7 +522,7 @@ public class TermServerClient {
 
 
 	private void importArchive(String importJobLocation, File archive) throws JSONException, InterruptedException, TermServerScriptException {
-		logger.info("Importing " + archive + " in import job " + importJobLocation);
+		LOGGER.info("Importing " + archive + " in import job " + importJobLocation);
 		String url = importJobLocation + "/archive";
 		
 		HttpHeaders headers = new HttpHeaders();
@@ -570,7 +570,7 @@ public class TermServerClient {
 		try {
 			Preconditions.checkNotNull(descId);
 			JSONResource response =  resty.json(getDescriptionsPath(branchPath,descId) + "/updates", RestyHelper.content(descObj, JSON_CONTENT_TYPE));
-			logger.info("Updated description " + descId);
+			LOGGER.info("Updated description " + descId);
 			return response;
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -588,7 +588,7 @@ public class TermServerClient {
 
 	public void deleteRefsetMember(String refsetMemberId, String branch, boolean toForce) throws TermServerScriptException {
 			restTemplate.delete(getRefsetMemberUpdateUrl(refsetMemberId, branch, toForce));
-			logger.info("Deleted refset member id:" + refsetMemberId);
+			LOGGER.info("Deleted refset member id:" + refsetMemberId);
 	}
 	
 	private String getRefsetMemberUrl(String refSetMemberId, String branch) {
@@ -624,7 +624,7 @@ public class TermServerClient {
 					RefsetMember.class);
 			RefsetMember updatedEntry = response.getBody();
 			Preconditions.checkNotNull(updatedEntry);
-			logger.info("Updated refset member " + refsetEntry.getId());
+			LOGGER.info("Updated refset member " + refsetEntry.getId());
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
 		}
@@ -748,7 +748,7 @@ public class TermServerClient {
 	public List<CodeSystem> getCodeSystems() throws TermServerScriptException {
 		try {
 			String url = this.url + "/codesystems";
-			logger.debug("Recovering codesystems from " + url);
+			LOGGER.debug("Recovering codesystems from " + url);
 			return restTemplate.getForObject(url, CodeSystemCollection.class).getItems();
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
@@ -758,7 +758,7 @@ public class TermServerClient {
 	public CodeSystem getCodeSystem(String codeSystemName) throws TermServerScriptException {
 		try {
 			String url = this.url + "/codesystems/" + codeSystemName;
-			logger.debug("Recovering codesystem from " + url);
+			LOGGER.debug("Recovering codesystem from " + url);
 			return restTemplate.getForObject(url, CodeSystem.class);
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class CrossoverUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CrossoverUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CrossoverUtils.class);
 
 	 /* The Enum TEST_RESULTS.
 	 */

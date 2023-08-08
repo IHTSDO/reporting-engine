@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RemoveSubstringFromNewTerms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveSubstringFromNewTerms.class);
 
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();

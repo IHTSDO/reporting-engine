@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public class MismatchedRelationships extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MismatchedRelationships.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MismatchedRelationships.class);
 
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;

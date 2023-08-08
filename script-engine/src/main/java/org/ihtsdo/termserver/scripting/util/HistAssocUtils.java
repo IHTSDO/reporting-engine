@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class HistAssocUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HistAssocUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HistAssocUtils.class);
 
 	private BatchFix ts;
 	private GraphLoader gl;

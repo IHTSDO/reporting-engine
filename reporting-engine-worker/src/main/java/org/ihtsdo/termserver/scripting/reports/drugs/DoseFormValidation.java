@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class DoseFormValidation extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DoseFormValidation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DoseFormValidation.class);
 
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";

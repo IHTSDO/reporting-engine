@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class RelationshipsWithType extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RelationshipsWithType.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipsWithType.class);
 
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());

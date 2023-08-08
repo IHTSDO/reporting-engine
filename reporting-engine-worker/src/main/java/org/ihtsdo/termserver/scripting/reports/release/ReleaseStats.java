@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReleaseStats extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseStats.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseStats.class);
 
 	public static final String THIS_RELEASE = "This Release";
 	public static final String MODULES = "Modules";

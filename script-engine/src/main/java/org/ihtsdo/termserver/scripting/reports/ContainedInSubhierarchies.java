@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class ContainedInSubhierarchies extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ContainedInSubhierarchies.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ContainedInSubhierarchies.class);
 
 	List<Concept> conceptsOfInterest = new ArrayList<>();
 	List<Concept> subHierarchies = new ArrayList<>();

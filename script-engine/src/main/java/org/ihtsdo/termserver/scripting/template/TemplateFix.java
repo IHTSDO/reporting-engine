@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 abstract public class TemplateFix extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TemplateFix.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateFix.class);
 
 	protected Set<Concept> exclusions;
 	protected List<String> exclusionWords;

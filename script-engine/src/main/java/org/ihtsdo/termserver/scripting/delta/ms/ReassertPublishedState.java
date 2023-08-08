@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReassertPublishedState extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedState.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedState.class);
 
 	String processMe = "372440000, 384786009";
 	String intReleaseBranch="MAIN/2022-01-31";

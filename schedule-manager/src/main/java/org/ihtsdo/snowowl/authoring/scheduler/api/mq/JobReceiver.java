@@ -10,9 +10,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JobReceiver {
-	
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
 	@Autowired
 	ScheduleService service;
 

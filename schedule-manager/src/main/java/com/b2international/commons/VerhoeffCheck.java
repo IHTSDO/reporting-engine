@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class VerhoeffCheck {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(VerhoeffCheck.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(VerhoeffCheck.class);
 
 	/**
 	 * Represents the multiplication table.

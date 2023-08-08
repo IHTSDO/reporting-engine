@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class ApplyDeltaToArchive extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ApplyDeltaToArchive.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ApplyDeltaToArchive.class);
 
 	Map<String, Map<String, String>> deltaArchiveMap = new HashMap<>();
 	Map<String, String> originalFileNames = new HashMap<>();

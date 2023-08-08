@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AllKnownTemplates extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AllKnownTemplates.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AllKnownTemplates.class);
 
 	TemplateServiceClient tsc;
 	Map<String, List<Template>> domainTemplates = new HashMap<>();

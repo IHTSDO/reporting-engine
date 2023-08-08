@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class MultiReportRunner extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MultiReportRunner.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultiReportRunner.class);
 
 	ReportClass report; 
 	JiraHelper jira;

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MismatchedLaterality.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MismatchedLaterality.class);
 	
 	Set<String> hierarchies = new HashSet<>();
 	Set<Concept> reportedSuspect = new HashSet<>();

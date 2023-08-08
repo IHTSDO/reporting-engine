@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSensitivity extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSensitivity.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivity.class);
 
 	List<Concept> targetHierarchies = new ArrayList<>();
 	List<Concept> excludeHierarchies = new ArrayList<>();

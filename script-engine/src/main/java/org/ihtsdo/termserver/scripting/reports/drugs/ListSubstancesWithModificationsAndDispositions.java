@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class ListSubstancesWithModificationsAndDispositions extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ListSubstancesWithModificationsAndDispositions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ListSubstancesWithModificationsAndDispositions.class);
 
 	Set<Concept> substancesUsedInProducts;
 	int maxParents = 0;

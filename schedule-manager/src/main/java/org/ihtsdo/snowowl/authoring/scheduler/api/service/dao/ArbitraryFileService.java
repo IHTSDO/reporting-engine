@@ -14,7 +14,7 @@ public class ArbitraryFileService {
 	public static final String UTF_8 = "UTF-8";
 
 	protected File baseDirectory;
-	protected Logger logger = LoggerFactory.getLogger(ArbitraryFileService.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ArbitraryFileService.class);
 
 	public ArbitraryFileService() {
 		this.baseDirectory = new File("resources/org.ihtsdo.snowowl.authoring.single.api");
@@ -49,7 +49,7 @@ public class ArbitraryFileService {
 	public void delete(String relativePath) {
 		final File file = new File(baseDirectory, relativePath);
 		if (file.isFile() && !file.delete()) {
-			logger.warn("Failed to delete file {}", file.getAbsolutePath());
+			LOGGER.warn("Failed to delete file {}", file.getAbsolutePath());
 		}
 	}
 

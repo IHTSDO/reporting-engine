@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
 
 	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReplaceConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceConcepts.class);
 
 	Concept subHierarchy;
 	Set<Concept> replaceConcepts;

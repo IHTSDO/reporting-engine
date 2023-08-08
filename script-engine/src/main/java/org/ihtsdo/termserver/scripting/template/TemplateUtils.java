@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class TemplateUtils implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TemplateUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateUtils.class);
 
 	public static Pattern p = Pattern.compile("[0-9]+");
 	

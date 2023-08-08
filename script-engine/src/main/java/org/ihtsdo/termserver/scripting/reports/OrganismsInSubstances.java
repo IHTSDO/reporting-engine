@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class OrganismsInSubstances extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(OrganismsInSubstances.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OrganismsInSubstances.class);
 
 	Concept subHierarchy = ROOT_CONCEPT;
 	Map<String, Description> organismNames;

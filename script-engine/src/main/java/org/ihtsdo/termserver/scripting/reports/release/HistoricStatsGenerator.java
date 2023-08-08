@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HistoricStatsGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricStatsGenerator.class);
 
 	private static int MAX_HIERARCHY_DEPTH = 150;
 	

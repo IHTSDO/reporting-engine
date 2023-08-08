@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReleaseSummaryDetail implements Comparable<ReleaseSummaryDetail> {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReleaseSummaryDetail.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseSummaryDetail.class);
 
 	@Expose
 	private String effectiveTime;

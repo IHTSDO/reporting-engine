@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class SummaryComponentStats extends HistoricDataUser implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStats.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStats.class);
 
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_CD = 3, TAB_AXIOMS = 4,
 			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,

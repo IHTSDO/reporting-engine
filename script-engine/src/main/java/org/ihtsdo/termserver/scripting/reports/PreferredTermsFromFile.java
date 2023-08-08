@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class PreferredTermsFromFile extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(PreferredTermsFromFile.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PreferredTermsFromFile.class);
 
 	String matchText = "+";
 	List<Concept> conceptFilter;

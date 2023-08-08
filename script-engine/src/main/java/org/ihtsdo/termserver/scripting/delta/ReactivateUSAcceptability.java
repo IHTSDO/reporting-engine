@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 @Deprecated
 public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ReactivateUSAcceptability.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReactivateUSAcceptability.class);
 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 	

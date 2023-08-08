@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class SubstanceDispositions extends DrugBatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SubstanceDispositions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SubstanceDispositions.class);
 
 	Map<Concept, List<Concept>> conceptDispositionMap = new HashMap<>();
 	BiMap<Concept, Concept> topLevelSubstances = HashBiMap.create();

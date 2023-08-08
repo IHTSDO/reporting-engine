@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class SimpleConceptList extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SimpleConceptList.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleConceptList.class);
 
 	public static String LANG_REFSETS = "LangRefsets";
 	public List<Concept> langRefsets = new ArrayList<>();

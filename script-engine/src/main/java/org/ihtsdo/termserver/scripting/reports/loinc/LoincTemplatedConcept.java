@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincConstants, LoincScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 
 	private static final String semTag = " (observable entity)";
 	private static Set<String> partNumsMapped = new HashSet<>();

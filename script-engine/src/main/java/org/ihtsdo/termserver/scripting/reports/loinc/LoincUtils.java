@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincUtils implements RF2Constants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincUtils.class);
 
 	public static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	public static String CORRELATION_PREFIX = "Correlation ID:";

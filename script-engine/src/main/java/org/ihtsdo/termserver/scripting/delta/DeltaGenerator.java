@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class DeltaGenerator extends TermServerScript {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(DeltaGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DeltaGenerator.class);
 
 	protected String outputDirName = "output";
 	protected String packageRoot;

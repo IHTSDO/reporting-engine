@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class CisRecord {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CisRecord.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CisRecord.class);
 
 	static DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZone(DateTimeZone.UTC);
 	

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class SwitchAttributeInGroup extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SwitchAttributeInGroup.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SwitchAttributeInGroup.class);
 
 	String subHierarchy = "81060008"; // |Intestinal obstruction (disorder)| 
 	RelationshipTemplate findRel;

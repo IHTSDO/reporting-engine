@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RevertCoreAxioms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RevertCoreAxioms.class);
 
 	Map<String, RefsetMember> changeMap = new HashMap<>();
 

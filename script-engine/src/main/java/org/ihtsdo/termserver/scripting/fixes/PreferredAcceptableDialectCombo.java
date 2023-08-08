@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(PreferredAcceptableDialectCombo.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PreferredAcceptableDialectCombo.class);
 
 	String subHierarchy = "105590001 |Substance (substance)|"; 
 	String[] exclusions = new String[] { "312435005 |Industrial and household substance (substance)|",

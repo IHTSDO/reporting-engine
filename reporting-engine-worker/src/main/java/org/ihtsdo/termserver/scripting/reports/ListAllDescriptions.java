@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class ListAllDescriptions extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ListAllDescriptions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ListAllDescriptions.class);
 
 	private static String DESCRIPTION_PER_LINE = "Description Per Line";
 	private Set<Concept> alreadyReported = new HashSet<>();

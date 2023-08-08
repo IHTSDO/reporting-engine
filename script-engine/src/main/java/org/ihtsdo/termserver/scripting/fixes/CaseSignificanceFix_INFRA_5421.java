@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix_INFRA_5421.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSignificanceFix_INFRA_5421.class);
 
 	String[] knownLowerCase = new String[] { "mm", "nm" };
 	CaseSensitivityUtils csUtils = new CaseSensitivityUtils();

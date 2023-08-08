@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class SetProximalPrimitiveParent extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SetProximalPrimitiveParent.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SetProximalPrimitiveParent.class);
 
 	Concept focusConcept = null;
 

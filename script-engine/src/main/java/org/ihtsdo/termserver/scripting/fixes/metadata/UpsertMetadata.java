@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class UpsertMetadata extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(UpsertMetadata.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(UpsertMetadata.class);
 
 	private static String EXPECTED_EXTENSION_MODULES = "expectedExtensionModules";
 	

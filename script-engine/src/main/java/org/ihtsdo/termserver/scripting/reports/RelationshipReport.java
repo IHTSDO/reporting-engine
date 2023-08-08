@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class RelationshipReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(RelationshipReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipReport.class);
 
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());

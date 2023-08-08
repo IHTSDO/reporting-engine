@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class ConceptsUsingAttribute extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsUsingAttribute.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsUsingAttribute.class);
 
 	Concept attributeType;
 	

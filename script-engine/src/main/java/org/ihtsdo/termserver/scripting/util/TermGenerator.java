@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class TermGenerator implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(TermGenerator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TermGenerator.class);
 
 	protected TermServerScript parent;
 	

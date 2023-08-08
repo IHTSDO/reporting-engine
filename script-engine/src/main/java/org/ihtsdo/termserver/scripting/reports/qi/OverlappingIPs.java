@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class OverlappingIPs extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(OverlappingIPs.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OverlappingIPs.class);
 
 	/* TODO ON REQUEST: Modify this code to work with ECL rather than subhierarchies
 	Map<String, Concept> shortNames = new HashMap<>();

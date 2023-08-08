@@ -15,9 +15,7 @@ import org.springframework.util.StringUtils;
 import com.google.gson.Gson;
 
 public class EclCache implements ScriptConstants {
-	
-	static Logger logger = LoggerFactory.getLogger(EclCache.class);
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(EclCache.class);
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 1000;
 	private TermServerClient tsClient;
@@ -136,7 +134,7 @@ public class EclCache implements ScriptConstants {
 					try {
 						//Try to recover from Graph.  Do not create, validate it exists
 						allConcepts = Collections.singleton(gl.getConcept(ecl, false, true));
-						logger.warn("Possible single concept used where set expected in template slot? {}", gl.getConcept(ecl));
+						LOGGER.warn("Possible single concept used where set expected in template slot? {}", gl.getConcept(ecl));
 					}catch (Exception e) {
 						throw new IllegalStateException("ECL is not simple: " + ecl);
 					}

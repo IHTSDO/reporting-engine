@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(NormaliseTemplateCompliantConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseTemplateCompliantConcepts.class);
 
 	boolean allowCompromisePPP = false;
 

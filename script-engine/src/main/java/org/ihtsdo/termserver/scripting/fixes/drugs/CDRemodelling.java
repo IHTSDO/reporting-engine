@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CDRemodelling.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CDRemodelling.class);
 
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
 	Map<Description, Concept> substanceMap = new HashMap<>();

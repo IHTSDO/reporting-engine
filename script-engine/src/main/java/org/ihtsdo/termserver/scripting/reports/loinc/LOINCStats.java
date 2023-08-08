@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class LOINCStats extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LOINCStats.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LOINCStats.class);
 
 	private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
 	//private static String publishedRefsetFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";

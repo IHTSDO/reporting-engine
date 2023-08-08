@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class CloneAndReplace extends BatchFix implements ScriptConstants{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(CloneAndReplace.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CloneAndReplace.class);
 
 	Set<Concept> allStatedTargets = new HashSet<>();
 	Set<Concept> allInferredTargets = new HashSet<>();

@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class HierarchyConceptsNotInFileReport extends TermServerScript{
 
-	private static Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsNotInFileReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsNotInFileReport.class);
 
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();

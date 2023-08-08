@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class SemanticTagHierarchy extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SemanticTagHierarchy.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SemanticTagHierarchy.class);
 
 	Map<String, Map<String, Concept>> semanticTagHierarchy = new HashMap<>();
 	

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class AttributeValueOutsideRange extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(AttributeValueOutsideRange.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AttributeValueOutsideRange.class);
 
 	Concept attributeType;
 	Set<Concept> acceptableRange;

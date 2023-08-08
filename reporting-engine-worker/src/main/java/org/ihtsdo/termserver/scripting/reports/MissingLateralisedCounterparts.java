@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class MissingLateralisedCounterparts extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(MissingLateralisedCounterparts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MissingLateralisedCounterparts.class);
 
 	private static final String CURRENT_CYCLE = "Concepts new/modified"; // Toggle whether to process all Concepts or only those that are new/modified.
 	private static final String NOT_YET_MEMBERS = "Concepts not in lateralisable reference set"; // Toggle whether to process Concepts not yet in the lateralisable reference set.

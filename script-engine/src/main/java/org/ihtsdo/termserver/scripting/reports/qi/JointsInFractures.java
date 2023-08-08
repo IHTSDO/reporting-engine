@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class JointsInFractures extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(JointsInFractures.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JointsInFractures.class);
 
 	Concept subHierarchy;
 	Set<Concept> boneStructures;

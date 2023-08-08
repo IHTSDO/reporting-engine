@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class SubstanceINN extends TermServerReport {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SubstanceINN.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SubstanceINN.class);
 
 	//Map<String, INNSet> innMap = new HashMap<>();
 	List<INNSet> allINN = new ArrayList<>();

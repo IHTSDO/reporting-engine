@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class InactivateDescriptions extends BatchFix implements ScriptConstants {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(InactivateDescriptions.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateDescriptions.class);
 
 	Map<Concept, List<Description>> inactivations = new HashMap<>();
 	

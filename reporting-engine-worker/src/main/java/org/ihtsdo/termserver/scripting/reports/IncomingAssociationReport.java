@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class IncomingAssociationReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(IncomingAssociationReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(IncomingAssociationReport.class);
 
 	public static String TEXT_MATCH = "Text Match";
 	List<String> textMatches;

@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoincReport extends TermServerReport implements ReportClass {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(LoincReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincReport.class);
 
 	private Set<String> semTagExclusions = new HashSet<>();
 	private TraceabilityService traceabilityService;
