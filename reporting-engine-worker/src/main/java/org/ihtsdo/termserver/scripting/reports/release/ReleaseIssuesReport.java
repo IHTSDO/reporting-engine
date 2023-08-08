@@ -68,14 +68,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
 
-	Concept subHierarchy = ROOT_CONCEPT;
 	private static final String FULL_STOP = ".";
-	String[] knownAbbrevs = new String[] {	"ser","ss","subsp",
-											"f","E", "var", "St"};
 	Set<String> stopWords = new HashSet<>();
 	List<String> wordsOftenTypedInReverse = new ArrayList<>();
 	List<String> wordsOftenTypedTwice = new ArrayList<>();
-	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
 	String ZEROSP = "\u200B";
 	String LONG_DASH = "—";
@@ -101,18 +97,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
-	public static String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
 	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
 	public static String SCTID_CH_MOD = "2011000195101"; //Swiss Module
-	public static String SCTID_CH_LRS = "2021000195106"; //Swiss French Language Reference Set
-	
+
 	private static int MUT_IDX_ACTIVE = 0;
 	private static int MUT_IDX_MODULEID = 1;
 	
 	private List<String> expectedExtensionModules = null;
 
-	private final List<String> refSetsToIgnoreForInactiveReferenceConponents = Arrays.asList("900000000000497000");
-	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
@@ -131,7 +123,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		cache = gl.getDescendantsCache();
 		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 		getArchiveManager().setPopulateReleasedFlag(true);
-		getArchiveManager().setLoadOtherReferenceSets(true);
 
 		//ignoreWhiteList = true;
 		
