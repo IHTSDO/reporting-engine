@@ -204,7 +204,7 @@ public class TermServerClient {
 	}
 
 	public Description getDescription(String descriptionId, String branchPath) {
-		String url = getDescriptionsPath(branchPath, descriptionId);
+		String url = getDescriptionsPath(descriptionId, branchPath);
 		return restTemplate.getForObject(url, Description.class);
 	}
 
@@ -214,6 +214,15 @@ public class TermServerClient {
 			LOGGER.info("Deleted concept " + sctId + " from " + branchPath);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to delete concept: " + sctId, e);
+		}
+	}
+
+	public void deleteDescription(String sctId, String branchPath) throws TermServerScriptException {
+		try {
+			restTemplate.delete(getDescriptionsPath(sctId,branchPath));
+			LOGGER.info("Deleted description " + sctId + " from " + branchPath);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to delete description: " + sctId, e);
 		}
 	}
 	
@@ -270,7 +279,7 @@ public class TermServerClient {
 		return url + "/browser/" + branchPath + "/validate/concept";
 	}
 	
-	private String getDescriptionsPath(String branchPath, String id) {
+	private String getDescriptionsPath(String id, String branchPath) {
 		return url  + "/" + branchPath + "/descriptions/" + id;
 	}
 
@@ -555,7 +564,7 @@ public class TermServerClient {
 	public JSONResource updateDescription(String descId, JSONObject descObj, String branchPath) throws TermServerScriptException {
 		try {
 			Preconditions.checkNotNull(descId);
-			JSONResource response =  resty.json(getDescriptionsPath(branchPath,descId) + "/updates", RestyHelper.content(descObj, JSON_CONTENT_TYPE));
+			JSONResource response =  resty.json(getDescriptionsPath(descId, branchPath) + "/updates", RestyHelper.content(descObj, JSON_CONTENT_TYPE));
 			LOGGER.info("Updated description " + descId);
 			return response;
 		} catch (Exception e) {

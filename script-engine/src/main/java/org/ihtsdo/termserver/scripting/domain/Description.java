@@ -684,6 +684,9 @@ public class Description extends Component implements ScriptConstants {
 
 	@Override
 	public String getReportedType() {
+		if (type == null) {
+			return null;
+		}
 		return type.toString();
 	}
 

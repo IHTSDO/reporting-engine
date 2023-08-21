@@ -37,6 +37,10 @@ RefsetMember extends Component implements ScriptConstants {
 	private static boolean firstFieldNamesWarningGiven = false;
 	
 	public RefsetMember() {}
+
+	public RefsetMember(String id) {
+		setId(id);
+	}
 	
 	public String getMemberId() {
 		return memberId;

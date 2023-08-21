@@ -211,7 +211,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
 				dependencyArchive = args[x+1];
-			} else if (thisArg.equals("-task")) {
+			} else if (thisArg.equals("-task") || thisArg.equals("--task")) {
 				taskKey = args[x+1];
 			}
 		}
@@ -1009,6 +1009,19 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return CHANGE_MADE;
 		} catch (Exception e) {
 			report (t, c, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
+			return NO_CHANGES_MADE;
+		}
+	}
+
+	protected int deleteDescription(Task t, Description d) throws TermServerScriptException {
+		try {
+			debug ((dryRun ?"Dry run deleting ":"Deleting ") + d );
+			if (!dryRun) {
+				tsClient.deleteDescription(d.getId(), t.getBranchPath());
+			}
+			return CHANGE_MADE;
+		} catch (Exception e) {
+			report (t, d, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
 			return NO_CHANGES_MADE;
 		}
 	}
