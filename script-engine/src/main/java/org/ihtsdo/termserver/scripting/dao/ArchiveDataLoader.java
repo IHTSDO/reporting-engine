@@ -35,13 +35,13 @@ public class ArchiveDataLoader implements DataLoader {
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void init() {
-		TermServerScript.info("ArchiveDataLoader initialised - SpringBoot configuration");
+		LOGGER.info("ArchiveDataLoader initialised - SpringBoot configuration");
 		if (awsKey == null) {
-			TermServerScript.info("ArchiveDataLoader - AWS Key missing?");
+			LOGGER.info("ArchiveDataLoader - AWS Key missing?");
 		} else if (awsKey.isEmpty()) {
-			TermServerScript.info("ArchiveDataLoader - AWS Key configured through EC2 instance");
+			LOGGER.info("ArchiveDataLoader - AWS Key configured through EC2 instance");
 		} else {
-			TermServerScript.info("ArchiveDataLoader using AWS Key: " + awsKey);
+			LOGGER.info("ArchiveDataLoader using AWS Key: " + awsKey);
 		}
 	}
 
@@ -53,9 +53,9 @@ public class ArchiveDataLoader implements DataLoader {
 
 				try (InputStream input = resourceManager.readResourceStream(archive.getName());
 					OutputStream out = new FileOutputStream(archive);) {
-					TermServerScript.info("Downloading " + archive.getName() + " from S3");
+					LOGGER.info("Downloading " + archive.getName() + " from S3");
 					IOUtils.copy(input, out);
-					TermServerScript.info("Download complete");
+					LOGGER.info("Download complete");
 				}
 			} catch (Throwable  t) {
 				final String msg = "Error when trying to download " + archive.getName() + " from S3 via :" +  archiveLoaderConfig;

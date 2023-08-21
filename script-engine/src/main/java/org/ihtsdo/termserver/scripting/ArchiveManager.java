@@ -80,21 +80,21 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
-			TermServerScript.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName());
+			LOGGER.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName());
 			singleton.gl = ts.getGraphLoader();
 		} else {
-			TermServerScript.info("Archive manager being reused in: " + ts.getClass().getSimpleName()); 
+			LOGGER.info("Archive manager being reused in: " + ts.getClass().getSimpleName()); 
 		}
 		
 		if (!forceReuse) {
-			TermServerScript.info("Resetting Archive Manager load flags");
+			LOGGER.info("Resetting Archive Manager load flags");
 			//Don't assume that just because we're being reused, we're loading the same files
 			singleton.loadEditionArchive = false;
 			singleton.loadDependencyPlusExtensionArchive = false;
 			singleton.populatePreviousTransativeClosure = false;
 			singleton.populateReleasedFlag = false;
 		} else {
-			TermServerScript.info("Archive Manager load flags retained - reuse forced.");
+			LOGGER.info("Archive Manager load flags retained - reuse forced.");
 		}
 		singleton.ts = ts;
 		return singleton;
@@ -110,7 +110,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	protected void info(String msg) {
-		TermServerScript.info(msg);
+		LOGGER.info(msg);
 	}
 	
 	protected void debug(String msg) {
@@ -235,7 +235,7 @@ public class ArchiveManager implements ScriptConstants {
 				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
 					throw new TermServerScriptException("Told to load dependency + extension but no dependency package specified");
 				} else {
-					TermServerScript.info("Loading dependency plus extension archives");
+					LOGGER.info("Loading dependency plus extension archives");
 					gl.reset();
 					File dependency = new File("releases", ts.getDependencyArchive());
 					if (dependency.exists()) {
@@ -243,7 +243,7 @@ public class ArchiveManager implements ScriptConstants {
 					} else {
 						//Can we find it in S3?
 						String cwd = new File("").getAbsolutePath();
-						TermServerScript.info(ts.getDependencyArchive() + " not found locally in " + cwd + ", attempting to download from S3.");
+						LOGGER.info(ts.getDependencyArchive() + " not found locally in " + cwd + ", attempting to download from S3.");
 						getArchiveDataLoader().download(dependency);
 						if (dependency.exists()) {
 							loadArchive(dependency, fsnOnly, "Snapshot", true);
@@ -266,7 +266,7 @@ public class ArchiveManager implements ScriptConstants {
 
 			//Look for an expanded directory by preference
 			File snapshot = getSnapshotPath();
-			TermServerScript.info("Snapshot path " + snapshot.getPath());
+			LOGGER.info("Snapshot path " + snapshot.getPath());
 			if (!snapshot.exists() && !snapshot.getName().endsWith(fileExt)) {
 				//Otherwise, do we have a zip file to play with?
 				snapshot = new File (snapshot.getPath() + fileExt);
@@ -276,7 +276,7 @@ public class ArchiveManager implements ScriptConstants {
 				//If it doesn't exist as a zip file locally either, we can try downloading it from S3
 				try {
 					String cwd = new File("").getAbsolutePath();
-					TermServerScript.info(snapshot + " not found locally in " + cwd + ", attempting to download from S3.");
+					LOGGER.info(snapshot + " not found locally in " + cwd + ", attempting to download from S3.");
 					getArchiveDataLoader().download(snapshot);
 				} catch (TermServerScriptException e) {
 					LOGGER.info("Could not find " + snapshot.getName() + " in S3.");
@@ -354,7 +354,7 @@ public class ArchiveManager implements ScriptConstants {
 						} catch (Exception e) {
 							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
 							if (!snapshot.getName().startsWith("releases/")) {
-								TermServerScript.info ("Deleting " + snapshot);
+								LOGGER.info ("Deleting " + snapshot);
 								try {
 									if (snapshot.isFile()) {
 										snapshot.delete();
@@ -367,7 +367,7 @@ public class ArchiveManager implements ScriptConstants {
 									TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
 								}
 							} else {
-								TermServerScript.info ("Not deleting " + snapshot + " as it's a release.");
+								LOGGER.info ("Not deleting " + snapshot + " as it's a release.");
 							}
 							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
 							//Next time round the snapshot on disk won't be detected and we'll take a different code path
@@ -493,7 +493,7 @@ public class ArchiveManager implements ScriptConstants {
 		if (!previous.exists()) {
 			getArchiveDataLoader().download(previous);
 		}
-		TermServerScript.info("Building snapshot release based on previous: " + previous);
+		LOGGER.info("Building snapshot release based on previous: " + previous);
 		
 		//In the case of managed service, we will also have a dependency package
 		File dependency = null;
@@ -502,7 +502,7 @@ public class ArchiveManager implements ScriptConstants {
 			if (!dependency.exists()) {
 				getArchiveDataLoader().download(dependency);
 			}
-			TermServerScript.info("Building Extension snapshot release also based on dependency: " + dependency);
+			LOGGER.info("Building Extension snapshot release also based on dependency: " + dependency);
 		}
 		
 		//Now we need a recent delta to add to it
@@ -515,13 +515,13 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
-		TermServerScript.info("In getArchiveLoader method, scriptName = " + ts.getScriptName());
+		LOGGER.info("In getArchiveLoader method, scriptName = " + ts.getScriptName());
 		if (ts.getScriptName().equals("PackageComparisonReport")) {
 			return getBuildArchiveDataLoader();
 		}
 		if (archiveDataLoader == null) {
 			if (appContext == null) {
-				TermServerScript.info("No ArchiveDataLoader configured, creating one locally...");
+				LOGGER.info("No ArchiveDataLoader configured, creating one locally...");
 				archiveDataLoader = ArchiveDataLoader.create();
 			} else {
 				archiveDataLoader = appContext.getBean(ArchiveDataLoader.class);
@@ -531,10 +531,10 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	private DataLoader getBuildArchiveDataLoader() throws TermServerScriptException {
-		TermServerScript.info("In getBuildArchiveDataLoader method");
+		LOGGER.info("In getBuildArchiveDataLoader method");
 		if (buildArchiveDataLoader == null) {
 			if (appContext == null) {
-				TermServerScript.info("No BuildArchiveDataLoader configured, creating one locally...");
+				LOGGER.info("No BuildArchiveDataLoader configured, creating one locally...");
 				buildArchiveDataLoader = BuildArchiveDataLoader.create();
 			} else {
 				buildArchiveDataLoader = appContext.getBean(BuildArchiveDataLoader.class);

@@ -140,7 +140,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public void reset() {
-		TermServerScript.info("Resetting Graph Loader");
+		LOGGER.info("Resetting Graph Loader");
 		concepts = new HashMap<String, Concept>();
 		descriptions = new HashMap<String, Description>();
 		allComponents = null;
@@ -184,10 +184,10 @@ public class GraphLoader implements ScriptConstants {
 		//long allocatedMemory = runtime.totalMemory();
 		long freeMemory = runtime.freeMemory();
 
-		TermServerScript.info("free memory now: " + format.format(freeMemory / 1024));
-		//TermServerScript.info("allocated memory: " + format.format(allocatedMemory / 1024) );
-		//TermServerScript.info("max memory: " + format.format(maxMemory / 1024));
-		//TermServerScript.info("total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
+		LOGGER.info("free memory now: " + format.format(freeMemory / 1024));
+		//LOGGER.info("allocated memory: " + format.format(allocatedMemory / 1024) );
+		//LOGGER.info("max memory: " + format.format(maxMemory / 1024));
+		//LOGGER.info("total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
 	}
 
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
@@ -1576,9 +1576,9 @@ public class GraphLoader implements ScriptConstants {
 	}
 
 	public void populatePreviousTransativeClosure() throws TermServerScriptException {
-		TermServerScript.info("Populating PREVIOUS transitive closure");
+		LOGGER.info("Populating PREVIOUS transitive closure");
 		previousTransitiveClosure = generateTransativeClosure();
-		TermServerScript.info("PREVIOUS transitive closure complete");
+		LOGGER.info("PREVIOUS transitive closure complete");
 	}
 	
 	public TransitiveClosure getTransitiveClosure() throws TermServerScriptException {
@@ -1589,7 +1589,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public TransitiveClosure generateTransativeClosure() throws TermServerScriptException {
-		TermServerScript.info ("Calculating transative closure...");
+		LOGGER.info ("Calculating transative closure...");
 		TransitiveClosure tc = new TransitiveClosure();
 		//For all active concepts, populate their ancestors into the TC
 		getAllConcepts().parallelStream().forEach(c->{
@@ -1599,7 +1599,7 @@ public class GraphLoader implements ScriptConstants {
 				e.printStackTrace();
 			} 
 		});
-		TermServerScript.info ("Completed transative closure: " + tc.size() + " relationships mapped");
+		LOGGER.info ("Completed transative closure: " + tc.size() + " relationships mapped");
 		return tc;
 	}
 
@@ -1799,7 +1799,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public void populateOriginalModuleMap() {
-		TermServerScript.info("Populating Original Module Map");
+		LOGGER.info("Populating Original Module Map");
 		originalModuleMap = new HashMap<>();
 		for (Concept c : getAllConcepts()) {
 			for (Component comp : SnomedUtils.getAllComponents(c)) {
