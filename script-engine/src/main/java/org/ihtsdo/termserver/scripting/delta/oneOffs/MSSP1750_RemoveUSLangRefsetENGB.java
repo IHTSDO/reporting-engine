@@ -26,6 +26,7 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 		MSSP1750_RemoveUSLangRefsetENGB delta = new MSSP1750_RemoveUSLangRefsetENGB();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			delta.getArchiveManager().setPopulateReleasedFlag(true);
 			delta.moduleId = US_MODULE;
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
@@ -42,6 +43,7 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 	private void process() throws ValidationFailure, TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				boolean changesMade = false;
 				if (!inScope(d)) {
 					continue;
 				}
@@ -49,12 +51,22 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 					String origET = l.getEffectiveTime();
 					Severity severity = StringUtils.isEmpty(origET) ? Severity.MEDIUM : Severity.LOW;
 					l.setActive(false);
+					changesMade = true;
 					if (!l.getModuleId().contentEquals(US_MODULE)) {
 						throw new IllegalArgumentException("Non US Module LangRefsetEntry encountered: " + l);
 					}
 					report(c, severity, ReportActionType.REFSET_MEMBER_INACTIVATED, l, origET, gl.getDescription(l.getReferencedComponentId()));
-					outputRF2(d);
 					incrementSummaryInformation("LangRefsetEntries inactivated");
+				}
+
+				if (!d.isReleased() && d.getLangRefsetEntries(ActiveState.ACTIVE).size() == 0) {
+					d.setActive(false);
+					changesMade = true;
+					report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_DELETED, "", d.getEffectiveTime(), d);
+				}
+
+				if (changesMade) {
+					outputRF2(d);
 				}
 			}
 		}
