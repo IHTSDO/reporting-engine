@@ -65,6 +65,10 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 
 	public Relationship() {
 	}
+
+	public Relationship(String id) {
+		setId(id);
+	}
 	
 	public Relationship(Concept source, Concept type, Concept target, int groupId) {
 		this.type = type;
