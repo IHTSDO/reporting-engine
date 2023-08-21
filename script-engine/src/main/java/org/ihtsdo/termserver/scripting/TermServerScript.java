@@ -1826,7 +1826,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public ReportDataBroker getReportDataUploader() throws TermServerScriptException {
 		if (reportDataBroker == null) {
 			if (appContext == null) {
-				TermServerScript.info("No ReportDataUploader loader configured, creating one locally...");
+				LOGGER.info("No ReportDataUploader loader configured, creating one locally...");
 				reportDataBroker = ReportDataBroker.create();
 			} else {
 				reportDataBroker = appContext.getBean(ReportDataBroker.class);

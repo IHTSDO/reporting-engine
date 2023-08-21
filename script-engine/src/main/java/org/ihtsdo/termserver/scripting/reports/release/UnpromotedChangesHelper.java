@@ -67,45 +67,45 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 			String fileName = path.getFileName().toString();
 			
 			if (fileName.contains("._")) {
-				//TermServerScript.info("Skipping " + fileName);
+				//LOGGER.info("Skipping " + fileName);
 				return;
 			}
 			
 			if (fileName.contains("sct2_Concept_" )) {
-				TermServerScript.info("Loading Concept unpromoted delta file.");
+				LOGGER.info("Loading Concept unpromoted delta file.");
 				loadFile(is, IDX_ID);
 			} else if (fileName.contains("sct2_Relationship_" )) {
-				TermServerScript.info("Loading Relationship unpromoted delta file.");
+				LOGGER.info("Loading Relationship unpromoted delta file.");
 				loadFile(is, REL_IDX_SOURCEID);
 			} else if (fileName.contains("sct2_StatedRelationship_" )) {
-				TermServerScript.info("Loading StatedRelationship unpromoted delta file.");
+				LOGGER.info("Loading StatedRelationship unpromoted delta file.");
 				loadFile(is, REL_IDX_SOURCEID);
 			} else if (fileName.contains("sct2_RelationshipConcrete" )) {
-				TermServerScript.info("Loading Concrete Relationship unpromoted delta file.");
+				LOGGER.info("Loading Concrete Relationship unpromoted delta file.");
 				loadFile(is, REL_IDX_SOURCEID);
 			} else if (fileName.contains("sct2_sRefset_OWLAxiom" )) {
-				TermServerScript.info("Loading Axiom unpromoted delta refset file.");
+				LOGGER.info("Loading Axiom unpromoted delta refset file.");
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("sct2_Description_" )) {
-				TermServerScript.info("Loading Description unpromoted delta file.");
+				LOGGER.info("Loading Description unpromoted delta file.");
 				loadFile(is, DES_IDX_CONCEPTID);
 			} else if (fileName.contains("sct2_TextDefinition_" )) {
-				TermServerScript.info("Loading Text Definition unpromoted delta file.");
+				LOGGER.info("Loading Text Definition unpromoted delta file.");
 				loadFile(is, DES_IDX_CONCEPTID);
 			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-				TermServerScript.info("Loading Concept Inactivation Indicator unpromoted delta file.");
+				LOGGER.info("Loading Concept Inactivation Indicator unpromoted delta file.");
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-				TermServerScript.info("Loading Description Inactivation Indicator unpromoted delta file.");
+				LOGGER.info("Loading Description Inactivation Indicator unpromoted delta file.");
 				loadFile(is, NOT_SET);
 			} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-				TermServerScript.info("Loading Concept/Description Inactivation Indicators unpromoted delta file.");
+				LOGGER.info("Loading Concept/Description Inactivation Indicators unpromoted delta file.");
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
-				TermServerScript.info("Loading Historical Association File: " + fileName);
+				LOGGER.info("Loading Historical Association File: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("Language")) {
-				TermServerScript.info("Loading unpromoted delta Language Reference Set File - " + fileName);
+				LOGGER.info("Loading unpromoted delta Language Reference Set File - " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			}
 		} catch (IOException e) {
