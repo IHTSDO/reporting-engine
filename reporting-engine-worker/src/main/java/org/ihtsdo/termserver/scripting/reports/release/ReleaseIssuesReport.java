@@ -1569,6 +1569,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
+	protected boolean report(Concept c, Object... details) throws TermServerScriptException {
+		//Are we filtering this report to only concepts with unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return false;
+		}
+
+		//First detail is the issue
+		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		countIssue(c);
+		return report(PRIMARY_REPORT, c, details);
+	}
 	
 	//RP-180
 	private void domainMustNotUseType() throws TermServerScriptException {

@@ -177,18 +177,6 @@ public abstract class TermServerReport extends TermServerScript {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 
-	protected boolean report(Concept c, Object... details) throws TermServerScriptException {
-		//Are we filtering this report to only concepts with unpromoted changes?
-		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
-			return false;
-		}
-
-		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
-		countIssue(c);
-		return report(PRIMARY_REPORT, c, details);
-	}
-
 	protected Object isActive(Component c1, Component c2) {
 		return (c1.isActive() ? "Y" : "N") + "/" + (c2 == null ? "" : (c2.isActive() ? "Y" : "N"));
 	}
