@@ -24,7 +24,7 @@ public class AttributePartMapManager {
 
 	private static int NOT_SET = -1;
 	
-	private int TAB_RF2_PART_MAP_NOTES = TermServerScript.QUATERNARY_REPORT;
+	private int TAB_RF2_PART_MAP_NOTES = TermServerScript.PRIMARY_REPORT;
 
 	private TermServerScript ts;
 	private GraphLoader gl;
@@ -49,7 +49,7 @@ public class AttributePartMapManager {
 		int lineNum = 0;
 		int failureCount = 0;
 		try {
-			TermServerScript.info("Validating Part / Attribute Map Base File: " + attributeMapFile);
+			LOGGER.info("Validating Part / Attribute Map Base File: " + attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
@@ -58,7 +58,7 @@ public class AttributePartMapManager {
 						String[] items = line.split("\t");
 						Concept attributeValue = gl.getConcept(items[4], false, false);
 						if (attributeValue == null) {
-							TermServerScript.warn("Part / Attribute Map Base File contains unknown concept " + items[4] + " at line " + lineNum);
+							LOGGER.warn("Part / Attribute Map Base File contains unknown concept " + items[4] + " at line " + lineNum);
 							failureCount++;
 						}
 					}
@@ -93,7 +93,7 @@ public class AttributePartMapManager {
 		int lineNum = 0;
 		Set<String> partsSeen = new HashSet<>();
 		try {
-			TermServerScript.info("Loading Part / Attribute Map Base File: " + attributeMapFile);
+			LOGGER.info("Loading Part / Attribute Map Base File: " + attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
@@ -117,7 +117,7 @@ public class AttributePartMapManager {
 				}
 			}
 			
-			TermServerScript.info("Populated map of " + loincPartToAttributeMap.size() + " LOINC parts to attributes");
+			LOGGER.info("Populated map of " + loincPartToAttributeMap.size() + " LOINC parts to attributes");
 			ts.report(TAB_RF2_PART_MAP_NOTES, "");
 			ts.report(TAB_RF2_PART_MAP_NOTES, "successfullTypeReplacement",successfullTypeReplacement);
 			ts.report(TAB_RF2_PART_MAP_NOTES, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);

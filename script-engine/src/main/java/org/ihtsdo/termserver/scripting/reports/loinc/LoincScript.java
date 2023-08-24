@@ -48,6 +48,8 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	protected static int FILE_IDX_LOINC_DETAIL = 5;
 	protected static int FILE_IDX_CONCEPT_IDS = 6;
 	protected static int FILE_IDX_DESC_IDS = 7;
+
+	public static final String LOINC_TIME_PART = "LP6969-2";
 	
 	protected int additionalThreadCount = 0;
 	

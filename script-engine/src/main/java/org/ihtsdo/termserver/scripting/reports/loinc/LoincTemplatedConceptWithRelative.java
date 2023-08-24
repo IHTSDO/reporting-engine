@@ -73,5 +73,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		return attributes;
 	}
 
-
+	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
+		return super.applyTemplateSpecificRules(loincPartNum, rt);
+	}
 }
