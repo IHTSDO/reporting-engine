@@ -29,7 +29,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
 	//-f3 "C:\Users\peter\Backup\Loinc_2.73\AccessoryFiles\PartFile\Part.csv"
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
-	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_All_Active_Lab_Parts.xlsx - LDT1_Parts.tsv" 
+	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_2.75_Active_Lab_NonVet.tsv"
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
 	
@@ -155,10 +155,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		/*if (loincNum.equals("7994-7")) {
-			LOGGER.debug("here");
-		}*/
-		
 		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
 				!loincDetailMap.containsKey(LoincDetail.COMPNUM_PN)) {
 			report(getTab(TAB_MODELING_ISSUES),

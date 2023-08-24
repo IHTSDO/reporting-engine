@@ -51,7 +51,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 			return attributes;
 		}
 		
-		if (CompNumPnIsSafe(loincNum) && true) {
+		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
 		} else {
@@ -87,6 +87,10 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 			attributes.add(null);
 		}
 		return attributes;
+	}
+
+	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
+		return super.applyTemplateSpecificRules(loincPartNum, rt);
 	}
 
 }
