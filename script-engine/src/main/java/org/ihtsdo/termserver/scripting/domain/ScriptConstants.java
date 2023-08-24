@@ -102,6 +102,7 @@ public interface ScriptConstants extends RF2Constants {
 	static Concept DIRECT_SITE = new Concept("704327008","Direct site (attribute)");
 	static Concept TECHNIQUE = new Concept("246501002","Technique (attribute)");
 	static Concept USING_SUBST = new Concept("424361007", "Using substance (attribute)");
+	static Concept USING_DEVICE = new Concept("424226004", "Using device (attribute)");
 	static Concept HAS_INTERPT = new Concept("363713009","Has interpretation (attribute)");
 	
 	static Concept LEFT = new Concept("7771000", "Left (qualifier value)");

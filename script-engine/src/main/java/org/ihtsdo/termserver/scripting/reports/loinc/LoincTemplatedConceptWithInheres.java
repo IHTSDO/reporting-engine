@@ -100,4 +100,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		}
 		return attributes;
 	}
+
+	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
+		return super.applyTemplateSpecificRules(loincPartNum, rt);
+	}
 }
