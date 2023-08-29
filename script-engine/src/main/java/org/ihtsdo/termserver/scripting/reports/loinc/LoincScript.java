@@ -6,12 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -25,7 +20,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoincScript extends TermServerScript implements LoincConstants {
+public class LoincScript extends TermServerScript implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
 
@@ -34,9 +29,13 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	protected static AttributePartMapManager attributePartMapManager;
 	protected Map<String, LoincPart> loincParts = new HashMap<>();
 	protected Map<String, Concept> categorizationMap = new HashMap<>();
+
+	protected Map<String, String> partMapNotes = new HashMap<>();
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
+
+	protected String[] tabNames = new String[] { TAB_SUMMARY };
 	
 	//private Concept HasConceptCategorizationStatus;
 	
@@ -52,6 +51,15 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 	public static final String LOINC_TIME_PART = "LP6969-2";
 	
 	protected int additionalThreadCount = 0;
+
+	public int getTab(String tabName) throws TermServerScriptException {
+		for (int i = 0; i < tabNames.length; i++) {
+			if (tabNames[i].equals(tabName)) {
+				return i;
+			}
+		}
+		throw new TermServerScriptException("Tab '" + tabName + "' not recognised");
+	}
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
@@ -217,8 +225,8 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 				report(tabIdx,"Already exists", existingConceptCount);
 				report(tabIdx,"Does not exist", notExistingConceptCount);
 				report(tabIdx,"");
-				report(tabIdx,"Has Targetted Property in Top 20K", hasTargettedPropertyIn20K);
-				report(tabIdx,"Has Targetted Property not in Top 20K", hasTargettedPropertyNotIn20K);
+				report(tabIdx,"Has Targeted Property in Top 20K", hasTargettedPropertyIn20K);
+				report(tabIdx,"Has Targeted Property not in Top 20K", hasTargettedPropertyNotIn20K);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_FULL), e);
@@ -226,4 +234,21 @@ public class LoincScript extends TermServerScript implements LoincConstants {
 			additionalThreadCount--;
 		}
 	}
+
+	protected void addPartMapNote(String partNum, String note) {
+		if (partMapNotes.containsKey(partNum)) {
+			partMapNotes.put(partNum, partMapNotes.get(partNum) + ", " + note);
+		} else {
+			partMapNotes.put(partNum, note);
+		}
+	}
+
+	protected void addPartMapNotes(String partNum , List<String> notes) {
+		for (String note : notes) {
+			addPartMapNote (partNum, note);
+		}
+	}
+
 }
+
+

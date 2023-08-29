@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoincRf2MapExpansion extends LoincScript implements LoincConstants {
+public class LoincRf2MapExpansion extends LoincScript {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
 
