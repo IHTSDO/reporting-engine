@@ -35,10 +35,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	
 	Rf2ConceptCreator conceptCreator;
 	
-	private static String[] tabNames = new String[] {
-			/*TAB_TOP_20K,*/
-			/*TAB_PART_MAPPING_DETAIL,*/
-			TAB_RF2_PART_MAP_NOTES,
+	protected String[] tabNames = new String[] {
+			TAB_SUMMARY,
+			TAB_LOINC_DETAIL_MAP_NOTES,
 			TAB_MODELING_ISSUES,
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_MAP_ME,
@@ -66,15 +65,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				report.conceptCreator.finish();
 			}
 		}
-	}
-
-	public static int getTab(String tabName) throws TermServerScriptException {
-		for (int i = 0; i < tabNames.length; i++) {
-			if (tabNames[i].equals(tabName)) {
-				return i;
-			}
-		}
-		throw new TermServerScriptException("Tab '" + tabName + "' not recognised");
 	}
 
 	public void postInit() throws TermServerScriptException {
@@ -107,12 +97,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		//executor.execute(() -> loadFullLoincFile());
 		loadFullLoincFile(NOT_SET/*getTab(TAB_TOP_20K)*/);
 		loadLoincDetail();
-		attributePartMapManager = new AttributePartMapManager(this, loincParts);
+		reportOnDetailMappingWithUsage();
+		attributePartMapManager = new AttributePartMapManager(this, loincParts, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 		//determineExistingConcepts(getTab(TAB_TOP_100));
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
-		LoincTemplatedConcept.reportStats();
+		LoincTemplatedConcept.reportStats(getTab(TAB_SUMMARY));
 		//LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
 		LoincTemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
 		flushFiles(false);
@@ -129,6 +120,12 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		
 		/*importIntoTask(successfullyModelled);
 		generateAlternateIdentifierFile(successfullyModelled);*/
+	}
+
+	private void reportOnDetailMappingWithUsage() {
+		//Work through the loincDetailMap for each loincNum to generate usage
+		// (and calculate a priority index) for each loincPart
+		// We're only interested in
 	}
 	
 	/*private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {

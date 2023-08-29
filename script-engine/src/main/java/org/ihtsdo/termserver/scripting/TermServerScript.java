@@ -1882,8 +1882,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		return null;
 	}
-	
-	protected Concept getReplacement(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
+
+	public Concept getReplacementSafely(List<String> notes, Object context, Concept inactiveConcept, boolean isIsA) {
+		try {
+			return getReplacement(notes, context, inactiveConcept, isIsA);
+		} catch (TermServerScriptException e) {
+			warn(e);
+		}
+		return null;
+	}
+
+	protected Concept getReplacement(List<String> notes, Object context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
 		Set<String> assocs = new HashSet<>(inactiveConcept.getAssociationTargets().getReplacedBy());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getAlternatives());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
@@ -1898,14 +1907,24 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		} else {
 			if(assocs.size() > 1){
 				String assocStr = inactiveConcept.getAssociationTargets().toString(gl);
-				if (context instanceof Concept) {
-					report((Concept)context, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple HistAssocs available. Result chosen at random.  Please specify to hardcode choice", assocStr);
-				} else {
-					report(reportTabIdx, "", context, "Multiple HistAssocs available for "  + inactiveConcept + ". Replacement chosen at random.  Please specify to hardcode choice", assocStr);
-				}
+				notes.add("Multiple HistAssocs available for "  + inactiveConcept + ". Replacement chosen at random.  Please specify to hardcode choice");
+				notes.add(assocStr);
 			}
 			return  gl.getConcept(assocs.iterator().next());
 		}
+	}
+	
+	protected Concept getReplacement(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
+		List<String> notes = new ArrayList<>();
+		Concept replacement = getReplacement(notes, context, inactiveConcept, isIsA);
+		for (String note : notes) {
+			if (context instanceof Concept) {
+				report((Concept)context, Severity.HIGH, ReportActionType.VALIDATION_CHECK, note);
+			} else {
+				report(reportTabIdx, "", context, note);
+			}
+		}
+		return replacement;
 	}
 
 	public boolean getAsyncSnapshotCacheInProgress() {

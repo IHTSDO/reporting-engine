@@ -3,14 +3,10 @@ package org.ihtsdo.termserver.scripting.reports.loinc;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
@@ -18,15 +14,14 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AttributePartMapManager {
+public class AttributePartMapManager implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
 
 	private static int NOT_SET = -1;
-	
-	private int TAB_RF2_PART_MAP_NOTES = TermServerScript.PRIMARY_REPORT;
+	private final Map<String, String> partMapNotes;
 
-	private TermServerScript ts;
+	private LoincScript ls;
 	private GraphLoader gl;
 	private Map<String, LoincPart> loincParts;
 	private Map<String, RelationshipTemplate> loincPartToAttributeMap;
@@ -38,10 +33,11 @@ public class AttributePartMapManager {
 	private int successfullValueReplacement = 0;
 	private int unsuccessfullValueReplacement = 0;
 	
-	public AttributePartMapManager (TermServerScript ts, Map<String, LoincPart> loincParts) {
-		this.ts = ts;
-		this.gl = ts.getGraphLoader();
+	public AttributePartMapManager (LoincScript ls, Map<String, LoincPart> loincParts, Map<String, String> partMapNotes) {
+		this.ls = ls;
+		this.gl = ls.getGraphLoader();
 		this.loincParts = loincParts;
+		this.partMapNotes = partMapNotes;
 		
 	}
 	
@@ -79,7 +75,7 @@ public class AttributePartMapManager {
 			rt = loincPartToAttributeMap.get(loincPartNum).clone();
 			rt.setType(attributeType);
 		} else {
-			ts.report(idxTab,
+			ls.report(idxTab,
 					loincNum,
 					loincPartNum,
 					"No attribute mapping available");
@@ -92,6 +88,7 @@ public class AttributePartMapManager {
 		populateKnownMappings();
 		int lineNum = 0;
 		Set<String> partsSeen = new HashSet<>();
+		List<String> mappingNotes = new ArrayList<>();
 		try {
 			LOGGER.info("Loading Part / Attribute Map Base File: " + attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
@@ -111,25 +108,29 @@ public class AttributePartMapManager {
 						LoincPart part = loincParts.get(partNum);
 						String partName = part == null ? "Unlisted" : part.getPartName();
 						String partStatus = part == null ? "Unlisted" : part.getStatus().name();
-						attributeValue = replaceValueIfRequired(TAB_RF2_PART_MAP_NOTES, attributeValue, partNum, partName, partStatus);
+						attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
+						if (!mappingNotes.isEmpty()) {
+
+						}
 						loincPartToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
 					}
 				}
 			}
 			
 			LOGGER.info("Populated map of " + loincPartToAttributeMap.size() + " LOINC parts to attributes");
-			ts.report(TAB_RF2_PART_MAP_NOTES, "");
-			ts.report(TAB_RF2_PART_MAP_NOTES, "successfullTypeReplacement",successfullTypeReplacement);
-			ts.report(TAB_RF2_PART_MAP_NOTES, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
-			ts.report(TAB_RF2_PART_MAP_NOTES, "successfullValueReplacement",successfullValueReplacement);
-			ts.report(TAB_RF2_PART_MAP_NOTES, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
+			int tabIdx = ls.getTab(TAB_SUMMARY);
+			ls.report(tabIdx, "");
+			ls.report(tabIdx, "successfullTypeReplacement",successfullTypeReplacement);
+			ls.report(tabIdx, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
+			ls.report(tabIdx, "successfullValueReplacement",successfullValueReplacement);
+			ls.report(tabIdx, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to read " + attributeMapFile + " at line " + lineNum, e);
 		}
 	}
 
-	public Concept replaceValueIfRequired(int tabIdx, Concept attributeValue, String partNum,
-			String partName, String partStatus) throws TermServerScriptException {
+	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum,
+										  String partName, String partStatus) throws TermServerScriptException {
 		
 		
 		if (!attributeValue.isActive()) {
@@ -137,17 +138,15 @@ public class AttributePartMapManager {
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
 			if (replacementValue == null) {
 				hardCodedIndicator = "";
-				replacementValue = ts.getReplacementSafely(tabIdx, partNum, attributeValue, false);
+				replacementValue = ls.getReplacementSafely(mappingNotes, partNum, attributeValue, false);
 			}
 			
-			if (tabIdx != NOT_SET) {
-				String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
-				if (replacementValue == null) unsuccessfullValueReplacement++; 
-				else successfullValueReplacement++;
-				String prefix = replacementValue == null ? "* " : "";
-				ts.report(tabIdx, partNum, partName, partStatus, prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
-			}
-			
+			String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
+			if (replacementValue == null) unsuccessfullValueReplacement++;
+			else successfullValueReplacement++;
+			String prefix = replacementValue == null ? "* " : "";
+			mappingNotes.add(prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
+
 			if (replacementValue != null) {
 				attributeValue = replacementValue;
 			}
@@ -155,7 +154,7 @@ public class AttributePartMapManager {
 		return attributeValue;
 	}
 
-	public Concept replaceTypeIfRequired(int tabIdx, Concept attributeType, String partNum) throws TermServerScriptException {
+	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType, String partNum) throws TermServerScriptException {
 		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
 			attributeType = hardCodedTypeReplacementMap.get(attributeType);
 		}
@@ -165,15 +164,13 @@ public class AttributePartMapManager {
 			Concept replacementType = knownReplacementMap.get(attributeType);
 			if (replacementType == null) {
 				hardCodedIndicator = "";
-				replacementType = ts.getReplacementSafely(TAB_RF2_PART_MAP_NOTES, partNum, attributeType, false);
+				replacementType = ls.getReplacementSafely(mappingNotes, partNum, attributeType, false);
 			} 
 			String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
-			if (tabIdx != NOT_SET) {
-				if (replacementType == null) unsuccessfullTypeReplacement++; 
-					else successfullTypeReplacement++;
-				ts.report(tabIdx, partNum, "Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
-			}
-			
+			if (replacementType == null) unsuccessfullTypeReplacement++;
+				else successfullTypeReplacement++;
+			mappingNotes.add("Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
+
 			if (replacementType != null) {
 				attributeType = replacementType;
 			}

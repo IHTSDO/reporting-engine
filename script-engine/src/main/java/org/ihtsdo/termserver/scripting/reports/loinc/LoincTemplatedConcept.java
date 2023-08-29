@@ -18,7 +18,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincConstants, LoincScriptConstants {
+public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 
@@ -28,8 +28,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	private static int mapped = 0;
 	private static int unmapped = 0;
 	private static int skipped = 0;
-	private static int MAPPING_DETAIL_TAB = TERTIARY_REPORT;
-	private static int TAB_MODELING_ISSUES = QUINARY_REPORT;
 	private static int conceptsModelled = 0;
 	
 	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
@@ -543,13 +541,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return loincNum;
 	}
 
-	public static void reportStats() throws TermServerScriptException {
-		ts.report(MAPPING_DETAIL_TAB, "");
-		ts.report(MAPPING_DETAIL_TAB, "Parts mapped", mapped);
-		ts.report(MAPPING_DETAIL_TAB, "Parts unmapped", unmapped);
-		ts.report(MAPPING_DETAIL_TAB, "Parts skipped", skipped);
-		ts.report(MAPPING_DETAIL_TAB, "Unique PartNums mapped", partNumsMapped.size());
-		ts.report(MAPPING_DETAIL_TAB, "Unique PartNums unmapped", partNumsUnmapped.size());
+	public static void reportStats(int tabIdx) throws TermServerScriptException {
+		ts.report(tabIdx, "");
+		ts.report(tabIdx, "Parts mapped", mapped);
+		ts.report(tabIdx, "Parts unmapped", unmapped);
+		ts.report(tabIdx, "Parts skipped", skipped);
+		ts.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
+		ts.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
 	}
 	
 	/**
