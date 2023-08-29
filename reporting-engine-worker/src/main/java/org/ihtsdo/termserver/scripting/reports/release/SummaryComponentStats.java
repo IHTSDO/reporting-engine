@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -42,7 +41,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			TAB_DESC_BY_LANG = 14;  
 	static final int MAX_REPORT_TABS = 15;
 	static final int DATA_WIDTH = 28;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
-	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5, 
+	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACTIVATED = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5,
 			IDX_MOVED_MODULE = 6, IDX_CHANGED_INACTIVE = 7, IDX_NEW_P = 8, IDX_NEW_SD = 9,
 			IDX_TOTAL = 10, IDX_INACT_AMBIGUOUS = 11,  IDX_INACT_MOVED_ELSEWHERE = 12, IDX_INACT_CONCEPT_NON_CURRENT = 13,
 			IDX_INACT_DUPLICATE = 14, IDX_INACT_ERRONEOUS = 15, IDX_INACT_INAPPROPRIATE = 16, IDX_INACT_LIMITED = 17,
@@ -220,6 +219,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			/*if (c.getId().equals("1908008") || c.getId().equals("1010625007") || c.getId().equals("8661000119102")) {
 				LOGGER.debug("here");
 			}*/
+			if (c.getId().equals("182385006") || c.getId().equals("138198004")) {
+				LOGGER.debug("here");
+			}
 			Datum datum = prevData.get(c.getConceptId());
 			//Is this concept in scope?  Even if its not, some of its components might be.
 			if (c.isActive()) {	
@@ -256,7 +258,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				analyzeConcept(c, topLevel, datum, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 			}
 			
-			analyzeDescriptions(c, topLevel, datum, wasActive, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
+			analyzeDescriptions(c, datum, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
 			
 			List<Relationship> normalRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
@@ -315,8 +317,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		} else if (prevData.containsKey(c.getConceptId())) {
 			if (prevData.get(c.getConceptId()).isActive) {
 				//If we had it last time active, then it's been inactivated in this release
-				counts[IDX_INACT]++;
-				System.out.println(c.getId() + " - " + topLevel + " - " + counts[IDX_INACT]);
+				counts[IDX_INACTIVATED]++;
+				System.out.println(c.getId() + " - " + topLevel + " - " + counts[IDX_INACTIVATED]);
 				debugToFile(c, "Inactivated");
 			} else if (isChangedSinceLastRelease(c)){
 				//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
@@ -343,7 +345,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			} else if (c.isActive() && !conceptIsNew && hadModel && !hasModel) {
 				qiCounts[IDX_LOST_ATTRIBUTES]++;
 			} else if (!c.isActive() && hadModel) {
-				qiCounts[IDX_INACT]++;
+				qiCounts[IDX_INACTIVATED]++;
 			}
 			
 			if (hasModel) {
@@ -378,7 +380,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return descCounts;
 	}
 	
-	private void analyzeDescriptions(Concept c, Concept topLevel, Datum datum, Boolean wasActive, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
+	private void analyzeDescriptions(Concept c, Datum datum, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
 			/*if (d.getId().equals("3770564011")) {
 				LOGGER.debug("here");
@@ -389,68 +391,82 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				continue;
 			}
 			
-			//Descriptions have historic associations if the refer to other concepts
+			// Descriptions have historic associations if they refer to other concepts
 			for (AssociationEntry a : d.getAssociationEntries()) {
 				incrementCounts(a, counts, IDX_TOTAL);
 				if (a.isActive()) {
 					incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
-					//Have we see this Id before?  If not, it's new
-					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
+					if (datum == null || !(datum.descHistAssocIds.contains(a.getId()) || datum.descHistAssocIdsInact.contains(a.getId()))) {
+						// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 						incrementCounts(a, counts, IDX_NEW);
+						debugToFile(a, "New");
 					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
-						//If previously inactive and now active, then it's reactivated
+						// If previously inactive and now active, then it's reactivated
 						incrementCounts(a, counts, IDX_REACTIVATED);
-					} else if (isChangedSinceLastRelease(a)) {
-						//Did it change in this release?
-						incrementCounts(a, counts, IDX_CHANGED);
-						debugToFile(a, "Changed");
+						debugToFile(a, "Reactivated");
+					} else if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
+						if (isChangedSinceLastRelease(a)) {
+							// Was and is active, yet it has changed since last release, then it's changed
+							incrementCounts(a, counts, IDX_CHANGED);
+							debugToFile(a, "Changed");
+						}
 					}
 				} else {
-					//If we saw this previously active, then it's been inactivated
-					if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
-						incrementCounts(a, counts, IDX_INACT);
-					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
-						//If it was previous inactive and continues to be so, yet has changed, then it's changed inactive
-						if (isChangedSinceLastRelease(a)) {
-							incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
-						}
-					} else if (datum == null) {
+					if (datum == null || !(datum.descHistAssocIds.contains(a.getId()) || datum.descHistAssocIdsInact.contains(a.getId()))) {
+						// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 						incrementCounts(a, counts, IDX_NEW_INACTIVE);
+						debugToFile(a, "New Inactive");
+					} else if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
+						// If previously active and now inactive, then it's inactivated
+						incrementCounts(a, counts, IDX_INACTIVATED);
+						debugToFile(a, "Inactivated");
+					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
+						if (isChangedSinceLastRelease(a)) {
+							// Was and is inactive, yet it has changed since last release, then it's changed inactive
+							incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
+							debugToFile(a, "Changed Inactive");
+						}
 					}
 				}
 			}
 			
-			//Descriptions can also have inactivation indicators if their concept is inactive
+			// Descriptions can also have inactivation indicators if their concept is inactive
 			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
-				//Are we writing our results to the default tab, or specific to CNC?
+				// Are we writing our results to the default tab, or specific to CNC?
 				int[] thisInactTab = i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT) ? cncCounts: inactCounts;
 				incrementCounts(i, thisInactTab, IDX_TOTAL);
 				if (i.isActive()) {
 					incrementCounts(i, thisInactTab, IDX_TOTAL_ACTIVE);
-					//Have we see this Id before?  If not, it's new
-					if (datum != null && !datum.descInactivationIds.contains(i.getId())) {
+					if (datum == null || !(datum.descInactivationIds.contains(i.getId()) || datum.descInactivationIdsInact.contains(i.getId()))) {
+						// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 						incrementCounts(i, thisInactTab, IDX_NEW);
 						debugToFile(i, "New");
 					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
-						//If previously inactive and now active, then it's reactivated
+						// If previously inactive and now active, then it's reactivated
 						incrementCounts(i, thisInactTab, IDX_REACTIVATED);
 						debugToFile(i, "Reactivated");
-					} else if (isChangedSinceLastRelease(i)) {
-						//Did it change in this release?
-						incrementCounts(i, thisInactTab, IDX_CHANGED);
-						debugToFile(i, "Changed");
-					} 
-				} else {
-					//If we saw this previously active, then it's been inactivated
-					if (datum != null && datum.descInactivationIds.contains(i.getId())) {
-						incrementCounts(i, thisInactTab, IDX_INACT);
-					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
-						//If it was previous inactive and continues to be so, yet has changed, then it's changed inactive
+					} else if (datum != null && datum.descInactivationIds.contains(i.getId())) {
 						if (isChangedSinceLastRelease(i)) {
-							incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
+							// Was and is active, yet it has changed since last release, then it's changed
+							incrementCounts(i, thisInactTab, IDX_CHANGED);
+							debugToFile(i, "Changed");
 						}
-					} else if (datum == null) {
+					}
+				} else {
+					if (datum == null || !(datum.descInactivationIds.contains(i.getId()) || datum.descInactivationIdsInact.contains(i.getId()))) {
+						// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 						incrementCounts(i, thisInactTab, IDX_NEW_INACTIVE);
+						debugToFile(i, "New Inactive");
+					} else if (datum != null && datum.descInactivationIds.contains(i.getId())) {
+						// If previously active and now inactive, then it's inactivated
+						incrementCounts(i, thisInactTab, IDX_INACTIVATED);
+						debugToFile(i, "Inactivated");
+					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
+						if (isChangedSinceLastRelease(i)) {
+							// Was and is inactive, yet it has changed since last release, then it's changed inactive
+							incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
+							debugToFile(i, "Changed Inactive");
+						}
 					}
 				}
 			}
@@ -522,7 +538,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				}
 			} else if (previouslyExistedActive) {
 				//Existed previously active and is now inactive, mark as inactivated
-				incrementCounts(component, counts, IDX_INACT);
+				incrementCounts(component, counts, IDX_INACTIVATED);
 				debugToFile(component, "Inactivated");
 				conceptAffected = true;
 			} else if (!previouslyExistedActive && !previouslyExistedInactive) {
@@ -698,28 +714,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
 		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 		
 		Arrays.asList(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET, TAB_DESC_BY_LANG).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 		});
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
 				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
 		});
 		
-		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACT, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACTIVATED, IDX_TOTAL_ACTIVE)));
 
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
 
 		return sheetFieldsByIndex;
 	}
@@ -775,28 +791,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		
 		String[] data = new String[24];
 		data[0]  = sum(TAB_CONCEPTS, IDX_NEW);
-		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_MOVED_MODULE);
+		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_MOVED_MODULE);
 		data[2]  = sum(TAB_CONCEPTS, IDX_TOTAL);
 		data[3]  = sum(TAB_DESCS, IDX_NEW_NEW);
-		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[5]  = sum(TAB_DESCS, IDX_TOTAL);
 		data[6]  = sum(TAB_TEXT_DEFN, IDX_NEW_NEW);
-		data[7]  = minusPlus(TAB_TEXT_DEFN, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[7]  = minusPlus(TAB_TEXT_DEFN, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[8]  = sum(TAB_TEXT_DEFN, IDX_TOTAL);
 		data[9]  = sum(TAB_LANG, IDX_NEW_NEW);
-		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[11] = sum(TAB_LANG, IDX_TOTAL);
 		data[12] = sum(TAB_AXIOMS, IDX_NEW_NEW);
-		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[14] = sum(TAB_AXIOMS, IDX_TOTAL);
 		data[15] = "0";
 		data[16] = "0";
 		data[17] = "1024719";
 		data[18] = sum(TAB_RELS, IDX_NEW_NEW);
-		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[20] = sum(TAB_RELS, IDX_TOTAL);
 		data[21] = sum(TAB_CD, IDX_NEW_NEW);
-		data[22] = minusPlus(TAB_CD, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACT, IDX_REACTIVATED, IDX_NEW_INACTIVE);
+		data[22] = minusPlus(TAB_CD, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[23] = sum(TAB_CD, IDX_TOTAL);
 		
 		rs.setData(data);

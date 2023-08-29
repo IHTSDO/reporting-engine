@@ -29,6 +29,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final char LINE_DELETED_INDICATOR = '<';
 	private static final char LINE_CREATED_INDICATOR = '>';
 	private static final int TIMEOUT_MINUTES = 30;
+	private static final int FILE_COMPARISON_TAB = MAX_REPORT_TABS;
+	private static final int NUMBER_OF_COLUMNS = 7;
 
 	private String previousReleasePath;
 	private String currentReleasePath;
@@ -49,8 +51,16 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 
 		// International on prod
-		params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
-		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
+		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
+
+		// US Edition Test 1
+		//params.put(PREV_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
+		//params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-17T15:59:10/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
+
+		// US Edition Test 2
+		params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
+		params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
@@ -80,7 +90,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 				"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 				" , ,Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
-				"Filename, New, Changed, Inactivated, Reactivated, Total"
+				"Filename, New, Changed, Inactivated, Reactivated, Deleted, Total"
 		};
 
 		String[] tabNames = new String[] {
@@ -307,25 +317,30 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return language;
 	}
 
-	private void report(String filename, int[] subTotals) throws TermServerScriptException {
-		report(MAX_REPORT_TABS + PRIMARY_REPORT, filename, subTotals[0], subTotals[1], subTotals[2], subTotals[3], subTotals[4]);
+	private void report(String filename, int[] fileTotals) throws TermServerScriptException {
+		Object[] details = new Object[NUMBER_OF_COLUMNS];
+		int i = 0;
+		details[i] = filename;
+		while (i < fileTotals.length) {
+			details[i + 1] = fileTotals[i++];
+		}
+		report(FILE_COMPARISON_TAB, details);
 	}
 
 	private void reportSCS(int[] subTotals) throws TermServerScriptException {
-		int created, changed, inactivated, reactivated;
-
-		created = changed = inactivated = reactivated = 0;
+		int[] totals = new int[]{0, 0, 0, 0, 0, 0};
 
 		if (subTotals != null) {
-			created = subTotals[IDX_NEW];
-			changed = subTotals[IDX_CHANGED] + subTotals[IDX_MOVED_MODULE] + subTotals[IDX_CHANGED_INACTIVE]; // + more?
-			inactivated = subTotals[IDX_INACT];
-			reactivated = subTotals[IDX_REACTIVATED];
+			totals[TotalsIndex.NEW.ordinal()] = subTotals[IDX_NEW];
+			totals[TotalsIndex.CHANGED.ordinal()] = subTotals[IDX_CHANGED] + subTotals[IDX_MOVED_MODULE] + subTotals[IDX_CHANGED_INACTIVE]; // + more?
+			totals[TotalsIndex.INACTIVATED.ordinal()] = subTotals[IDX_INACTIVATED];
+			totals[TotalsIndex.REACTIVATED.ordinal()] = subTotals[IDX_REACTIVATED];
+			totals[TotalsIndex.DELETED.ordinal()] = 0; // No deleted in SCS report
 		}
 
-		int total = created + changed + inactivated + reactivated;
+		totals[TotalsIndex.TOTAL.ordinal()] = Arrays.stream(totals).sum();
 
-		report(MAX_REPORT_TABS + PRIMARY_REPORT, "-- Summary Component Stats --", created, changed, inactivated, reactivated, total);
+		report("-- Summary Component Stats --", totals);
 	}
 
 	private String doubleQuote(String arg) {
@@ -393,15 +408,26 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				}
 			}
 
-			assert deleted.size() == 0;
+			//assert deleted.size() == 0;
 
-			int total = created.size() + changed.size() + inactivated.size() + reactivated.size();
+			int total = created.size() + changed.size() + inactivated.size() + reactivated.size() + deleted.size();
+
+			// Debugging
+			/*if (filename.contains("AttributeValue")) {
+				reactivated.entrySet().forEach(entry -> {
+					try {
+						report(MAX_REPORT_TABS + PRIMARY_REPORT, entry.getKey(), entry.getValue().previousValue, entry.getValue().currentValue);
+					} catch (TermServerScriptException e) {
+					}
+				});
+			}*/
 
 			fileTotals.put(filename, new int[] {
 					created.size(),
 					changed.size(),
 					inactivated.size(),
 					reactivated.size(),
+					deleted.size(),
 					total
 			});
 
@@ -440,5 +466,14 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			return INACTIVE_FLAG.equals(previousValue.split(FIELD_DELIMITER)[DIFF_IDX_ACTIVE]) &&
 					ACTIVE_FLAG.equals(currentValue.split(FIELD_DELIMITER)[DIFF_IDX_ACTIVE]);
 		}
+	}
+
+	enum TotalsIndex {
+		NEW,
+		CHANGED,
+		INACTIVATED,
+		REACTIVATED,
+		DELETED,
+		TOTAL
 	}
 }
