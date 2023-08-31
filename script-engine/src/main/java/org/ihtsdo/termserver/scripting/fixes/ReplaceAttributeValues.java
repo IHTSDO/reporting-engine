@@ -32,8 +32,10 @@ public class ReplaceAttributeValues extends BatchFix {
 	//String ecl = "* : * = 367651003  |Malignant neoplasm of primary, secondary, or uncertain origin (morphologic abnormality)|";
 	//String ecl = "<< 253273004 |Cardiac septal defects (disorder)| OR << 768552007 |Congenital ventricular septal defect (disorder)| ";
 	//String ecl = "<<53941002 |Closure of septal fenestration of heart (procedure)|";
-	String ecl = "<< 61557004 |Implantation of joint prosthesis (procedure)|";
-	RelationshipTemplate addRelationship; 
+	//String ecl = "<< 61557004 |Implantation of joint prosthesis (procedure)|";
+	//String ecl = "<< 1288025000 |Prosthetic arthroplasty of joint (procedure)|";
+	String ecl = "<< 1288025000 |Prosthetic arthroplasty of joint (procedure)| OR << 61557004 |Implantation of joint prosthesis (procedure)| ";
+	RelationshipTemplate addRelationship;
 	
 	protected ReplaceAttributeValues(BatchFix clone) {
 		super(clone);
@@ -63,7 +65,8 @@ public class ReplaceAttributeValues extends BatchFix {
 		
 		Concept find = gl.getConcept("425362007 |Surgical insertion - action (qualifier value)|");
 		Concept replace = gl.getConcept("129338005 |Surgical implantation - action (qualifier value)|");
-		replacementMap.put(find, replace); 
+
+		replacementMap.put(find, replace);
 		//replacementMap.put(gl.getConcept("371520008 |Developmental failure of fusion (morphologic abnormality)|"), replacement); 		
 		
 		//restrictToType = gl.getConcept("363700003 |Direct morphology (attribute)|");
