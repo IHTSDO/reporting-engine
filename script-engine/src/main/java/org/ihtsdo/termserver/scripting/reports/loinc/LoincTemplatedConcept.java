@@ -129,10 +129,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
 		switch (loincDetail.getPartName()) {
-			case "Ratio" :
+			/*case "Ratio" :
 			case "MRto" :
 			case "VFr" :
-			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
+			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);*/
 			case "PrThr" :
 			case "PPres" :
 			case "CCnc" :
