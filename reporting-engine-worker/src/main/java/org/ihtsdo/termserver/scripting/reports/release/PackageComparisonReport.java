@@ -81,9 +81,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
 
 		// US Edition Test 2 with module filter
-		//params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
-		//params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
-		//params.put(MODULES, "731000124108");
+		params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
+		params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
+		params.put(MODULES, "731000124108");
 
 		// NL Edition
 		//params.put(PREV_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-02T17:55:02/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
@@ -91,17 +91,24 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(MODULES, "11000146104");
 
 		// SE Extension
-		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2022-11-17T18:21:20/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20221130T120000Z.zip");
+		/*params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2022-11-17T18:21:20/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20221130T120000Z.zip");
 		params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-05-19T07:39:38/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20230531T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
-		params.put(MODULES, "45991000052106");
+		params.put(MODULES, "45991000052106");*/
+
+		// DK Extension
+		/*params.put(PREV_RELEASE, "dk/snomed_ct_denmark_extension_releases/2022-09-23T12:02:14/output-files/SnomedCT_ManagedServiceDK_PRODUCTION_DK1000005_20220930T120000Z.zip");
+		params.put(THIS_RELEASE, "dk/snomed_ct_denmark_extension_releases/2023-03-18T21:23:11/output-files/xSnomedCT_ManagedServiceDK_PREPRODUCTION_DK1000005_20230331T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220630T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
+		params.put(MODULES, "554471000005108");*/
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
 
 	@Override
-	public void init (JobRun run) throws TermServerScriptException {
+	public void init(JobRun run) throws TermServerScriptException {
 		//ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; // Release Stats
 		previousReleasePath = run.getParamValue(PREV_RELEASE);
 		currentReleasePath = run.getParamValue(THIS_RELEASE);
@@ -429,8 +436,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			}
 
 			// Calculate created and deleted totals
-			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+			totals.put(TotalsIndex.NEW, created.values().stream()
+					.filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
+			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream()
+					.filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
 			totals.put(TotalsIndex.NEW_EFFECTIVE_TIME_NOT_LATEST, created.values().stream().filter(data -> !thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
 			totals.put(TotalsIndex.DELETED, deleted.size());
 
