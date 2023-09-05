@@ -1668,19 +1668,27 @@ public class GraphLoader implements ScriptConstants {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String headerLine = br.readLine();
 
-		if (! headerLine.startsWith("id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId")) {
+		if (!headerLine.startsWith("id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId")) {
 			LOGGER.warn("Ignoring RefSet file, wrong header: {}", headerLine);
 			return;
 		}
 
-		LOGGER.info("Loading reference set file {}", fileName);
+		//The columns after the referenced component id give us our additional field names
+		String[] fieldNames = headerLine.split(TAB);
+		String[] additionalFieldNames = Arrays.copyOfRange(fieldNames, REF_IDX_FIRST_ADDITIONAL, fieldNames.length);
 
+		LOGGER.info("Loading reference set file {}", fileName);
 		for (String line = br.readLine(); line != null; line = br.readLine()) {
 			String[] lineItems = line.split(TAB);
 			RefsetMember member = new RefsetMember();
-			RefsetMember.populatefromRf2(member, lineItems, new String[]{});
-			Concept c = getConcept(member.getReferencedComponentId());
-			c.getOtherRefsetMembers().add(member);
+			RefsetMember.populatefromRf2(member, lineItems, additionalFieldNames);
+			if (SnomedUtils.isConceptSctid(member.getReferencedComponentId())) {
+				Concept c = getConcept(member.getReferencedComponentId());
+				c.getOtherRefsetMembers().add(member);
+			} else {
+				Description d = getDescription(member.getReferencedComponentId());
+				d.getOtherRefsetMembers().add(member);
+			}
 		}
 	}
 

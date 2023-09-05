@@ -93,12 +93,12 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	Set<Concept> statedParents = new HashSet<>();
 	Set<Concept> inferredParents = new HashSet<>();
-	Set<Concept> statedChildren = new HashSet<>();
-	Set<Concept> inferredChildren = new HashSet<>();
+	Set<Concept> statedChildren;  //Lazy create Set to reduce memory footprint
+	Set<Concept> inferredChildren;
 	
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
-	private Set<RefsetMember> otherRefsetMembers = new HashSet<>();
+	private Set<RefsetMember> otherRefsetMembers;
 
 	public void reset() {
 		assertionFailures = new ArrayList<String>();
@@ -106,10 +106,17 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		inferredRelationshipGroups = null;
 		descriptions = new ArrayList<Description>();
 		relationships = new HashSet<Relationship>();
-		statedParents = new HashSet<>();
-		inferredParents = new HashSet<>();
-		statedChildren = new HashSet<>();
-		inferredChildren = new HashSet<>();
+		statedParents.clear();
+		inferredParents.clear();
+		if (statedChildren != null) {
+			statedChildren.clear();
+		}
+		if (inferredChildren != null) {
+			inferredChildren.clear();
+		}
+		if (otherRefsetMembers != null) {
+			otherRefsetMembers.clear();
+		}
 	}
 	
 	public String getReviewer() {
@@ -472,10 +479,24 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public boolean isLeaf (CharacteristicType c) {
 		if (c.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-			return statedChildren.size() == 0;
+			return getStatedChildren().size() == 0;
 		} else {
-			return inferredChildren.size() == 0;
+			return getInferredChildren().size() == 0;
 		}
+	}
+
+	private Set<Concept> getStatedChildren() {
+		if (statedChildren == null) {
+			statedChildren = new HashSet<>();
+		}
+		return statedChildren;
+	}
+
+	private Set<Concept> getInferredChildren() {
+		if (inferredChildren == null) {
+			inferredChildren = new HashSet<>();
+		}
+		return inferredChildren;
 	}
 
 	@Override
@@ -665,8 +686,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Set<Concept> getChildren(CharacteristicType characteristicType) {
 		switch (characteristicType) {
-			case STATED_RELATIONSHIP : return statedChildren;
-			case INFERRED_RELATIONSHIP : return inferredChildren;
+			case STATED_RELATIONSHIP : return getStatedChildren();
+			case INFERRED_RELATIONSHIP : return getInferredChildren();
 			default:
 		}
 		return null;
@@ -1258,8 +1279,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		
 		//Copy Parent/Child arrays
-		clone.inferredChildren = inferredChildren == null? new HashSet<>() : new HashSet<>(inferredChildren);
-		clone.statedChildren = statedChildren == null? new HashSet<>() : new HashSet<>(statedChildren);
+		clone.inferredChildren = inferredChildren == null? new HashSet<>() : new HashSet<>(getInferredChildren());
+		clone.statedChildren = statedChildren == null? new HashSet<>() : new HashSet<>(getStatedChildren());
 		clone.inferredParents = inferredParents == null? new HashSet<>() : new HashSet<>(inferredParents);
 		clone.statedParents = statedParents == null? new HashSet<>() : new HashSet<>(statedParents);
 		
@@ -1722,6 +1743,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public Set<RefsetMember> getOtherRefsetMembers() {
+		if (otherRefsetMembers == null) {
+			otherRefsetMembers = new HashSet<>();
+		}
 		return otherRefsetMembers;
 	}
 
