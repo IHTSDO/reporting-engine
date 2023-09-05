@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -42,12 +43,17 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	private static final String REPORT_NAME = "Refset members with invalid referenced components";
 	private static final String REPORT_DESCRIPTION = "A report to check for both inactive and completely invalid SCTID's in refsets - the report can then distinguish whether each record that is failing has done so because it's inactive or invalid.";
 	private static final String[] REPORT_TAB_NAMES = new String[]{"Issues", "Summary"};
-	private static final String REPORT_TAB_ISSUES_COLUMNS = "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail";
+	private static final String REPORT_TAB_ISSUES_COLUMNS = "SCTID, FSN, Semtag, Issue, Refset, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail";
 	private static final String REPORT_TAB_SUMMARY_COLUMNS = "Issue, Count";
-	private static final String ISSUE_TITLE = "Active refset member for inactive concept";
+	private static final String ISSUE_TITLE = "Active refset member for inactive component";
 	private static final String RELEASE_VALIDATION_FOLDER_ID = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";
-	private static final List<String> REF_SETS_TO_IGNORE_FOR_INACTIVE_REFERENCE_CONPONENTS = List.of("900000000000497000");
+	private static final List<String> REF_SETS_TO_IGNORE_FOR_INACTIVE_REFERENCE_CONPONENTS = List.of("900000000000497000" //CTV3 Map
+	);
 	private List<Concept> sortedListOfConcepts;
+
+	private Map<Concept, Boolean> refsetsWithChanges = new HashMap<>();
+	private Map<String, Integer> summaryCounts = new HashMap<>();
+	private boolean includeLegacyIssues = false;
 
 	/**
 	 * Run the report from the command line, no arguments required for this report.
@@ -60,6 +66,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		LOGGER.debug("Running from main CLI");
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		TermServerReport.run(RefsetMembersWithInvalidReferencedComponents.class, args, params);
 	}
 
@@ -74,27 +81,21 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
-				.add(NEW_CONCEPTS_ONLY)
+				.add(UNPROMOTED_CHANGES_ONLY)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(false)
+					.withDefaultValue(true)
 				.add(MODULES) // Blank means all modules.
 					.withType(JobParameter.Type.STRING)
-//				.add(REPORT_OUTPUT_TYPES)
-//					.withType(JobParameter.Type.HIDDEN)
-//					.withDefaultValue(false)
-//				.add(REPORT_FORMAT_TYPE)
-//					.withType(JobParameter.Type.HIDDEN)
-//					.withDefaultValue(false)
+					.withDescription("Comma separated list of modules, or blank to include all modules")
 				.build();
 
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
 				.withName(REPORT_NAME)
 				.withDescription(REPORT_DESCRIPTION)
 				.withProductionStatus(Job.ProductionStatus.PROD_READY)
 				.withParameters(jobParameters)
-				.withTag(INT)
-				.withTag(MS)
+				.withTag(INT).withTag(MS)
 				.build();
 	}
 
@@ -106,6 +107,10 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	 */
 	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = RELEASE_VALIDATION_FOLDER_ID;
+		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
+		if (unpromotedChangesOnly && includeLegacyIssues) {
+			throw new TermServerScriptException("Cannot include legacy issues when only checking unpromoted changes");
+		}
 		super.init(run);
 		gl.setRecordPreviousState(true);
 		getArchiveManager().setPopulateReleasedFlag(true);
@@ -124,6 +129,10 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		var allConcepts = gl.getAllConcepts();
 		LOGGER.info("Checking {} concepts...", allConcepts.size());
 		sortedListOfConcepts = SnomedUtils.sort(allConcepts);
+		LOGGER.info("Concepts sorted");
+
+		firstPassRefsetsWithChanges();
+		LOGGER.info("First pass complete");
 
 		checkForMembersWithInvalidReferenceComponents();
 
@@ -133,36 +142,98 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
+	private void firstPassRefsetsWithChanges() throws TermServerScriptException {
+		int conceptCount = 0;
+		for (Concept concept : sortedListOfConcepts) {
+			for (Component component : SnomedUtils.getAllComponents(concept)) {
+				if (!(component instanceof RefsetMember)) {
+					continue;
+				}
+				RefsetMember refsetMember = (RefsetMember) component;
+				Concept refset = gl.getConcept(refsetMember.getRefsetId());
+				//Have we seen this refset before?
+				if (!refsetsWithChanges.containsKey(refset)) {
+					refsetsWithChanges.put(refset, Boolean.FALSE);
+				}
+				if (!refsetsWithChanges.get(refset) &&
+						StringUtils.isEmpty(refsetMember.getEffectiveTime())) {
+					refsetsWithChanges.put(refset, Boolean.TRUE);
+				}
+				if (++conceptCount % 100000 == 0) {
+					LOGGER.info("   ...checked {} concepts", conceptCount);
+				}
+			}
+		}
+	}
+
 	private void checkForMembersWithInvalidReferenceComponents() throws TermServerScriptException {
 		LOGGER.info("   Checking: {}", ISSUE_TITLE);
 		initialiseSummary(ISSUE_TITLE);
 
 		for (Concept concept : sortedListOfConcepts) {
-			if (concept.isActive()) {
-				continue;
-			}
-
-			var allComponents = SnomedUtils.getAllComponents(concept);
-
-			for (Component component : allComponents) {
-				if (!(component instanceof RefsetMember)) {
+			for (Component component : SnomedUtils.getAllComponents(concept)) {
+				if (!(component instanceof RefsetMember) ||
+						(!includeLegacyIssues && !isLegacySimple(component))
+				) {
 					continue;
 				}
+
+				//Are we considering a component belonging to this concept?  Or one of its descriptions?
 				RefsetMember refsetMember = (RefsetMember) component;
+				Concept refset = gl.getConcept(refsetMember.getRefsetId());
+				if (REF_SETS_TO_IGNORE_FOR_INACTIVE_REFERENCE_CONPONENTS.contains(refset.getId())) {
+					continue;
+				}
+				//Are we interested in this refset?
+				if (includeLegacyIssues || refsetsWithChanges.get(refset)) {
+					//Historical Associations and Inactivation Indicators are applied to inactive concepts
+					//so we don't need to check those - we're expecting their referenced components to be inactive.
+					if (refsetMember.getComponentType() != Component.ComponentType.HISTORICAL_ASSOCIATION
+							&& refsetMember.getComponentType() != Component.ComponentType.ATTRIBUTE_VALUE
+							&& refsetMember.isActive()) {
+						String refsetStr = refset.toString();
+						Component owningComponent = concept;
+						if (!SnomedUtils.isConceptSctid(refsetMember.getReferencedComponentId())) {
+							owningComponent = gl.getDescription(refsetMember.getReferencedComponentId());
+						}
 
-				if (refsetMember.getComponentType() != Component.ComponentType.HISTORICAL_ASSOCIATION
-						&& refsetMember.getComponentType() != Component.ComponentType.ATTRIBUTE_VALUE
-						&& refsetMember.getComponentType() != Component.ComponentType.LANGREFSET
-						&& refsetMember.isActive()) {
-					Concept refSet = gl.getConcept(refsetMember.getRefsetId());
+						if (owningComponent.isActive()) {
+							continue;
+						}
 
-					if (REF_SETS_TO_IGNORE_FOR_INACTIVE_REFERENCE_CONPONENTS.contains(refSet.getId())) {
-						continue;
+						summaryCounts.merge(refsetStr, 1, Integer::sum);
+						reportAndIncrementSummary(concept, isLegacySimple(component), ISSUE_TITLE, refset, getLegacyIndicator(component), isActive(concept, component), component, component.getId());
 					}
-
-					reportAndIncrementSummary(concept, isLegacySimple(component), ISSUE_TITLE, getLegacyIndicator(component), isActive(concept, component), component, component.getId());
 				}
 			}
 		}
+	}
+
+	protected void reportAndIncrementSummary(Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
+		//Are we filtering this report to only concepts with unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return;
+		}
+		if (includeLegacyIssues || !isLegacy) {
+			//First detail is the issue text
+			issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+			countIssue(c);
+			report(PRIMARY_REPORT, c, details);
+		}
+	}
+
+	public void populateSummaryTabAndTotal() {
+		super.populateSummaryTabAndTotal();
+		summaryCounts.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), e.getValue()));
+
+		reportSafely(SECONDARY_REPORT, "");
+		reportSafely(SECONDARY_REPORT, "");
+
+		refsetsWithChanges.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), (e.getValue()? "Contains changes" : "Contains no changes")));
+
 	}
 }

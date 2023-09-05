@@ -62,6 +62,8 @@ public class Description extends Component implements ScriptConstants {
 	private transient List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	
 	private transient List<AssociationEntry> associationEntries;
+
+	private transient Set<RefsetMember> otherRefsetMembers;
 	
 	/**
 	 * No args constructor for use in serialization
@@ -837,6 +839,17 @@ public class Description extends Component implements ScriptConstants {
 		} catch (TermServerScriptException e) {
 			throw new IllegalArgumentException("Failed to form whitelist string in " + this);
 		}
+	}
+
+	public Set<RefsetMember> getOtherRefsetMembers() {
+		if (otherRefsetMembers == null) {
+			otherRefsetMembers = new HashSet<>();
+		}
+		return otherRefsetMembers;
+	}
+
+	public void setOtherRefsetMembers(Set<RefsetMember> otherRefsetMembers) {
+		this.otherRefsetMembers = otherRefsetMembers;
 	}
 
 }

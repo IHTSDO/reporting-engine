@@ -23,7 +23,7 @@ public abstract class TermServerReport extends TermServerScript {
 
 	public static final String IP = "IP";
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
-	private final Map<String, Integer> issueSummaryMap = new HashMap<>();
+	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
 
 	protected boolean unpromotedChangesOnly = false;
 	
@@ -40,7 +40,7 @@ public abstract class TermServerReport extends TermServerScript {
 		if (unpromotedChangesOnly) {
 			unpromotedChangesHelper = new UnpromotedChangesHelper(this);
 			LOGGER.info("Populating map of unpromoted change components");
-			unpromotedChangesHelper.populateUnpromotedChangesMap(project);
+			unpromotedChangesHelper.populateUnpromotedChangesMap(project, getArchiveManager().isLoadOtherReferenceSets());
 		}
 		super.postInit(tabNames, columnHeadings, csvOutput);
 	}
@@ -171,6 +171,8 @@ public abstract class TermServerReport extends TermServerScript {
 
 		int total = issueSummaryMap.values().stream().mapToInt(Integer::intValue).sum();
 		reportSafely(SECONDARY_REPORT, (Component) null, "TOTAL", total);
+
+
 	}
 
 	protected void initialiseSummary(String issue) {

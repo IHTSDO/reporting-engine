@@ -88,7 +88,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	DescendantsCache cache;
 	private Set<Concept> deprecatedHierarchies;
 	private String defaultModule = SCTID_CORE_MODULE;
@@ -198,12 +197,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		JobParameters params = new JobParameters()
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(false)
-				.add(REPORT_OUTPUT_TYPES)
-					.withType(JobParameter.Type.HIDDEN)
-					.withDefaultValue(false)
-				.add(REPORT_FORMAT_TYPE)
-					.withType(JobParameter.Type.HIDDEN)
 					.withDefaultValue(false)
 				.add(UNPROMOTED_CHANGES_ONLY)
 					.withType(JobParameter.Type.BOOLEAN)

@@ -31,26 +31,26 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 		this.ts = ts;
 	}
 	
-	public void populateUnpromotedChangesMap(Project project) throws TermServerScriptException {
+	public void populateUnpromotedChangesMap(Project project, boolean loadOtherRefsets) throws TermServerScriptException {
 		//Re-query our current task/project to obtain just those components which 
 		//haven't been promoted
 		try {
 			File delta = ts.getArchiveManager().generateDelta(project, true);
 			unpromotedChangesMap = new HashMap<>();
-			loadDeltaZip(delta);
+			loadDeltaZip(delta, loadOtherRefsets);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to obtain unpromoted changes map", e);
 		}
 	}
 	
-	private void loadDeltaZip(File archive) throws IOException, TermServerScriptException {
+	private void loadDeltaZip(File archive, boolean loadOtherRefsets) throws IOException, TermServerScriptException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
 				if (!ze.isDirectory()) {
 					Path path = Paths.get(ze.getName());
-					loadFile(path, zis);
+					loadFile(path, zis, loadOtherRefsets);
 				}
 				ze = zis.getNextEntry();
 			}
@@ -62,7 +62,7 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 		}
 	}
 	
-	private void loadFile(Path path, InputStream is) throws TermServerScriptException  {
+	private void loadFile(Path path, InputStream is, boolean loadOtherReferenceSets) throws TermServerScriptException  {
 		try {
 			String fileName = path.getFileName().toString();
 			
@@ -107,7 +107,10 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 			} else if (fileName.contains("Language")) {
 				LOGGER.info("Loading unpromoted delta Language Reference Set File - " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
+			} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
+				loadFile(is, REF_IDX_REFCOMPID);
 			}
+
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
 		}
