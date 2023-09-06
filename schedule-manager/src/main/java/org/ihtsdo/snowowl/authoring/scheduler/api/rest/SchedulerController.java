@@ -1,7 +1,9 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.rest;
 
-import io.swagger.annotations.*;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.snowowl.authoring.scheduler.api.configuration.WebSecurityConfig;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Api("Authoring Projects")
+@Tag(name = "Scheduler")
 @RestController
 @RequestMapping(produces={MediaType.APPLICATION_JSON_VALUE})
 public class SchedulerController {
@@ -80,27 +82,27 @@ public class SchedulerController {
 		return new AuthData(authToken, userName);
 	}
 
-	@ApiOperation(value="List Job Types")
+	@Operation(summary="List Job Types")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs", method= RequestMethod.GET)
 	public List<JobType> listJobTypes() throws BusinessServiceException {
 		return scheduleService.listJobTypes();
 	}
 
-	@ApiOperation(value="List job type categories")
+	@Operation(summary="List job type categories")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}", method= RequestMethod.GET)
 	public List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
 		return scheduleService.listJobTypeCategories(typeName);
 	}
 
-	@ApiOperation(value="Get job details")
+	@Operation(summary="Get job details")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}", method= RequestMethod.GET)
 	public Job getJobDetails(@PathVariable final String typeName,
@@ -108,9 +110,9 @@ public class SchedulerController {
 		return scheduleService.getJob(jobName);
 	}
 
-	@ApiOperation(value="List jobs run")
+	@Operation(summary="List jobs run")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.GET)
 	public List<JobRun> listJobsRun(HttpServletRequest request,
@@ -124,9 +126,9 @@ public class SchedulerController {
 		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable).getContent();
 	}
 	
-	@ApiOperation(value="List all jobs run")
+	@Operation(summary="List all jobs run")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/runs", method= RequestMethod.GET)
 	public List<JobRun> listAllJobsRun(HttpServletRequest request,
@@ -140,8 +142,8 @@ public class SchedulerController {
 		return santise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
 	}
 
-	@ApiOperation(value="Run all jobs")
-	@ApiResponses({@ApiResponse(code = 200, message = "OK")})
+	@Operation(summary="Run all jobs")
+	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
 	@RequestMapping(value="/jobs/runall", method= RequestMethod.POST)
 	@ResponseBody
 	public List<AllReportRunnerResult> runAll(
@@ -157,9 +159,9 @@ public class SchedulerController {
 		return accessControlService.getProjects(result.userName, terminologyServerUrl, result.authToken);
 	}
 
-	@ApiOperation(value="Run job")
+	@Operation(summary="Run job")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.POST)
 	public JobRun runJob(@PathVariable final String typeName, 
@@ -168,9 +170,9 @@ public class SchedulerController {
 		return scheduleService.runJob(typeName, jobName, jobRun);
 	}
 	
-	@ApiOperation(value="Bulk delete job-runs")
+	@Operation(summary="Bulk delete job-runs")
 	@ApiResponses({
-			@ApiResponse(code = 204, message = "Deleted")
+			@ApiResponse(responseCode = "204", description = "Deleted")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/delete", method= RequestMethod.POST)
 	public Page<JobRun> deleteJobRuns(
@@ -185,9 +187,9 @@ public class SchedulerController {
 		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), null);
 	}
 	
-	@ApiOperation(value="Schedule job")
+	@Operation(summary="Schedule job")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/schedule", method= RequestMethod.POST)
 	public JobSchedule scheduleJob(@PathVariable final String typeName, 
@@ -196,9 +198,9 @@ public class SchedulerController {
 		return scheduleService.scheduleJob(typeName, jobName, jobSchedule);
 	}
 	
-	@ApiOperation(value="Remove job schedule")
+	@Operation(summary="Remove job schedule")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/schedule/{scheduleId}", method= RequestMethod.DELETE)
 	public void deleteSchedule(@PathVariable final String typeName, 
@@ -207,9 +209,9 @@ public class SchedulerController {
 		scheduleService.deleteSchedule(typeName, jobName, scheduleId);
 	}
 	
-	@ApiOperation(value="Get job run")
+	@Operation(summary="Get job run")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/{runId}", method= RequestMethod.GET)
 	public JobRun getJobStatus(@PathVariable final String typeName,
@@ -218,7 +220,7 @@ public class SchedulerController {
 		return scheduleService.getJobRun(typeName, jobName, runId);
 	}
 	
-	@ApiOperation(value="Delete job run")
+	@Operation(summary="Delete job run")
 	@RequestMapping(value = "/jobs/{typeName}/{jobName}/runs/{runId}", method = RequestMethod.DELETE)
 	public ResponseEntity<?> deleteJobRun(@PathVariable final String typeName,
 			@PathVariable final String jobName,
@@ -230,18 +232,18 @@ public class SchedulerController {
 		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
 	}
 	
-	@ApiOperation(value="Re-initialise")
+	@Operation(summary="Re-initialise")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/initialise", method= RequestMethod.GET)
 	public void initialise() throws BusinessServiceException {
 		scheduleService.initialise();
 	}
 
-	@ApiOperation(value="List whitelisted concepts for the given job & code system")
+	@Operation(summary="List whitelisted concepts for the given job & code system")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist", method= RequestMethod.GET)
 	public Set<WhiteListedConcept> getWhiteList(
@@ -251,9 +253,9 @@ public class SchedulerController {
 		return scheduleService.getWhiteList(typeName, codeSystemShortname, jobName);
 	}
 	
-	@ApiOperation(value="Set whitelisted concept for the given job & code system")
+	@Operation(summary="Set whitelisted concept for the given job & code system")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
+			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist", method= RequestMethod.POST)
 	public void setWhiteList(
