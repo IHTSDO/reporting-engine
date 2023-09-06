@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -67,11 +68,16 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 	}
 
+	protected String[] getTabNames() {
+		return tabNames;
+	}
+
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				/*"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,*/
 				/*"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ", */
-				"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ",
+				"Item, Info, Details, ,",
+				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
@@ -95,11 +101,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		loadLoincParts();
 		//We can look at the full LOINC file in parallel as it's not needed for modelling
 		//executor.execute(() -> loadFullLoincFile());
-		loadFullLoincFile(NOT_SET/*getTab(TAB_TOP_20K)*/);
+		loadFullLoincFile(NOT_SET);
 		loadLoincDetail();
-		reportOnDetailMappingWithUsage();
 		attributePartMapManager = new AttributePartMapManager(this, loincParts, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
+
+		reportOnDetailMappingWithUsage();
+
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 		//determineExistingConcepts(getTab(TAB_TOP_100));
 		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
@@ -122,10 +130,94 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		generateAlternateIdentifierFile(successfullyModelled);*/
 	}
 
-	private void reportOnDetailMappingWithUsage() {
-		//Work through the loincDetailMap for each loincNum to generate usage
+	private void reportOnDetailMappingWithUsage() throws TermServerScriptException {
+		Map<String, LoincUsage> loincPartNumUsages = new HashMap<>();
+		Map<String, Set<String>> LDTColumnNamesForPart = new HashMap<>();
+		List<String> partNumTypesOfInterest = Arrays.asList("COMPONENT", "CHALLENGE", "DIVISORS", "METHOD", "PROPERTY", "SCALE", "SYSTEM", "TIME");
+		// Work through the loincDetailMap for each loincNum to generate usage
 		// (and calculate a priority index) for each loincPart
-		// We're only interested in
+		for (String loincNum: loincDetailMap.keySet()) {
+			populateLoincPartNumUsage(loincNum, partNumTypesOfInterest, loincPartNumUsages, LDTColumnNamesForPart);
+		}
+
+		int partDetailItemsMapped = 0;
+		int partDetailItemsNotMapped = 0;
+		int partDetailWithUnlistedPart = 0;
+		int partDetailItemsWithNotes = 0;
+		//Now output each of those parts, indicating if there is a mapping available
+		for (Map.Entry<String, LoincUsage> entry : loincPartNumUsages.entrySet()) {
+			String loincPartNum = entry.getKey();
+			LoincUsage usage = entry.getValue();
+			LoincPart loincPart = loincParts.get(loincPartNum);
+			if (loincPart == null) {
+				partDetailWithUnlistedPart++;
+			}
+			String partName = loincPart == null ? "Unlisted" : loincPart.getPartName();
+			String partTypeName = loincPart == null ? "Unlisted" : loincPart.getPartTypeName();
+			String partStatus = loincPart == null ? "Unlisted" : loincPart.getStatus().name();
+			RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(NOT_SET, null, loincPartNum, null);
+			String targetSctId = rt == null? "" : rt.getTarget().getId();
+			String targetFSN = rt == null? "" : rt.getTarget().getFsn();
+			if (rt == null) {
+				partDetailItemsNotMapped++;
+			} else {
+				partDetailItemsMapped++;
+			}
+
+			String notes = getPartMapNotes(loincPartNum);
+			if (!StringUtils.isEmpty(notes)) {
+				partDetailItemsWithNotes++;
+			}
+
+			report(getTab(TAB_LOINC_DETAIL_MAP_NOTES),
+					loincPartNum, partName,
+					partTypeName,
+					LDTColumnNamesForPart.get(loincPartNum).stream().collect(Collectors.joining(", \n")),
+					partStatus,
+					targetSctId, targetFSN,
+					usage.getPriority(),
+					usage.getCount(),
+					usage.getTopRankedLoincTermsStr(),
+					notes);
+		}
+
+		int summaryTabIdx = getTab(TAB_SUMMARY);
+		report(summaryTabIdx, "");
+		report(summaryTabIdx, "Part Detail Items Mapped",partDetailItemsMapped);
+		report(summaryTabIdx, "Part Detail Items Not Mapped",partDetailItemsNotMapped);
+		report(summaryTabIdx, "Part Detail Items With Notes",partDetailItemsWithNotes);
+		report(summaryTabIdx, "Part Detail Items With Unlisted Part",partDetailWithUnlistedPart);
+
+		//Are there any mapped parts that we've provided that are not used?
+		for (String mappedLoincPartNum : attributePartMapManager.getAllMappedLoincPartNums()) {
+			if (!loincPartNumUsages.containsKey(mappedLoincPartNum)) {
+				report(summaryTabIdx, mappedLoincPartNum, " is mapped but no longer used in detail file");
+			}
+		}
+	}
+
+	private void populateLoincPartNumUsage(String loincNum, List<String> partNumTypesOfInterest, Map<String, LoincUsage> loincPartNumUsages, Map<String, Set<String>> LDTColumnNamesForPart) {
+		for (LoincDetail loincDetail : loincDetailMap.get(loincNum).values()) {
+			// Is this a part we're interested in?
+			if (!partNumTypesOfInterest.contains(loincDetail.getPartTypeName())) {
+				continue;
+			}
+			String loincPartNum = loincDetail.getPartNumber();
+			LoincUsage usage = loincPartNumUsages.get(loincPartNum);
+			if (usage == null) {
+				usage = new LoincUsage();
+				loincPartNumUsages.put(loincPartNum, usage);
+			}
+			usage.add(loincNumToLoincTermMap.get(loincNum));
+
+			// Have we seen this part before?  Record the LDTColumnNames.
+			Set<String> LDTColumnNames = LDTColumnNamesForPart.get(loincPartNum);
+			if (LDTColumnNames == null) {
+				LDTColumnNames = new HashSet<>();
+				LDTColumnNamesForPart.put(loincPartNum, LDTColumnNames);
+			}
+			LDTColumnNames.add(loincDetail.getLDTColumnName());
+		}
 	}
 	
 	/*private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {

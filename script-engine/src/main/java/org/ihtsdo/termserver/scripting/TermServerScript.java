@@ -1887,6 +1887,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		try {
 			return getReplacement(notes, context, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {
+			notes.add(e.getMessage());
 			warn(e);
 		}
 		return null;

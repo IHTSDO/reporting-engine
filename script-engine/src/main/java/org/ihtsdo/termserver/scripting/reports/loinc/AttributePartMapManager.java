@@ -19,7 +19,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
 
 	private static int NOT_SET = -1;
-	private final Map<String, String> partMapNotes;
+
 
 	private LoincScript ls;
 	private GraphLoader gl;
@@ -27,6 +27,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	private Map<String, RelationshipTemplate> loincPartToAttributeMap;
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
+	private final Map<String, String> partMapNotes;
 	
 	private int unsuccessfullTypeReplacement = 0;
 	private int successfullTypeReplacement = 0;
@@ -50,18 +51,22 @@ public class AttributePartMapManager implements LoincScriptConstants {
 				String line;
 				while ((line = br.readLine()) != null) {
 					lineNum++;
-					if (lineNum > 1) {
+					if (!line.isEmpty() && lineNum > 1) {
 						String[] items = line.split("\t");
-						Concept attributeValue = gl.getConcept(items[4], false, false);
-						if (attributeValue == null) {
-							LOGGER.warn("Part / Attribute Map Base File contains unknown concept " + items[4] + " at line " + lineNum);
-							failureCount++;
+						if (items.length < 5) {
+							LOGGER.warn("Part / Attribute Map Base File contains invalid number of columns at line " + lineNum);
+						} else {
+							Concept attributeValue = gl.getConcept(items[4], false, false);
+							if (attributeValue == null) {
+								LOGGER.warn("Part / Attribute Map Base File contains unknown concept " + items[4] + " at line " + lineNum);
+								failureCount++;
+							}
 						}
 					}
 				}
 			} 
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failure while reading " + attributeMapFile, e);
+			throw new TermServerScriptException("Failure while reading " + attributeMapFile + " at line " + lineNum, e);
 		}
 		
 		if (failureCount > 0) {
@@ -74,7 +79,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		if (containsMappingForLoincPartNum(loincPartNum)) {
 			rt = loincPartToAttributeMap.get(loincPartNum).clone();
 			rt.setType(attributeType);
-		} else {
+		} else if (idxTab != NOT_SET ) {
 			ls.report(idxTab,
 					loincNum,
 					loincPartNum,
@@ -89,30 +94,38 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		int lineNum = 0;
 		Set<String> partsSeen = new HashSet<>();
 		List<String> mappingNotes = new ArrayList<>();
+
 		try {
 			LOGGER.info("Loading Part / Attribute Map Base File: " + attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					lineNum++;
-					if (lineNum > 1) {
+					if (!line.isEmpty() && lineNum > 1) {
 						String[] items = line.split("\t");
 						String partNum = items[1];
 						//Have we seen this part before?  Map should now be unique
 						if (partsSeen.contains(partNum)) {
-							throw new TermServerScriptException("Part / Attribute BaseFile contains duplicate entry for " + partNum);
-						}
-						partsSeen.add(partNum);
-						Concept attributeValue = gl.getConcept(items[4], false, true);
-						
-						LoincPart part = loincParts.get(partNum);
-						String partName = part == null ? "Unlisted" : part.getPartName();
-						String partStatus = part == null ? "Unlisted" : part.getStatus().name();
-						attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
-						if (!mappingNotes.isEmpty()) {
+							mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
+							//throw new TermServerScriptException("Part / Attribute BaseFile contains duplicate entry for " + partNum);
+						} else {
+							partsSeen.add(partNum);
+							Concept attributeValue = gl.getConcept(items[4], false, true);
 
+							LoincPart part = loincParts.get(partNum);
+							String partName = part == null ? "Unlisted" : part.getPartName();
+							String partStatus = part == null ? "Unlisted" : part.getStatus().name();
+							attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
+							if (attributeValue != null && attributeValue.isActive()) {
+								mappingNotes.add("Inactive concept");
+							}
+							loincPartToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
 						}
-						loincPartToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
+
+						if (!mappingNotes.isEmpty()) {
+							partMapNotes.put(partNum, String.join("\n", mappingNotes));
+							mappingNotes.clear();
+						}
 					}
 				}
 			}
@@ -124,6 +137,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			ls.report(tabIdx, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
 			ls.report(tabIdx, "successfullValueReplacement",successfullValueReplacement);
 			ls.report(tabIdx, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
+
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to read " + attributeMapFile + " at line " + lineNum, e);
 		}
@@ -196,4 +210,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		return loincPartToAttributeMap.containsKey(loincPartNum);
 	}
 
+	public Set<String> getAllMappedLoincPartNums() {
+		return loincPartToAttributeMap.keySet();
+	}
 }
