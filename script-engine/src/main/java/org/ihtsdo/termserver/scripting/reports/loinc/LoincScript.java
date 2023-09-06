@@ -35,7 +35,7 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 
-	protected String[] tabNames = new String[] { TAB_SUMMARY };
+	//protected String[] tabNames = new String[] { TAB_SUMMARY };
 	
 	//private Concept HasConceptCategorizationStatus;
 	
@@ -52,7 +52,13 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 	
 	protected int additionalThreadCount = 0;
 
+	protected String[] getTabNames() {
+		throw new IllegalStateException("Please override getTabNames() in your script");
+	}
+
+
 	public int getTab(String tabName) throws TermServerScriptException {
+		String[] tabNames = getTabNames();
 		for (int i = 0; i < tabNames.length; i++) {
 			if (tabNames[i].equals(tabName)) {
 				return i;
@@ -245,8 +251,12 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 
 	protected void addPartMapNotes(String partNum , List<String> notes) {
 		for (String note : notes) {
-			addPartMapNote (partNum, note);
+			addPartMapNote(partNum, note);
 		}
+	}
+
+	protected String getPartMapNotes(String partNum) {
+		return partMapNotes.containsKey(partNum) ? partMapNotes.get(partNum) : "";
 	}
 
 }

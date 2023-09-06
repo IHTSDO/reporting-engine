@@ -56,7 +56,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 
 	private void runReport() throws TermServerScriptException, InterruptedException, IOException {
 		loadLoincParts();
-		attributePartManager = new AttributePartMapManager(this, loincParts);
+		attributePartManager = new AttributePartMapManager(this, loincParts, null);
 		loadLoincDetail();
 		expandRf2Map(PRIMARY_REPORT, getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 	}
@@ -121,7 +121,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 
 	private String reportIfValueReplaced(Concept value) throws TermServerScriptException {
-		Concept replacementValue = attributePartManager.replaceValueIfRequired(NOT_SET, value, null, null, null);
+		Concept replacementValue = attributePartManager.replaceValueIfRequired(null, value, null, null, null);
 		//If this concept is inactive and we don't have a replacement, then we really need one
 		if (!value.isActive() && replacementValue.equals(value)) {
 			return "REQUIRED";
@@ -131,7 +131,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 	
 	private String reportIfTypeReplaced(Concept value) throws TermServerScriptException {
-		Concept replacementType = attributePartManager.replaceTypeIfRequired(NOT_SET, value, null);
+		Concept replacementType = attributePartManager.replaceTypeIfRequired(null, value, null);
 		return replacementType.equals(value) ? "" : replacementType.toStringPref();
 	}
 }
