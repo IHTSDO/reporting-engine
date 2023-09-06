@@ -3,7 +3,6 @@ package org.ihtsdo.snowowl.authoring.scheduler.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.ihtsdo.snowowl.authoring.scheduler.api.mq.ActiveMQConnectionFactoryForAutoscaling;
@@ -16,10 +15,6 @@ import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
-
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
 
 import java.util.TimeZone;
 
@@ -67,16 +62,6 @@ public class Application {
 				new ResourceHttpMessageConverter(),
 				jacksonConverter);
 	}*/
-
-	// Swagger Config
-	@Bean
-	public Docket api() {
-		return new Docket(DocumentationType.SWAGGER_2)
-				.select()
-				.apis(RequestHandlerSelectors.any())
-				.apis(RequestHandlerSelectors.basePackage("org.ihtsdo.snowowl.authoring.scheduler.api"))
-				.build();
-	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
