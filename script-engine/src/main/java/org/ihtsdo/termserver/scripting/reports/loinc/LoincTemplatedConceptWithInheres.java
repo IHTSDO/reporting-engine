@@ -46,7 +46,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
 			getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName().endsWith(" given")) {
 			String issue = "Skipping concept using 'given'";
-			ts.report(getTab(TAB_IOI), issue, loincNum);
+			ls.report(getTab(TAB_IOI), issue, loincNum);
 			issues.add(issue);
 			attributes.add(null);
 			return attributes;

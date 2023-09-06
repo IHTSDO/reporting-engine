@@ -32,7 +32,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	
 	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
 	
-	protected static TermServerScript ts;
+	protected static LoincScript ls;
 	protected static GraphLoader gl;
 	protected static AttributePartMapManager attributePartMapManager;
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
@@ -66,12 +66,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected Map<String, String> slotTermMap = new HashMap<>();
 	protected Map<String, String> slotTermAppendMap = new HashMap<>();
 	
-	public static void initialise(TermServerScript ts, GraphLoader gl, 
+	public static void initialise(LoincScript ls, GraphLoader gl,
 			AttributePartMapManager attributePartMapManager,
 			Map<String, LoincTerm> loincNumToLoincTermMap,
 			Map<String, Map<String, LoincDetail>> loincDetailMap, 
 			Map<String, LoincPart> loincParts) throws TermServerScriptException {
-		LoincTemplatedConcept.ts = ts;
+		LoincTemplatedConcept.ls = ls;
 		LoincTemplatedConcept.gl = gl;
 		LoincTemplatedConcept.attributePartMapManager = attributePartMapManager;
 		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
@@ -121,7 +121,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 	
 	protected int getTab(String tabName) throws TermServerScriptException {
-		return ImportLoincTerms.getTab(tabName);
+		return ls.getTab(tabName);
 	}
 	
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
@@ -392,7 +392,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				attributesToAdd = determineComponentAttributes(loincNum, issues);
 				concept.addIssues(issues, ",\n");
 			} else {
-				RelationshipTemplate rt = getAttributeForLoincPart(MAPPING_DETAIL_TAB, loincDetail);
+				RelationshipTemplate rt = getAttributeForLoincPart(getTab(TAB_MODELING_ISSUES), loincDetail);
 				attributesToAdd = Collections.singletonList(rt);
 				//Now if we didn't find a map, then for non-critical parts, we'll used the loinc part name anyway
 				if (rt == null
@@ -421,7 +421,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				} else {
 					unmapped++;
 					String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
-					ts.report(MAPPING_DETAIL_TAB,
+					ls.report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
 						loincDetail.getPartNumber(),
 						issue,
@@ -489,7 +489,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		Concept attributeType = typeMap.get(loincDetail.getPartTypeName());
 		if (attributeType == null) {
 			if (idxTab != NOT_SET) {
-				ts.report(idxTab,
+				ls.report(idxTab,
 					loincNum,
 					loincDetail.getPartNumber(),
 					"Type in context not identified - " + loincDetail.getPartTypeName() + " | " + this.getClass().getSimpleName(),
@@ -499,7 +499,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		}
 		
 		if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && loincDetail.getPartName().toLowerCase().contains("specimen")) {
-			ts.report(getTab(TAB_IOI), "Allow use of 'specimen'", loincNum);
+			ls.report(getTab(TAB_IOI), "Allow use of 'specimen'", loincNum);
 			processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
 		}
 		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincDetail.getPartNumber(), attributeType);
@@ -542,12 +542,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 
 	public static void reportStats(int tabIdx) throws TermServerScriptException {
-		ts.report(tabIdx, "");
-		ts.report(tabIdx, "Parts mapped", mapped);
-		ts.report(tabIdx, "Parts unmapped", unmapped);
-		ts.report(tabIdx, "Parts skipped", skipped);
-		ts.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
-		ts.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
+		ls.report(tabIdx, "");
+		ls.report(tabIdx, "Parts mapped", mapped);
+		ls.report(tabIdx, "Parts unmapped", unmapped);
+		ls.report(tabIdx, "Parts skipped", skipped);
+		ls.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
+		ls.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
 	}
 	
 	/**
@@ -607,7 +607,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		if (!attributePartMapManager.containsMappingForLoincPartNum(loincPartNum)) {
 			throw new TermServerScriptException("Unable to find any attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ")" );
 		}
-		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(TAB_MODELING_ISSUES, loincNum, loincPartNum, attributeType);
+		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
 
 		if (rt == null) {
 			throw new TermServerScriptException("Unable to find appropriate attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ")" );
@@ -678,12 +678,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		try {
 			String loincPartNum = entry.getKey();
 			if (!loincParts.containsKey(loincPartNum)) {
-				ts.report(tabIdx, loincPartNum, "Unknown", "", "Part num not known to list of parts.  Check origin.");
+				ls.report(tabIdx, loincPartNum, "Unknown", "", "Part num not known to list of parts.  Check origin.");
 			} else {
 				String loincPartName = loincParts.get(loincPartNum).getPartName();
 				String loincPartType = loincParts.get(loincPartNum).getPartTypeName();
 				LoincUsage usage = entry.getValue();
-				ts.report(tabIdx, loincPartNum, loincPartName, loincPartType, usage.getPriority(), usage.getCount(), usage.getTopRankedLoincTermsStr());
+				ls.report(tabIdx, loincPartNum, loincPartName, loincPartType, usage.getPriority(), usage.getCount(), usage.getTopRankedLoincTermsStr());
 			}
 		} catch (TermServerScriptException e) {
 			throw new RuntimeException(e);
