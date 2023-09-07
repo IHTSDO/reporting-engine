@@ -291,6 +291,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		checkMRCMDomain();
 		checkMRCMAttributeRanges();
 
+		LOGGER.info("Concept Non-Current inactivation indicators where concept is active.");
+		checkActiveConceptsForCncIndicators();
+
 		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -1472,6 +1475,29 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				Concept c = gl.getConcept(rm.getReferencedComponentId());
 				for (String additionalField : additionalFieldNames) {
 					validateTermsInField(partName, c, rm, additionalField);
+				}
+			}
+		}
+	}
+
+	private void checkActiveConceptsForCncIndicators() {
+		String issueStr = "Concept Non-Current inactivation indicators where concept is active.";
+		initialiseSummary(issueStr);
+
+		for (Concept concept : allActiveConceptsSorted) {
+			if (concept.getInactivationIndicator() != InactivationIndicator.CONCEPT_NON_CURRENT) {
+				continue;
+			}
+
+			List<Description> descriptionList = concept.getDescriptions();
+
+			for (Description description : descriptionList) {
+				if (inScope(description)) {
+					try {
+						report(concept, issueStr, getLegacyIndicator(description), isActive(concept, description), description);
+					} catch (TermServerScriptException e) {
+						reportSafely(TERTIARY_REPORT, concept, e.getMessage(), getLegacyIndicator(description), isActive(concept, description), description);
+					}
 				}
 			}
 		}
