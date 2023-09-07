@@ -81,14 +81,14 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
 
 		// US Edition Test 2 with module filter
-		params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
+		/*params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
 		params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
-		params.put(MODULES, "731000124108");
+		params.put(MODULES, "731000124108");*/
 
 		// NL Edition
-		//params.put(PREV_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-02T17:55:02/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
-		//params.put(THIS_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-07T02:35:31/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
-		//params.put(MODULES, "11000146104");
+		/*params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
+		params.put(THIS_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-07T02:35:31/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
+		params.put(MODULES, "11000146104");*/
 
 		// SE Extension
 		/*params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2022-11-17T18:21:20/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20221130T120000Z.zip");
@@ -103,6 +103,27 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220630T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
 		params.put(MODULES, "554471000005108");*/
+
+		// BE Extension
+		/*params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/2021-09-10T15:10:46/output-files/SnomedCT_BelgiumExtensionRF2_PRODUCTION_20210915T120000Z.zip");
+		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/2022-03-01T17:54:15/output-files/xSnomedCT_BelgiumExtensionRF2_PREPRODUCTION_20220315T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		params.put(MODULES, "11000172109");*/
+
+		// NZ Extension
+		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
+		params.put(THIS_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2023-04-21T07:24:12/output-files/xSnomedCT_ManagedServiceNZ_PREPRODUCTION_NZ1000210_20230401T000000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
+		params.put(MODULES, "11000210104,21000210109");*/
+
+		// IE Extension
+		params.put(PREV_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
+		params.put(THIS_RELEASE, "ie/snomed_ct_ireland_extension_releases/2023-04-12T17:05:21/output-files/xSnomedCT_ManagedServiceIE_PREPRODUCTION_IE1000220_20230421T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
+		params.put(MODULES, "11000220105");
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
@@ -288,11 +309,13 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			if (filename.contains("sct2_Concept_")) {
 				report(filename, fileTotals, totals[TAB_CONCEPTS]);
 
-			} else if (filename.contains("sct2_Description_")) {
-				report(filename, fileTotals, descriptionStatsByLanguage.get(DESCRIPTION).get(getLanguage(filename)));
-
-			} else if (filename.contains("sct2_TextDefinition_")) {
-				report(filename, fileTotals, descriptionStatsByLanguage.get(TEXT_DEFINITION).get(getLanguage(filename)));
+			} else if (filename.contains("sct2_Description_") || filename.contains("sct2_TextDefinition_")) {
+				int[] statsByLanguage = new int[DATA_WIDTH];
+				Map<String, int[]> stats = descriptionStatsByLanguage.get(filename.contains("sct2_Description_") ? DESCRIPTION : TEXT_DEFINITION);
+				if (stats != null) {
+					statsByLanguage = stats.get(getLanguage(filename));
+				}
+				report(filename, fileTotals, statsByLanguage);
 
 			} else if (filename.contains("sct2_Relationship_")) {
 				report(filename, fileTotals, totals[TAB_RELS]);
@@ -456,10 +479,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 	private void count(Map<TotalsIndex, Integer> totals, TotalsIndex index) {
 		totals.compute(index, (k, v) -> v + 1);
-	}
-
-	private boolean inScope(List<String> moduleFilter, String moduleId) {
-		return moduleFilter == null || moduleFilter.contains(moduleId);
 	}
 
 	static class ValuePair {

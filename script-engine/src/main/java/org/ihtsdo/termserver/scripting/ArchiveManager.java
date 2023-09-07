@@ -515,7 +515,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
-		LOGGER.info("In getArchiveLoader method, scriptName = " + ts.getScriptName());
+		LOGGER.debug("In getArchiveLoader method, scriptName = " + ts.getScriptName());
 		if (ts.getScriptName().equals("PackageComparisonReport")) {
 			return getBuildArchiveDataLoader();
 		}
@@ -531,7 +531,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	private DataLoader getBuildArchiveDataLoader() throws TermServerScriptException {
-		LOGGER.info("In getBuildArchiveDataLoader method");
+		LOGGER.debug("In getBuildArchiveDataLoader method");
 		if (buildArchiveDataLoader == null) {
 			if (appContext == null) {
 				LOGGER.info("No BuildArchiveDataLoader configured, creating one locally...");
