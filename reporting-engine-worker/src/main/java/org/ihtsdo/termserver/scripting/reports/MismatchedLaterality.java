@@ -56,6 +56,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 	
