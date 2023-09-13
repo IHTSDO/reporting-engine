@@ -178,13 +178,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		String ptTemplateStr = preferredTermTemplate;
 		Set<String> partTypeSeen = new HashSet<>();
 		
-		for (LoincDetail detail : details.values()) {
+		/*for (LoincDetail detail : details.values()) {
 			//We have multiple details for the component, so no need to try populate multiple times
 			if (!partTypeSeen.contains(detail.getPartTypeName())) {
 				ptTemplateStr = populateTermTemplateFromAttribute(ptTemplateStr, detail);
 				partTypeSeen.add(detail.getPartTypeName());
 			}
-		}
+		}*/
 		//TODO Don't really need to do both of these things - consolidate
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
 		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
@@ -261,9 +261,15 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		for (String templateItem : templateItems) {
 			String regex = "\\[" + templateItem + "\\]";
 			if (slotTermMap.containsKey(templateItem)) {
-				//populateTermTemplate(slotTermMap.get(templateItem), templateItem, ptTemplateStr);
 				String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
+				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
+				if (StringUtils.isEmpty(itemStr)) {
+					//TODO This will probably become a list
+					if (ptTemplateStr.contains(" at ")) {
+						ptTemplateStr = ptTemplateStr.replace(" at ", "");
+					}
+				}
 			} else {
 				Concept attributeType = typeMap.get(templateItem);
 				if (attributeType == null) {
@@ -380,7 +386,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			if (skipLDTColumnNames.contains(loincDetail.getLDTColumnName())) {
 				continue;
 			}
-			
+
+			boolean expectNullMap = false;
 			boolean isComponent = partTypeName.equals("COMPONENT");
 			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 			if (isComponent) {
@@ -395,11 +402,13 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				RelationshipTemplate rt = getAttributeForLoincPart(getTab(TAB_MODELING_ISSUES), loincDetail);
 				attributesToAdd = Collections.singletonList(rt);
 				//Now if we didn't find a map, then for non-critical parts, we'll used the loinc part name anyway
-				if (rt == null
-						&& useTypesInPrimitive.contains(loincDetail.getPartTypeName())
-						&& !loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
-					slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
-					processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+				if (rt == null && useTypesInPrimitive.contains(loincDetail.getPartTypeName())) {
+					if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
+						expectNullMap = true;
+					} else {
+						slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+						processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+					}
 				}
 			}
 
@@ -413,12 +422,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			
 			for (RelationshipTemplate rt : attributesToAdd) {
 				if (rt != null) {
-					if (rt.getTarget() == null || rt.getType() == null) {
-						TermServerScript.debug("Here also");
-					}
 					mapped++;
 					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
-				} else {
+				} else if (!expectNullMap){
 					unmapped++;
 					String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
 					ls.report(getTab(TAB_MODELING_ISSUES),
