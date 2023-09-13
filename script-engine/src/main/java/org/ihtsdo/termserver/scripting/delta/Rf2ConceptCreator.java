@@ -54,7 +54,7 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		incrementSummaryInformation("Concepts created");
 		outputRF2(concept);  //Will only output dirty fields.
-		report(tabIdx, null, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
+		report(tabIdx, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
 		return concept;
 	}
 

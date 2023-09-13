@@ -19,7 +19,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
+public class    ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
 
