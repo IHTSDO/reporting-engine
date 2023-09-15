@@ -43,7 +43,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	private static final String REPORT_NAME = "Refset members with invalid referenced components";
 	private static final String REPORT_DESCRIPTION = "A report to check for both inactive and completely invalid SCTID's in refsets - the report can then distinguish whether each record that is failing has done so because it's inactive or invalid.";
 	private static final String[] REPORT_TAB_NAMES = new String[]{"Issues", "Summary"};
-	private static final String REPORT_TAB_ISSUES_COLUMNS = "SCTID, FSN, Semtag, Issue, Refset, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail";
+	private static final String REPORT_TAB_ISSUES_COLUMNS = "SCTID, FSN, Semtag, Issue, Refset, Legacy, C/D/R Active, Detail, Additional Detail, Concept Inactivation";
 	private static final String REPORT_TAB_SUMMARY_COLUMNS = "Issue, Count";
 	private static final String ISSUE_TITLE = "Active refset member for inactive component";
 	private static final String RELEASE_VALIDATION_FOLDER_ID = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";
@@ -202,7 +202,15 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 						}
 
 						summaryCounts.merge(refsetStr, 1, Integer::sum);
-						reportAndIncrementSummary(concept, isLegacySimple(component), ISSUE_TITLE, refset, getLegacyIndicator(component), isActive(concept, component), component, component.getId());
+						reportAndIncrementSummary(concept,
+								isLegacySimple(component),
+								ISSUE_TITLE,
+								refset,
+								getLegacyIndicator(component),
+								isActive(concept, component),
+								component,
+								component.getId(),
+								owningComponent.getEffectiveTime());
 					}
 				}
 			}
