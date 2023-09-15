@@ -24,7 +24,6 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
 
-	protected static Map<String, Concept> loincNumToSnomedConceptMap = new HashMap<>();
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	protected static AttributePartMapManager attributePartMapManager;
 	protected Map<String, LoincPart> loincParts = new HashMap<>();
@@ -47,7 +46,7 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 	protected static int FILE_IDX_LOINC_DETAIL = 5;
 	protected static int FILE_IDX_CONCEPT_IDS = 6;
 	protected static int FILE_IDX_DESC_IDS = 7;
-
+	protected static int FILE_IDX_PREVIOUS_ITERATION = 8;
 	public static final String LOINC_TIME_PART = "LP6969-2";
 	
 	protected int additionalThreadCount = 0;
@@ -165,7 +164,7 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 		}
 	}*/
 	
-	private boolean checkForExistingModelling(LoincTerm loincTerm, int tabIdx) throws TermServerScriptException {
+/*	private boolean checkForExistingModelling(LoincTerm loincTerm, int tabIdx) throws TermServerScriptException {
 		//Do we have this loincNum
 		Concept loincConcept = loincNumToSnomedConceptMap.get(loincTerm.getLoincNum());
 		if (loincConcept != null) {
@@ -187,7 +186,7 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 					loincTerm.getCommonColumns());
 			return false;
 		}
-	}
+	}*/
 	
 	protected void loadFullLoincFile(int tabIdx) {
 		additionalThreadCount++;
@@ -199,8 +198,6 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 			//withSkipHeaderRecord() is apparently ignored when using iterator
 			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
 			CSVRecord header = iterator.next();
-			int existingConceptCount = 0;
-			int notExistingConceptCount = 0;
 			int hasTargettedPropertyIn20K = 0;
 			int hasTargettedPropertyNotIn20K = 0;
 			while (iterator.hasNext()) {
@@ -214,12 +211,6 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 						hasTargettedPropertyNotIn20K++;
 					}
 				} else if (tabIdx != NOT_SET){
-					if (checkForExistingModelling(loincTerm, tabIdx)) {
-						existingConceptCount++;
-					} else {
-						notExistingConceptCount++;
-					}
-					
 					if (targettedProperties.contains(loincTerm.getProperty())) {
 						hasTargettedPropertyIn20K++;
 					}
@@ -228,8 +219,6 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 			if (tabIdx != NOT_SET) {
 				report(tabIdx,"");
 				report(tabIdx,"Summary:");
-				report(tabIdx,"Already exists", existingConceptCount);
-				report(tabIdx,"Does not exist", notExistingConceptCount);
 				report(tabIdx,"");
 				report(tabIdx,"Has Targeted Property in Top 20K", hasTargettedPropertyIn20K);
 				report(tabIdx,"Has Targeted Property not in Top 20K", hasTargettedPropertyNotIn20K);

@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -19,7 +21,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class    ImportLoincTerms extends LoincScript implements LoincScriptConstants {
+public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
 
@@ -33,6 +35,9 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_2.75_Active_Lab_NonVet.tsv"
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
+
+	private List<String> previousIterationLoincNums = new ArrayList<>();
+	int existedPreviousIteration = 0;
 	
 	Rf2ConceptCreator conceptCreator;
 	
@@ -79,9 +84,9 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 				"Item, Info, Details, ,",
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, LoincName, Issues, ",
-				"LoincNum, Existing Concept, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
+				"LoincNum, This Iteration, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
-				"Concept, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
+				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , "
 		};
 
@@ -97,7 +102,7 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 	private void runReport() throws TermServerScriptException, InterruptedException {
 		//ExecutorService executor = Executors.newCachedThreadPool();
 		AttributePartMapManager.validatePartAttributeMap(gl, getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
-		populateLoincNumMap();
+		//populateLoincNumMap();
 		loadLoincParts();
 		//We can look at the full LOINC file in parallel as it's not needed for modelling
 		//executor.execute(() -> loadFullLoincFile());
@@ -107,6 +112,8 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 
 		reportOnDetailMappingWithUsage();
+
+		loadLastIterationLoincNums();
 
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 		//determineExistingConcepts(getTab(TAB_TOP_100));
@@ -128,6 +135,28 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 		
 		/*importIntoTask(successfullyModelled);
 		generateAlternateIdentifierFile(successfullyModelled);*/
+	}
+
+	private void loadLastIterationLoincNums() {
+		LOGGER.info ("Loading LoincNums from previous iteration: " + getInputFile(FILE_IDX_PREVIOUS_ITERATION));
+		BufferedReader in = null;
+		try {
+			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_PREVIOUS_ITERATION)));
+			String line = in.readLine();
+			while (line != null) {
+				previousIterationLoincNums.add(line.trim());
+				line = in.readLine();
+			}
+			LOGGER.info("Loaded " + previousIterationLoincNums.size() + " previous iterations loincNums");
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_PREVIOUS_ITERATION), e);
+		} finally {
+			if (in != null) {
+				try {
+					in.close();
+				} catch (IOException e) {}
+			}
+		}
 	}
 
 	private void reportOnDetailMappingWithUsage() throws TermServerScriptException {
@@ -240,6 +269,30 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 				successfullyModelledConcepts.add(templatedConcept);
 			}
 		}
+		Set<String> successfullyModelledLoincNums = successfullyModelledConcepts.stream()
+				.map(ltc -> ltc.getLoincNum())
+				.collect(Collectors.toSet());
+		//Report LoincNums modelled in the previous iteration that didn't make this round
+		int removedThisIteration = 0;
+		for (String loincNum : previousIterationLoincNums) {
+			if (!successfullyModelledLoincNums.contains(loincNum)) {
+				removedThisIteration++;
+				report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
+						loincNum,
+						"REMOVED",
+						"",
+						loincNumToLoincTermMap.get(loincNum).getDisplayName());
+			}
+		}
+
+		//Report summary of LoincNums existing/new/removed
+		int newThisIteration = successfullyModelledConcepts.size() - existedPreviousIteration;
+		int tabIdx = getTab(TAB_SUMMARY);
+		report(tabIdx, "");
+		report(tabIdx, "LoincNums existing in previous iteration", existedPreviousIteration);
+		report(tabIdx, "LoincNums new this iteration", newThisIteration);
+		report(tabIdx, "LoincNums removed this iteration", removedThisIteration);
+
 		return successfullyModelledConcepts;
 	}
 	
@@ -291,7 +344,6 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 
 	private void doProposedModelComparison(String loincNum, LoincTemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
 		//Do we have this loincNum
-		Concept existingLoincConcept = loincNumToSnomedConceptMap.get(loincNum);
 		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 		
@@ -299,23 +351,24 @@ public class    ImportLoincTerms extends LoincScript implements LoincScriptConst
 		String modelDiff = "";
 		String proposedSCG = proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String existingLoincConceptStr = "N/A";
-		if (existingLoincConcept != null) {
-			existingLoincConceptStr = existingLoincConcept.getId();
-			existingSCG = existingLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-			modelDiff = SnomedUtils.getModelDifferences(existingLoincConcept, proposedLoincConcept, CharacteristicType.STATED_RELATIONSHIP);
+		//Did we have this loincNum in the previous iteration?
+		String previousIterationIndicator = "NEW";
+		if (previousIterationLoincNums.contains(loincNum)) {
+			previousIterationIndicator = "EXISTING";
+			existedPreviousIteration++;
 		}
 		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
 				.map(d -> d.toString())
 				.collect(Collectors.joining("\n"));
-		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, existingLoincConceptStr, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, previousIterationIndicator, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
 	}
 
-	private void populateLoincNumMap() throws TermServerScriptException {
+	/*private void populateLoincNumMap() throws TermServerScriptException {
 		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
 			loincNumToSnomedConceptMap.put(LoincUtils.getLoincNumFromDescription(c), c);
 		}
 		LOGGER.info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
-	}
+	}*/
 	
 	/*private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		//TODO Move this class to be a BatchFix so we don't need a plug in class
