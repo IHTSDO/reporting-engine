@@ -227,25 +227,24 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 
 	@Override
 	public int hashCode() {
-		if (StringUtils.isEmpty(relationshipId)) {
-			//Do not include the inactivation indicator, otherwise we might not
-			//be able to recognise the object in a set if it changes after being created.
-			//return toString(true, false).hashCode();
-			try {
-				if (isConcrete()) {
-					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), concreteValue);
-				} else {
-					if (target == null) {
-						throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
-					}
-					return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
+		if (relationshipId != null && relationshipId.length() > 5) {
+				return relationshipId.hashCode();
+		}
+		//Do not include the inactivation indicator, otherwise we might not
+		//be able to recognise the object in a set if it changes after being created.
+		//return toString(true, false).hashCode();
+		try {
+			if (isConcrete()) {
+				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), concreteValue);
+			} else {
+				if (target == null) {
+					throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
 				}
-			} catch (NullPointerException e) {
-				TermServerScript.debug("Null pointer here");
-				throw e;
+				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
 			}
-		} else {
-			return relationshipId.hashCode();
+		} catch (NullPointerException e) {
+			TermServerScript.debug("Null pointer here");
+			throw e;
 		}
 	}
 	

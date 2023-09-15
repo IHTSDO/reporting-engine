@@ -1511,7 +1511,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public void report (Task t, Component c, ValidationFailure v) throws TermServerScriptException {
-		report (t, c, v.severity, v.reportActionType, v.getMessage());
+		report(t, c, v.severity, v.reportActionType, v.getMessage());
 	}
 
 	public void reportLoud(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
@@ -1577,7 +1577,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				sb.append(COMMA_QUOTE + detail + QUOTE);
 			}
 		}
-		writeToReportFile (sb.toString());
+		writeToReportFile(sb.toString());
 		incrementSummaryInformation("Report lines written");
 	}
 
