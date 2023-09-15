@@ -4,27 +4,24 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.domain.ComponentFactory;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.domain.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DeleteComponents extends BatchFix implements ScriptConstants{
+public class DeleteComponents extends BatchFix implements ScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DeleteComponents.class);
 
 	private String[] componentsToDelete = new String[] {
-			"1383141000124117","1383631000124119","1383381000124113",
-			"1383201000124112","1383451000124112","1383521000124116",
-			"1383651000124114","1383401000124113","1383161000124118",
-			"1383501000124114","1383581000124117","1383291000124117",
-			"1384161000124115","1383731000124111","1383911000124119",
-			"1384001000124115","1384081000124112","1383821000124118",
-			"1384111000124118","1383741000124118","1383891000124116",
-			"1383941000124115","1384051000124116","1383801000124111",
-			"1383251000124111"
+			"a0de0643-9861-47b5-b01d-0b4bdfdc49e3",
+			"54234842-1f8a-4827-aa21-c829665c3085",
+			"f8a11edc-a9b5-49bf-9bc9-92d4794e0df1",
+			"aa0f2ada-dca3-4fca-a38b-3c3487b44b9a",
+			"9c00fe2f-26ef-4ed8-afe0-821bfdcedaaf"
 	};
 
 	protected DeleteComponents(BatchFix clone) {
@@ -51,19 +48,31 @@ public class DeleteComponents extends BatchFix implements ScriptConstants{
 
 	@Override
 	public int doFix(Task t, Component c, String info) throws TermServerScriptException {
-		c = gl.getComponent(c.getId());
-		if (c instanceof Concept) {
+		Component fullComponent = gl.getComponent(c.getId());
+		if (fullComponent == null || fullComponent instanceof RefsetMember) {
+			if (fullComponent == null && c.getId().contains("-")) {
+				LOGGER.warn("Suspected orphan {}, attempting refset deletion", c.getId());
+			} else {
+				throw new TermServerScriptException("Further work needed to delete oprhan component: " + c.getId());
+			}
+			deleteRefsetMember(t, c.getId());
+		} else if (fullComponent instanceof Concept) {
 			Concept concept = gl.getConcept(c.getId());
 			deleteConcept(t, concept);
-		} else if (c instanceof Description) {
+		} else if (fullComponent instanceof Description) {
 			Description d = gl.getDescription(c.getId());
 			deleteDescription(t, d);
 		} else {
 			throw new TermServerScriptException("Unable to delete component of type " + c.getClass().getSimpleName());
 		}
-		Concept concept = gl.getComponentOwner(c.getId());
-		report(t, concept, Severity.LOW, ReportActionType.COMPONENT_DELETED, c);
-		return CHANGE_MADE;
+
+		if (fullComponent == null) {
+			report(t, (Concept)null, Severity.LOW, ReportActionType.COMPONENT_DELETED, c.getId());
+		} else {
+			Concept concept = gl.getComponentOwner(c.getId());
+			report(t, concept, Severity.LOW, ReportActionType.COMPONENT_DELETED, c);
+		}
+			return CHANGE_MADE;
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

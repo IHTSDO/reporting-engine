@@ -83,13 +83,6 @@ public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 			//Work through all descriptions and change any "influenza X" to "Influenza X virus"
 			nextDescription:
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				String[] termParts = new String[2];
-				if (d.getType().equals(DescriptionType.FSN)) {
-					termParts = SnomedUtils.deconstructFSN(d.getTerm());
-				} else {
-					termParts[0] = d.getTerm();
-				}
-				
 				for (String fluLetter : influenzas) {
 					for (Map.Entry<String, String> replacement : generatePossibleReplacements(fluLetter).entrySet()) {
 						if (d.getTerm().contains(replacement.getKey())) {
@@ -197,7 +190,7 @@ public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 		}
 		setQuiet(false);
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
-		return new ArrayList<Component>(allAffected);
+		return new ArrayList<>(allAffected);
 	}
 
 	private boolean containsTerm(Concept c, String term) {
