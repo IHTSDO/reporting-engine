@@ -66,12 +66,28 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			"ed5098ef-2b7c-4047-ac62-e7aafa0f05de",
 			"48b1a539-53d2-4862-a3c1-609e6e8793a9",
 			"b0a6e733-04e4-4ce1-aca9-5ff605a4398a"
-	};*/
+	};
 	
 	String[] componentsToProcess = new String[] { 
 			"870683026",
 			"870682020",
 			"2485242028"
+	};*/
+
+	String[] componentsToProcess = new String[]{
+			"85842356-607a-f4e8-61f4-24349243b309", "8b6307c0-ad41-6cca-5cfa-c2130d0bb747", "8d03e4cc-0ea6-4ecc-0fd7-79220203edb9",
+			"903e032f-2c7f-2317-3e70-f06d9fd7196a", "909cee75-4639-3da5-efad-e4b8245703e1", "92dbab3c-6d1c-9498-e220-000186ab3166",
+			"a7141064-9a4e-7508-b14f-cf2b9f1c6aed", "aad27e67-91c3-810c-c5d3-d0dd620fb0d9", "aba6ae6f-54a9-c13a-2257-f1862893c3f1",
+			"b09a1c49-90be-4b54-59c5-300bb4e78d44", "b80cccbb-7a1a-5220-318b-e2c4e7e4d691", "b849d712-4749-8955-194f-414eb61f9352",
+			"c6ad2db7-a192-bab7-ea26-47008848a829", "ca341156-4184-fe59-f1e7-24bf6865c626", "cc6e16ef-957d-921c-c9ee-dcdcd0546a55",
+			"d6cd6325-8ca0-6c39-b3f9-498c014c9e53", "d7e58842-53c1-6770-6343-c7bcb99a2b2c", "f0dc5ebf-6342-09c9-869d-3588e0406583",
+			"f2ea57f3-b0b2-e2f8-4944-c41509efe335", "fcff5514-6cfc-b468-7ab0-faf7d0c70fbc", "fef14894-1595-fcc7-e316-bd16fb2ed052",
+			"ff87106c-728b-2c54-367e-1bd9275c3991", "02cf7245-5443-bb9a-512a-d4fbe91f1dee", "0a40c325-8439-a5f5-4e3b-288cf0f010be",
+			"0c60fb73-1c0a-7810-2536-4d9db65745fa", "0d27954b-566c-3f4e-9e71-f8f911ba5ccc", "201eb513-1822-ccfa-ab70-d498503b4068",
+			"2adbd4c2-c1c7-1455-8e36-8a11269ab1ed", "2e4faf1b-da02-ee36-ba5c-e2b85b159eb1", "33d38ab5-b3b9-61a2-9533-68fe2da7986e",
+			"3ea3b567-dcee-ee39-215c-a6bbc116b182", "5354d302-ca90-9dc2-4e63-cd428f877f22", "55ac661e-bb08-764c-50da-72919e8f4d99",
+			"591ff3c7-03d7-6c89-d158-7d3faaabddc0", "649eee76-7d7f-6591-715b-dc5e8ef74691", "6528d96d-84f7-c4cf-20a9-f8356282d431",
+			"6cf085a5-d67a-1f18-21d3-d15ba24fbcc8"
 	};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
