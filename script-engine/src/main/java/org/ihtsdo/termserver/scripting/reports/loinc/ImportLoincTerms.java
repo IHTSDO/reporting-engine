@@ -25,6 +25,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
 
+	protected static Set<String> objectionableWords = new HashSet<>(Arrays.asList("panel"));
+
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
@@ -248,19 +250,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			LDTColumnNames.add(loincDetail.getLDTColumnName());
 		}
 	}
-	
-	/*private void generateAlternateIdentifierFile(Set<LoincTemplatedConcept> ltcs) throws TermServerScriptException {
-		for (LoincTemplatedConcept ltc : ltcs) {
-			report(getTab(TAB_RF2_IDENTIFIER_FILE),
-					ltc.getLoincNum(),
-					today,
-					"1",
-					SCTID_LOINC_EXTENSION_MODULE,
-					SCTID_LOINC_CODE_SYSTEM,
-					ltc.getConcept().getId());
-		}
-	}*/
-	
+
 	private Set<LoincTemplatedConcept> doModeling() throws TermServerScriptException {
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
@@ -305,9 +295,19 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 					"Does not feature one of COMPONENT_PN or COMPNUM_PN");
 			return null;
 		}
+
+		//Does this LoincNum feature an objectionable word?  Skip if so.
+		for (String objectionableWord : objectionableWords) {
+			if (loincNumToLoincTermMap.get(loincNum).getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
+				report(getTab(TAB_MODELING_ISSUES),
+						loincNum,
+						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+						"Contains objectionable word - " + objectionableWord);
+				return null;
+			}
+		}
 		
 		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(loincNum, loincDetailMap);
-		//populateCategorization(loincNum, templatedConcept.getConcept());
 		if (templatedConcept == null) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
@@ -332,15 +332,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		flushFilesSoft();
 		return templatedConcept;
 	}
-
-	/*private void populateCategorization(String loincNum, Concept concept) {
-		//Do we have the full set of properties for this loincTerm?
-		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
-		String order = loincTerm.getOrderObs();
-		Concept categoryConcept = categorizationMap.get(order);
-		RelationshipTemplate rt = new RelationshipTemplate(HasConceptCategorizationStatus, categoryConcept);
-		concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
-	}*/
 
 	private void doProposedModelComparison(String loincNum, LoincTemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
 		//Do we have this loincNum

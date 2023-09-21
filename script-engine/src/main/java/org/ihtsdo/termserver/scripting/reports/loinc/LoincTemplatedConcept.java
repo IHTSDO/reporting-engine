@@ -48,8 +48,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
 	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified"));
-	//protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
-	//protected static int failedMappingAlreadySeenForOtherProperty = 0;
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
 	protected static Map<String, LoincPart> loincParts;
 	
