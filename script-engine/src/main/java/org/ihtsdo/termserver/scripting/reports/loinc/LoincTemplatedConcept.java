@@ -47,7 +47,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
 	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
-	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown"));
+	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified"));
 	//protected static Map<String, Set<String>> failedMappingsByProperty = new HashMap<>();
 	//protected static int failedMappingAlreadySeenForOtherProperty = 0;
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
@@ -80,7 +80,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
-		Set<String> removals = new HashSet<>(Arrays.asList("specimen", "structure", "of", "at", "from"));
+		Set<String> removals = new HashSet<>(Arrays.asList("specimen", "structure", "submitted as specimen", "of", "at", "from"));
 		typeValueTermRemovalMap.put(DIRECT_SITE, removals);
 		
 		removals = new HashSet<>(Arrays.asList("technique"));
@@ -152,8 +152,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("33599-2")) {
-			TermServerScript.debug("Check for time exception");
+		if (loincNum.equals("21003-9")) {
+			TermServerScript.debug("Check for failure to map CompNum");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);

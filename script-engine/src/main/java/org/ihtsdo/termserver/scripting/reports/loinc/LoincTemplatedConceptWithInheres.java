@@ -51,23 +51,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			attributes.add(null);
 			return attributes;
 		}
-		
-		if (CompNumPnIsSafe(loincNum)) {
-			//Use COMPNUM_PN LOINC Part map to model Inheres in
-			if (!detailPresent(loincNum, LoincDetail.COMPNUM_PN)) {
-				TermServerScript.debug("Check here");
-			}
-			//If we can't map the COMPNUM_PN then concept will be set to primitive.   Use an inhere from the core
-			if (!addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, inheresIn);
-			}
-		} else {
-			/*LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
-			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
-			}*/
-			
+
+		if (!CompNumPnIsSafe(loincNum)) {
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
 					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
