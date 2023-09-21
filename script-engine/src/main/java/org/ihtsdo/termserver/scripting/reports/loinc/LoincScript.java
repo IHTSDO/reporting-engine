@@ -34,10 +34,6 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 
-	//protected String[] tabNames = new String[] { TAB_SUMMARY };
-	
-	//private Concept HasConceptCategorizationStatus;
-	
 	protected static int FILE_IDX_LOINC_100 = 0;
 	protected static int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
 	//private static int FILE_IDX_LOINC_100_Primary = 2;
