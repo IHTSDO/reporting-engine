@@ -150,8 +150,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("21003-9")) {
-			TermServerScript.debug("Check for failure to map CompNum");
+		if (loincNum.equals("17912-7")) {
+			LOGGER.debug("Check for 'specimen' handling");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
@@ -212,7 +212,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		concept.addDescription(colonDesc);
 	}
 
-	private String populateTermTemplateFromAttribute(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {
+	/*private String populateTermTemplateFromAttribute(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {
 		if (skipPartTypes.contains(detail.getPartTypeName())) {
 			return ptTemplateStr;
 		}
@@ -247,7 +247,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			}
 		}
 		return ptTemplateStr;
-	}
+	}*/
 
 	private String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
 		//Do we have any slots left to fill?  Find their attributetypes via the slot map
@@ -337,9 +337,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			//Add a space to ensure we do whole word removal
 			term = " " + term + " ";
 			for (String removal : typeValueTermRemovalMap.get(rt.getType())) {
-				removal = " " + removal + " ";
-				term = term.replaceAll(removal, " ");
-				term = term.replaceAll(StringUtils.capitalizeFirstLetter(removal), " ");
+				String removalWithSpaces = " " + removal + " ";
+				term = term.replaceAll(removalWithSpaces, " ");
+				removalWithSpaces = " " + StringUtils.capitalizeFirstLetter(removal) + " ";
+				term = term.replaceAll(removalWithSpaces, " ");
 			}
 			term = term.trim();
 		}
