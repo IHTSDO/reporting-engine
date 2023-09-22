@@ -74,7 +74,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			"2485242028"
 	};
 
-	/*String[] componentsToProcess = new String[]{
+	String[] componentsToProcess = new String[]{
 			"85842356-607a-f4e8-61f4-24349243b309", "8b6307c0-ad41-6cca-5cfa-c2130d0bb747", "8d03e4cc-0ea6-4ecc-0fd7-79220203edb9",
 			"903e032f-2c7f-2317-3e70-f06d9fd7196a", "909cee75-4639-3da5-efad-e4b8245703e1", "92dbab3c-6d1c-9498-e220-000186ab3166",
 			"a7141064-9a4e-7508-b14f-cf2b9f1c6aed", "aad27e67-91c3-810c-c5d3-d0dd620fb0d9", "aba6ae6f-54a9-c13a-2257-f1862893c3f1",
@@ -88,6 +88,12 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			"3ea3b567-dcee-ee39-215c-a6bbc116b182", "5354d302-ca90-9dc2-4e63-cd428f877f22", "55ac661e-bb08-764c-50da-72919e8f4d99",
 			"591ff3c7-03d7-6c89-d158-7d3faaabddc0", "649eee76-7d7f-6591-715b-dc5e8ef74691", "6528d96d-84f7-c4cf-20a9-f8356282d431",
 			"6cf085a5-d67a-1f18-21d3-d15ba24fbcc8"
+	};
+
+	String[] componentsToProcess = new String[] {
+			"3c0b3629-77d3-5027-b3cb-0ef4ab5d6636",
+			"856d0be8-d966-5999-959c-b42c85bccd4e",
+			"80bdda99-2d35-4f86-9d92-772d58f96d19"
 	};
 
 	String[] componentsToProcess = new String[] {
