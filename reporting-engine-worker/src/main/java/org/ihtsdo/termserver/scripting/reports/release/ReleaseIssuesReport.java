@@ -93,6 +93,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private String defaultModule = SCTID_CORE_MODULE;
 	private List<Concept> allActiveConceptsSorted;
 	private Set<Concept> recentlyTouched;
+	private List<String> prepositions;
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
@@ -122,6 +123,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		cache = gl.getDescendantsCache();
 		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 		getArchiveManager().setPopulateReleasedFlag(true);
+
+		inputFiles.add(0, new File("resources/prepositions.txt"));
+		loadPrepositions();
 
 		//ignoreWhiteList = true;
 		
@@ -168,6 +172,20 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		wordsOftenTypedTwice.add("be");
 		
 		sctidFsnPattern = Pattern.compile(SCTID_FSN_REGEX, Pattern.MULTILINE);
+	}
+
+	public void loadPrepositions() throws TermServerScriptException {
+		print("Loading " + getInputFile() + "...");
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
+		}
+		try {
+			prepositions = Files.readLines(getInputFile(), Charsets.UTF_8);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
+		}
+		LOGGER.info ("Complete");
+
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -246,7 +264,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		semTagInCorrectHierarchy();
 		repeatedWordGroups();
 		reviewContractions();
-		wordsInReverse();
+		//Splitting every description into an array is expensive, so run checks for
+		//words in reverse and consecutive prepositions in the same loop
+		runTokenisedDescriptionChecks();
 		multipleLangRef();
 		multiplePTs();
 		multipleFSNs();
@@ -717,25 +737,44 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 
-	private void wordsInReverse() throws TermServerScriptException {
+	private void runTokenisedDescriptionChecks() throws TermServerScriptException {
 		String issueStr = "Potential mistyped word in Description";
 		initialiseSummary(issueStr);
+		String issueStr2 = "Consecutive prepositions detected";
+		initialiseSummary(issueStr2);
 
 		for (Concept c : allActiveConceptsSorted) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
-				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					String[] words = d.getTerm().split(" ");
-					for (String currentWord : words) {
-						String currentWordInReverse = new StringBuilder(currentWord).reverse().toString();
-						int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
-						if (indexOf != -1) {
-							String detailStr = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
-							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
-							continue nextDescription;
-						}
+					checkForReversedWords(c, d, issueStr, words);
+					checkForConsecutivePrepositions(c, d, issueStr2, words);
+				}
+			}
+		}
+	}
+
+	private void checkForConsecutivePrepositions(Concept c, Description d, String issueStr2, String[] words) throws TermServerScriptException {
+		for (int x = 0; x < words.length; x++) {
+			String currentWord = words[x];
+			if (prepositions.contains(currentWord.toLowerCase())) {
+				if (x + 1 < words.length) {
+					String nextWord = words[x + 1];
+					if (prepositions.contains(nextWord.toLowerCase())) {
+						report(c, issueStr2, getLegacyIndicator(d), isActive(c, d), "Consecutive prepositions: " + currentWord + " " + nextWord, d);
 					}
 				}
+			}
+		}
+	}
+
+	private void checkForReversedWords(Concept c, Description d, String issueStr, String[] words) throws TermServerScriptException {
+		for (String currentWord : words) {
+			String currentWordInReverse = new StringBuilder(currentWord).reverse().toString();
+			int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
+			if (indexOf != -1) {
+				String detailStr = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
+				report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 			}
 		}
 	}

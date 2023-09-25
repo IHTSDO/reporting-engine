@@ -31,7 +31,8 @@ public class ResourceDataLoader {
 																"acceptable_dose_forms.tsv",
 																"us-to-gb-terms-map.txt",
 																"HighVolumeSCTIDs.txt",
-																"legacy_int_release_summary.json"};
+																"legacy_int_release_summary.json",
+																"prepositions.txt"};
 	
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;
