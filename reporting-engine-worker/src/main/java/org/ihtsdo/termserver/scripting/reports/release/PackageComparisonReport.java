@@ -86,9 +86,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(MODULES, "731000124108");*/
 
 		// NL Edition
-		/*params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
+		params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
 		params.put(THIS_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-07T02:35:31/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
-		params.put(MODULES, "11000146104");*/
+		params.put(MODULES, "11000146104");
 
 		// SE Extension
 		/*params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2022-11-17T18:21:20/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20221130T120000Z.zip");
@@ -119,11 +119,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(MODULES, "11000210104,21000210109");*/
 
 		// IE Extension
-		params.put(PREV_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
+		/*params.put(PREV_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
 		params.put(THIS_RELEASE, "ie/snomed_ct_ireland_extension_releases/2023-04-12T17:05:21/output-files/xSnomedCT_ManagedServiceIE_PREPRODUCTION_IE1000220_20230421T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(MODULES, "11000220105");
+		params.put(MODULES, "11000220105");*/
 
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
@@ -266,7 +266,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
 		try {
-			// Process snapshot diff files
+			// Process file list diff file
+			processFileList(diffDir.toString(), "diff_file_list.txt");
+
+			// Process content diff files (snapshot files)
 			try (Stream<Path> stream = Files.list(diffDir)) {
 				stream.filter(file -> !Files.isDirectory(file))
 						.map(Path::getFileName)
@@ -277,11 +280,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			}
 
 			// Delete diff files
-			try (Stream<Path> stream = Files.walk(Path.of("results", uploadFolder))) {
+			/*try (Stream<Path> stream = Files.walk(Path.of("results", uploadFolder))) {
 				stream.sorted(Comparator.reverseOrder())
 						.map(Path::toFile)
 						.forEach(File::delete);
-			}
+			}*/
 		} catch (IOException | RuntimeException e) {
 			LOGGER.error("Error processing diff files in " + uploadFolder);
 			throw new TermServerScriptException(e);
@@ -395,6 +398,62 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return "\"" + arg + "\"";
 	}
 
+	private void processFileList(String path, String filename) throws TermServerScriptException {
+		Set<String> created = new TreeSet<>();
+		Set<String> deleted = new TreeSet<>();
+
+		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				char ch = line.charAt(0);
+
+				if (!(ch == LINE_DELETED_INDICATOR || ch == LINE_CREATED_INDICATOR)) {
+					continue;
+				}
+
+				// Start from index = 4 to exclude "<" or ">" followed by space and "./"
+				String value = line.substring(4);
+
+				switch (ch) {
+					// For the same component deleted indicator always comes before created indicator in the file
+					case LINE_DELETED_INDICATOR:
+						// Previous release entry
+						if (created.contains(value)) {
+							created.remove(value);
+						} else {
+							deleted.add(value);
+						}
+						break;
+					case LINE_CREATED_INDICATOR:
+						// Current release entry
+						if (deleted.contains(value)) {
+							deleted.remove(value);
+						} else {
+							created.add(value);
+						}
+						break;
+				}
+			}
+
+			report(FILE_COMPARISON_TAB, "Files created: " + created.size());
+			for (String file : created) {
+				report(FILE_COMPARISON_TAB, file);
+			}
+			report(FILE_COMPARISON_TAB, "");
+
+			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size());
+			for (String file : deleted) {
+				report(FILE_COMPARISON_TAB, file);
+			}
+			report(FILE_COMPARISON_TAB, "");
+
+		} catch (IOException | IndexOutOfBoundsException e) {
+			LOGGER.error("Error processing file: " + filename);
+			throw new TermServerScriptException(e);
+		}
+	}
+
 	private void processFile(String path, String filename) {
 		Map<String, String[]> created = new HashMap<>();
 		Map<String, String[]> deleted = new HashMap<>();
@@ -426,7 +485,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				String moduleId = data[IDX_MODULEID];
 
 				switch (ch) {
-					// For the same component deleted indicator always comes before created indicator in the file
+					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
 					case LINE_DELETED_INDICATOR:
 						// Previous release entry
 						if (moduleFilter == null || moduleFilter.contains(moduleId)) {

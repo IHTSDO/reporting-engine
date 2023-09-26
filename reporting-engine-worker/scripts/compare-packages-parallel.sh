@@ -82,12 +82,12 @@ echo "Right archive in ${rightLocation}"
 extractZip "${rightArchive}" "${rightLocation}"
 echo "Extracted right archive"
 
-#Flatten the left structure into directory "a"
+#Move the left structure into directory "a" excluding json files
 mkdir -p target/a
 echo "Moving ${leftName} from ${leftLocation} into flat structure 'a'"
 find ${leftLocation} -type f ! -name "*.json" | xargs -I {} mv {} target/a
 
-#Move the right structure into "b"
+#Move the right structure into directory "b" excluding json files
 mkdir -p target/b
 echo "Moving ${rightName} from ${rightLocation} into flat structure 'b'"
 find ${rightLocation} -type f ! -name "*.json" | xargs -I {} mv {} target/b
@@ -116,11 +116,11 @@ echo "Create lists"
 createLists "${leftName}" "target/a"
 createLists "${rightName}" "target/b"
 
-echo -e "_File list differences ${leftName} vs ${rightName}_\n"
-diff target/"${leftName}"_file_list.txt target/"${rightName}"_file_list.txt && echo "None"
-echo
-
 mkdir -p target/c
+
+echo "_File list differences ${leftName} vs ${rightName}"
+diff target/"${leftName}"_file_list.txt target/"${rightName}"_file_list.txt | tee target/c/diff_file_list.txt #&& echo "None"
+echo
 
 echo "_File content differences_"
 echo "Between $leftName $leftArchive and $rightName $rightArchive"
@@ -139,15 +139,11 @@ echo "File size diff is ${leftName} minus ${rightName}"
 
 echo
 processOrderFile="_process_order.txt"
-find target/a -type f | sed "s/target\/a\///" | grep "sct2_" | sort > ${processOrderFile}
 {
+	find target/a -type f | sed "s/target\/a\///" | grep "sct2_" | sort;
 	find target/a -type f | sed "s/target\/a\///" | grep "der2_" | sort;
-	#Now also compare RF1 Files
-	find target/a -type f | sed "s/target\/a\///" | grep "sct1_" | sort;
-	find target/a -type f | sed "s/target\/a\///" | grep "der1_" | sort;
-	find target/a -type f | sed "s/target\/a\///" | grep "res1_" | sort;
 	#Now we'll just do a file size comparison of any other file
-	find target/a -type f | sed "s/target\/a\///" | egrep -v "sct2_|der2_|sct1_|der1_|res1_" | sort;
+	find target/a -type f | sed "s/target\/a\///" | egrep -v "sct2_|der2_" | sort;
 } >> ${processOrderFile}
 
 parallelFeed="ParallelFeed_${RANDOM}.txt"
