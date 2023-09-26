@@ -39,8 +39,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class TermServerClient {
-	
-	public enum ExtractType {
+
+    public enum ExtractType {
 		DELTA, SNAPSHOT, FULL
 	}
 	
@@ -827,6 +827,17 @@ public class TermServerClient {
 	public static String getParentBranchPath(String branchPath) {
 		int endIndex = branchPath.lastIndexOf("/");
 		return branchPath.substring(0, endIndex);
+	}
+
+	public boolean adminRollbackCommit(Branch b) throws TermServerScriptException {
+		String url = this.url + "/admin/" + b.getPath() + "/actions/rollback-commit?commitHeadTime=" + b.getHeadTimestamp();
+		HttpEntity<Map<String,Object>> entity = new HttpEntity<>(null);
+		try {
+			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.POST, entity, Object.class);
+			return response.getStatusCode().is2xxSuccessful();
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
 	}
 
 }
