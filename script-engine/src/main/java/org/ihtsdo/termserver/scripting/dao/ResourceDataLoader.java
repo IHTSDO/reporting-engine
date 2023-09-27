@@ -32,7 +32,8 @@ public class ResourceDataLoader {
 																"us-to-gb-terms-map.txt",
 																"HighVolumeSCTIDs.txt",
 																"legacy_int_release_summary.json",
-																"prepositions.txt"};
+																"prepositions.txt",
+																"preposition-exceptions.txt"};
 	
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;
