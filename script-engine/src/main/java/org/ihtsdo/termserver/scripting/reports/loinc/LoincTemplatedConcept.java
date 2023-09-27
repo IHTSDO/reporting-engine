@@ -39,8 +39,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static RelationshipTemplate percentAttribute;
 	
 	protected static Map<String, String> termTweakingMap = new HashMap<>();
-	protected static Map<Concept, Set<String>> typeValueTermRemovalMap = new HashMap<>();
-	protected static Map<String, Set<String>> valueSemTagTermRemovalMap = new HashMap<>();
+	//Note that the order in which matches are done is important - search for the longest strings first.   So use List rather than Set
+	protected static Map<Concept, List<String>> typeValueTermRemovalMap = new HashMap<>();
+	protected static Map<String, List<String>> valueSemTagTermRemovalMap = new HashMap<>();
 	protected static Concept conceptModelObjectAttrib;
 	protected static Concept precondition;
 	protected static Concept relativeTo;
@@ -78,20 +79,20 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
-		Set<String> removals = new HashSet<>(Arrays.asList("specimen", "structure", "submitted as specimen", "of", "at", "from"));
+		List<String> removals = Arrays.asList("submitted as specimen", "specimen", "structure", "of", "at", "from");
 		typeValueTermRemovalMap.put(DIRECT_SITE, removals);
 		
-		removals = new HashSet<>(Arrays.asList("technique"));
+		removals = Arrays.asList("technique");
 		typeValueTermRemovalMap.put(TECHNIQUE, removals);
 		
-		removals = new HashSet<>(Arrays.asList("clade", "class", "division", "domain", "family", "genus", 
+		removals = Arrays.asList("clade", "class", "division", "domain", "family", "genus",
 				"infraclass", "infraclass", "infrakingdom", "infraorder", "infraorder", "kingdom", "order", 
 				"phylum", "species", "subclass", "subdivision", "subfamily", "subgenus", "subkingdom", 
 				"suborder", "subphylum", "subspecies", "superclass", "superdivision", "superfamily", 
-				"superkingdom", "superorder", "superphylum"));
+				"superkingdom", "superorder", "superphylum");
 		valueSemTagTermRemovalMap.put("(organism)", removals);
 		
-		removals = new HashSet<>(Arrays.asList("population of all", "in portion of fluid"));
+		removals = Arrays.asList("population of all", "in portion of fluid");
 		valueSemTagTermRemovalMap.put("(body structure)", removals);
 		
 		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
