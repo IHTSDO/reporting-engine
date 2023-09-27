@@ -94,6 +94,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private List<Concept> allActiveConceptsSorted;
 	private Set<Concept> recentlyTouched;
 	private List<String> prepositions;
+	private List<String> prepositionExceptions;
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
@@ -125,7 +126,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		getArchiveManager().setPopulateReleasedFlag(true);
 
 		inputFiles.add(0, new File("resources/prepositions.txt"));
-		loadPrepositions();
+		inputFiles.add(1, new File("resources/preposition-exceptions.txt"));
+		loadPrepositionsAndExceptions();
 
 		//ignoreWhiteList = true;
 		
@@ -174,7 +176,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		sctidFsnPattern = Pattern.compile(SCTID_FSN_REGEX, Pattern.MULTILINE);
 	}
 
-	public void loadPrepositions() throws TermServerScriptException {
+	public void loadPrepositionsAndExceptions() throws TermServerScriptException {
 		print("Loading " + getInputFile() + "...");
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException("Cannot read: " + getInputFile());
@@ -183,6 +185,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			prepositions = Files.readLines(getInputFile(), Charsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
+		}
+
+		print("Loading " + getInputFile(1) + "...");
+		if (!getInputFile(1).canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
+		}
+		try {
+			prepositionExceptions = Files.readLines(getInputFile(1), Charsets.UTF_8);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failure while reading: " + getInputFile(1), e);
 		}
 		LOGGER.info ("Complete");
 
@@ -756,11 +768,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private void checkForConsecutivePrepositions(Concept c, Description d, String issueStr2, String[] words) throws TermServerScriptException {
 		for (int x = 0; x < words.length; x++) {
-			String currentWord = words[x];
-			if (prepositions.contains(currentWord.toLowerCase())) {
+			String currentWord = words[x].toLowerCase();
+			if (prepositions.contains(currentWord)) {
 				if (x + 1 < words.length) {
-					String nextWord = words[x + 1];
-					if (prepositions.contains(nextWord.toLowerCase())) {
+					String nextWord = words[x + 1].toLowerCase();
+					if (prepositions.contains(nextWord)) {
+						//Check for this being an allowable exception combination
+						if (prepositionExceptions.contains(currentWord + " " + nextWord)) {
+							continue;
+						}
 						report(c, issueStr2, getLegacyIndicator(d), isActive(c, d), "Consecutive prepositions: " + currentWord + " " + nextWord, d);
 					}
 				}
