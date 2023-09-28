@@ -201,15 +201,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		String colonStr = loincNumToLoincTermMap.get(loincNum).getColonizedTerm();
 		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-		
-		//And the LoncNum itself, until we have the Identifier File available to use
-		String lnStr = LoincUtils.buildLoincNumTerm(loincNum);
-		Description ln = Description.withDefaults(lnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-		
+
 		concept.addDescription(pt);
 		concept.addDescription(fsn);
 		concept.addDescription(lcn);
-		concept.addDescription(ln);
 		concept.addDescription(colonDesc);
 	}
 
