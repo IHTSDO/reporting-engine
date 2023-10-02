@@ -86,8 +86,8 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
-				.withName("All Templates Compliance Stats")
-				.withDescription("For every domain which has one or more templates, determine how many concepts comply to that template(s).")
+				.withName("Historic Templates Compliance Stats")
+				.withDescription("For every domain which has one or more templates, determine how many concepts comply to that template(s) historically.")
 				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(params)
 				.withTag(INT)
