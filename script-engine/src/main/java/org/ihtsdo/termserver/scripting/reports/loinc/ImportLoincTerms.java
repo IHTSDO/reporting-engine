@@ -255,7 +255,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
 			LoincTemplatedConcept templatedConcept = doModeling(entry.getKey(), entry.getValue());
-			if (templatedConcept != null && !templatedConcept.getConcept().hasIssue(FSN_FAILURE)) {
+			if (templatedConcept != null
+				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
+				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
 				successfullyModelledConcepts.add(templatedConcept);
 			}
 		}
@@ -318,7 +320,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			boolean insufficientTermPopulation = fsn.contains("[");
 			if (insufficientTermPopulation) {
 				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
-			} else {
+			} else if (!templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
 				doProposedModelComparison(loincNum, templatedConcept);
 			}
 			
