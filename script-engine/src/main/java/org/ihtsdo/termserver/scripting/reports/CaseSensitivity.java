@@ -29,22 +29,27 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivity.class);
 
-	List<Concept> targetHierarchies = new ArrayList<>();
-	List<Concept> excludeHierarchies = new ArrayList<>();
-	Map<String, Description> sourcesOfTruth = new HashMap<>();
-	Set<Concept> allExclusions = new HashSet<>();
-	Set<String> whiteList = new HashSet<>();  //Note this can be both descriptions and concept SCTIDs
-	boolean newlyModifiedContentOnly = true;
-	List<String> properNouns = new ArrayList<>();
-	Map<String, List<String>> properNounPhrases = new HashMap<>();
-	List<String> knownLowerCase = new ArrayList<>();
-	Pattern numberLetter = Pattern.compile("\\d[a-z]");
-	Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
-	Set<String>wilcardWords = new HashSet<>();
+	private static String INCLUDE_SUB_ORG = "Include Substances and Organisms";
+	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
+
+	private List<Concept> targetHierarchies = new ArrayList<>();
+	private List<Concept> excludeHierarchies = new ArrayList<>();
+	private Map<String, Description> sourcesOfTruth = new HashMap<>();
+	private Set<Concept> allExclusions = new HashSet<>();
+	private Set<String> whiteList = new HashSet<>();  //Note this can be both descriptions and concept SCTIDs
+	private boolean includeSubOrg = false;
+	private boolean recentChangesOnly = true;
+	private List<String> properNouns = new ArrayList<>();
+	private Map<String, List<String>> properNounPhrases = new HashMap<>();
+	private List<String> knownLowerCase = new ArrayList<>();
+	private Pattern numberLetter = Pattern.compile("\\d[a-z]");
+	private Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
+	private Set<String>wilcardWords = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
+		params.put(RECENT_CHANGES_ONLY, "N");
 		TermServerReport.run(CaseSensitivity.class, params, args);
 	}
 	
@@ -61,9 +66,13 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		loadCSWords();
 		LOGGER.info ("Processing exclusions");
 		targetHierarchies.add(ROOT_CONCEPT);
-		//targetHierarchies.add(gl.getConcept("771115008"));
-		excludeHierarchies.add(SUBSTANCE);
-		excludeHierarchies.add(ORGANISM);
+		recentChangesOnly = getJob().getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);
+		includeSubOrg = getJob().getParameters().getMandatoryBoolean(INCLUDE_SUB_ORG);
+		if (!includeSubOrg) {
+			excludeHierarchies.add(SUBSTANCE);
+			excludeHierarchies.add(ORGANISM);
+		}
+
 		for (Concept excludeThis : excludeHierarchies) {
 			excludeThis = gl.getConcept(excludeThis.getConceptId());
 			allExclusions.addAll(gl.getDescendantsCache().getDescendents(excludeThis));
@@ -91,11 +100,13 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.add(INCLUDE_SUB_ORG).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+				.add(RECENT_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Case Significance")
-				.withDescription("This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'. " +
+				.withDescription("This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are normally excluded as they are taken to be a 'source of truth' and since most Organisms start with proper nouns we see a lot of false positives, but this setting can be overridden. " +
 									"The 'Issues' count here reflects the number of rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
@@ -183,7 +194,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					if (whiteList.contains(d.getDescriptionId())) {
 						continue;
 					}
-					if (!newlyModifiedContentOnly || !d.isReleased()) {
+					if (!recentChangesOnly || !d.isReleased()) {
 						String term = d.getTerm().replaceAll("\\-", " ");
 						String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 						String firstLetter = term.substring(0,1);
@@ -241,6 +252,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					}
 				}
 			}
+			print ("\n\n");
 			LOGGER.info ("Completed hierarchy: " + targetHierarchy);
 			
 		}
