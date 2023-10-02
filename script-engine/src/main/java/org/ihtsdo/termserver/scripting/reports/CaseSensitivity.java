@@ -44,7 +44,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, Object> params = new HashMap<>();
-		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		TermServerReport.run(CaseSensitivity.class, params, args);
 	}
 	
@@ -155,23 +155,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
-			//Sorting is doing String creation and manipulation multiple times for each concept
-			//We'll let the user do the sorting in the spreadsheet output if they want.
-			/*LOGGER.info ("Sorting descendants: " + targetHierarchy);
-			Collections.sort(hiearchyDescendants, new Comparator<Concept>() {
-				@Override
-				public int compare(Concept c1, Concept c2) {
-					try {
-						String sortOn1 = SnomedUtils.deconstructFSN(c1.getFsn())[1] + c1.getFsn();
-						String sortOn2 = SnomedUtils.deconstructFSN(c2.getFsn())[1] + c2.getFsn();
-						return sortOn1.compareTo(sortOn2);
-					} catch (Exception e) {
-						LOGGER.warn(e.toString() + " sorting " + c1 + " and " + c2);
-					}
-					return c1.getConceptId().compareTo(c2.getConceptId());
-				}
-			});*/
-			
 			LOGGER.info ("Checking case significance in target hierarchy: " + targetHierarchy);
 			
 			int count = 0;
@@ -185,9 +168,9 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					print (".");
 				}
 				
-				if (c.getConceptId().equals("322280009")) {
-//					LOGGER.debug ("Temp - check here");
-				}
+/*				if (c.getConceptId().equals("688271000119100")) {
+					LOGGER.debug ("Temp - check here");
+				}*/
 				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
 					continue;
 				}
@@ -204,6 +187,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						String term = d.getTerm().replaceAll("\\-", " ");
 						String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 						String firstLetter = term.substring(0,1);
+						String secondLetter = term.substring(1,2);
 						String chopped = term.substring(1);
 						String preferred = d.isPreferred()?"Y":"N";
 						
@@ -216,6 +200,13 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						} else if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
 							//Lower case first letters must be entire term case sensitive
 							report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
+							countIssue(c);
+							continue nextConcept;
+						} else if ((Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
+								&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase()))
+								&& !caseSig.equals(CS)) {
+							//Terms starting with acronyms should be entire term case sensitive
+							report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
 							countIssue(c);
 							continue nextConcept;
 						} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
