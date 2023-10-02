@@ -38,6 +38,13 @@ public class AccessControlService {
 		return userProjects.getProjects();
 	}
 
+	public void clearCache (String username) {
+		if (cache.containsKey(username)) {
+			LOGGER.info("Clearing {}'s project access cache", username);
+			cache.get(username).expire();
+		}
+	}
+
 	private UserProjects getUserProjects(String username, String serverUrl, String authToken) {
 		prepareAuthServices(serverUrl, authToken);
 		List<Project> projects = authoringServices.listProjects();
