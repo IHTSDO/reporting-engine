@@ -337,10 +337,22 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		String issue2Str = "Group contains > 1 presentation/concentration strength";
 		String issue3Str = "Invalid drugs model";
 		String issue4Str = "CD with multiple inferred parents";
+		String issue5Str = "CD missing Has Unit of Presentation attribute";
+		String issue6Str = "CD >1 x Has Unit of Presentation attribute";
+
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
 		initialiseSummary(issue4Str);
+		initialiseSummary(issue5Str);
+		initialiseSummary(issue6Str);
+
+		Set<Relationship> unitsOfPresentation = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+		if (unitsOfPresentation.size() == 0) {
+			report (c, issue5Str);
+		} else if (unitsOfPresentation.size() > 1) {
+			report (c, issue6Str);
+		}
 		
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (g.isGrouped()) {
