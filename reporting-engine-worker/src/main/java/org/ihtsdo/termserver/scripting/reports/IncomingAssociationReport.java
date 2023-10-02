@@ -33,8 +33,9 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<<" + CLINICAL_FINDING + " OR <<" + SITN_WITH_EXP_CONTXT );
-		params.put(TEXT_MATCH,"on examination,o/e,complaining of,c/o");
+		//params.put(ECL, "<<" + CLINICAL_FINDING + " OR <<" + SITN_WITH_EXP_CONTXT );
+		params.put(ECL, "<< 23406007 |Fracture of upper limb|");
+		//params.put(TEXT_MATCH,"on examination,o/e,complaining of,c/o");
 		TermServerReport.run(IncomingAssociationReport.class, args, params);
 	}
 
@@ -86,6 +87,10 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 	}
 	
 	public boolean inScope (Concept c) {
+		if (textMatches == null || textMatches.isEmpty()) {
+			return true;
+		}
+
 		String fsn = c.getFsn().toLowerCase();
 		for (String textMatch : textMatches) {
 			if (fsn.contains(textMatch)) {

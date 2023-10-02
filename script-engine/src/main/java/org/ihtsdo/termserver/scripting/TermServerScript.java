@@ -1682,7 +1682,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public boolean hasInputFile(int n) {
-		return getInputFile(n) != null;
+		return inputFiles.get(n) != null;
 	}
 
 	public File getInputFile() {
