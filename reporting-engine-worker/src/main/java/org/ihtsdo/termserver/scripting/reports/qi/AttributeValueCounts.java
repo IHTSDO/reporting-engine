@@ -179,6 +179,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 			if (countFiltered > minimumSizeOfInterest) {
 				double recentActivityPercentage = 100 * ((double) recentActivity.get(c) / count);
 				report(c, getDepthIndicator(c), count, countFiltered, countNotIncludingDescendants, countNotIncludingDescendantsFiltered, parentsStr, parentsParentsStr, getUsedInCombination(c), df.format(recentActivityPercentage));
+				countIssue(c);
 			}
 		}
 
