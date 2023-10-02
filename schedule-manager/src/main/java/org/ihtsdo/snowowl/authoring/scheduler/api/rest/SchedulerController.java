@@ -155,8 +155,8 @@ public class SchedulerController {
 	}
 
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
-		AuthData result = getAuthData(request);
-		return accessControlService.getProjects(result.userName, terminologyServerUrl, result.authToken);
+		AuthData authData = getAuthData(request);
+		return accessControlService.getProjects(authData.userName, terminologyServerUrl, authData.authToken);
 	}
 
 	@Operation(summary="Run job")
@@ -237,8 +237,10 @@ public class SchedulerController {
 			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/initialise", method= RequestMethod.GET)
-	public void initialise() throws BusinessServiceException {
+	public void initialise(HttpServletRequest request) throws BusinessServiceException {
 		scheduleService.initialise();
+		AuthData authData = getAuthData(request);
+		accessControlService.clearCache(authData.userName);
 	}
 
 	@Operation(summary="List whitelisted concepts for the given job & code system")
