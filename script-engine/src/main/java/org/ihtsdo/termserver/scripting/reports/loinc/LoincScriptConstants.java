@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.loinc;
 
 public interface LoincScriptConstants {
 	
-	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE }
+	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT }
 
 	public final String TAB_SUMMARY = "Summary";
 	public final String TAB_LOINC_DETAIL_MAP_NOTES = "LOINC Detail Map Notes";

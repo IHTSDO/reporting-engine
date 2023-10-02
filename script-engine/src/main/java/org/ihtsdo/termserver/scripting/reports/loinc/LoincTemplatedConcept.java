@@ -151,8 +151,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("17912-7")) {
-			LOGGER.debug("Check for 'specimen' handling");
+		if (loincNum.equals("68433-2")) {
+			LOGGER.debug("Check for missing component - should result in loinc term being dropped entirely");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
@@ -626,9 +626,15 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			attributes.add(getAttributeFromDetailWithType(loincNum, ldtColumnName, type));
 			attributeAdded = true;
 		} catch (TermServerScriptException e) {
-			//TODO Stop passing issues around, we have access to the concept here
-			issues.add(e.getMessage() + " definition status set to Primitive");
-			this.concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			//If we've not found the COMPNUM_PN then we're not going to go ahead with this Loinc Term
+			if (ldtColumnName.equals("COMPNUM_PN")) {
+				issues.add(e.getMessage());
+				processingFlags.add(ProcessingFlag.DROP_OUT);
+			} else {
+				//TODO Stop passing issues around, we have access to the concept here
+				issues.add(e.getMessage() + " definition status set to Primitive");
+				this.concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			}
 		}
 		return attributeAdded;
 	}
