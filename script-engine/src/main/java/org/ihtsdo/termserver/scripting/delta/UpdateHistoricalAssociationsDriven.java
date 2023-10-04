@@ -4,9 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -24,7 +23,14 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
 
-	private Map<Concept, Concept> replacementMap = new HashMap<>();
+	private Map<Concept, UpdateAction> replacementMap = new HashMap<>();
+
+	private List<String> skipConcepts = Arrays.asList(new String[]{"163092009",
+			"163094005",
+			"163096007",
+			"164018003",
+			"275284008",
+	});
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		UpdateHistoricalAssociationsDriven delta = new UpdateHistoricalAssociationsDriven();
@@ -36,15 +42,31 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			delta.postInit();
 			delta.process();
 			delta.flushFiles(false); //Need to flush files before zipping
-			SnomedUtils.createArchive(new File(delta.outputDirName));
+			if (!dryRun) {
+				SnomedUtils.createArchive(new File(delta.outputDirName));
+			}
 		} finally {
 			delta.finish();
 		}
 	}
 
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[]{
+				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , ",
+				"Issue, Detail"
+		};
+
+		String[] tabNames = new String[]{
+				"Delta Records Created",
+				"Other processing issues"
+		};
+		postInit(tabNames, columnHeadings, false);
+	}
+
 	private void process() throws ValidationFailure, TermServerScriptException {
 		
 		populateReplacementMap();
+		populateUpdatedReplacementMap();
 		
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			//Is this a concept we've been told to replace the associations on?
@@ -81,6 +103,28 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void replaceHistoricalAssociations(Concept c) throws TermServerScriptException {
+
+		UpdateAction action = replacementMap.get(c);
+		List<Concept> updatedReplacements = new ArrayList<>(action.replacements);
+		for (Concept replacement : action.replacements) {
+			//Check that our replacement is still active
+			if (!replacement.isActive()) {
+				report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Originally suggested replacement is now inactive", replacement);
+				Concept updatedReplacement = null;
+				try {
+					updatedReplacement = getReplacement(PRIMARY_REPORT, c, replacement, false);
+				} catch (Exception e) {
+					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Failed to find replacement for inactive replacement" + replacement, e.getMessage());
+				}
+				if (updatedReplacement == null || !updatedReplacement.isActive()) {
+					return;
+				}
+				updatedReplacements.remove(replacement);
+				updatedReplacements.add(updatedReplacement);
+			}
+		}
+		action.replacements = updatedReplacements;
+
 		String prevAssocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
 		for (AssociationEntry a : c.getAssociationEntries()) {
 			if (a.getRefsetId().equals(SCTID_ASSOC_REPLACED_BY_REFSETID)) {
@@ -90,9 +134,12 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			a.setActive(false);
 			a.setEffectiveTime(null);
 		}
-		Concept replacement = replacementMap.get(c);
-		AssociationEntry assoc = AssociationEntry.create(c, SCTID_ASSOC_REPLACED_BY_REFSETID, replacement);
-		c.getAssociationEntries().add(assoc);
+
+		String associationTypeSCTID = SnomedUtils.translateAssociation(action.type);
+		for (Concept replacement : action.replacements) {
+			AssociationEntry assoc = AssociationEntry.create(c, associationTypeSCTID, replacement);
+			c.getAssociationEntries().add(assoc);
+		}
 		String newAssocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
 		report(c, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, prevAssocStr, newAssocStr);
 	}
@@ -104,19 +151,71 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					String[] items = line.split(TAB);
 					Concept inactive = gl.getConcept(items[0]);
 					Concept replacement = gl.getConcept(items[2]);
-					Concept existing = replacementMap.get(inactive);
-					if (existing != null && !existing.equals(replacement)) {
-						LOGGER.warn("Map replacement for inactive " + inactive + " was " + existing + " now " + replacement);
+					UpdateAction alreadyMapped = replacementMap.get(inactive);
+					UpdateAction thisMapping = createReplacementAssociation(replacement);
+					if (alreadyMapped != null && !alreadyMapped.equals(replacement)) {
+						report(SECONDARY_REPORT,"Map replacement for inactive " + inactive + " already seen.  Was " + alreadyMapped + " now " + thisMapping);
 					}
-					replacementMap.put(inactive, replacement);
+					replacementMap.put(inactive, thisMapping);
 				} catch (Exception e) {
-					LOGGER.warn("Failed to parse line: " + line);
+					report(SECONDARY_REPORT,"Failed to parse line: " + line + " due to " + e.getMessage());
 				}
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
-		
+	}
+
+	private void populateUpdatedReplacementMap() throws TermServerScriptException {
+		try {
+			for (String line : Files.readAllLines(getInputFile(1).toPath(), Charset.defaultCharset())) {
+				try {
+					String[] items = line.split(TAB);
+					Concept inactive = gl.getConcept(items[0]);
+					String inactivationIndicatorStr = items[2];
+					String replacementsStr = items[3];
+					InactivationIndicator inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+					Association association = Association.REPLACED_BY;
+					if (inactivationIndicatorStr.contains("Ambiguous")) {
+						inactivationIndicator = InactivationIndicator.AMBIGUOUS;
+						association = Association.POSS_EQUIV_TO;
+					}
+					List<Concept> replacements = splitConcepts(replacementsStr);
+					UpdateAction action = new UpdateAction();
+					action.inactivationIndicator = inactivationIndicator;
+					action.replacements = replacements;
+					action.type = association;
+					replacementMap.put(inactive, action);
+				} catch (Exception e) {
+					report(SECONDARY_REPORT,"Failed to parse line: " + line);
+				}
+			}
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
+		}
+	}
+
+	private List<Concept> splitConcepts(String replacementsStr) {
+		String[] conceptIds = replacementsStr.split(",");
+		return Arrays.stream(conceptIds).map(s -> gl.getConceptSafely(s)).collect(Collectors.toList());
+	}
+
+	private UpdateAction createReplacementAssociation(Concept replacement) {
+		UpdateAction action = new UpdateAction();
+		action.type = Association.REPLACED_BY;
+		action.inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+		action.replacements = Arrays.asList(replacement);
+		return action;
+	}
+
+	class UpdateAction {
+		Association type;
+		InactivationIndicator inactivationIndicator;
+		List<Concept> replacements;
+
+		public String toString() {
+			return inactivationIndicator + ": " + type + " " + replacements.stream().map(c -> c.toString()).collect(Collectors.joining(", "));
+		}
 	}
 
 }
