@@ -156,13 +156,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		suppress.add("Product containing pituitary follicle stimulating hormone (medicinal product)");
 		suppress.add("Product containing recombinant antihemophilic factor (medicinal product)");
 		suppress.add("Product containing only adenosine deaminase in parenteral dose form (medicinal product form)");
-		suppress.add("Product containing only pibrentasvir (medicinal product)");
-		suppress.add("Product containing only bictegravir (medicinal product)");
-		suppress.add("Product containing only elbasvir (medicinal product)");
-		suppress.add("Product containing only glecaprevir (medicinal product)");
-		suppress.add("Product containing only grazoprevir (medicinal product)");
-		suppress.add("Product containing only velpatasvir (medicinal product)");
-		suppress.add("Product containing only voxilaprevir (medicinal product)");
 		suppress.add("Product containing only antigen of bacteria and antigen of virus (medicinal product)");
 		suppress.add("Product containing only antigen of bacteria (medicinal product)");
 		suppress.add("Product containing only antigen of virus (medicinal product)");
