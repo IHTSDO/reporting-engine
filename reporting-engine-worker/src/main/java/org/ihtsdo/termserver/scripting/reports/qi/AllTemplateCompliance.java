@@ -97,7 +97,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
-				String msg = "Inactive or Non-existent domain: " + invalidTemplateDomain;
+				String msg = "Problematic domain (check for inactive concepts / invalid syntax): " + invalidTemplateDomain;
 				LOGGER.warn (msg + " in template: " + t.getName());
 				report(TERTIARY_REPORT, t.getName(), msg);
 			}
