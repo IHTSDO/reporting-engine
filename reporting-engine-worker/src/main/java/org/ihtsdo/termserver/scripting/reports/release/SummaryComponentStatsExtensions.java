@@ -30,6 +30,9 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20211001T121212Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
+
+		//params.put(MODULES, "21000210109");  //NZ Module
+		*/
 		
 		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20221115T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220930T120000Z.zip");
@@ -38,10 +41,8 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		
 		params.put(MODULES, "11000172109"); // Belgium Module
-		
-		params.put(MODULES, "21000210109");  //NZ Module
 		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");*/
+		params.put(REPORT_FORMAT_TYPE, "JSON");
 		
 		TermServerReport.run(SummaryComponentStatsExtensions.class, args, params);
 	}
