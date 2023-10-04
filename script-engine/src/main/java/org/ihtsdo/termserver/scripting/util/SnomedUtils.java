@@ -676,6 +676,23 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
 		}
 	}
+
+	public static String translateAssociation(Association assoc) {
+		switch (assoc) {
+			case WAS_A : return SCTID_ASSOC_WAS_A_REFSETID;
+			case POSS_REPLACED_BY : return SCTID_ASSOC_POSS_REPLACED_BY_REFSETID ;
+			case REPLACED_BY : return SCTID_ASSOC_REPLACED_BY_REFSETID ;
+			case SAME_AS : return SCTID_ASSOC_SAME_AS_REFSETID ;
+			case MOVED_TO : return SCTID_ASSOC_MOVED_TO_REFSETID ;
+			case POSS_EQUIV_TO : return SCTID_ASSOC_POSS_EQUIV_REFSETID ;
+			case PARTIALLY_EQUIV_TO : return SCTID_ASSOC_PART_EQUIV_REFSETID ;
+			case ALTERNATIVE : return SCTID_ASSOC_ALTERNATIVE_REFSETID ;
+			case REFERS_TO : return SCTID_ASSOC_REFERS_TO_REFSETID ;
+			case ANATOMY_STRUC_ENTIRE : return SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID ;
+			case ANATOMY_STRUC_PART : return SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID ;
+			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assoc);
+		}
+	}
 	
 	public static String prettyPrintHistoricalAssociations(Concept c, GraphLoader gl) throws TermServerScriptException {
 		String associations = "";
