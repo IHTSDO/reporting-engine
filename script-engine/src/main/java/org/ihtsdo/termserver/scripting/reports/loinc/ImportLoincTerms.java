@@ -93,12 +93,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
-		
-		//HasConceptCategorizationStatus = gl.registerConcept("10071010000104 |Has concept categorization status (attribute)|");
-		categorizationMap.put("Observation", gl.registerConcept("10101010000107 |Observation concept categorization status (qualifier value)|"));
-		categorizationMap.put("Order", gl.registerConcept("10091010000103 |Orderable concept categorization status (qualifier value)|"));
-		categorizationMap.put("Both", gl.registerConcept("10111010000105 |Both orderable and observation concept categorization status (qualifier value)|"));
-		categorizationMap.put("Subset", gl.registerConcept("10121010000104 |Subset of panel concept categorization status (qualifier value)|"));
 	}
 
 	private void runReport() throws TermServerScriptException, InterruptedException {
