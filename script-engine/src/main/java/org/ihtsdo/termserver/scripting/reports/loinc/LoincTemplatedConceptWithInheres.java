@@ -25,7 +25,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		templatedConcept.typeMap.put("PROPERTY", gl.getConcept("370130000 |Property (attribute)|"));
 		templatedConcept.typeMap.put("SCALE", gl.getConcept("370132008 |Scale type (attribute)|"));
 		templatedConcept.typeMap.put("TIME", gl.getConcept("370134009 |Time aspect (attribute)|"));
-		templatedConcept.typeMap.put("SYSTEM", gl.getConcept("704327008  |Direct site (attribute)|"));
+		templatedConcept.typeMap.put("SYSTEM", gl.getConcept("704327008 |Direct site (attribute)|"));
 		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
 		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("704319004 |Inheres in (attribute)|"));
 		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
@@ -80,8 +80,10 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		}
 		
 		//If we didn't find the component, return a null so that we record that failed mapping usage
+		//And in fact, don't map this term at all
 		if (attributes.size() == 0) {
 			attributes.add(null);
+			processingFlags.add(ProcessingFlag.DROP_OUT);
 		}
 		return attributes;
 	}

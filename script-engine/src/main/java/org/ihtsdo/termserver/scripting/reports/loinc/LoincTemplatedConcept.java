@@ -51,10 +51,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
 	protected static Map<String, LoincPart> loincParts;
+	protected static Set<String> allowSpecimenTermForLoincParts = new HashSet<>(Arrays.asList("LP7593-9", "LP7735-6", "LP189538-4"));
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
-	
 	protected Set<ProcessingFlag> processingFlags = new HashSet<>();
 	
 	protected String loincNum;
@@ -151,9 +151,9 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("68433-2")) {
+		/*if (loincNum.equals("50407-6")) {
 			LOGGER.debug("Check for missing component - should result in loinc term being dropped entirely");
-		}
+		}*/
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
@@ -333,6 +333,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			//Add a space to ensure we do whole word removal
 			term = " " + term + " ";
 			for (String removal : typeValueTermRemovalMap.get(rt.getType())) {
+				//Rule 2a. We sometimes allow 'specimen' to be used, for certain loinc parts
+				if (removal.equals("specimen") && hasProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN)) {
+					continue;
+				}
 				String removalWithSpaces = " " + removal + " ";
 				term = term.replaceAll(removalWithSpaces, " ");
 				removalWithSpaces = " " + StringUtils.capitalizeFirstLetter(removal) + " ";
@@ -499,7 +503,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			return null;
 		}
 		
-		if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && loincDetail.getPartName().toLowerCase().contains("specimen")) {
+		if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber())) {
 			ls.report(getTab(TAB_IOI), "Allow use of 'specimen'", loincNum);
 			processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
 		}

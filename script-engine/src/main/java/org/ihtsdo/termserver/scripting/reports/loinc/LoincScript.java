@@ -27,8 +27,6 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	protected static AttributePartMapManager attributePartMapManager;
 	protected Map<String, LoincPart> loincParts = new HashMap<>();
-	protected Map<String, Concept> categorizationMap = new HashMap<>();
-
 	protected Map<String, String> partMapNotes = new HashMap<>();
 	
 	//Map of LoincNums to ldtColumnNames to details
