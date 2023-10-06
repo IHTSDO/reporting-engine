@@ -30,10 +30,14 @@ public abstract class TermServerReport extends TermServerScript {
 	protected UnpromotedChangesHelper unpromotedChangesHelper;
 	
 	protected void init (JobRun jobRun) throws TermServerScriptException {
+		super.init(jobRun);
+
 		if (!StringUtils.isEmpty(jobRun.getParamValue(UNPROMOTED_CHANGES_ONLY))) {
 			unpromotedChangesOnly = jobRun.getParamBoolean(UNPROMOTED_CHANGES_ONLY);
+			if (unpromotedChangesOnly && projectName.equals("MAIN")) {
+				throw new TermServerScriptException("Unpromoted changes only is not supported for use on MAIN");
+			}
 		}
-		super.init(jobRun);
 	}
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {

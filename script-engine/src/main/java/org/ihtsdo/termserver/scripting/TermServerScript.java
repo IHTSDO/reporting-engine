@@ -581,6 +581,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		return new TermServerClient(url + contextPath, authenticatedCookie);
 	}
+
+	//Default implementation - load all descriptions
+	protected void loadProjectSnapshot() throws TermServerScriptException {
+		loadProjectSnapshot(false);
+	}
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		getArchiveManager(true).loadSnapshot(fsnOnly);

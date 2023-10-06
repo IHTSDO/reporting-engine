@@ -81,6 +81,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		//params.put(MODULES, "45991000052106");
 		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
+		params.put(UNPROMOTED_CHANGES_ONLY, "true");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
 	}
 	
@@ -243,6 +244,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(INCLUDE_DETAIL).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
+				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))

@@ -75,11 +75,4 @@ public class InactivateLangRefsetMembersInWrongLanguage extends DeltaGenerator i
 		return refsetLangCodeMap;
 	}
 
-	private void createOutputArchive() throws TermServerScriptException {
-		outputModifiedComponents(true);
-		getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
-		File archive = SnomedUtils.createArchive(new File(outputDirName));
-		report(null, Severity.NONE, ReportActionType.INFO, "Created " + archive.getName());
-	}
-
 }
