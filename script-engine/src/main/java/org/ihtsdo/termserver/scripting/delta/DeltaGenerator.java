@@ -430,4 +430,15 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 
+	protected void createOutputArchive() throws TermServerScriptException {
+		if (dryRun) {
+			LOGGER.info("Dry run, skipping archive creation");
+		} else {
+			outputModifiedComponents(true);
+			getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
+			File archive = SnomedUtils.createArchive(new File(outputDirName));
+			report((Concept) null, Severity.NONE, ReportActionType.INFO, "Created " + archive.getName());
+		}
+	}
+
 }

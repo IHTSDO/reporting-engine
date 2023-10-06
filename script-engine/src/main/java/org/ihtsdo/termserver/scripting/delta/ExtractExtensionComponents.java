@@ -351,13 +351,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		return null;
 	}
-	
-	private void createOutputArchive() throws TermServerScriptException {
-		outputModifiedComponents(true);
-		getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
-		File archive = SnomedUtils.createArchive(new File(outputDirName));
-		report((Concept)null, Severity.NONE, ReportActionType.INFO, "Created " + archive.getName());
-	}
 
 	private List<Component> process(List<Component> componentsToProcess) throws TermServerScriptException {
 		addSummaryInformation("Concepts specified", componentsToProcess.size());

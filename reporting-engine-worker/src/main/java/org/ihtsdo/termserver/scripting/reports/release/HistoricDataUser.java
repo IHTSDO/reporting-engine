@@ -253,8 +253,12 @@ public class HistoricDataUser extends TermServerReport {
 
 	@Override
 	protected boolean inScope(Component c) {
+		//Are we filtering for unpromoted changes only?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return false;
+		}
 		//If we've specified some modules explicitly, then allow those to
-		//take precidence
+		//take precedence
 		if (moduleFilter != null && moduleFilter.size() > 0) {
 			return moduleFilter.contains(c.getModuleId());
 		}
