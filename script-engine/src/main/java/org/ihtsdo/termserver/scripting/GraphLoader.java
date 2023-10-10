@@ -1664,7 +1664,7 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 
-	public void loadReferenceSets(InputStream is, String fileName) throws IOException, TermServerScriptException {
+	public void loadReferenceSets(InputStream is, String fileName, Boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String headerLine = br.readLine();
 
@@ -1682,11 +1682,23 @@ public class GraphLoader implements ScriptConstants {
 			String[] lineItems = line.split(TAB);
 			RefsetMember member = new RefsetMember();
 			RefsetMember.populatefromRf2(member, lineItems, additionalFieldNames);
+			if (isReleased != null) {
+				member.setReleased(isReleased);
+			}
+			//Do we already have this member?  Copy the released flag if so
 			if (SnomedUtils.isConceptSctid(member.getReferencedComponentId())) {
 				Concept c = getConcept(member.getReferencedComponentId());
+				RefsetMember existing = c.getOtherRefsetMember(member.getId());
+				if (existing != null) {
+					member.setReleased(existing.getReleased());
+				}
 				c.getOtherRefsetMembers().add(member);
 			} else {
 				Description d = getDescription(member.getReferencedComponentId());
+				RefsetMember existing = d.getOtherRefsetMember(member.getId());
+				if (existing != null) {
+					member.setReleased(existing.getReleased());
+				}
 				d.getOtherRefsetMembers().add(member);
 			}
 		}
