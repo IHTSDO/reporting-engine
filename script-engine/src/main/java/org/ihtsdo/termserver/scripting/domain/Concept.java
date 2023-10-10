@@ -426,7 +426,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public void removeRelationship(Relationship r, boolean force) {
 		CharacteristicType charType = r.getCharacteristicType();
-		if (r.getEffectiveTime() != null && !force) {
+		if (!StringUtils.isEmpty(r.getEffectiveTime()) && !force) {
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
 

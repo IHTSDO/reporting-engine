@@ -303,7 +303,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		return equals(other, false);  //By default, include Axiom comparison
 	}
 	
-	public Relationship clone(String newSCTID) {
+	public Relationship cloneWithoutAxiom(String newSCTID) {
 		Relationship clone = new Relationship();
 		clone.modifier = this.modifier;
 		clone.groupId = this.groupId;
@@ -318,9 +318,14 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		clone.source = this.source;
 		clone.characteristicType = this.characteristicType;
 		clone.isDirty = true;
+		clone.setIssue(this.getIssues());
+		return clone;
+	}
+
+	public Relationship clone(String newSCTID) {
+		Relationship clone = cloneWithoutAxiom(newSCTID);
 		clone.axiom = this.axiom;
 		clone.axiomEntry = this.axiomEntry;
-		clone.setIssue(this.getIssues());
 		clone.setReleased(this.isReleased());
 		return clone;
 	}
