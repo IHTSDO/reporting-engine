@@ -791,7 +791,7 @@ public class ArchiveManager implements ScriptConstants {
 					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
 					gl.loadLanguageFile(is, isReleased);
 				} else if (loadTheReferenceSet) {
-					gl.loadReferenceSets(is, fileName);
+					gl.loadReferenceSets(is, fileName, isReleased);
 				}
 			}
 		} catch (TermServerScriptException | IOException e) {

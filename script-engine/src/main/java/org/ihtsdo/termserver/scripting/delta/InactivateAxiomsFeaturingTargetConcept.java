@@ -23,6 +23,7 @@ public class InactivateAxiomsFeaturingTargetConcept extends DeltaGenerator imple
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
 			delta.init(args);
+			delta.getArchiveManager(true).setLoadOtherReferenceSets(true);
 			delta.loadProjectSnapshot();
 			delta.postInit();
 			delta.process();

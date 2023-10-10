@@ -852,4 +852,12 @@ public class Description extends Component implements ScriptConstants {
 		this.otherRefsetMembers = otherRefsetMembers;
 	}
 
+	public RefsetMember getOtherRefsetMember(String id) {
+		for (RefsetMember m : getOtherRefsetMembers()) {
+			if (m.getId().equals(id)) {
+				return m;
+			}
+		}
+		return null;
+	}
 }

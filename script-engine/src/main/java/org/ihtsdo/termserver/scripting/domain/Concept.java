@@ -1752,4 +1752,13 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public void setOtherRefsetMembers(Set<RefsetMember> otherRefsetMembers) {
 		this.otherRefsetMembers = otherRefsetMembers;
 	}
+
+	public RefsetMember getOtherRefsetMember(String id) {
+		for (RefsetMember m : getOtherRefsetMembers()) {
+			if (m.getId().equals(id)) {
+				return m;
+			}
+		}
+		return null;
+	}
 }
