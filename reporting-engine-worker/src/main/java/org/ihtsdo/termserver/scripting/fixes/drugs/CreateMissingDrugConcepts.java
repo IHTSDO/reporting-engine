@@ -77,9 +77,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		Map<String, String> params = new HashMap<>();
-		params.put(NEW_CONCEPTS_ONLY, "false");
-		params.put(CONCEPTS_PER_TASK, "5");
-		params.put(DRY_RUN, "true");
 		TermServerReport.run(CreateMissingDrugConcepts.class, args, params);
 	}
 	
@@ -115,8 +112,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
-		//dryRun = jobRun.getParamBoolean(DRY_RUN);
-		//taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
+		dryRun = jobRun.getParamBoolean(DRY_RUN);
+		taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -219,7 +216,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		for (Concept required : conceptsRequired) {
 			termGenerator.ensureTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
-			report (task, concept, Severity.NONE, ReportActionType.INFO, "Concepts suggests need for :" + required);
+			report (task, concept, Severity.NONE, ReportActionType.INFO, "Concept suggests need for : " + required.getFsn());
 
 			String expression = required.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			required = createConcept(task, required, info);
@@ -231,7 +228,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 						.filter(parent -> parent.getConceptType().equals(invalidParentType))
 						.map(parent -> parent.toString())
 						.collect(Collectors.joining(",\n"));
-				report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
+				//If we don't detect problems with the parents, then don't report anything
+				if (!currentParents.isEmpty()) {
+					report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Existing parents problematic due to same drug class level as this concept : " + currentParents);
+				}
 			}
 			task.addAfter(required, concept);
 			//With the CD reported, we don't actually need to load it in the edit panel
@@ -403,7 +403,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 								allAffected.add(c);
 							}
 						} else {
-							report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							//report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 						}
 					}
 					
@@ -423,7 +423,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 								}
 							}
 						} else {
-							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							//report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 						}
 					}
 				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
