@@ -3,7 +3,7 @@ package org.ihtsdo.snowowl.authoring.scheduler.api.service;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
