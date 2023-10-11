@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.job.mq;
 import java.util.*;
 import java.util.concurrent.*;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.ihtsdo.termserver.job.JobManager;
 import org.slf4j.Logger;

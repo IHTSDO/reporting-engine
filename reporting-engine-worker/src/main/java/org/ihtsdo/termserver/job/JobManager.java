@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.job;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 //import org.ihtsdo.otf.resourcemanager.*;
 import org.ihtsdo.termserver.job.mq.Transmitter;
