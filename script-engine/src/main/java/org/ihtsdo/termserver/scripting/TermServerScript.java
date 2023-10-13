@@ -555,6 +555,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					jobRun.setParameter(RESTART_FROM_TASK, parameter);
 					break;
 				case "-task":
+				case "--task":
 					jobRun.setTask(parameter);
 					break;
 				case "-headless":
