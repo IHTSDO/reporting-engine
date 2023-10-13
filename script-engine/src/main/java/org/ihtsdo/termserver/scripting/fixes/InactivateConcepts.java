@@ -18,6 +18,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * DEVICES-92 Straight inactivation, driven by list, no replacement
  * 
  * TMO-66 Inactivate numbers.
+ * 
+ * INFRA-11734 Inactivate << 168123008 |Sample sent for examination (situation)|.
  */
 public class InactivateConcepts extends BatchFix implements ScriptConstants {
 	
@@ -43,7 +45,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			fix.groupByIssue = true;
 			fix.reportNoChange = false;
 			fix.selfDetermining = true;
-			fix.subsetECL = "< 260299005 |Number (qualifier value)|";
+			fix.subsetECL = "< 168123008 |Sample sent for examination (situation)|.";
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
