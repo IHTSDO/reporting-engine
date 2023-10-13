@@ -112,8 +112,6 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 			throw new TermServerScriptException("Cannot include legacy issues when only checking unpromoted changes");
 		}
 		super.init(run);
-		gl.setRecordPreviousState(true);
-		getArchiveManager().setPopulateReleasedFlag(true);
 		getArchiveManager().setLoadOtherReferenceSets(true);
 	}
 
@@ -159,7 +157,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 						StringUtils.isEmpty(refsetMember.getEffectiveTime())) {
 					refsetsWithChanges.put(refset, Boolean.TRUE);
 				}
-				if (++conceptCount % 100000 == 0) {
+				if (++conceptCount % 500000 == 0) {
 					LOGGER.info("   ...checked {} concepts", conceptCount);
 				}
 			}

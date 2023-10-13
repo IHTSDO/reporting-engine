@@ -1685,6 +1685,9 @@ public class GraphLoader implements ScriptConstants {
 			if (isReleased != null) {
 				member.setReleased(isReleased);
 			}
+			/*if (member.getId().equals("acc12fa8-74db-5e6e-9408-5ea60cd650e6")) {
+				LOGGER.info("Check here");
+			}*/
 			//Do we already have this member?  Copy the released flag if so
 			if (SnomedUtils.isConceptSctid(member.getReferencedComponentId())) {
 				Concept c = getConcept(member.getReferencedComponentId());
@@ -1692,7 +1695,7 @@ public class GraphLoader implements ScriptConstants {
 				if (existing != null) {
 					member.setReleased(existing.getReleased());
 				}
-				c.getOtherRefsetMembers().add(member);
+				c.addOtherRefsetMember(member);
 			} else {
 				Description d = getDescription(member.getReferencedComponentId());
 				RefsetMember existing = d.getOtherRefsetMember(member.getId());
