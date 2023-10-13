@@ -4,8 +4,6 @@ import org.ihtsdo.snowowl.authoring.scheduler.api.configuration.WebSecurityConfi
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.route53.model.InvalidArgumentException;
-
 @Component
 public class AuthenticationService {
 
@@ -19,6 +17,7 @@ public class AuthenticationService {
 		}
 		
 		//TODO Need a solution for obtaining a system token
-		throw new InvalidArgumentException("No 'system' account configured, or authentication token override set");
+		throw new RuntimeException("No 'system' account configured, or authentication token override set");
+		//InvalidArgumentException("No 'system' account configured, or authentication token override set");
 	}
 }

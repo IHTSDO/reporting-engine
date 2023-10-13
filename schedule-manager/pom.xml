@@ -10,9 +10,9 @@
 		<artifactId>reporting-engine</artifactId>
 	</parent>
 
-	<properties>
+	<!--<properties>
 		<spring-cloud.version>2021.0.3</spring-cloud.version>
-	</properties>
+	</properties>-->
 
 	<dependencies>
 		<dependency>
@@ -85,7 +85,7 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk</artifactId>
 			<exclusions>
@@ -94,7 +94,7 @@
 					<artifactId>netty-handler</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
