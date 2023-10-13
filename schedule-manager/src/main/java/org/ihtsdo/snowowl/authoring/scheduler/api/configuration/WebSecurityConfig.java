@@ -1,7 +1,7 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.configuration;
 
 import com.google.common.base.Strings;
-import org.ihtsdo.sso.integration.RequestHeaderAuthenticationDecorator;
+import org.ihtsdo.snowowl.authoring.scheduler.api.security.RequestHeaderAuthenticationDecoratorWithOverride;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,8 +37,7 @@ public class WebSecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable);
-		http.addFilterBefore(new RequestHeaderAuthenticationDecorator(), AuthorizationFilter.class);
-		//new RequestHeaderAuthenticationDecoratorWithOverride(overrideUsername, overrideRoles, overrideToken), FilterSecurityInterceptor.class);
+		http.addFilterBefore(new RequestHeaderAuthenticationDecoratorWithOverride(overrideUsername, overrideRoles, overrideToken), AuthorizationFilter.class);
 
 		if (!Strings.isNullOrEmpty(requiredRole)) {
 			http.authorizeHttpRequests(c -> c

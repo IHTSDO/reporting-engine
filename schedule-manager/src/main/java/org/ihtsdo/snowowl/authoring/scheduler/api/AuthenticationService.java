@@ -18,6 +18,5 @@ public class AuthenticationService {
 		
 		//TODO Need a solution for obtaining a system token
 		throw new RuntimeException("No 'system' account configured, or authentication token override set");
-		//InvalidArgumentException("No 'system' account configured, or authentication token override set");
 	}
 }

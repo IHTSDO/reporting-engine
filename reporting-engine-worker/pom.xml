@@ -31,7 +31,7 @@
 			 until Spring Boot upgrade is complete -->
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>resource-manager</artifactId>
-			<version>6.1.0-SNAPSHOT</version>
+			<!--<version>6.1.0-SNAPSHOT</version>-->
 		</dependency>
 		<!-- Spring boot -->
 		<dependency>
@@ -55,13 +55,11 @@
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>${slf4j.version}</version>
+			<artifactId>slf4j-reload4j</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
 		</dependency>
 		
 		<dependency>
@@ -167,7 +165,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0</version>
 			</plugin>
 		</plugins>
 	</build>

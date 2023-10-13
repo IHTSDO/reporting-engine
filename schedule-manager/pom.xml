@@ -10,10 +10,6 @@
 		<artifactId>reporting-engine</artifactId>
 	</parent>
 
-	<!--<properties>
-		<spring-cloud.version>2021.0.3</spring-cloud.version>
-	</properties>-->
-
 	<dependencies>
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
@@ -85,16 +81,6 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
 		</dependency>
-		<!--<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-handler</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>-->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
