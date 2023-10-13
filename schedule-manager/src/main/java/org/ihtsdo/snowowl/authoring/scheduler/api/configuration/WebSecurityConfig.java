@@ -1,13 +1,16 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.configuration;
 
-import org.ihtsdo.snowowl.authoring.scheduler.api.security.RequestHeaderAuthenticationDecoratorWithOverride;
+import com.google.common.base.Strings;
+import org.ihtsdo.sso.integration.RequestHeaderAuthenticationDecorator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -31,23 +34,22 @@ public class WebSecurityConfig {
 			"/swagger-ui/**"
 	};
 
-
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.csrf().disable();
-		http.addFilterBefore(new RequestHeaderAuthenticationDecoratorWithOverride(overrideUsername, overrideRoles, overrideToken), FilterSecurityInterceptor.class);
+		http.csrf(AbstractHttpConfigurer::disable);
+		http.addFilterBefore(new RequestHeaderAuthenticationDecorator(), AuthorizationFilter.class);
+		//new RequestHeaderAuthenticationDecoratorWithOverride(overrideUsername, overrideRoles, overrideToken), FilterSecurityInterceptor.class);
 
-		if (requiredRole != null && !requiredRole.isEmpty()) {
-			http.authorizeRequests()
-					.antMatchers(excludedUrlPatterns).permitAll()
-					.anyRequest().hasAuthority(requiredRole)
-					.and().httpBasic();
+		if (!Strings.isNullOrEmpty(requiredRole)) {
+			http.authorizeHttpRequests(c -> c
+					.requestMatchers(excludedUrlPatterns).permitAll()
+					.anyRequest().hasAuthority(requiredRole));
 		} else {
-			http.authorizeRequests()
-					.antMatchers(excludedUrlPatterns).permitAll()
-					.anyRequest().authenticated()
-					.and().httpBasic();
+			http.authorizeHttpRequests(c -> c
+					.requestMatchers(excludedUrlPatterns).permitAll()
+					.anyRequest().authenticated());
 		}
+		http.httpBasic(Customizer.withDefaults());
 		return http.build();
 	}
 
