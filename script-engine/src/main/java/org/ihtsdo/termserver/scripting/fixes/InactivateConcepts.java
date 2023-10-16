@@ -248,7 +248,14 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//inactivation reason must also change.
 		Concept originalTarget = gl.getConcept(assoc.getTargetComponentId());
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
-		incomingConcept.setInactivationIndicator(reason);
+
+		//Do we need to align the incoming concept's inactivation indicator?
+		InactivationIndicator origII = incomingConcept.getInactivationIndicator();
+		if (!origII.equals(reason)) {
+			incomingConcept.setInactivationIndicator(reason);
+			report(task, incomingConcept, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, origII + " --> " + reason);
+		}
+
 		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
 			//In this case the replacement is expected to be null and we will just inactivate that historical association
 			if (assoc.isReleased()) {
@@ -277,6 +284,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		updateConcept(task, incomingConcept, "");
 	}
+
 
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
