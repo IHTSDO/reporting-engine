@@ -53,6 +53,8 @@ public class DrugUtils implements ScriptConstants {
 								break;
 			case "(medicinal product)" : c.setConceptType(hasBaseCount ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
 										 break;
+			case "(real medicinal product)" : c.setConceptType(hasBaseCount ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
+				break;
 			case "(clinical drug)" : c.setConceptType(ConceptType.CLINICAL_DRUG);
 										break;
 			default : c.setConceptType(ConceptType.UNKNOWN);
