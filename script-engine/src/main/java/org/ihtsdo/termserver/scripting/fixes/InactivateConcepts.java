@@ -251,12 +251,19 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 
 		//Do we need to align the incoming concept's inactivation indicator?
 		InactivationIndicator origII = incomingConcept.getInactivationIndicator();
+		boolean iiChanged = false;
 		if (!origII.equals(reason)) {
 			incomingConcept.setInactivationIndicator(reason);
+			iiChanged = true;
 			report(task, incomingConcept, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, origII + " --> " + reason);
 		}
 
 		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			//If we're modifying the refset member directly, we also need to save the concept to pick up the ii change
+			if (iiChanged) {
+				updateConcept(task, incomingConcept, "");
+			}
+
 			//In this case the replacement is expected to be null and we will just inactivate that historical association
 			if (assoc.isReleased()) {
 				assoc.setActive(false);
