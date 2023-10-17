@@ -418,6 +418,14 @@ public class DrugUtils implements ScriptConstants {
 		}
 		return countOfBase;
 	}
+
+	public static String getCountOfBaseOrNA(Concept c) throws TermServerScriptException {
+		Integer countOfBase = SnomedUtils.getConcreteIntValue(c, COUNT_BASE_ACTIVE_INGREDIENT, CharacteristicType.STATED_RELATIONSHIP, UNGROUPED);
+		if (countOfBase == null) {
+			countOfBase = SnomedUtils.getConcreteIntValue(c, COUNT_OF_BASE_AND_MODIFICATION, CharacteristicType.STATED_RELATIONSHIP, UNGROUPED);
+		}
+		return countOfBase == null ? "N/A" : countOfBase.toString();
+	}
 	
 	public static boolean matchesBossPAIStrength(Concept lhs, Concept rhs) throws TermServerScriptException {
 		int lhsCountOfBase = getCountOfBase(lhs);

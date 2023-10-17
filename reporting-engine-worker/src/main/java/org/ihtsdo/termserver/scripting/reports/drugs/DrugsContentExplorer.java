@@ -30,6 +30,8 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 
 	private List<String> drugClassesOfInterest = new ArrayList<>();
 
+	private Collection<Concept> allKnownDrugs;
+
 	private String[] defaultDrugClasses;
 	{
 		defaultDrugClasses = EnumSet.allOf(DrugClass.class).stream().map(DrugClass::name)
@@ -51,8 +53,11 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 			drugClassesOfInterest = Arrays.asList(defaultDrugClasses);
 		}
 
+		allKnownDrugs = MEDICINAL_PRODUCT.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
+
+
 		String[] columnHeadings = new String[] {
-				"SCTID, FSN, SemTag, Expression, Definition Status, Drug Class, MP Descendents, MPO Descendents, MPF Descendent, MPFO Descendents, RMPF Descedents, RMPFO Descendents, CD Descendents, RCD Descendents, UNKNOWN "
+				"SCTID, FSN, SemTag, Ingredient Count, Count of Base, Expression, Definition Status, Drug Class, MP Descendants, MPO Descendants, MPF Descendants, MPFO Descendants, RMPF Descedants, RMPFO Descendants, CD Descendants, RCD Descendants, Unknown Descendants, MP Ancestors, MPO Ancestors, MPF Ancestors, MPFO Ancestors, RMPF Ancestors, RMPFO Ancestors, CD Ancestors, RCD Ancestors, Unknown Ancestors "
 				};
 		String[] tabNames = new String[] {	
 				"Drugs Content Explored"
@@ -81,7 +86,7 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 	public void runJob() throws TermServerScriptException {
 		List<Concept> conceptsToReport;
 		if (StringUtils.isEmpty(subsetECL)) {
-			conceptsToReport = new ArrayList<>(MEDICINAL_PRODUCT.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP));
+			conceptsToReport = new ArrayList<>(allKnownDrugs);
 		} else {
 			conceptsToReport = new ArrayList<>(findConcepts(subsetECL));
 		}
@@ -119,25 +124,42 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 	}
 
 	private void analyzeConcept(Concept c) {
-		Map<String, Integer> data = new HashMap<>();
+		Map<String, Integer> descendantData = new HashMap<>();
+		Map<String, Integer> ancestorData = new HashMap<>();
 		try {
-			c.getDescendents(NOT_SET).stream()
+			c.getDescendants(NOT_SET).stream()
 					.peek(d -> DrugUtils.setConceptType(d))
 					.map(d -> traslateConceptTypeToString(d.getConceptType()))
-					.forEach(s -> data.merge(s, 1, Math::addExact));
+					.forEach(s -> descendantData.merge(s, 1, Math::addExact));
+			c.getAncestors(NOT_SET).stream()
+					.filter(a -> allKnownDrugs.contains(a))
+					.peek(d -> DrugUtils.setConceptType(d))
+					.map(d -> traslateConceptTypeToString(d.getConceptType()))
+					.forEach(s -> ancestorData.merge(s, 1, Math::addExact));
 			report(c,
+					DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP).size(),
+					DrugUtils.getCountOfBaseOrNA(c),
 					c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP),
-					c.getDefinitionStatus().toString(),
+					SnomedUtils.translateDefnStatus(c.getDefinitionStatus()),
 					traslateConceptTypeToString(c.getConceptType()),
-					data.getOrDefault("MP", 0),
-					data.getOrDefault("MPO", 0),
-					data.getOrDefault("MPF", 0),
-					data.getOrDefault("MPFO", 0),
-					data.getOrDefault("RMPF", 0),
-					data.getOrDefault("RMPFO", 0),
-					data.getOrDefault("CD", 0),
-					data.getOrDefault("RCD", 0),
-					data.getOrDefault("UNKNOWN", 0));
+					descendantData.getOrDefault("MP", 0),
+					descendantData.getOrDefault("MPO", 0),
+					descendantData.getOrDefault("MPF", 0),
+					descendantData.getOrDefault("MPFO", 0),
+					descendantData.getOrDefault("RMPF", 0),
+					descendantData.getOrDefault("RMPFO", 0),
+					descendantData.getOrDefault("CD", 0),
+					descendantData.getOrDefault("RCD", 0),
+					descendantData.getOrDefault("UNKNOWN", 0),
+					ancestorData.getOrDefault("MP", 0),
+					ancestorData.getOrDefault("MPO", 0),
+					ancestorData.getOrDefault("MPF", 0),
+					ancestorData.getOrDefault("MPFO", 0),
+					ancestorData.getOrDefault("RMPF", 0),
+					ancestorData.getOrDefault("RMPFO", 0),
+					ancestorData.getOrDefault("CD", 0),
+					ancestorData.getOrDefault("RCD", 0),
+					ancestorData.getOrDefault("UNKNOWN", 0));
 		} catch (TermServerScriptException e) {
 			try {
 				report(c, e.getMessage());
