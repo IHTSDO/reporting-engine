@@ -1345,7 +1345,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		DescendantsCache cache = GraphLoader.getGraphLoader().getDescendantsCache();
 		//For each concept, it is redundant if any of it's descendants are also present
 		for (Concept concept : concepts) {
-			Set<Concept> descendants = new HashSet<>(cache.getDescendents(concept));
+			Set<Concept> descendants = new HashSet<>(cache.getDescendants(concept));
 			descendants.retainAll(concepts);
 			if (descendants.size() > 0) {
 				redundant.add(concept);
@@ -1653,9 +1653,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 
 	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {
-		Set<Concept> types = cache.getDescendentsOrSelf(targetAttribute.getType());
+		Set<Concept> types = cache.getDescendantsOrSelf(targetAttribute.getType());
 		//If there's no attribute value specified, we'll match on just the target type
-		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendentsOrSelf(targetAttribute.getTarget());
+		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendantsOrSelf(targetAttribute.getTarget());
 		return c.getRelationships().stream()
 				.filter(r -> r.isActive())
 				.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))

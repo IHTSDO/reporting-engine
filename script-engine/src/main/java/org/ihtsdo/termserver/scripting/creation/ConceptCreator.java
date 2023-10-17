@@ -19,7 +19,7 @@ public abstract class ConceptCreator implements ScriptConstants {
 	ConceptCreationPattern conceptPattern;
 	List<String> inspirations = new ArrayList<>();
 	GraphLoader gl = GraphLoader.getGraphLoader();
-	DescendantsCache cache = DescendantsCache.getDescendentsCache();
+	DescendantsCache cache = DescendantsCache.getDescendantsCache();
 	private Map<String, Concept> anatomyMap = null;
 	
 	static final String SEMTAG_BODY = "(body structure)";
@@ -32,7 +32,7 @@ public abstract class ConceptCreator implements ScriptConstants {
 			for (String inspirationStr : inspirations) {
 				Concept inspiration = gl.getConcept(inspirationStr);
 				//Do we have a match for this inspiration?
-				Set<Concept> inspirationDescendantsSelf = cache.getDescendentsOrSelf(inspiration);
+				Set<Concept> inspirationDescendantsSelf = cache.getDescendantsOrSelf(inspiration);
 				for (Concept thisProposed : proposedInspirations) {
 					if (inspirationDescendantsSelf.contains(thisProposed)) {
 						continue nextInspiration;
@@ -70,7 +70,7 @@ public abstract class ConceptCreator implements ScriptConstants {
 
 	private void populateAnatomyMap() throws TermServerScriptException {
 		anatomyMap = new HashMap<>();
-		for (Concept c : BODY_STRUCTURE.getDescendents(NOT_SET)) {
+		for (Concept c : BODY_STRUCTURE.getDescendants(NOT_SET)) {
 			anatomyMap.put(c.getPreferredSynonym().toLowerCase(), c);
 		}
 	}

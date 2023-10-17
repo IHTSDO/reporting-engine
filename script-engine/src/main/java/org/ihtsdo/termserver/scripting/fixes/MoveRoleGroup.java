@@ -81,7 +81,7 @@ public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			for (Concept value : targetAttributeValues) {
 				if (SnomedUtils.hasValue(charType, c, value)) {
 					c.addIssue(value.getPreferredSynonym());

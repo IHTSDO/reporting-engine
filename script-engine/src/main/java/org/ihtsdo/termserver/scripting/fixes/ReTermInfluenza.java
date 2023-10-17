@@ -8,7 +8,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
@@ -177,7 +176,7 @@ public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> allAffected = new ArrayList<>();
-		Set<Concept> organisms = gl.getDescendantsCache().getDescendents(ORGANISM);
+		Set<Concept> organisms = gl.getDescendantsCache().getDescendants(ORGANISM);
 		setQuiet(true);
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive() && !exceptions.contains(c.getConceptId())) {

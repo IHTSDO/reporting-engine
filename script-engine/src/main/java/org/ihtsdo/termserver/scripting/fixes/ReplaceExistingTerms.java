@@ -71,7 +71,7 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
-		//Set<Concept> allPotential = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		//Set<Concept> allPotential = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
 		List<Concept> allPotential = SnomedUtils.sort(gl.getAllConcepts());
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		List<DescriptionType> descTypes = new ArrayList<>();

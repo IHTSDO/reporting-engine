@@ -75,7 +75,7 @@ public class DrugUtils implements ScriptConstants {
 	private static void populateDoseFormConceptMap() throws TermServerScriptException {
 		doseFormConceptMap = new HashMap<>();
 		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
-		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
+		for (Concept doseForm : doseFormSubHierarchy.getDescendants(NOT_SET)) {
 			doseFormConceptMap.put(doseForm.getFsn(), doseForm);
 		}
 	}
@@ -93,7 +93,7 @@ public class DrugUtils implements ScriptConstants {
 	private static void populateUnitOfPresentationConceptMap() throws TermServerScriptException {
 		unitOfPresentationConceptMap = new HashMap<>();
 		Concept unitOfPresentationSubHierarchy = GraphLoader.getGraphLoader().getConcept("732935002", false, true); //|Unit of presentation (unit of presentation)|
-		for (Concept unitOfPresenation : unitOfPresentationSubHierarchy.getDescendents(NOT_SET)) {
+		for (Concept unitOfPresenation : unitOfPresentationSubHierarchy.getDescendants(NOT_SET)) {
 			unitOfPresentationConceptMap.put(unitOfPresenation.getFsn(), unitOfPresenation);
 		}
 	}
@@ -119,7 +119,7 @@ public class DrugUtils implements ScriptConstants {
 		//UAT workaround
 		//Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001", false, true); //  |Unit(qualifier value)|
 		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("767524001", false, true); //  |Unit of measure (qualifier value)|
-		for (Concept unit : unitSubHierarchy.getDescendents(NOT_SET)) {
+		for (Concept unit : unitSubHierarchy.getDescendants(NOT_SET)) {
 			unitOfMeasureConceptMap.put(unit.getFsn(), unit);
 			unitOfMeasureConceptMap.put(unit.getPreferredSynonym().toLowerCase(), unit);
 		}
@@ -141,7 +141,7 @@ public class DrugUtils implements ScriptConstants {
 	private static void populateDoseFormSynonymMap() throws TermServerScriptException {
 		doseFormSynonymConceptMap = new HashMap<>();
 		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
-		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
+		for (Concept doseForm : doseFormSubHierarchy.getDescendants(NOT_SET)) {
 			for (Description d : doseForm.getDescriptions(ActiveState.ACTIVE, Collections.singletonList(DescriptionType.SYNONYM))) {
 				String term = d.getTerm().toLowerCase();
 				if (!doseFormSynonymConceptMap.containsKey(term)) {
@@ -178,7 +178,7 @@ public class DrugUtils implements ScriptConstants {
 		TermServerScript.info("Populating substance map");
 		substanceMap = new HashMap<>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
-		for (Concept c : gl.getDescendantsCache().getDescendents(SUBSTANCE)) {
+		for (Concept c : gl.getDescendantsCache().getDescendants(SUBSTANCE)) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				String term = d.getTerm().toLowerCase().trim();
 				if (d.getType().equals(DescriptionType.FSN)) {
@@ -397,7 +397,7 @@ public class DrugUtils implements ScriptConstants {
 
 	public static Set<Concept> getSubstancesUsedInProducts() throws TermServerScriptException {
 		Set<Concept> substancesUsedInProducts = new HashSet<>();
-		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept product : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
 				substancesUsedInProducts.add(r.getTarget());
 			}

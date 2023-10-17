@@ -124,7 +124,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				"Processing Issues",
 				"Suppressed Concepts"};
 		
-		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
 			/*if (c.getConceptId().equals("774384006")) {
 				LOGGER.debug("Here");
 			}*/
@@ -349,7 +349,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		LOGGER.debug("Identifying concepts to process");
 		List<Concept> allAffected = new ArrayList<Concept>();
 		termGenerator.setQuiet(true);
-		List<Concept> conceptsToProcess = MEDICINAL_PRODUCT.getDescendents(NOT_SET).stream()
+		List<Concept> conceptsToProcess = MEDICINAL_PRODUCT.getDescendants(NOT_SET).stream()
 				.filter(c -> inScope(c))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
@@ -460,7 +460,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 
 	private boolean hasClinicalDrugDescendant(Concept c) throws TermServerScriptException {
-		for (Concept descendant : gl.getDescendantsCache().getDescendents(c)) {
+		for (Concept descendant : gl.getDescendantsCache().getDescendants(c)) {
 			if (descendant.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				return true;
 			}

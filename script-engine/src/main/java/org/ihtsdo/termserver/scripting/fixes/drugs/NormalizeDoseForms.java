@@ -119,7 +119,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.debug("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<>();
-		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				for (String currentTerm : doseFormMap.keySet()) {

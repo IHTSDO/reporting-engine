@@ -45,7 +45,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 
 	private void findBaseWithModifications() throws TermServerScriptException {
 		substancesUsedInProducts = DrugUtils.getSubstancesUsedInProducts();
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			//Get a list of parents
 			Set<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 			if (statedParents.size() > maxParents) {

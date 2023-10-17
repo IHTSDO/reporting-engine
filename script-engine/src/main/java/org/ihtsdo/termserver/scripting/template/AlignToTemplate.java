@@ -117,7 +117,7 @@ public class AlignToTemplate extends TemplateFix {
 																ASSOC_MORPH,
 																ActiveState.ACTIVE);
 			for (Relationship r : specialRels) {
-				if (gl.getDescendantsCache().getDescendents(chronicInflammation).contains(r.getTarget())) {
+				if (gl.getDescendantsCache().getDescendants(chronicInflammation).contains(r.getTarget())) {
 					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Existing morphology a descendant of " + chronicInflammation + " : " + r.getTarget());
 					return true;
 				}
@@ -133,7 +133,7 @@ public class AlignToTemplate extends TemplateFix {
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return asComponents(subHierarchy.getDescendents(NOT_SET));
+		return asComponents(subHierarchy.getDescendants(NOT_SET));
 	}
 
 }

@@ -109,7 +109,7 @@ public class ReplaceSematicTags extends BatchFix implements ScriptConstants{
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		Set<Concept> allPotential = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> allPotential = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept thisConcept : allPotential) {
 			for (String replaceTag : replacementMap.keySet()) {

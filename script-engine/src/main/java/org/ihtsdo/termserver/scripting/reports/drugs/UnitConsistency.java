@@ -47,7 +47,7 @@ public class UnitConsistency extends TermServerReport {
 
 	private void findAllIngredientUnits() throws TermServerScriptException {
 		LOGGER.info("Finding all ingredient units");
-		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			//We're only interested in clinical drugs if we're talking about units
 			SnomedUtils.populateConceptType(c);
 			if (!c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {

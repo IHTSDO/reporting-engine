@@ -51,7 +51,7 @@ public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 		boolean useConcreteValues = false;
 		Concept random = gl.getConcept("774966003 |Product containing only caffeine (medicinal product)|");
 		loop:
-		for (Concept c : random.getDescendents(NOT_SET)) {
+		for (Concept c : random.getDescendants(NOT_SET)) {
 			for (Relationship r : c.getRelationships()) {
 				if (r.isConcrete()) {
 					useConcreteValues = true;

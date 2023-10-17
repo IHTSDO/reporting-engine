@@ -61,7 +61,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 			String[] items = line.split(COMMA);
 			Concept accountedForSubHierarchy = gl.getConcept(items[0]);
 			accountedForHierarchies.add(accountedForSubHierarchy);
-			accountedForHierarchiesExpanded.addAll(accountedForSubHierarchy.getDescendents(NOT_SET));
+			accountedForHierarchiesExpanded.addAll(accountedForSubHierarchy.getDescendants(NOT_SET));
 		}
 		super.postInit();
 		
@@ -101,7 +101,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	public void runJob() throws TermServerScriptException {
 		
 		//Work through all concepts in the hierarchy and work out if we've covered it or not
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			//Is this concept too high to look at?
 			if (tooHigh.contains(c)) {
 				continue;
@@ -116,7 +116,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		//Now output the results
 		Set<Concept> alreadyReported = new HashSet<>();
 		for (Concept c : notAccountedForHierarchies) {
-			Set<Concept> descendants = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(c));
+			Set<Concept> descendants = new HashSet<>(gl.getDescendantsCache().getDescendantsOrSelf(c));
 			int originalSize = descendants.size();
 			descendants.removeAll(alreadyReported);
 			descendants.removeAll(accountedForHierarchiesExpanded);
@@ -155,13 +155,13 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	private Set<Concept> findHighestNotAccountedFor(Concept c) throws TermServerScriptException {
 		//Is this concept already accounted for?
 		for (Concept hierarchy : accountedForHierarchies) {
-			if (gl.getDescendantsCache().getDescendentsOrSelf(hierarchy).contains(c)) {
+			if (gl.getDescendantsCache().getDescendantsOrSelf(hierarchy).contains(c)) {
 				return null;
 			}
 		}
 		
 		for (Concept hierarchy : notAccountedForHierarchies) {
-			if (gl.getDescendantsCache().getDescendentsOrSelf(hierarchy).contains(c)) {
+			if (gl.getDescendantsCache().getDescendantsOrSelf(hierarchy).contains(c)) {
 				return null;
 			}
 		}

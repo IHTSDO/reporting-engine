@@ -73,7 +73,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 		}
 		String[] columnHeadings = new String[] { 
 				tab1Heading,
-				"SCTID, FSN, Semtag, Descendent Of"
+				"SCTID, FSN, Semtag, Descendant Of"
 		};
 		String[] tabNames = new String[] {	
 				"Concepts using Attribute Values",
@@ -156,7 +156,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 			report (SECONDARY_REPORT, c);
 			//Are we including descendants?
 			if (includeDescendants) {
-				List<Concept> descendants = c.getDescendents(NOT_SET).stream()
+				List<Concept> descendants = c.getDescendants(NOT_SET).stream()
 						.filter(d -> !conceptsOfInterest.contains(d))
 						.sorted(Comparator.comparing(Concept::getFsn))
 						.collect(Collectors.toList());

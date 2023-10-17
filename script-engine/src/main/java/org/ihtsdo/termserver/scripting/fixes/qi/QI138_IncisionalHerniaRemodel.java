@@ -101,7 +101,7 @@ public class QI138_IncisionalHerniaRemodel extends BatchFix {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return asComponents(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy));
+		return asComponents(gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy));
 	}
 	
 	protected Batch formIntoBatch (List<Component> allComponents) throws TermServerScriptException {
@@ -119,12 +119,12 @@ public class QI138_IncisionalHerniaRemodel extends BatchFix {
 		//Sort into one of four buckets
 		for (Component comp : allComponents) {
 			Concept c = (Concept)comp;
-			boolean isObstruction = gl.getDescendantsCache().getDescendentsOrSelf(hWithO).contains(c);
+			boolean isObstruction = gl.getDescendantsCache().getDescendantsOrSelf(hWithO).contains(c);
 			//Or might have that morphology
 			if (!isObstruction) {
 				isObstruction = SnomedUtils.hasValue(CharacteristicType.INFERRED_RELATIONSHIP, c, obstruction);
 			}
-			boolean isGangrene = gl.getDescendantsCache().getDescendentsOrSelf(hWithG).contains(c);
+			boolean isGangrene = gl.getDescendantsCache().getDescendantsOrSelf(hWithG).contains(c);
 			if (isObstruction && true) {
 				//Is it both?
 				if (isGangrene) {

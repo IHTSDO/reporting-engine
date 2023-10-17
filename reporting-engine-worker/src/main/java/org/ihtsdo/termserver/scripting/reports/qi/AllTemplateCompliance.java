@@ -154,7 +154,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		//We'll create a set to avoid double counting concepts in multiple TLHs
 		for (Concept subHierarchy : inScope) {
 			Set<Concept> concepts = gl.getDescendantsCache()
-					.getDescendentsOrSelf(subHierarchy)
+					.getDescendantsOrSelf(subHierarchy)
 					.stream()
 					.filter(c -> inModuleScope(c))
 					.collect(Collectors.toSet());
@@ -171,7 +171,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	}
 
 	private void examineSubset(String ecl, List<Template> templates) throws TermServerScriptException {
-		DescendantsCache cache = DescendantsCache.getDescendentsCache();
+		DescendantsCache cache = DescendantsCache.getDescendantsCache();
 		Collection<Concept> subset = findConcepts(ecl);
 		if (subset.size() == 0) {
 			LOGGER.warn ("No concepts found in subset defined by '" + ecl + "' skipping");
@@ -180,7 +180,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		int subsetSize = subset.size();
 		Concept randomConcept = subset.iterator().next();
 		Concept topLevelConcept = SnomedUtils.getHighestAncestorBefore(randomConcept, ROOT_CONCEPT);
-		Set<Concept> topLevelHierarchy = cache.getDescendentsOrSelf(topLevelConcept);
+		Set<Concept> topLevelHierarchy = cache.getDescendantsOrSelf(topLevelConcept);
 		int topLevelHierarchySize = topLevelHierarchy.size();
 		
 		//How much of the top level hierarchy is out of scope due to have no model, or Oprhanet

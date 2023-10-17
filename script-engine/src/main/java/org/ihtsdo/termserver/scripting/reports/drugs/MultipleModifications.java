@@ -44,7 +44,7 @@ public class MultipleModifications extends TermServerReport {
 	}
 
 	private void findMultipleModifications() throws TermServerScriptException {
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			List<Concept> bases = getBases(c);
 			
 			if (bases.size() > 1) {
@@ -63,7 +63,7 @@ public class MultipleModifications extends TermServerReport {
 	}
 
 	private void findCDsWithMultipleModifications() throws TermServerScriptException {
-		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
 			for (Relationship r : DrugUtils.getIngredientRelationships(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				if (substancesWithMultipleModifications.contains(r.getTarget())) {
 					String basesStr = getBases(r.getTarget())

@@ -38,7 +38,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		
 		//We're making these exclusions because they're a source of truth for CS
 		for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
-			for (Concept c : sourceOfTruth.getDescendents(NOT_SET)) {
+			for (Concept c : sourceOfTruth.getDescendants(NOT_SET)) {
 				for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 					if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 						String term = d.getTerm();

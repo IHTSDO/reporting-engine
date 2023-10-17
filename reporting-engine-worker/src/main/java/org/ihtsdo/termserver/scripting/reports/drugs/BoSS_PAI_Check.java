@@ -58,7 +58,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
-		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT));
+		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateGrouperSubstances();
 		populateBaseMDFMap();
 		
@@ -137,7 +137,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 	private void populateGrouperSubstances() throws TermServerScriptException {
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
 		//considered 'grouper substances' that should not be used as BoSS 
-		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
+		for (Concept c : gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT)) {
 			DrugUtils.setConceptType(c);
 			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
 				for (Concept substance : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -220,7 +220,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 				Concept ingred = iRel.getTarget();
 				if (bRel.getGroupId() == iRel.getGroupId()) {
 					boolean isSelf = boSS.equals(ingred);
-					boolean isSubType = gl.getDescendantsCache().getDescendents(boSS).contains(ingred);
+					boolean isSubType = gl.getDescendantsCache().getDescendants(boSS).contains(ingred);
 					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
 					
 					if (isSelf || isSubType || isModificationOf) {

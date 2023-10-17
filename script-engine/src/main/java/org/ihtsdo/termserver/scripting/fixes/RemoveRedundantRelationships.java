@@ -81,7 +81,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 		//Find primitive concepts with redundant stated parents
 		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
-		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendents(NOT_SET);
+		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendants(NOT_SET);
 		for (Concept c : subHierarchy) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				//How many of these do we have?

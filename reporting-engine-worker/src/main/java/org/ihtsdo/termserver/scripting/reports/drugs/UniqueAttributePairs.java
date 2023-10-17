@@ -76,7 +76,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP)) {
+		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			analyzeConcept(c);
 		}
 		

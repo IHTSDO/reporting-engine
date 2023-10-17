@@ -80,7 +80,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
-		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT));
+		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateAcceptableDoseFormMaps();
 		populateGrouperSubstances();
 		populateBaseMDFMap();
@@ -277,7 +277,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	private void populateGrouperSubstances() throws TermServerScriptException {
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
 		//considered 'grouper substances' that should not be used as BoSS 
-		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
+		for (Concept c : gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT)) {
 			DrugUtils.setConceptType(c);
 			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
 				for (Concept substance : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -1205,7 +1205,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		initialiseSummary(issueStr);
 		Concept theraputicRole = gl.getConcept("766941000 |Therapeutic role (role)|");
 		nextConcept:
-		for (Concept c : theraputicRole.getDescendents(NOT_SET)) {
+		for (Concept c : theraputicRole.getDescendants(NOT_SET)) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.getTerm().toLowerCase().contains("agent")) {
 					report(c, issueStr, d);

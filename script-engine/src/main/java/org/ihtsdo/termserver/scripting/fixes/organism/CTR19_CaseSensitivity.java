@@ -146,7 +146,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<Concept>();
 		setQuiet(true);
-		for (Concept thisConcept :  subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept thisConcept :  subHierarchy.getDescendants(NOT_SET)) {
 			//Does this concept need any changes?  Modify a clone
 			Concept c = thisConcept.cloneWithIds();
 			

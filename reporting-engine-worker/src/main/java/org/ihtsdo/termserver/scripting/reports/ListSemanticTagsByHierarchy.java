@@ -60,11 +60,11 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 
 	public void runJob() throws TermServerScriptException {
 		//Work through all top level hierarchies and list semantic tags along with their counts
-		for (Concept topLevel : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
-			Set<Concept> descendents = topLevel.getDescendents(NOT_SET);
-			report (PRIMARY_REPORT, (Component)null, topLevel.toString(), "", descendents.size());
+		for (Concept topLevel : ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD)) {
+			Set<Concept> descendants = topLevel.getDescendants(NOT_SET);
+			report (PRIMARY_REPORT, (Component)null, topLevel.toString(), "", descendants.size());
 			Map<String, Multiset<String>> languageMap = new HashMap<>();
-			for (Concept c : descendents) {
+			for (Concept c : descendants) {
 				for (Description d : c.getDescriptions()) {
 					if(!includeInt && SnomedUtils.isInternational(d)) {
 						continue;

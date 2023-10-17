@@ -67,7 +67,7 @@ public class FsnPtAlignmentStats extends TermServerReport implements ReportClass
 		if (StringUtils.isEmpty(subsetECL)) {
 			List<Concept> hierarchies = SnomedUtils.sort(ROOT_CONCEPT.getChildren(CharacteristicType.STATED_RELATIONSHIP));
 			for (Concept hierarchy : hierarchies) {
-				Collection<Concept> concepts = hierarchy.getDescendents(NOT_SET);
+				Collection<Concept> concepts = hierarchy.getDescendants(NOT_SET);
 				reportAlignmentStats(hierarchy.toStringPref(), concepts);
 			}
 		} else {

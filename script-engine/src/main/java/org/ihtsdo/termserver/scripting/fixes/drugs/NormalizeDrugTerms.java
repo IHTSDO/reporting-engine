@@ -115,7 +115,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants 
 		termGenerator.setQuiet(true);
 		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
-		Set<Concept> selection = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> selection = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
 		//Set<Concept> selection = Collections.singleton(gl.getConcept("785386009"));
 		for (Concept c : selection) {
 			SnomedUtils.populateConceptType(c);

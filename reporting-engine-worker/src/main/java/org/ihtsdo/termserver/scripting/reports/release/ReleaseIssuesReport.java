@@ -1311,8 +1311,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Rule 1 (clinical finding) concepts cannot have a (disorder) concept as a parent
 		//Rule 2 All (disorder) concepts must be a descendant of 64572001|Disease (disorder)| 
-		Set<Concept> diseases = DISEASE.getDescendents(NOT_SET);
-		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
+		Set<Concept> diseases = DISEASE.getDescendants(NOT_SET);
+		for (Concept c : CLINICAL_FINDING.getDescendants(NOT_SET)) {
 			if (!inScope(c) || c.equals(DISEASE)) {
 				continue;
 			}
@@ -1466,7 +1466,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		Concept type = gl.getConcept("424876005 |Surgical approach (attribute)|");
 		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
-		Set<Concept> subHierarchyList = cache.getDescendentsOrSelf(subHierarchy);
+		Set<Concept> subHierarchyList = cache.getDescendantsOrSelf(subHierarchy);
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
 				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
@@ -1494,9 +1494,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//RP-181 No finding or procedure site attribute should take a combined bodysite as the value
 		List<Concept> typesOfInterest = new ArrayList<>();
 		typesOfInterest.add(FINDING_SITE);
-		Set<Concept> procSiteTypes = cache.getDescendentsOrSelf(gl.getConcept("363704007 |Procedure site (attribute)|"));
+		Set<Concept> procSiteTypes = cache.getDescendantsOrSelf(gl.getConcept("363704007 |Procedure site (attribute)|"));
 		typesOfInterest.addAll(procSiteTypes);
-		Set<Concept> invalidValues = cache.getDescendentsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
+		Set<Concept> invalidValues = cache.getDescendantsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
 		
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActive() && inScope(c)) {
@@ -1513,7 +1513,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//RP-181 No new combined bodysite concepts should be created
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
-			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
+			for (Concept c : deprecatedHierarchy.getDescendants(NOT_SET)) {
 				if (!c.isReleased() && inScope(c)) {
 					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
 				}
@@ -1649,7 +1649,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept[] domainType : domainTypeIncompatibilities) {
 			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
 			initialiseSummary(issueStr);
-			for (Concept c : domainType[0].getDescendents(NOT_SET)) {
+			for (Concept c : domainType[0].getDescendants(NOT_SET)) {
 				if (c.isActive() && inScope(c)) {
 					if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, domainType[1])) {
 						//RP-574 But is this concept also a type of a domain that would allow this attribute?

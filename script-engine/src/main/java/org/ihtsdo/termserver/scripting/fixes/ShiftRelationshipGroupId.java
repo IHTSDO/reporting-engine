@@ -82,7 +82,7 @@ public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstant
 		List<Component> processMe = new ArrayList<Component>();
 		print ("Identifying cloned relationships that should have been moved");
 		this.setQuiet(true);
-		for (Concept c : ROOT_CONCEPT.getDescendents(NOT_SET)) {
+		for (Concept c : ROOT_CONCEPT.getDescendants(NOT_SET)) {
 			//For each active unpublished relationship, see if we have an inactive one 
 			//in another group
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {

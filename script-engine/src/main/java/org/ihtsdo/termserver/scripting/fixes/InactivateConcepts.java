@@ -103,14 +103,14 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		
 		//How many children do we have to do something different with?
 		//Use locally held concept when traversing transitive closure
-		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendants(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 		descendants.removeAll(allComponentsToProcess);
 		if (descendants.size() > 0) {
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
 		}
 		
 		//Check for any stated children and remove this concept as a parent
-		for (Concept child : gl.getConcept(c.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
+		for (Concept child : gl.getConcept(c.getConceptId()).getDescendants(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
 			//Have we already inactivated this child
 			if (!inactivations.containsKey(child)) {
 				t.remove(child);

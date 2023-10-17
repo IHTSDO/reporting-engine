@@ -131,7 +131,7 @@ abstract public class TemplateFix extends BatchFix {
 
 		for (String thisExclude : excludeHierarchies) {
 			LOGGER.info("Setting exclusion of " + thisExclude + " subHierarchy.");
-			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
+			exclusions.addAll(gl.getConcept(thisExclude).getDescendants(NOT_SET));
 		}
 		
 		//Note add words as lower case as we do all lower case matching

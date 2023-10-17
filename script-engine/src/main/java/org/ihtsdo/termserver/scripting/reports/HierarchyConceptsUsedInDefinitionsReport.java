@@ -56,7 +56,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	private void reportConceptsUsedInDefinition() throws TermServerScriptException {
 
 		//Concept sourceHierarchy = gl.getConcept(hierarchy);
-		//Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
+		//Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendants(NOT_SET));
 		List<Component> sourceConcepts = processFile();
 		
 		LOGGER.info ("Active source concepts number " + sourceConcepts.size());

@@ -159,7 +159,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 		exclusions = new HashSet<>();
 		for (String exclusionStr : exclusionArr) {
 			Concept exclusionStart = gl.getConcept(exclusionStr);
-			exclusions.addAll(exclusionStart.getDescendents(NOT_SET));
+			exclusions.addAll(exclusionStart.getDescendants(NOT_SET));
 		}
 	}
 	
@@ -305,7 +305,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 			return;
 		}
 		
-		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(intermediatePrimitive)) {
+		for (Concept c : gl.getDescendantsCache().getDescendantsOrSelf(intermediatePrimitive)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				totalFDsUnderIP++;
 				if (this.conceptsToAnalyse.contains(c)) {
@@ -319,7 +319,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 			}
 		}
 		int aboveMe = primitivesAboveHere(intermediatePrimitive);
-		int descendants = gl.getDescendantsCache().getDescendents(intermediatePrimitive).size();
+		int descendants = gl.getDescendantsCache().getDescendants(intermediatePrimitive).size();
 		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 		countIssue(null);
 	}

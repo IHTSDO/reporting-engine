@@ -49,7 +49,7 @@ public class MissingModifications extends TermServerReport {
 	}
 
 	private void findSubstancesUsedInProducts() throws TermServerScriptException {
-		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept product : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
 				substancesProductMap.put(r.getTarget(), product);
 			}
@@ -61,7 +61,7 @@ public class MissingModifications extends TermServerReport {
 
 	private void findModificationWords() throws TermServerScriptException {
 		LOGGER.debug ("Finding modification words");
-		for (Concept substance : gl.getDescendantsCache().getDescendentsOrSelf(SUBSTANCE)) {
+		for (Concept substance : gl.getDescendantsCache().getDescendantsOrSelf(SUBSTANCE)) {
 			//What is my X?
 			String baseName = SnomedUtils.deconstructFSN(substance.getFsn())[0];
 			for (Concept modification : getModifications(substance)) {
@@ -85,13 +85,13 @@ public class MissingModifications extends TermServerReport {
 
 	private Set<Concept> getModifications(Concept substance) throws TermServerScriptException {
 		return gl.getDescendantsCache()
-				.getDescendentsOrSelf(SUBSTANCE).stream()
+				.getDescendantsOrSelf(SUBSTANCE).stream()
 				.filter(child -> child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, substance, ActiveState.ACTIVE).size() > 0)
 				.collect(Collectors.toSet());
 	}
 
 	private void findMissingModifications() throws TermServerScriptException {
-		for (Concept substance : gl.getDescendantsCache().getDescendentsOrSelf(SUBSTANCE)) {
+		for (Concept substance : gl.getDescendantsCache().getDescendantsOrSelf(SUBSTANCE)) {
 			if (substance.getConceptId().equals("396061008")) {
 				LOGGER.debug("Checkpoint");
 			}

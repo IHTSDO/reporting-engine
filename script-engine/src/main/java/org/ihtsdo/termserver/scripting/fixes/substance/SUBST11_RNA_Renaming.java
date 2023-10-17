@@ -50,7 +50,7 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 	
 	public void postInit() throws TermServerScriptException {
 		//Populate Organisms by PT
-		for (Concept c : ORGANISM.getDescendents(NOT_SET)) {
+		for (Concept c : ORGANISM.getDescendants(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				String term = d.getTerm().toLowerCase().replaceAll(" of ", "");
 				organisms.put(term, c);
@@ -202,7 +202,7 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 		List<Concept> conceptsToProcess = new ArrayList<>();
 		setQuiet(true);
 		subHierarchy = gl.getConcept("118251005 | Microbial ribosomal ribonucleic acid (substance)");
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			if (remodel(null, c.cloneWithIds()) > 0) {
 				conceptsToProcess.add(c);
 			} else {

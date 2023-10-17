@@ -57,7 +57,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
-		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT));
+		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateAcceptableDoseFormMaps();
 		
 		super.postInit(tabNames, columnHeadings, false);

@@ -42,7 +42,7 @@ public class MultipleIngredients extends TermServerReport {
 	}
 
 	private void finMultipleModifications() throws TermServerScriptException {
-		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
 			DrugUtils.setConceptType(c);
 			if (SnomedUtils.isConceptType(c, validTypes)) {
 				int ingredientCount = DrugUtils.getIngredients(c, CharacteristicType.STATED_RELATIONSHIP).size();

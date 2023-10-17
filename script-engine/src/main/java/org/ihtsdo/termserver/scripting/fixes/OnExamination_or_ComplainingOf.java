@@ -57,8 +57,8 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 
 	public void postInit() throws TermServerScriptException {
 		//The target domain is Clinical Finding Hierarchy, with the disorders removed
-		targetDomain = gl.getConcept(targetHierarchy).getDescendents(NOT_SET);
-		//Collection<Concept> exceptions = gl.getConcept(except).getDescendents(NOT_SET);
+		targetDomain = gl.getConcept(targetHierarchy).getDescendants(NOT_SET);
+		//Collection<Concept> exceptions = gl.getConcept(except).getDescendants(NOT_SET);
 		//targetDomain.removeAll(exceptions);
 		browserClient = new BrowserClient();
 		super.postInit();
@@ -132,7 +132,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		LOGGER.info ("Identifying concepts to process");
-		Collection<Concept> checkMe = gl.getConcept(targetHierarchy).getDescendents(NOT_SET);
+		Collection<Concept> checkMe = gl.getConcept(targetHierarchy).getDescendants(NOT_SET);
 		List<Component> processMe = new ArrayList<>();
 		
 		int count = 0;

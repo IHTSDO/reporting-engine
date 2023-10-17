@@ -1,11 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.Charsets;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -131,7 +129,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				String ecl = "<< 64572001 |Disease (disorder)| : " + targetType + " = << " + subsetDefn;
 				subset = findConcepts(ecl);
 			} else {
-				subset = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subsetDefn)); //
+				subset = new HashSet<>(gl.getDescendantsCache().getDescendantsOrSelf(subsetDefn)); //
 				removeExclusions(subsetDefn, subset);
 			}
 			
@@ -177,7 +175,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		if (theseExclusions != null) {
 			for (Concept thisExclusion : theseExclusions) {
 				LOGGER.info ("For " + subHierarchyStart + " removing " + thisExclusion);
-				subSet.removeAll(gl.getDescendantsCache().getDescendentsOrSelf(thisExclusion));
+				subSet.removeAll(gl.getDescendantsCache().getDescendantsOrSelf(thisExclusion));
 			}
 		}
 	}

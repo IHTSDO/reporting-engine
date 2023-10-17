@@ -60,7 +60,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements ScriptCons
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> conceptsToProcess = new ArrayList<>();
-		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
+		for (Concept c : gl.getConcept(subHierarchyStr).getDescendants(NOT_SET)) {
 			//This check will report any concepts that cannot have their PPP remodelled.
 			if (checkAndSetProximalPrimitiveParent(null, c.cloneWithIds(), proximalPrimitiveParent, true, false) != NO_CHANGES_MADE) {
 				conceptsToProcess.add(c);

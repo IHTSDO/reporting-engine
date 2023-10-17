@@ -46,17 +46,17 @@ public class SemanticTagsMatrix extends TermServerReport{
 
 	private void getTopLevelHierarchies() throws TermServerScriptException {
 		Concept rootConcept = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
-		topLevelHierarchies = new ArrayList<Concept>(rootConcept.getDescendents(IMMEDIATE_CHILD));
+		topLevelHierarchies = new ArrayList<Concept>(rootConcept.getDescendants(IMMEDIATE_CHILD));
 		tagToUsageMap = new TreeMap<String, int[]>();
 	}
 
 	private void listSemanticTags() throws TermServerScriptException {
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (int h=0; h < topLevelHierarchies.size(); h++) {
-			Set<Concept> descendents = topLevelHierarchies.get(h).getDescendents(NOT_SET);
-			LOGGER.info (topLevelHierarchies.get(h) + " - total: " + descendents.size());
+			Set<Concept> descendants = topLevelHierarchies.get(h).getDescendants(NOT_SET);
+			LOGGER.info (topLevelHierarchies.get(h) + " - total: " + descendants.size());
 			String topTag = SnomedUtils.deconstructFSN(topLevelHierarchies.get(h).getFsn())[1];
-			for (Concept c : descendents) {
+			for (Concept c : descendants) {
 				String tag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				checkForAnomoly(topTag, tag, c);
 				//Have we seen this tag before?

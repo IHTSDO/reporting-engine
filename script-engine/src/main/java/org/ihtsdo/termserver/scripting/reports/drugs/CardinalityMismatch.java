@@ -38,7 +38,7 @@ public class CardinalityMismatch extends TermServerReport {
 	}
 
 	private void finMultipleModifications() throws TermServerScriptException {
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			List<Concept> statedDispositions = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)
 					.stream()
 					.map(rel -> rel.getTarget())

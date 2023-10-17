@@ -105,7 +105,7 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		*/
 		
 		searchTermAttributeMap.put("idiopathic", new RelationshipTemplate(IS_A, gl.getConcept("41969006 |Idiopathic disease (disorder)|")));
-		acceptableAlternatives = gl.getConcept("41969006").getDescendents(NOT_SET);
+		acceptableAlternatives = gl.getConcept("41969006").getDescendants(NOT_SET);
 		super.postInit();
 	}
 
@@ -171,7 +171,7 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<>();
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			for (String searchTerm : searchTermAttributeMap.keySet()) {
 				if (c.getFsn().toLowerCase().contains(searchTerm) //|| 
 						//c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", " ")) ||

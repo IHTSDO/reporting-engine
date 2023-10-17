@@ -75,7 +75,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 		for (Concept excludeThis : excludeHierarchies) {
 			excludeThis = gl.getConcept(excludeThis.getConceptId());
-			allExclusions.addAll(gl.getDescendantsCache().getDescendents(excludeThis));
+			allExclusions.addAll(gl.getDescendantsCache().getDescendants(excludeThis));
 		}
 		
 		//We're making these exclusions because they're a source of truth for CS
@@ -165,7 +165,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
-			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
+			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendants(NOT_SET));
 			LOGGER.info ("Checking case significance in target hierarchy: " + targetHierarchy);
 			
 			int count = 0;

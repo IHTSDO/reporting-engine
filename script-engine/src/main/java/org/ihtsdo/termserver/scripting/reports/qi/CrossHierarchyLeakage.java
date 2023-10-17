@@ -49,11 +49,11 @@ public class CrossHierarchyLeakage extends TermServerReport {
 	}
 
 	private void runCrossHierarchyLeakageReport() throws TermServerScriptException {
-		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy)) {
 			Concept parentInHierarchy = null;
 			//Check all my inferred parents for concepts in target hierarchy
 			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-				if (gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).contains(parent)) {
+				if (gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy).contains(parent)) {
 					parentInHierarchy = parent;
 				}
 			}
@@ -61,7 +61,7 @@ public class CrossHierarchyLeakage extends TermServerReport {
 			//Check all my inferred parents for concepts in other hierarchies
 			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				boolean leakingParentFound = false;
-				if (!gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).contains(parent)) {
+				if (!gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy).contains(parent)) {
 					report (c, parent, parentInHierarchy);
 					leakingParentFound = true;
 				}
@@ -73,7 +73,7 @@ public class CrossHierarchyLeakage extends TermServerReport {
 	}
 	
 	private void runMultipleParentsReport() throws TermServerScriptException {
-		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy)) {
 			Set<Concept> parents = new HashSet<>(c.getParents(CharacteristicType.STATED_RELATIONSHIP));
 			parents.addAll(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP));
 			if (parents.size() > 1) {

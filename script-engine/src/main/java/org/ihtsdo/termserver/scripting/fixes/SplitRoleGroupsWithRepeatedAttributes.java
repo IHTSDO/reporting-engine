@@ -48,7 +48,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements S
 	}
 
 	public void postLoadInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept("46866001").getDescendents(NOT_SET); // |Fracture of lower limb (disorder)|
+		subHierarchy = gl.getConcept("46866001").getDescendants(NOT_SET); // |Fracture of lower limb (disorder)|
 		/*attributesToSplit = new ArrayList<Concept>();
 		attributesToSplit.add(gl.getConcept("116676008")); // |Associated morphology (attribute)|"))
 		attributesToSplit.add(gl.getConcept("363698007")); // |Finding site (attribute)|
@@ -59,7 +59,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements S
 	}
 	
 	public void setSubHierarchy(Concept concept) throws TermServerScriptException {
-		this.subHierarchy = concept.getDescendents(NOT_SET);
+		this.subHierarchy = concept.getDescendants(NOT_SET);
 	}
 
 	public void setSubHierarchy(Set<Concept> concepts) {

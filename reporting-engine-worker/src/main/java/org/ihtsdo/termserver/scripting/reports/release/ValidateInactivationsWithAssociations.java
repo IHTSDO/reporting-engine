@@ -104,7 +104,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 
 	public void runJob() throws TermServerScriptException {
-		namespaceConcepts = gl.getDescendantsCache().getDescendentsOrSelf(NAMESPACE_CONCEPT);
+		namespaceConcepts = gl.getDescendantsCache().getDescendantsOrSelf(NAMESPACE_CONCEPT);
 		List<Concept> concepts = SnomedUtils.sort(gl.getAllConcepts());
 		for (Concept c : concepts) {
 			//Are we checking only unpromoted changes?  Either d or the already known

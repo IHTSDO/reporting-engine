@@ -46,7 +46,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 	
 	private void getTopLevelHierarchies() throws TermServerScriptException {
 		Concept rootConcept = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
-		topLevelHierarchies = new ArrayList<Concept>(rootConcept.getDescendents(IMMEDIATE_CHILD));
+		topLevelHierarchies = new ArrayList<Concept>(rootConcept.getDescendants(IMMEDIATE_CHILD));
 		//Sort by FSN
 		Collections.sort(topLevelHierarchies, new Comparator<Concept>() {
 			@Override
@@ -62,13 +62,13 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept thisHierarchy : topLevelHierarchies) {
 			int hierarchyIpCount = 0;
-			Set<Concept> descendents = thisHierarchy.getDescendents(NOT_SET, targetCharType);
-			for (Concept c : descendents) {
+			Set<Concept> descendants = thisHierarchy.getDescendants(NOT_SET, targetCharType);
+			for (Concept c : descendants) {
 				if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 					hierarchyIpCount += checkConceptForIntermediatePrimitive(c);
 				}
 			}
-			LOGGER.info(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendents.size());
+			LOGGER.info(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendants.size());
 			rowsReported += hierarchyIpCount;
 		}
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
@@ -77,7 +77,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 
 	private int checkConceptForIntermediatePrimitive(Concept c) throws TermServerScriptException {
 		//Do we have both ancestor and descendant fully defined concepts?
-		Set<Concept> descendants = c.getDescendents(NOT_SET, targetCharType);
+		Set<Concept> descendants = c.getDescendants(NOT_SET, targetCharType);
 		boolean hasFdDescendants = containsFdConcept(descendants);
 		if (hasFdDescendants && containsFdConcept(c.getAncestors(NOT_SET, targetCharType, false))) {
 			//This is an intermediate primitive, but does it have immediately close SD concepts?

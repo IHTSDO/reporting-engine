@@ -32,8 +32,8 @@ public class ClosureCache implements ScriptConstants{
 	public Set<Concept> getClosure(Concept c) throws TermServerScriptException {
 		if (!closureCache.containsKey(c)) {
 			Concept preLoadedConcept = gl.getConcept(c.getConceptId());
-			Set<Concept> descendents = preLoadedConcept.getDescendents(NOT_SET);
-			closureCache.put(c, descendents);
+			Set<Concept> descendants = preLoadedConcept.getDescendants(NOT_SET);
+			closureCache.put(c, descendants);
 		}
 		return closureCache.get(c);
 	}

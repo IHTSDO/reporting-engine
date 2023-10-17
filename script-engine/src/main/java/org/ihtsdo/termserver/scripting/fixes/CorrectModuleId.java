@@ -87,7 +87,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 		LOGGER.info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<Concept>();
 		setQuiet(true);
-		for (Concept c : ROOT_CONCEPT.getDescendents(NOT_SET)) {
+		for (Concept c : ROOT_CONCEPT.getDescendants(NOT_SET)) {
 			if (!c.getConceptId().equals("277040004")) {
 			//	continue;
 			}

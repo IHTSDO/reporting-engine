@@ -59,7 +59,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	public void runJob() throws TermServerScriptException {
 		//Work out the path of semantic tags with examples
 		LOGGER.info ("Generating Semantic Tag Hierarchy report");
-		Set<Concept> concepts = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy);
+		Set<Concept> concepts = gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy);
 		
 		LOGGER.info ("Examining all concepts to determine tag hierarchy");
 		for (Concept c : concepts) {
@@ -80,7 +80,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			}
 			
 			//Record all the child semtags if not seen before
-			for (Concept child : c.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			for (Concept child : c.getDescendants(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				if (whiteListedConceptIds.contains(child)) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;

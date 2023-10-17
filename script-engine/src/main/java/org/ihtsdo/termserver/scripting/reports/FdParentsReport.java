@@ -43,7 +43,7 @@ public class FdParentsReport extends TermServerReport {
 	private void reportFdParents() throws TermServerScriptException {
 		Collection<Concept> concepts = null;
 		if (subHierarchy != null) {
-			concepts = gl.getConcept(subHierarchy).getDescendents(NOT_SET);
+			concepts = gl.getConcept(subHierarchy).getDescendants(NOT_SET);
 		} else {
 			concepts = gl.getAllConcepts();
 		}

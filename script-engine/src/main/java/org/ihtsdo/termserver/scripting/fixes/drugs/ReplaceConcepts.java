@@ -217,7 +217,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 			processMe.sort(Comparator.comparing(c -> ((Concept)c).getFsn()));
 			
 			//Now all of our subHierarchy will be removed except for the ones we're moving
-			List<Concept> inactivateMe = new ArrayList<>(subHierarchy.getDescendents(NOT_SET));
+			List<Concept> inactivateMe = new ArrayList<>(subHierarchy.getDescendants(NOT_SET));
 			inactivateMe.removeAll(processMe);
 			
 			//As well as sorting, we also need to remove any children, since they'll have to 

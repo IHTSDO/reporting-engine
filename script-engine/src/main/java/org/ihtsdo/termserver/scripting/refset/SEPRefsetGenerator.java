@@ -64,7 +64,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 		print ("Generating SEP Refset");
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierchyStr);
-		Set<Concept> allConcepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> allConcepts = subHierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 		for (Concept thisConcept : allConcepts) {
 			String fsnBase = SnomedUtils.deconstructFSN(thisConcept.getFsn())[0].toLowerCase();
 			//Check we don't have more than one of our target keywords. THAT would be confusing!
@@ -106,7 +106,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 		//Find immediate active children of thisConcept, identify concepts with 'Entire' or 'Part' in FSN and warn if 
 		//there is more than one Entire or Part
 		String[] entireAndPart = new String[] { null, null };
-		Set<Concept> immediateChildren = thisConcept.getDescendents(IMMEDIATE_CHILD,CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> immediateChildren = thisConcept.getDescendants(IMMEDIATE_CHILD,CharacteristicType.INFERRED_RELATIONSHIP);
 		for (Concept thisChild : immediateChildren) {
 			for (int i=0; i<MAX_VALUE_COUNT; i++) {
 				if (thisChild.getFsn().contains(entirePart[i])) {

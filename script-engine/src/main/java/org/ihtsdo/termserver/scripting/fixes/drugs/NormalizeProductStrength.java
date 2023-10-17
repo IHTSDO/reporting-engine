@@ -142,7 +142,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements ScriptCons
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();  //We want to process in the same order each time, in case we restart and skip some.
 		setQuiet(true);
-		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				if (normalizeProductStrength(null, c) > 0) {

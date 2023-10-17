@@ -60,7 +60,7 @@ public class FractureOfXTermRemodelling extends BatchFix implements ScriptConsta
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<Component>();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
-		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);
+		Set<Concept>allDescendants = subHierarchy.getDescendants(NOT_SET);
 		for (Concept thisConcept : allDescendants) {
 			String fsn = thisConcept.getFsn().toLowerCase();
 			if (fsn.contains(searchTerm) && !startsWithSearchDesiredTerm(fsn)) {

@@ -67,7 +67,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 	public void postInit() throws TermServerScriptException {
 		//Create various maps of terms
 		LOGGER.info ("Mapping current descriptions");
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				String term = removeStopWords(d.getTerm());;
 				String[] words = term.split(SPACE);

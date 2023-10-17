@@ -549,7 +549,7 @@ public class GroupRemodel extends TemplateFix {
 		if (a.getValue() != null && !templateGroupOptional) {
 			Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
 			//Don't add if our group already contains this, or something more specific
-			if (!group.containsTypeValue(type, gl.getDescendantsCache().getDescendentsOrSelf(a.getValue()))) {
+			if (!group.containsTypeValue(type, gl.getDescendantsCache().getDescendantsOrSelf(a.getValue()))) {
 				//Does this constant already exist ungrouped?
 				if (groups.get(UNGROUPED).containsTypeValue(constantRel)) {
 					Relationship ungroupedConstant = groups.get(UNGROUPED).getTypeValue(constantRel);
