@@ -229,7 +229,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 		List<Concept> processMe = new ArrayList<>();
 		LOGGER.info ("Identifying incorrect case signficance settings");
 		this.setQuiet(true);
-		for (Concept concept : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept concept : subHierarchy.getDescendants(NOT_SET)) {
 			/*if (!concept.getConceptId().equals("130867000")) {
 				continue;
 			}*/

@@ -66,14 +66,14 @@ public class LoincReport extends TermServerReport implements ReportClass {
 		traceabilityService = new SingleTraceabilityService(jobRun, this);
 		traceabilityService.setBranchPath(project.getKey());
 		
-		for (Concept c : gl.getConcept("363787002 | Observable entity (observable entity)").getDescendents(NOT_SET)) {
+		for (Concept c : gl.getConcept("363787002 | Observable entity (observable entity)").getDescendants(NOT_SET)) {
 			if (!c.isReleased() && !isExcluded(c)) {
 				populateTraceabilityAndReport(PRIMARY_REPORT, c);
 				countIssue(c);
 			}
 		}
 		
-		for (Concept c : gl.getConcept("386053000 | Evaluation procedure (procedure)").getDescendents(NOT_SET)) {
+		for (Concept c : gl.getConcept("386053000 | Evaluation procedure (procedure)").getDescendants(NOT_SET)) {
 			if (!c.isReleased() && !isExcluded(c)) {
 				populateTraceabilityAndReport(SECONDARY_REPORT, c);
 				countIssue(c);

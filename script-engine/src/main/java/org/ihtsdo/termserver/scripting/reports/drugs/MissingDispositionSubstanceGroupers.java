@@ -49,7 +49,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 		//Populate the disposition / substance map
 		dispositionSubstanceMap = new HashMap<>();
 		dispositionGrouperMap = new HashMap<>();
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			for (Concept disposition : SnomedUtils.getTargets(c, new Concept[] {HAS_DISPOSITION}, CharacteristicType.STATED_RELATIONSHIP)) {
 				//Have we seen this disposition before?
 				Set<Concept> usedBy = dispositionSubstanceMap.get(disposition);
@@ -82,7 +82,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 
 	private void runMissingDispositionsReport() throws TermServerScriptException {
 		Concept topDisposition = gl.getConcept("726711005"); // |Disposition (disposition)|
-		for (Concept disposition : topDisposition.getDescendents(NOT_SET)) {
+		for (Concept disposition : topDisposition.getDescendants(NOT_SET)) {
 			//Does this disposition have a grouper concept?
 			if (!dispositionGrouperMap.containsKey(disposition)) {
 				//Are there substances using this disposition?  List them

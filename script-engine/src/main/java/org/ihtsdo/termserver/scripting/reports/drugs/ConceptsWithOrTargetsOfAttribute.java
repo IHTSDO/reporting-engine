@@ -93,7 +93,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	}
 
 	private void runModifiedNotLeaf() throws TermServerScriptException {
-		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendents(NOT_SET);
+		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : subHierarchyConcepts) {
 			//We're only interested in active concepts with descendants - ie not leaf concepts
 			if (c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
@@ -107,7 +107,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	}
 	
 	private void runModifcationTargetWithChildren() throws TermServerScriptException {
-		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendents(NOT_SET);
+		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : subHierarchyConcepts) {
 			//We're only interested in active concepts with stated descendants - ie not leaf concepts
 			if (c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0) {

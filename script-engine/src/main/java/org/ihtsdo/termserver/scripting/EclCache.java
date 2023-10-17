@@ -127,11 +127,11 @@ public class EclCache implements ScriptConstants {
 					if (subhierarchy.equals(ROOT_CONCEPT)) {
 						allConcepts = gl.getAllConcepts();
 					} else {
-						allConcepts = descendantsCache.getDescendentsOrSelf(subhierarchy, true);
+						allConcepts = descendantsCache.getDescendantsOrSelf(subhierarchy, true);
 					}
 				} else if (ecl.startsWith("<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
-					allConcepts = descendantsCache.getDescendents(subhierarchy, true);
+					allConcepts = descendantsCache.getDescendants(subhierarchy, true);
 				} else {
 					//Could this be a single concept?
 					try {

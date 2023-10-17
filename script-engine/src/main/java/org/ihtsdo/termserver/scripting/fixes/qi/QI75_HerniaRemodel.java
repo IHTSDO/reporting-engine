@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.fixes.qi;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
@@ -69,7 +68,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 		//Populate all known types of hernia
 		Concept hernia = gl.getConcept("52515009 |Hernia of abdominal cavity (disorder)|");
 		typesOfHernia = new HashMap<>();
-		for (Concept c : hernia.getDescendents(NOT_SET)) {
+		for (Concept c : hernia.getDescendants(NOT_SET)) {
 			String term = SnomedUtils.deconstructFSN(c.getFsn())[0].toLowerCase();
 			typesOfHernia.put(term, c);
 		}
@@ -130,8 +129,8 @@ public class QI75_HerniaRemodel extends BatchFix {
 	 */
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Component> processMe = new HashSet<>();
-		processMe.addAll(gl.getDescendantsCache().getDescendentsOrSelf(hWithO));
-		processMe.addAll(gl.getDescendantsCache().getDescendentsOrSelf(hWithG));
+		processMe.addAll(gl.getDescendantsCache().getDescendantsOrSelf(hWithO));
+		processMe.addAll(gl.getDescendantsCache().getDescendantsOrSelf(hWithG));
 		return new ArrayList<Component>(processMe);
 	}
 	
@@ -149,8 +148,8 @@ public class QI75_HerniaRemodel extends BatchFix {
 		//Sort into one of three buckets
 		for (Component comp : allComponents) {
 			Concept c = (Concept)comp;
-			boolean isObstruction = gl.getDescendantsCache().getDescendentsOrSelf(hWithO).contains(c);
-			boolean isGangrene = gl.getDescendantsCache().getDescendentsOrSelf(hWithG).contains(c);
+			boolean isObstruction = gl.getDescendantsCache().getDescendantsOrSelf(hWithO).contains(c);
+			boolean isGangrene = gl.getDescendantsCache().getDescendantsOrSelf(hWithG).contains(c);
 			if (isObstruction) {
 				//Is it both?
 				if (isGangrene) {

@@ -55,7 +55,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		//For all active concepts in the report hierarchy, report if the concept is not
 		//also in the supplied file
 		Concept sourceHierarchy = gl.getConcept(hierarchy);
-		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
+		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendants(NOT_SET));
 		LOGGER.info ("Active source concepts number " + sourceConcepts.size());
 		
 		for (Concept c : sourceConcepts) {

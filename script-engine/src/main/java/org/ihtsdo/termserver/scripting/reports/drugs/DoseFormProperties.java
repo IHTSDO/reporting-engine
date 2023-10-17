@@ -60,7 +60,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 
 	public void runJob() throws TermServerScriptException {
 		Concept pharmDoseForm = gl.getConcept("736542009 |Pharmaceutical dose form (dose form)|");
-		List<Concept> pharmDoseForms = new ArrayList<>(pharmDoseForm.getDescendents(NOT_SET));
+		List<Concept> pharmDoseForms = new ArrayList<>(pharmDoseForm.getDescendants(NOT_SET));
 		pharmDoseForms.sort(Comparator.comparing(Concept::getFsn));
 		Set<Concept> usedInInternationalEdition = findDoseFormsUsed();
 		for (Concept c : pharmDoseForms) {
@@ -82,7 +82,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 	private Set<Concept> findDoseFormsUsed() throws TermServerScriptException {
 		Set<Concept> doseFormsUsed = new HashSet<>();
 		Concept[] types = new Concept[] { gl.getConcept("411116001 |Has manufactured dose form (attribute)|")};
-		for (Concept drug : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept drug : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			doseFormsUsed.addAll(SnomedUtils.getTargets(drug, types, CharacteristicType.INFERRED_RELATIONSHIP));
 		}
 		return doseFormsUsed;

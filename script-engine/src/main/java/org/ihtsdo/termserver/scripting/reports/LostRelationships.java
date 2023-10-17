@@ -18,7 +18,7 @@ public class LostRelationships extends TermServerScript{
 	private static final Logger LOGGER = LoggerFactory.getLogger(LostRelationships.class);
 
 	Set<Concept> modifiedConcepts;
-	Set<Concept> descendentOfProductRole;
+	Set<Concept> descendantOfProductRole;
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -39,7 +39,7 @@ public class LostRelationships extends TermServerScript{
 	
 	private void populateProdRoleDesc() throws TermServerScriptException {
 		Concept productRole = gl.getConcept("718566004"); // |Product role (product))
-		descendentOfProductRole = productRole.getDescendents(NOT_SET);
+		descendantOfProductRole = productRole.getDescendants(NOT_SET);
 	}
 
 	private void detectLostRelationships() throws TermServerScriptException {
@@ -78,7 +78,7 @@ public class LostRelationships extends TermServerScript{
 	
 	protected void report (Concept c, Relationship r) throws TermServerScriptException {
 		//Adding a column to indicate if the relationship value is a descendant of Product Role
-		boolean isProdRoleDesc = descendentOfProductRole.contains(r.getTarget());
+		boolean isProdRoleDesc = descendantOfProductRole.contains(r.getTarget());
 		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE_COMMA + isProdRoleDesc;
 		writeToReportFile(line);
 	}

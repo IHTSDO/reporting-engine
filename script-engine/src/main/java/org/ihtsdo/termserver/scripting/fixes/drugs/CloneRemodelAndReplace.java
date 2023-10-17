@@ -80,7 +80,7 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 		HPSNV = gl.getConcept("732944001 |Has presentation strength numerator value (attribute)|");
 		HCSNV = gl.getConcept("733724008 |Has concentration strength numerator value (attribute)|");
 	
-		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
+		for (Concept c : gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT)) {
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				allKnownCDs.put(c.getFsn(), c);
@@ -163,7 +163,7 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.debug("Identifying concepts to process");
 		//We're looking for concepts with both concentration and presentation strength
-		List<Concept> allAffected = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)
+		List<Concept> allAffected = gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT)
 				.stream()
 				.filter(c -> c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HPSNV, ActiveState.ACTIVE).size() > 0)
 				.filter(c -> c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HCSNV, ActiveState.ACTIVE).size() > 0)

@@ -133,14 +133,14 @@ public class RelationshipsWithTarget extends TermServerScript{
 		LOGGER.info ("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
 				
 		while (response == null) {
-			print ("Filter for attribute target descendent or self of: ");
+			print ("Filter for attribute target descendant or self of: ");
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				Concept hierarchy = gl.getConcept(response);
-				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
+				Set<Concept> filteringTargets = hierarchy.getDescendants(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
 				filterOnTarget.addAll(filteringTargets); //descendant
 				filterOnTarget.add(hierarchy);  //and self
-				LOGGER.info ("\nFiltering for target descendents of " + hierarchy + " - " + filteringTargets.size());
+				LOGGER.info ("\nFiltering for target descendants of " + hierarchy + " - " + filteringTargets.size());
 				response = null;
 			}
 		}

@@ -34,7 +34,7 @@ public class LoincMatchingAttributes extends TermServerScript{
 	}
 
 	private void reportMatchingConcepts() throws TermServerScriptException {
-		Set<Concept> attributeValues = SUBSTANCE.getDescendents(NOT_SET);
+		Set<Concept> attributeValues = SUBSTANCE.getDescendants(NOT_SET);
 		Concept targetType = gl.getConcept("704327008 |Direct site|");
 		int noAttributeTypeDetected = 0;
 		int loincInactive = 0;

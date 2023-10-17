@@ -86,7 +86,7 @@ public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 		List<Component> processMe = new ArrayList<Component>();
 		print ("Identifying incorrect case signficance settings");
 		this.setQuiet(true);
-		for (Concept concept : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept concept : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			if (concept.isActive()) {
 				if (createAdditionalSynonyms(null, concept.cloneWithIds()) > 0) {
 					processMe.add(concept);

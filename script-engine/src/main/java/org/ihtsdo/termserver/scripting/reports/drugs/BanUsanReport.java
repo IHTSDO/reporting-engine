@@ -78,7 +78,7 @@ public class BanUsanReport extends TermServerScript{
 			subHierarchySCTID = expressionPart.substring(1);
 		}
 		Concept subHierarchy = gl.getConcept(subHierarchySCTID);
-		Set<Concept> expansion = subHierarchy.getDescendents(NOT_SET);
+		Set<Concept> expansion = subHierarchy.getDescendants(NOT_SET);
 		if (includeSelf) {
 			expansion.add(subHierarchy);
 		}

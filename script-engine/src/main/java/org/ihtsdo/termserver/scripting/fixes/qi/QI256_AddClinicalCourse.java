@@ -96,7 +96,7 @@ public class QI256_AddClinicalCourse extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<>();
 		//Find all descendants of < 429040005 |Ulcer (disorder)|
-		for (Concept c : gl.getConcept(429040005L).getDescendents(NOT_SET)) {
+		for (Concept c : gl.getConcept(429040005L).getDescendants(NOT_SET)) {
 			String fsn = c.getFsn().toLowerCase();
 			boolean isChronic = fsn.contains("chronic");
 			boolean isAcute = fsn.contains("acute");

@@ -634,29 +634,29 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		this.conceptType = conceptType;
 	}
 	
-	public Set<Concept> getDescendents(int depth) throws TermServerScriptException {
-		return getDescendents(depth, CharacteristicType.INFERRED_RELATIONSHIP);
+	public Set<Concept> getDescendants(int depth) throws TermServerScriptException {
+		return getDescendants(depth, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 	
-	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType) throws TermServerScriptException {
-		return getDescendents(depth, characteristicType, false);
+	public Set<Concept> getDescendants(int depth, CharacteristicType characteristicType) throws TermServerScriptException {
+		return getDescendants(depth, characteristicType, false);
 	}
 	
-	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, boolean includeSelf) throws TermServerScriptException {
-		Set<Concept> allDescendents = new HashSet<Concept>();
-		this.populateAllDescendents(allDescendents, depth, characteristicType);
+	public Set<Concept> getDescendants(int depth, CharacteristicType characteristicType, boolean includeSelf) throws TermServerScriptException {
+		Set<Concept> allDescendants = new HashSet<Concept>();
+		this.populateAllDescendants(allDescendants, depth, characteristicType);
 		if (includeSelf) {
-			allDescendents.add(this);
+			allDescendants.add(this);
 		}
-		return allDescendents;
+		return allDescendants;
 	}
 	
-	private void populateAllDescendents(Set<Concept> descendents, int depth, CharacteristicType characteristicType) throws TermServerScriptException {
+	private void populateAllDescendants(Set<Concept> descendants, int depth, CharacteristicType characteristicType) throws TermServerScriptException {
 		for (Concept thisChild : getChildren(characteristicType)) {
-			descendents.add(thisChild);
+			descendants.add(thisChild);
 			if (depth == NOT_SET || depth > 1) {
 				int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
-				thisChild.populateAllDescendents(descendents, newDepth, characteristicType);
+				thisChild.populateAllDescendants(descendants, newDepth, characteristicType);
 			}
 		}
 	}

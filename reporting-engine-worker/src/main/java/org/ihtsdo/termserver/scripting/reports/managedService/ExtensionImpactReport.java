@@ -193,7 +193,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		//Executor executor = Executors.newFixedThreadPool(7);
 		
 		//Work through the top level hierarchies
-		List<Concept> topLevelHierarchies = SnomedUtils.sort(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
+		List<Concept> topLevelHierarchies = SnomedUtils.sort(ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD));
 		for (Concept topLevelConcept : topLevelHierarchies) {
 			LOGGER.info("Processing - " + topLevelConcept);
 			Set<String> thisHierarchy = getHierarchy(topLevelConcept);
@@ -366,7 +366,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private Set<String> getHierarchy(Concept topLevelConcept) throws TermServerScriptException {
 		//Form the top level set as the sum of current hierarchy and what's in the incoming data
 		Set<String> hierarchy = new HashSet<>();
-		hierarchy = topLevelConcept.getDescendents(NOT_SET).stream()
+		hierarchy = topLevelConcept.getDescendants(NOT_SET).stream()
 				.map(c -> c.getId())
 				.collect(Collectors.toSet());
 		

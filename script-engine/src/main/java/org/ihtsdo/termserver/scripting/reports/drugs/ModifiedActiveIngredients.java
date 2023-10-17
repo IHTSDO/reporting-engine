@@ -43,7 +43,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 	}
 
 	private void runModifiedActiveIngredientsReport() throws TermServerScriptException {
-		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendents(NOT_SET);
+		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : subHierarchyConcepts) {
 			//We're only interested in Medicinal Products 
 			if (c.isActive() && c.getFsn().contains("(medicinal product)")) {

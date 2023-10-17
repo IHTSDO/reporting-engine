@@ -36,7 +36,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	Concept targetAttributeType;
 	String ignoreConceptsECL;
 	AncestorsCache ancestorCache;
-	DescendantsCache descendentCache;
+	DescendantsCache descendantCache;
 	AtomicLongMap<Concept> valueCounts = AtomicLongMap.create();
 	AtomicLongMap<Concept> recentActivity = AtomicLongMap.create();
 	AtomicLongMap<Concept> valueCountsFiltered = AtomicLongMap.create();
@@ -102,7 +102,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	public void runJob() throws TermServerScriptException {
 		Concept[] types = new Concept[] {targetAttributeType};
 		ancestorCache = gl.getAncestorsCache();
-		descendentCache = gl.getDescendantsCache();
+		descendantCache = gl.getDescendantsCache();
 		LOGGER.info ("Analyzing " + subsetECL);
 		ignoreConcepts = new HashSet<>(findConcepts(ignoreConceptsECL));
 		for (Concept c : findConcepts(subsetECL)) {
@@ -212,7 +212,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	}
 
 	private Integer getDescendantAndSelfCount(Concept c, Set<Concept> targets, boolean doFiltering) throws TermServerScriptException {
-		Set<Concept> descendantsInUse = new HashSet<>(descendentCache.getDescendentsOrSelf(c));
+		Set<Concept> descendantsInUse = new HashSet<>(descendantCache.getDescendantsOrSelf(c));
 		descendantsInUse.retainAll(targets);
 		AtomicLongMap<Concept> sourceData = doFiltering ? valueCountsFiltered : valueCounts;
 		int count = 0;

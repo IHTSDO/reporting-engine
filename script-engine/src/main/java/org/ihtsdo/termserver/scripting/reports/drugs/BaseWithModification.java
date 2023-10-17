@@ -38,7 +38,7 @@ public class BaseWithModification extends TermServerReport {
 	}
 
 	private void findBaseWithModifications() throws TermServerScriptException {
-		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			List<Concept> ingredients = DrugUtils.getIngredients(c, CharacteristicType.STATED_RELATIONSHIP);
 			//We won't consider the transitive case, just immediate modifications
 			for (Concept ingredient : ingredients) {

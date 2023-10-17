@@ -116,14 +116,14 @@ public class RemoveRedundantParents extends BatchFix implements ScriptConstants{
 		Collection<Concept> checkMe = new ArrayList<>();
 		if (includes != null) {
 			for (String include : includes) {
-				checkMe.addAll(gl.getConcept(include).getDescendents(NOT_SET));
+				checkMe.addAll(gl.getConcept(include).getDescendants(NOT_SET));
 			}
 		} else { 
 			checkMe = gl.getAllConcepts();
 		}
 		
 		if (exclude != null) {
-			checkMe.removeAll(gl.getConcept(exclude).getDescendents(NOT_SET));
+			checkMe.removeAll(gl.getConcept(exclude).getDescendants(NOT_SET));
 		}
 		List<Concept> processMe = new ArrayList<>();
 		

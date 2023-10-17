@@ -200,7 +200,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			
 			//Does concept have descendants that we want to group with it?
 			//We need the parents to be imported before any children, so rework any set as one that maintains the order input
-			Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendents(c, true);
+			Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendants(c, true);
 			descendantsToImport.retainAll(componentsOfInterest);
 			if (descendantsToImport.size() > 0) {
 				alsoImportingDescendants = true;

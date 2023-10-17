@@ -56,11 +56,11 @@ public class InferredGroupsNotStated extends TermServerReport {
 
 	public void postInit() throws TermServerScriptException {
 		//subHierarchy = gl.getConcept("138875005"); // |SNOMED CT Concept (SNOMED RT+CTV3)|
-		subHierarchy = gl.getConcept("46866001").getDescendents(NOT_SET); // |Fracture of lower limb (disorder)|
+		subHierarchy = gl.getConcept("46866001").getDescendants(NOT_SET); // |Fracture of lower limb (disorder)|
 		
 		//Identify large hierarchies from depth 2 to 6
-		for (Concept hierarchy : ROOT_CONCEPT.getDescendents(4)) {
-			int hierarchySize = hierarchy.getDescendents(NOT_SET).size();
+		for (Concept hierarchy : ROOT_CONCEPT.getDescendants(4)) {
+			int hierarchySize = hierarchy.getDescendants(NOT_SET).size();
 			if (hierarchySize >= LARGE) {
 				LOGGER.debug ("Large hierarchy: " + hierarchy + " - " + hierarchySize);
 				largeHierarchies.add(hierarchy);
@@ -70,7 +70,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 	}
 	
 	public void setSubHierarchy(Concept concept) throws TermServerScriptException {
-		this.subHierarchy = concept.getDescendents(NOT_SET);
+		this.subHierarchy = concept.getDescendants(NOT_SET);
 	}
 
 	public void setSubHierarchy(Set<Concept> concepts) {
@@ -212,7 +212,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 		for (Map.Entry<Concept, Integer> entry : instancesPerSubHierarchy.entrySet()) {
 			Concept subHierarchy = entry.getKey();
 			int issueCount = entry.getValue();
-			int hierarchySize =  subHierarchy.getDescendents(NOT_SET).size();
+			int hierarchySize =  subHierarchy.getDescendants(NOT_SET).size();
 			double percent = (issueCount / (double)hierarchySize);
 			LOGGER.debug (df.format(percent) + "  " + subHierarchy + " : " + issueCount + " / " + hierarchySize );
 		}

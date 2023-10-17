@@ -38,7 +38,7 @@ public class StatedNotInferred extends TermServerReport {
 	}
 
 	private void runStatedNotInferredReport() throws TermServerScriptException {
-		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendents(NOT_SET);
+		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendants(NOT_SET);
 		LOGGER.info ("Finding redundant relationships");
 		for (Concept c : subHierarchy) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {

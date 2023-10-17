@@ -72,7 +72,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	}
 
 	private void runIdentifyMissingMPConceptsReport() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			// MPF-containing concepts 
 			if (c.getFsn().contains(MPF)) {
 					//..that do not have an inferred MP parent.
@@ -93,7 +93,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	} 
 	
 	private void runIdentifyMissingMPFConceptsReport() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			// MPF concepts that are sufficiently defined
 			if (c.isActive() && c.getFsn().contains(MPF) && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				//...with stated parent |Medicinal product| 
@@ -119,7 +119,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	}
 	
 	private void runIdentifyMissingMPOnlyConceptsReport() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			// MP concepts that are sufficiently defined
 			if (c.isActive() && c.getFsn().contains(MP) && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				//...with stated parent |Medicinal product| 
@@ -139,7 +139,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	}
 	
 	private void runIdentifyMissingMPFOnlyConceptsReport() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			// CD concepts that are sufficiently defined
 			if (c.isActive() && c.getFsn().contains(CD) && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				//...with stated parent |Medicinal product| 
@@ -162,7 +162,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	 * MP and MPF concepts that have no descendants
 	 */
 	private void runIdentifyMissingDescendantReport() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			// MP, MPF concepts...
 			if (c.getFsn().contains(MP) || c.getFsn().contains(MPF)) {
 				//with no inferred children
@@ -180,7 +180,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	 * MP and MPF concepts that use "Modified" ingredients
 	 */
 	private void runIdentifyModified_MP_MPF_Report() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			// MP, MPF concepts...
 			if (c.getFsn().contains(MP) || c.getFsn().contains(MPF)) {
 				//with an ingredient 

@@ -50,7 +50,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 
 	private void reportAcidsWithBases() throws TermServerScriptException {
 		Concept subHierarchy = GraphLoader.getGraphLoader().getConcept(subHierarchyStr);
-		Collection<Concept> concepts = subHierarchy.getDescendents(NOT_SET);
+		Collection<Concept> concepts = subHierarchy.getDescendants(NOT_SET);
 		
 		for (Concept c : concepts) {
 			//Skip any we've already reported as being the matched partners
@@ -94,7 +94,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		foundPartnerInParents = findPartner( c, parents, downstream, findAcid);
 		
 		boolean foundPartnerInChildren = false;
-		Set<Concept> children = c.getDescendents(NOT_SET);
+		Set<Concept> children = c.getDescendants(NOT_SET);
 		downstream = !findAcid;
 		foundPartnerInChildren = findPartner( c, children, downstream, findAcid);
 		if (!foundPartnerInParents && !foundPartnerInChildren) {

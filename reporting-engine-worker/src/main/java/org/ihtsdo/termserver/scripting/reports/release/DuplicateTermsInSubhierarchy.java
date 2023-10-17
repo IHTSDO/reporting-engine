@@ -77,7 +77,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		
 		//Am I working through multiple subHierarchies, or targeting one?
 		if (subHierarchy == null || subHierarchy.equals(ROOT_CONCEPT)) {
-			for (Concept majorHierarchy : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
+			for (Concept majorHierarchy : ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD)) {
 				LOGGER.info ("Reporting " + majorHierarchy);
 				reportDuplicateDescriptions(majorHierarchy);
 			}
@@ -90,7 +90,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		//Create a map of all not-fsn terms and check for one already known
 		Map<String, Description> knownTerms = new HashMap<>();
 		Acceptability acceptability = ptOnly ? Acceptability.PREFERRED : Acceptability.BOTH;
-		Collection<Concept> concepts = subHierarchy == null ? gl.getAllConcepts() : subHierarchy.getDescendents(NOT_SET);
+		Collection<Concept> concepts = subHierarchy == null ? gl.getAllConcepts() : subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : SnomedUtils.sort(concepts)) {
 			//Have we white listed this concept?
 			if (whiteListedConceptIds.contains(c.getId())) {

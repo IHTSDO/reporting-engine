@@ -619,22 +619,22 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	
 	/**
-	 Validate that that any attribute with that attribute type is a descendent of the target Value
+	 Validate that that any attribute with that attribute type is a descendant of the target Value
 	 * @param cardinality 
 	 * @throws TermServerScriptException 
 	 */
 	protected int validateAttributeValues(Task task, Concept concept,
-			Concept attributeType, Concept descendentsOfValue, CardinalityExpressions cardinality) throws TermServerScriptException {
+			Concept attributeType, Concept descendantsOfValue, CardinalityExpressions cardinality) throws TermServerScriptException {
 		
 		Set<Relationship> attributes = concept.getRelationships(CharacteristicType.ALL, attributeType, ActiveState.ACTIVE);
-		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
+		Set<Concept> descendants = ClosureCache.getClosureCache().getClosure(descendantsOfValue);
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
-			if (!descendents.contains(value)) {
+			if (!descendants.contains(value)) {
 				Severity severity = thisAttribute.isActive()?Severity.CRITICAL:Severity.LOW;
 				String activeStr = thisAttribute.isActive()?"":"inactive ";
 				String relType = thisAttribute.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)?"stated ":"inferred ";
-				String msg = "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue;
+				String msg = "Attribute has " + activeStr + relType + "target which is not a descendant of: " + descendantsOfValue;
 				report (task, concept, severity, ReportActionType.VALIDATION_ERROR, msg);
 			}
 		}

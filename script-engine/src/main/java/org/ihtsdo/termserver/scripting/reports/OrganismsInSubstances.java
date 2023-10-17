@@ -61,7 +61,7 @@ public class OrganismsInSubstances extends TermServerReport {
 		
 		LOGGER.info("Mapping organism names");
 		organismNames = new HashMap<>();
-		for (Concept organism : ORGANISM.getDescendents(NOT_SET)) {
+		for (Concept organism : ORGANISM.getDescendants(NOT_SET)) {
 			for (Description d : organism.getDescriptions(ActiveState.ACTIVE)) {
 				String storeTerm = d.getTerm().toLowerCase();
 				if (d.getType().equals(DescriptionType.FSN)) {

@@ -65,7 +65,7 @@ public class OrganismsNotCaseSensitive extends TermServerReport {
 		report(PRIMARY_REPORT, "Specifically these are organisms where the FSN is cI ie initial character case insensitive");
 		report(PRIMARY_REPORT, "");
 
-		for (Concept organism : ORGANISM.getDescendents(NOT_SET)) {
+		for (Concept organism : ORGANISM.getDescendants(NOT_SET)) {
 			if (organism.getFSNDescription().getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)
 				&& !startsWithSkippedWord(organism.getFsn())) {
 				report(organism);

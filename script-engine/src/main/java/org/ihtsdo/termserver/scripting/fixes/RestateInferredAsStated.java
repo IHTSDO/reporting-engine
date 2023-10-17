@@ -124,7 +124,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendants(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept thisConcept : allPotential) {
 			String semTag = SnomedUtils.deconstructFSN(thisConcept.getFsn())[1];

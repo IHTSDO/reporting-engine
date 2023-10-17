@@ -114,7 +114,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements ScriptConstants{
 		List<Component> processMe = new ArrayList<Component>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
-		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);
+		Set<Concept>allDescendants = subHierarchy.getDescendants(NOT_SET);
 		for (Concept thisConcept : allDescendants) {
 			//Don't process the exceptions
 			if (ArrayUtils.contains(exceptions, thisConcept.getConceptId())) {

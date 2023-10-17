@@ -64,7 +64,7 @@ public class LowerCaseTermInactivation extends BatchFix implements ScriptConstan
 		List<Component> processMe = new ArrayList<Component>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
-		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);
+		Set<Concept>allDescendants = subHierarchy.getDescendants(NOT_SET);
 		for (Concept thisConcept : allDescendants) {
 			//Find concepts where there are otherwise identical lower and uppercase terms
 			MatchedSet lowerCaseMatchingSet = findMatchingDescriptionSet(thisConcept);

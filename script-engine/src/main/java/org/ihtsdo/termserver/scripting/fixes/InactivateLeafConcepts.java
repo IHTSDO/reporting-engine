@@ -48,7 +48,7 @@ public class InactivateLeafConcepts extends BatchFix implements ScriptConstants{
 		checkAndInactivatateIncomingAssociations(task, concept);
 		
 		//Check for any children and inactivate them to.  Because we can.
-		for (Concept child :  gl.getConcept(concept.getConceptId()).getDescendents(IMMEDIATE_CHILD)) {
+		for (Concept child :  gl.getConcept(concept.getConceptId()).getDescendants(IMMEDIATE_CHILD)) {
 			task.add(child);
 			doFix(task, child, " as descendant of " + concept);
 			report(task, child, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivating child of " + concept);

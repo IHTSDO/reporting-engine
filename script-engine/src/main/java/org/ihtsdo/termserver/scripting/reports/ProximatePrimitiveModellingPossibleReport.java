@@ -58,7 +58,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
 			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
-			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+			Set<Concept> allHierarchy = hierarchy.getDescendants(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
 			LOGGER.info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			

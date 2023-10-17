@@ -51,7 +51,7 @@ public class SubstanceINN extends TermServerReport {
 	private void runSubstanceINNReport() throws TermServerScriptException {
 		
 		//For all substances, check if they have any match to an INN Set entry
-		for (Concept subst : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept subst : SUBSTANCE.getDescendants(NOT_SET)) {
 			INNSet innSet = findINNSetMatch(subst);
 			if (innSet != null) {
 				if (subst.getConceptId().equals("58202007")) {

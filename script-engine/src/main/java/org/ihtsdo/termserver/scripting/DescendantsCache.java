@@ -20,17 +20,17 @@ public class DescendantsCache implements ScriptConstants {
 	private static DescendantsCache singleton = null;
 	private static DescendantsCache singletonStated = null;
 	
-	Map<Concept, Set<Concept>> descendentCache = new HashMap<>();
+	Map<Concept, Set<Concept>> descendantCache = new HashMap<>();
 	CharacteristicType charType = CharacteristicType.INFERRED_RELATIONSHIP;
 	
-	public static DescendantsCache getDescendentsCache() {
+	public static DescendantsCache getDescendantsCache() {
 		if (singleton == null) {
 			singleton = new DescendantsCache();
 		}
 		return singleton;
 	}
 	
-	public static DescendantsCache getStatedDescendentsCache() {
+	public static DescendantsCache getStatedDescendantsCache() {
 		if (singletonStated == null) {
 			singletonStated = new DescendantsCache();
 		}
@@ -43,14 +43,14 @@ public class DescendantsCache implements ScriptConstants {
 	}
 	
 	public void reset() {
-		descendentCache = new HashMap<>();
+		descendantCache = new HashMap<>();
 	}
 	
-	public Set<Concept> getDescendents(Concept c) throws TermServerScriptException {
-		return getDescendents(c, false);  //Default implementation is immutable
+	public Set<Concept> getDescendants(Concept c) throws TermServerScriptException {
+		return getDescendants(c, false);  //Default implementation is immutable
 	}
 	
-	public Set<Concept> getDescendents (Concept c, boolean mutable) throws TermServerScriptException {
+	public Set<Concept> getDescendants(Concept c, boolean mutable) throws TermServerScriptException {
 		if (c == null) {
 			throw new IllegalArgumentException("Null concept requested");
 		}
@@ -64,28 +64,28 @@ public class DescendantsCache implements ScriptConstants {
 		if (!localConcept.isActive()) {
 			throw new TermServerScriptException(c + " is inactive. Unlikely you want to find its decendants");
 		}
-		Set<Concept> descendents = descendentCache.get(localConcept);
-		if (descendents == null) {
-			descendents = localConcept.getDescendents(NOT_SET);
+		Set<Concept> descendants = descendantCache.get(localConcept);
+		if (descendants == null) {
+			descendants = localConcept.getDescendants(NOT_SET);
 			//Don't allow anyone to change this!
-			descendentCache.put(localConcept, descendents);
+			descendantCache.put(localConcept, descendants);
 		}
-		return mutable ? new HashSet<>(descendents) : Collections.unmodifiableSet(descendents);
+		return mutable ? new HashSet<>(descendants) : Collections.unmodifiableSet(descendants);
 	}
 
-	public Set<Concept> getDescendentsOrSelf(Concept c) throws TermServerScriptException {
-		Set<Concept> descendents = getDescendents(c, false);
+	public Set<Concept> getDescendantsOrSelf(Concept c) throws TermServerScriptException {
+		Set<Concept> descendants = getDescendants(c, false);
 		Set<Concept> orSelf = Collections.singleton(c);
-		return ImmutableSet.copyOf(Iterables.concat(descendents, orSelf));
+		return ImmutableSet.copyOf(Iterables.concat(descendants, orSelf));
 	}
 	
-	public Set<Concept> getDescendentsOrSelf(Concept c, boolean mutable) throws TermServerScriptException {
-		Set<Concept> dOrS = getDescendentsOrSelf(c);
+	public Set<Concept> getDescendantsOrSelf(Concept c, boolean mutable) throws TermServerScriptException {
+		Set<Concept> dOrS = getDescendantsOrSelf(c);
 		return mutable ? new HashSet<>(dOrS) : Collections.unmodifiableSet(dOrS);
 	}
 
-	public Set<Concept> getDescendentsOrSelf (String sctid) throws TermServerScriptException {
+	public Set<Concept> getDescendantsOrSelf(String sctid) throws TermServerScriptException {
 		Concept c = GraphLoader.getGraphLoader().getConcept(sctid);
-		return getDescendentsOrSelf(c);
+		return getDescendantsOrSelf(c);
 	}
 }

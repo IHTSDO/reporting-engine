@@ -67,7 +67,7 @@ public class SwitchAttributeInGroup extends BatchFix {
 		alsoPresentRel = new RelationshipTemplate(ASSOC_MORPH, value);
 		/*alsoPresentType = gl.getConcept("246075003"); // |Causative agent (attribute)|
 		Concept alsoPresent = gl.getConcept(alsoPresentHierarchy); 
-		alsoPresentValues = alsoPresent.getDescendents(NOT_SET);*/
+		alsoPresentValues = alsoPresent.getDescendants(NOT_SET);*/
 		super.postInit();
 	}
 
@@ -101,7 +101,7 @@ public class SwitchAttributeInGroup extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<>();
 		//Find all descendants of subHierarchy
-		for (Concept c : gl.getConcept(subHierarchy).getDescendents(NOT_SET)) {
+		for (Concept c : gl.getConcept(subHierarchy).getDescendants(NOT_SET)) {
 			//Try making the change and see if changes are made
 			if (switchValues(null, c.clone(null), true) > 0) {
 				processMe.add(c);

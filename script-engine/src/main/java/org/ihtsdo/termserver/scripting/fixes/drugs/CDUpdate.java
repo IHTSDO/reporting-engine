@@ -176,7 +176,7 @@ public class CDUpdate extends DrugBatchFix implements ScriptConstants {
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();  //We want to process in the same order each time, in case we restart and skip some.
-		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			Set<Relationship> bossRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
 			if (bossRels.size() > 0 && !c.getFsn().contains("precisely") && c.getFsn().contains("(clinical drug)")) {
 				c.setConceptType(ConceptType.CLINICAL_DRUG);

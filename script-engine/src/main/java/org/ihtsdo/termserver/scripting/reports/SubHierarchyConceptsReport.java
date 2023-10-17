@@ -44,7 +44,7 @@ public class SubHierarchyConceptsReport extends TermServerReport{
 	private void reportConcepts() throws TermServerScriptException {
 		Set<Concept> concepts = new HashSet<>();
 		for (Concept subHierarchy : subHierarchies) {
-			concepts.addAll(subHierarchy.getDescendents(NOT_SET));
+			concepts.addAll(subHierarchy.getDescendants(NOT_SET));
 		}
 		
 		for (Concept c : concepts) {

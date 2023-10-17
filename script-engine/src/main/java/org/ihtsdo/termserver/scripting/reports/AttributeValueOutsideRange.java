@@ -43,14 +43,14 @@ public class AttributeValueOutsideRange extends TermServerReport {
 
 	public void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("732947008"); // |Has presentation strength denominator unit (attribute)|
-		acceptableRange = gl.getConcept("732935002").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true); // | Unit of presentation (unit of presentation).")
+		acceptableRange = gl.getConcept("732935002").getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true); // | Unit of presentation (unit of presentation).")
 		subHierarchy = gl.getConcept("373873005"); // |Pharmaceutical / biologic product (product)|"
 		initialiseSummaryInformation("Issues reported");
 		super.postInit();
 	}
 
 	private void runAttributeValueOutsideRangeReport() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			//If our Attribute type is present, report if the value is outside of the range
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				if (!acceptableRange.contains(r.getTarget())) {

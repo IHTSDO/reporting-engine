@@ -39,8 +39,8 @@ public class GraphLoader implements ScriptConstants {
 	private Set<String> orphanetConceptIds;
 	private AxiomRelationshipConversionService axiomService;
 	
-	private DescendantsCache descendantsCache = DescendantsCache.getDescendentsCache();
-	private DescendantsCache statedDescendantsCache = DescendantsCache.getStatedDescendentsCache();
+	private DescendantsCache descendantsCache = DescendantsCache.getDescendantsCache();
+	private DescendantsCache statedDescendantsCache = DescendantsCache.getStatedDescendantsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	private AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
 	

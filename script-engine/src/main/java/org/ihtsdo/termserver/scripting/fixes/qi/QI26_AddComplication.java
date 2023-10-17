@@ -75,7 +75,7 @@ public class QI26_AddComplication extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<>();
 		//Find all descendants of 404684003 |Clinical finding (finding)| 
-		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
+		for (Concept c : CLINICAL_FINDING.getDescendants(NOT_SET)) {
 			/*if (c.getConceptId().equals("238794007")) {
 				LOGGER.debug ("Check 238794007 |Ischemic foot ulcer (disorder)|");
 			}*/

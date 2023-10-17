@@ -57,7 +57,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 	
 	public void runJob() throws TermServerScriptException {
 		nextConcept:
-		for (Concept c : gl.getDescendantsCache().getDescendents(subHierarchy)) {
+		for (Concept c : gl.getDescendantsCache().getDescendants(subHierarchy)) {
 			for (Concept parent : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (parent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 					String parentStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)

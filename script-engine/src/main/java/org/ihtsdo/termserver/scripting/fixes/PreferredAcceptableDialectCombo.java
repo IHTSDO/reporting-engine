@@ -56,7 +56,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 		allExclusions = new HashSet<>();
 		for (String exclusion : exclusions) {
 			Concept subHierarchy = gl.getConcept(exclusion);
-			allExclusions.addAll(subHierarchy.getDescendents(NOT_SET));
+			allExclusions.addAll(subHierarchy.getDescendants(NOT_SET));
 		}
 		getSubstancesUsedInProducts();
 		super.postInit();
@@ -64,7 +64,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 	
 	private void getSubstancesUsedInProducts() throws TermServerScriptException {
 		substancesUsedInProducts = new HashSet<>();
-		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept product : PHARM_BIO_PRODUCT.getDescendants(NOT_SET)) {
 			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
 				substancesUsedInProducts.add(r.getTarget());
 			}
@@ -113,7 +113,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 		LOGGER.info ("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
-		for (Concept c : gl.getConcept(subHierarchy).getDescendents(NOT_SET)) {
+		for (Concept c : gl.getConcept(subHierarchy).getDescendants(NOT_SET)) {
 			if (allExclusions.contains(c) || !substancesUsedInProducts.contains(c)) {
 				continue;
 			}

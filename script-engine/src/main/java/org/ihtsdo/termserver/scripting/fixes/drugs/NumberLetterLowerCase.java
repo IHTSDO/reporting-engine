@@ -134,7 +134,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();
 		setQuiet(true);
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			//Work with a clone of the concept so we don't fix the issues on the initial pass
 			c = c.cloneWithIds();
 			//if (c.getConceptId().equals("86884000")) {

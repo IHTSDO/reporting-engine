@@ -309,8 +309,8 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		Set<Concept> descendants = new HashSet<>();
 		if (task.size() < taskSize) {
 			for (Concept sibling : siblings) {
-				//Are any of it's descendents unallocated?
-				descendants = sibling.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
+				//Are any of it's descendants unallocated?
+				descendants = sibling.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 				descendants.retainAll(unallocated);
 				if (descendants.size() > 0) {
 					if (task.size() + descendants.size() <= taskSize * wiggleRoom) {
@@ -334,7 +334,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		Set<Concept> ancestors = new HashSet<>();
 		if (task.size() < taskSize) {
 			for (Concept sibling : siblings) {
-				//Are any of it's descendents unallocated?
+				//Are any of it's descendants unallocated?
 				ancestors = sibling.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 				ancestors.retainAll(unallocated);
 				if (ancestors.size() > 0) {

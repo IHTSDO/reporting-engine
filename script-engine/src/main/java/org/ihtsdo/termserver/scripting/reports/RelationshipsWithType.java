@@ -134,14 +134,14 @@ public class RelationshipsWithType extends TermServerScript{
 		LOGGER.info ("Filter type example: 106237007 |Linkage concept (linkage concept)|");
 				
 		while (response == null) {
-			print ("Filter for attribute type descendent or self of: ");
+			print ("Filter for attribute type descendant or self of: ");
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				Concept hierarchy = gl.getConcept(response);
-				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
+				Set<Concept> filteringTargets = hierarchy.getDescendants(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
 				filterOnType.addAll(filteringTargets); //descendant
 				filterOnType.add(hierarchy);  //and self
-				LOGGER.info ("\nFiltering for type descendents of " + hierarchy + " - " + filteringTargets.size());
+				LOGGER.info ("\nFiltering for type descendants of " + hierarchy + " - " + filteringTargets.size());
 				response = null;
 			}
 		}

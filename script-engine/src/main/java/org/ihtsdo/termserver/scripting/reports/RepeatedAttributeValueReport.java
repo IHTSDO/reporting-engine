@@ -40,7 +40,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 	}
 
 	private void runRepeatedAttributeValueReport() throws TermServerScriptException {
-		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
 		LOGGER.info ("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {

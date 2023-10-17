@@ -60,14 +60,14 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	
 	public void postInit() throws TermServerScriptException {
 		LOGGER.info("Collecting organism terms...");
-		for (Concept c : ORGANISM.getDescendents(NOT_SET)) {
+		for (Concept c : ORGANISM.getDescendants(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 				organismTerms.add(d.getTerm());
 			}
 		}
 		
 		LOGGER.info("Collecting substance terms...");
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 				substanceTerms.add(d.getTerm());
 			}

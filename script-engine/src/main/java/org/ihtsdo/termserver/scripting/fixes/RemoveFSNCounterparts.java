@@ -79,7 +79,7 @@ public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 		LOGGER.info ("Identifying concepts to process");
 
 		List<Concept> processMe = new ArrayList<>();
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			if (c.getConceptId().equals("317265007")) {
 				//LOGGER.debug("LOGGER.debug here!");
 			}

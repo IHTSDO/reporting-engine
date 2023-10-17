@@ -169,7 +169,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 	}
 
 	private Set<Concept> getAncestorContribution(Concept thisAncestor, Collection<Concept> remainingConcepts) throws TermServerScriptException {
-		Set<Concept> potentialContribution = thisAncestor.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> potentialContribution = thisAncestor.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 		//But we need to add change concepts to the task, so work out which one of our remaining concepts are in that descendant list
 		Set<Concept> contribution = new HashSet<Concept>();
 		for (Concept changeConcept : remainingConcepts) {

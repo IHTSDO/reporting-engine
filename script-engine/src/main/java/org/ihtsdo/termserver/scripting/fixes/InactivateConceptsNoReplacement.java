@@ -280,7 +280,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		Set<Concept> processMe = new HashSet<>();
 		
 		for (Concept hierarchy : targetHierarchies) {
-			for (Concept c : hierarchy.getDescendents(NOT_SET)) {
+			for (Concept c : hierarchy.getDescendants(NOT_SET)) {
 				addComponentsToProcess(c, processMe);
 			}
 		}

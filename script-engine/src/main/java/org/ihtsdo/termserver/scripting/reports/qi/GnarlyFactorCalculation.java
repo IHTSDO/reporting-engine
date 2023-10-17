@@ -79,7 +79,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			}
 			//Work our way up the stated parents to find which one arrives at our target range in 
 			//the fewest (or greatest?) number of hops
-			int descCount = gl.getDescendantsCache().getDescendentsOrSelf(c).size();
+			int descCount = gl.getDescendantsCache().getDescendantsOrSelf(c).size();
 			if ( descCount > lowerLimit) {
 				LOGGER.warn (c + " already has " + descCount + " descendants.  Adding.");
 			} else {
@@ -123,7 +123,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 				continue;
 			}
 			//Work our way up the stated parents via some attribute that we have;
-			int descCount = gl.getDescendantsCache().getDescendentsOrSelf(c).size();
+			int descCount = gl.getDescendantsCache().getDescendantsOrSelf(c).size();
 			Concept optimal =  null;
 			if ( descCount > lowerLimit) {
 				LOGGER.warn (c + " already has " + descCount + " descendants.  Adding.");
@@ -178,7 +178,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 
 	private boolean isDescendantOf(Concept optimal, List<Concept> groupers) throws TermServerScriptException {
 		for (Concept grouper : groupers) {
-			if (gl.getDescendantsCache().getDescendentsOrSelf(grouper).contains(optimal)) {
+			if (gl.getDescendantsCache().getDescendantsOrSelf(grouper).contains(optimal)) {
 				return true;
 			}
 		}
@@ -190,7 +190,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		Concept bestParent = null;
 		int bestParentCount = lowerLimit;
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			int descCount = gl.getDescendantsCache().getDescendentsOrSelf(parent).size();
+			int descCount = gl.getDescendantsCache().getDescendantsOrSelf(parent).size();
 			if ( descCount > lowerLimit && (bestParent == null || descCount < bestParentCount)) {
 				bestParent = parent;
 				bestParentCount = descCount;
@@ -206,7 +206,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			int bestAncestorCount = lowerLimit;
 			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				Concept thisAncestor = findOptimalGrouper(parent, hopCount + 1);
-				int descCount = gl.getDescendantsCache().getDescendentsOrSelf(thisAncestor).size();
+				int descCount = gl.getDescendantsCache().getDescendantsOrSelf(thisAncestor).size();
 				if ( descCount > lowerLimit && (bestAncestor == null || descCount < bestAncestorCount)) {
 					bestAncestor = thisAncestor;
 					bestAncestorCount = descCount;
@@ -222,7 +222,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		Concept bestParent = null;
 		int bestParentCount = lowerLimit;
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			int descCount = gl.getDescendantsCache().getDescendentsOrSelf(parent).size();
+			int descCount = gl.getDescendantsCache().getDescendantsOrSelf(parent).size();
 			if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, parent, organisingPrinciple) && descCount > lowerLimit && (bestParent == null || descCount < bestParentCount)) {
 				bestParent = parent;
 				bestParentCount = descCount;
@@ -243,7 +243,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 					//TODO - We could fall back to a straight up the line ancestor here
 					return null;
 				}
-				int descCount = gl.getDescendantsCache().getDescendentsOrSelf(thisAncestor).size();
+				int descCount = gl.getDescendantsCache().getDescendantsOrSelf(thisAncestor).size();
 				if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, parent, organisingPrinciple) && descCount > lowerLimit && (bestAncestor == null || descCount < bestAncestorCount)) {
 					bestAncestor = thisAncestor;
 					bestAncestorCount = descCount;
@@ -298,8 +298,8 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	}
 
 	private String getSize(Concept c) throws TermServerScriptException {
-		int statedDescendants = c.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP).size();
-		int inferredDescendants = gl.getDescendantsCache().getDescendentsOrSelf(c).size();
+		int statedDescendants = c.getDescendants(NOT_SET, CharacteristicType.STATED_RELATIONSHIP).size();
+		int inferredDescendants = gl.getDescendantsCache().getDescendantsOrSelf(c).size();
 		return statedDescendants + " / " + inferredDescendants;
 	}
 	
@@ -307,10 +307,10 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		int totalFDsUnderIPs = 0;
 		int fdsInSubHierarchy = 0;
 		for (Concept ip : intermediatePrimitives) {
-			for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(ip)) {
+			for (Concept c : gl.getDescendantsCache().getDescendantsOrSelf(ip)) {
 				if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 					totalFDsUnderIPs++;
-					if (gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).contains(c)) {
+					if (gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy).contains(c)) {
 						fdsInSubHierarchy++;
 					}
 				}

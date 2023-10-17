@@ -75,7 +75,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	}
 
 	private void validateSubstancesModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = SUBSTANCE.getDescendents(NOT_SET);
+		Set<Concept> subHierarchy = SUBSTANCE.getDescendants(NOT_SET);
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			validateDisposition(concept);

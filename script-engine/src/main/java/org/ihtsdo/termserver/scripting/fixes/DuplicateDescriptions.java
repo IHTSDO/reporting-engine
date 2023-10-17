@@ -76,7 +76,7 @@ public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 		
 		//for (Concept c : gl.getAllConcepts()) {
 		//for (Concept c : Collections.singletonList(gl.getConcept("14311001"))) {
-		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
 			if (!c.isReleased()) {
 				termsKnown.clear();
 				for (Description d : c.getDescriptions()) {

@@ -136,7 +136,7 @@ public class SubstanceDispositions extends DrugBatchFix implements ScriptConstan
 		topLevelSubstances.put(topLevelSubstance, disposition);
 		priorityComponents.add(topLevelSubstance);
 		topLevelSubstance.setIssue("top level disposition");
-		Set<Concept> subsumedConcepts = topLevelSubstance.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
+		Set<Concept> subsumedConcepts = topLevelSubstance.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
 		for (Concept descendant : subsumedConcepts) {
 			//We'll group our batches by disposition 
 			if (descendant.getIssues().isEmpty()) {

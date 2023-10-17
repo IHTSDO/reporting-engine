@@ -54,7 +54,7 @@ public class Hydrates extends TermServerReport {
 
 	private void reportDescriptionContainsX() throws TermServerScriptException {
 
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			//Does the FSN match?
 			boolean fsnMatch = c.getFsn().toLowerCase().contains(matchText);
 			List<Description> matchingDescs = null;

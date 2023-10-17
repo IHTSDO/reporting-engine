@@ -113,7 +113,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 
 		//If the value concept in LP map file is to a concept < 49062001 |Device (physical object)|
 		// in which case “LOINC Method -> SNOMED 424226004 |Using device (attribute)|.
-		if (gl.getDescendantsCache().getDescendents(DEVICE).contains(rt.getTarget())) {
+		if (gl.getDescendantsCache().getDescendants(DEVICE).contains(rt.getTarget())) {
 			rt.setType(USING_SUBST);
 		}
 		return rt;

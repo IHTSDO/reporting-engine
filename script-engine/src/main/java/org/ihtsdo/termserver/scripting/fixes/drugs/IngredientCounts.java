@@ -61,7 +61,7 @@ public class IngredientCounts extends DrugBatchFix implements ScriptConstants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//List<Concept> processMe = new ArrayList<>(Collections.singletonList(gl.getConcept("377209001")));
 		List<Concept> processMe = new ArrayList<>();
-		for (Concept drug : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept drug : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
 			DrugUtils.setConceptType(drug);
 			switch (drug.getConceptType()) {
 				case CLINICAL_DRUG: if (drug.getFsn().contains("precisely")) {
