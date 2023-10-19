@@ -93,6 +93,7 @@ public class ArchiveManager implements ScriptConstants {
 			singleton.loadDependencyPlusExtensionArchive = false;
 			singleton.populatePreviousTransativeClosure = false;
 			singleton.populateReleasedFlag = false;
+			singleton.loadOtherReferenceSets = false;
 		} else {
 			LOGGER.info("Archive Manager load flags retained - reuse forced.");
 		}
