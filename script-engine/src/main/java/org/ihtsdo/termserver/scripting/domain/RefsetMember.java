@@ -227,7 +227,8 @@ RefsetMember extends Component implements ScriptConstants {
 			isFirst = false;
 		}
 		String activeIndicator = isActive()?"":"*";
-		return "[" + activeIndicator + "RM]:" + getId() + " - " + refsetId + " : " + referencedComponentId + " -> " + additionalStr;
+		String arrow = additionalStr.isEmpty() ? "" : " -> ";
+		return "[" + activeIndicator + "RM]:" + getId() + " - " + refsetId + " : " + referencedComponentId + arrow + additionalStr;
 	}
 
 	/**

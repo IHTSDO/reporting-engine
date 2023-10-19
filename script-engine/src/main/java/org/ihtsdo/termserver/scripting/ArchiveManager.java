@@ -307,7 +307,7 @@ public class ArchiveManager implements ScriptConstants {
 				}
 			}
 
-			if (!snapshot.exists() || 
+			if (!snapshot.exists() ||
 					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) ||
 					(populatePreviousTransativeClosure && gl.getPreviousTC() == null)) {
@@ -388,7 +388,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		LOGGER.info("Snapshot loading complete, checking integrity");
 		checkIntegrity(fsnOnly);
-		
+
 		LOGGER.info("Setting all components to be clean");
 		gl.getAllConcepts().stream()
 			.flatMap(c -> SnomedUtils.getAllComponents(c).stream())
@@ -413,7 +413,9 @@ public class ArchiveManager implements ScriptConstants {
 				}
 				
 				if (c.isActive() == null) {
-					String msg = "Phantom concept encountered - no active state: " + c.getId();
+					//Now SOMETHING had a reference to this concept, so let's try and work out what and
+					//report that, rather than talk about a concept that doesn't exist
+					String msg = determineSourceofPhantomConcept(c);
 					if (ts.getDependencyArchive() != null) {
 						msg += ". Check dependency is appropriate - " + ts.getDependencyArchive(); 
 					}
@@ -464,6 +466,25 @@ public class ArchiveManager implements ScriptConstants {
 			}
 			LOGGER.debug("Integrity check complete");
 		}
+	}
+
+	private String determineSourceofPhantomConcept(Concept c) {
+		//What all components referenced this concept?
+		Collection<Component> components = SnomedUtils.getAllComponents(c);
+		if (components.size() == 0) {
+			return "Concept " + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
+		}
+		//Reduce count by 1 because the concept itself gets counted, and that's a phantom.
+		return "Concept " + c.getId() + " does not appear in concept file.  It is, however, referenced by " + (components.size()-1) + " component(s), eg: " + getFirstNonConceptComponent(components);
+	}
+
+	private String getFirstNonConceptComponent(Collection<Component> components) {
+		for (Component c : components) {
+			if (!(c instanceof Concept)) {
+				return c.toString();
+			}
+		}
+		return "No non-concept components found.";
 	}
 
 	private boolean checkIsStale(TermServerScript ts, Branch branch, File snapshot) throws IOException {
