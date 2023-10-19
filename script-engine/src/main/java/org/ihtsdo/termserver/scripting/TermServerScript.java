@@ -82,6 +82,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
+	private List<String> finalWords = new ArrayList<>();
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected ApplicationContext appContext;
@@ -480,6 +481,20 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			error(msg, e);
 		} finally {
 			try {
+				if (finalWords.size() > 0) {
+					report(PRIMARY_REPORT, "");
+					report(PRIMARY_REPORT, "", "***********************************");
+					report(PRIMARY_REPORT, "");
+					for (String finalMsg : finalWords) {
+						report(PRIMARY_REPORT, finalMsg);
+					}
+				}
+				flushFiles(true);
+			} catch (Exception e) {
+				LOGGER.warn("Exception while writing final words and flushing: " + e.getMessage());
+			}
+
+			try {
 				if (!suppressOutput) {
 					if (getReportManager() != null) {
 						jobRun.setResultUrl(getReportManager().getUrl());
@@ -594,8 +609,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		setReportName(null);
 	}
 	
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException  {
-		getArchiveManager(true).loadArchive(archive, fsnOnly, fileType, isReleased);
+	protected void loadArchive(TermServerScript parentProcess, File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException  {
+		parentProcess.getArchiveManager(true).loadArchive(archive, fsnOnly, fileType, isReleased);
 	}
 	
 	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
@@ -1371,7 +1386,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		LOGGER.info(BREAK);
 		
-		flushFiles(true);
+		flushFiles(false);
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
@@ -1936,6 +1951,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public boolean getAsyncSnapshotCacheInProgress() {
 		return asyncSnapshotCacheInProgress;
+	}
+
+	public void addFinalWords(String msg) {
+		finalWords.add(msg);
 	}
 
 }

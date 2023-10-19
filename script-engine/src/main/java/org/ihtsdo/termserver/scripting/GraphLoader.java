@@ -1714,7 +1714,14 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 
-	public class DuplicatePair {
+    public void removeConcept(Concept c) {
+		concepts.remove(c.getId());
+		if (allComponents != null) {
+			allComponents.remove(c.getId());
+		}
+    }
+
+    public class DuplicatePair {
 		private Component keep;
 		private Component inactivate;
 		

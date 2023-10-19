@@ -414,7 +414,8 @@ public class ArchiveManager implements ScriptConstants {
 			//Ensure that every active parent other than root has at least one parent in both views
 			LOGGER.debug("Ensuring all concepts have parents and depth if required.");
 			StringBuffer integrityFailureMessage = new StringBuffer();
-			for (Concept c : gl.getAllConcepts()) {
+			//We need a separate copy of all concepts because we might modify it in passing if we encounter a phantom concept
+			for (Concept c : new ArrayList<>(gl.getAllConcepts())) {
 				/*if (c.getId().equals("15747361000119104")) {
 					LOGGER.debug("here");
 				}*/
@@ -429,7 +430,18 @@ public class ArchiveManager implements ScriptConstants {
 					if (ts.getDependencyArchive() != null) {
 						msg += ". Check dependency is appropriate - " + ts.getDependencyArchive(); 
 					}
-					throw new IllegalStateException(msg);
+					//Now if we've imported all reference sets and we've got a phantom concept that's coming from an
+					//inactive referenceset member, then we're just going to report that as a "final word" rather than
+					//bomb out the entire report
+					if (loadOtherReferenceSets && msg.contains("*RM")) {
+						LOGGER.warn("Recording final words rather than throwing exception: " + msg);
+						ts.addFinalWords(msg);
+						//And we're going to remove this concept so that we don't trip over it again
+						ts.getGraphLoader().removeConcept(c);
+						continue;
+					} else {
+						throw new IllegalStateException(msg);
+					}
 				}
 				
 				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
@@ -482,10 +494,10 @@ public class ArchiveManager implements ScriptConstants {
 		//What all components referenced this concept?
 		Collection<Component> components = SnomedUtils.getAllComponents(c);
 		if (components.size() == 0) {
-			return "Concept " + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
+			return "Integrity concern: concept " + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
 		}
 		//Reduce count by 1 because the concept itself gets counted, and that's a phantom.
-		return "Concept " + c.getId() + " does not appear in concept file.  It is, however, referenced by " + (components.size()-1) + " component(s), eg: " + getFirstNonConceptComponent(components);
+		return "Integrity concern: concept " + c.getId() + " does not appear in concept file.  It is, however, referenced by " + (components.size()-1) + " component(s), eg: " + getFirstNonConceptComponent(components);
 	}
 
 	private String getFirstNonConceptComponent(Collection<Component> components) {
