@@ -50,6 +50,7 @@ public class ArchiveManager implements ScriptConstants {
 	protected GraphLoader gl;
 	protected TermServerScript ts;
 	protected ApplicationContext appContext;
+	protected SnapshotGenerator snapshotGenerator = null;
 	private boolean allowStaleData = false;
 	private boolean loadDependencyPlusExtensionArchive = false;
 	private boolean loadEditionArchive = false;
@@ -231,6 +232,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	public void loadSnapshot(boolean fsnOnly) throws TermServerScriptException {
+		boolean writeSnapshotToCache = false;
 		try {
 			if (loadDependencyPlusExtensionArchive) {
 				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
@@ -318,7 +320,8 @@ public class ArchiveManager implements ScriptConstants {
 					LOGGER.info("Generating fresh snapshot because previous transative closure must be populated");
 				}
 				generateSnapshot(ts.getProject());
-				releasedFlagPopulated=true;
+				releasedFlagPopulated = true;
+				writeSnapshotToCache = true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
 				//We might already have this project in memory
@@ -340,7 +343,8 @@ public class ArchiveManager implements ScriptConstants {
 						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
 						generateSnapshot (ts.getProject());
-						releasedFlagPopulated=true;
+						writeSnapshotToCache = true;
+						releasedFlagPopulated = true;
 					} else {
 						LOGGER.info ("Loading snapshot archive contents into memory: " + snapshot);
 						try {
@@ -389,6 +393,12 @@ public class ArchiveManager implements ScriptConstants {
 		LOGGER.info("Snapshot loading complete, checking integrity");
 		checkIntegrity(fsnOnly);
 
+		if (writeSnapshotToCache &&  snapshotGenerator != null) {
+			snapshotGenerator.writeSnapshotToCache(ts);
+		} else if (snapshotGenerator == null) {
+			LOGGER.warn("Snapshot generator not initialised, cannot write snapshot to cache");
+		}
+		
 		LOGGER.info("Setting all components to be clean");
 		gl.getAllConcepts().stream()
 			.flatMap(c -> SnomedUtils.getAllComponents(c).stream())

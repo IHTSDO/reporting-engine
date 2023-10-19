@@ -87,11 +87,15 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		LOGGER.info("Loading delta " + delta);
 		loadArchive(delta, false, "Delta", false);
+		setQuiet(false);
+	}
+
+	public void writeSnapshotToCache(TermServerScript ts) {
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
 		//The disk copy will save time when we run again for the same project
-		
+
 		//Ah, well that's not completely true because sometimes we want to be really careful we've not modified the data
-		//in some process. 
+		//in some process.
 		if (!skipSave) {
 			if (runAsynchronously) {
 				new Thread(new ArchiveWriter(ts)).start();
@@ -99,7 +103,6 @@ public class SnapshotGenerator extends TermServerScript {
 				new ArchiveWriter(ts).run();
 			}
 		}
-		setQuiet(false);
 	}
 	
 	protected void init (String[] args) throws TermServerScriptException {
