@@ -262,29 +262,40 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 	}
 
+	private String getFilename(Path file) {
+		return file.getFileName().toString();
+	}
+
+	private boolean matches(String filename) {
+		return filename.matches("diff_.*(sct2|der2)_.*(Snapshot).*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt");
+	}
+
+
 	private void processFiles(String uploadFolder) throws TermServerScriptException {
+		Path runDir = Path.of("results", uploadFolder);
 		Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
 		try {
 			// Process file list diff file
-			processFileList(diffDir.toString(), "diff_file_list.txt");
+			processFileList(diffDir, "diff_file_list.txt");
 
-			// Process content diff files (snapshot files)
-			try (Stream<Path> stream = Files.list(diffDir)) {
-				stream.filter(file -> !Files.isDirectory(file))
-						.map(Path::getFileName)
-						.map(Path::toString)
-						.filter(filename -> filename.matches("diff_.*(sct2|der2)_.*(Snapshot).*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt"))
+			report(FILE_COMPARISON_TAB, "Files that remain static:");
+
+			// Process content diff files (snapshot files only)
+			try (Stream<Path> stream = Files.list(diffDir)) { //.filter(file -> !Files.isDirectory(file))) {
+				stream
+						.map(file -> getFilename(file))
+						.filter(filename -> matches(filename))
 						.sorted(String::compareToIgnoreCase)
-						.forEach(filename -> processFile(diffDir.toString(), filename));
+						.forEach(filename -> processFile(diffDir, filename));
 			}
 
-			// Delete diff files
-			/*try (Stream<Path> stream = Files.walk(Path.of("results", uploadFolder))) {
+			// Delete all temporary and diff files after processing
+			try (Stream<Path> stream = Files.walk(runDir)) {
 				stream.sorted(Comparator.reverseOrder())
 						.map(Path::toFile)
 						.forEach(File::delete);
-			}*/
+			}
 		} catch (IOException | RuntimeException e) {
 			LOGGER.error("Error processing diff files in " + uploadFolder);
 			throw new TermServerScriptException(e);
@@ -398,7 +409,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return "\"" + arg + "\"";
 	}
 
-	private void processFileList(String path, String filename) throws TermServerScriptException {
+	private void processFileList(Path path, String filename) throws TermServerScriptException {
 		Set<String> created = new TreeSet<>();
 		Set<String> deleted = new TreeSet<>();
 
@@ -454,7 +465,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 	}
 
-	private void processFile(String path, String filename) {
+	private void processFile(Path path, String filename) {
 		Map<String, String[]> created = new HashMap<>();
 		Map<String, String[]> deleted = new HashMap<>();
 
