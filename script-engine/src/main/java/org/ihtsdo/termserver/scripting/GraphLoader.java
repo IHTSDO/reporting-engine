@@ -1371,11 +1371,13 @@ public class GraphLoader implements ScriptConstants {
 		return allComponents.get(id);
 	}
 	
-	public Map<String,Component> getComponentMap() {
+	public final Map<String,Component> getComponentMap() {
 		if (allComponents == null) {
 			populateAllComponents();
 		}
-		return new HashMap<>(allComponents);
+		//Don't create a new hashmap.  Caller can do this if they think
+		//it's going to change.
+		return allComponents;
 	}
 	
 	public Concept getComponentOwner(String id) {
