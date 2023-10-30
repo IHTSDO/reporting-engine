@@ -12,6 +12,17 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.hibernate.orm</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>6.4.0.CR1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>antlr4-runtime</artifactId>
+			<version>4.13.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
 			<exclusions>
@@ -117,7 +128,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>org.ihtsdo.snowowl.authoring.scheduler.api.Application</mainClass>
+					<mainClass>org.ihtsdo.authoring.scheduler.api.Application</mainClass>
 					<additionalProperties>
 						<encoding.source>UTF-8</encoding.source>
 						<encoding.reporting>UTF-8</encoding.reporting>
