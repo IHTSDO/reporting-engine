@@ -592,9 +592,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 		}
 		String contextPath = "snowstorm/snomed-ct";
-		if (url.contains("-ms")) {
-			contextPath = "snowowl/snomed-ct/v2";
-		}
 		return new TermServerClient(url + contextPath, authenticatedCookie);
 	}
 

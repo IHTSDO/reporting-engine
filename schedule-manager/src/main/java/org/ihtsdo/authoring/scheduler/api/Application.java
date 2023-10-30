@@ -10,7 +10,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
@@ -23,7 +22,6 @@ import java.util.TimeZone;
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
 @EntityScan(basePackages="org.snomed.otf.scheduler.domain")
-@EnableJpaRepositories(basePackages="org.ihtsdo.authoring.scheduler.api.repository")
 @EnableJms
 public class Application {
 

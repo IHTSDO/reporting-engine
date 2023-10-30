@@ -17,7 +17,7 @@ public class ArbitraryFileService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArbitraryFileService.class);
 
 	public ArbitraryFileService() {
-		this.baseDirectory = new File("resources/org.ihtsdo.snowowl.authoring.single.api");
+		this.baseDirectory = new File("resources/org.ihtsdo.authoring.single.api");
 	}
 
 	public void write(String path, String data) throws IOException {

@@ -11,10 +11,6 @@ import org.ihtsdo.termserver.scripting.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
-//import com.b2international.snowowl.dsl.SCGStandaloneSetup;
-//import com.b2international.snowowl.dsl.scg.Expression;
 import com.google.common.primitives.Ints;
 
 public class BatchImportFormat implements ScriptConstants {
