@@ -35,14 +35,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private String incomingDataKey;
 	private Map<String, Datum> incomingData;
 	
-	private Map<Concept, Concept> usedInStatedModellingMap; 
-	private Map<Concept, Concept> usedAsStatedParentMap;
+	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
+	private Map<Concept, Set<Concept>> usedAsStatedParentMap;
 	
 	private String[][] columnNames;  //Used for both column names, and to track totals
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20231001T120000Z.zip");
 		TermServerReport.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -76,6 +76,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		if (!StringUtils.isEmpty(getJobRun().getTask())) {
 			throw new TermServerScriptException("This report cannot be run against tasks");
 		}
+		//getArchiveManager(true).setRunIntegrityChecks(false);
 	}
 	
 	@Override
@@ -131,7 +132,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			getJobRun().setProject(origProject);
 		}
 		
-		columnNames = new String[][] {	{"Inactivated Used As Stated Parent", "Inactivated Used In Stated Modelling", "Inactivated With Inferred Extension Children"},
+		columnNames = new String[][] {	{"Has Inactivated Stated Parent", "Inactivated Concept Used As Stated Parent", "Has Inactivated Stated Attribute", "Inactivated Concept Used In Stated Modelling", "Has Inactivated Inferred Parent", "Inactivated Concept Used As Inferred Parent"},
 										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation", "Translated Concept Inactivated - Replacement Requires Translation"}};
 		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
@@ -147,6 +148,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private String formColumnNames(String[] columnNames, boolean includeExamples) {
 		String header = "";
 		boolean isFirst = true;
+		int pairCount = 0;
 		for (String columnName : columnNames) {
 			if (!isFirst) {
 				header += ",";
@@ -154,10 +156,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				isFirst = false;
 			}
 			header += columnName;
-			if (includeExamples) {
+			pairCount++;
+			
+			if (includeExamples && pairCount == 2) {
 				header += ",Example";
+				pairCount = 0;
 			}
 		}
+		header += ", ,";
 		return header;
 	}
 
@@ -189,9 +195,12 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
 		LOGGER.info("Reporting Inactivations");
-		int inactivatedWithInferredExtensionChildren = 0;
-		int inactivatedUsedInStatedModelling = 0;
-		int inactivatedUsedAsStatedParent = 0;
+		int hasInactivatedStatedParent = 0; 
+		int inactivatedConceptUsedAsStatedParent = 0;
+		int hasInactivatedStatedAttribute = 0;
+		int inactivatedConceptUsedInStatedModelling = 0;
+		int hasInactivatedInferredParent = 0;
+		int inactivatedConceptUsedAsInferredParent = 0;
 		String[] examples = new String[3];
 		
 		Set<Concept> noInScopeDescendentsCache = new HashSet<>();
@@ -209,31 +218,47 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				continue;
 			}
 			
-			Concept usedIn = usedAsStatedParentMap.get(currentConcept);
-			if (usedIn != null) {
-				inactivatedUsedAsStatedParent++;
-				incrementSummaryInformation(summaryNames[0]);
-				examples[0] = currentConcept + "\nParent of : " + usedIn;
+			//But the IMPACT is not the count of International Concepts involved, 
+			//but how many _extension_ concepts each inactivated INT concept is used in.
+			
+			Set<Concept> usedIn = usedAsStatedParentMap.get(currentConcept);
+			if (usedIn != null && usedIn.size() > 0) {
+				hasInactivatedStatedParent += usedIn.size();
+				inactivatedConceptUsedAsStatedParent++;
+				incrementSummaryInformation(summaryNames[0], usedIn.size());
+				incrementSummaryInformation(summaryNames[1]);
+				Concept exampleConcept = usedIn.iterator().next();
+				examples[0] = currentConcept + "\nParent of : " + exampleConcept;
 			}
 			
 			usedIn = usedInStatedModellingMap.get(currentConcept);
 			if (usedIn != null) {
-				inactivatedUsedInStatedModelling++;
-				incrementSummaryInformation(summaryNames[1]);
-				examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + usedIn.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+				hasInactivatedStatedAttribute += usedIn.size();
+				inactivatedConceptUsedInStatedModelling++;
+				incrementSummaryInformation(summaryNames[2], usedIn.size());
+				incrementSummaryInformation(summaryNames[3]);
+				Concept exampleConcept = usedIn.iterator().next();
+				examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + exampleConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			}
 			
 			//Does this concept have any inScope children?  We'll step this with new code
 			//to short cut finding the complete set and allocating memory for that
 			if (hasInScopeDescendents(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
-				inactivatedWithInferredExtensionChildren++;
-				incrementSummaryInformation(summaryNames[2]);
-				examples[2] = currentConcept.toString();
+				long countInferredChildren = currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).stream()
+						.filter(child -> inScope(child))
+						.count();
+				if (countInferredChildren > 0) {
+					hasInactivatedInferredParent++;
+					inactivatedConceptUsedAsInferredParent += countInferredChildren;
+					incrementSummaryInformation(summaryNames[4], (int)countInferredChildren);
+					incrementSummaryInformation(summaryNames[5]);
+					examples[2] = currentConcept + " inferred parent of " + currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).iterator().next();
+				}
 			}
 		}
-		report(SECONDARY_REPORT, topLevelConcept, inactivatedUsedAsStatedParent, examples[0], inactivatedUsedInStatedModelling, examples[1], inactivatedWithInferredExtensionChildren, examples[2]);
+		report(SECONDARY_REPORT, topLevelConcept, hasInactivatedStatedParent, inactivatedConceptUsedAsStatedParent, examples[0], hasInactivatedStatedAttribute, inactivatedConceptUsedInStatedModelling, examples[1], hasInactivatedInferredParent, inactivatedConceptUsedAsInferredParent, examples[2]);
 	}
-	
+
 
 	private void reportTranslations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
 		LOGGER.info("Reporting Translations Required");
@@ -301,15 +326,15 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {
 		String[] data = new String[columnNames.length];
 		if (includeExamples) {
-			data = new String[columnNames.length * 2];
+			data = new String[columnNames.length + 3];
 		}
 		int idx = 0;
 		for (String columnName : columnNames) {
 			int count = getSummaryInformationInt(columnName);
 			countIssue(null, count);
 			data[idx++] = Integer.toString(count);
-			if (includeExamples) {
-				data[idx++] = "";
+			if (includeExamples && idx > 0 && idx % 2 == 0) {
+				data[idx++] = "N/A";
 			}
 		}
 		report(tabNum, "");
@@ -343,26 +368,27 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				for (Relationship r : c.getRelationships()) {
 					if (r.isActive() && r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)) {
 						if (r.getType().equals(IS_A)) {
-							if (!usedAsStatedParentMap.containsKey(r.getType())) {
-								usedAsStatedParentMap.put(r.getType(), c);
-							}
-							
-							if (!usedAsStatedParentMap.containsKey(r.getTarget())) {
-								usedAsStatedParentMap.put(r.getTarget(), c);
-							}
+								addToMap(usedAsStatedParentMap, r.getType(), c);
+								addToMap(usedAsStatedParentMap, r.getTarget(), c);
 						} else {
-							if (!usedInStatedModellingMap.containsKey(r.getType())) {
-								usedInStatedModellingMap.put(r.getType(), c);
-							}
-							
-							if (r.isNotConcrete() && !usedInStatedModellingMap.containsKey(r.getTarget())) {
-								usedInStatedModellingMap.put(r.getTarget(), c);
+							addToMap(usedInStatedModellingMap, r.getType(), c);
+							if (r.isNotConcrete()) {
+								addToMap(usedInStatedModellingMap, r.getTarget(), c);
 							}
 						}
 					}
 				}
 			}
 		}
+	}
+
+	private void addToMap(Map<Concept, Set<Concept>> map, Concept key, Concept value) {
+		Set<Concept> set = map.get(key);
+		if (set == null) {
+			set = new HashSet<>();
+			map.put(key, set);
+		}
+		set.add(value);
 	}
 
 	private boolean hasInScopeDescendents(Concept c, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache) {
