@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -28,6 +29,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final char LINE_CREATED_INDICATOR = '>';
 	private static final int TIMEOUT_MINUTES = 30;
 	private static final int FILE_COMPARISON_TAB = MAX_REPORT_TABS;
+
+	public static final String SCTID_SE_REFSETID = "734138000";
+	public static final String SCTID_SP_REFSETID = "734139008";
 
 	private String previousReleasePath;
 	private String currentReleasePath;
@@ -69,8 +73,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 
 		// International on prod
-		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
-		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
+		params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
 
 		// US Edition Test 1
 		//params.put(PREV_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
@@ -86,9 +90,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(MODULES, "731000124108");*/
 
 		// NL Edition
-		params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
+		/*params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
 		params.put(THIS_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-07T02:35:31/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
-		params.put(MODULES, "11000146104");
+		params.put(MODULES, "11000146104");*/
 
 		// SE Extension
 		/*params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2022-11-17T18:21:20/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20221130T120000Z.zip");
@@ -287,7 +291,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						.map(file -> getFilename(file))
 						.filter(filename -> matches(filename))
 						.sorted(String::compareToIgnoreCase)
-						.forEach(filename -> processFile(diffDir, filename));
+						.forEach(filename -> process(diffDir, filename));
 			}
 
 			// Delete all temporary and diff files after processing
@@ -344,7 +348,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				report(filename, fileTotals, indicatorSubTotals);
 
 			} else if (filename.contains("der2_cRefset_Association")) {
-				report(filename, fileTotals, associationSubTotals);
+				if (filename.contains(SCTID_SE_REFSETID) || filename.contains(SCTID_SP_REFSETID)) {
+					report(filename, fileTotals, null);
+				} else {
+					report(filename, fileTotals, associationSubTotals);
+				}
 
 			} else if (filename.contains("der2_cRefset_Language")) {
 				report(filename, fileTotals, null);
@@ -465,6 +473,14 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 	}
 
+	private void process(Path path, String filename) {
+		processFile(path, filename);
+
+		if (filename.contains("der2_cRefset_Association")) {
+			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
+ 		}
+	}
+
 	private void processFile(Path path, String filename) {
 		Map<String, String[]> created = new HashMap<>();
 		Map<String, String[]> deleted = new HashMap<>();
@@ -540,6 +556,98 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
 
 			fileTotals.put(filename, totals);
+
+			if (filename.contains("der2_cRefset_Association")) {
+				processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
+			}
+
+		} catch (IOException | IndexOutOfBoundsException e) {
+			LOGGER.error("Error processing file: " + filename);
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void processAssociationFile(Path path, String filename, Set<String> refsetIds) {
+		Map<String, String[]> created = new HashMap<>();
+		Map<String, String[]> deleted = new HashMap<>();
+
+		Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
+
+		for (TotalsIndex index : TotalsIndex.values()) {
+			totals.put(index, 0);
+		}
+
+		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				char ch = line.charAt(0);
+
+				if (!(ch == LINE_DELETED_INDICATOR || ch == LINE_CREATED_INDICATOR)) {
+					continue;
+				}
+
+				// Start from index = 2 to exclude "<" or ">" and the following space and split into 5 parts:
+				// 0 - id
+				// 1 - effectiveTime
+				// 2 - active
+				// 3 - moduleId
+				// 4 - refsetId
+				// 5 - the rest of the line
+				String[] data = line.substring(2).split(FIELD_DELIMITER, 6);
+				String key = data[ASSOC_IDX_ID];
+				String moduleId = data[ASSOC_IDX_MODULID];
+				String refsetId = data[ASSOC_IDX_REFSETID];
+
+				if (refsetIds != null && !refsetIds.contains(refsetId)) {
+					continue;
+				}
+
+				switch (ch) {
+					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
+					case LINE_DELETED_INDICATOR:
+						// Previous release entry
+						if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							deleted.put(key, data);
+						}
+						break;
+					case LINE_CREATED_INDICATOR:
+						// Current release entry
+						if (deleted.containsKey(key)) {
+							String[] oldValue = deleted.remove(key);
+							ValuePair valuePair = new ValuePair(oldValue, data);
+							if (valuePair.isInScope(moduleFilter)) {
+								if (valuePair.isInactivated()) {
+									count(totals, TotalsIndex.INACTIVATED);
+								} else if (valuePair.isReactivated()) {
+									count(totals, TotalsIndex.REACTIVATED);
+								} else if (valuePair.isActive()) {
+									count(totals, TotalsIndex.CHANGED);
+								} else if (valuePair.isInactive()) {
+									count(totals, TotalsIndex.CHANGED_INACTIVE);
+								}
+							} else if (valuePair.isMovedModule()) {
+								count(totals, TotalsIndex.MOVED_MODULE);
+							}
+						} else if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							created.put(key, data);
+						}
+						break;
+				}
+			}
+
+			// Calculate created and deleted totals
+			totals.put(TotalsIndex.NEW, created.values().stream()
+					.filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
+			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream()
+					.filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
+			totals.put(TotalsIndex.NEW_EFFECTIVE_TIME_NOT_LATEST, created.values().stream().filter(data -> !thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
+			totals.put(TotalsIndex.DELETED, deleted.size());
+
+			// Calculate total of all changes
+			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
+
+			fileTotals.put(filename + (refsetIds == null ? "" : " [" + refsetIds.stream().collect(Collectors.joining(",")) + "]"), totals);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing file: " + filename);
