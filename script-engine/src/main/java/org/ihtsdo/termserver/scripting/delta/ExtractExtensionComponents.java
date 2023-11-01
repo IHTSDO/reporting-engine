@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -66,11 +65,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK Composition Module
 			//delta.moduleId = "999000011000000103"; //UK Clinical Extension
-			delta.moduleId = "57091000202101";  //Norway module for medicines
+			//delta.moduleId = "57091000202101";  //Norway module for medicines
+			delta.moduleId = "332351000009108"; //Vet Extension
 			//delta.moduleId = "51000202101"; //Norway Module
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
+			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't include the project export in our timings

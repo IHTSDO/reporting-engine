@@ -59,6 +59,7 @@ public class GraphLoader implements ScriptConstants {
 	private boolean runIntegrityChecks = true;
 	private boolean checkForExcludedModules = false;
 	private boolean recordPreviousState = false;
+	private boolean allowIllegalSCTIDs = false;
 	
 	protected boolean populateOriginalModuleMap = false;
 	protected Map<Component, String> originalModuleMap = null;
@@ -663,7 +664,11 @@ public class GraphLoader implements ScriptConstants {
 			if (!createIfRequired && !validateExists && sctId.length() == 0) {
 				return null;
 			} else {
-				throw new IllegalArgumentException("Request made for non concept sctid: '" + sctId + "'");
+				if (allowIllegalSCTIDs) {
+					LOGGER.warn("Allowing illegal SCTID to exist: {}", sctId);
+				} else {
+					throw new IllegalArgumentException("Request made for non concept sctid: '" + sctId + "'");
+				}
 			}
 		}
 		
@@ -674,7 +679,7 @@ public class GraphLoader implements ScriptConstants {
 		} else {
 			String msg = SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT);
 			if (msg != null) {
-				TermServerScript.warn(msg);
+				LOGGER.warn(msg);
 			}
 		}
 		
@@ -1837,5 +1842,9 @@ public class GraphLoader implements ScriptConstants {
 				originalModuleMap.put(comp, comp.getModuleId());
 			}
 		}
+	}
+
+	public void setAllowIllegalSCTIDs(boolean setting) {
+		allowIllegalSCTIDs = setting;
 	}
 }
