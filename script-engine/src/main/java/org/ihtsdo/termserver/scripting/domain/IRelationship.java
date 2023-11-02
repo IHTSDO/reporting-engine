@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import org.ihtsdo.otf.RF2Constants;
 
-public interface IRelationshipTemplate extends RF2Constants {
+public interface IRelationship extends RF2Constants {
 
 
 	public Concept getType();
@@ -17,10 +17,15 @@ public interface IRelationshipTemplate extends RF2Constants {
 	public CharacteristicType getCharacteristicType();
 	public void setCharacteristicType(CharacteristicType characteristicType);
 
-	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rel);
+	public boolean equalsTypeAndTargetValue(IRelationship rel);
 	
 	public String toString();
 	
 	public boolean isConcrete();
 
+    void setGroupId(int groupId);
+
+	int getGroupId();
+
+	IRelationship clone();
 }

@@ -6,13 +6,12 @@ import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.util.*;
 
-public class Relationship extends Component implements IRelationshipTemplate, ScriptConstants, Comparable<Relationship> {
+public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
 
 	@SerializedName("relationshipId")
 	@Expose
@@ -428,11 +427,11 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		return getComponentType().toString();
 	}
 	
-	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rhs) {
+	public boolean equalsTypeAndTargetValue(IRelationship rhs) {
 		return this.type.equals(rhs.getType()) && equalsTargetOrValue(rhs);
 	}
 	
-	public boolean equalsTargetOrValue(IRelationshipTemplate b) {
+	public boolean equalsTargetOrValue(IRelationship b) {
 		if (isConcrete() && b.isConcrete()) {
 			return getConcreteValue().toString().equals(b.getConcreteValue().toString());
 		} else if (!isConcrete() && !b.isConcrete()) {

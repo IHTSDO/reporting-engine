@@ -1,8 +1,6 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import com.google.api.client.util.Objects;
-
-public class RelationshipTemplate implements IRelationshipTemplate {
+public class RelationshipTemplate implements IRelationship {
 	
 	public enum Mode { PERMISSIVE, REPLACE_TYPE_IN_THIS_GROUP, UNIQUE_TYPE_IN_THIS_GROUP, UNIQUE_TYPE_ACROSS_ALL_GROUPS, UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS}
 	
@@ -67,7 +65,7 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 		this.concreteValue = concreteValue;
 	}
 
-	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rel) {
+	public boolean equalsTypeAndTargetValue(IRelationship rel) {
 		if (this.type.equals(rel.getType()) && this.target.equals(rel.getTarget())) {
 			return true;
 		}
@@ -103,6 +101,17 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	@Override
 	public boolean isConcrete() {
 		return concreteValue != null;
+	}
+
+	@Override
+	public void setGroupId(int groupId) {
+		//Templates don't care about groupId.  They get set when we create the actual
+		//relationship when we know where it's going.
+	}
+
+	@Override
+	public int getGroupId() {
+		return NOT_SET;
 	}
 
 	public Mode getMode() {

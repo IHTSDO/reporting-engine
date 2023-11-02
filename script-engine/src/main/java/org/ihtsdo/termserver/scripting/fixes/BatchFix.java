@@ -1015,7 +1015,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		report(t, c, Severity.LOW, action, msg, msg2, info);
 	}
 	
-	protected int addRelationship(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
+	protected int addRelationship(Task t, Concept c, IRelationship r, int groupId) throws TermServerScriptException {
 		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS);  //Allow other relationships of the same type, but not value
 	}
 	
@@ -1145,7 +1145,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 	
-	protected int replaceRelationship(Task t, Concept c, IRelationshipTemplate from, IRelationshipTemplate to) throws TermServerScriptException {
+	protected int replaceRelationship(Task t, Concept c, IRelationship from, IRelationship to) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//Do we have any inactive relationships that we could reactivate, rather than creating new ones?
@@ -1296,9 +1296,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	/**
 	 * Takes a remodelled concept and saves it as a new concept, inactivates tbe original
 	 * and points to it as a replacement
-	 * @throws TermServerScriptException 
-	 * @throws JSONException 
-	 * @throws TermServerClientException 
+	 * @throws TermServerScriptException
 	 */
 	protected void cloneAndReplace(Concept concept, Task t, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
 		String originalId = concept.getConceptId();
