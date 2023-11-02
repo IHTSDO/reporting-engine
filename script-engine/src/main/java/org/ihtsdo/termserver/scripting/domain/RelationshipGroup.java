@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RelationshipGroup implements ScriptConstants {
-	private Set<Relationship> relationships = new HashSet<>();
+	private Set<IRelationship> relationships = new HashSet<>();
 	private int groupId;
 	private AxiomEntry axiomEntry;  //Used when loading from RF2
 	
@@ -15,7 +15,7 @@ public class RelationshipGroup implements ScriptConstants {
 	
 	public RelationshipGroup clone() {
 		RelationshipGroup clone = new RelationshipGroup(groupId);
-		for (Relationship r : relationships) {
+		for (IRelationship r : relationships) {
 			clone.addRelationship(r.clone());
 		}
 		return clone;
@@ -26,10 +26,15 @@ public class RelationshipGroup implements ScriptConstants {
 		this.relationships = new HashSet<>();
 	}
 	
-	public RelationshipGroup (int groupId, Set<Relationship> relationships) {
+	public RelationshipGroup (int groupId, Set<? extends IRelationship> relationships) {
 		this.groupId = groupId;
-		this.relationships = relationships;
+		this.relationships = new HashSet<>(relationships);
 	}
+
+	/*public RelationshipGroup (int groupId, Set<Relationship> relationships) {
+		this.groupId = groupId;
+		this.relationships = new HashSet<>(relationships);
+	}*/
 	
 	public RelationshipGroup(int groupId, Relationship r) {
 		relationships = new HashSet<>();
@@ -37,23 +42,30 @@ public class RelationshipGroup implements ScriptConstants {
 		relationships.add(r);
 	}
 
-	public Set<Relationship> getRelationships() {
+	public Set<IRelationship> getIRelationships() {
 		return relationships;
 	}
-	
+
+
+	public Set<Relationship> getRelationships() {
+		return relationships.stream()
+				.map(r -> ensureRelationship(r))
+				.collect(Collectors.toSet());
+	}
+
 	public Set<Relationship> getRelationshipsWithType(Concept type) {
 		Set<Relationship> matching = new HashSet<>();
-		for (Relationship r : relationships) {
-			if (r.getType().equals(type)) {
-				matching.add(r);
+		for (IRelationship ir : relationships) {
+			if (ir.getType().equals(type)) {
+				matching.add(ensureRelationship(ir));
 			}
 		}
 		return matching;
 	}
 	
-	public Set<Relationship> getRelationshipsWithTypeValue(Concept type, Concept value) {
-		Set<Relationship> matching = new HashSet<>();
-		for (Relationship r : relationships) {
+	public Set<IRelationship> getRelationshipsWithTypeValue(Concept type, Concept value) {
+		Set<IRelationship> matching = new HashSet<>();
+		for (IRelationship r : relationships) {
 			if (r.getType().equals(type) && r.getTarget().equals(value)) {
 				matching.add(r);
 			}
@@ -68,26 +80,27 @@ public class RelationshipGroup implements ScriptConstants {
 		} else if (relationships.size() > 1) {
 			throw new IllegalStateException(this + " features multiple " + type);
 		}
-		return relationships.iterator().next();
+		return ensureRelationship(relationships.iterator().next());
 	}
 	
 	public Relationship getRelationshipWithTypeValue(Concept type, Concept value) {
-		Set<Relationship> relationships = getRelationshipsWithTypeValue(type, value);
+		Set<IRelationship> relationships = getRelationshipsWithTypeValue(type, value);
 		if (relationships.isEmpty()) {
 			return null;
 		} else if (relationships.size() > 1) {
 			throw new IllegalStateException(this + " features multiple " + type);
 		}
-		return relationships.iterator().next();
+		return ensureRelationship(relationships.iterator().next());
 	}
 	
 	public Set<Relationship> getRelationships(ActiveState activeState) {
 		return relationships.stream()
+				.map(ir -> ensureRelationship(ir))
 				.filter(r -> r.hasActiveState(activeState))
 				.collect(Collectors.toSet());
 	}
 	
-	public void setRelationships(Set<Relationship> relationships) {
+	public void setRelationships(Set<IRelationship> relationships) {
 		this.relationships = relationships;
 	}
 	
@@ -106,7 +119,7 @@ public class RelationshipGroup implements ScriptConstants {
 	public void setGroupId(int groupId) {
 		this.groupId = groupId;
 		//All relationships in this group must also conform to this groupId
-		for (Relationship r : relationships) {
+		for (IRelationship r : relationships) {
 			r.setGroupId(groupId);
 		}
 	}
@@ -118,7 +131,7 @@ public class RelationshipGroup implements ScriptConstants {
 		issues.add(c);
 	}
 	
-	public void addRelationship (Relationship r) {
+	public void addRelationship (IRelationship r) {
 		relationships.add(r);
 	}
 	
@@ -152,9 +165,9 @@ public class RelationshipGroup implements ScriptConstants {
 		}
 		
 		nextLhsRel:
-		for (Relationship lhs : this.getRelationships()) {
+		for (IRelationship lhs : this.getRelationships()) {
 			//Can we find a matching relationship.  We're sure of source, so just check type and target
-			for (Relationship rhs : otherGroup.getRelationships()) {
+			for (IRelationship rhs : otherGroup.getRelationships()) {
 				//If one is concrete and the other is not, then they cannot be equal
 				if ((lhs.isConcrete() && !rhs.isConcrete()) ||
 						!lhs.isConcrete() && rhs.isConcrete()) {
@@ -177,8 +190,8 @@ public class RelationshipGroup implements ScriptConstants {
 		return groupId > 0;
 	}
 
-	public boolean containsTypeValue(IRelationshipTemplate r1) {
-		for (Relationship r2 : relationships) {
+	public boolean containsTypeValue(IRelationship r1) {
+		for (IRelationship r2 : relationships) {
 			if (r2.equalsTypeAndTargetValue(r1)) {
 				return true;
 			}
@@ -191,7 +204,7 @@ public class RelationshipGroup implements ScriptConstants {
 	}
 
 	public boolean containsType(Concept type) {
-		for (Relationship r2 : relationships) {
+		for (IRelationship r2 : relationships) {
 			if (r2.getType().equals(type)) {
 				return true;
 			}
@@ -202,7 +215,14 @@ public class RelationshipGroup implements ScriptConstants {
 	public Set<Relationship> getType(Concept t) {
 		return relationships.stream()
 		.filter(r -> r.getType().equals(t))
+				.map(r -> ensureRelationship(r))
 		.collect(Collectors.toSet());
+	}
+
+	public Set<IRelationship> getIRelationshipWithType(Concept t) {
+		return relationships.stream()
+				.filter(r -> r.getType().equals(t))
+				.collect(Collectors.toSet());
 	}
 	
 	public Concept getValueForType(Concept type) {
@@ -210,7 +230,7 @@ public class RelationshipGroup implements ScriptConstants {
 	}
 	
 	public Concept getValueForType(Concept type, boolean allowNull) {
-		List<Relationship> rels = relationships.stream()
+		List<IRelationship> rels = relationships.stream()
 		.filter(r -> r.getType().equals(type))
 		.collect(Collectors.toList());
 		
@@ -222,10 +242,14 @@ public class RelationshipGroup implements ScriptConstants {
 		}
 		return rels.get(0).getTarget();
 	}
-	
+
 	public Relationship getTypeValue(Relationship r1) {
-		Set<Relationship> matches = new HashSet<>();
-		for (Relationship r2 : relationships) {
+		return ensureRelationship(getTypeValueIRelationship(r1));
+	}
+	
+	public IRelationship getTypeValueIRelationship(Relationship r1) {
+		Set<IRelationship> matches = new HashSet<>();
+		for (IRelationship r2 : relationships) {
 			if (r2.equalsTypeAndTargetValue(r1)) {
 				matches.add(r2);
 			}
@@ -268,32 +292,43 @@ public class RelationshipGroup implements ScriptConstants {
 	}
 
 	public void setActive(boolean isActive) {
-		for (Relationship r : relationships) {
+		for (IRelationship ir : relationships) {
+			Relationship r = ensureRelationship(ir);
 			r.setActive(isActive);
 		}
 	}
 
+	private Relationship ensureRelationship(IRelationship ir) {
+		if (ir instanceof Relationship) {
+			return (Relationship)ir;
+		}
+		throw new IllegalArgumentException("Expected a Relationship, found " + ir.getClass().getSimpleName() + " " + ir);
+	}
+
 	public void setEffectiveTime(String effectiveTime) {
-		for (Relationship r : relationships) {
+		for (IRelationship ir : relationships) {
+			Relationship r = ensureRelationship(ir);
 			r.setEffectiveTime(effectiveTime);
 		}
 	}
 
 	public void setModule(String moduleId) {
-		for (Relationship r : relationships) {
+		for (IRelationship ir : relationships) {
+			Relationship r = ensureRelationship(ir);
 			r.setModuleId(moduleId);
 		}
 	}
 
 	public void setAxiom(AxiomEntry axiomEntry) {
-		for (Relationship r : relationships) {
+		for (IRelationship ir : relationships) {
+			Relationship r = ensureRelationship(ir);
 			r.setAxiomEntry(axiomEntry);
 		}
 	}
 
 	public List<org.snomed.otf.owltoolkit.domain.Relationship> getToolKitRelationships() {
 		List<org.snomed.otf.owltoolkit.domain.Relationship> toolkitRels = new ArrayList<>();
-		for (Relationship r : getRelationships()) {
+		for (IRelationship r : getIRelationships()) {
 			int groupId = r.getGroupId();
 			long type = Long.parseLong(r.getType().getConceptId());
 			long target = Long.parseLong(r.getTarget().getConceptId());
@@ -306,19 +341,20 @@ public class RelationshipGroup implements ScriptConstants {
 
 	public Concept getSourceConcept() {
 		//Can return any relationship's source concept - they will all be the same
-		return relationships.iterator().next().getSource();
+		return ensureRelationship(relationships.iterator().next()).getSource();
 	}
 
 	public void setReleased(Boolean isReleased) {
-		for (Relationship r : relationships) {
-			r.setReleased(isReleased);
+		for (IRelationship r : relationships) {
+			ensureRelationship(r).setReleased(isReleased);
 		}
 	}
 
 	public AxiomEntry getAxiomEntry() {
 		if (axiomEntry == null) {
 			//Use the first axiom entry assigned
-			for (Relationship r : getRelationships()) {
+			for (IRelationship ir : getIRelationships()) {
+				Relationship r = ensureRelationship(ir);
 				if (r.getAxiomEntry() != null) {
 					axiomEntry = r.getAxiomEntry();
 					break;
@@ -333,7 +369,7 @@ public class RelationshipGroup implements ScriptConstants {
 	}
 
 	public boolean isAllISA() {
-		for (Relationship r : getRelationships()) {
+		for (IRelationship r : getIRelationships()) {
 			if (!r.getType().equals(IS_A)) {
 				return false;
 			}

@@ -15,10 +15,7 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -69,8 +66,8 @@ public class CrossoverUtils implements ScriptConstants {
 	/**
 	 * Subsumption concept test.
 	 *
-	 * @param concept1 the concept1
-	 * @param concept2 the concept2
+	 * @param c1 the concept1
+	 * @param c2 the concept2
 	 * @return the tES t_ results
 	 * @throws TermServerScriptException 
 	 */
@@ -190,14 +187,14 @@ public class CrossoverUtils implements ScriptConstants {
 					break;
 				case ROLE1_EQUAL_ROLE2:
 					equal=true;
-					tupleTested.add( role2);
+					tupleTested.add(role2);
 					break;
 				case ROLE1_SUBSUM_ROLE2:
 					oneSubsTwo=true;
 					break;
 				case ROLE2_SUBSUM_ROLE1:
 					twoSubsOne=true;
-					tupleTested.add( role2);
+					tupleTested.add(role2);
 					break;
 				default:
 					break;
@@ -253,7 +250,7 @@ public class CrossoverUtils implements ScriptConstants {
 					}
 				}
 
-				RelationshipGroup relgroupToTest=new RelationshipGroup(NOT_SET,tupleToTestSwitch);
+				RelationshipGroup relgroupToTest = new RelationshipGroup(NOT_SET,tupleToTestSwitch);
 				boolean shortResult=roleGroup1SubSumToRoleGroup2(relgroupToTest,rolegroup1);
 				if (!shortResult){
 					return TEST_RESULTS.THERE_IS_NO_SUBSUM;

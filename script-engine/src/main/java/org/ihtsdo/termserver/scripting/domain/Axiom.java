@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
