@@ -1585,8 +1585,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (RelationshipGroup potentialMatch : c.getRelationshipGroups(charType)) {
 			if (potentialMatch.size() == g.size()) {
 				nextRelationship:
-				for (Relationship r1 : potentialMatch.getRelationships()) {
-					for (Relationship r2 : g.getRelationships()) {
+				for (IRelationship r1 : potentialMatch.getIRelationships()) {
+					for (IRelationship r2 : g.getIRelationships()) {
 						if (r1.getType().equals(r2.getType())) {
 							if (r1.isConcrete() && r2.isConcrete()) {
 								if (r1.getConcreteValue().equals(r2.getConcreteValue())) {

@@ -137,7 +137,7 @@ public class Axiom extends Expressable implements ScriptConstants {
 				group = new RelationshipGroup(r.getGroupId() , r);
 				groups.put(r.getGroupId(), group);
 			} else {
-				group.getRelationships().add(r);
+				group.addRelationship(r);
 			}
 		}
 		return groups.values();

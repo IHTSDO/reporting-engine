@@ -32,7 +32,7 @@ public abstract class Expressable extends Component implements ScriptConstants {
 		}
 		//Add any ungrouped attributes
 		boolean isFirstGroup = true;
-		for (RelationshipGroup group : getRelationshipGroups (charType)) {
+		for (RelationshipGroup group : getRelationshipGroups(charType)) {
 			if (isFirstGroup) {
 				isFirstGroup = false;
 			} else {

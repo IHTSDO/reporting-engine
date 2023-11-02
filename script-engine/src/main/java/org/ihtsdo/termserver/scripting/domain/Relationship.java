@@ -270,11 +270,8 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		//If we have two rels the same but coming from different axioms, they should be handled separately
 		if (ignoreAxiom == false && (
 				(this.getAxiomEntry() != null && rhs.getAxiomEntry() == null) ||
-				(this.getAxiomEntry() != null && rhs.getAxiomEntry() == null) ||
 				(this.getAxiomEntry() == null && rhs.getAxiomEntry() != null) ||
-				(this.getAxiomEntry() != null && 
-				rhs.getAxiomEntry() != null && 
-				!this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())))) {
+				(this.getAxiomEntry() != null && rhs.getAxiomEntry() != null && !this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())))) {
 			return false;
 		}
 		
@@ -282,10 +279,8 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		//If we have two rels the same but coming from different axioms, they should be handled separately
 		if (ignoreAxiom == false && (
 				(this.getAxiom() != null && rhs.getAxiom() == null) ||
-				(this.getAxiom() != null && rhs.getAxiom() == null) ||
 				(this.getAxiom() == null && rhs.getAxiom() != null) ||
-				(this.getAxiom() != null && rhs.getAxiom() != null && 
-				!this.getAxiom().getId().equals(rhs.getAxiom().getId())))) {
+				(this.getAxiom() != null && rhs.getAxiom() != null && !this.getAxiom().getId().equals(rhs.getAxiom().getId())))) {
 			return false;
 		}
 		
@@ -332,7 +327,12 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	public Relationship clone() {
 		return clone(null);
 	}
-	
+
+	@Override
+	public Relationship instantiate(Concept concept, int groupId) {
+		return this;
+	}
+
 	public Relationship cloneWithIds() {
 		return clone(this.getId());
 	}
