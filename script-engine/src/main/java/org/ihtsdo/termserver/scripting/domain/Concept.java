@@ -1355,7 +1355,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 					group = new RelationshipGroup(r.getGroupId() , r);
 					axiomGroups.put(r.getGroupId(), group);
 				} else {
-					group.getRelationships().add(r);
+					group.addRelationship(r);
 				}
 			}
 			
@@ -1374,7 +1374,16 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public int addRelationshipGroup(RelationshipGroup group, Set<Relationship> availableForReuse) {
 		int changesMade = 0;
-		for (Relationship r : group.getRelationships()) {
+		if (availableForReuse == null) {
+			availableForReuse = new HashSet<>();
+		}
+
+		for (IRelationship ir : group.getIRelationships()) {
+			//Now these might be relationshipTemplates that need to be instantiated as proper relationships
+			Relationship r = null;
+			if (ir instanceof RelationshipTemplate) {
+				r = ir.instantiate(this, group.getGroupId());
+			}
 			//Do we have one of these relationships available to be reused?
 			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {
 				if (reuseMe.getType().equals(r.getType()) && reuseMe.getTarget().equals(r.getTarget())) {

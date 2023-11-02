@@ -46,7 +46,8 @@ public class RelationshipGroup implements ScriptConstants {
 		return relationships;
 	}
 
-
+	//Watch here that you're not getting the internal collection back, so you can't add to this set.
+	//Use 'addRelationship' instead
 	public Set<Relationship> getRelationships() {
 		return relationships.stream()
 				.map(r -> ensureRelationship(r))

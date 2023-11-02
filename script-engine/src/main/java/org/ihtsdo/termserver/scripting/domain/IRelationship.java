@@ -28,4 +28,6 @@ public interface IRelationship extends RF2Constants {
 	int getGroupId();
 
 	IRelationship clone();
+
+    Relationship instantiate(Concept source, int groupId);
 }

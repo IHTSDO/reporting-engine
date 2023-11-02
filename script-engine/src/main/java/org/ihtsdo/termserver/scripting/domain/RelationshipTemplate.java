@@ -128,7 +128,16 @@ public class RelationshipTemplate implements IRelationship {
 		clone.setConcreteValue(this.getConcreteValue());
 		return clone;
 	}
-	
+
+	@Override
+	public Relationship instantiate(Concept source, int groupId) {
+		Relationship r = new Relationship(this.getType(), this.getTarget());
+		r.setCharacteristicType(this.getCharacteristicType());
+		r.setSource(source);
+		r.setGroupId(groupId);
+		return r;
+	}
+
 	@Override 
 	public int hashCode() {
 		if (hashCode == null) {
