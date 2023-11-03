@@ -1,10 +1,9 @@
 package org.ihtsdo.termserver.scripting.dao;
 
-import java.io.*;
-
 import org.apache.commons.io.IOUtils;
-import org.ihtsdo.otf.resourcemanager.ResourceManager;
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,15 +14,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import org.apache.commons.lang.StringUtils;
+import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 @Service
 public class ResourceDataLoader {
@@ -63,19 +61,19 @@ public class ResourceDataLoader {
 		
 		if (useCloud) {
 			try {
-				AWSCredentialsProvider awsCredProv;
+				AwsCredentialsProvider awsCredProv;
 				if (awsKey == null || awsKey.isEmpty()) {
-					awsCredProv = new EC2ContainerCredentialsProviderWrapper();
+					awsCredProv = ContainerCredentialsProvider.builder().build();
 					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials for resources");
 				} else {
-					AWSCredentials awsCreds = new BasicAWSCredentials(awsKey, awsSecretKey);
-					awsCredProv = new AWSStaticCredentialsProvider(awsCreds);
+					AwsCredentials awsCreds = AwsBasicCredentials.create(awsKey, awsSecretKey);
+					awsCredProv = StaticCredentialsProvider.create(awsCreds);
 					TermServerScript.info("Connecting to S3 for resources with locally specified account: " + awsKey);
 				}
 	
-				AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-										.withCredentials(awsCredProv)
-										.withRegion(region)
+				S3Client s3Client = S3Client.builder()
+										.credentialsProvider(awsCredProv)
+										.region(Region.of(region))
 										.build();
 				ResourceManager resourceManager = new ResourceManager(resourceConfig, new SimpleStorageResourceLoader(s3Client));
 				for (String fileName : fileNames) {

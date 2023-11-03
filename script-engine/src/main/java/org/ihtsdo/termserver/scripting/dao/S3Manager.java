@@ -1,19 +1,17 @@
 package org.ihtsdo.termserver.scripting.dao;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.LocalProperties;
 import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3Manager {
     private String region;
@@ -57,14 +55,14 @@ public class S3Manager {
                 return resourceManager;
             }
             try {
-                AmazonS3 s3Client;
+                S3Client s3Client;
                 if (StringUtils.isEmpty(awsKey)) {
-                    s3Client = AmazonS3ClientBuilder.standard().build();
+                    s3Client = S3Client.builder().build();
                     TermServerScript.info("Connecting to S3 with EC2 environment configured credentials");
                 } else {
-                    s3Client = AmazonS3ClientBuilder.standard()
-                            .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(awsKey, awsSecretKey)))
-                            .withRegion(region)
+                    s3Client = S3Client.builder()
+                            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsKey, awsSecretKey)))
+                            .region(Region.of(region))
                             .build();
                     TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
                     //AWS will still attempt to connect locally to discover its credentials, so let's only
