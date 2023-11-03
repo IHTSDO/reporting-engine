@@ -72,7 +72,7 @@ public class MultiArchiveImporter extends BatchFix {
 			createTask(task);
 			if (!dryRun) {
 				tsClient.importArchive(task.getBranchPath(), ImportType.DELTA, thisArchive);
-				updateTask(task);
+				updateTask(task, getReportName(), getReportManager().getUrl());
 				if (classifyTasks) {
 					LOGGER.info ("Classifying " + task);
 					Classification classification = scaClient.classify(task.getKey());

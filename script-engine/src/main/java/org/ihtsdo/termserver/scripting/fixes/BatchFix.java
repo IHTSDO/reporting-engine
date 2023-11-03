@@ -256,7 +256,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				//Don't update Editpanel or assign task if we're using a pre-existing one
 				if (!dryRun && !task.isPreExistingTask()) {
 					populateEditPanel(task);
-					updateTask(task);
+					updateTask(task, getReportName(), getReportManager().getUrl());
 					
 					Classification classification = null;
 					if (classifyTasks) {
@@ -398,12 +398,20 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 	}
 	
-	protected void updateTask(Task task) throws Exception {
+	protected void updateTask(Task task, String reportName, String reportURL) throws Exception {
 		String taskDescription;
 		if (this instanceof BatchImport) {
 			taskDescription = ((BatchImport)this).getAllNotes(task);
 		} else {
-			taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+			taskDescription = populateTaskDescription ? task.getDescriptionHTML() : DEFAULT_TASK_DESCRIPTION;
+		}
+
+		if (reportName != null) {
+			String link = reportName;
+			if (reportURL != null) {
+				link = "<a href=\"" + reportURL + "\">" + link + "</a>";
+			}
+			taskDescription += ": " + link;
 		}
 		
 		//Reassign the task to the intended author.  Set at task or processing level
