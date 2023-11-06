@@ -1380,7 +1380,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			recordSummaryText("Started at: " + startTime);
 		}
 		recordSummaryText("Finished at: " + endTime);
-		
+		if (getReportManager() != null) {
+			recordSummaryText("Processing Report URL: " + getReportManager().getUrl());
+		}
 		LOGGER.info(BREAK);
 		
 		flushFiles(false);

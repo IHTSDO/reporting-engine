@@ -948,7 +948,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					Map<String, Acceptability> ptAcceptMap = d.getAcceptabilityMap();
 					d.setAcceptabilityMap(reuseMe.getAcceptabilityMap());
 					reuseMe.setAcceptabilityMap(ptAcceptMap);
-					report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists as PT, acceptablity swapped: ", reuseMe, info);
+					report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe, info);
 					if (demotePT) {
 						return reuseMe;
 					}

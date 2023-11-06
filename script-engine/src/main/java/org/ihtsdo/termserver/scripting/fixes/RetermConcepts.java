@@ -2,22 +2,32 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  */
 public class RetermConcepts extends BatchFix {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RetermConcepts.class);
 	
-	private String identifyingText = "caused by";
+	private String identifyingText = "bladder";
+	private String excludeText = "urinary";
 	private Map<String, String> replacementMap;
 	private boolean forcePTAlignment = true;
+	private Collection<Concept> requiredAttributeValue = null;
+	Map<String, Concept> currentFSNs = new HashMap<>();
 	
 	protected RetermConcepts(BatchFix clone) {
 		super(clone);
@@ -30,7 +40,7 @@ public class RetermConcepts extends BatchFix {
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
-			//fix.selfDetermining = true;
+			fix.selfDetermining = true;
 			fix.runStandAlone = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
@@ -42,11 +52,18 @@ public class RetermConcepts extends BatchFix {
 	}
 
 	public void postInit() throws TermServerScriptException {
-		subsetECL = "<< 404684003 |Clinical finding|";
+		subsetECL = "*";
 		replacementMap = new HashMap<>();
 		//text should be lower case.
 		//TODO Make replacement match case, if there's a chance of it being the first word
-		replacementMap.put("due to", "caused by");
+		replacementMap.put("bladder", "urinary bladder");
+		requiredAttributeValue = findConcepts("<< 89837001|Urinary bladder structure|");
+
+		LOGGER.info("Obtaining all current FSNs...");
+		//There are duplicates.  In the case of duplicate, we'll keep the first one we find.
+		gl.getAllConcepts().stream()
+				.collect(Collectors.toMap(Concept::getFsn, Function.identity(), (existing, replacement) -> existing));
+
 		super.postInit();
 	}
 
@@ -77,16 +94,32 @@ public class RetermConcepts extends BatchFix {
 			String replace = entry.getValue();
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				//Skip FSNs & text definitions
-				if (!d.getType().equals(DescriptionType.SYNONYM)) {
+				/*if (!d.getType().equals(DescriptionType.SYNONYM)) {
+					continue;
+				}*/
+				//Only process FSN + PT
+				if (!d.isPreferred()) {
 					continue;
 				}
 				//In this case we're looking for an entire match
-				if (d.getTerm().contains(find)) {
+				if ((d.getTerm().contains(find) || d.getTerm().contains(StringUtils.capitalizeFirstLetter(find)))
+						&& !d.getTerm().contains(excludeText)) {
 					if (!d.isReleased()) {
 						report(t, c, Severity.MEDIUM, ReportActionType.INFO, "New description this cycle");
 					}
 					String replacement = d.getTerm().replaceAll(find, replace);
-					replaceDescription(t, c, d, replacement, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+
+					//If the term is unchanged, try an upper case replacement
+					if (replacement.equals(d.getTerm())) {
+						replacement = d.getTerm().replaceAll(StringUtils.capitalizeFirstLetter(find), StringUtils.capitalizeFirstLetter(replace));
+					}
+
+					//If the replacement is a known FSN, we'll skip
+					if (currentFSNs.containsKey(replacement)) {
+						report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement is a known FSN: " + replacement);
+						continue;
+					}
+					replaceDescription(t, c, d, replacement, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, true, "", null	);
 					changesMade++;
 				}
 			}
@@ -101,7 +134,7 @@ public class RetermConcepts extends BatchFix {
 		Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		
 		if (!usPT.equals(gbPT)) {
-			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "US/GB Variance!", gbPT);
+			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB Variance!", gbPT);
 		}
 		
 		//We've already deleted the unwanted terms, so we'll demote this PT rather than inactivate
@@ -116,14 +149,23 @@ public class RetermConcepts extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> toProcess = new ArrayList<>();
 		nextConcept:
-		for (Concept c : findConcepts(subsetECL, true, true)) {
+		for (Concept c : SnomedUtils.sort(findConcepts(subsetECL, true, true))) {
+		//for (Concept c : Collections.singleton(gl.getConcept("210215001"))) {
+			if (!containsRequiredAttributeValue(c)) {
+				continue;
+			}
 			//Flag up any descriptions that have both the find AND the replace in the same term.
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+				if (d.getType().equals(DescriptionType.TEXT_DEFINITION) || !d.isPreferred()) {
 					continue;
 				}
+				String termLower = d.getTerm().toLowerCase();
+				if (termLower.contains(identifyingText) && !termLower.contains(excludeText)) {
+					toProcess.add(c);
+					break;
+				}
 				
-				for (Map.Entry<String,String> entry : replacementMap.entrySet()) {
+			/*	for (Map.Entry<String,String> entry : replacementMap.entrySet()) {
 					String find = entry.getKey();
 					String replace = entry.getValue();
 					String term = d.getTerm().toLowerCase();
@@ -149,8 +191,18 @@ public class RetermConcepts extends BatchFix {
 						}
 					}
 				}
+			}*/
 			}
 		}
 		return toProcess;
+	}
+
+	private boolean containsRequiredAttributeValue(Concept c) {
+		return c.getRelationships().stream()
+				.filter(r -> r.isActive())
+				.filter(r -> !r.getType().equals(IS_A))
+				.filter(r -> !r.isConcrete())
+				.map(r -> r.getTarget())
+				.anyMatch(t -> requiredAttributeValue.contains(t));
 	}
 }
