@@ -72,7 +72,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			"870683026",
 			"870682020",
 			"2485242028"
-	};*/
+	};
 
 	String[] componentsToProcess = new String[]{
 			"85842356-607a-f4e8-61f4-24349243b309", "8b6307c0-ad41-6cca-5cfa-c2130d0bb747", "8d03e4cc-0ea6-4ecc-0fd7-79220203edb9",
@@ -88,8 +88,21 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			"3ea3b567-dcee-ee39-215c-a6bbc116b182", "5354d302-ca90-9dc2-4e63-cd428f877f22", "55ac661e-bb08-764c-50da-72919e8f4d99",
 			"591ff3c7-03d7-6c89-d158-7d3faaabddc0", "649eee76-7d7f-6591-715b-dc5e8ef74691", "6528d96d-84f7-c4cf-20a9-f8356282d431",
 			"6cf085a5-d67a-1f18-21d3-d15ba24fbcc8"
-	};
-	
+	};*/
+
+	String[] componentsToProcess = new String[] {
+						/*"903745025",
+						"2047987023",
+						"750938028",
+						"653945028",
+						"653946027",
+						"872235028",
+						"1814546022",
+						"887612024",
+						"887613025",
+						"673081029" */
+						"2041987026",
+						"861386023"};
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ReassertPublishedComponentState delta = new ReassertPublishedComponentState();
 		try {
@@ -118,11 +131,10 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 		}
 	}
 	
-	public void init (JobRun run) throws TermServerScriptException {
+	public void init (String[] args) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
 		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
-		subsetECL = run.getParamValue(ECL);
-		super.init(run);
+		super.init(args);
 	}
 	
 	public void postInit() throws TermServerScriptException {
