@@ -150,7 +150,7 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 
 	private String findXfromKnownSubstances(String newTerm) throws TermServerScriptException {
 		if (knownSubstancePTs == null) {
-			knownSubstancePTs = SUBSTANCE.getDescendents(NOT_SET).stream()
+			knownSubstancePTs = SUBSTANCE.getDescendants(NOT_SET).stream()
 					.map(c -> {
 						try {
 							return c.getPreferredSynonym(GB_ENG_LANG_REFSET).getTerm().toLowerCase();
@@ -169,8 +169,8 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> process = new ArrayList<>();
-		List<Concept> exclude = new ArrayList<>(SUBSTANCE.getDescendents(NOT_SET));
-		exclude.addAll(MEDICINAL_PRODUCT.getDescendents(NOT_SET));
+		List<Concept> exclude = new ArrayList<>(SUBSTANCE.getDescendants(NOT_SET));
+		exclude.addAll(MEDICINAL_PRODUCT.getDescendants(NOT_SET));
 		info ("Gathering sorted list of potential concepts");
 		List<Concept> conceptsSorted = gl.getAllConcepts().stream()
 				//.filter(Concept::isActive)
