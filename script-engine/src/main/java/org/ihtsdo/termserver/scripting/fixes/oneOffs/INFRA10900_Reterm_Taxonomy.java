@@ -62,8 +62,8 @@ public class INFRA10900_Reterm_Taxonomy extends BatchFix {
 				"SCTID, FSN, SemTag, Taxonomy, Issue, Expression, Details, , , "};
 		String[] tabNames = new String[] {"Processed", "Skip but check"};
 		super.postInit(tabNames, columnHeadings, false);
-		organisms = ORGANISM.getDescendents(NOT_SET);
-		bodyStructures = BODY_STRUCTURE.getDescendents(NOT_SET);
+		organisms = ORGANISM.getDescendants(NOT_SET);
+		bodyStructures = BODY_STRUCTURE.getDescendants(NOT_SET);
 	}
 
 	@Override

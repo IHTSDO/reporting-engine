@@ -56,7 +56,7 @@ public class QI1176_SetProximalPrimitiveParent extends BatchFix {
 		focusConcept = gl.getConcept("399248000 |Procedure related to anesthesia and sedation (procedure)|");
 		findParent = PROCEDURE;
 		replaceParent = focusConcept;
-		focusConceptDescendants = focusConcept.getDescendents(NOT_SET);
+		focusConceptDescendants = focusConcept.getDescendants(NOT_SET);
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
