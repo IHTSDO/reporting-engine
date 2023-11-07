@@ -122,7 +122,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 
 	private String findXfromKnownSubstances(String newTerm) throws TermServerScriptException {
 		if (knownSubstancePTs == null) {
-			knownSubstancePTs = SUBSTANCE.getDescendents(NOT_SET).stream()
+			knownSubstancePTs = SUBSTANCE.getDescendants(NOT_SET).stream()
 					.map(c -> {
 						try {
 							return c.getPreferredSynonym(GB_ENG_LANG_REFSET).getTerm().toLowerCase();
@@ -141,7 +141,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> process = new ArrayList<>();
-		List<Concept> conceptsSorted = PHARM_BIO_PRODUCT.getDescendents(NOT_SET).stream()
+		List<Concept> conceptsSorted = PHARM_BIO_PRODUCT.getDescendants(NOT_SET).stream()
 				//.filter(Concept::isActive)
 				//.filter(c -> !exclude.contains(c))  Too slow
 				.sorted(Comparator.comparing(Concept::getSemTag)

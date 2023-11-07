@@ -217,8 +217,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		int inactivatedConceptUsedAsInferredParent = 0;
 		String[] examples = new String[3];
 		
-		Set<Concept> noInScopeDescendentsCache = new HashSet<>();
-		Set<Concept> yesInScopeDescendentsCache = new HashSet<>();
+		Set<Concept> noInScopeDescendantsCache = new HashSet<>();
+		Set<Concept> yesInScopeDescendantsCache = new HashSet<>();
 		
 		for (String sctId : thisHierarchy) {
 			Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
@@ -265,7 +265,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			
 			//Does this concept have any inScope children?  We'll step this with new code
 			//to short cut finding the complete set and allocating memory for that
-			if (hasInScopeDescendents(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
+			if (hasInScopeDescendants(currentConcept, noInScopeDescendantsCache, yesInScopeDescendantsCache)) {
 				long countInferredChildren = currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).stream()
 						.filter(child -> inScope(child))
 						.count();
@@ -413,25 +413,25 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		set.add(value);
 	}
 
-	private boolean hasInScopeDescendents(Concept c, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache) {
+	private boolean hasInScopeDescendants(Concept c, Set<Concept> noInScopeDescendantsCache, Set<Concept> yesInScopeDescendantsCache) {
 		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//If we already know that this concept has no descendants, then no need to check again
-			if (noInScopeDescendentsCache.contains(child)) {
+			if (noInScopeDescendantsCache.contains(child)) {
 				return false;
 			}
 			
-			if (yesInScopeDescendentsCache.contains(child)) {
+			if (yesInScopeDescendantsCache.contains(child)) {
 				return true;
 			}
 			
-			if (inScope(child) || hasInScopeDescendents(child, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
-				yesInScopeDescendentsCache.add(child);
+			if (inScope(child) || hasInScopeDescendants(child, noInScopeDescendantsCache, yesInScopeDescendantsCache)) {
+				yesInScopeDescendantsCache.add(child);
 				return true;
 			} else {
-				noInScopeDescendentsCache.add(child);
+				noInScopeDescendantsCache.add(child);
 			}
 		}
-		noInScopeDescendentsCache.add(c);
+		noInScopeDescendantsCache.add(c);
 		return false;
 	}
 	

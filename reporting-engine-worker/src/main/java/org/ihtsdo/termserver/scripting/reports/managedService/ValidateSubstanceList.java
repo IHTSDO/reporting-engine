@@ -52,7 +52,7 @@ public class ValidateSubstanceList extends TermServerReport implements ReportCla
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		List<Concept> substances = new ArrayList<>(SUBSTANCE.getDescendents(NOT_SET));
+		List<Concept> substances = new ArrayList<>(SUBSTANCE.getDescendants(NOT_SET));
 		substances.sort(Comparator.comparing(Concept::getFsnSafely));
 		for (Concept substance : substances) {
 			//Do MOH already know about this substance?
