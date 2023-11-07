@@ -1156,13 +1156,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet, charType);
 		boolean wasCached = cache.isCached(ecl);
 		Collection<Concept> concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 
-		int retry = 0;
-		if (concepts.size() == 0 && ++retry < 3) {
-			debug("No concepts returned. Double checking that result...");
-			try { Thread.sleep(3*1000); } catch (Exception e) {}
-			concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple, charType); 
-		}
-		
+
 		//If this is the first time we've seen these results, check for duplicates
 		if (!wasCached) {
 			debug(concepts.size() + " concepts recovered.  Checking for duplicates...");

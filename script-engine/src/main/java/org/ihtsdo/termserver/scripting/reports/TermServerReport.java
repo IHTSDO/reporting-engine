@@ -16,6 +16,7 @@ import org.snomed.otf.scheduler.domain.JobRun;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 public abstract class TermServerReport extends TermServerScript {
 
@@ -167,14 +168,17 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 		return false;
 	}
-
 	protected void populateSummaryTabAndTotal() {
+		populateSummaryTabAndTotal(SECONDARY_REPORT);
+	}
+
+	protected void populateSummaryTabAndTotal(int tabIdx) {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), e.getValue()));
+				.forEach(e -> reportSafely(tabIdx, (Component) null, e.getKey(), e.getValue()));
 
 		int total = issueSummaryMap.values().stream().mapToInt(Integer::intValue).sum();
-		reportSafely(SECONDARY_REPORT, (Component) null, "TOTAL", total);
+		reportSafely(tabIdx, (Component) null, "TOTAL", total);
 
 
 	}

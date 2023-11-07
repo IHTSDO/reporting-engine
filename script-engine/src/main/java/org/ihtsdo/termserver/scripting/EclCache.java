@@ -117,9 +117,10 @@ public class EclCache implements ScriptConstants {
 			allConcepts = combinedSet;
 			expansionCache.put(ecl, combinedSet);
 		} else {
-			if (useLocalStoreIfSimple && ecl.equals("*")) {
+			boolean localStorePopulated = gl.getAllConcepts().size() > 100;
+			if (useLocalStoreIfSimple && localStorePopulated && ecl.equals("*")) {
 				allConcepts = gl.getAllConcepts();
-			} else if (useLocalStoreIfSimple && isSimple(ecl)){
+			} else if (useLocalStoreIfSimple && localStorePopulated && isSimple(ecl)){
 				//We might want to modify these sets, so request mutable copies
 				if (ecl.startsWith("<<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(2).trim());
@@ -185,6 +186,7 @@ public class EclCache implements ScriptConstants {
 		boolean allRecovered = false;
 		String searchAfter = null;
 		int totalRecovered = 0;
+		boolean localStorePopulated = gl.getAllConcepts().size() > 100;
 		while (!allRecovered) {
 			try {
 					ConceptCollection collection = tsClient.getConcepts(ecl, branch, charType, searchAfter, PAGING_LIMIT);
@@ -193,12 +195,18 @@ public class EclCache implements ScriptConstants {
 						//First time round, report how many we're receiving.
 						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
 					}
-					
-					//Recover our locally held copy of these concepts so that we have the full hierarchy populated
-					List<Concept> localCopies = collection.getItems().stream()
-							.map(c -> gl.getConceptSafely(c.getId()))
-							.collect(Collectors.toList());
-					allConcepts.addAll(localCopies);
+					if (localStorePopulated) {
+						//Recover our locally held copy of these concepts so that we have the full hierarchy populated
+						List<Concept> localCopies = collection.getItems().stream()
+								.map(c -> gl.getConceptSafely(c.getId()))
+								.toList();
+						allConcepts.addAll(localCopies);
+					} else {
+						List<Concept> localCopies = collection.getItems().stream()
+								.map(c -> new Concept(c.getId(), c.getFsn()))
+								.toList();
+						allConcepts.addAll(localCopies);
+					}
 					
 					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
 					//add to the set
