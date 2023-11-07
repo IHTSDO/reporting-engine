@@ -488,25 +488,25 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		set.add(value);
 	}
 
-	private boolean hasInScopeDescendents(Concept c, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache) {
+	private boolean hasInScopeDescendants(Concept c, Set<Concept> noInScopeDescendantsCache, Set<Concept> yesInScopeDescendantsCache) {
 		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//If we already know that this concept has no descendants, then no need to check again
-			if (noInScopeDescendentsCache.contains(child)) {
+			if (noInScopeDescendantsCache.contains(child)) {
 				return false;
 			}
 			
-			if (yesInScopeDescendentsCache.contains(child)) {
+			if (yesInScopeDescendantsCache.contains(child)) {
 				return true;
 			}
 			
-			if (inScope(child) || hasInScopeDescendents(child, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
-				yesInScopeDescendentsCache.add(child);
+			if (inScope(child) || hasInScopeDescendants(child, noInScopeDescendantsCache, yesInScopeDescendantsCache)) {
+				yesInScopeDescendantsCache.add(child);
 				return true;
 			} else {
-				noInScopeDescendentsCache.add(child);
+				noInScopeDescendantsCache.add(child);
 			}
 		}
-		noInScopeDescendentsCache.add(c);
+		noInScopeDescendantsCache.add(c);
 		return false;
 	}
 	

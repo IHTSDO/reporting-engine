@@ -314,7 +314,7 @@ public class INFRA7506_AngiogramReterming extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> process = new ArrayList<>();
-		List<Concept> conceptsSorted = PROCEDURE.getDescendents(NOT_SET).stream()
+		List<Concept> conceptsSorted = PROCEDURE.getDescendants(NOT_SET).stream()
 				.sorted(Comparator.comparing(Concept::getSemTag)
 						.thenComparing(Comparator.comparing(Concept::getFsn)))
 				.collect(Collectors.toList());
