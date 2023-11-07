@@ -49,9 +49,9 @@ public class MissingSemanticTags extends TermServerReport implements ReportClass
 	public void runJob() throws TermServerScriptException {
 		Set<String> validSemTags = new HashSet<>();
 		//Work through all top level hierarchies and list semantic tags along with their counts
-		for (Concept topLevel : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
-			Set<Concept> descendents = topLevel.getDescendents(NOT_SET);
-			for (Concept thisDescendent : descendents) {
+		for (Concept topLevel : ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD)) {
+			Set<Concept> descendants = topLevel.getDescendants(NOT_SET);
+			for (Concept thisDescendent : descendants) {
 				validSemTags.add(SnomedUtils.deconstructFSN(thisDescendent.getFsn())[1]);
 			}
 		}
