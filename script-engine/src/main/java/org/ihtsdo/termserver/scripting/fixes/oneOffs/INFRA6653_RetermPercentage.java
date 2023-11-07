@@ -94,7 +94,7 @@ public class INFRA6653_RetermPercentage extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> process = new ArrayList<>();
 		//MPs can be ignored.
-		Set<Concept> products = PHARM_BIO_PRODUCT.getDescendents(NOT_SET);
+		Set<Concept> products = PHARM_BIO_PRODUCT.getDescendants(NOT_SET);
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive() || products.contains(c) 
