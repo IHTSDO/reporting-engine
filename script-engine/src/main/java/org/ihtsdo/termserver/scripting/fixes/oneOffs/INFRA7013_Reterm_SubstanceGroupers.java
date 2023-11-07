@@ -103,7 +103,7 @@ public class INFRA7013_Reterm_SubstanceGroupers extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> process = new ArrayList<>();
-		List<Concept> substances = new ArrayList<>(SUBSTANCE.getDescendents(NOT_SET));
+		List<Concept> substances = new ArrayList<>(SUBSTANCE.getDescendants(NOT_SET));
 		String[] suffixes = new String[] { "derivative", "compound" };
 		String[] plurals = new String[] { "", "s" };
 		substances.sort(Comparator.comparing(Concept::getFsn));
