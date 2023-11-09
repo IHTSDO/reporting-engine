@@ -20,3 +20,4 @@ done
 sudo chmod 755 $APP_DIR/scripts/*.sh
 
 supervisorctl update $APP_NAME || true
+supervisorctl start $APP_NAME || true
