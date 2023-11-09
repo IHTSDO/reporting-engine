@@ -67,7 +67,6 @@ public class ResourceDataLoader {
 				if (StringUtils.isEmpty(awsKey)) {
 					s3Client = S3Client.builder()
 							.region(DefaultAwsRegionProviderChain.builder().build().getRegion())
-							.credentialsProvider(ProfileCredentialsProvider.create())
 							.build();
 					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials for resources");
 				} else {
