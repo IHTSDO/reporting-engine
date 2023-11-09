@@ -110,6 +110,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 						"2041987026",
 						"861386023"};
 
+
 	String[] componentsToProcess = new String[] {
 						"3333dcf8-332d-b99b-7d59-6c4d34b63cf2",
 						"75cb4cac-ac05-fae4-1b35-d251a90198ad",
