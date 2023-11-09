@@ -182,7 +182,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	public String toLongString() {
 		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
 		String activeIndicator = this.isActive()?"":"*";
-		return "[" + activeIndicator +  charType + groupId + "] " + source + ": "+ type + " -> " + target;
+		return "[" + activeIndicator +  charType + groupId + "] " + source + ": "+ type + " -> " + (isConcrete()?concreteValue:target);
 	}
 	
 	@Override
