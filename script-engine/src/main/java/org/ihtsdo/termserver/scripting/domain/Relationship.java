@@ -341,7 +341,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	@Override
 	//Sort on source id, type id, target id, group id
 	public int compareTo(Relationship other) {
-		if (!this.sourceId.equals(other.getSourceId())) {
+ 		if (!this.sourceId.equals(other.getSourceId())) {
 			return sourceId.compareTo(other.getSourceId());
 		} else {
 			if (!this.getType().getConceptId().equals(other.getType().getConceptId())) {
