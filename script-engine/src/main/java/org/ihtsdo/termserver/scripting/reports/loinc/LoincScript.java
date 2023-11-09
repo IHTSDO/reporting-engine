@@ -1,11 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 
 import org.apache.commons.csv.CSVFormat;
@@ -181,14 +176,17 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 			return false;
 		}
 	}*/
-	
+
 	protected void loadFullLoincFile(int tabIdx) {
+		loadFullLoincFile(tabIdx, getInputFile(FILE_IDX_LOINC_FULL));
+	}
+	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) {
 		additionalThreadCount++;
-		LOGGER.info ("Loading Full Loinc: " + getInputFile(FILE_IDX_LOINC_FULL));
+		LOGGER.info ("Loading Full Loinc: " + fullLoincFile);
 		loincNumToLoincTermMap = new HashMap<>();
 		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {
-			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_FULL)));
+			Reader in = new InputStreamReader(new FileInputStream(fullLoincFile));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
 			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
 			CSVRecord header = iterator.next();
@@ -218,7 +216,7 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 				report(tabIdx,"Has Targeted Property not in Top 20K", hasTargettedPropertyNotIn20K);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_FULL), e);
+			throw new RuntimeException("Failed to load " + fullLoincFile, e);
 		} finally {
 			additionalThreadCount--;
 		}
