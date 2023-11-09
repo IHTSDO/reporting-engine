@@ -8,9 +8,10 @@ import org.snomed.otf.script.dao.LocalProperties;
 import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3Manager {
@@ -57,12 +58,15 @@ public class S3Manager {
             try {
                 S3Client s3Client;
                 if (StringUtils.isEmpty(awsKey)) {
-                    s3Client = S3Client.builder().build();
+                    s3Client = S3Client.builder()
+                            .region(DefaultAwsRegionProviderChain.builder().build().getRegion())
+                            .credentialsProvider(ProfileCredentialsProvider.create())
+                            .build();
                     TermServerScript.info("Connecting to S3 with EC2 environment configured credentials");
                 } else {
                     s3Client = S3Client.builder()
-                            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsKey, awsSecretKey)))
                             .region(Region.of(region))
+                            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsKey, awsSecretKey)))
                             .build();
                     TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
                     //AWS will still attempt to connect locally to discover its credentials, so let's only

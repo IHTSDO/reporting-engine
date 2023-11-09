@@ -14,8 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.File;
@@ -58,24 +61,25 @@ public class ResourceDataLoader {
 		} else {
 			throw new TermServerScriptException("Check application.properties - resources.useCloud is not specified");
 		}
-		
 		if (useCloud) {
 			try {
-				AwsCredentialsProvider awsCredProv;
-				if (awsKey == null || awsKey.isEmpty()) {
-					awsCredProv = ContainerCredentialsProvider.builder().build();
+				S3Client s3Client;
+				if (StringUtils.isEmpty(awsKey)) {
+					s3Client = S3Client.builder()
+							.region(DefaultAwsRegionProviderChain.builder().build().getRegion())
+							.credentialsProvider(ProfileCredentialsProvider.create())
+							.build();
 					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials for resources");
 				} else {
-					AwsCredentials awsCreds = AwsBasicCredentials.create(awsKey, awsSecretKey);
-					awsCredProv = StaticCredentialsProvider.create(awsCreds);
-					TermServerScript.info("Connecting to S3 for resources with locally specified account: " + awsKey);
+					s3Client = S3Client.builder()
+							.region(Region.of(region))
+							.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsKey, awsSecretKey)))
+							.build();
+					TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
 				}
-	
-				S3Client s3Client = S3Client.builder()
-										.credentialsProvider(awsCredProv)
-										.region(Region.of(region))
-										.build();
+
 				ResourceManager resourceManager = new ResourceManager(resourceConfig, new SimpleStorageResourceLoader(s3Client));
+
 				for (String fileName : fileNames) {
 					File localFile = new File ("resources/" + fileName);
 					TermServerScript.info ("Downloading " + fileName + " from S3");
@@ -88,6 +92,7 @@ public class ResourceDataLoader {
 						throw new TermServerScriptException ("Unable to load " + fileName + " from S3", e);
 					}
 				}
+
 			} catch (Throwable  t) {
 				final String errorMsg = "Error when trying to download the us-to-gb-terms-map.txt file from S3 via :" +  resourceConfig;
 				LOGGER.error(errorMsg, t);
