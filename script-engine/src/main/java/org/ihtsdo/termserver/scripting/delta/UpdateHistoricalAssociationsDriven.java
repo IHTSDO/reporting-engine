@@ -69,6 +69,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		populateUpdatedReplacementMap();
 		
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
+			/*if (!c.getId().equals("164427005")) {
+				continue;
+			}*/
 			//Is this a concept we've been told to replace the associations on?
 			if (replacementMap.containsKey(c)) {
 				if (!c.isActive()) {
@@ -86,13 +89,20 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 						report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, assocStr, "Supplied: " + replacementMap.get(c));
 						continue;
 					}
-				
-					if (!prevInactValue.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-						i.setInactivationReasonId(SCTID_INACT_NON_CONFORMANCE);
-						i.setEffectiveTime(null);  //Will mark as dirty
-						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> NCEP");
+
+					//Have we got some specific inactivation indicator we're expecting to use?
+					InactivationIndicator newII = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+					UpdateAction action = replacementMap.get(c);
+					if (action != null && action.inactivationIndicator != null) {
+						newII = action.inactivationIndicator;
 					}
-					
+
+					if (!action.inactivationIndicator.equals(prevInactValue)) {
+						i.setInactivationReasonId(SnomedUtils.translateInactivationIndicator(newII));
+						i.setEffectiveTime(null);  //Will mark as dirty
+						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> " + newII);
+					}
+
 					replaceHistoricalAssociations(c);
 					
 				} else {
@@ -145,9 +155,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void populateReplacementMap() throws TermServerScriptException {
+		int lineNo = 0;
 		try {
 			for (String line : Files.readAllLines(getInputFile().toPath(), Charset.defaultCharset())) {
 				try {
+					lineNo++;
 					String[] items = line.split(TAB);
 					Concept inactive = gl.getConcept(items[0]);
 					Concept replacement = gl.getConcept(items[2]);
@@ -158,7 +170,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					}
 					replacementMap.put(inactive, thisMapping);
 				} catch (Exception e) {
-					report(SECONDARY_REPORT,"Failed to parse line: " + line + " due to " + e.getMessage());
+					report(SECONDARY_REPORT,"Failed to parse line (1st file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
 				}
 			}
 		} catch (Exception e) {
@@ -167,9 +179,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void populateUpdatedReplacementMap() throws TermServerScriptException {
+		int lineNo = 0;
 		try {
 			for (String line : Files.readAllLines(getInputFile(1).toPath(), Charset.defaultCharset())) {
 				try {
+					lineNo++;
 					String[] items = line.split(TAB);
 					Concept inactive = gl.getConcept(items[0]);
 					String inactivationIndicatorStr = items[2];
@@ -187,7 +201,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					action.type = association;
 					replacementMap.put(inactive, action);
 				} catch (Exception e) {
-					report(SECONDARY_REPORT,"Failed to parse line: " + line);
+					report(SECONDARY_REPORT,"Failed to parse line (2nd file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
 				}
 			}
 		} catch (Exception e) {

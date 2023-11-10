@@ -660,6 +660,26 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
 		}
 	}
+
+	public static String translateInactivationIndicator(InactivationIndicator ii) {
+		switch (ii) {
+			case AMBIGUOUS : return SCTID_INACT_AMBIGUOUS;
+			case MOVED_ELSEWHERE : return SCTID_INACT_MOVED_ELSEWHERE;
+			case CONCEPT_NON_CURRENT : return SCTID_INACT_CONCEPT_NON_CURRENT;
+			case DUPLICATE : return SCTID_INACT_DUPLICATE;
+			case ERRONEOUS : return SCTID_INACT_ERRONEOUS;
+			case INAPPROPRIATE : return SCTID_INACT_INAPPROPRIATE;
+			case LIMITED : return SCTID_INACT_LIMITED;
+			case OUTDATED : return SCTID_INACT_OUTDATED;
+			case PENDING_MOVE : return SCTID_INACT_PENDING_MOVE;
+			case NONCONFORMANCE_TO_EDITORIAL_POLICY : return SCTID_INACT_NON_CONFORMANCE;
+			case NOT_SEMANTICALLY_EQUIVALENT : return SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT;
+			case COMPONENT_MEANING_UNKNOWN : return SCTID_INACT_COMPONENT_MEANING_UNKNOWN;
+			case CLASSIFICATION_DERIVED_COMPONENT : return SCTID_INACT_CLASS_DERIVED_COMPONENT;
+			case GRAMMATICAL_DESCRIPTION_ERROR : return SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR;
+			default: throw new IllegalArgumentException("Unrecognised inactivation indicator  " + ii.toString());
+		}
+	}
 	
 	public static Association translateAssociation(String assocSctId) {
 		switch (assocSctId) {
