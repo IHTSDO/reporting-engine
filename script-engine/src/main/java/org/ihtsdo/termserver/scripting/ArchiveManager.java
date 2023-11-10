@@ -342,7 +342,7 @@ public class ArchiveManager implements ScriptConstants {
 					if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
 						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
-						generateSnapshot (ts.getProject());
+						generateSnapshot(ts.getProject());
 						writeSnapshotToCache = true;
 						releasedFlagPopulated = true;
 					} else {
@@ -583,7 +583,7 @@ public class ArchiveManager implements ScriptConstants {
 		
 		//Now we need a recent delta to add to it
 		File delta = generateDelta(project);
-		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
+		snapshotGenerator = new SnapshotGenerator();
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());

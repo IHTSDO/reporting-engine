@@ -36,7 +36,7 @@ public class SnapshotGenerator extends TermServerScript {
 	
 	protected static boolean runAsynchronously = true;
 	protected static boolean skipSave = false;
-	
+
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
@@ -53,9 +53,13 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
+
+	private boolean isIntialised = false;
+	private File fileLocation;
+	private boolean addTodaysDate;
 	
 	
-	public static void main (String[] args) throws IOException, TermServerScriptException, InterruptedException {
+	public static void main(String[] args) throws IOException, TermServerScriptException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
 		try {
 			snapGen.runStandAlone = true;
@@ -74,7 +78,7 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public void generateSnapshot (TermServerScript parentProcess, File dependencySnapshot, File previousSnapshot, File delta, File newLocation) throws TermServerScriptException {
+	public void generateSnapshot(TermServerScript parentProcess, File dependencySnapshot, File previousSnapshot, File delta, File newLocation) throws TermServerScriptException {
 		setQuiet(true);
 		init(newLocation, false);
 		if (dependencySnapshot != null) {
@@ -90,13 +94,17 @@ public class SnapshotGenerator extends TermServerScript {
 		setQuiet(false);
 	}
 
-	public void writeSnapshotToCache(TermServerScript ts) {
+	public void writeSnapshotToCache(TermServerScript ts) throws TermServerScriptException {
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
 		//The disk copy will save time when we run again for the same project
 
 		//Ah, well that's not completely true because sometimes we want to be really careful we've not modified the data
 		//in some process.
 		if (!skipSave) {
+			if (!isIntialised) {
+				init();
+			}
+
 			if (runAsynchronously) {
 				new Thread(new ArchiveWriter(ts)).start();
 			} else {
@@ -105,16 +113,22 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	protected void init (String[] args) throws TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		File newLocation = new File("SnomedCT_RF2Release_" + edition);
 		init(newLocation, true);
 	}
 	
-	protected void init (File newLocation, boolean addTodaysDate) throws TermServerScriptException {
+	protected void init(File newLocation, boolean addTodaysDate) throws TermServerScriptException {
 		//Make sure the Graph Loader is clean
 		LOGGER.info("Snapshot Generator ensuring Graph Loader is clean");
 		gl.reset();
+		this.fileLocation = newLocation;
+		this.addTodaysDate = addTodaysDate;
+		this.isIntialised = false;
+	}
+
+	private void init() throws TermServerScriptException {
 		if (!skipSave) {
 			File outputDir = new File (outputDirName);
 			int increment = 0;
@@ -122,16 +136,17 @@ public class SnapshotGenerator extends TermServerScript {
 				String proposedOutputDirName = outputDirName + "_" + (++increment) ;
 				outputDir = new File(proposedOutputDirName);
 			}
-			
+
 			if (leaveArchiveUncompressed) {
 				packageDir = outputDir.getPath() + File.separator;
 			} else {
 				outputDirName = outputDir.getName();
-				packageRoot = outputDirName + File.separator + newLocation;
+				packageRoot = outputDirName + File.separator + fileLocation;
 				packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
 			}
 			LOGGER.info("Outputting data to " + packageDir);
 			initialiseFileHeaders();
+			isIntialised = true;
 		}
 	}
 	
@@ -169,6 +184,9 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 	
 	private void outputRF2() throws TermServerScriptException {
+		if (!isIntialised) {
+			init();
+		}
 		//Create new collection in case some other process looks at a new concept
 		Set<Concept> allConcepts = new HashSet<>(gl.getAllConcepts());
 		for (Concept thisConcept : allConcepts) {
@@ -177,6 +195,10 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 	
 	protected void outputRF2(Concept c) throws TermServerScriptException {
+		if (!isIntialised) {
+			init();
+		}
+
 		writeToRF2File(conSnapshotFilename, c.toRF2());
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
@@ -205,6 +227,10 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 
 	protected void outputRF2(Description d) throws TermServerScriptException {
+		if (!isIntialised) {
+			init();
+		}
+
 		writeToRF2File(descSnapshotFilename, d.toRF2());
 		
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
@@ -221,6 +247,9 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 
 	protected void outputRF2(Relationship r) throws TermServerScriptException {
+		if (!isIntialised) {
+			init();
+		}
 		//Relationships that hail from an axiom will not be persisted as relationships
 		//We'll re-establish those on loading from the original axioms
 		if (r.fromAxiom()) {
