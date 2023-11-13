@@ -49,13 +49,14 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< 404684003 |Clinical finding (finding)|");
-		params.put(ATTRIBUTE_TYPE, ASSOC_MORPH.toString());
+		//params.put(ECL, "<< 417893002|Deformity| ");
+		params.put(ECL, "*");
+		params.put(ATTRIBUTE_TYPE, "363713009 |Has interpretation|");
 		TermServerReport.run(AttributeValueCounts.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; // QI / Misc Analysis
 		additionalReportColumns = "FSN, SemTag, Depth, Total Concept Count, Filtered Concept Count, Not-Including Descendants, Filtered Not-Including Descendants, Parents, GrandParents, Seen Together With, Recent Activity";
 		getArchiveManager().setPopulateHierarchyDepth(true);
 		super.init(run);
@@ -104,7 +105,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		ancestorCache = gl.getAncestorsCache();
 		descendantCache = gl.getDescendantsCache();
 		LOGGER.info ("Analyzing " + subsetECL);
-		ignoreConcepts = new HashSet<>(findConcepts(ignoreConceptsECL));
+		ignoreConcepts = StringUtils.isEmpty(ignoreConceptsECL)? new HashSet<>() : new HashSet<>(findConcepts(ignoreConceptsECL));
 		for (Concept c : findConcepts(subsetECL)) {
 			//Find all the target values for the specified attribute type
 			Set<Concept> targets = SnomedUtils.getTargets(c, types, CharacteristicType.INFERRED_RELATIONSHIP);
@@ -135,11 +136,14 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		}
 		
 		//TODO We're also interested in the primitive concepts above this attribute value.
+		//I don't think this is right as it doesn't consider deep concepts that have no subsumption
+		//relationship with concepts higher up.  I think I've got a 'find common ancestor somewhere...
 		LOGGER.info ("Outputting counts");
 		Set<Concept> targets = new HashSet<>(valueCounts.asMap().keySet());
 		if (!targets.isEmpty()) {
 			//Now work through the list, from top to bottom
-			Concept top = calculateHighestConceptOrParent(targets);
+			//Concept top = calculateHighestConceptOrParent(targets);
+			Concept top = SnomedUtils.findCommonAncestor(targets, ancestorCache);
 			targets.add(top);
 			//Go go go recursive programming!
 			reportCounts(top, targets, true);
@@ -162,6 +166,8 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		} else {
 			alreadyReported.add(c);
 		}
+
+		LOGGER.debug("Reporting {} with {} targets", c, targets.size());
 		
 		//What's the descendant count added up?
 		if (isTop || valueCounts.containsKey(c)) {
@@ -222,7 +228,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		return count;
 	}
 
-	private Concept calculateHighestConceptOrParent(Set<Concept> concepts) throws TermServerScriptException {
+	/*private Concept calculateHighestConceptOrParent(Set<Concept> concepts) throws TermServerScriptException {
 		//Find the smallest depth indicator
 		Integer minimumDepth = null;
 		for (Concept c : concepts) {
@@ -232,20 +238,20 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		}
 		//What all concepts are at that depth?
 		final int minDepth = minimumDepth;
-		Set<Concept> siblings = concepts.stream()
+		Set<Concept> equiDepthConcepts = concepts.stream()
 				.filter(c -> c.getDepth() == minDepth)
 				.collect(Collectors.toSet());
 		
-		if (siblings.size() == 1) {
-			return siblings.iterator().next();
+		if (equiDepthConcepts.size() == 1) {
+			return equiDepthConcepts.iterator().next();
 		} else {
-			//Find the deepest common ancestor of these siblings
+			//Find the first common ancestor of these equiDepthConcepts
 			Set<Concept> commonAncestors = null;
-			for (Concept sibling : siblings) {
+			for (Concept equiDepthConcept : equiDepthConcepts) {
 				if (commonAncestors == null) {
-					commonAncestors = ancestorCache.getAncestors(sibling);
+					commonAncestors = new HashSet<>(ancestorCache.getAncestors(equiDepthConcept));
 				} else {
-					commonAncestors.retainAll(ancestorCache.getAncestors(sibling));
+					commonAncestors.retainAll(ancestorCache.getAncestors(equiDepthConcept));
 				}
 			}
 			return deepestConcept(commonAncestors);
@@ -272,5 +278,6 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		}
 		return siblings.iterator().next();
 	}
+*/
 
 }

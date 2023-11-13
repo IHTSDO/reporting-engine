@@ -2501,4 +2501,38 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return sctId;
 	}
+
+	public static Concept findCommonAncestor(Set<Concept> concepts, AncestorsCache ancestorsCache) throws TermServerScriptException {
+		//Find the first common ancestor of these equiDepthConcepts
+		Set<Concept> commonAncestors = null;
+		for (Concept c : concepts) {
+			if (commonAncestors == null) {
+				commonAncestors = new HashSet<>(ancestorsCache.getAncestors(c));
+			} else {
+				commonAncestors.retainAll(ancestorsCache.getAncestors(c));
+			}
+		}
+		return findDeepestConcept(commonAncestors);
+	}
+
+	public static Concept findDeepestConcept(Set<Concept> concepts) throws TermServerScriptException {
+		//Find the greatest depth indicator
+		Integer maximumDepth = null;
+		for (Concept c : concepts) {
+			if (maximumDepth == null || c.getDepth() > maximumDepth) {
+				maximumDepth = c.getDepth();
+			}
+		}
+
+		//What all concepts are at that depth?
+		final int maxDepth = maximumDepth;
+		Set<Concept> siblings = concepts.stream()
+				.filter(c -> c.getDepth() == maxDepth)
+				.collect(Collectors.toSet());
+
+		if (siblings.size() != 1) {
+			throw new TermServerScriptException("Unable to find single deepest concept from " + concepts);
+		}
+		return siblings.iterator().next();
+	}
 }
