@@ -8,8 +8,11 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 public class BatchEndMarker extends Component {
 	
 	public static String NEW_TASK = "NEW_TASK";
+
+	private static int markerCount = 0;
 	
 	public BatchEndMarker() {
+		this.id = NEW_TASK + "_" + ++markerCount;
 		this.moduleId = getReportedName();
 		this.released = true;
 	}
