@@ -29,9 +29,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermContainsXReport.class);
 
-	String[] textsToMatch = null;
-	String[] textsToAvoid = null;
-	boolean reportConceptOnceOnly = true;
+	private String[] textsToMatch = null;
+	private String[] textsToAvoid = null;
+	private boolean reportConceptOnceOnly = true;
+	public static final String EXT_ONLY = "Extension Descriptions Only";
 	public static final String STARTS_WITH = "Starts With";
 	public static final String WHOLE_WORD = "Whole Word Only";
 	public static final String WORDS = "Words";
@@ -41,9 +42,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public static final String WITHOUT_MODE = "Without Mode";
 	public static final String ALL_WITHOUT = "All terms 'without'";
 	public static final String ANY_WITHOUT = "Any terms 'without'";
-	Concept attributeDetail;
-	boolean startsWith = false;
-	boolean wholeWord = false;
+	private Concept attributeDetail;
+	private boolean startsWith = false;
+	private boolean wholeWord = false;
+	private boolean extensionDescriptionsOnly = false;
 	private enum WithoutMode {ALL_WITHOUT, ANY_WITHOUT};
 	private WithoutMode withoutMode;
 	
@@ -113,12 +115,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		startsWith = run.getParameters().getMandatoryBoolean(STARTS_WITH);
 		wholeWord = run.getParameters().getMandatoryBoolean(WHOLE_WORD);
 		targetTypes = run.getParameters().getValues(TERM_TYPES);
+		extensionDescriptionsOnly = run.getParameters().getMandatoryBoolean(EXT_ONLY);
 	}
 	
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(EXT_ONLY).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WHOLE_WORD).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WORDS).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
@@ -135,6 +139,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 	
@@ -160,6 +165,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (!isTargetDescriptionType(d)) {
+						continue;
+					}
+					if (extensionDescriptionsOnly && !inScope(d)) {
 						continue;
 					}
 					boolean reported = false;
