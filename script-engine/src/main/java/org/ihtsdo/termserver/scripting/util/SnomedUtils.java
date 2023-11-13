@@ -1525,7 +1525,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	public static Set<Description> getDescriptionsList(Concept c, boolean includeDefinitions) {
-		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+		return getDescriptionsList(c, ActiveState.ACTIVE, includeDefinitions);
+	}
+
+	public static Set<Description> getDescriptionsList(Concept c, ActiveState activeState, boolean includeDefinitions) {
+		return prioritise(c.getDescriptions(activeState)).stream()
 				.filter(d -> includeDefinitions || !d.getType().equals(DescriptionType.TEXT_DEFINITION))
 				.collect(Collectors.toSet());
 	}
@@ -2192,6 +2196,20 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			if (acceptablityMap.get(refsetId).equals(Acceptability.PREFERRED)) {
 				changesMade++;
 				acceptablityMap.put(refsetId, Acceptability.ACCEPTABLE);
+			}
+		}
+		return changesMade;
+	}
+
+	public static int upgradeTermToPreferred(Description d) {
+		//Get a list of all refsets that we have acceptability for and ensure
+		//that it's acceptable
+		int changesMade = 0;
+		Map<String, Acceptability> acceptablityMap = d.getAcceptabilityMap();
+		for (String refsetId : acceptablityMap.keySet()) {
+			if (acceptablityMap.get(refsetId).equals(Acceptability.ACCEPTABLE)) {
+				changesMade++;
+				acceptablityMap.put(refsetId, Acceptability.PREFERRED);
 			}
 		}
 		return changesMade;
