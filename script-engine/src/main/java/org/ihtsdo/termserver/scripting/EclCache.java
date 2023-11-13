@@ -71,7 +71,7 @@ public class EclCache implements ScriptConstants {
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
-			TermServerScript.warn("EclCache asked to find concepts but not ecl specified.  Returning empty set");
+			TermServerScript.warn("EclCache asked to find concepts but no ecl specified.  Returning empty set");
 			return new ArrayList<>();
 		}
 		
