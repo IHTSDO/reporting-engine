@@ -11,6 +11,8 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.collect.ImmutableSet;
@@ -18,6 +20,8 @@ import com.google.common.collect.ImmutableSet;
 /**
  */
 public class INFRA10900_Reterm_Taxonomy extends BatchFix {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA10900_Reterm_Taxonomy.class);
 
 	public static Set<String> taxonomyNames = ImmutableSet.of(" clade ", " class ", 
 			" division ", " domain ", " family ", " genus ", " infraclass ", " infraclass ", 
