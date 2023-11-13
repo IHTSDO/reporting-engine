@@ -1255,15 +1255,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				if (lineItems.length >= 1) {
 					try{
 						components = loadLine(lineItems);
-					} catch (Exception e) {
-						throw new TermServerScriptException("Failed to load line " + lineNum,e);
-					}
-					if (components != null && components.size() > 0) {
-						allComponents.addAll(components);
-					} else {
-						if (!expectNullConcepts) {
-							debug ("Skipped line " + lineNum + ": '" + lines.get(lineNum) + "', malformed or not required?");
+
+						if (components != null && components.size() > 0) {
+							allComponents.addAll(components);
+						} else {
+							if (!expectNullConcepts) {
+								debug ("Skipped line " + lineNum + ": '" + lines.get(lineNum) + "', malformed or not required?");
+							}
 						}
+					} catch (Exception e) {
+						throw new TermServerScriptException("Failed to load line " + lineNum + ": '" + lines.get(lineNum) + "' due to ",e);
 					}
 				} else {
 					debug ("Skipping blank line " + lineNum);
