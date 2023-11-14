@@ -36,7 +36,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> noMoveRequired = new ArrayList<>();
 	private boolean includeDependencies = true;
 	
-	private boolean includeInferredParents = true;
+	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
