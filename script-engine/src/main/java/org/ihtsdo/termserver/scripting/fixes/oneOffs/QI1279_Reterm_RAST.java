@@ -26,6 +26,8 @@ public class QI1279_Reterm_RAST extends BatchFix {
 
 	private Map<String, Concept> substancesByPT;
 
+	private Set<String> lexicalExclusions = new HashSet<>(Arrays.asList("radioallergosorbent"));
+
 	protected QI1279_Reterm_RAST(BatchFix clone) {
 		super(clone);
 	}
@@ -38,6 +40,7 @@ public class QI1279_Reterm_RAST extends BatchFix {
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
+			fix.maxFailures = 9999;
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.init(args);
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
@@ -80,11 +83,13 @@ public class QI1279_Reterm_RAST extends BatchFix {
 	private int modifyDescriptions(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		Set<Description> originalDescriptions = SnomedUtils.getDescriptionsList(c, ActiveState.BOTH, false);
-		if (SnomedUtils.hasUsGbVariance(c)) {
+		boolean hasUsGbVariance = SnomedUtils.hasUsGbPtVariance(c);
+		if (hasUsGbVariance) {
 			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has US/GB variance");
 		}
 
 		//Inactivate any descriptions that contain the word RAST
+		boolean ptProcessed = false;
 		for (Description d : originalDescriptions) {
 			if (d.isActive() && d.getTerm().contains("RAST")) {
 				d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
@@ -92,25 +97,65 @@ public class QI1279_Reterm_RAST extends BatchFix {
 				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, d);
 				changesMade++;
 
-				//Now, was this the PT?
-				if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
-					String substanceName = findSubstanceName(t, c);
-					report(t, c, Severity.NONE, ReportActionType.INFO, "Substance name detected as: " + substanceName);
-					//First try finding a description using X, the organism name
-					substanceName = substanceName.replace("immunoglobulin ", "Ig");
-					Description promotingDesc = findReplacementDescription(t, c, originalDescriptions, substanceName);
-					if (promotingDesc == null) {
-						//If that fails, try finding a description without X
-						promotingDesc = findReplacementDescription(t, c, originalDescriptions, null);
+				//Now, was this a PT?  Only process the first PT.  We'll pick up any gb/us variance now
+				if (!ptProcessed && d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
+					ptProcessed = true;
+					//We might have multiple substance names if there's US/GB Variance
+					List<Description> substanceDescs = findSubstanceDescs(t, c);
+					if (hasUsGbVariance && substanceDescs.size() < 2) {
+						throw new TermServerScriptException("Concept indicates US/GB variance, but substance does not");
+					} else if (!hasUsGbVariance && substanceDescs.size() > 1) {
+						throw new TermServerScriptException("Concept indicates no US/GB variance, but substance has variance");
 					}
-					if (promotingDesc == null) {
-						String msg = "Unable to find replacement PT from: " + SnomedUtils.getDescriptions(c, false);
-						throw new TermServerScriptException(msg);
-					} else {
-						int promotions = SnomedUtils.upgradeTermToPreferred(promotingDesc);
-						changesMade += promotions;
-						if (promotions > 0) {
-							report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Promoted PT: " + promotingDesc);
+
+					for (Description substanceDesc : substanceDescs) {
+						String substanceName = substanceDesc.getTerm();
+						report(t, c, Severity.NONE, ReportActionType.INFO, "Substance name(s) detected as: " + substanceName);
+						//First try finding a description using X, the organism name
+						substanceName = substanceName.replace("immunoglobulin ", "Ig");
+						Description promotingDesc = findReplacementDescription(t, c, originalDescriptions, substanceName, false,false);
+
+						if (promotingDesc == null) {
+							//Can we find an "immunoglobulin" variant as template we can use to construct a new IgX?
+							promotingDesc = findReplacementDescription(t, c, originalDescriptions, substanceName, false, true);
+							//In this case we'll clone that description and tweak the text
+							if (promotingDesc != null) {
+								Description newPT = promotingDesc.clone(null);
+								newPT.setTerm(newPT.getTerm().replace("immunoglobulin ", "Ig"));
+								//SnomedUtils.upgradeTermToPreferred(newPT);
+								//Set the acceptability to be the same as the substance name, to account for variances gb / us
+								newPT.setAcceptabilityMap(substanceDesc.getAcceptabilityMap());
+								c.addDescription(newPT);
+								report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, newPT);
+								changesMade++;
+								break;
+							}
+						}
+
+						if (promotingDesc == null) {
+							//If that fails, try finding a description with some of the same words as the substance?
+							promotingDesc = findReplacementDescription(t, c, originalDescriptions, substanceName,true, false);
+						}
+
+						if (promotingDesc == null) {
+							//If that fails, try finding a description without X
+							promotingDesc = findReplacementDescription(t, c, originalDescriptions, null, false,false);
+							if (promotingDesc != null) {
+								report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Promoting PT which did not begin with the substance name.  Please check", promotingDesc);
+							}
+						}
+
+						if (promotingDesc == null) {
+							String msg = "Unable to find replacement PT from: " + SnomedUtils.getDescriptions(c, false);
+							throw new TermServerScriptException(msg);
+						} else {
+							int promotions = SnomedUtils.upgradeTermToPreferred(promotingDesc);
+							changesMade += promotions;
+							if (promotions > 0) {
+								report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Promoted PT: " + promotingDesc);
+							} else {
+								report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "PT already promoted for substance: " + substanceName, promotingDesc);
+							}
 						}
 					}
 				} else if (d.getType().equals(DescriptionType.FSN)) {
@@ -119,38 +164,86 @@ public class QI1279_Reterm_RAST extends BatchFix {
 			}
 		}
 		report(t, c, Severity.LOW, ReportActionType.INFO, "Post update descriptions:", SnomedUtils.getDescriptions(c, false));
+		//Have we lost our en/gb variance in this?
+		if (hasUsGbVariance && !SnomedUtils.hasUsGbPtVariance(c)) {
+			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Concept lost US/GB variance during processing");
+		}
 		return changesMade;
 	}
 
-	private Description findReplacementDescription(Task t, Concept c, Set<Description> descs, String organismName) throws TermServerScriptException {
+	private Description findReplacementDescription(Task t, Concept c, Set<Description> descs, String substanceName,boolean allowPartialMatch, boolean lastResort) throws TermServerScriptException {
+		String targetPhrase = lastResort ? "specific immunoglobulin" : "specific Ig";
 		//First try for an active description, 2nd pass will be inactive
 		for (int i=0; i<2; i++) {
 			for (Description d : descs) {
 				if ((i == 0 && !d.isActive()) || (i == 1 && d.isActive())) {
 					continue;
 				}
-				if (organismName != null && !d.getTerm().startsWith(organismName)) {
+				if (substanceName != null && !d.getTerm().startsWith(substanceName)) {
 					continue;
 				}
-				if (d.getTerm().contains("specific Ig")) {
+				if (d.getTerm().contains(targetPhrase)) {
 					return d;
+				}
+			}
+		}
+
+		if (substanceName != null && allowPartialMatch) {
+			Map<Description, Integer> scores = new HashMap<>();
+			List<String> ignoreWords = Arrays.asList("specific", "immunoglobulin", "IgE", "IgG", "IgM", "IgA", "IgD", "Ig");
+			List<String> partialMatch = Arrays.stream(substanceName.split(" "))
+					.filter(s -> s.length() > 2)
+					.filter(s -> !ignoreWords.contains(s))
+					.toList();
+			//Will we allow for a partial match on the substance name?  Active Descs only
+			for (Description d : descs) {
+				if (!d.isActive() || !d.getTerm().contains(targetPhrase)) {
+					continue;
+				}
+				for (String word : partialMatch) {
+					if (d.getTerm().contains(word)) {
+						scores.put(d, scores.getOrDefault(d, 0) + 1);
+					}
+				}
+			}
+			if (scores.size() > 0) {
+				int maxScore = Collections.max(scores.values());
+				List<Description> bestMatches = scores.entrySet().stream()
+						.filter(e -> e.getValue() == maxScore)
+						.map(e -> e.getKey())
+						.collect(Collectors.toList());
+				if (bestMatches.size() == 1) {
+					return bestMatches.get(0);
+				} else if (bestMatches.size() > 1) {
+					String msg = bestMatches.stream().map(d -> d.getTerm()).collect(Collectors.joining(", "));
+					throw new TermServerScriptException("Multiple best matches found for " + substanceName + " : " + msg);
 				}
 			}
 		}
 		return null;
 	}
 
-	private String findSubstanceName(Task t, Concept c) throws TermServerScriptException {
-		String substanceName = null;
+	private List<Description> findSubstanceDescs(Task t, Concept c) throws TermServerScriptException {
+		List<Description> substanceDescs = null;
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (substancesByPT.values().contains(r.getTarget())) {
-				if (substanceName != null) {
-					report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept features multiple organisms");
+				if (substanceDescs != null) {
+					throw new TermServerScriptException("Concept features multiple substances: " + getSubstancesStr(c));
 				}
-				substanceName = gl.getConcept(r.getTarget().getId()).getPreferredSynonym();
+				substanceDescs = gl.getConcept(r.getTarget().getId()).getPreferredSynonyms().stream()
+						.toList();
 			}
 		}
-		return substanceName;
+		return substanceDescs;
+	}
+
+	private String getSubstancesStr(Concept c) {
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
+				.stream()
+				.map( r -> gl.getConceptSafely(r.getTarget().getConceptId()))
+				.filter(t -> substancesByPT.values().contains(t))
+				.map(t -> t.getPreferredSynonym())
+				.collect(Collectors.joining(",\n"));
 	}
 
 	@Override
@@ -159,11 +252,22 @@ public class QI1279_Reterm_RAST extends BatchFix {
 
 		nextConcept:
 		for (Concept c : SnomedUtils.sort(findConcepts("<104380004 |Allergen specific antibody measurement (procedure)|"))) {
+		//for (Concept c : findConcepts("388576001")){
+			boolean targetWordFound = false;
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.getTerm().contains("RAST")) {
-					process.add(c);
-					continue nextConcept;
+					targetWordFound = true;
 				}
+				for (String exclusion : lexicalExclusions) {
+					if (normalise(d).contains(exclusion)) {
+						report(SECONDARY_REPORT, c, "Excluded by lexical exclusion: " + exclusion);
+						continue nextConcept;
+					}
+				}
+			}
+			if (targetWordFound) {
+				process.add(c);
+				continue nextConcept;
 			}
 		}
 		return process;
