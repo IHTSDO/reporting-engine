@@ -409,9 +409,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		if (reportName != null) {
 			String link = reportName;
 			if (reportURL != null) {
-				link = "<a href=\"" + reportURL + "\">" + link + "</a>";
+				link = "<a href=\"" + reportURL + "\" target=\"_blank\">" + link + "</a>";
 			}
-			taskDescription += ": " + link;
+			String separator = populateTaskDescription ? " as per " : ": ";
+			taskDescription += separator + link;
 		}
 		
 		//Reassign the task to the intended author.  Set at task or processing level
