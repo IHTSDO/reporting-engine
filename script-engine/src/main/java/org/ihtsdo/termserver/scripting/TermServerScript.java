@@ -1349,7 +1349,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (criticalIssues.size() > 0) {
-			recordSummaryText ("\nCritical Issues Encountered\n========================");
+			recordSummaryText ("\nCritical Issues Encountered (" + criticalIssues.size() + ")\n========================");
 			for (String thisCriticalIssue : criticalIssues) {
 				recordSummaryText(thisCriticalIssue);
 			}
