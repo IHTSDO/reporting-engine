@@ -117,6 +117,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		
 		//If we're grouping by issue or keeping issues together, then we need to sort by issue
 		if (groupByIssue || keepIssuesTogether) {
+			LOGGER.info("Sorting components by issue");
 			allComponents = allComponents.stream()
 					.sorted(Comparator.comparing(Component::getIssues))
 					.collect(Collectors.toList());
