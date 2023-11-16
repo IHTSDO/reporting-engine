@@ -75,7 +75,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Find Concepts Across All Extensions")
-				.withDescription("This report lists all concepts that match the specified ECL across all extensions")
+				.withDescription("This report lists all concepts that match the specified ECL across all extensions.  The issue count here will be for the count of concepts outside of the International Edition.")
 				.withParameters(params)
 				.withProductionStatus(Job.ProductionStatus.PROD_READY)
 				.withTag(INT)
@@ -106,6 +106,9 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 				for (Concept c : findConcepts(eclForExtensionModules)) {
 					report(tabIdx, c);
 					issueSummaryMap.merge(cs.getName(), 1, Integer::sum);
+					if (!cs.getShortName().equals("SNOMEDCT")) {
+						countIssue(c);
+					}
 				}
 			} catch (Exception e) {
 				report(tabIdx, null, "Failed to find concepts for " + cs.getShortName() + " due to " + e.getMessage());
