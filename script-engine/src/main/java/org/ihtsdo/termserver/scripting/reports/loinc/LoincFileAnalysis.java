@@ -18,18 +18,19 @@ public class LoincFileAnalysis extends LoincScript {
 
     private static final int FILE_IDX_LOINC_FULL = 0;
     private static final int FILE_IDX_ALT_ID = 1;
-    private static final int FILE_IDX_20K = 2;
+    //private static final int FILE_IDX_20K = 2;
+    private static final int FILE_IDX_BE_2K = 2;
 
     Set<String> loincNumsInPreview = new HashSet<>();
     Map<String, Integer> propertiesInPreview = new HashMap<>();
-    Map<String, Integer> propertiesIn20k = new HashMap<>();
+    Map<String, Integer> propertiesInTopNk = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         LoincFileAnalysis report = new LoincFileAnalysis();
         report.init(args);
         report.postInit();
-        //report.reportFileAnalysis();
-        report.loinc20kAnalysis();
+        report.reportFileAnalysis(FILE_IDX_BE_2K);
+        //report.loinc20kAnalysis();
         report.finish();
     }
 
@@ -38,14 +39,14 @@ public class LoincFileAnalysis extends LoincScript {
         super.postInit(new String[]{"Analysis"}, new String[]{"Property, Count, In Preview"}, false);
     }
 
-    public void reportFileAnalysis() throws Exception {
+    public void reportFileAnalysis(int fileIdx) throws Exception {
         loadFullLoincFile(NOT_SET, getInputFile(FILE_IDX_LOINC_FULL));
         loadAltIdFile(getInputFile(FILE_IDX_ALT_ID));
         int unknownLoincNums = 0;
         try {
-            LOGGER.info ("Analysing " + getInputFile(FILE_IDX_20K));
+            LOGGER.info ("Analysing " + getInputFile(fileIdx));
             boolean isFirstLine = true;
-            try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_20K)))) {
+            try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(fileIdx)))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     if (!isFirstLine) {
@@ -58,7 +59,7 @@ public class LoincFileAnalysis extends LoincScript {
                         }
 
                         String property = loincTerm.getProperty();
-                        propertiesIn20k.merge(property, 1, Integer::sum);
+                        propertiesInTopNk.merge(property, 1, Integer::sum);
                         if (loincNumsInPreview.contains(loincNum)) {
                             propertiesInPreview.merge(property, 1, Integer::sum);
                         }
@@ -66,9 +67,9 @@ public class LoincFileAnalysis extends LoincScript {
                 }
             }
 
-            for (String property : propertiesIn20k.keySet()) {
+            for (String property : propertiesInTopNk.keySet()) {
                 int previewCount = propertiesInPreview.getOrDefault(property, 0);
-                report(PRIMARY_REPORT, property, propertiesIn20k.get(property), previewCount);
+                report(PRIMARY_REPORT, property, propertiesInTopNk.get(property), previewCount);
             }
             report(PRIMARY_REPORT, "Unknown LoincNums", unknownLoincNums);
         } catch (Exception e) {
@@ -88,15 +89,15 @@ public class LoincFileAnalysis extends LoincScript {
                 }
 
                 String property = loincTerm.getProperty();
-                propertiesIn20k.merge(property, 1, Integer::sum);
+                propertiesInTopNk.merge(property, 1, Integer::sum);
                 if (loincNumsInPreview.contains(loincNum)) {
                     propertiesInPreview.merge(property, 1, Integer::sum);
                 }
             }
 
-            for (String property : propertiesIn20k.keySet()) {
+            for (String property : propertiesInTopNk.keySet()) {
                 int previewCount = propertiesInPreview.getOrDefault(property, 0);
-                report(PRIMARY_REPORT, property, propertiesIn20k.get(property), previewCount);
+                report(PRIMARY_REPORT, property, propertiesInTopNk.get(property), previewCount);
             }
         } catch (Exception e) {
             throw new TermServerScriptException(e);
