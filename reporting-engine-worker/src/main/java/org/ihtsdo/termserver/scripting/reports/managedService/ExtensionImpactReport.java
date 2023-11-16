@@ -137,11 +137,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
-												"SCTID, FSN, SemTag," + formColumnNames(columnNames[1], false)};
+												"SCTID, FSN, SemTag," + formColumnNames(columnNames[1], false),
+												"SCTID, FSN, SemTag,Impact,Affected Concept"};
 		
-		String[] tabNames = new String[] {	"Summary Counts",  //PRIMARY
-											"Inactivations",   //SECONDARY
-											"Translations"};   //TERTIARY
+		String[] tabNames = new String[]{"Summary Counts",  //PRIMARY
+				"Inactivations",   //SECONDARY
+				"Translations",   //TERTIARY
+				"Inactivation Detail",  //QUATERNARY
+		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -229,6 +232,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				incrementSummaryInformation(summaryNames[1]);
 				Concept exampleConcept = usedIn.iterator().next();
 				examples[0] = currentConcept + "\nParent of : " + exampleConcept;
+				for (Concept detail : usedIn) {
+					report(QUATERNARY_REPORT, currentConcept, "Becomes Inactive Stated Parent Of", detail);
+				}
 			}
 			
 			usedIn = usedInStatedModellingMap.get(currentConcept);
@@ -239,6 +245,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				incrementSummaryInformation(summaryNames[3]);
 				Concept exampleConcept = usedIn.iterator().next();
 				examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + exampleConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+				for (Concept detail : usedIn) {
+					report(QUATERNARY_REPORT, currentConcept, "Becomes Inactive Used In Modelling Of", detail);
+				}
 			}
 			
 			//Does this concept have any inScope children?  We'll step this with new code
