@@ -116,6 +116,11 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		wholeWord = run.getParameters().getMandatoryBoolean(WHOLE_WORD);
 		targetTypes = run.getParameters().getValues(TERM_TYPES);
 		extensionDescriptionsOnly = run.getParameters().getMandatoryBoolean(EXT_ONLY);
+
+		//Makes no sense to run extension descriptions only in a core project
+		if (extensionDescriptionsOnly && !project.getBranchPath().contains("SNOMEDCT-")) {
+			throw new IllegalArgumentException("Extension Descriptions Only flag is not compatible with core projects");
+		}
 	}
 	
 	@Override
