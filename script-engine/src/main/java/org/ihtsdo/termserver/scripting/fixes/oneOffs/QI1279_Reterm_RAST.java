@@ -28,6 +28,14 @@ public class QI1279_Reterm_RAST extends BatchFix {
 
 	private Set<String> lexicalExclusions = new HashSet<>(Arrays.asList("radioallergosorbent"));
 
+	private List<String> problematicConcepts = Arrays.asList(new String[] {
+			"392503004","392539005","392462005","388550001","388576001","388581005","397728001","391477004","388607001",
+			"397639009","388652003","414370009","397650007","397673004","414445005","392361004","388460007","399795002",
+			"399815008","397649007","397674005","399838006","392370001","392372009","392436001","397667000","392382005",
+			"388757001","392515000","392548000","392524009","392525005","392526006","392527002","392528007","388480008",
+			"399804003","392388009","397646000","415865000"
+	});
+
 	protected QI1279_Reterm_RAST(BatchFix clone) {
 		super(clone);
 	}
@@ -41,6 +49,7 @@ public class QI1279_Reterm_RAST extends BatchFix {
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.maxFailures = 9999;
+			fix.groupByIssue = true;
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.init(args);
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
@@ -267,6 +276,9 @@ public class QI1279_Reterm_RAST extends BatchFix {
 			}
 			if (targetWordFound) {
 				process.add(c);
+				if (problematicConcepts.contains(c.getId())) {
+					c.setIssue("Problematic concept");
+				}
 				continue nextConcept;
 			}
 		}
