@@ -4,19 +4,23 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * QI-1206 Remove attributes using 105590001 |Substance (substance)|
+ * INFRA-115951 Bulk Change: Remove therapeutic intent from Therapy (regime/therapy)
  */
 public class RemoveAttributes extends BatchFix {
 	
 	Set<RelationshipTemplate> removeAttributes;
-	
+	String subsetECL = "<<276239002 |Therapy (regime/therapy)|";
+
 	protected RemoveAttributes(BatchFix clone) {
 		super(clone);
 	}
@@ -25,9 +29,9 @@ public class RemoveAttributes extends BatchFix {
 		RemoveAttributes fix = new RemoveAttributes(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
-			fix.populateEditPanel = true;
+			fix.populateEditPanel = false;
 			fix.reportNoChange = true;
-			//fix.selfDetermining = true;
+			fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -39,8 +43,9 @@ public class RemoveAttributes extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		removeAttributes = new HashSet<>();
-		removeAttributes.add(new RelationshipTemplate(DIRECT_SUBST, SUBSTANCE));
-		removeAttributes.add(new RelationshipTemplate(USING_SUBST, SUBSTANCE));
+		removeAttributes.add(new RelationshipTemplate(
+				gl.getConcept("363703001 |Has intent|"),
+				gl.getConcept("262202000 |Therapeutic intent|")));
 		super.postInit();
 	}
 
@@ -69,13 +74,14 @@ public class RemoveAttributes extends BatchFix {
 		return changesMade;
 	}
 
-	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> allAffected = new ArrayList<>();
 		info("Identifying concepts to process");
 		
 		nextConcept:
-		for (Concept c : gl.getAllConcepts()) {
-			for (RelationshipTemplate rt : replacementMap.keySet()) {
+		//for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : SnomedUtils.sort(findConcepts(subsetECL))) {
+			for (RelationshipTemplate rt : removeAttributes) {
 				if (c.getRelationships(rt, ActiveState.ACTIVE).size() > 0) {
 					allAffected.add(c);
 					continue nextConcept;
@@ -85,5 +91,5 @@ public class RemoveAttributes extends BatchFix {
 		info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
-	}*/
+	}
 }
