@@ -40,8 +40,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
-	String targetModuleId = SCTID_CORE_MODULE;
-	//String targetModuleId = "45991000052106";  //SE
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
@@ -64,9 +62,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK Composition Module
-			delta.moduleId = "999000011000000103"; //UK Clinical Extension
+			//delta.moduleId = "999000011000000103"; //UK Clinical Extension
 			//delta.moduleId = "57091000202101";  //Norway module for medicines
-			//delta.moduleId = "332351000009108"; //Vet Extension
+			delta.moduleId = "332351000009108"; //Vet Extension
 			//delta.moduleId = "51000202101"; //Norway Module
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);

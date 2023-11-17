@@ -48,6 +48,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected boolean newIdsRequired = true;
 	protected String moduleId="900000000000207008";
 	protected String nameSpace="0";
+	protected String targetModuleId = SCTID_CORE_MODULE;
 	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",   //GB
 															"900000000000509007" }; //US
 
@@ -367,11 +368,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (hasDirtyNotFromAxiomRelationships(c)) {
 			convertStatedRelationshipsToAxioms(c, true);
 			for (AxiomEntry a : AxiomUtils.convertClassAxiomsToAxiomEntries(c)) {
-				//If we're moving relationships into a new module but not the concept, we 
-				//might have a wrong module id here
-				a.setModuleId(moduleId);
+				a.setModuleId(targetModuleId);
 				a.setDirty();
 				c.getAxiomEntries().add(a);
+				if (!c.getModuleId().equals(targetModuleId)) {
+					LOGGER.warn("Mismatch between Concept and Axiom module: " + c + " " + a);
+				}
 			}
 			
 			//Now output inferred relationships
