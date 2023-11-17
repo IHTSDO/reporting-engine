@@ -185,7 +185,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		//We've always loaded historic data as 'prev' but in this case, we're looking the release that
 		//we're about to upgrade to.  So we'll give that a more appropriate name
 		LOGGER.info ("Loading Previous Data");
-		incomingData = loadData(incomingDataKey); 
+		incomingData = loadData(incomingDataKey, true);
 		
 		LOGGER.info("Populating map of all concepts used in stated modelling");
 		populateStatedModellingMap();

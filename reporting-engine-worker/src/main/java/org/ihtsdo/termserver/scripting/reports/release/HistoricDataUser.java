@@ -128,8 +128,14 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected Map<String, Datum> loadData(String release) throws TermServerScriptException {
+		return loadData(release, false);
+	}
+
+	protected Map<String, Datum> loadData(String release, boolean minimalSet) throws TermServerScriptException {
 		File dataFile = null;
 		prevData = new HashMap<>();
+		//Might need all the memory we can get at this point
+		System.gc();
 		try {
 			dataFile = new File("historic-data/" + release + ".tsv");
 			if (!dataFile.exists() || !dataFile.canRead()) {
@@ -142,7 +148,7 @@ public class HistoricDataUser extends TermServerReport {
 			try {
 				while ((line = br.readLine()) != null) {
 					lineNumber++;
-					Datum datum = fromLine(line);
+					Datum datum = fromLine(line, minimalSet);
 					if (StringUtils.isEmpty(datum.hierarchy)){
 						datum.hierarchy = UNKNOWN_CONCEPT.getConceptId();
 					}
@@ -204,38 +210,43 @@ public class HistoricDataUser extends TermServerReport {
 		}
 	}
 
-	Datum fromLine (String line) {
+	Datum fromLine (String line, boolean minimalSet) {
 		int idx = 0;
 		Datum datum = new Datum();
 		String[] lineItems = line.split(TAB, -1);
 		datum.conceptId = Long.parseLong(lineItems[idx]);
+		datum.hashCode = Long.hashCode(datum.conceptId);
 		datum.fsn = lineItems[++idx];
 		datum.isActive = lineItems[++idx].equals("Y");
-		datum.isSD = lineItems[++idx].equals("SD");
-		datum.hierarchy = lineItems[++idx];
-		datum.isIP = lineItems[++idx].equals("Y");
-		datum.hasSdAncestor = lineItems[++idx].equals("Y");
-		datum.hasSdDescendant = lineItems[++idx].equals("Y");
-		datum.hashCode = Long.hashCode(datum.conceptId);
-		datum.relIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.relIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.descIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.descIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.axiomIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.axiomIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.langRefsetIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.langRefsetIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.inactivationIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.inactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.histAssocIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.histAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.moduleId = lineItems[++idx];
-		datum.hasAttributes = lineItems[++idx].equals("Y");
-		datum.descHistAssocIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.descHistAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.descInactivationIds = Arrays.asList(lineItems[++idx].split(","));
-		datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
-		datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
+		if (!minimalSet) {
+			datum.isSD = lineItems[++idx].equals("SD");
+			datum.hierarchy = lineItems[++idx];
+			datum.isIP = lineItems[++idx].equals("Y");
+			datum.hasSdAncestor = lineItems[++idx].equals("Y");
+			datum.hasSdDescendant = lineItems[++idx].equals("Y");
+			datum.relIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.relIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.descIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.descIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.axiomIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.axiomIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.langRefsetIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.langRefsetIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.inactivationIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.inactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.histAssocIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.histAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.moduleId = lineItems[++idx];
+			datum.hasAttributes = lineItems[++idx].equals("Y");
+			datum.descHistAssocIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.descHistAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.descInactivationIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
+			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
+		} else {
+			idx += 23;
+			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
+		}
 		return datum;
 	}
 
