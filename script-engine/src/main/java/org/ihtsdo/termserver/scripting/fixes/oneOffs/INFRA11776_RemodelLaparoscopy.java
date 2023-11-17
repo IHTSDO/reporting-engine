@@ -61,7 +61,7 @@ public class INFRA11776_RemodelLaparoscopy extends BatchFix implements ScriptCon
 
 		addGroup = new RelationshipGroup(RF2Constants.NOT_SET);
 		addGroup.addRelationship(new RelationshipTemplate(METHOD, gl.getConcept("129287005 |Incision - action (qualifier value)|")));
-		addGroup.addRelationship(new RelationshipTemplate(PROCEDURE_SITE, gl.getConcept("59380008 |Anterior abdominal wall structure (body structure)|")));
+		addGroup.addRelationship(new RelationshipTemplate(ScriptConstants.PROCEDURE_SITE_DIRECT, gl.getConcept("59380008 |Anterior abdominal wall structure (body structure)|")));
 
 		exclusionTexts = new HashSet<>();
 		super.postInit();
@@ -122,6 +122,7 @@ public class INFRA11776_RemodelLaparoscopy extends BatchFix implements ScriptCon
 			changesMade++;
 		}
 		addGroup.setGroupId(useGroup);
+		//TODO Check if we actually make changes here
 		changesMade += c.addRelationshipGroup(addGroup, null	);
 		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED);
 		report(t, c, Severity.LOW, ReportActionType.INFO, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
