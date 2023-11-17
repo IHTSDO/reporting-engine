@@ -37,12 +37,13 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
 	private Map<Concept, Set<Concept>> usedAsStatedParentMap;
+	private Map<Concept, String> historicalAssociationStrMap;
 	
 	private String[][] columnNames;  //Used for both column names, and to track totals
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20231001T120000Z.zip");
+		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20231001T120000Z.zip");
 		TermServerReport.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -105,9 +106,19 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			ArchiveManager mgr = getArchiveManager(true);
 			//mgr.setLoadEditionArchive(loadEditionArchive);
 			mgr.loadSnapshot(fsnOnly);
-			
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.runJob();
+			//Generate a map of historical associations now, since they won't be available in the target location
+			LOGGER.info("Generating map of historical associations");
+			historicalAssociationStrMap = gl.getAllConcepts().stream()
+							.filter(c -> !c.isActive())
+							.collect(Collectors.toMap(c -> c, c -> {
+								try {
+									return SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+								} catch (TermServerScriptException e) {
+									throw new RuntimeException(e);
+								}
+							}));
 			mgr.reset();
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
@@ -138,7 +149,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
 												"SCTID, FSN, SemTag," + formColumnNames(columnNames[1], false),
-												"SCTID, FSN, SemTag,Impact,Affected Concept"};
+												"SCTID, FSN, SemTag,Impact,Affected Concept,Historical Associations"};
 		
 		String[] tabNames = new String[]{"Summary Counts",  //PRIMARY
 				"Inactivations",   //SECONDARY
@@ -232,8 +243,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				incrementSummaryInformation(summaryNames[1]);
 				Concept exampleConcept = usedIn.iterator().next();
 				examples[0] = currentConcept + "\nParent of : " + exampleConcept;
+				String histAssocStr = historicalAssociationStrMap.get(currentConcept);
 				for (Concept detail : usedIn) {
-					report(QUATERNARY_REPORT, currentConcept, "Becomes Inactive Stated Parent Of", detail);
+					report(QUATERNARY_REPORT, currentConcept, "Becomes inactive, stated parent of", detail, histAssocStr);
 				}
 			}
 			
@@ -245,8 +257,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				incrementSummaryInformation(summaryNames[3]);
 				Concept exampleConcept = usedIn.iterator().next();
 				examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + exampleConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+				String histAssocStr = historicalAssociationStrMap.get(currentConcept);
 				for (Concept detail : usedIn) {
-					report(QUATERNARY_REPORT, currentConcept, "Becomes Inactive Used In Modelling Of", detail);
+					report(QUATERNARY_REPORT, currentConcept, "Becomes inactive, used in modelling of", detail, histAssocStr);
 				}
 			}
 			
@@ -342,7 +355,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			int count = getSummaryInformationInt(columnName);
 			countIssue(null, count);
 			data[idx++] = Integer.toString(count);
-			if (includeExamples && idx > 0 && idx % 2 == 0) {
+			if (includeExamples && idx >= 2 && (idx+1) % 3 == 0) {
 				data[idx++] = "N/A";
 			}
 		}
