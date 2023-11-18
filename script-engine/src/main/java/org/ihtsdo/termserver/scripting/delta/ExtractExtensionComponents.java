@@ -17,6 +17,8 @@ import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import com.google.common.collect.Sets;
+
 /**
  * Class form a delta of specified concepts from some edition and 
  * promote those (along with attribute values and necessary ancestors)
@@ -48,6 +50,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private boolean ensureConceptsHaveBeenReleased = false;
 	
 	Map<Concept, Concept> knownReplacements = new HashMap<>();
+	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
