@@ -771,7 +771,7 @@ public class ArchiveManager implements ScriptConstants {
 				}
 				ze = zis.getNextEntry();
 			}
-		}  finally {
+		} finally {
 			try{
 				zis.closeEntry();
 				zis.close();
@@ -779,7 +779,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 	
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException {
+	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
 			.forEach( path ->  {
@@ -791,7 +791,7 @@ public class ArchiveManager implements ScriptConstants {
 					throw new RuntimeException ("Faied to load " + path + " due to " + e.getMessage(),e);
 				}
 			});
-		} 
+		}
 	}
 	
 	private InputStream toInputStream(Path path) {

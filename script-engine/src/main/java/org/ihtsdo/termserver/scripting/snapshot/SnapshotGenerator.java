@@ -91,6 +91,7 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		LOGGER.info("Loading delta " + delta);
 		loadArchive(parentProcess, delta, false, "Delta", false);
+		gl.finalizeGraph();
 		setQuiet(false);
 	}
 
