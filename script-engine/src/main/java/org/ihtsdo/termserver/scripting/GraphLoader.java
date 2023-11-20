@@ -1279,6 +1279,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public void loadMRCMAttributeRangeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		List<String> conflictingAttributes = new ArrayList<>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -1298,14 +1299,15 @@ public class GraphLoader implements ScriptConstants {
 				}
 				Concept refComp = getConcept(ar.getReferencedComponentId());
 				String contentTypeId = lineItems[MRCM_ATTRIB_CONTENT_TYPE];
+				
 				switch(contentTypeId) {
-					case SCTID_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPreCoord, refComp, ar);
+					case SCTID_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPreCoord, refComp, ar, conflictingAttributes);
 					break;
-					case SCTID_POST_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPostCoord, refComp, ar);
+					case SCTID_POST_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPostCoord, refComp, ar, conflictingAttributes);
 					break;
-					case SCTID_ALL_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapAll, refComp, ar);
+					case SCTID_ALL_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapAll, refComp, ar, conflictingAttributes);
 					break;
-					case SCTID_NEW_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapNewPreCoord, refComp, ar);
+					case SCTID_NEW_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapNewPreCoord, refComp, ar, conflictingAttributes);
 					break;
 					default : throw new TermServerScriptException("Unrecognised content type in MRCM Attribute Range File: " + contentTypeId);
 				}
@@ -1313,9 +1315,15 @@ public class GraphLoader implements ScriptConstants {
 				isHeaderLine = false;
 			}
 		}
+		
+		if (conflictingAttributes.size() > 0) {
+			String msg = "MRCM Attribute Range File conflicts: \n";
+			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
+			throw new TermServerScriptException(msg);
+		}
 	}
 	
-	private void addToMRCMAttributeMap(Map<Concept, MRCMAttributeRange> mrcmAttribMap, Concept refComp, MRCMAttributeRange ar) throws TermServerScriptException {
+	private void addToMRCMAttributeMap(Map<Concept, MRCMAttributeRange> mrcmAttribMap, Concept refComp, MRCMAttributeRange ar, List<String> conflictingAttributes) throws TermServerScriptException {
 		//Do we already have an entry for this referencedCompoment id?
 		if (mrcmAttribMap.containsKey(refComp)) {
 			MRCMAttributeRange existing = mrcmAttribMap.get(refComp);
@@ -1325,9 +1333,10 @@ public class GraphLoader implements ScriptConstants {
 				return;
 			}
 			//If it's the same NOT the same id, we have a problem if the existing one is also active
+			//We'll collect all conflicts up and report back on all of them in the calling function
 			if (!existing.getId().equals(ar.getId()) && existing.isActive() && ar.isActive()) {
 				String contentType = translateContentType(ar.getContentTypeId());
-				throw new TermServerScriptException("Multiple active members for " + refComp + contentType + " in MRCM Attribute Range File");
+				conflictingAttributes.add(contentType + ": " + refComp);
 			}
 		}
 		mrcmAttribMap.put(refComp, ar);
