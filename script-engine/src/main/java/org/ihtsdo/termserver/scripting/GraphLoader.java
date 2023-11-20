@@ -48,6 +48,11 @@ public class GraphLoader implements ScriptConstants {
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
+
+	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapPreCoord = new HashMap<>();
+	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapPostCoord = new HashMap<>();
+	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapAll = new HashMap<>();
+	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapNewPreCoord = new HashMap<>();
 	
 	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapPreCoord = new HashMap<>();
 	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapPostCoord = new HashMap<>();
@@ -167,6 +172,10 @@ public class GraphLoader implements ScriptConstants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap= null;
 		duplicateLangRefsetIdsReported = new HashSet<>();
+		mrcmStagingAttributeRangeMapPreCoord = new HashMap<>();
+		mrcmStagingAttributeRangeMapPostCoord = new HashMap<>();
+		mrcmStagingAttributeRangeMapAll = new HashMap<>();
+		mrcmStagingAttributeRangeMapNewPreCoord = new HashMap<>();
 		mrcmAttributeRangeMapPreCoord = new HashMap<>();
 		mrcmAttributeRangeMapPostCoord = new HashMap<>();
 		mrcmAttributeRangeMapAll = new HashMap<>();
@@ -1279,7 +1288,6 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public void loadMRCMAttributeRangeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
-		List<String> conflictingAttributes = new ArrayList<>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -1301,13 +1309,13 @@ public class GraphLoader implements ScriptConstants {
 				String contentTypeId = lineItems[MRCM_ATTRIB_CONTENT_TYPE];
 				
 				switch(contentTypeId) {
-					case SCTID_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPreCoord, refComp, ar, conflictingAttributes);
+					case SCTID_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapPreCoord, refComp, ar);
 					break;
-					case SCTID_POST_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapPostCoord, refComp, ar, conflictingAttributes);
+					case SCTID_POST_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapPostCoord, refComp, ar);
 					break;
-					case SCTID_ALL_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapAll, refComp, ar, conflictingAttributes);
+					case SCTID_ALL_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapAll, refComp, ar);
 					break;
-					case SCTID_NEW_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmAttributeRangeMapNewPreCoord, refComp, ar, conflictingAttributes);
+					case SCTID_NEW_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapNewPreCoord, refComp, ar);
 					break;
 					default : throw new TermServerScriptException("Unrecognised content type in MRCM Attribute Range File: " + contentTypeId);
 				}
@@ -1315,17 +1323,11 @@ public class GraphLoader implements ScriptConstants {
 				isHeaderLine = false;
 			}
 		}
-		
-		if (conflictingAttributes.size() > 0) {
-			String msg = "MRCM Attribute Range File conflicts: \n";
-			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
-			throw new TermServerScriptException(msg);
-		}
 	}
 	
-	private void addToMRCMAttributeMap(Map<Concept, MRCMAttributeRange> mrcmAttribMap, Concept refComp, MRCMAttributeRange ar, List<String> conflictingAttributes) throws TermServerScriptException {
+	private void addToMRCMAttributeMap(Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttribMap, Concept refComp, MRCMAttributeRange ar) throws TermServerScriptException {
 		//Do we already have an entry for this referencedCompoment id?
-		if (mrcmAttribMap.containsKey(refComp)) {
+		/*if (mrcmAttribMap.containsKey(refComp)) {
 			MRCMAttributeRange existing = mrcmAttribMap.get(refComp);
 			//If this one is inactive and there is an existing one active with a different id, then 
 			//we'll just keep the existing one.
@@ -1339,7 +1341,17 @@ public class GraphLoader implements ScriptConstants {
 				conflictingAttributes.add(contentType + ": " + refComp);
 			}
 		}
-		mrcmAttribMap.put(refComp, ar);
+		mrcmAttribMap.put(refComp, ar);*/
+		//We'll add all entries to a staging structure initially, to allow conflicts to be resolved
+		//in a delta.
+		Map<String, MRCMAttributeRange> attribRanges = mrcmStagingAttribMap.get(refComp);
+		if (attribRanges == null) {
+			attribRanges = new HashMap<>();
+			mrcmStagingAttribMap.put(refComp, attribRanges);
+		}
+		//This will overwrite any existing MRCM row with the same UUID
+		//And allow multiple rows for exist for a given referenced component id
+		attribRanges.put(ar.getId(), ar);
 	}
 
 	private String translateContentType(String contentTypeId) throws TermServerScriptException {
@@ -1788,6 +1800,8 @@ public class GraphLoader implements ScriptConstants {
 		return maxEffectiveTime;
 	}
 
+	//Note: No need to return the staging variants of these, as they're only used
+	//temporarily by the GraphLoader
 	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapPreCoord() {
 		return mrcmAttributeRangeMapPreCoord;
 	}
@@ -1862,5 +1876,49 @@ public class GraphLoader implements ScriptConstants {
 
 	public void setAllowIllegalSCTIDs(boolean setting) {
 		allowIllegalSCTIDs = setting;
+	}
+
+	public void finalizeGraph() throws TermServerScriptException {
+		//Only current work required here is to verify that the Delta import has resolved
+		//any apparent conflicts in the MRCM.  Convert the staging collection (which will hold duplicates)
+		//into the non-staging collection only if all duplications have been resolved.
+		LOGGER.info("Finalising MRCM from Staging Area");
+		List<String> conflictingAttributes = new ArrayList<>();
+		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPreCoord, mrcmAttributeRangeMapPreCoord, conflictingAttributes);
+		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPostCoord, mrcmAttributeRangeMapPostCoord, conflictingAttributes);
+		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapAll, mrcmAttributeRangeMapAll, conflictingAttributes);
+		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapNewPreCoord, mrcmAttributeRangeMapNewPreCoord, conflictingAttributes);
+	
+		if (conflictingAttributes.size() > 0) {
+			String msg = "MRCM Attribute Range File conflicts: \n";
+			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
+			throw new TermServerScriptException(msg);
+		}
+	}
+
+	private void finaliseMRCMAttributeRange(
+			Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMap,
+			Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMap, List<String> conflictingAttributes) throws TermServerScriptException {
+		mrcmAttributeRangeMap.clear();
+		for (Concept refComp : mrcmStagingAttributeRangeMap.keySet()) {
+			Map<String, MRCMAttributeRange> conflictingRanges = mrcmStagingAttributeRangeMap.get(refComp);
+			if (conflictingRanges.size() == 1) {
+				//No Conflict in this case
+				mrcmAttributeRangeMap.put(refComp, conflictingRanges.values().iterator().next());
+			} else {
+				//We're OK as long as only 1 of the ranges is active.  Store that one.   Otherwise, add to conflicts list to report
+				for (MRCMAttributeRange ar : conflictingRanges.values()) {
+					MRCMAttributeRange existing = mrcmAttributeRangeMap.get(refComp);
+					//We have a problem if the existing one is also active
+					//We'll collect all conflicts up and report back on all of them in the calling function
+					if (existing != null && existing.isActive() && ar.isActive()) {
+						String contentType = translateContentType(ar.getContentTypeId());
+						conflictingAttributes.add(contentType + ": " + refComp);
+					} else if (existing == null || ar.isActive()) {
+						mrcmAttributeRangeMap.put(refComp, ar);
+					}
+				}
+			}
+		}
 	}
 }
