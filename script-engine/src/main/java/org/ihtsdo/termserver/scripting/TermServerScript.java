@@ -1418,7 +1418,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							&& !msg.contains("Completed processing in")) {
 						msg = QUOTE + msg.replaceAll(": ", QUOTE_COMMA_QUOTE).replaceAll(":", QUOTE_COMMA_QUOTE) + QUOTE;
 					}
-					writeToReportFile (summaryTabIdx, msg);
+					writeToReportFile(summaryTabIdx, msg);
 				} catch (Exception e) {
 					LOGGER.error("Failed to write summary info: " + msg, e);
 				}
