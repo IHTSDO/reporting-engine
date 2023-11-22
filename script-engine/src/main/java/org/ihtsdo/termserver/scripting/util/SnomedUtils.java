@@ -2515,7 +2515,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return findDeepestConcept(commonAncestors);
 	}
 
-	public static Concept findDeepestConcept(Set<Concept> concepts) throws TermServerScriptException {
+	public static Concept findDeepestConcept(Collection<Concept> concepts) throws TermServerScriptException {
+		return findDeepestConcept(concepts, true);
+	}
+
+	public static Concept findDeepestConcept(Collection<Concept> concepts, boolean ensureUnique) throws TermServerScriptException {
 		//Find the greatest depth indicator
 		Integer maximumDepth = null;
 		for (Concept c : concepts) {
@@ -2530,8 +2534,29 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				.filter(c -> c.getDepth() == maxDepth)
 				.collect(Collectors.toSet());
 
-		if (siblings.size() != 1) {
+		if (ensureUnique && siblings.size() != 1) {
 			throw new TermServerScriptException("Unable to find single deepest concept from " + concepts);
+		}
+		return siblings.iterator().next();
+	}
+
+	public static Concept findShallowestConcept(Collection<Concept> concepts) throws TermServerScriptException {
+		//Find the greatest depth indicator
+		Integer minimumDepth = null;
+		for (Concept c : concepts) {
+			if (minimumDepth == null || c.getDepth() < minimumDepth) {
+				minimumDepth = c.getDepth();
+			}
+		}
+
+		//What all concepts are at that depth?
+		final int minDepth = minimumDepth;
+		Set<Concept> siblings = concepts.stream()
+				.filter(c -> c.getDepth() == minDepth)
+				.collect(Collectors.toSet());
+
+		if (siblings.size() != 1) {
+			throw new TermServerScriptException("Unable to find single shallowest concept from " + concepts);
 		}
 		return siblings.iterator().next();
 	}
