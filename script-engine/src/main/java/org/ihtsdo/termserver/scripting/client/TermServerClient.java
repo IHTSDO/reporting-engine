@@ -589,7 +589,11 @@ public class TermServerClient {
 	private String getRefsetMemberUrl(String refSetMemberId, String branch) {
 		return this.url + "/" + branch + "/members/" + refSetMemberId;
 	}
-	
+
+	private String getRelationshipUrl(String relationshipId, String branch) {
+		return this.url + "/" + branch + "/relationships/" + relationshipId;
+	}
+
 	private String getRefsetMemberUrl(String branch) {
 		return this.url + "/" + branch + "/members";
 	}
@@ -652,6 +656,19 @@ public class TermServerClient {
 		String url = getConceptBrowserValidationPath(branchPath);
 		HttpEntity<Concept> request = new HttpEntity<>(c, headers); 
 		return restTemplate.postForObject(url, request, DroolsResponse[].class);
+	}
+
+	public Relationship getRelationship(String relationshipId, String branchPath) {
+		try {
+			String relationshipUrl = getRelationshipUrl(relationshipId, branchPath);
+			return restTemplate.getForObject(relationshipUrl, Relationship.class);
+		} catch (Exception e) {
+			if (e.getMessage().contains("Relationship not found")) {
+				return null;
+			}
+
+			throw e;
+		}
 	}
 
 	public RefsetMember getRefsetMember(String uuid, String branchPath) {

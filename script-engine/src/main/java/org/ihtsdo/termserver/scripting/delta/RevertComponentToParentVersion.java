@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RefsetMember;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.io.File;
@@ -39,12 +40,19 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 	);
 
 	/**
+	 * Identifiers of Relationships that may be reverted.
+	 */
+	private static final List<String> REVERT_RELATIONSHIPS = List.of(
+			// Give me a value, i.e.
+	);
+
+	/**
 	 * Identifiers of Descriptions that may be reverted.
 	 */
 	private static final List<String> REVERT_DESCRIPTIONS = List.of(
 			// Give me a value, i.e. 3502010019
 	);
-	
+
 	private static boolean forceOutput = false;
 
 	public static void main(String[] args) throws Exception {
@@ -101,6 +109,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		Branch childBranch = getBranchOrThrow(BRANCH_CHILD);
 
 		processMembers(parentBranch, childBranch);
+		processRelationships(parentBranch, childBranch);
 		processDescriptions(parentBranch, childBranch);
 	}
 
@@ -141,6 +150,41 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 				writeToRF2File(getFileNameByRefsetId(parentMember.getRefsetId()), parentMember.toRF2());
 			} else {
 				report(TERTIARY_REPORT, memberId, "ReferenceSetMember", "Unknown fault.");
+			}
+		}
+	}
+
+	private void processRelationships(Branch parentBranch, Branch childBranch) throws Exception {
+		if (REVERT_RELATIONSHIPS.isEmpty()) {
+			return;
+		}
+
+		// Collect relationships on both parent and child
+		Map<String, Relationship> parentRelationships = getRelationships(parentBranch.getPath(), REVERT_RELATIONSHIPS);
+		Map<String, Relationship> childRelationships = getRelationships(childBranch.getPath(), REVERT_RELATIONSHIPS);
+
+		if (childRelationships.isEmpty()) {
+			return;
+		}
+
+		// Produce Delta of reverted components
+		for (Map.Entry<String, Relationship> entrySet : childRelationships.entrySet()) {
+			String relationshipId = entrySet.getKey();
+			Relationship parentRelationship = parentRelationships.get(relationshipId);
+
+			report(0, relationshipId, "Relationship");
+
+			if (parentRelationship == null) {
+				LOGGER.info("Relationship {} not found on parent and will be ignored by script.", relationshipId);
+				report(TERTIARY_REPORT, relationshipId, "Relationship", "Doesn't exist on parent. Cannot be restored.");
+				continue;
+			}
+
+			if (forceOutput) {
+				report(SECONDARY_REPORT, relationshipId, "Relationship", "'ForcedOutput' set to true");
+				writeToRF2File(relDeltaFilename, parentRelationship.toRF2());
+			} else {
+				report(TERTIARY_REPORT, relationshipId, "Relationship", "Unknown fault.");
 			}
 		}
 	}
@@ -205,6 +249,20 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		return branch;
 	}
 
+	private Map<String, Relationship> getRelationships(String branchPath, List<String> relationshipIds) {
+		LOGGER.info("Fetching relationships for branch {}.", branchPath);
+
+		Map<String, Relationship> relationships = new HashMap<>();
+
+		for (int x = 0; x < relationshipIds.size(); x++) {
+			String identifier = relationshipIds.get(x);
+			Relationship relationship = tsClient.getRelationship(identifier, branchPath);
+			relationships.put(relationship.getId(), relationship);
+			LOGGER.info("{}/{} relationships fetched.", x + 1, relationshipIds.size());
+		}
+
+		return relationships;
+	}
 	private Map<String, RefsetMember> getMembers(String branchPath, List<String> referenceSetMemberIds) {
 		LOGGER.info(String.format("Fetching RefsetMembers for branch %s.", branchPath));
 		Map<String, RefsetMember> refSetMembers = new HashMap<>();
