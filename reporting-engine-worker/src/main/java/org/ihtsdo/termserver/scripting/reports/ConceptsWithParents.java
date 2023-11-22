@@ -22,22 +22,57 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsWithParents.class);
 
 	private static final String TERMS_FILTER = "Filter for terms";
-	private static final String EXAMPLE_MAIN_PARAM_ECL = "<< 1144725004";
-	private static final String EXAMPLE_MAIN_PARAM_TERMS_FILTER = "capsule";
+	private static final String INDENT = "Indent";
+	private static final String EXAMPLE_MAIN_PARAM_ECL = "<< 1296758008";
+	private static final String EXAMPLE_MAIN_PARAM_TERMS_FILTER = null;
 	private static final Pattern CONTAINS_TERM_PATTERN = Pattern.compile("\\{\\{\\s*term", Pattern.MULTILINE);
 	public static final String COMMA_NEWLINE_DELIMITER = ",\n";
+
+	private boolean indent;
+	private Collection<Concept> conceptsOfInterest;
+	private Set<Concept> conceptsReported = new HashSet<>();
+	int deepestLevel = NOT_SET;
+	int highestLevel = NOT_SET;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, EXAMPLE_MAIN_PARAM_ECL);
 		params.put(TERMS_FILTER, EXAMPLE_MAIN_PARAM_TERMS_FILTER);
+		params.put(INDENT, "true");
 		TermServerReport.run(ConceptsWithParents.class, args, params);
 	}
 
 	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		additionalReportColumns = "FSN, SemTag, DEF_STATUS, Immediate Stated Parent, Immediate Inferred Parents ,Inferred Grand Parents";
+		additionalReportColumns = "";
 		super.init(run);
+		indent = run.getMandatoryParamBoolean(INDENT);
+	}
+
+	public void postInit() throws TermServerScriptException {
+		String eclQuery = appendTermsFilter(jobRun.getMandatoryParamValue(ECL), jobRun.getParamValue(TERMS_FILTER));
+		conceptsOfInterest = SnomedUtils.sort(findConcepts(eclQuery));
+		deepestLevel = SnomedUtils.findDeepestConcept(conceptsOfInterest, false).getDepth();
+		highestLevel = SnomedUtils.findShallowestConcept(conceptsOfInterest).getDepth();
+		String columnStr = "";
+		if (indent) {
+			//If we're indenting, we just need a lot of columns but we don't know what they're going to contain
+			for (int i = highestLevel ; i < deepestLevel ; i++ ) {
+				if (i == highestLevel) {
+					columnStr += ", , , , , , ";
+				}
+				columnStr += ", ";
+			}
+		} else {
+			columnStr += "SCTID,FSN, SemTag, DEF_STATUS, Immediate Stated Parent, Immediate Inferred Parents, Inferred Grand Parents";
+		}
+
+		String[] tabNames = new String[]{
+				"Concepts with Parents"};
+		String[] columnHeadings = new String[]{
+				columnStr
+				};
+		super.postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override
@@ -50,12 +85,16 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				.add(TERMS_FILTER)
 					.withType(JobParameter.Type.STRING)
 					.withDescription("Optional.  Use a comma to separate multiple terms.  This will be ignored if the ECL contains a term filter.")
+				.add(INDENT)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
+					.withDescription("Indent the output as a representation of the hierarchy.")
 				.build();
 
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Concepts with Parents")
-				.withDescription("This report lists all parents and grandparents of concepts in the specified hierarchies.")
+				.withDescription("This report lists all parents and grandparents of concepts in the specified hierarchies.  Grandparents not available when indenting.  Note that indenting may cause the same concept to appear multiple times if it has multiple parents within the selection.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -63,40 +102,81 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		String eclQuery = appendTermsFilter(jobRun.getMandatoryParamValue(ECL), jobRun.getParamValue(TERMS_FILTER));
-		Collection<Concept> conceptsOfInterest = findConcepts(eclQuery);
-		List<Concept> sortedListOfConceptsOfInterest = SnomedUtils.sort(conceptsOfInterest);
+		//Report top level concepts first
+		Set<Concept> topLevelConcepts = conceptsOfInterest.stream()
+				.filter(c -> c.getDepth() == highestLevel)
+				.collect(Collectors.toSet());
 
-		for (Concept concept : sortedListOfConceptsOfInterest) {
-			if (whiteListedConceptIds.contains(concept.getId())) {
-				incrementSummaryInformation(WHITE_LISTED_COUNT);
+		for (Concept concept : topLevelConcepts) {
+			if (indent) {
+				reportIndented(concept, true);
+			} else {
+				report(concept);
+			}
+		}
+
+		for (Concept concept : conceptsOfInterest) {
+			if (topLevelConcepts.contains(concept)) {
 				continue;
 			}
+			if (indent) {
+				reportIndented(concept, true);
+			} else {
+				report(concept);
+			}
+		}
+	}
 
-			Set<Concept> statedParents = concept.getParents(CharacteristicType.STATED_RELATIONSHIP);
-			String statedParentsStr = statedParents.stream()
-					.map(Concept::toString)
-					.distinct()
-					.sorted()
-					.collect(Collectors.joining(COMMA_NEWLINE_DELIMITER));
-			Set<Concept> inferredParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
-			String inferredParentsStr = inferredParents.stream()
-					.map(Concept::toString)
-					.distinct()
-					.sorted()
-					.collect(Collectors.joining(COMMA_NEWLINE_DELIMITER));
+	private void reportIndented(Concept concept, boolean isTopLevel) throws TermServerScriptException {
+		//If we're being run directly off the initial selection, we don't want to report concepts more than once
+		//But other than that, if a concept is a child more than once (ie multiple parents) then report it each time.
+		if ((isTopLevel && conceptsReported.contains(concept)) || !conceptsOfInterest.contains(concept)) {
+			return;
+		}
+		if (concept.getDepth() == highestLevel) {
+			report(concept, null, true);
+		} else {
+			String[] indentArr = new String[concept.getDepth() - highestLevel];
+			report(concept, indentArr, false);
+		}
+		for (Concept child : SnomedUtils.sort(concept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP))) {
+			reportIndented(child, false);
+		}
+
+	}
+
+	private void report(Concept c, String[] indent, boolean includeGrandParents) throws TermServerScriptException {
+		if (whiteListedConceptIds.contains(c.getId())) {
+			incrementSummaryInformation(WHITE_LISTED_COUNT);
+			return;
+		}
+		Set<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		String statedParentsStr = statedParents.stream()
+				.map(Concept::toString)
+				.distinct()
+				.sorted()
+				.collect(Collectors.joining(COMMA_NEWLINE_DELIMITER));
+		Set<Concept> inferredParents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+		String inferredParentsStr = inferredParents.stream()
+				.map(Concept::toString)
+				.distinct()
+				.sorted()
+				.collect(Collectors.joining(COMMA_NEWLINE_DELIMITER));
+		String definition = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
+		if (includeGrandParents) {
 			String grandParentsStr = inferredParents.stream()
 					.flatMap(parent -> parent.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream())
 					.map(Concept::toString)
 					.distinct()
 					.sorted()
 					.collect(Collectors.joining(COMMA_NEWLINE_DELIMITER));
-			String definition = SnomedUtils.translateDefnStatus(concept.getDefinitionStatus());
-
-			report(concept, definition, statedParentsStr, inferredParentsStr, grandParentsStr);
-			countIssue(concept);
-			incrementSummaryInformation("Concepts reported");
+			report(c, definition, statedParentsStr, inferredParentsStr, grandParentsStr);
+		} else {
+			report(PRIMARY_REPORT, indent, c, statedParentsStr, inferredParentsStr);
 		}
+		conceptsReported.add(c);
+		countIssue(c);
+		incrementSummaryInformation("Concepts reported");
 	}
 
 	/**
