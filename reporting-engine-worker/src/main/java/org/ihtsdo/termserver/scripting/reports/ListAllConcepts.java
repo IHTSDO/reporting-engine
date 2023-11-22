@@ -25,22 +25,27 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 	private static final int MAX_CONCEPTS = 10000;
 	
 	public static String NEW_CONCEPTS_ONLY = "New Concepts Only";
+	public static String EXTENSION_ONLY = "Extension Concepts Only";
 	private boolean newConceptsOnly = false;
+	private boolean extensionOnly = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<<84757009 |Epilepsy (disorder)|"); 
 		params.put(ECL, "*");
-		params.put(NEW_CONCEPTS_ONLY, "true");
+		params.put(NEW_CONCEPTS_ONLY, "false");
+		params.put(EXTENSION_ONLY, "true");
 		TermServerReport.run(ListAllConcepts.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		this.getArchiveManager().setPopulateReleasedFlag(true);
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		additionalReportColumns="FSN, SemTag, Defn, Descriptions, Inferred Expression, Stated Expression, Parents";
 		super.init(run);
 		newConceptsOnly = run.getMandatoryParamBoolean(NEW_CONCEPTS_ONLY);
+		//We only need a fresh delta export if we're checking for new concepts via the isReleased flag
+		this.getArchiveManager().setPopulateReleasedFlag(newConceptsOnly);
+		extensionOnly = run.getMandatoryParamBoolean(EXTENSION_ONLY);
 	}
 
 	@Override
@@ -48,6 +53,7 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(NEW_CONCEPTS_ONLY).withType(Type.BOOLEAN).withDefaultValue(false)
+				.add(EXTENSION_ONLY).withType(Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		
 		return new Job()
@@ -69,12 +75,13 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 		
 		List<Concept> concepts = SnomedUtils.sortFSN(findConcepts(subsetECL));
 		
-		if (concepts.size() > MAX_CONCEPTS) {
-			throw new TermServerScriptException(concepts.size() + " concepts selected.  Please modify ECL selection to < " + MAX_CONCEPTS);
+		if (!extensionOnly && concepts.size() > MAX_CONCEPTS) {
+			throw new TermServerScriptException(concepts.size() + " concepts selected.  Please modify ECL selection to pick up < " + MAX_CONCEPTS);
 		}
 		
 		for (Concept c : concepts) {
-			if (!c.isActive() || 
+			if (!c.isActive() ||
+					(extensionOnly && !inScope(c)) ||
 					(newConceptsOnly && c.isReleased())) {
 				continue;
 			}
