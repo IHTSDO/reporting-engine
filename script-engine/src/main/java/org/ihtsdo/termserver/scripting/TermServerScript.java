@@ -1356,7 +1356,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
 				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 				double avg = Math.round((c/t) * 10) / 10.0;
-				recordSummaryText ("Concepts per task: " + avg);
+				recordSummaryText("Concepts per task: " + avg);
 			}
 		}
 		
@@ -1415,7 +1415,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							&& !msg.contains("Completed processing in")) {
 						msg = QUOTE + msg.replaceAll(": ", QUOTE_COMMA_QUOTE).replaceAll(":", QUOTE_COMMA_QUOTE) + QUOTE;
 					}
-					writeToReportFile (summaryTabIdx, msg);
+					writeToReportFile(summaryTabIdx, msg);
 				} catch (Exception e) {
 					error ("Failed to write summary info: " + msg, e);
 				}
