@@ -28,7 +28,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< 73632009 |Laparoscopy (procedure)|");
+		params.put(ECL, "< 195967001 |Asthma (disorder)|");
 		TermServerReport.run(FindConceptsAcrossAllExtensions.class, args, params);
 	}
 	
@@ -48,6 +48,9 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 
 	public void loadProjectSnapshot(boolean includeFSNs) throws TermServerScriptException {
 		//Nothing needed here.  The ECL return will have everything we need.
+		//In fact, we're going to wipe the graph loader so that we don't
+		//try to use our local copy when we recover ECL results from other extensions
+		gl.reset();
 	}
 	
 	public void postInit() throws TermServerScriptException {
