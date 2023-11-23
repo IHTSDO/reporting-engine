@@ -102,16 +102,19 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		//Report top level concepts first
-		Set<Concept> topLevelConcepts = conceptsOfInterest.stream()
-				.filter(c -> c.getDepth() == highestLevel)
-				.collect(Collectors.toSet());
+		List<Concept> topLevelConcepts = new ArrayList<>();
+		if (indent) {
+			//Report top level concepts first
+			topLevelConcepts = conceptsOfInterest.stream()
+					.filter(c -> c.getDepth() == highestLevel)
+					.collect(Collectors.toList());
 
-		for (Concept concept : topLevelConcepts) {
-			if (indent) {
-				reportIndented(concept, true);
-			} else {
-				report(concept);
+			for (Concept concept : topLevelConcepts) {
+				if (indent) {
+					reportIndented(concept, 0,true);
+				} else {
+					report(concept);
+				}
 			}
 		}
 
@@ -120,14 +123,15 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				continue;
 			}
 			if (indent) {
-				reportIndented(concept, true);
+				int indentBy = concept.getDepth() - highestLevel;
+				reportIndented(concept, indentBy,true);
 			} else {
 				report(concept);
 			}
 		}
 	}
 
-	private void reportIndented(Concept concept, boolean isTopLevel) throws TermServerScriptException {
+	private void reportIndented(Concept concept, int indentBy, boolean isTopLevel) throws TermServerScriptException {
 		//If we're being run directly off the initial selection, we don't want to report concepts more than once
 		//But other than that, if a concept is a child more than once (ie multiple parents) then report it each time.
 		if ((isTopLevel && conceptsReported.contains(concept)) || !conceptsOfInterest.contains(concept)) {
@@ -136,11 +140,11 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 		if (concept.getDepth() == highestLevel) {
 			report(concept, null, true);
 		} else {
-			String[] indentArr = new String[concept.getDepth() - highestLevel];
+			String[] indentArr = new String[indentBy];
 			report(concept, indentArr, false);
 		}
 		for (Concept child : SnomedUtils.sort(concept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP))) {
-			reportIndented(child, false);
+			reportIndented(child, indentBy + 1,false);
 		}
 
 	}
@@ -150,6 +154,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 			return;
 		}
+
 		Set<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 		String statedParentsStr = statedParents.stream()
 				.map(Concept::toString)
