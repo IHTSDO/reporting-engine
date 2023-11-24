@@ -59,6 +59,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected TermServerClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
+	protected boolean ignoreInputFileForReportName = false;
 	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
@@ -1426,7 +1427,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public String getReportName() {
 		if (reportName == null) {
 			String fileName = "";
-			if (hasInputFile(0)) {
+			if (!ignoreInputFileForReportName && hasInputFile(0)) {
 				fileName = SnomedUtils.deconstructFilename(getInputFile())[1];
 			}
 			String spacer = " ";
