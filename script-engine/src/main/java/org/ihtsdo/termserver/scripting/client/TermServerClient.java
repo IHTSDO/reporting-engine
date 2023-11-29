@@ -585,13 +585,21 @@ public class TermServerClient {
 			restTemplate.delete(getRefsetMemberUpdateUrl(refsetMemberId, branch, toForce));
 			LOGGER.info("Deleted refset member id:" + refsetMemberId);
 	}
-	
+
 	private String getRefsetMemberUrl(String refSetMemberId, String branch) {
 		return this.url + "/" + branch + "/members/" + refSetMemberId;
 	}
 
 	private String getRelationshipUrl(String relationshipId, String branch) {
 		return this.url + "/" + branch + "/relationships/" + relationshipId;
+	}
+
+	private String getRefsetMembersUrl(String branchPath, String referenceSet, String searchAfter) {
+		if (searchAfter == null || searchAfter.isEmpty()) {
+			return this.url + "/" + branchPath + "/members?referenceSet=" + referenceSet;
+		} else {
+			return this.url + "/" + branchPath + "/members?referenceSet=" + referenceSet + "&searchAfter=" + searchAfter;
+		}
 	}
 
 	private String getRefsetMemberUrl(String branch) {
@@ -682,7 +690,33 @@ public class TermServerClient {
 			throw e;
 		}
 	}
-	
+
+	public List<RefsetMember> getMembersByReferenceSet(String branchPath, String referenceSet) {
+		return getMembersByReferenceSet(branchPath, referenceSet, null, new ArrayList<>());
+	}
+
+	public List<RefsetMember> getMembersByReferenceSet(String branchPath, String referenceSet, String searchAfter, List<RefsetMember> refsetMembers) {
+		try {
+			String url = getRefsetMembersUrl(branchPath, referenceSet, searchAfter);
+			RefsetMemberCollection response = restTemplate.getForObject(url, RefsetMemberCollection.class);
+
+			boolean responseHasHits = response.getItems() != null && !response.getItems().isEmpty();
+			if (responseHasHits) {
+				refsetMembers.addAll(response.getItems());
+			}
+
+			boolean moreHitsAvailable = response.getTotal() > refsetMembers.size();
+			if (moreHitsAvailable) {
+				// Recursive
+				getMembersByReferenceSet(branchPath, referenceSet, response.getSearchAfter(), refsetMembers);
+			}
+
+			return refsetMembers;
+		} catch (Exception e) {
+			return Collections.emptyList();
+		}
+	}
+
 	public LangRefsetEntry getLangRefsetMember(String uuid, String branchPath) {
 		try {
 			String url = getRefsetMemberUrl(uuid, branchPath);
