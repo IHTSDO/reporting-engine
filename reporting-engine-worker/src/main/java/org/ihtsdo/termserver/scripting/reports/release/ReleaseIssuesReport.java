@@ -178,9 +178,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	public void loadPrepositionsAndExceptions() throws TermServerScriptException {
-		print("Loading " + getInputFile() + "...");
+		LOGGER.info("Loading {}...", getInputFile());
 		if (!getInputFile().canRead()) {
-			throw new TermServerScriptException("Cannot read: " + getInputFile());
+			//Now it might be that the server is still starting up.  Let's give it 10 seconds and try again
+			try {
+				LOGGER.info("Sleeping for 10 seconds - has the server just started?");
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {}
+
+			if (!getInputFile().canRead()) {
+				throw new TermServerScriptException("Cannot read: " + getInputFile());
+			}
 		}
 		try {
 			prepositions = Files.readLines(getInputFile(), Charsets.UTF_8);
@@ -188,7 +196,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
 
-		print("Loading " + getInputFile(1) + "...");
+		LOGGER.info("Loading {}...", getInputFile(1));
 		if (!getInputFile(1).canRead()) {
 			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}
