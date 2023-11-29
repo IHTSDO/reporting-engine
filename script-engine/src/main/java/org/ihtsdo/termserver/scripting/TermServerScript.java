@@ -1409,6 +1409,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				try {
 					//Split the colon into it's own column (unless it's a time stamp!)
 					if (msg.contains(":") 
+							&& !msg.contains("http")
 							&& !msg.contains("at: ")
 							&& !msg.contains("\"")
 							&& !msg.contains("Completed processing in")) {
