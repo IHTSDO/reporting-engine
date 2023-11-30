@@ -41,7 +41,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
-	TemplateServiceClient tsc = new TemplateServiceClient(null, null);
+	TemplateServiceClient tsc;
 	
 	Map<Concept, Template> conceptToTemplateMap = new HashMap<>();
 

@@ -126,7 +126,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static final String TEMPLATE_NAME = "TemplateName";
 	protected static final String SERVER_URL = "ServerUrl";
 
-	@Autowired
 	protected ReportDataBroker reportDataBroker;
 
 	public static Gson gson;
@@ -238,6 +237,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 			tsClient = createTSClient(this.url, authenticatedCookie);
 		}
+
 		boolean loadingRelease = false;
 		//Recover the full project path from authoring services, if not already fully specified
 		if (project == null) {

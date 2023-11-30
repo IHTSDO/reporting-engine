@@ -35,6 +35,37 @@ public class TemplateServiceClient {
 	LogicalTemplateParserService service  = new LogicalTemplateParserService();
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
+
+	public TemplateServiceClient(String serverUrl, String cookie) {
+		headers = new HttpHeaders();
+		headers.add("Cookie", cookie);
+		headers.add("Accept", CONTENT_TYPE);
+
+		if (serverUrl != null) {
+			//Have we been passed a full url?
+			int cutPoint = serverUrl.indexOf(TEMPLATES);
+			if (cutPoint != -1) {
+				serverUrl = serverUrl.substring(0,cutPoint);
+			}
+		}
+
+		restTemplate = new RestTemplateBuilder()
+				.rootUri(serverUrl)
+				.additionalMessageConverters(new GsonHttpMessageConverter())
+				.errorHandler(new ExpressiveErrorHandler())
+				.build();
+
+		this.serverUrl = serverUrl;
+
+		//Add a ClientHttpRequestInterceptor to the RestTemplate
+		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
+			@Override
+			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+				request.getHeaders().addAll(headers);
+				return execution.execute(request, body);
+			}
+		});
+	}
 	
 	public ConceptTemplate loadLocalConceptTemplate (String templateName) throws TermServerScriptException {
 		if (!templateName.startsWith("/")) {
@@ -68,38 +99,7 @@ public class TemplateServiceClient {
 	public LogicalTemplate parseLogicalTemplate (String logicalTemplateStr) throws JsonParseException, JsonMappingException, IOException {
 		return service.parseTemplate(logicalTemplateStr);
 	}
-	
-	public TemplateServiceClient(String serverUrl, String cookie) {
-		headers = new HttpHeaders();
-		headers.add("Cookie", cookie);
-		headers.add("Accept", CONTENT_TYPE);
-		
-		if (serverUrl != null) {
-			//Have we been passed a full url?
-			int cutPoint = serverUrl.indexOf(TEMPLATES);
-			if (cutPoint != -1) {
-				serverUrl = serverUrl.substring(0,cutPoint);
-			}
-		}
-		
-		restTemplate = new RestTemplateBuilder()
-				.rootUri(serverUrl)
-				.additionalMessageConverters(new GsonHttpMessageConverter())
-				.errorHandler(new ExpressiveErrorHandler())
-				.build();
-		
-		this.serverUrl = serverUrl;
-		
-		//Add a ClientHttpRequestInterceptor to the RestTemplate
-		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
-			@Override
-			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-				request.getHeaders().addAll(headers);
-				return execution.execute(request, body);
-			}
-		}); 
-	}
-	
+
 	public List<ConceptTemplate> getAllTemplates() {
 		ResponseEntity<List<ConceptTemplate>> response = restTemplate.exchange(
 				"/templates",
