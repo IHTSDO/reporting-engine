@@ -95,6 +95,8 @@ class ConceptsWithParentsTest extends Specification {
             int reportRow = 0
 
         when:
+            //TODO We need to work out how to stub the call to the superclass in super.postInit(tabNames, columnHeadings, false);
+            cwp.determineConceptsOfInterest()
             cwp.runJob()
 
         then:
