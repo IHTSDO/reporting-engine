@@ -56,6 +56,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String url = environments[0];
 	protected boolean stateComponentType = true;
 	protected JobRun jobRun;
+	protected boolean localClientsRequired = true;
 	protected TermServerClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
@@ -233,9 +234,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		//TODO Make calls through client objects rather than resty direct and remove this member
 		//TODO May then be able to remove otf-common entirely and just use resource-manager
-		//resty.withHeader("Cookie", authenticatedCookie);  
-		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
-		tsClient = createTSClient(this.url, authenticatedCookie);
+		if (localClientsRequired == true) {
+			scaClient = new AuthoringServicesClient(url, authenticatedCookie);
+			tsClient = createTSClient(this.url, authenticatedCookie);
+		}
 		boolean loadingRelease = false;
 		//Recover the full project path from authoring services, if not already fully specified
 		if (project == null) {
