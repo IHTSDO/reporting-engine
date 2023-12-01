@@ -28,7 +28,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	private static final Pattern CONTAINS_TERM_PATTERN = Pattern.compile("\\{\\{\\s*term", Pattern.MULTILINE);
 	public static final String COMMA_NEWLINE_DELIMITER = ",\n";
 
-	private boolean indent;
+	private boolean indent = false;
 	private Collection<Concept> conceptsOfInterest;
 	private Set<Concept> conceptsReported = new HashSet<>();
 	int deepestLevel = NOT_SET;
@@ -50,10 +50,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 
 	public void postInit() throws TermServerScriptException {
-		String eclQuery = appendTermsFilter(jobRun.getMandatoryParamValue(ECL), jobRun.getParamValue(TERMS_FILTER));
-		conceptsOfInterest = SnomedUtils.sort(findConcepts(eclQuery));
-		deepestLevel = SnomedUtils.findDeepestConcept(conceptsOfInterest, false).getDepth();
-		highestLevel = SnomedUtils.findShallowestConcept(conceptsOfInterest).getDepth();
+		determineConceptsOfInterest();
 		String columnStr = "";
 		if (indent) {
 			//If we're indenting, we just need a lot of columns but we don't know what they're going to contain
@@ -73,6 +70,13 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				columnStr
 				};
 		super.postInit(tabNames, columnHeadings, false);
+	}
+
+	protected void determineConceptsOfInterest() throws TermServerScriptException {
+		String eclQuery = appendTermsFilter(jobRun.getMandatoryParamValue(ECL), jobRun.getParamValue(TERMS_FILTER));
+		conceptsOfInterest = SnomedUtils.sort(findConcepts(eclQuery));
+		deepestLevel = SnomedUtils.findDeepestConcept(conceptsOfInterest, false).getDepth();
+		highestLevel = SnomedUtils.findShallowestConcept(conceptsOfInterest, false).getDepth();
 	}
 
 	@Override
@@ -126,7 +130,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				int indentBy = concept.getDepth() - highestLevel;
 				reportIndented(concept, indentBy,true);
 			} else {
-				report(concept);
+				report(concept, null, true);
 			}
 		}
 	}

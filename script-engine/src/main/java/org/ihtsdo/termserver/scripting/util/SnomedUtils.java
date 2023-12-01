@@ -2540,7 +2540,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return siblings.iterator().next();
 	}
 
-	public static Concept findShallowestConcept(Collection<Concept> concepts) throws TermServerScriptException {
+	public static Concept findShallowestConcept(Collection<Concept> concepts, boolean ensureUnique) throws TermServerScriptException {
 		//Find the greatest depth indicator
 		Integer minimumDepth = null;
 		for (Concept c : concepts) {
@@ -2555,7 +2555,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				.filter(c -> c.getDepth() == minDepth)
 				.collect(Collectors.toSet());
 
-		if (siblings.size() != 1) {
+		if (ensureUnique && siblings.size() != 1) {
 			throw new TermServerScriptException("Unable to find single shallowest concept from " + concepts);
 		}
 		return siblings.iterator().next();
