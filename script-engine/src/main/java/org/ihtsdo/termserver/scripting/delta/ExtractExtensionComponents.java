@@ -18,6 +18,8 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class form a delta of specified concepts from some edition and 
@@ -25,10 +27,6 @@ import com.google.common.collect.Sets;
  * into the core module.
  * TODO Load in the MRCM and properly populate the Never Group attributes
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
@@ -541,7 +539,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 			}
 		}
-		
+
+		validatePreferredTermsInLanguageRefsets(c);
+
 		boolean relationshipMoved = false;
 		boolean relationshipAlreadyMoved = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -602,6 +602,81 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		return true;
 	}
+
+	private void validatePreferredTermsInLanguageRefsets(Concept c) throws TermServerScriptException {
+		// Ensure that the concept has a preferred term in both en-gb and en-us.
+		if (conceptContainsValidTerms(c)) {
+			return;
+		}
+
+		throw new TermServerScriptException("Language refset issue, please investigate.");
+		// Code below is not used, but if we ever see the above exception it can be used as a
+		// starting point to resolve data issue.
+
+		/*
+			// Check what happens behind setAcceptability....that may be more for working with the browser representation of the concept.
+			// It may or may not also work through the RF2 rows of LangRefsetEntries.     It's not the Description that is being modified
+			// (although, in fact, it will already be dirty because we changed its module), it's the Language Reference Set entries.
+
+			// If it does NOT, then loop through preferred terms in knownMapToCoreLangRefsets and,
+			// where en-gb/en-us langrefset entries exist for the same description, upgrade them from acceptable to preferred.
+			for (String localAuthoritativeRefset : knownMapToCoreLangRefsets) {
+				for (Description description : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (description.getType() != DescriptionType.SYNONYM || !description.isPreferred(localAuthoritativeRefset)) {
+						continue;
+					}
+
+					if (description.isPreferred(GB_ENG_LANG_REFSET)) {
+						description.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
+						description.setDirty();
+					} else if (description.isPreferred(US_ENG_LANG_REFSET)) {
+						description.setAcceptability(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
+						description.setDirty();
+					}
+
+					// And where they do NOT exist, create them.
+				}
+			}
+
+			// Re-run the check a 2nd time and output a HIGH warning if it has not been possible to determine the preferred terms.
+			if (conceptContainsValidTerms(c)) {
+				return;
+			}
+
+			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept does not have a preferred term in both en-gb and en-us reference sets");
+		*/
+	}
+
+	// Both the FSN and one synonym should be marked as preferred in both
+	// the en-gb and en-us language reference sets.
+	private boolean conceptContainsValidTerms(Concept c) {
+		int foundUKsynonym = 0;
+		int foundUSsynonym = 0;
+		int foundUKfsn  = 0;
+		int foundUSfsn  = 0;
+
+		for (Description description : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (description.getType() == DescriptionType.SYNONYM) {
+				if (description.isPreferred(GB_ENG_LANG_REFSET)) {
+					foundUKsynonym++;
+				}
+
+				if (description.isPreferred(US_ENG_LANG_REFSET)) {
+					foundUSsynonym++;
+				}
+			} else if (description.getType() == DescriptionType.FSN) {
+				if (description.isPreferred(GB_ENG_LANG_REFSET)) {
+					foundUKfsn++;
+				}
+
+				if (description.isPreferred(US_ENG_LANG_REFSET)) {
+					foundUSfsn++;
+				}
+			}
+		}
+
+        return foundUKsynonym==1 && foundUKfsn==1 && foundUSsynonym==1 && foundUSfsn==1;
+    }
 
 	private void setDescriptionAndLangRefModule(Description d) {
 		d.setModuleId(targetModuleId);
