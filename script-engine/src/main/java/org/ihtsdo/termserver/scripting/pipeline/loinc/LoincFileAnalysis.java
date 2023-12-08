@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.slf4j.Logger;
