@@ -143,6 +143,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 
 	public static AssociationEntry create(Concept c, String refsetId, Concept replacement) {
 		AssociationEntry a = new AssociationEntry();
+		a.setId(UUID.randomUUID().toString());
 		a.setModuleId(c.getModuleId());
 		a.setRefsetId(refsetId);
 		a.setReferencedComponentId(c.getId());

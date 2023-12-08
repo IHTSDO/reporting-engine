@@ -41,10 +41,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			delta.loadProjectSnapshot(false); 
 			delta.postInit();
 			delta.process();
-			delta.flushFiles(false); //Need to flush files before zipping
-			if (!dryRun) {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
-			}
+			delta.createOutputArchive();
 		} finally {
 			delta.finish();
 		}
@@ -141,13 +138,13 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept already using a ReplacedBy association");
 				return;
 			}
-			a.setActive(false);
-			a.setEffectiveTime(null);
+			a.setActive(false); //This will reset effective time and mark as dirty
 		}
 
 		String associationTypeSCTID = SnomedUtils.translateAssociation(action.type);
 		for (Concept replacement : action.replacements) {
 			AssociationEntry assoc = AssociationEntry.create(c, associationTypeSCTID, replacement);
+			assoc.setDirty();
 			c.getAssociationEntries().add(assoc);
 		}
 		String newAssocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
