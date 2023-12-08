@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import java.io.IOException;
 import java.util.*;
