@@ -9,8 +9,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.reports.loinc.ConceptWrapper;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.ConceptWrapper;
 import org.snomed.otf.script.dao.ReportManager;
 
 /*
