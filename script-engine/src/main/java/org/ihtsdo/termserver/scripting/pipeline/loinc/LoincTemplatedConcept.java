@@ -11,29 +11,22 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptWrapper, LoincScriptConstants {
+public abstract class LoincTemplatedConcept extends TemplatedConcept implements  LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 
 	private static final String semTag = " (observable entity)";
-	private static Set<String> partNumsMapped = new HashSet<>();
-	private static Set<String> partNumsUnmapped = new HashSet<>();
-	private static int mapped = 0;
-	private static int unmapped = 0;
-	private static int skipped = 0;
-	private static int conceptsModelled = 0;
-	
+
 	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
 	
-	protected static LoincScript ls;
-	protected static GraphLoader gl;
 	protected static AttributePartMapManager attributePartMapManager;
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	protected static RelationshipTemplate percentAttribute;
@@ -57,7 +50,6 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
 	protected Set<ProcessingFlag> processingFlags = new HashSet<>();
 	
-	protected String loincNum;
 	protected Map<String, Concept> typeMap = new HashMap<>();
 	protected String preferredTermTemplate;
 	protected Concept concept;
@@ -65,12 +57,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	protected Map<String, String> slotTermMap = new HashMap<>();
 	protected Map<String, String> slotTermAppendMap = new HashMap<>();
 	
-	public static void initialise(LoincScript ls, GraphLoader gl,
-			AttributePartMapManager attributePartMapManager,
-			Map<String, LoincTerm> loincNumToLoincTermMap,
-			Map<String, Map<String, LoincDetail>> loincDetailMap, 
-			Map<String, LoincPart> loincParts) throws TermServerScriptException {
-		LoincTemplatedConcept.ls = ls;
+	public static void initialise(ContentPipelineManager cpm, GraphLoader gl,
+								  AttributePartMapManager attributePartMapManager,
+								  Map<String, LoincTerm> loincNumToLoincTermMap,
+								  Map<String, Map<String, LoincDetail>> loincDetailMap,
+								  Map<String, LoincPart> loincParts) throws TermServerScriptException {
+		LoincTemplatedConcept.cpm = cpm;
 		LoincTemplatedConcept.gl = gl;
 		LoincTemplatedConcept.attributePartMapManager = attributePartMapManager;
 		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
@@ -105,7 +97,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 
 	protected LoincTemplatedConcept (String loincNum) {
-		this.loincNum = loincNum;
+		this.externalIdentifier = loincNum;
 	}
 
 	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
@@ -120,7 +112,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 	
 	protected int getTab(String tabName) throws TermServerScriptException {
-		return ls.getTab(tabName);
+		return cpm.getTab(tabName);
 	}
 	
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
@@ -289,7 +281,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 					continue;
 				}
 				if (rels.size() > 1) {
-					throw new TermServerScriptException(rels.size() + " relationships for " + attributeType + " in " + getLoincNum());
+					throw new TermServerScriptException(rels.size() + " relationships for " + attributeType + " in " + getExternalIdentifier());
 				}
 				RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
 				ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
@@ -409,7 +401,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 					continue;
 				}
 				ArrayList<String> issues = new ArrayList<>();
-				attributesToAdd = determineComponentAttributes(loincNum, issues);
+				attributesToAdd = determineComponentAttributes(externalIdentifier, issues);
 				concept.addIssues(issues, ",\n");
 			} else {
 				RelationshipTemplate rt = getAttributeForLoincPart(getTab(TAB_MODELING_ISSUES), loincDetail);
@@ -440,8 +432,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 				} else if (!expectNullMap){
 					unmapped++;
 					String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
-					ls.report(getTab(TAB_MODELING_ISSUES),
-						loincNum,
+					cpm.report(getTab(TAB_MODELING_ISSUES),
+							externalIdentifier,
 						loincDetail.getPartNumber(),
 						issue,
 						loincDetail.getPartName());
@@ -508,8 +500,8 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		Concept attributeType = typeMap.get(loincDetail.getPartTypeName());
 		if (attributeType == null) {
 			if (idxTab != NOT_SET) {
-				ls.report(idxTab,
-					loincNum,
+				cpm.report(idxTab,
+						externalIdentifier,
 					loincDetail.getPartNumber(),
 					"Type in context not identified - " + loincDetail.getPartTypeName() + " | " + this.getClass().getSimpleName(),
 					loincDetail.getPartName());
@@ -518,10 +510,10 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		}
 		
 		if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber())) {
-			ls.report(getTab(TAB_IOI), "Allow use of 'specimen'", loincNum);
+			cpm.report(getTab(TAB_IOI), "Allow use of 'specimen'", externalIdentifier);
 			processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
 		}
-		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(idxTab, loincNum, loincDetail.getPartNumber(), attributeType);
+		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(idxTab, externalIdentifier, loincDetail.getPartNumber(), attributeType);
 
 		if (rt == null) {
 			if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
@@ -552,23 +544,14 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		return concept;
 	}
 	
-	public String getLoincNum() {
-		return loincNum;
+	public String getExternalIdentifier() {
+		return externalIdentifier;
 	}
 	
 	public String getWrappedId() {
-		return loincNum;
+		return externalIdentifier;
 	}
 
-	public static void reportStats(int tabIdx) throws TermServerScriptException {
-		ls.report(tabIdx, "");
-		ls.report(tabIdx, "Parts mapped", mapped);
-		ls.report(tabIdx, "Parts unmapped", unmapped);
-		ls.report(tabIdx, "Parts skipped", skipped);
-		ls.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
-		ls.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
-	}
-	
 	/**
 	 * If the “PartNumber” and “Part” fields (column B and D) are the same for COMPONENT_PN and COMPNUM
 	 * @throws TermServerScriptException 
@@ -703,12 +686,12 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 		try {
 			String loincPartNum = entry.getKey();
 			if (!loincParts.containsKey(loincPartNum)) {
-				ls.report(tabIdx, loincPartNum, "Unknown", "", "Part num not known to list of parts.  Check origin.");
+				cpm.report(tabIdx, loincPartNum, "Unknown", "", "Part num not known to list of parts.  Check origin.");
 			} else {
 				String loincPartName = loincParts.get(loincPartNum).getPartName();
 				String loincPartType = loincParts.get(loincPartNum).getPartTypeName();
 				LoincUsage usage = entry.getValue();
-				ls.report(tabIdx, loincPartNum, loincPartName, loincPartType, usage.getPriority(), usage.getCount(), usage.getTopRankedLoincTermsStr());
+				cpm.report(tabIdx, loincPartNum, loincPartName, loincPartType, usage.getPriority(), usage.getCount(), usage.getTopRankedLoincTermsStr());
 			}
 		} catch (TermServerScriptException e) {
 			throw new RuntimeException(e);
@@ -716,7 +699,7 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 	}
 	
 	public String toString() {
-		return this.getClass().getSimpleName() + " for loincNum " + loincNum;
+		return this.getClass().getSimpleName() + " for loincNum " + externalIdentifier;
 	}
 
 }

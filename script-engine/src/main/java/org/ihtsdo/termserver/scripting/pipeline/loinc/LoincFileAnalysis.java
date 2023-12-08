@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -122,5 +123,15 @@ public class LoincFileAnalysis extends LoincScript {
     @Override
     public String getReportName() {
         return "LOINC File Analysis";
+    }
+
+    @Override
+    protected void importPartMap() throws TermServerScriptException {
+       throw new IllegalStateException("This class is not expected to import a part map");
+    }
+
+    @Override
+    protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
+        throw new IllegalStateException("This class is not expected to do any modelling");
     }
 }
