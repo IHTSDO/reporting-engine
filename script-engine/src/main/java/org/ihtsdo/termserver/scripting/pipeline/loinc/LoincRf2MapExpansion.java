@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
 
+import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,5 +134,20 @@ public class LoincRf2MapExpansion extends LoincScript {
 	private String reportIfTypeReplaced(Concept value) throws TermServerScriptException {
 		Concept replacementType = attributePartManager.replaceTypeIfRequired(null, value, null);
 		return replacementType.equals(value) ? "" : replacementType.toStringPref();
+	}
+
+	@Override
+	protected void importExternalContent() throws TermServerScriptException {
+
+	}
+
+	@Override
+	protected void importPartMap() throws TermServerScriptException {
+
+	}
+
+	@Override
+	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
+		return null;
 	}
 }

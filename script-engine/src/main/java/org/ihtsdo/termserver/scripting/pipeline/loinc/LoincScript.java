@@ -7,16 +7,16 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoincScript extends TermServerScript implements LoincScriptConstants {
+public abstract class LoincScript extends ContentPipelineManager implements LoincScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
 
 	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	protected static AttributePartMapManager attributePartMapManager;
@@ -26,34 +26,13 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 
-	protected static int FILE_IDX_LOINC_100 = 0;
-	protected static int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
-	//private static int FILE_IDX_LOINC_100_Primary = 2;
-	protected static int FILE_IDX_LOINC_PARTS = 3;
-	protected static int FILE_IDX_LOINC_FULL = 4;
-	protected static int FILE_IDX_LOINC_DETAIL = 5;
-	protected static int FILE_IDX_CONCEPT_IDS = 6;
-	protected static int FILE_IDX_DESC_IDS = 7;
-	protected static int FILE_IDX_PREVIOUS_ITERATION = 8;
 	public static final String LOINC_TIME_PART = "LP6969-2";
 	
-	protected int additionalThreadCount = 0;
-
 	protected String[] getTabNames() {
 		throw new IllegalStateException("Please override getTabNames() in your script");
 	}
 
 
-	public int getTab(String tabName) throws TermServerScriptException {
-		String[] tabNames = getTabNames();
-		for (int i = 0; i < tabNames.length; i++) {
-			if (tabNames[i].equals(tabName)) {
-				return i;
-			}
-		}
-		throw new TermServerScriptException("Tab '" + tabName + "' not recognised");
-	}
-	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
 		
@@ -65,6 +44,12 @@ public class LoincScript extends TermServerScript implements LoincScriptConstant
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 		
 		super.postInit(tabNames, columnHeadings, csvOutput);
+	}
+
+	@Override
+	protected void importExternalContent() throws TermServerScriptException {
+		loadLoincDetail();
+		loadLoincParts();
 	}
 	
 	protected void loadLoincDetail() {
