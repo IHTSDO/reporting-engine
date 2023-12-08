@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import java.io.*;
 import java.util.*;
@@ -8,7 +8,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 
