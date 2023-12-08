@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -40,9 +40,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	private List<String> previousIterationLoincNums = new ArrayList<>();
 	int existedPreviousIteration = 0;
-	
-	Rf2ConceptCreator conceptCreator;
-	
+
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
 			TAB_LOINC_DETAIL_MAP_NOTES,
@@ -53,26 +51,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			TAB_IOI };
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		ImportLoincTerms report = new ImportLoincTerms();
-		try {
-			report.runStandAlone = false;
-			report.getGraphLoader().setExcludedModules(new HashSet<>());
-			report.getArchiveManager().setRunIntegrityChecks(false);
-			report.init(args);
-			report.loadProjectSnapshot(false);
-			report.postInit();
-			report.conceptCreator = Rf2ConceptCreator.build(report, report.getInputFile(FILE_IDX_CONCEPT_IDS), report.getInputFile(FILE_IDX_DESC_IDS), null);
-			report.conceptCreator.initialiseGenerators(new String[]{"-nS","1010000", "-iR", "16470", "-m", "11010000107"});
-			report.runReport();
-		} finally {
-			while (report.additionalThreadCount > 0) {
-				Thread.sleep(1000);
-			}
-			report.finish();
-			if (report.conceptCreator != null) {
-				report.conceptCreator.finish();
-			}
-		}
+		new ImportLoincTerms().ingestExternalContent(args);
 	}
 
 	protected String[] getTabNames() {
@@ -96,6 +75,19 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	private void runReport() throws TermServerScriptException, InterruptedException {
+
+
+
+		//determineExistingConcepts(getTab(TAB_TOP_100));
+
+		
+		/*importIntoTask(successfullyModelled);
+		generateAlternateIdentifierFile(successfullyModelled);*/
+	}
+
+
+	@Override
+	protected void importExternalContent() throws TermServerScriptException {
 		//ExecutorService executor = Executors.newCachedThreadPool();
 		AttributePartMapManager.validatePartAttributeMap(gl, getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 		//populateLoincNumMap();
@@ -104,33 +96,18 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		//executor.execute(() -> loadFullLoincFile());
 		loadFullLoincFile(NOT_SET);
 		loadLoincDetail();
+
+	}
+
+	@Override
+	protected void importPartMap() throws TermServerScriptException {
 		attributePartMapManager = new AttributePartMapManager(this, loincParts, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 
 		reportOnDetailMappingWithUsage();
 
 		loadLastIterationLoincNums();
-
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
-		//determineExistingConcepts(getTab(TAB_TOP_100));
-		Set<LoincTemplatedConcept> successfullyModelled = doModeling();
-		LoincTemplatedConcept.reportStats(getTab(TAB_SUMMARY));
-		//LoincTemplatedConcept.reportFailedMappingsByProperty(getTab(TAB_MODELING_ISSUES));
-		LoincTemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
-		flushFiles(false);
-		for (LoincTemplatedConcept tc : successfullyModelled) {
-			Concept concept = tc.getConcept();
-			try {
-				conceptCreator.copyStatedRelsToInferred(concept);
-				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getLoincNum(), SCTID_LOINC_EXTENSION_MODULE);
-			} catch (Exception e) {
-				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getLoincNum(), e);
-			}
-		}
-		conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
-		
-		/*importIntoTask(successfullyModelled);
-		generateAlternateIdentifierFile(successfullyModelled);*/
 	}
 
 	private void loadLastIterationLoincNums() {
@@ -245,8 +222,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 	}
 
-	private Set<LoincTemplatedConcept> doModeling() throws TermServerScriptException {
-		Set<LoincTemplatedConcept> successfullyModelledConcepts = new HashSet<>();
+	@Override
+	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
+		Set<TemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
 			LoincTemplatedConcept templatedConcept = doModeling(entry.getKey(), entry.getValue());
 			if (templatedConcept != null
@@ -256,7 +234,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			}
 		}
 		Set<String> successfullyModelledLoincNums = successfullyModelledConcepts.stream()
-				.map(ltc -> ltc.getLoincNum())
+				.map(ltc -> ltc.getExternalIdentifier())
 				.collect(Collectors.toSet());
 		//Report LoincNums modelled in the previous iteration that didn't make this round
 		int removedThisIteration = 0;
