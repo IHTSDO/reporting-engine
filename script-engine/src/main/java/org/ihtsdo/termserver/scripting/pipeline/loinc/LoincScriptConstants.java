@@ -1,16 +1,17 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-public interface LoincScriptConstants {
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
+
+public interface LoincScriptConstants extends ContentPipeLineConstants {
 	
 	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT }
 
-	public final String TAB_SUMMARY = "Summary";
-	public final String TAB_LOINC_DETAIL_MAP_NOTES = "LOINC Detail Map Notes";
-	public final String TAB_MODELING_ISSUES = "Modeling Issues";
-	public final String TAB_PROPOSED_MODEL_COMPARISON = "Proposed Model Comparison";
-	public final String TAB_MAP_ME = "Map Me!";
-	public final String TAB_IMPORT_STATUS = "Import Status";
-	public final String TAB_IOI = "Items of Interest";
+	public int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
+	public int FILE_IDX_LOINC_100 = 0;
+	public int FILE_IDX_LOINC_100_Primary = 2;
+	public int FILE_IDX_LOINC_PARTS = 3;
+	public int FILE_IDX_LOINC_FULL = 4;
+	public int FILE_IDX_LOINC_DETAIL = 5;
 
 	public int IDX_LOINC_NUM = 0;
 	public int IDX_COMPONENT = 1;
