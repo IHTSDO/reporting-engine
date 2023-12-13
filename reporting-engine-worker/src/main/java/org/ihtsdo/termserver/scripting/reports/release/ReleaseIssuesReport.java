@@ -75,6 +75,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	String NBSPSTR = "\u00A0";
 	String ZEROSP = "\u200B";
 	String LONG_DASH = "—";
+	String EN_DASH = "\u2013";
+	String EM_DASH = "\u2014";
 	String RIGHT_APOS = "\u2019";
 	String LEFT_APOS = "\u2018";
 	String RIGHT_QUOTE = "\u201D";
@@ -1099,6 +1101,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			{ ZEROSP , "Zero-sized space" },
 			{ NBSPSTR , "Non-breaking space" },
 			{ LONG_DASH , "MsWord style dash" },
+			{ EN_DASH , "EN dash" },
+			{ EM_DASH , "EM dash" },
 			{ "--" , "Double dash" },
 			{ RIGHT_APOS , "Right apostrophe" },
 			{ LEFT_APOS , "Left apostrophe" },
