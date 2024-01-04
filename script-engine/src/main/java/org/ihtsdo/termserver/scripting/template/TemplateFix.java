@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.util.*;
 
+import org.ihtsdo.termserver.scripting.EclCache;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
 
@@ -64,6 +65,9 @@ abstract public class TemplateFix extends BatchFix {
 				LOGGER.info ("Validated template: " + templateNames[x]);
 			}
 		}
+		//We're going to scrub the ECL cache at this point, because we've now cached a bunch of concepts just as the SCTIDs, which will fail
+		//when we recover that same ECL later and try to use them.
+		EclCache.reset();
 	}
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
