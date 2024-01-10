@@ -130,21 +130,35 @@ public abstract class LoincTemplatedConcept implements ScriptConstants, ConceptW
 			case "MRto" :
 			case "VFr" :
 			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);*/
-			case "PrThr" :
-			case "PPres" :
-			case "CCnc" :
-			case "MCnc" :
-			case "SCnc" :
 			case "ACnc" :
-			case "NCnc" :
+			case "Angle" :
+			case "CCnc" :
+			case "CCnt" :
+			case "Diam" :
+			case "LaCnc" :
+			case "LnCnc" :
 			case "LsCnc" :
+			case "MCnc" :
+			case "MCnt" :
+			case "MoM" :
+			case "NCnc" :
 			case "Naric" :
-			case "MoM" :  return LoincTemplatedConceptWithComponent.create(loincNum);
-			//case "EntMass" : 
-			case "Prid" :
+			case "PPres" :
+			case "PrThr" :
+			case "SCnc" :
+			case "SCnt" :
+			case "Titr" :
+			case "Visc" : return LoincTemplatedConceptWithComponent.create(loincNum);
+			//case "EntMass" :
+			case "Anat" :
+			case "Aper" :
 			case "EntVol" :
-			case "Vol" :
-			case "Type" : return LoincTemplatedConceptWithInheres.create(loincNum);
+			case "ID" :
+			case "Morph" :
+			case "Prid" :
+			case "Temp" :
+			case "Type" :
+			case "Vol" : return LoincTemplatedConceptWithInheres.create(loincNum);
 		}
 		return null;
 	}
