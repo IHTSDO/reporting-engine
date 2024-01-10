@@ -140,10 +140,10 @@ echo "File size diff is ${leftName} minus ${rightName}"
 echo
 processOrderFile="_process_order.txt"
 {
-	find target/a -type f | sed "s/target\/a\///" | grep "sct2_" | sort;
-	find target/a -type f | sed "s/target\/a\///" | grep "der2_" | sort;
+	find target/b -type f | sed "s/target\/b\///" | grep "sct2_" | sort;
+	find target/b -type f | sed "s/target\/b\///" | grep "der2_" | sort;
 	#Now we'll just do a file size comparison of any other file
-	find target/a -type f | sed "s/target\/a\///" | egrep -v "sct2_|der2_" | sort;
+	find target/b -type f | sed "s/target\/b\///" | egrep -v "sct2_|der2_" | sort;
 } >> ${processOrderFile}
 
 parallelFeed="ParallelFeed_${RANDOM}.txt"
