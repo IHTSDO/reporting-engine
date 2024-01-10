@@ -4,10 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +67,35 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			}
 		}
 		if (changesMade) {
+			//We need to reset relationship groups
+			c.recalculateGroups();
 			String after = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			report(c, Severity.LOW, ReportActionType.INFO, before, after);
 		}
+	}
+
+	private boolean inScope(Concept c) {
+		//Are we in scope more generally?
+		if (!super.inScope(c)) {
+			return false;
+		}
+
+		//But also, we're looking for concepts that have more the one self grouped attribute
+		boolean hasSelfGroupedAttribute = false;
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false)) {
+			//Ignore group 0
+			if (g.getGroupId() == 0) {
+				continue;
+			}
+			if (g.size() == 1) {
+				//Have we already seen a self grouped attribute?
+				if (hasSelfGroupedAttribute) {
+					return true;
+				}
+				hasSelfGroupedAttribute = true;
+			}
+		}
+		return false;
 	}
 
 }
