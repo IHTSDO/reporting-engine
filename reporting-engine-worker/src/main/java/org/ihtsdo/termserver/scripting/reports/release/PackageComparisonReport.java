@@ -36,7 +36,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private String previousReleasePath;
 	private String currentReleasePath;
 	private Map<String, Map<TotalsIndex, Integer>> fileTotals = new TreeMap<>();
-
+	
+	private Map<String, String> rightFilesLineCounts = new HashMap<>();
+	private static final String LINE_COUNT_FILENAME = "right_files_line_counts.txt";
+	
 	private String[] columnHeadings = new String[] {
 			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, New Effective Time Not Latest, New Inactive, Changed Inactive, Deleted, Total"
 	};
@@ -280,6 +283,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
 		try {
+			//Load the file containing the line counts for the right files
+			loadLineCountFile(diffDir);
+			
 			// Process file list diff file
 			processFileList(diffDir, "diff_file_list.txt");
 
@@ -303,6 +309,20 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		} catch (IOException | RuntimeException e) {
 			LOGGER.error("Error processing diff files in " + uploadFolder);
 			throw new TermServerScriptException(e);
+		}
+	}
+
+	private void loadLineCountFile(Path outputDir) {
+		try (BufferedReader br = new BufferedReader(new FileReader(outputDir + File.separator + LINE_COUNT_FILENAME , StandardCharsets.UTF_8))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] parts = line.split("\t"); 
+				String filename = parts[0]; 
+				String lineCount = parts[1];
+				rightFilesLineCounts.put(filename, lineCount);
+			}
+		} catch (Exception e) {
+			LOGGER.warn("Failed to populate right files line counts due to " + e);;
 		}
 	}
 
@@ -457,7 +477,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 			report(FILE_COMPARISON_TAB, "Files created: " + created.size());
 			for (String file : created) {
-				report(FILE_COMPARISON_TAB, file);
+				String lineCount = "Unknown";
+				if (rightFilesLineCounts.containsKey(file)) {
+					lineCount = rightFilesLineCounts.get(file);
+				}
+				report(FILE_COMPARISON_TAB, file, lineCount);
 			}
 			report(FILE_COMPARISON_TAB, "");
 

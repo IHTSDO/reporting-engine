@@ -12,19 +12,26 @@ rightName=$5
 
 tmpOutput="target/${fileName}_comparison_details_${RANDOM}.txt"
 
+if [ -f "${rightFile}" ] && [[ ${rightFile} == *.txt ]]
+then
+	rightFileCount=`wc -l ${rightFile} | awk '{print $1}'`
+	#Write all file line counts to a file, which will upload to S3
+	echo -e "${fileName}\t$rightFileCount" >> target/c/right_files_line_counts.txt
+fi 
+
 if [ -f "${rightFile}" ] && [ -f "${leftFile}" ]
 then 
 
-	echo "Completed Comparison of  ${rightFile}" > ${tmpOutput}
+	echo "Completed Comparison of ${rightFile}" > ${tmpOutput}
 	
 	if [[ ${rightFile} == *.txt ]]
 	then
 		leftFileCount=`wc -l ${leftFile} | awk '{print $1}'`
-		echo "${leftName} line count: $leftFileCount" >> ${tmpOutput}
+		echo "${leftFile} line count: $leftFileCount" >> ${tmpOutput}
 
 		rightFileCount=`wc -l ${rightFile} | awk '{print $1}'`
-		echo "${rightName} line count: $rightFileCount" >> ${tmpOutput}
-
+		echo "${rightFile} line count: $rightFileCount" >> ${tmpOutput}
+		
 		echo "Line count diff: $[$leftFileCount-$rightFileCount]" >> ${tmpOutput}
 
 		comparisonComplete=false
