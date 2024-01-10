@@ -25,6 +25,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	private Map<Concept, UpdateAction> replacementMap = new HashMap<>();
 
+	private List<String> targetPrefixes = Arrays.asList(new String[] {"OE ", "CO ", "O/E", "C/O", "Complaining of", "On examination"});
+
 	private List<String> skipConcepts = Arrays.asList(new String[]{"163092009",
 			"163094005",
 			"163096007",
@@ -50,12 +52,14 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , ",
-				"Issue, Detail"
+				"Issue, Detail",
+				"SCTID, FSN, SemTag, Existing HistAssoc, Lexical Match, Sibling Active, Sibling HistAssoc",
 		};
 
 		String[] tabNames = new String[]{
 				"Delta Records Created",
-				"Other processing issues"
+				"Other processing issues",
+				"Additional Concepts"
 		};
 		postInit(tabNames, columnHeadings, false);
 	}
@@ -64,6 +68,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		
 		populateReplacementMap();
 		populateUpdatedReplacementMap();
+		checkForRecentInactivations();
 		
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			/*if (!c.getId().equals("164427005")) {
@@ -209,6 +214,61 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	private List<Concept> splitConcepts(String replacementsStr) {
 		String[] conceptIds = replacementsStr.split(",");
 		return Arrays.stream(conceptIds).map(s -> gl.getConceptSafely(s)).collect(Collectors.toList());
+	}
+
+	private void checkForRecentInactivations() throws TermServerScriptException {
+		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
+			if (c.getFSNDescription() == null) {
+				LOGGER.warn("Unpopulated " + c.getId());
+				continue;
+			}
+			if (c.isActive() || !inScope(c) ||
+					skipConcepts.contains(c.getId()) ||
+					replacementMap.containsKey(c)) {
+				continue;
+			}
+			//Can we find a sibling for this concept?
+			Concept sibling = findSibling(c);
+			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+			if (sibling != null) {
+				if (sibling.isActive()) {
+					report(TERTIARY_REPORT, c, assocStr, sibling, "Y");
+				} else {
+					report(TERTIARY_REPORT, c, assocStr, sibling, "N", SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl));
+				}
+			} else {
+				report(TERTIARY_REPORT, c, assocStr);
+			}
+		}
+	}
+
+	private Concept findSibling(Concept c) throws TermServerScriptException {
+		String targetFsn = "Unknown";
+		for (String targetPrefix : targetPrefixes) {
+			if (c.getFsn().startsWith(targetPrefix)) {
+				targetFsn = c.getFsn().replace(targetPrefix, "").replace("- ", "").trim();
+				targetFsn = SnomedUtils.deconstructFSN(targetFsn)[0];
+				break;
+			}
+		}
+
+		for (Concept sibling : gl.getAllConcepts()) {
+			for (Description d : sibling.getDescriptions()) {
+				if (targetFsn.equalsIgnoreCase(d.getTerm())) {
+					return sibling;
+				}
+			}
+		}
+		return null;
+	}
+
+	private boolean inScope(Concept c) {
+		for (String targetPrefix : targetPrefixes) {
+			if (c.getFsn().startsWith(targetPrefix)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private UpdateAction createReplacementAssociation(Concept replacement) {
