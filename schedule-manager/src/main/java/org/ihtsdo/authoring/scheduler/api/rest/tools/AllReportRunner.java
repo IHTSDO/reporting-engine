@@ -1,5 +1,6 @@
 package org.ihtsdo.authoring.scheduler.api.rest.tools;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRepository;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRunRepository;
 import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
@@ -27,19 +28,31 @@ public class AllReportRunner {
 	@Autowired
 	private ScheduleService scheduleService;
 
-	public List<AllReportRunnerResult> runAllReports(boolean dryRun, String userName, String authToken) {
+	public List<AllReportRunnerResult> runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName, String authToken) {
 		List<AllReportRunnerResult> allReportRunnerResults = new ArrayList<>();
 		List<Job> listOfJobs = jobRepository.findAll();
-		LOGGER.info("{} {} reports for user '{}'", dryRun ? "Dry run of" : "Scheduling", listOfJobs.size(), userName);
+		LOGGER.info("{} {} reports for user '{}' [INT={}, MS={}, Project={}]",
+				dryRun ? "Dry run of" : "Scheduling",
+				listOfJobs.size(),
+				userName,
+				international,
+				managedService,
+				projectName);
 
 		for (Job job : listOfJobs) {
-			allReportRunnerResults.add(createReportJobAndRunIt(job, userName, authToken, dryRun));
+			if ((international && job.getTags().contains("INT")) || (managedService && job.getTags().contains("MS"))) {
+				AllReportRunnerResult runJob = createReportJobAndRunIt(job, projectName, userName, authToken, dryRun);
+
+				if (runJob != null) {
+					allReportRunnerResults.add(runJob);
+				}
+			}
 		}
 
 		return allReportRunnerResults;
 	}
 
-	private AllReportRunnerResult createReportJobAndRunIt(Job job, String userName, String authToken, boolean dryRun) {
+	private AllReportRunnerResult createReportJobAndRunIt(Job job, String projectName, String userName, String authToken, boolean dryRun) {
 		String jobName = job.getName();
 		Optional<JobRun> jobRun = jobRunRepository.findLastRunByJobName(jobName);
 		JobRun reRunJob;
@@ -53,6 +66,10 @@ public class AllReportRunner {
 
 		checkAndUpdateEclParameterIfBlank(jobName, reRunJob, userName);
 		reRunJob.setAuthToken(authToken);
+
+		if (StringUtils.isNotBlank(projectName)) {
+			reRunJob.setProject(projectName);
+		}
 
 		if (dryRun) {
 			LOGGER.info("Dry run of report job : '{}'", jobName);

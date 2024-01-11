@@ -148,10 +148,13 @@ public class SchedulerController {
 	@ResponseBody
 	public List<AllReportRunnerResult> runAll(
 			HttpServletRequest request,
-			@RequestParam(name= "dryRun", required=false, defaultValue="true") final Boolean dryRun
+			@RequestParam(name= "dryRun", required=false, defaultValue="true") final Boolean dryRun,
+			@RequestParam(name= "international", required=false, defaultValue="true") final Boolean international,
+			@RequestParam(name= "managedService", required=false, defaultValue="true") final Boolean managedService,
+			@RequestParam(name= "project", required=false, defaultValue="") final String project
 	) throws BusinessServiceException {
 		AuthData authData = getAuthData(request);
-		return allReportRunner.runAllReports(dryRun, authData.userName, authData.authToken);
+		return allReportRunner.runAllReports(dryRun, international, managedService, project, authData.userName, authData.authToken);
 	}
 
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
