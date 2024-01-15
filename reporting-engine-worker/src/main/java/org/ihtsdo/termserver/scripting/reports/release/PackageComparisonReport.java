@@ -76,8 +76,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
 
 		// International on prod
-		params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
-		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
+		/*params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");*/
+
+		// International on prod
+		/*params.put(PREV_RELEASE, "international/international_edition_releases/previous/SnomedCT_InternationalRF2_PRODUCTION_20231201T120000Z.zip");
+		params.put(THIS_RELEASE, "international/international_edition_releases/current/SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");*/
 
 		// US Edition Test 1
 		//params.put(PREV_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
@@ -112,11 +116,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(MODULES, "554471000005108");*/
 
 		// BE Extension
-		/*params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/2021-09-10T15:10:46/output-files/SnomedCT_BelgiumExtensionRF2_PRODUCTION_20210915T120000Z.zip");
+		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/2021-09-10T15:10:46/output-files/SnomedCT_BelgiumExtensionRF2_PRODUCTION_20210915T120000Z.zip");
 		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/2022-03-01T17:54:15/output-files/xSnomedCT_BelgiumExtensionRF2_PREPRODUCTION_20220315T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(MODULES, "11000172109");*/
+		params.put(MODULES, "11000172109");
 
 		// NZ Extension
 		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
@@ -327,76 +331,108 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private void outputResults() throws TermServerScriptException {
-		boolean languageRefset = false;
-		Map<TotalsIndex, Integer> langRefsetTotals = new EnumMap<>(TotalsIndex.class);
+		Map<TotalsIndex, Integer> descriptionTotals = new EnumMap<>(TotalsIndex.class);
+		Map<TotalsIndex, Integer> textDefinitionTotals = new EnumMap<>(TotalsIndex.class);
+		Map<TotalsIndex, Integer> languageRefsetTotals = new EnumMap<>(TotalsIndex.class);
 
 		for (TotalsIndex index : TotalsIndex.values()) {
-			langRefsetTotals.put(index, 0);
+			descriptionTotals.put(index, 0);
+			textDefinitionTotals.put(index, 0);
+			languageRefsetTotals.put(index, 0);
 		}
+
+		boolean isDescription = false;
+		boolean isTextDefinition = false;
+		boolean isLanguageRefset = false;
+		boolean isAssociation = false;
+
+		Map<String, Map<TotalsIndex, Integer>> fileTotalsWithoutComparison = new TreeMap<>();
 
 		for (Map.Entry<String, Map<TotalsIndex, Integer>> entry : fileTotals.entrySet()) {
 			String filename = entry.getKey();
-			Map<TotalsIndex, Integer> fileTotals = entry.getValue();
+			Map<TotalsIndex, Integer> fileTotalsEntry = entry.getValue();
 
-			// Output language refset totals
-			if (languageRefset && !filename.contains("der2_cRefset_Language")) {
-				report("Total Language Refsets:", langRefsetTotals, languageSubTotals);
-				languageRefset = false;
+			// Output descriptions totals
+			if (isDescription && !filename.contains("sct2_Description_")) {
+				report("Total Descriptions:", descriptionTotals, totals[TAB_DESCS]);
+				isDescription = false;
 			}
 
-			if (filename.contains("sct2_Concept_")) {
-				report(filename, fileTotals, totals[TAB_CONCEPTS]);
+			// Output text definitions totals
+			if (isTextDefinition && !filename.contains("sct2_TextDefinition_")) {
+				report("Total Text Definitions:", textDefinitionTotals, totals[TAB_TEXT_DEFN]);
+				isTextDefinition = false;
+			}
 
-			} else if (filename.contains("sct2_Description_") || filename.contains("sct2_TextDefinition_")) {
-				int[] statsByLanguage = new int[DATA_WIDTH];
-				Map<String, int[]> stats = descriptionStatsByLanguage.get(filename.contains("sct2_Description_") ? DESCRIPTION : TEXT_DEFINITION);
-				if (stats != null) {
-					statsByLanguage = stats.get(getLanguage(filename));
-				}
-				report(filename, fileTotals, statsByLanguage);
+			// Output language refsets totals
+			if (isLanguageRefset && !filename.contains("der2_cRefset_Language")) {
+				report("Total Language Refsets:", languageRefsetTotals, totals[TAB_LANG]);
+				isLanguageRefset = false;
+			}
 
-			} else if (filename.contains("sct2_Relationship_")) {
-				report(filename, fileTotals, totals[TAB_RELS]);
+			// Output associations totals
+			if (isAssociation && !filename.contains("der2_cRefset_Association")) {
+				report(sumOfTabs(TAB_HIST, TAB_DESC_HIST));
+				isAssociation = false;
+			}
 
-			} else if (filename.contains("sct2_RelationshipConcreteValues_")) {
-				report(filename, fileTotals, totals[TAB_CD]);
-
-			} else if (filename.contains("sct2_sRefset_OWLExpression")) {
-				report(filename, fileTotals, totals[TAB_AXIOMS]);
-
-			} else if (filename.contains("der2_cRefset_AttributeValue")) {
-				report(filename, fileTotals, indicatorSubTotals);
-
-			} else if (filename.contains("der2_cRefset_Association")) {
-				if (filename.contains(SCTID_SE_REFSETID) || filename.contains(SCTID_SP_REFSETID)) {
-					report(filename, fileTotals, null);
-				} else {
-					report(filename, fileTotals, associationSubTotals);
-				}
-
-			} else if (filename.contains("der2_cRefset_Language")) {
-				report(filename, fileTotals, null);
-				if (!languageRefset) {
-					languageRefset = true;
-				}
+			if (filename.contains("sct2_Description_")) {
+				isDescription = true;
+				report(filename, fileTotalsEntry, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
-					langRefsetTotals.compute(index, (k, v) -> v + fileTotals.get(index));
+					descriptionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
+			} else if (filename.contains("sct2_TextDefinition_")) {
+				isTextDefinition = true;
+				report(filename, fileTotalsEntry, null);
+				for (TotalsIndex index : TotalsIndex.values()) {
+					textDefinitionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
+				}
+			} else if (filename.contains("der2_cRefset_Language")) {
+				isLanguageRefset = true;
+				report(filename, fileTotalsEntry, null);
+				for (TotalsIndex index : TotalsIndex.values()) {
+					languageRefsetTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
+				}
+			} else if (filename.contains("sct2_Concept_")) {
+				report(filename, fileTotalsEntry, totals[TAB_CONCEPTS]);
+			} else if (filename.contains("sct2_Relationship_")) {
+				report(filename, fileTotalsEntry, totals[TAB_RELS]);
+			} else if (filename.contains("sct2_RelationshipConcreteValues_")) {
+				report(filename, fileTotalsEntry, totals[TAB_CD]);
+			} else if (filename.contains("sct2_sRefset_OWLExpression")) {
+				report(filename, fileTotalsEntry, totals[TAB_AXIOMS]);
+			} else if (filename.contains("der2_cRefset_AttributeValue")) {
+				report(filename, fileTotalsEntry, sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
+			} else if (filename.contains("der2_cRefset_Association")) {
+				isAssociation = true;
+				report(filename, fileTotalsEntry, null);
 			} else {
-				report(filename, fileTotals, null);
+				fileTotalsWithoutComparison.put(filename, fileTotalsEntry);
 			}
+		}
+
+		for (Map.Entry<String, Map<TotalsIndex, Integer>> entry : fileTotalsWithoutComparison.entrySet()) {
+			report(entry.getKey(), entry.getValue(), null);
 		}
 	}
 
-	private String getLanguage(String filename) {
-		String language = null;
-		if (filename.contains(DASH)) {
-			language = filename.substring(filename.indexOf(DASH)).substring(1, 3);
+	private int[] sumOfTabs(int...tabs) {
+		int[] result = new int[DATA_WIDTH];
+		for (int i = 0; i < DATA_WIDTH; i++) {
+			for (int tab : tabs) {
+				result[i] += totals[tab][i];
+			}
 		}
-		return language;
+		return result;
 	}
 
 	private void report(String filename, Map<TotalsIndex, Integer> fileTotals, int[] scsTotals) throws TermServerScriptException {
+		report(filename, fileTotals);
+		report(scsTotals);
+	}
+
+	private void report(String filename, Map<TotalsIndex, Integer> fileTotals) throws TermServerScriptException {
 		Object[] fileDetails = new Object[TotalsIndex.values().length + 1];
 
 		fileDetails[0] = filename;
@@ -404,7 +440,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			fileDetails[index.ordinal() + 1] = fileTotals.get(index);
 		}
 		report(FILE_COMPARISON_TAB, fileDetails);
+	}
 
+	private void report(int[] scsTotals) throws TermServerScriptException {
 		if (scsTotals != null) {
 			Object[] scsDetails = new Object[TotalsIndex.values().length + 1];
 
@@ -421,12 +459,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 			scsDetails[TotalsIndex.TOTAL.ordinal() + 1] =
 					scsTotals[IDX_NEW] +
-					scsTotals[IDX_CHANGED] +
-					scsTotals[IDX_INACTIVATED] +
-					scsTotals[IDX_REACTIVATED] +
-					scsTotals[IDX_MOVED_MODULE] +
-					scsTotals[IDX_NEW_INACTIVE] +
-					scsTotals[IDX_CHANGED_INACTIVE];
+							scsTotals[IDX_CHANGED] +
+							scsTotals[IDX_INACTIVATED] +
+							scsTotals[IDX_REACTIVATED] +
+							scsTotals[IDX_MOVED_MODULE] +
+							scsTotals[IDX_NEW_INACTIVE] +
+							scsTotals[IDX_CHANGED_INACTIVE];
 
 			report(FILE_COMPARISON_TAB, scsDetails);
 			report(FILE_COMPARISON_TAB, "");
@@ -498,11 +536,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private void process(Path path, String filename) {
-		processFile(path, filename);
-
 		if (filename.contains("der2_cRefset_Association")) {
+			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
- 		}
+ 		} else {
+			processFile(path, filename);
+		}
 	}
 
 	private void processFile(Path path, String filename) {
@@ -581,10 +620,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 			fileTotals.put(filename, totals);
 
-			if (filename.contains("der2_cRefset_Association")) {
-				processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
-			}
-
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing file: " + filename);
 			throw new RuntimeException(e);
@@ -611,7 +646,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					continue;
 				}
 
-				// Start from index = 2 to exclude "<" or ">" and the following space and split into 5 parts:
+				// Start from index = 2 to exclude "<" or ">" and the following space and split into 6 parts:
 				// 0 - id
 				// 1 - effectiveTime
 				// 2 - active
@@ -671,7 +706,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			// Calculate total of all changes
 			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
 
-			fileTotals.put(filename + (refsetIds == null ? "" : " [" + refsetIds.stream().collect(Collectors.joining(",")) + "]"), totals);
+			fileTotals.put(filename + " " + (refsetIds == null ? "[ALL REFSETS]" : "[SEP REFSETS: " + refsetIds.stream().collect(Collectors.joining(",")) + "]"), totals);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing file: " + filename);
