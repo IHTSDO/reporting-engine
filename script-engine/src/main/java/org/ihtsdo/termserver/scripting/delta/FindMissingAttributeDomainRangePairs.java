@@ -4,23 +4,20 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FindMissingAttributeDomainRangePairs.class);
-
     private static final String CONTENT_TYPE_ALL_ID = "723596005";
     private static final String CONTENT_TYPE_ALL_NAME = "All SNOMED CT content";
     private static final String CONTENT_TYPE_PRE_ID = "723594008";
     private static final String CONTENT_TYPE_PRE_NAME = "All precoordinated SNOMED CT content";
+    private static final String CONTENT_TYPE_PRE_NEW_ID = "723593002";
+    private static final String CONTENT_TYPE_PRE_NEW_ID_NAME = "All new precoordinated SNOMED CT content";
     private static final String CONTENT_TYPE_POST_ID = "723595009";
-    private static final String CONTENT_TYPE_POST_NAME = "All postcoordinated SNOMED CT content";
-
+    private static final String CONTENT_TYPE_POST_NAME = " All postcoordinated SNOMED CT content";
     private static final String MRCM_ATTRIBUTE_DOMAIN_REFSET_ID = "723561005";
     private static final String MRCM_ATTRIBUTE_DOMAIN_REFSET_NAME = "MRCM attribute domain international reference set";
     private static final String MRCM_ATTRIBUTE_RANGE_REFSET_ID = "723562003";
@@ -51,116 +48,149 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
 
     public void postInit() throws TermServerScriptException {
         String[] columnHeadings = new String[]{
-                "Concept Id, Content Type, Domain, Range, Pair found",
-                "Concept Id, Content Type, Domain, Range, Pair found",
-                "Concept Id, Content Type, Domain, Range, Pair found"
+                "Item, Count, Note",
+                "Range Id, Range Content Type, Attribute Id, Attribute Content Type, Solution",
+                "Attribute Id, Attribute Content Type, Solution"
         };
 
         String[] tabNames = new String[]{
-                "All",
-                "Pre",
-                "Post"
+                "Overview",
+                "Ranges greater than Attributes",
+                "Attributes without Ranges"
         };
 
         super.postInit(tabNames, columnHeadings, false);
     }
 
-    private void process() throws Exception {
-        // Collect AttributeDomains
-        List<RefsetMember> membersDomain = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_DOMAIN_REFSET_ID, MRCM_ATTRIBUTE_DOMAIN_REFSET_NAME);
-        List<RefsetMember> membersDomainFilteredByContentAll = filterReferenceSetMembers(membersDomain, CONTENT_TYPE_ALL_ID, CONTENT_TYPE_ALL_NAME);
-        List<RefsetMember> membersDomainFilteredByContentPre = filterReferenceSetMembers(membersDomain, CONTENT_TYPE_PRE_ID, CONTENT_TYPE_PRE_NAME);
-        List<RefsetMember> membersDomainFilteredByContentPost = filterReferenceSetMembers(membersDomain, CONTENT_TYPE_POST_ID, CONTENT_TYPE_POST_NAME);
+    private void process() throws TermServerScriptException {
+        List<RefsetMember> ranges = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_RANGE_REFSET_ID);
+        List<RefsetMember> attributes = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_DOMAIN_REFSET_ID);
 
-        // Collect AttributeRanges
-        List<RefsetMember> membersRange = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_RANGE_REFSET_ID, MRCM_ATTRIBUTE_RANGE_REFSET_NAME);
-        List<RefsetMember> membersRangeFilteredByContentAll = filterReferenceSetMembers(membersRange, CONTENT_TYPE_ALL_ID, CONTENT_TYPE_ALL_NAME);
-        List<RefsetMember> membersRangeFilteredByContentPre = filterReferenceSetMembers(membersRange, CONTENT_TYPE_PRE_ID, CONTENT_TYPE_PRE_NAME);
-        List<RefsetMember> membersRangeFilteredByContentPost = filterReferenceSetMembers(membersRange, CONTENT_TYPE_POST_ID, CONTENT_TYPE_POST_NAME);
+        List<RefsetMember> rangesActive = new ArrayList<>();
+        List<RefsetMember> rangesInactive = new ArrayList<>();
+        List<RefsetMember> rangesWithoutAttributes = new ArrayList<>();
+        for (RefsetMember range : ranges) {
+            if (range.isActive()) {
+                rangesActive.add(range);
+            } else {
+                rangesInactive.add(range);
+            }
+        }
 
-        // Merge collections into single map. Map ReferenceSetMembers by referencedComponentId
-        Map<String, List<RefsetMember>> referenceSetMembersByReferencedComponentId = mapReferenceSetMembersByReferencedComponentId(
-                membersDomainFilteredByContentAll,
-                membersDomainFilteredByContentPre,
-                membersDomainFilteredByContentPost,
-                membersRangeFilteredByContentAll,
-                membersRangeFilteredByContentPre,
-                membersRangeFilteredByContentPost
-        );
+        List<RefsetMember> attributesActive = new ArrayList<>();
+        List<RefsetMember> attributesInactive = new ArrayList<>();
+        for (RefsetMember attribute : attributes) {
+            if (attribute.isActive()) {
+                attributesActive.add(attribute);
+            } else {
+                attributesInactive.add(attribute);
+            }
+        }
 
-        // Report on mismatching levels
-        reportDifferences(0, referenceSetMembersByReferencedComponentId, CONTENT_TYPE_ALL_ID, CONTENT_TYPE_ALL_NAME);
-        reportDifferences(1, referenceSetMembersByReferencedComponentId, CONTENT_TYPE_PRE_ID, CONTENT_TYPE_PRE_NAME);
-        reportDifferences(2, referenceSetMembersByReferencedComponentId, CONTENT_TYPE_POST_ID, CONTENT_TYPE_POST_NAME);
+        int rangesGreaterThanAttributes = 0;
+        int attributesWithoutRanges = 0;
+        int suggestions = 0;
+
+        for (RefsetMember range : rangesActive) {
+            boolean attributeFound = false;
+
+            for (RefsetMember attribute : attributesActive) {
+                boolean matchReferencedComponentId = Objects.equals(attribute.getReferencedComponentId(), range.getReferencedComponentId());
+                boolean matchContentTypeId = Objects.equals(attribute.getField("contentTypeId"), range.getField("contentTypeId"));
+
+                // Match
+                if (matchReferencedComponentId && matchContentTypeId) {
+                    attributeFound = true;
+                    continue;
+                }
+
+                // Match, but requires scope change
+                if (matchReferencedComponentId && !matchContentTypeId) {
+                    attributeFound = true;
+
+                    int attributeScore = getScore(attribute.getField("contentTypeId"));
+                    int rangeScore = getScore(range.getField("contentTypeId"));
+                    if (rangeScore > attributeScore) {
+                        suggestions = suggestions + 1;
+                        rangesGreaterThanAttributes = rangesGreaterThanAttributes + 1;
+                        report(1, range.getMemberId(), asContentType(range.getField("contentTypeId")), attribute.getMemberId(), asContentType(attribute.getField("contentTypeId")), "Change contentTypeId of Range to match Attribute");
+                    }
+                }
+            }
+
+            if (!attributeFound) {
+                rangesWithoutAttributes.add(range);
+            }
+        }
+
+        for (RefsetMember attribute : attributes) {
+            boolean rangeFound = false;
+            for (RefsetMember range : ranges) {
+                boolean matchReferencedComponentId = Objects.equals(attribute.getReferencedComponentId(), range.getReferencedComponentId());
+                if (matchReferencedComponentId) {
+                    rangeFound = true;
+                    break;
+                }
+            }
+
+            if (!rangeFound) {
+                suggestions = suggestions + 1;
+                attributesWithoutRanges = attributesWithoutRanges + 1;
+                report(2, attribute.getMemberId(), asContentType(attribute.getField("contentTypeId")), "Create Attribute Range for content type " + asContentType(attribute.getField("contentTypeId")));
+            }
+        }
+
+        report(0, "Attribute Ranges", ranges.size());
+        report(0, "Attribute Ranges (active)", rangesActive.size());
+        report(0, "Attribute Ranges (inactive)", rangesInactive.size());
+        report(0, "");
+
+        report(0, "Attribute Domains", attributes.size());
+        report(0, "Attribute Domains (active)", attributesActive.size());
+        report(0, "Attribute Domains (inactive)", attributesInactive.size());
+        report(0, "");
+
+        report(0, "Ranges greater than Attributes", rangesGreaterThanAttributes, "The Attribute Range has a greater scope (i.e. contentTypeId) than its corresponding Attribute Domain.");
+        report(0, "Ranges without Attributes", rangesWithoutAttributes.size(), "The Attribute Range does not have any corresponding Attribute Domains.");
+        report(0, "Attributes without Ranges", attributesWithoutRanges, "The Attribute Domain does not have any corresponding Attribute Ranges.");
+        report(0, "Suggested fixes", suggestions, "Suggestions on how to fix content.");
+        report(0, "");
     }
 
     private void validateScriptArguments() throws TermServerScriptException {
         // Verify branches exist
-        getBranchOrThrow(BRANCH);
-    }
-
-    private Branch getBranchOrThrow(String branchPath) throws TermServerScriptException {
-        Branch branch = tsClient.getBranch(branchPath);
-        if (branch == null) {
-            throw new TermServerScriptException(String.format("Cannot find branch with path '%s'.", branchPath));
+        if (BRANCH == null || BRANCH.isBlank()) {
+            throw new TermServerScriptException("No branch path given.");
         }
 
-        return branch;
+        Branch branch = tsClient.getBranch(BRANCH);
+        if (branch == null) {
+            throw new TermServerScriptException(String.format("Cannot find branch with path '%s'.", BRANCH));
+        }
     }
 
-    private List<RefsetMember> fetchReferenceSetMembers(String branch, String referenceSetId, String referenceSetName) {
-        LOGGER.info("Fetching all ReferenceSetMembers in {} |{}|.", referenceSetId, referenceSetName);
-
+    private List<RefsetMember> fetchReferenceSetMembers(String branch, String referenceSetId) {
         return tsClient.getMembersByReferenceSet(branch, referenceSetId);
     }
 
-    private List<RefsetMember> filterReferenceSetMembers(List<RefsetMember> refsetMembers, String contentTypeId, String contentTypeName) {
-        LOGGER.info("Filtering ReferenceSetMembers that do not have contentTypeId matching {} |{}|.", contentTypeId, contentTypeName);
-        List<RefsetMember> refsetMembersFiltered = new ArrayList<>();
-        for (RefsetMember refsetMember : refsetMembers) {
-            if (contentTypeId.equals(refsetMember.getField("contentTypeId"))) {
-                refsetMembersFiltered.add(refsetMember);
-            }
-        }
-
-        return refsetMembersFiltered;
+    // Arbitrary ranking to show whether a range has a greater scope than it's corresponding attribute
+    private int getScore(String contentTypeId) {
+        return switch (contentTypeId) {
+            case CONTENT_TYPE_ALL_ID -> 3;
+            case CONTENT_TYPE_POST_ID -> 2;
+            case CONTENT_TYPE_PRE_ID -> 1;
+            case CONTENT_TYPE_PRE_NEW_ID -> 0;
+            default -> throw new IllegalArgumentException("ContentTypeId " + contentTypeId + " not recognised.");
+        };
     }
 
-    private Map<String, List<RefsetMember>> mapReferenceSetMembersByReferencedComponentId(List<RefsetMember>... refsetMembers) {
-        Map<String, List<RefsetMember>> map = new HashMap<>();
-        for (List<RefsetMember> refsetMemberList : refsetMembers) {
-            for (RefsetMember refsetMember : refsetMemberList) {
-                List<RefsetMember> value = map.get(refsetMember.getReferencedComponentId());
-                if (value == null) {
-                    value = new ArrayList<>();
-                }
-
-                value.add(refsetMember);
-                map.put(refsetMember.getReferencedComponentId(), value);
-            }
-        }
-
-        return map;
-    }
-
-    private void reportDifferences(int reportIndex, Map<String, List<RefsetMember>> membersByReferencedComponentId, String contentTypeId, String contentTypeName) throws TermServerScriptException {
-        for (Map.Entry<String, List<RefsetMember>> entrySet : membersByReferencedComponentId.entrySet()) {
-            String referencedComponentId = entrySet.getKey();
-            List<RefsetMember> referenceSetMembers = entrySet.getValue();
-
-            boolean foundDomain = false;
-            boolean foundRange = false;
-            for (RefsetMember referenceSetMember : referenceSetMembers) {
-                if (MRCM_ATTRIBUTE_DOMAIN_REFSET_ID.equals(referenceSetMember.getRefsetId()) && contentTypeId.equals(referenceSetMember.getField("contentTypeId"))) {
-                    foundDomain = true;
-                }
-
-                if (MRCM_ATTRIBUTE_RANGE_REFSET_ID.equals(referenceSetMember.getRefsetId()) && contentTypeId.equals(referenceSetMember.getField("contentTypeId"))) {
-                    foundRange = true;
-                }
-            }
-
-            report(reportIndex, referencedComponentId, contentTypeId + " |" + contentTypeName + "|", foundDomain, foundRange, foundDomain & foundRange);
-        }
+    private String asContentType(String contentTypeId) {
+        return switch (contentTypeId) {
+            case CONTENT_TYPE_ALL_ID -> CONTENT_TYPE_ALL_NAME;
+            case CONTENT_TYPE_POST_ID -> CONTENT_TYPE_POST_NAME;
+            case CONTENT_TYPE_PRE_ID -> CONTENT_TYPE_PRE_NAME;
+            case CONTENT_TYPE_PRE_NEW_ID -> CONTENT_TYPE_PRE_NEW_ID_NAME;
+            default -> throw new IllegalArgumentException("ContentTypeId " + contentTypeId + " not recognised.");
+        };
     }
 }
