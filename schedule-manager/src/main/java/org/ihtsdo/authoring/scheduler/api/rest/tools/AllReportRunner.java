@@ -2,6 +2,7 @@ package org.ihtsdo.authoring.scheduler.api.rest.tools;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRepository;
+import org.ihtsdo.authoring.scheduler.api.repository.JobRunBatchRepository;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRunRepository;
 import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -26,10 +27,12 @@ public class AllReportRunner {
 	private JobRepository jobRepository;
 
 	@Autowired
+	private JobRunBatchRepository jobRunBatchRepository;
+
+	@Autowired
 	private ScheduleService scheduleService;
 
-	public List<AllReportRunnerResult> runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName, String authToken) {
-		List<AllReportRunnerResult> allReportRunnerResults = new ArrayList<>();
+	public JobRunBatch runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName, String authToken) {
 		List<Job> listOfJobs = jobRepository.findAll();
 		LOGGER.info("{} {} reports for user '{}' [INT={}, MS={}, Project={}]",
 				dryRun ? "Dry run of" : "Scheduling",
@@ -39,20 +42,22 @@ public class AllReportRunner {
 				managedService,
 				projectName);
 
+		JobRunBatch runBatch = new JobRunBatch(international, managedService, projectName, userName);
+
+		if (!dryRun) {
+			jobRunBatchRepository.save(runBatch);
+		}
+
 		for (Job job : listOfJobs) {
 			if ((international && job.getTags().contains("INT")) || (managedService && job.getTags().contains("MS"))) {
-				AllReportRunnerResult runJob = createReportJobAndRunIt(job, projectName, userName, authToken, dryRun);
-
-				if (runJob != null) {
-					allReportRunnerResults.add(runJob);
-				}
+				createReportJobAndRunIt(job, runBatch, projectName, userName, authToken, dryRun);
 			}
 		}
 
-		return allReportRunnerResults;
+		return runBatch;
 	}
 
-	private AllReportRunnerResult createReportJobAndRunIt(Job job, String projectName, String userName, String authToken, boolean dryRun) {
+	private void createReportJobAndRunIt(Job job, JobRunBatch runBatch, String projectName, String userName, String authToken, boolean dryRun) {
 		String jobName = job.getName();
 		Optional<JobRun> jobRun = jobRunRepository.findLastRunByJobName(jobName);
 		JobRun reRunJob;
@@ -71,22 +76,24 @@ public class AllReportRunner {
 			reRunJob.setProject(projectName);
 		}
 
+		reRunJob.setBatch(runBatch);
+
 		if (dryRun) {
 			LOGGER.info("Dry run of report job : '{}'", jobName);
-			return new AllReportRunnerResult(jobName);
+			return;
 		}
 
-		return runTheReport(jobName, reRunJob);
+		runTheReport(jobName, reRunJob);
 	}
 
-	private AllReportRunnerResult runTheReport(String jobName, JobRun reRunJob) {
+	private void runTheReport(String jobName, JobRun reRunJob) {
 		try {
 			JobRun result = scheduleService.runJob(reRunJob);
 			LOGGER.info("Scheduling report job : '{}'", jobName);
-			return new AllReportRunnerResult(jobName, JobStatus.Scheduled, result.getId());
+			new AllReportRunnerResult(jobName, JobStatus.Scheduled, result.getId());
 		} catch (BusinessServiceException e) {
 			LOGGER.error("Error running report job : '{}'", jobName);
-			return new AllReportRunnerResult(jobName, JobStatus.Failed, e.getMessage());
+			new AllReportRunnerResult(jobName, JobStatus.Failed, e.getMessage());
 		}
 	}
 

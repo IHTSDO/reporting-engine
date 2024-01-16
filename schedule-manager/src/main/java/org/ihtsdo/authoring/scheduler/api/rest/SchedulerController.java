@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.authoring.scheduler.api.configuration.WebSecurityConfig;
 import org.ihtsdo.authoring.scheduler.api.rest.tools.AllReportRunner;
-import org.ihtsdo.authoring.scheduler.api.rest.tools.AllReportRunnerResult;
+import org.ihtsdo.authoring.scheduler.api.rest.tools.BatchTools;
 import org.ihtsdo.authoring.scheduler.api.service.AccessControlService;
 import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -44,6 +44,9 @@ public class SchedulerController {
 
 	@Autowired
 	private AllReportRunner allReportRunner;
+
+	@Autowired
+	private BatchTools batchTools;
 
 	@Value("${schedule.manager.terminology.server.uri}")
 	String terminologyServerUrl;
@@ -142,11 +145,27 @@ public class SchedulerController {
 		return santise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
 	}
 
+	@Operation(summary="List batches")
+	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
+	@RequestMapping(value="/jobs/listbatches")
+	@GetMapping
+	public Iterable<JobRunBatch> listLastBatch(@RequestParam(required=false, defaultValue = "0") final Long number) {
+		return batchTools.getLastNBatches(number);
+	}
+
+	@Operation(summary="Get batch")
+	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
+	@RequestMapping(value="/jobs/batch/{id}")
+	@GetMapping
+	public JobRunBatch getBatch(@PathVariable final Long id) {
+		return batchTools.getBatch(id);
+	}
+
 	@Operation(summary="Run all jobs")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
 	@RequestMapping(value="/jobs/runall", method= RequestMethod.POST)
 	@ResponseBody
-	public List<AllReportRunnerResult> runAll(
+	public JobRunBatch runAll(
 			HttpServletRequest request,
 			@RequestParam(name= "dryRun", required=false, defaultValue="true") final Boolean dryRun,
 			@RequestParam(name= "international", required=false, defaultValue="true") final Boolean international,
