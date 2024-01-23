@@ -12,9 +12,12 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Description extends Component implements ScriptConstants {
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(Description.class);
+
 	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
 
 	@SerializedName(value = "descriptionId", alternate = {"id"})
@@ -364,22 +367,34 @@ public class Description extends Component implements ScriptConstants {
 		if (acceptabilityMap == null) {
 			acceptabilityMap = new HashMap<String, Acceptability> ();
 		}
+
 		acceptabilityMap.put(refsetId, acceptability);
 		
 		if (!isReplacement) {
-			//Also if we're working with RF2 loaded content we need to make the same change to the entries
+			// Also, if we are working with RF2 loaded content, we need to make the same change to the entries.
 			boolean refsetEntrySet = false;
+
 			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
 				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
-				refsetEntrySet = true;
 				l.setDirty();
+				refsetEntrySet = true;
 			}
+
 			//If we've not set it, is there an inactive record we could re-use?
 			if (!refsetEntrySet) {
 				for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.INACTIVE, refsetId)) {
 					l.setActive(true);
 					l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
 					l.setDirty();
+					refsetEntrySet = true;
+				}
+
+				// If we still have not found a lang refset entry to reuse, then create one.
+				if (!refsetEntrySet) {
+                    LangRefsetEntry newLangRefsetEntry = LangRefsetEntry.withDefaults(this, refsetId, SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+					newLangRefsetEntry.setDirty();
+					newLangRefsetEntry.setActive(true);
+					this.getLangRefsetEntries().add(newLangRefsetEntry);
 				}
 			}
 		}
@@ -572,21 +587,22 @@ public class Description extends Component implements ScriptConstants {
 		} else {
 			langRefsetEntries = new ArrayList<>();
 		}
-		
+
 		if (ensureReuse) {
 			if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
-				langRefsetEntries.stream()
-					.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
-				throw new IllegalStateException("Check here, don't want two entries for same refset");
+					langRefsetEntries.stream()
+							.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
+				throw new IllegalStateException("Check here, don't want two entries for same refset, when ensuring reuse");
 			}
 		} else {
 			if (SnomedUtils.isEmpty(lang.getEffectiveTime()) &&
 					langRefsetEntries.stream()
-						.filter(l -> l.isActive())
-						.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
-					throw new IllegalStateException("Check here, don't want two active entries for same refset");
-				}
+							.filter(Component::isActive)
+							.anyMatch(l -> l.getRefsetId().equals(lang.getRefsetId()))) {
+				throw new IllegalStateException("Check here, don't want two active entries for same refset, when not ensuring reuse");
+			}
 		}
+
 		langRefsetEntries.add(lang);
 	}
 
