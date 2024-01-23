@@ -14,9 +14,15 @@ public class RelationshipGroup implements ScriptConstants {
 	List<Concept> issues;
 	
 	public RelationshipGroup clone() {
-		RelationshipGroup clone = new RelationshipGroup(groupId);
+		return clone(groupId);
+	}
+
+	public RelationshipGroup clone(int newGroupId) {
+		RelationshipGroup clone = new RelationshipGroup(newGroupId);
 		for (IRelationship r : relationships) {
-			clone.addRelationship(r.clone());
+			IRelationship rClone = r.clone();
+			rClone.setGroupId(newGroupId);
+			clone.addRelationship(rClone);
 		}
 		return clone;
 	}
