@@ -107,6 +107,8 @@ public interface ScriptConstants extends RF2Constants {
 	
 	static Concept LEFT = new Concept("7771000", "Left (qualifier value)");
 	static Concept RIGHT = new Concept("24028007", "Right (qualifier value)|");
+	static Concept BILATERAL = new Concept("51440002", "Right and left (qualifier value)|");
+
 	
 	//Drug Terms
 	static String ACETAMINOPHEN = "acetaminophen";
