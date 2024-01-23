@@ -1648,9 +1648,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return false;
 		}
 
-		/*if (reportIdx == QUINARY_REPORT && c == null) {
-			debug("here");
-		}*/
+		if (reportIdx == QUINARY_REPORT && c == null) {
+			LOGGER.debug("here");
+		}
+
 		//Have we whiteListed this concept?
 		if (!ignoreWhiteList && c != null && whiteListedConceptIds.contains(c.getId())) {
 			String detailsStr = writeToString(details);
