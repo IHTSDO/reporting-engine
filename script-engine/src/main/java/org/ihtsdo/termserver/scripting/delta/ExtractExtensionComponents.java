@@ -46,12 +46,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Integer conceptsPerArchive = 50;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
+
+	protected boolean containsReplacementFSNs = false;
+	Map<String, String> replacementFSNs = new HashMap<>();
 	
 	Map<Concept, Concept> knownReplacements = new HashMap<>();
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		//ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
@@ -63,9 +67,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "83821000000107"; //UK Composition Module
-			//delta.moduleId = "999000011000000103"; //UK Clinical Extension
+			delta.moduleId = "999000011000000103"; //UK Clinical Extension
 			//delta.moduleId = "57091000202101";  //Norway module for medicines
-			delta.moduleId = "332351000009108"; //Vet Extension
+			//delta.moduleId = "332351000009108"; //Vet Extension
 			//delta.moduleId = "51000202101"; //Norway Module
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
@@ -387,6 +391,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					//Check we're not ending up with a Fully Defined concept with only ISAs
 					report(thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept FD with only ISAs ", thisConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 				}
+				doAdditionalProcessing(thisConcept);
 			} catch (TermServerScriptException e) {
 				report(thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
@@ -395,9 +400,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 	}
 
+	protected void doAdditionalProcessing(Concept c) throws TermServerScriptException {
+		//Override this method in subclasses to do additional processing
+	}
+
 	private boolean switchModule(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
-		
+
 		/*if (c.getConceptId().equals("1255997005")) {
 			LOGGER.debug("Here: " + c);
 		}*/
@@ -470,77 +479,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		boolean subComponentsMoved = false;
-		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			//We're going to skip any non-English Descriptions
-			if (!d.getLang().equals("en")) {
-				continue;
-			}
-			boolean thisDescMoved = false;
-			//Move descriptions if concept doesn't exist in target location, or module id is not target
-			//OR if the concept in the target location doesn't know about this description id.
-			//OR if the description has been inactivated in the new location
-			if (conceptOnTS.equals(NULL_CONCEPT) 
-					|| (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE))
-					|| conceptOnTS.getDescription(d.getId()) == null
-					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
-					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
-				//However, don't move inactive descriptions if they don't already exist at the target location
-				if (!d.isActive() && conceptOnTS.getDescription(d.getId()) == null) {
-					LOGGER.info("Skipping inactive description, not existing in target location: " + d);
-					continue;
-				}
-				
-				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
-					subComponentsMoved = true;
-					thisDescMoved = true;
-				}
-			} else if (conceptOnTS != null && !conceptOnTS.equals(NULL_CONCEPT)){
-				//Is this description already in the target module but not held on the target server?
-				if (conceptOnTS.getDescription(d.getId()) == null) {
-					if (moveDescriptionToTargetModule(d, conceptOnTS)) {
-						subComponentsMoved = true;
-						thisDescMoved = true;
-					}
-				}
-			}
-			
-			if (thisDescMoved && !conceptOnTS.equals(NULL_CONCEPT)) {
-				//Do we need to demote existing content to make way for the new?
-				if (d.getType().equals(DescriptionType.FSN)) {
-					String existingFsnId = conceptOnTS.getFSNDescription().getId();
-					Description loadedFSN = c.getDescription(existingFsnId);
-					if (loadedFSN != null && !existingFsnId.equals(loadedFSN.getId())) {
-						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
-						setDescriptionAndLangRefModule(loadedFSN);
-						loadedFSN.setActive(false, true); //Force dirty flag
-						subComponentsMoved = true;
-					}
-				} else if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
-					String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
-					Description loadedPT = c.getDescription(existingPtId);
-					if (loadedPT != null && !existingPtId.equals(loadedPT.getId())) {
-						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
-						setDescriptionAndLangRefModule(loadedPT);
-						loadedPT.setActive(true); //Will only mark dirty if not already active
-						//Only demote to US acceptable if currently preferred in US
-						if (loadedPT.isPreferred(US_ENG_LANG_REFSET)) {
-							loadedPT.setAcceptability(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-						}
-						
-						//Only demote to GB acceptable if currently preferred in GB
-						if (loadedPT.isPreferred(GB_ENG_LANG_REFSET)) {
-							loadedPT.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-						}
-						//The local copy may already be acceptable, so mark as dirty to force this state to TS
-						loadedPT.setDirty(ENGLISH_DIALECTS);
-						subComponentsMoved = true;
-					}
-				}
-
-			}
+		if (containsReplacementFSNs) {
+			replaceFsnInTransit(c);
+			subComponentsMoved = true;
+		} else {
+			subComponentsMoved = moveDescriptions(c, conceptOnTS, componentsToProcess);
 		}
-
-		validatePreferredTermsInLanguageRefsets(c);
 
 		boolean relationshipMoved = false;
 		boolean relationshipAlreadyMoved = false;
@@ -601,6 +545,91 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		return true;
+	}
+
+	private void replaceFsnInTransit(Concept c) {
+		List<Description> replacementTerms = new ArrayList<>();
+		String fsnTern = replacementFSNs.get(c.getId());
+		Description fsn = Description.withDefaults(fsnTern, DescriptionType.FSN, Acceptability.PREFERRED);
+
+		String ptTerm = SnomedUtils.deconstructFSN(fsnTern)[0];
+		Description pt = Description.withDefaults(ptTerm, DescriptionType.SYNONYM, Acceptability.PREFERRED);
+
+		c.setDescriptions(replacementTerms);
+	}
+
+	private boolean moveDescriptions(Concept c, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
+		boolean subComponentsMoved = false;
+		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
+			//We're going to skip any non-English Descriptions
+			if (!d.getLang().equals("en")) {
+				continue;
+			}
+			boolean thisDescMoved = false;
+			//Move descriptions if concept doesn't exist in target location, or module id is not target
+			//OR if the concept in the target location doesn't know about this description id.
+			//OR if the description has been inactivated in the new location
+			if (conceptOnTS.equals(NULL_CONCEPT)
+					|| (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE))
+					|| conceptOnTS.getDescription(d.getId()) == null
+					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
+					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
+				//However, don't move inactive descriptions if they don't already exist at the target location
+				if (!d.isActive() && conceptOnTS.getDescription(d.getId()) == null) {
+					LOGGER.info("Skipping inactive description, not existing in target location: " + d);
+					continue;
+				}
+
+				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
+					subComponentsMoved = true;
+					thisDescMoved = true;
+				}
+			} else if (conceptOnTS != null && !conceptOnTS.equals(NULL_CONCEPT)){
+				//Is this description already in the target module but not held on the target server?
+				if (conceptOnTS.getDescription(d.getId()) == null) {
+					if (moveDescriptionToTargetModule(d, conceptOnTS)) {
+						subComponentsMoved = true;
+						thisDescMoved = true;
+					}
+				}
+			}
+
+			if (thisDescMoved && !conceptOnTS.equals(NULL_CONCEPT)) {
+				//Do we need to demote existing content to make way for the new?
+				if (d.getType().equals(DescriptionType.FSN)) {
+					String existingFsnId = conceptOnTS.getFSNDescription().getId();
+					Description loadedFSN = c.getDescription(existingFsnId);
+					if (loadedFSN != null && !existingFsnId.equals(loadedFSN.getId())) {
+						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
+						setDescriptionAndLangRefModule(loadedFSN);
+						loadedFSN.setActive(false, true); //Force dirty flag
+						subComponentsMoved = true;
+					}
+				} else if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
+					String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
+					Description loadedPT = c.getDescription(existingPtId);
+					if (loadedPT != null && !existingPtId.equals(loadedPT.getId())) {
+						report(c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
+						setDescriptionAndLangRefModule(loadedPT);
+						loadedPT.setActive(true); //Will only mark dirty if not already active
+						//Only demote to US acceptable if currently preferred in US
+						if (loadedPT.isPreferred(US_ENG_LANG_REFSET)) {
+							loadedPT.setAcceptability(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						}
+
+						//Only demote to GB acceptable if currently preferred in GB
+						if (loadedPT.isPreferred(GB_ENG_LANG_REFSET)) {
+							loadedPT.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						}
+						//The local copy may already be acceptable, so mark as dirty to force this state to TS
+						loadedPT.setDirty(ENGLISH_DIALECTS);
+						subComponentsMoved = true;
+					}
+				}
+			}
+		}
+		validatePreferredTermsInLanguageRefsets(c);
+		return subComponentsMoved;
 	}
 
 	private void validatePreferredTermsInLanguageRefsets(Concept c) throws TermServerScriptException {
@@ -894,7 +923,17 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 	}
 
-	private Concept loadConcept(Concept c) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
+		//Do we have an FSN override to deal with?
+		if (containsReplacementFSNs) {
+			if (lineItems.length == 3) {
+				replacementFSNs.put(lineItems[0], lineItems[2]);
+			}
+		}
+		return super.loadLine(lineItems);
+	}
+
+	 private Concept loadConcept(Concept c) throws TermServerScriptException {
 		//Do we already have this concept?
 		Concept loadedConcept = loadedConcepts.get(c.getConceptId());
 		if (loadedConcept == null) {
