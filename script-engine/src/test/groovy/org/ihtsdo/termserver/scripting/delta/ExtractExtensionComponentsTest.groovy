@@ -34,7 +34,7 @@ class ExtractExtensionComponentsTest extends Specification {
             concept.getDescriptions(ActiveState.ACTIVE) >> [description1, description2, description3, description4, description5]
 
         then:
-            new ExtractExtensionComponents().conceptContainsValidTerms(concept) == expectedResult
+            new ExtractExtensionComponents().conceptContainsValidTerms(concept, false) == expectedResult
 
         where:
             testName              | pref1 | lang1              | desc1           | pref2 | lang2              | desc2   | pref3 | lang3              | desc3           | pref4 | lang4              | desc4 | pref5 | lang5              | desc5   || expectedResult

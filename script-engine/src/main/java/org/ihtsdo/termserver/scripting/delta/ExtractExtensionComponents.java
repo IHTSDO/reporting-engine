@@ -34,7 +34,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> allIdentifiedConcepts;
 	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
-	private boolean includeDependencies = true;
+	private boolean includeDependencies = false;
 	
 	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	
@@ -54,8 +54,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		//ExtractExtensionComponents delta = new ExtractExtensionComponents();
-		ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
+		ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		//ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
@@ -71,6 +71,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "57091000202101";  //Norway module for medicines
 			//delta.moduleId = "332351000009108"; //Vet Extension
 			//delta.moduleId = "51000202101"; //Norway Module
+			delta.moduleId="999000011000000103"; // UK Clinical Extension
+			delta.newIdsRequired = false;
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -634,68 +636,57 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private void validatePreferredTermsInLanguageRefsets(Concept c) throws TermServerScriptException {
 		// Ensure that the concept has a preferred term in both en-gb and en-us.
-		if (conceptContainsValidTerms(c)) {
+		if (conceptContainsValidTerms(c, false)) {
 			return;
 		}
 
-		throw new TermServerScriptException("Language refset issue, please investigate.");
-		// Code below is not used, but if we ever see the above exception it can be used as a
-		// starting point to resolve data issue.
+		// Check what happens behind setAcceptability....that may be more for working with the browser representation of the concept.
+		// It may or may not also work through the RF2 rows of LangRefsetEntries.     It's not the Description that is being modified
+		// (although, in fact, it will already be dirty because we changed its module), it's the Language Reference Set entries.
 
-		/*
-			// Check what happens behind setAcceptability....that may be more for working with the browser representation of the concept.
-			// It may or may not also work through the RF2 rows of LangRefsetEntries.     It's not the Description that is being modified
-			// (although, in fact, it will already be dirty because we changed its module), it's the Language Reference Set entries.
-
-			// If it does NOT, then loop through preferred terms in knownMapToCoreLangRefsets and,
-			// where en-gb/en-us langrefset entries exist for the same description, upgrade them from acceptable to preferred.
-			for (String localAuthoritativeRefset : knownMapToCoreLangRefsets) {
-				for (Description description : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (description.getType() != DescriptionType.SYNONYM || !description.isPreferred(localAuthoritativeRefset)) {
-						continue;
-					}
-
-					if (description.isPreferred(GB_ENG_LANG_REFSET)) {
-						description.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
-						description.setDirty();
-					} else if (description.isPreferred(US_ENG_LANG_REFSET)) {
-						description.setAcceptability(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
-						description.setDirty();
-					}
-
-					// And where they do NOT exist, create them.
+		// If it does NOT, then loop through preferred terms in knownMapToCoreLangRefsets and,
+		// where en-gb/en-us langrefset entries exist for the same description, upgrade them from acceptable to preferred.
+		for (String localAuthoritativeRefset : knownMapToCoreLangRefsets) {
+			for (Description description : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (description.getType() != DescriptionType.SYNONYM || !description.isPreferred(localAuthoritativeRefset)) {
+					continue;
 				}
-			}
 
-			// Re-run the check a 2nd time and output a HIGH warning if it has not been possible to determine the preferred terms.
-			if (conceptContainsValidTerms(c)) {
-				return;
+				description.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				description.setAcceptability(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				description.setDirty();
+				report(c, Severity.MEDIUM, ReportActionType.LANG_REFSET_CREATED, "US + GB Acceptability brought into line with : "+localAuthoritativeRefset+" reference set");
 			}
+		}
 
-			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept does not have a preferred term in both en-gb and en-us reference sets");
-		*/
+		// Re-run the check a 2nd time and output a HIGH warning if it has not been possible to determine the preferred terms.
+		if (conceptContainsValidTerms(c, true)) {
+			return;
+		}
+
+		report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept does not have a preferred term in both en-gb and en-us reference sets: " + SnomedUtils.getDescriptionsToString(c));
 	}
 
 	// Both the FSN and one synonym should be marked as preferred in both
 	// the en-gb and en-us language reference sets.
-	private boolean conceptContainsValidTerms(Concept c) {
-		int foundUKsynonym = 0;
-		int foundUSsynonym = 0;
-		int foundUKfsn  = 0;
+	private boolean conceptContainsValidTerms(Concept c, boolean logWarning) {
+		int foundGBPT = 0;
+		int foundUSPT = 0;
+		int foundGBfsn  = 0;
 		int foundUSfsn  = 0;
 
 		for (Description description : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (description.getType() == DescriptionType.SYNONYM) {
 				if (description.isPreferred(GB_ENG_LANG_REFSET)) {
-					foundUKsynonym++;
+					foundGBPT++;
 				}
 
 				if (description.isPreferred(US_ENG_LANG_REFSET)) {
-					foundUSsynonym++;
+					foundUSPT++;
 				}
 			} else if (description.getType() == DescriptionType.FSN) {
 				if (description.isPreferred(GB_ENG_LANG_REFSET)) {
-					foundUKfsn++;
+					foundGBfsn++;
 				}
 
 				if (description.isPreferred(US_ENG_LANG_REFSET)) {
@@ -704,7 +695,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 
-        return foundUKsynonym==1 && foundUKfsn==1 && foundUSsynonym==1 && foundUSfsn==1;
+		if (logWarning && !(foundGBPT == 1 && foundGBfsn == 1 && foundUSPT == 1 && foundUSfsn == 1)) {
+			LOGGER.warn("ConceptID={}, foundUKsynonym={}, foundUKfsn={}, foundUSsynonym={}, foundUSfsn={}",
+					c.getConceptId(), foundGBPT, foundGBfsn, foundUSPT, foundUSfsn);
+		}
+
+		return foundGBPT==1 && foundGBfsn==1 && foundUSPT==1 && foundUSfsn==1;
     }
 
 	private void setDescriptionAndLangRefModule(Description d) {
@@ -1011,15 +1007,14 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 							gbEntry.setEffectiveTime(null);
 							gbEntry.setDirty();
 						} else {
-							//Otherwise clone the US entry to use as GB
-							LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
-							gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
-							d.addAcceptability(gbEntry);
+							//Otherwise, clone the US entry to use as GB
+							LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
+							d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
 						}
 					}
 				}
 			}
-			
+
 			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
 				//if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
 				gbEntry.setModuleId(targetModuleId);
@@ -1027,11 +1022,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				//}
 				//Do we need to copy the GB Langref as the US one?
 				if (!hasUSLangRefset) {
-					LangRefsetEntry usEntry = gbEntry.clone(d.getId(), false);
-					usEntry.setRefsetId(US_ENG_LANG_REFSET);
-					usEntry.setDirty();
-					d.addLangRefsetEntry(usEntry);
+					// This ensures existing langrefset entries are re-used if present, or a new one is created.
+					d.setAcceptability(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(gbEntry.getAcceptabilityId()));
 				}
+
 			}
 		}
 		
