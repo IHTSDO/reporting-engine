@@ -1553,6 +1553,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
 				.map(d -> d.getTerm()).collect(Collectors.joining(",\n"));
 	}
+
+	public static String getDescriptionsToString(Concept c) {
+		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+				.map(d -> d.toString()).collect(Collectors.joining(",\n"));
+	}
 	
 	public static String getDescriptions(Concept c, boolean includeDefinitions) {
 		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
