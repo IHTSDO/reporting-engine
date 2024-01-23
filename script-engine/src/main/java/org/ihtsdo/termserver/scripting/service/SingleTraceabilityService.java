@@ -343,8 +343,10 @@ public class SingleTraceabilityService implements TraceabilityService {
 					}
 				}
 			}
-			
-			if (row.details == null) {
+
+			if (StringUtils.isEmpty(row.c)) {
+				LOGGER.warn("Check row - skipping output due to lack of content: " + row);
+			} else if (row.details == null) {
 				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.traceabilityInfo);
 			} else {
 				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.details, row.traceabilityInfo);
