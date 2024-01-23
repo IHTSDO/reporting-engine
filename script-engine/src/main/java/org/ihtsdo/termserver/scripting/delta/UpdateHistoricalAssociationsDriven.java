@@ -53,13 +53,13 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , ",
 				"Issue, Detail",
-				"SCTID, FSN, SemTag, Existing HistAssoc, Lexical Match, Sibling Active, Sibling HistAssoc",
+				"SCTID, FSN, SemTag, Existing HistAssoc, Sibling Lexical Match, Sibling Active, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc"
 		};
 
 		String[] tabNames = new String[]{
 				"Delta Records Created",
 				"Other processing issues",
-				"Additional Concepts"
+				"Additional Inactive Concepts"
 		};
 		postInit(tabNames, columnHeadings, false);
 	}
@@ -227,22 +227,68 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					replacementMap.containsKey(c)) {
 				continue;
 			}
-			//Can we find a sibling for this concept?
-			Concept sibling = findSibling(c);
 			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+
+			//Can we find a sibling for this concept - same text with different prefix?
+			Concept sibling = findSibling(c);
+			String[] siblingData = new String[] {"", "", ""};
 			if (sibling != null) {
-				if (sibling.isActive()) {
-					report(TERTIARY_REPORT, c, assocStr, sibling, "Y");
-				} else {
-					report(TERTIARY_REPORT, c, assocStr, sibling, "N", SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl));
-				}
-			} else {
-				report(TERTIARY_REPORT, c, assocStr);
+				siblingData[0] = sibling.toString();
+				siblingData[1] = sibling.isActive()?"Y":"N";
+				siblingData[2] = SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl);
 			}
+
+			Concept cousin = findCousin(c);
+			String[] cousinData = new String[] {"", "", ""};
+			if (cousin != null) {
+				cousinData[0] = cousin.toString();
+				cousinData[1] = cousin.isActive()?"Y":"N";
+				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl);
+			}
+			report(TERTIARY_REPORT, c, assocStr, siblingData, cousinData);
 		}
 	}
 
+	//A cousin is the same basic FSN, but with a _different_ prefix
 	private Concept findSibling(Concept c) throws TermServerScriptException {
+		String rootFsn = "Unknown";
+		String thisPrefix = "Unknown";
+		for (String targetPrefix : targetPrefixes) {
+			if (c.getFsn().startsWith(targetPrefix)) {
+				rootFsn = c.getFsn().replace(targetPrefix, "").replace("- ", "").trim();
+				rootFsn = SnomedUtils.deconstructFSN(rootFsn)[0];
+				thisPrefix = targetPrefix;
+				break;
+			}
+		}
+
+		for (Concept sibling : gl.getAllConcepts()) {
+			for (Description d : sibling.getDescriptions()) {
+				String thisTerm = d.getTerm();
+				if (d.getType().equals(DescriptionType.FSN)) {
+					thisTerm = SnomedUtils.deconstructFSN(thisTerm, true)[0];
+				}
+				thisTerm = thisTerm.replace("-", "").replaceAll("  ", " ");
+				//Check for all alternative prefixes
+				for (String siblingPrefix : targetPrefixes) {
+					if (siblingPrefix.equals(thisPrefix)) {
+						continue;
+					}
+
+					String targetFsn = siblingPrefix + " " + rootFsn;
+					targetFsn = targetFsn.replace("  ", " ").trim();
+
+					if (targetFsn.equalsIgnoreCase(thisTerm)) {
+						return sibling;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	//A cousin is the same basic FSN, but without any prefix
+	private Concept findCousin(Concept c) throws TermServerScriptException {
 		String targetFsn = "Unknown";
 		for (String targetPrefix : targetPrefixes) {
 			if (c.getFsn().startsWith(targetPrefix)) {
@@ -252,10 +298,10 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			}
 		}
 
-		for (Concept sibling : gl.getAllConcepts()) {
-			for (Description d : sibling.getDescriptions()) {
+		for (Concept cousin : gl.getAllConcepts()) {
+			for (Description d : cousin.getDescriptions()) {
 				if (targetFsn.equalsIgnoreCase(d.getTerm())) {
-					return sibling;
+					return cousin;
 				}
 			}
 		}
