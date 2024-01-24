@@ -23,17 +23,21 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	private static String MAP_CONCEPT = "Map Concept";
 	private static String REVERSE_MAP = "Reverse Map";
 	private static String MAP_TARGET = "mapTarget";
+	private static String EXCLUDE = "Exclude";
 	private static int MAX_CELL_SIZE = 49900;
 	
 	protected Concept mapConcept;
 	protected boolean compact = false;
 	protected boolean reverseMap = false;
+	protected String excludeECL = null;
+	protected Collection<Concept> exclusions = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(MAP_CONCEPT, "447562003 |SNOMED CT to ICD-10 extended map|");
 		params.put(COMPACT, "true");
-		params.put(REVERSE_MAP, "true");
+		params.put(REVERSE_MAP, "false");
+		params.put(EXCLUDE, "<< 129125009 |Procedure with explicit context (situation)|");
 		TermServerReport.run(ListMapEntries.class, args, params);
 	}
 	
@@ -49,10 +53,14 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		mapConcept = gl.getConcept(jobRun.getMandatoryParamValue(MAP_CONCEPT));
 		compact = jobRun.getMandatoryParamBoolean(COMPACT);
 		reverseMap = jobRun.getMandatoryParamBoolean(REVERSE_MAP);
-		
+		excludeECL = jobRun.getParamValue(EXCLUDE);
+		if (!StringUtils.isEmpty(excludeECL)) {
+			exclusions = findConcepts(excludeECL);
+		}
+
 		String[] columnHeadings = new String[] {
-				(reverseMap?"Map Target, Count, Concept, RefsetMember" : "SCTID, FSN, MAP"), 
-				"SCTID, FSN, Refset Member"};
+				(reverseMap?"Map Target, Count, Concept, RefsetMember" : "SCTID, FSN, SemTag, MapTarget, RefsetMember"),
+				"SCTID, FSN, SemTag, Refset Member"};
 		String[] tabNames = new String[] {
 				"Map",
 				"No Map Target"};
@@ -70,7 +78,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
-				.withName("List selected concepts with preferred terms")
+				.withName("List all Map Entries")
 				.withDescription("This report lists map entries for the specified map.  Optionally concise (one row per entry) and optionally reversed, where the map target is the left hand column.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
@@ -120,6 +128,9 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		LOGGER.info("Generating reverse map");
 		Map<String, List<RefsetMember>> reverseMap = new TreeMap<>();
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
+			if (exclusions.contains(c)) {
+				continue;
+			}
 			for (RefsetMember rm : c.getOtherRefsetMembers()) {
 				if (rm.isActive() && rm.getRefsetId().equals(mapConcept.getId())) {
 					String mapTarget = rm.getField(MAP_TARGET);
@@ -142,6 +153,9 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 
 	private void reportMap() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
+			if (exclusions.contains(c)) {
+				continue;
+			}
 			for (RefsetMember rm : c.getOtherRefsetMembers()) {
 				if (rm.isActive() && rm.getRefsetId().equals(mapConcept.getId())) {
 					report(c, rm.getField(MAP_TARGET), rm);
