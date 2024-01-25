@@ -72,7 +72,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		
 		if (!successfulLaterlization) {
 			String allBodyStructures = getBodyStructureStrs(original).stream().collect(Collectors.joining(", "));
-			throw new TermServerScriptException("Failed to lateralize FSN for " + original + " with laterality " + laterality + " and body structures " + allBodyStructures);
+			throw new TermServerScriptException("Failed to lateralize FSN for " + original + " with laterality " + laterality + " and body structure(s) " + allBodyStructures);
 		}
         normalizeDescriptions(clone, laterality);
 	}
@@ -94,11 +94,14 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		}
     }
 
-    private List<String> getBodyStructureStrs(Concept original) throws TermServerScriptException {
-		List<String> bodyStructureStrs = new ArrayList<>();
+    private Set<String> getBodyStructureStrs(Concept original) throws TermServerScriptException {
+		Set<String> bodyStructureStrs = new HashSet<>();
 		for (RelationshipGroup g : original.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 			for (Relationship r : g.getRelationships()) {
 				if (isBodyStructure(r.getTarget())) {
+					for (Description d : r.getTarget().getDescriptions(ActiveState.ACTIVE, List.of(DescriptionType.SYNONYM))) {
+						bodyStructureStrs.add(d.getTerm().toLowerCase());
+					}
 					bodyStructureStrs.add(r.getTarget().getPreferredSynonym().toLowerCase());
 				}
 			}
@@ -116,9 +119,10 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		if (unlateralizedFsn.startsWith("Structure of ")) {
 			String lateralizedFsn = unlateralizedFsn.replace("Structure of ", "Structure of " + lateralityStr + " ");
 			lateralizedBodyStructure = findBodyStructureWithFsn(lateralizedFsn);
-			if (lateralizedBodyStructure == null) {
-				lateralizedBodyStructure = findLateralizedCounterpartExhaustive(unlaterlizedConcept, lateralityStr);
-			}
+		}
+
+		if (lateralizedBodyStructure == null) {
+			lateralizedBodyStructure = findLateralizedCounterpartExhaustive(unlaterlizedConcept, lateralityStr);
 		}
 		return lateralizedBodyStructure;
 	}
@@ -128,7 +132,9 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		String unlateralizedFsn = unlaterlizedConcept.getFsn();
 		Concept lateralizedBodyStructure = null;
 		String[] fsnParts = unlateralizedFsn.split(" ");
-		for (int position = 0; position < fsnParts.length; position++) {
+
+		//Miss out the last two parts - not going to lateralize the semantic tag!
+		for (int position = 0; position < fsnParts.length -2; position++) {
 			String[] fsnPartsCopy = fsnParts.clone();
 			if (position == 0) {
 				fsnPartsCopy[position] = StringUtils.capitalizeFirstLetter(lateralityStr) + " " + StringUtils.decapitalizeFirstLetter(fsnPartsCopy[position]);
@@ -142,6 +148,20 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			}
 		}
 
+		//Now it might be that the text of the laterlized structure is different from that of the unlateralized structure
+		//For example, 955009 |Bronchial structure| is lateralized to 736637009 |Structure of left bronchus|
+		List<Concept> lateralizedChildren = new ArrayList<>();
+		for (Concept child : unlaterlizedConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (child.getFsn().contains(lateralityStr) || child.getFsn().contains(lateralityStr.toLowerCase())) {
+				lateralizedChildren.add(child);
+			}
+		}
+
+		if (lateralizedChildren.size() > 1) {
+			throw new IllegalArgumentException("Multiple lateralized children found for " + unlaterlizedConcept);
+		} else if (lateralizedChildren.size() == 1) {
+			lateralizedBodyStructure = lateralizedChildren.get(0);
+		}
 		return lateralizedBodyStructure;
 
 	}
