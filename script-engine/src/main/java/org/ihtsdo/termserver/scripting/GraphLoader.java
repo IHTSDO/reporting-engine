@@ -92,53 +92,15 @@ public class GraphLoader implements ScriptConstants {
 	private static void populateKnownConcepts() {
 		//Pre populate known concepts to ensure we only ever refer to one object
 		//Reset concept each time, to avoid contamination from previous runs
-		ROOT_CONCEPT.reset();
-		singleton.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
-		
-		IS_A.reset();
-		singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
-
-		PHARM_BIO_PRODUCT.reset();
-		singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
-		
-		MEDICINAL_PRODUCT.reset();
-		singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
-
-		PHARM_DOSE_FORM.reset();
-		singleton.concepts.put(PHARM_DOSE_FORM.getConceptId(), PHARM_DOSE_FORM);
-		
-		SUBSTANCE.reset();
-		singleton.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
-
-		CLINICAL_FINDING.reset();
-		singleton.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
-		
-		BODY_STRUCTURE.reset();
-		singleton.concepts.put(BODY_STRUCTURE.getConceptId(), BODY_STRUCTURE);
-
-		PROCEDURE.reset();
-		singleton.concepts.put(PROCEDURE.getConceptId(), PROCEDURE);
-		
-		SITN_WITH_EXP_CONTXT.reset();
-		singleton.concepts.put(SITN_WITH_EXP_CONTXT.getConceptId(), SITN_WITH_EXP_CONTXT);
-
-		SPECIMEN.reset();
-		singleton.concepts.put(SPECIMEN.getConceptId(), SPECIMEN);
-		
-		OBSERVABLE_ENTITY.reset();
-		singleton.concepts.put(OBSERVABLE_ENTITY.getConceptId(),OBSERVABLE_ENTITY);
-
-		EVENT.reset();
-		singleton.concepts.put(EVENT.getConceptId(),EVENT);
-		
-		DISEASE.reset();
-		singleton.concepts.put(DISEASE.getConceptId(), DISEASE);
-		
-		DEVICE.reset();
-		singleton.concepts.put(DEVICE.getConceptId(), DEVICE);
-		
-		ORGANISM.reset();
-		singleton.concepts.put(ORGANISM.getConceptId(), ORGANISM);
+		List<Concept> conceptsToReset = List.of(
+				ROOT_CONCEPT, IS_A, PHARM_BIO_PRODUCT, MEDICINAL_PRODUCT, PHARM_DOSE_FORM,
+				SUBSTANCE, CLINICAL_FINDING, BODY_STRUCTURE, PROCEDURE, SITN_WITH_EXP_CONTXT,
+				SPECIMEN, OBSERVABLE_ENTITY, EVENT, DISEASE, DEVICE, ORGANISM,
+				LEFT, RIGHT, BILATERAL);
+		for (Concept c : conceptsToReset) {
+			c.reset();
+			singleton.concepts.put(c.getConceptId(), c);
+		}
 	}
 
 	public Collection <Concept> getAllConcepts() {

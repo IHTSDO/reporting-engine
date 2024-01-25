@@ -54,8 +54,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		ExtractExtensionComponents delta = new ExtractExtensionComponents();
-		//ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
+		//ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
