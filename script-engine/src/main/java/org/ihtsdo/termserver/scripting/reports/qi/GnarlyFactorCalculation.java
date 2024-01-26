@@ -321,7 +321,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	
 	private Concept getAlternative(Concept c) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
-		List<AssociationEntry> assocs = c.getAssociations(ActiveState.ACTIVE);
+		List<AssociationEntry> assocs = c.getAssociationEntries(ActiveState.ACTIVE);
 		if (assocs.size() > 1 || assocs.size() == 0) {
 			LOGGER.warn ( c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept." );
 			return null;

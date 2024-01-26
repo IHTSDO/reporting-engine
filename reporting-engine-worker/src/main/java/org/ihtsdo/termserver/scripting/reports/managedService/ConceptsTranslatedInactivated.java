@@ -86,7 +86,7 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 			boolean reported = false;
 			InactivationIndicator i = c.getInactivationIndicator();
 			String translations = getTranslations(c);
-			for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE, true)) {
+			for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
 				String assocType = SnomedUtils.getAssociationType(a);
 				Concept assocValue = gl.getConcept(a.getTargetComponentId());
 				String assocTranslations = getTranslations(assocValue);

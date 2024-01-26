@@ -1048,18 +1048,18 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return associationEntries;
 	}
 	
-	public List<AssociationEntry> getAssociations(ActiveState activeState) {
-		return getAssociations(activeState, false); //All associations by default
+	public List<AssociationEntry> getAssociationEntries(ActiveState activeState) {
+		return getAssociationEntries(activeState, false); //All associations by default
 	}
 	
-	public List<AssociationEntry> getAssociations(ActiveState activeState, String refsetId) {
+	public List<AssociationEntry> getAssociationEntries(ActiveState activeState, String refsetId) {
 		return getAssociationEntries().stream()
 				.filter(a -> a.hasActiveState(activeState))
 				.filter(a -> a.getRefsetId().contentEquals(refsetId))
 				.collect(Collectors.toList());
 	}
 
-	public List<AssociationEntry> getAssociations(ActiveState activeState, boolean historicalAssociationsOnly) {
+	public List<AssociationEntry> getAssociationEntries(ActiveState activeState, boolean historicalAssociationsOnly) {
 		return getAssociationEntries().stream()
 				.filter(a -> a.hasActiveState(activeState))
 				.filter(a -> !historicalAssociationsOnly || Script.HISTORICAL_REFSETS.contains(a.getRefsetId()))
