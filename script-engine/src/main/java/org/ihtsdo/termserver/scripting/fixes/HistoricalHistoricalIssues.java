@@ -85,7 +85,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements ScriptConsta
 		} else {
 			String refsetId = "";
 			boolean wasaComboDetected = loadedConcept.getAssociationTargets().isWasACombo();
-			List<AssociationEntry> assocs = c.getAssociations(ActiveState.ACTIVE, true);  //Historical associations only!
+			List<AssociationEntry> assocs = c.getAssociationEntries(ActiveState.ACTIVE, true);  //Historical associations only!
 			for (AssociationEntry h : assocs) {
 				//If this is a WAS A as part of a combination with other indicators, remove it
 				if (h.getRefsetId().equals(SCTID_ASSOC_WAS_A_REFSETID) && wasaComboDetected) {

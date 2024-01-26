@@ -420,7 +420,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 
 	private Concept getAlternative(Task t, Concept c) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
-		List<AssociationEntry> assocs = c.getAssociations(ActiveState.ACTIVE);
+		List<AssociationEntry> assocs = c.getAssociationEntries(ActiveState.ACTIVE);
 		if (assocs.size() > 1 || assocs.size() == 0) {
 			String msg = c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept.";
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);

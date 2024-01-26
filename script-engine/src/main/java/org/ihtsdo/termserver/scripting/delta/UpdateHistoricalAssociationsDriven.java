@@ -53,7 +53,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , ",
 				"Issue, Detail",
-				"SCTID, FSN, SemTag, Existing HistAssoc, Sibling Lexical Match, Sibling Active, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc"
+				"SCTID, FSN, SemTag, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc"
 		};
 
 		String[] tabNames = new String[]{
@@ -235,7 +235,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			if (sibling != null) {
 				siblingData[0] = sibling.toString();
 				siblingData[1] = sibling.isActive()?"Y":"N";
-				siblingData[2] = SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl);
+				siblingData[2] = SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl, true);
 			}
 
 			Concept cousin = findCousin(c);
@@ -243,7 +243,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			if (cousin != null) {
 				cousinData[0] = cousin.toString();
 				cousinData[1] = cousin.isActive()?"Y":"N";
-				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl);
+				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl, true);
 			}
 			report(TERTIARY_REPORT, c, assocStr, siblingData, cousinData);
 		}

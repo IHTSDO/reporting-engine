@@ -71,7 +71,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 		for (Concept c : scopeAndSort(gl.getAllConcepts())) {
 			boolean reported = false;
 			InactivationIndicator i = c.getInactivationIndicator();
-			for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE, true)) {
+			for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
 				String assocType = SnomedUtils.getAssociationType(a);
 				Concept assocValue = gl.getConcept(a.getTargetComponentId());
 				report (c, i, assocType, assocValue);

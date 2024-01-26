@@ -9,7 +9,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
@@ -107,7 +106,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 		
 		//or having some indicator other than NCEP with no historical associations
 		if (c.getInactivationIndicator() != null && !c.getInactivationIndicator().equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY) &&
-				c.getAssociations(ActiveState.ACTIVE, true).size() == 0) {
+				c.getAssociationEntries(ActiveState.ACTIVE, true).size() == 0) {
 			return true;
 		}
 		

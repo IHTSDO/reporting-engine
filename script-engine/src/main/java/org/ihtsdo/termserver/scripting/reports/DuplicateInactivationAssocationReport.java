@@ -60,7 +60,7 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.BOTH)) {
 				report (c, i.getEffectiveTime(), i);
 			}
-			for (AssociationEntry h : c.getAssociations(ActiveState.BOTH)) {
+			for (AssociationEntry h : c.getAssociationEntries(ActiveState.BOTH)) {
 				report (c, h.getEffectiveTime(), h);
 			}
 			incrementSummaryInformation("Concepts reported");

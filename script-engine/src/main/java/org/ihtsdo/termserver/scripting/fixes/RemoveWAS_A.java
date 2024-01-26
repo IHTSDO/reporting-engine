@@ -158,7 +158,7 @@ public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 	
 	Set<Concept> getWAS_A(Concept c) throws TermServerScriptException {
 		Set<Concept> was_a = new HashSet<>();
-		for (AssociationEntry assoc: c.getAssociations(ActiveState.ACTIVE)) {
+		for (AssociationEntry assoc: c.getAssociationEntries(ActiveState.ACTIVE)) {
 			if (assoc.getRefsetId().equals(SCTID_ASSOC_WAS_A_REFSETID)) {
 				was_a.add(gl.getConcept(assoc.getTargetComponentId()));
 			}

@@ -296,7 +296,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		String msg = "Active concepts with active historical associations";
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.getAssociations(ActiveState.ACTIVE, true).size() > 0) {
+			if (c.getAssociationEntries(ActiveState.ACTIVE, true).size() > 0) {
 				incrementSummaryInformation(projectKey);
 			}
 		}

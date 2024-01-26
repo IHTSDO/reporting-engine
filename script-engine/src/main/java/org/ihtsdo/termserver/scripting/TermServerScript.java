@@ -1503,9 +1503,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected String getPrettyHistoricalAssociation (Concept c) throws TermServerScriptException {
 		String prettyString = "No association specified.";
-		if (c.getAssociations(ActiveState.ACTIVE).size() > 0) {
+		if (c.getAssociationEntries(ActiveState.ACTIVE).size() > 0) {
 			prettyString = " ";
-			for (AssociationEntry assoc : c.getAssociations(ActiveState.ACTIVE)) {
+			for (AssociationEntry assoc : c.getAssociationEntries(ActiveState.ACTIVE)) {
 				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getRefsetId()).getFsn())[0].replace(" association reference set", "");
 				prettyString += " -> ";
 				prettyString += gl.getConcept(assoc.getTargetComponentId());

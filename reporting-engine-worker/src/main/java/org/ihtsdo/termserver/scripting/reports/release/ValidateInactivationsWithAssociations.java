@@ -127,7 +127,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				
 				//Ensure that association target is active.   To ignore legacy issues, both the 
 				//concept AND the target must be legacy
-				for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE, true)) {
+				for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
 					Concept target = gl.getConcept(a.getTargetComponentId(), false, false);
 					if (target == null) {
 						incrementSummaryInformation("Inactive concept association target not a concept");
@@ -297,7 +297,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 	
 	private void validate(Concept c, InactivationIndicatorEntry i, List<AssociationCardinality> associationsWithCardinality, Boolean legacy) throws TermServerScriptException {
-		String data = c.getAssociations(ActiveState.ACTIVE).stream()
+		String data = c.getAssociationEntries(ActiveState.ACTIVE).stream()
 				.map(h->h.toString())
 				.collect(Collectors.joining(",\n"));
 		
@@ -310,7 +310,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			data = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()) + "\n" + data;
 		}
 		
-		String targets = c.getAssociations(ActiveState.ACTIVE).stream()
+		String targets = c.getAssociationEntries(ActiveState.ACTIVE).stream()
 				.map(h-> SnomedUtils.translateAssociation(h.getRefsetId()).toString() + " " + gl.getConceptSafely(h.getTargetComponentId()).toString())
 				.collect(Collectors.joining(",\n"));
 		
@@ -349,7 +349,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		
 		//Special case, we're getting limited inactivations with both SameAs and Was A attributes.  Record stats, but skip
 		if (i.getInactivationReasonId().equals(SCTID_INACT_LIMITED) || i.getInactivationReasonId().equals(SCTID_INACT_MOVED_ELSEWHERE)) {
-			String typesOfAssoc = c.getAssociations(ActiveState.ACTIVE).stream()
+			String typesOfAssoc = c.getAssociationEntries(ActiveState.ACTIVE).stream()
 					.map(h->SnomedUtils.translateAssociation(h.getRefsetId()).toString())
 					.collect(Collectors.joining(", "));
 			typesOfAssoc = typesOfAssoc.isEmpty()? "No associations" : typesOfAssoc;
@@ -358,8 +358,8 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 		
 		//First check cardinality
-		int assocCount = c.getAssociations(ActiveState.ACTIVE, assocId).size();
-		int allAssocCount = c.getAssociations(ActiveState.ACTIVE, true).size();
+		int assocCount = c.getAssociationEntries(ActiveState.ACTIVE, assocId).size();
+		int allAssocCount = c.getAssociationEntries(ActiveState.ACTIVE, true).size();
 		
 		if (assocCount > 0 && assocCount != allAssocCount && mutuallyExclusive) {
 			return inactStr + " inactivation's " + reqAssocStr + " association is mutually exclusive with other associations types.";
@@ -373,7 +373,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			return CARDINALITY_ISSUE;
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
-			for (AssociationEntry h : c.getAssociations(ActiveState.ACTIVE, true)) {
+			for (AssociationEntry h : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
 				String assocStr = SnomedUtils.translateAssociation(h.getRefsetId()).toString();
 				Concept target = gl.getConcept(h.getTargetComponentId());
 				//Only the "MovedTo" historical association should point to a Namespace Concept
