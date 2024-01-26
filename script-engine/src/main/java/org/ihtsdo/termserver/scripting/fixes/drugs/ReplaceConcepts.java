@@ -165,7 +165,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 					parentFind.parents.add(parent);
 				} else {
 					//Can we find a historical association to replace it?
-					List<AssociationEntry> assocs = parent.getAssociations(ActiveState.ACTIVE);
+					List<AssociationEntry> assocs = parent.getAssociationEntries(ActiveState.ACTIVE);
 					if (assocs!= null && assocs.size() > 1) {
 						String assocStr = assocs
 								.stream()

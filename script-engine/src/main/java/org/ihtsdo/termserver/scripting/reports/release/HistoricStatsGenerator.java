@@ -147,7 +147,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	}
 
 	private String getHistAssocTargets(Concept c) {
-		return c.getAssociations(ActiveState.ACTIVE, true)
+		return c.getAssociationEntries(ActiveState.ACTIVE, true)
 				.stream()
 				.map(a -> a.getTargetComponentId())
 				.collect(Collectors.joining(","));
@@ -322,13 +322,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private String[] getHistAssocIds(Concept c) {
 		String[] results = new String[2];
 		
-		results[ACTIVE] = c.getAssociations(ActiveState.ACTIVE)
+		results[ACTIVE] = c.getAssociationEntries(ActiveState.ACTIVE)
 		.stream()
 		.filter(h -> inScope(h))
 		.map(h -> h.getId())
 		.collect(Collectors.joining(","));
 		
-		results[INACTIVE] = c.getAssociations(ActiveState.INACTIVE)
+		results[INACTIVE] = c.getAssociationEntries(ActiveState.INACTIVE)
 		.stream()
 		.filter(h -> inScope(h))
 		.map(h -> h.getId())
