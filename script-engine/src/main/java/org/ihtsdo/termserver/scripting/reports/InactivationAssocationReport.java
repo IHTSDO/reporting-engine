@@ -75,7 +75,7 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 					for (InactivationIndicatorEntry inactivationIndicator : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 						if (inactivationIndicator.getInactivationReasonId().equals(inactivationReasonSctId)) {
 							//Now does the concept have one of our target historical associations?
-							for (AssociationEntry histAssoc : c.getAssociations(ActiveState.ACTIVE)) {
+							for (AssociationEntry histAssoc : c.getAssociationEntries(ActiveState.ACTIVE)) {
 								for (String targetAssocationRefsetId : targetAssocationRefsetIds) {
 									if (histAssoc.getRefsetId().equals(targetAssocationRefsetId)) {
 										report(c,inactivationIndicator, histAssoc);
