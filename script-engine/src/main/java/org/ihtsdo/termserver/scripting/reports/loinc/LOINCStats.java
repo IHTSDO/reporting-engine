@@ -124,7 +124,7 @@ public class LOINCStats extends TermServerReport {
 				increment("Inactivated Expression");
 				
 				//Does the inactive concept have a historical association
-				for (AssociationEntry e : c.getAssociations(ActiveState.ACTIVE)) {
+				for (AssociationEntry e : c.getAssociationEntries(ActiveState.ACTIVE)) {
 					Concept replacement = gl.getConcept(e.getTargetComponentId());
 					if (currentContentMap.containsValue(replacement)) {
 						increment("Inactivated concept has replacement value");

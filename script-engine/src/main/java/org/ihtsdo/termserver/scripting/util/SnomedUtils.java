@@ -713,22 +713,24 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assoc);
 		}
 	}
-	
+
 	public static String prettyPrintHistoricalAssociations(Concept c, GraphLoader gl) throws TermServerScriptException {
-		String associations = "";
+		return prettyPrintHistoricalAssociations(c, gl, false);
+	}
+
+	public static String prettyPrintHistoricalAssociations(Concept c, GraphLoader gl, boolean includeInactivationIndicator) throws TermServerScriptException {
+		String associations = includeInactivationIndicator? c.getInactivationIndicator() + "\n" : "";
 		boolean isFirst = true;
-		for (AssociationEntry assoc : c.getAssociationEntries())  {
-			if (assoc.isActive()) {
-				if (!isFirst) {
-					associations += "\n";
-				} else {
-					isFirst = false;
-				}
-				if (assoc.getRefsetId() == null || assoc.getTargetComponentId() == null) {
-					throw new TermServerScriptException("Malformed historical association encountered : " + assoc);
-				}
-				associations += translateAssociation(assoc.getRefsetId()) + ": " + gl.getConcept(assoc.getTargetComponentId());
+		for (AssociationEntry assoc : c.getAssociationEntries(ActiveState.ACTIVE, true))  {
+			if (!isFirst) {
+				associations += "\n";
+			} else {
+				isFirst = false;
 			}
+			if (assoc.getRefsetId() == null || assoc.getTargetComponentId() == null) {
+				throw new TermServerScriptException("Malformed historical association encountered : " + assoc);
+			}
+			associations += translateAssociation(assoc.getRefsetId()) + ": " + gl.getConcept(assoc.getTargetComponentId());
 		}
 		
 		if (c.getAssociationEntries().isEmpty()) {
@@ -2413,7 +2415,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				}
 			}
 			
-			for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE)) {
+			for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE)) {
 				if (StringUtils.isEmpty(a.getEffectiveTime())) {
 					recentlyTouched.add(c);
 					continue nextConcept;
