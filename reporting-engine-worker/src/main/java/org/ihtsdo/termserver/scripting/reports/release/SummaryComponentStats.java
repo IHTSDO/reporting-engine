@@ -66,21 +66,36 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	protected int[] indicatorSubTotals = new int[DATA_WIDTH];
 
 	private String[] columnHeadings = new String[] {
-			"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, New SD, New P, Total Active, Total, Promoted",
+			// * Concepts
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, New SD, New P, Total Active, Total, Promoted",
+			// * Descriptions
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
-			"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
-			"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
-			"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Concepts Affected, Total Active",
-			"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, New Inactive, Changed, Inactivations Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
-			"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Concepts Affected, Total Active",
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total, Concepts Affected, Total Active",
+			// * Relationships
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+			// * Concrete Rels
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+			// * Axioms
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+			// * LangRefSet
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Concepts Affected",
+			// * Inactivations
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Total Active, Concepts Affected",
+			// * Hist Assoc
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Concepts Affected",
+			// * Text Defn
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
+			// * QI Scope
 			"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
-			"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, New Inactive, Total, Total Active",
+			// * Desc Assoc
+			"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, New Inactive, Total Active, Total",
+			// * Desc CNC
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+			// * Desc Inact
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+			// * Refsets
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
-			" , ,Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
+			// * Desc By Lang
+			" , , Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
 	};
 	private String[] tabNames = new String[] {
 			"Concepts",
@@ -236,7 +251,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 			Datum datum = prevData.get(c.getConceptId());
 			//Is this concept in scope?  Even if its not, some of its components might be.
-			if (c.isActive()) {	
+			if (c.isActive()) {
 				topLevel = SnomedUtils.getHierarchy(gl, c);
 			} else {
 				//Was it active in the previous release?
@@ -248,16 +263,16 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					topLevel = UNKNOWN_CONCEPT;
 				}
 			}
-			
+
 			//Have we seen this hierarchy before?
 			int[][] summaryData = summaryDataMap.get(topLevel);
 			if (summaryData == null) {
 				summaryData = new int[MAX_REPORT_TABS][DATA_WIDTH];
 				summaryDataMap.put(topLevel, summaryData);
 			}
-			
+
 			boolean isNewConcept = datum == null;
-			
+
 			//If the concept is no longer in the target module, we'll count that and ignore the rest
 			if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
 				//Was it in the target module last time?
@@ -267,19 +282,19 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			} else {
 				analyzeConcept(c, topLevel, datum, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 			}
-			
+
 			analyzeDescriptions(c, datum, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
-			
+
 			List<Relationship> normalRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
 					.filter(r -> !r.isConcrete())
 					.collect(Collectors.toList());
-			
+
 			List<Relationship> concreteRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
 					.filter(r -> r.isConcrete())
 					.collect(Collectors.toList());
-			
+
 			//Component changes
 			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
 			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
@@ -294,36 +309,27 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), (datum==null?null:datum.langRefsetIdsInact), summaryData[TAB_LANG], langRefsetEntries);
 		}
 	}
-	
+
 	private void analyzeConcept(Concept c, Concept topLevel, Datum datum, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		if (c.isActive()) {
 			counts[IDX_TOTAL_ACTIVE]++;
-			boolean isSD = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED);
 			if (datum == null) {
 				// No previous data, so this is a new concept
-				if (isSD) {
-					counts[IDX_NEW_SD]++;
-				} else {
+				if (c.isPrimitive()) {
 					counts[IDX_NEW_P]++;
+				} else {
+					counts[IDX_NEW_SD]++;
 				}
 				counts[IDX_NEW]++;
 				counts[IDX_NEW_NEW]++;
 			} else if (!datum.isActive) {
 				//Were we inactive in the last release?  Reactivated if so
 				counts[IDX_REACTIVATED]++;
-			} else {
-				// Should we use the same condition i.e. isChangedSinceLastRelease() as for other components here?
-				// Will affect dependency package components that may not be counted as changed
-				// if their effectiveTime is before the previous release effectiveTime)
-				/*if (isChangedSinceLastRelease(c)) {
-					counts[IDX_CHANGED]++;
-				}*/
-				if (isSD != datum.isSD) {
-					//Active now and not new, and previously new, we must have changed Definition Status
+			} else if (datum.isActive) {
+				if (isChangedSinceLastRelease(c)) {
 					counts[IDX_CHANGED]++;
 				}
 			}
-
 			//Has the concept remained active, but moved into this module?
 			if (datum != null && !datum.moduleId.equals(c.getModuleId())) {
 				counts[IDX_MOVED_MODULE]++;
@@ -335,9 +341,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			} else if (datum.isActive) {
 				//If we had it last time active, then it's been inactivated in this release
 				counts[IDX_INACTIVATED]++;
-				//logger.debug(c.getId() + " - " + topLevel + " - " + counts[IDX_INACTIVATED]);
-				//debugToFile(c, "Inactivated");
-			} else {
+			} else if (!datum.isActive) {
 				if (isChangedSinceLastRelease(c)) {
 					//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
 					counts[IDX_CHANGED_INACTIVE]++;
@@ -345,7 +349,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 		}
 		counts[IDX_TOTAL]++;
-		
+
 		//Check state change for QI tab
 		//Are we in scope for QI?
 		if (inQIScope(topLevel)) {
@@ -363,7 +367,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			} else if (!c.isActive() && hadModel) {
 				qiCounts[IDX_INACTIVATED]++;
 			}
-			
+
 			if (hasModel) {
 				qiCounts[IDX_TOTAL_ACTIVE]++;
 			}
@@ -746,15 +750,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
-				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE)));
+				IDX_INACT_NOT_EQUIVALENT, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED))));
 		});
 		
 		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACTIVATED, IDX_TOTAL_ACTIVE)));
 
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 
 		return sheetFieldsByIndex;
 	}
