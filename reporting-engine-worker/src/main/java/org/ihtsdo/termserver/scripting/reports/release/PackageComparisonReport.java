@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -41,7 +40,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final String LINE_COUNT_FILENAME = "right_files_line_counts.txt";
 	
 	private String[] columnHeadings = new String[] {
-			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, New Effective Time Not Latest, New Inactive, Changed Inactive, Deleted, Total"
+			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Total"
 	};
 
 	private String[] tabNames = new String[] {
@@ -54,7 +53,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		INACTIVATED,
 		REACTIVATED,
 		MOVED_MODULE,
-		NEW_EFFECTIVE_TIME_NOT_LATEST,
+		PROMOTED,
 		NEW_INACTIVE,
 		CHANGED_INACTIVE,
 		DELETED,
@@ -64,49 +63,33 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 
-		// Estonia release
-		/*params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
-		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(MODULES, "11000181102");*/
-
-		// International on dev
-		//params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-06T05:13:11/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
-		//params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-10T04:54:06/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230331T120000Z.zip");
-
-		// International on prod
-		/*params.put(PREV_RELEASE, "international/international_edition_releases/2023-05-17T11:48:57/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
-		params.put(THIS_RELEASE, "international/international_edition_releases/2023-06-14T08:22:16/output-files/SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");*/
-
-		// International on prod
+		// International
 		/*params.put(PREV_RELEASE, "international/international_edition_releases/previous/SnomedCT_InternationalRF2_PRODUCTION_20231201T120000Z.zip");
 		params.put(THIS_RELEASE, "international/international_edition_releases/current/SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");*/
 
-		// US Edition Test 1
-		//params.put(PREV_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
-		//params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-17T15:59:10/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
-
-		// US Edition Test 2
-		//params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
-		//params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
-
-		// US Edition Test 2 with module filter
-		/*params.put(PREV_RELEASE, "us/us_edition_releases/2023-02-20T18:46:58/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230301T120000Z.zip");
-		params.put(THIS_RELEASE, "us/us_edition_releases/2023-08-02T15:53:24/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20230901T120000Z.zip");
-		params.put(MODULES, "731000124108");*/
+		// US Edition
+		/*params.put(THIS_RELEASE, "us/us_edition_releases/current/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20240301T120000Z.zip");
+		params.put(PREV_RELEASE, "us/us_edition_releases/previous/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230901T120000Z.zip");
+		//params.put(MODULES, "731000124108,5991000124107,449080006");*/
 
 		// NL Edition
 		/*params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
 		params.put(THIS_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-07T02:35:31/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
 		params.put(MODULES, "11000146104");*/
 
+		// ES Extension
+		/*params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
+		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
+		params.put(MODULES, "11000181102");*/
+
 		// SE Extension
-		/*params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2022-11-17T18:21:20/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20221130T120000Z.zip");
-		params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-05-19T07:39:38/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20230531T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
-		params.put(MODULES, "45991000052106");*/
+		params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-11-22T17:15:10/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20231130T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230731T120000Z.zip");
+		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-05-19T07:39:38/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20230531T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
+		params.put(MODULES, "45991000052106");
 
 		// DK Extension
 		/*params.put(PREV_RELEASE, "dk/snomed_ct_denmark_extension_releases/2022-09-23T12:02:14/output-files/SnomedCT_ManagedServiceDK_PRODUCTION_DK1000005_20220930T120000Z.zip");
@@ -116,11 +99,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(MODULES, "554471000005108");*/
 
 		// BE Extension
-		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/2021-09-10T15:10:46/output-files/SnomedCT_BelgiumExtensionRF2_PRODUCTION_20210915T120000Z.zip");
+		/*params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/2021-09-10T15:10:46/output-files/SnomedCT_BelgiumExtensionRF2_PRODUCTION_20210915T120000Z.zip");
 		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/2022-03-01T17:54:15/output-files/xSnomedCT_BelgiumExtensionRF2_PREPRODUCTION_20220315T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(MODULES, "11000172109");
+		params.put(MODULES, "11000172109");*/
 
 		// NZ Extension
 		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
@@ -136,12 +119,18 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
 		params.put(MODULES, "11000220105");*/
 
+		// CH Extension
+		/*params.put(THIS_RELEASE, "ch/snomed_ct_switzerland_releases/2023-12-05T08:16:33/output-files/SnomedCT_ManagedServiceCH_PRODUCTION_CH1000195_20231207T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20231101T120000Z.zip");
+		params.put(PREV_RELEASE, "ch/snomed_ct_switzerland_releases/2023-05-25T10:27:16/output-files/SnomedCT_ManagedServiceCH_PRODUCTION_CH1000195_20230607T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
+		params.put(MODULES, "2011000195101");*/
+
 		TermServerReport.run(PackageComparisonReport.class, args, params);
 	}
 
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
-		//ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; // Release Stats
 		previousReleasePath = run.getParamValue(PREV_RELEASE);
 		currentReleasePath = run.getParamValue(THIS_RELEASE);
 		super.init(run);
@@ -298,8 +287,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			// Process content diff files (snapshot files only)
 			try (Stream<Path> stream = Files.list(diffDir)) { //.filter(file -> !Files.isDirectory(file))) {
 				stream
-						.map(file -> getFilename(file))
-						.filter(filename -> matches(filename))
+						.map(this::getFilename)
+						.filter(this::matches)
 						.sorted(String::compareToIgnoreCase)
 						.forEach(filename -> process(diffDir, filename));
 			}
@@ -452,7 +441,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			scsDetails[TotalsIndex.INACTIVATED.ordinal() + 1] = scsTotals[IDX_INACTIVATED];
 			scsDetails[TotalsIndex.REACTIVATED.ordinal() + 1] = scsTotals[IDX_REACTIVATED];
 			scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = scsTotals[IDX_MOVED_MODULE];
-			scsDetails[TotalsIndex.NEW_EFFECTIVE_TIME_NOT_LATEST.ordinal() + 1] = 0; // missing in SCS
+			scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = scsTotals[IDX_PROMOTED];
 			scsDetails[TotalsIndex.NEW_INACTIVE.ordinal() + 1] = scsTotals[IDX_NEW_INACTIVE];
 			scsDetails[TotalsIndex.CHANGED_INACTIVE.ordinal() + 1] = scsTotals[IDX_CHANGED_INACTIVE];
 			scsDetails[TotalsIndex.DELETED.ordinal() + 1] = 0; // missing in SCS
@@ -463,6 +452,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 							scsTotals[IDX_INACTIVATED] +
 							scsTotals[IDX_REACTIVATED] +
 							scsTotals[IDX_MOVED_MODULE] +
+							scsTotals[IDX_PROMOTED] +
 							scsTotals[IDX_NEW_INACTIVE] +
 							scsTotals[IDX_CHANGED_INACTIVE];
 
@@ -539,6 +529,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		if (filename.contains("der2_cRefset_Association")) {
 			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
+		} else if (filename.contains("sct2_Concept_")) {
+			processConceptFile(path, filename);
  		} else {
 			processFile(path, filename);
 		}
@@ -564,21 +556,20 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					continue;
 				}
 
-				// Start from index = 2 to exclude "<" or ">" and the following space and split into 5 parts:
+				// Start from index = 2 to exclude "<" or ">" and the following space and split into parts:
 				// 0 - id
 				// 1 - effectiveTime
 				// 2 - active
-				// 3 - moduleId
-				// 4 - the rest of the line
-				String[] data = line.substring(2).split(FIELD_DELIMITER, 5);
+				// 3 - moduleId, etc.
+				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[IDX_ID];
 				String moduleId = data[IDX_MODULEID];
 
 				switch (ch) {
 					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
 					case LINE_DELETED_INDICATOR:
-						// Previous release entry
 						if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							// Previous release entry
 							deleted.put(key, data);
 						}
 						break;
@@ -586,19 +577,24 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						// Current release entry
 						if (deleted.containsKey(key)) {
 							String[] oldValue = deleted.remove(key);
-							ValuePair valuePair = new ValuePair(oldValue, data);
-							if (valuePair.isInScope(moduleFilter)) {
-								if (valuePair.isInactivated()) {
+
+							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+								ValuePair valuePair = new ValuePair(oldValue, data);
+								if (valuePair.isActive()) {
+									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+										count(totals, TotalsIndex.CHANGED);
+									}
+								} else if (valuePair.isInactive()) {
+									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+										count(totals, TotalsIndex.CHANGED_INACTIVE);
+									}
+								} else if (valuePair.isInactivated()) {
 									count(totals, TotalsIndex.INACTIVATED);
 								} else if (valuePair.isReactivated()) {
 									count(totals, TotalsIndex.REACTIVATED);
-								} else if (valuePair.isActive()) {
-									count(totals, TotalsIndex.CHANGED);
-								} else if (valuePair.isInactive()) {
-									count(totals, TotalsIndex.CHANGED_INACTIVE);
 								}
-							} else if (valuePair.isMovedModule()) {
-								count(totals, TotalsIndex.MOVED_MODULE);
+							} else {
+								//count(totals, TotalsIndex.PROMOTED);
 							}
 						} else if (moduleFilter == null || moduleFilter.contains(moduleId)) {
 							created.put(key, data);
@@ -608,11 +604,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			}
 
 			// Calculate created and deleted totals
-			totals.put(TotalsIndex.NEW, created.values().stream()
-					.filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
-			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream()
-					.filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
-			totals.put(TotalsIndex.NEW_EFFECTIVE_TIME_NOT_LATEST, created.values().stream().filter(data -> !thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
+			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
 			totals.put(TotalsIndex.DELETED, deleted.size());
 
 			// Calculate total of all changes
@@ -646,19 +639,17 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					continue;
 				}
 
-				// Start from index = 2 to exclude "<" or ">" and the following space and split into 6 parts:
+				// Start from index = 2 to exclude "<" or ">" and the following space and split into parts:
 				// 0 - id
 				// 1 - effectiveTime
 				// 2 - active
 				// 3 - moduleId
-				// 4 - refsetId
-				// 5 - the rest of the line
-				String[] data = line.substring(2).split(FIELD_DELIMITER, 6);
+				// 4 - refsetId, etc
+				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[ASSOC_IDX_ID];
 				String moduleId = data[ASSOC_IDX_MODULID];
-				String refsetId = data[ASSOC_IDX_REFSETID];
 
-				if (refsetIds != null && !refsetIds.contains(refsetId)) {
+				if (refsetIds != null && !refsetIds.contains(data[ASSOC_IDX_REFSETID])) {
 					continue;
 				}
 
@@ -674,19 +665,26 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						// Current release entry
 						if (deleted.containsKey(key)) {
 							String[] oldValue = deleted.remove(key);
-							ValuePair valuePair = new ValuePair(oldValue, data);
-							if (valuePair.isInScope(moduleFilter)) {
-								if (valuePair.isInactivated()) {
+
+							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+								ValuePair valuePair = new ValuePair(oldValue, data);
+								if (valuePair.isActive()) {
+									// Changed since last release
+									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+										count(totals, TotalsIndex.CHANGED);
+									}
+								} else if (valuePair.isInactive()) {
+									// Changed since last release
+									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+										count(totals, TotalsIndex.CHANGED_INACTIVE);
+									}
+								} else if (valuePair.isInactivated()) {
 									count(totals, TotalsIndex.INACTIVATED);
 								} else if (valuePair.isReactivated()) {
 									count(totals, TotalsIndex.REACTIVATED);
-								} else if (valuePair.isActive()) {
-									count(totals, TotalsIndex.CHANGED);
-								} else if (valuePair.isInactive()) {
-									count(totals, TotalsIndex.CHANGED_INACTIVE);
 								}
-							} else if (valuePair.isMovedModule()) {
-								count(totals, TotalsIndex.MOVED_MODULE);
+							} else {
+								//count(totals, TotalsIndex.PROMOTED);
 							}
 						} else if (moduleFilter == null || moduleFilter.contains(moduleId)) {
 							created.put(key, data);
@@ -696,17 +694,108 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			}
 
 			// Calculate created and deleted totals
-			totals.put(TotalsIndex.NEW, created.values().stream()
-					.filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
-			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream()
-					.filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE]) && thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
-			totals.put(TotalsIndex.NEW_EFFECTIVE_TIME_NOT_LATEST, created.values().stream().filter(data -> !thisEffectiveTime.equals(data[IDX_EFFECTIVETIME])).toList().size());
+			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
 			totals.put(TotalsIndex.DELETED, deleted.size());
 
 			// Calculate total of all changes
 			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
 
-			fileTotals.put(filename + " " + (refsetIds == null ? "[ALL REFSETS]" : "[SEP REFSETS: " + refsetIds.stream().collect(Collectors.joining(",")) + "]"), totals);
+			fileTotals.put(filename + " " + (refsetIds == null ? "[ALL REFSETS]" : "[SEP REFSETS: " + String.join(",", refsetIds) + "]"), totals);
+
+		} catch (IOException | IndexOutOfBoundsException e) {
+			LOGGER.error("Error processing file: " + filename);
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void processConceptFile(Path path, String filename) {
+		Map<String, String[]> created = new HashMap<>();
+		Map<String, String[]> deleted = new HashMap<>();
+
+		Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
+
+		for (TotalsIndex index : TotalsIndex.values()) {
+			totals.put(index, 0);
+		}
+
+		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				char ch = line.charAt(0);
+
+				if (!(ch == LINE_DELETED_INDICATOR || ch == LINE_CREATED_INDICATOR)) {
+					continue;
+				}
+
+				// Start from index = 2 to exclude "<" or ">" and the following space and split into parts:
+				// 0 - id
+				// 1 - effectiveTime
+				// 2 - active
+				// 3 - moduleId
+				// 4 - definitionStatusId
+				String[] data = line.substring(2).split(FIELD_DELIMITER);
+				String key = data[CON_IDX_ID];
+				String moduleId = data[CON_IDX_MODULID];
+
+				switch (ch) {
+					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
+					case LINE_DELETED_INDICATOR:
+						if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							// Previous release entry
+							deleted.put(key, data);
+						}
+						break;
+					case LINE_CREATED_INDICATOR:
+						// Current release entry
+						if (deleted.containsKey(key)) {
+							String[] oldValue = deleted.remove(key);
+
+							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+								ValuePair valuePair = new ValuePair(oldValue, data);
+								if (valuePair.isActive()) {
+									// Remains active and changed since last release
+									if (valuePair.currentValue[CON_IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+										count(totals, TotalsIndex.CHANGED);
+									}
+								} else if (valuePair.isInactive()) {
+									// Remains inactive and changed since last release
+									if (valuePair.currentValue[CON_IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+										count(totals, TotalsIndex.CHANGED_INACTIVE);
+									}
+								} else if (valuePair.isInactivated()) {
+									// Inactivated
+									count(totals, TotalsIndex.INACTIVATED);
+								} else if (valuePair.isReactivated()) {
+									// Reactivated
+									count(totals, TotalsIndex.REACTIVATED);
+								}
+								// Active and changed module since last release
+								if (valuePair.isActiveMovedModule()) {
+									count(totals, TotalsIndex.MOVED_MODULE);
+								}
+							} else {
+								count(totals, TotalsIndex.PROMOTED);
+							}
+						} else {
+							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+								created.put(key, data);
+							}
+						}
+						break;
+				}
+			}
+
+			// Calculate created and deleted totals
+			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+			totals.put(TotalsIndex.DELETED, deleted.size());
+
+			// Calculate total of all changes
+			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
+
+			fileTotals.put(filename, totals);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing file: " + filename);
@@ -730,13 +819,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			this.currentValue = currentValue;
 		}
 
-		boolean isInScope(List<String> moduleFilter) {
-			return moduleFilter == null ||
-					(moduleFilter.contains(previousValue[IDX_MODULEID]) && moduleFilter.contains(currentValue[IDX_MODULEID]));
-		}
-
-		boolean isMovedModule() {
-			return !previousValue[IDX_MODULEID].equals(currentValue[IDX_MODULEID]);
+		boolean isActiveMovedModule() {
+			return ACTIVE_FLAG.equals(currentValue[IDX_ACTIVE]) && !currentValue[IDX_MODULEID].equals(previousValue[IDX_MODULEID]);
 		}
 
 		boolean isActive() {
@@ -748,14 +832,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 
 		boolean isInactivated() {
-			// Split previous and current value strings into parts (columns) and
-			// compare their second column, i.e. "active" indicator
 			return ACTIVE_FLAG.equals(previousValue[IDX_ACTIVE]) && INACTIVE_FLAG.equals(currentValue[IDX_ACTIVE]);
 		}
 
 		boolean isReactivated() {
-			// Split previous and current value strings into parts (columns) and
-			// compare their second column, i.e. "active" indicator
 			return INACTIVE_FLAG.equals(previousValue[IDX_ACTIVE]) && ACTIVE_FLAG.equals(currentValue[IDX_ACTIVE]);
 		}
 	}
