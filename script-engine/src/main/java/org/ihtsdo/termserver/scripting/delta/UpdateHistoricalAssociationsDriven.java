@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -27,11 +27,13 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	private List<String> targetPrefixes = Arrays.asList(new String[] {"OE ", "CO ", "O/E", "C/O", "Complaining of", "On examination"});
 
-	private List<String> skipConcepts = Arrays.asList(new String[]{"163092009",
-			"163094005",
-			"163096007",
-			"164018003",
-			"275284008",
+	private List<String> manageManually = Arrays.asList(new String[]{
+			"163092009","163094005","163096007","164018003","275284008",
+			"271879001","164075007","162952003","164398007","164346005",
+			"141331007","141369002","141751009","140614001","140514005",
+			"140605006","140761009","141666001","141492001","141849001",
+			"141853004","141870007","141874003","141857003","141864001",
+			"141819003","140962005","163432001"
 	});
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -53,7 +55,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , ",
 				"Issue, Detail",
-				"SCTID, FSN, SemTag, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc"
+				"SCTID, FSN, SemTag, Notes, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc"
 		};
 
 		String[] tabNames = new String[]{
@@ -223,11 +225,20 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				continue;
 			}
 			if (c.isActive() || !inScope(c) ||
-					skipConcepts.contains(c.getId()) ||
+					manageManually.contains(c.getId()) ||
 					replacementMap.containsKey(c)) {
 				continue;
 			}
 			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+			String notes = "";
+			//For 'NOS' concepts, we may pull them into our main processing set
+			if (c.getFsn().contains("NOS")) {
+				notes = checkForProcessInclusionNOS(c);
+			} else if (c.FSN.contains("context-dependent")) {
+				notes = checkForProcessInclusion(c, true);
+			} else if (c.FSN.contains("[")) {
+				notes = checkForProcessInclusion(c, false);
+			}
 
 			//Can we find a sibling for this concept - same text with different prefix?
 			Concept sibling = findSibling(c);
@@ -245,8 +256,73 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				cousinData[1] = cousin.isActive()?"Y":"N";
 				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl, true);
 			}
-			report(TERTIARY_REPORT, c, assocStr, siblingData, cousinData);
+			report(TERTIARY_REPORT, c, notes, assocStr, siblingData, cousinData);
 		}
+	}
+
+	private String checkForProcessInclusionNOS(Concept c) {
+		//Are we already processing this concept?
+		if (replacementMap.containsKey(c)) {
+			return "Already included for processing";
+		}
+		//Do we have one association target or more?
+		List<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
+				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
+				.collect(Collectors.toList());
+
+		UpdateAction action = null;
+		if (assocTargets.size() == 1) {
+			action = new UpdateAction()
+					.withAssociationType(Association.REPLACED_BY)
+					.withInactivationIndicator(InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT)
+					.withReplacements(assocTargets);
+		} else if (assocTargets.size() > 1) {
+			action = new UpdateAction()
+					.withAssociationType(Association.PARTIALLY_EQUIV_TO)
+					.withInactivationIndicator(InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT)
+					.withReplacements(assocTargets);
+		} else {
+			return "Not included for processing due to lack of existing associations";
+		}
+		replacementMap.put(c, action);
+		return "Included for processing - CDC";
+	}
+
+	private String checkForProcessInclusion(Concept c, boolean allowMultipleTargets) {
+		//The CDC here stands for Context Dependent Category
+		//Are we already processing this concept?
+		if (replacementMap.containsKey(c)) {
+			return "Already included for processing";
+		}
+
+		if (!c.getInactivationIndicator().equals(InactivationIndicator.AMBIGUOUS)) {
+			return "Not included for processing - inactivation indicator is not Ambiguous";
+		}
+		//Do we have one association target or more?
+		List<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
+				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
+				.collect(Collectors.toList());
+
+		UpdateAction action = null;
+		if (assocTargets.size() == 1) {
+			action = new UpdateAction()
+					.withAssociationType(Association.REPLACED_BY)
+					.withInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)
+					.withReplacements(assocTargets);
+		} else if (assocTargets.size() > 1) {
+			if (allowMultipleTargets) {
+				action = new UpdateAction()
+						.withAssociationType(Association.PARTIALLY_EQUIV_TO)
+						.withInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)
+						.withReplacements(assocTargets);
+			} else {
+				return "Not included for processing due to multiple existing associations";
+			}
+		} else {
+			return "Not included for processing due to lack of existing associations";
+		}
+		replacementMap.put(c, action);
+		return "Included for processing - NCEP";
 	}
 
 	//A cousin is the same basic FSN, but with a _different_ prefix
@@ -332,6 +408,21 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 		public String toString() {
 			return inactivationIndicator + ": " + type + " " + replacements.stream().map(c -> c.toString()).collect(Collectors.joining(", "));
+		}
+
+		public UpdateAction withInactivationIndicator(InactivationIndicator inactivationIndicator) {
+			this.inactivationIndicator = inactivationIndicator;
+			return this;
+		}
+
+		public UpdateAction withReplacements(List<Concept> replacements) {
+			this.replacements = replacements;
+			return this;
+		}
+
+		public UpdateAction withAssociationType(Association type) {
+			this.type = type;
+			return this;
 		}
 	}
 
