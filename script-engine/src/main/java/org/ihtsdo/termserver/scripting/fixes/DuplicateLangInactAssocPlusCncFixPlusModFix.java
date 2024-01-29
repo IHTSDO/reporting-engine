@@ -413,6 +413,10 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							//and resurrect the previously inactive value instead
 							RefsetMember previousThis = loadPreviousRefsetMember(thisEntry.getId());
 							RefsetMember previousThat = loadPreviousRefsetMember(thatEntry.getId());
+
+							if (previousThis == null || previousThat == null) {
+								throw new TermServerScriptException("Unable to load previous refset member for " + thisEntry + " or " + thatEntry);
+							}
 							
 							//If both have been released, and we've recently made one inactive, then that's as good as it gets.  Skip
 							if (duplicationRecentlyResolved(thisEntry, thatEntry)) {
