@@ -256,9 +256,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				summaryDataMap.put(topLevel, summaryData);
 			}
 			
-			boolean isNewConcept = datum==null;
-			Boolean wasSD = datum==null?null:datum.isSD;
-			Boolean wasActive = datum==null?null:datum.isActive;
+			boolean isNewConcept = datum == null;
 			
 			//If the concept is no longer in the target module, we'll count that and ignore the rest
 			if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
@@ -267,7 +265,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					summaryData[TAB_CONCEPTS][IDX_PROMOTED]++;
 				}
 			} else {
-				analyzeConcept(c, topLevel, datum, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
+				analyzeConcept(c, topLevel, datum, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 			}
 			
 			analyzeDescriptions(c, datum, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
@@ -297,14 +295,12 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 	
-	private void analyzeConcept(Concept c, Concept topLevel, Datum datum, Boolean wasSD, Boolean wasActive, int[] counts, int[] qiCounts) throws TermServerScriptException {
-		//If we have no previous data, then the concept is new
-		boolean conceptIsNew = (wasSD == null);
-		
+	private void analyzeConcept(Concept c, Concept topLevel, Datum datum, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		if (c.isActive()) {
 			counts[IDX_TOTAL_ACTIVE]++;
 			boolean isSD = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED);
-			if (conceptIsNew) {
+			if (datum == null) {
+				// No previous data, so this is a new concept
 				if (isSD) {
 					counts[IDX_NEW_SD]++;
 				} else {
@@ -312,33 +308,41 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				}
 				counts[IDX_NEW]++;
 				counts[IDX_NEW_NEW]++;
-			} else { 
+			} else if (!datum.isActive) {
 				//Were we inactive in the last release?  Reactivated if so
-				if (!wasActive) {
-					counts[IDX_REACTIVATED]++;
-				} else if (isSD != wasSD) {
+				counts[IDX_REACTIVATED]++;
+			} else {
+				// Should we use the same condition i.e. isChangedSinceLastRelease() as for other components here?
+				// Will affect dependency package components that may not be counted as changed
+				// if their effectiveTime is before the previous release effectiveTime)
+				/*if (isChangedSinceLastRelease(c)) {
+					counts[IDX_CHANGED]++;
+				}*/
+				if (isSD != datum.isSD) {
 					//Active now and not new, and previously new, we must have changed Definition Status
 					counts[IDX_CHANGED]++;
 				}
-				
-				//Has the concept remained active, but moved into this module?
-				if (datum != null && !datum.moduleId.equals(c.getModuleId())) {
-					counts[IDX_MOVED_MODULE]++;
-				}
 			}
-		} else if (prevData.containsKey(c.getConceptId())) {
-			if (prevData.get(c.getConceptId()).isActive) {
+
+			//Has the concept remained active, but moved into this module?
+			if (datum != null && !datum.moduleId.equals(c.getModuleId())) {
+				counts[IDX_MOVED_MODULE]++;
+			}
+		} else {
+			if (datum == null) {
+				//If it's inactive and we DIDN'T see it before, then we've got a born inactive or "New Inactive" concept
+				counts[IDX_NEW_INACTIVE]++;
+			} else if (datum.isActive) {
 				//If we had it last time active, then it's been inactivated in this release
 				counts[IDX_INACTIVATED]++;
-				System.out.println(c.getId() + " - " + topLevel + " - " + counts[IDX_INACTIVATED]);
-				debugToFile(c, "Inactivated");
-			} else if (isChangedSinceLastRelease(c)){
-				//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
-				counts[IDX_CHANGED_INACTIVE]++;
+				//logger.debug(c.getId() + " - " + topLevel + " - " + counts[IDX_INACTIVATED]);
+				//debugToFile(c, "Inactivated");
+			} else {
+				if (isChangedSinceLastRelease(c)) {
+					//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
+					counts[IDX_CHANGED_INACTIVE]++;
+				}
 			}
-		} else if (!prevData.containsKey(c.getConceptId())) {
-			//If it's inactive and we DIDN'T see it before, then we've got a born inactive or "New Inactive" concept
-			counts[IDX_NEW_INACTIVE]++;
 		}
 		counts[IDX_TOTAL]++;
 		
@@ -347,14 +351,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (inQIScope(topLevel)) {
 			//Does it have a model?
 			boolean hasModel = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0;
-			boolean hadModel = prevData.containsKey(c.getConceptId()) && prevData.get(c.getConceptId()).hasAttributes;
+			boolean hadModel = datum != null && datum.hasAttributes;
 			//Is it new with a model ?
 			//Or Has it gained a model since we last saw it?
-			if (conceptIsNew && hasModel) {
+			if (datum == null && hasModel) {
 				qiCounts[IDX_NEW_IN_QI_SCOPE]++;
-			} else if (!conceptIsNew && !hadModel && hasModel) {
+			} else if (datum != null && !hadModel && hasModel) {
 				qiCounts[IDX_GAINED_ATTRIBUTES]++;
-			} else if (c.isActive() && !conceptIsNew && hadModel && !hasModel) {
+			} else if (c.isActive() && datum != null && hadModel && !hasModel) {
 				qiCounts[IDX_LOST_ATTRIBUTES]++;
 			} else if (!c.isActive() && hadModel) {
 				qiCounts[IDX_INACTIVATED]++;
@@ -495,9 +499,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeComponents(boolean isNewConcept, Collection<String> ids, Collection<String> idsInactive, int[] counts, Collection<? extends Component> components) throws TermServerScriptException {
-		//If we have no previous data, then the concept is new
-		boolean conceptIsNew = (ids == null && idsInactive == null);
 		boolean conceptAffected = false;
+
 		for (Component component : components) {
 			/*if (component.getId().equals("8f7a882f-b4e7-43d1-81e8-d2cfae503000") ||
 					component.getId().equals("b6507605-25fa-4a0b-88d1-26327247da86")) {
@@ -506,30 +509,22 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			if (moduleFilter != null && !moduleFilter.contains(component.getModuleId())) {
 				continue;
 			}
-			//Was the description present in the previous data?
-			boolean previouslyExistedActive = false;
-			boolean previouslyExistedInactive = false;
-			if (!conceptIsNew) {
-				previouslyExistedActive = ids.contains(component.getId());
-				previouslyExistedInactive = idsInactive.contains(component.getId());
-			}
+
+			incrementCounts(component, counts, IDX_TOTAL);
+			debugToFile(component, "Total");
+
+			//Was the component present in the previous data?
+			boolean previouslyExistedActive = (ids != null && ids.contains(component.getId())) ? true : false;
+			boolean previouslyExistedInactive = (idsInactive != null && idsInactive.contains(component.getId())) ? true : false;
+
 			if (component.isActive()) {
 				incrementCounts(component, counts, IDX_TOTAL_ACTIVE);
-				if (previouslyExistedInactive) {
-					incrementCounts(component, counts, IDX_REACTIVATED);
-					debugToFile(component, "Reactivated");
-					conceptAffected = true;
-				} else if(!previouslyExistedActive) {
-					
-					/*if (component instanceof RefsetMember) {
-						RefsetMember refsetMember = (RefsetMember) component;
-						if (refsetMember.getRefsetId().equals("900000000000509007")) {
-							LOGGER.debug("here");
-						}
-					}*/
+
+				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
 					conceptAffected = true;
+
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
 						//so it's not been 'added' as such.  Well, we might want to count additions
@@ -537,29 +532,41 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						incrementCounts(component, counts, IDX_NEW_NEW);;
 						debugToFile(component, "NewNew");
 					}
-					// find out the reason
+
 					if (component instanceof InactivationIndicatorEntry) {
 						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) component;
-						incrementInactivationReason (counts, inactivationIndicatorEntry.getInactivationReasonId());
+						incrementInactivationReason(counts, inactivationIndicatorEntry.getInactivationReasonId());
 					}
-				} else if (isChangedSinceLastRelease(component)) {
-					//Did it change in this release?
-					incrementCounts(component, counts, IDX_CHANGED);
-					debugToFile(component, "Changed");
+				} else if (previouslyExistedInactive) {
+					incrementCounts(component, counts, IDX_REACTIVATED);
+					debugToFile(component, "Reactivated");
 					conceptAffected = true;
+				} else if (previouslyExistedActive) {
+					if (isChangedSinceLastRelease(component)) {
+						//Did it change in this release?
+						incrementCounts(component, counts, IDX_CHANGED);
+						debugToFile(component, "Changed");
+						conceptAffected = true;
+					}
 				}
-			} else if (previouslyExistedActive) {
-				//Existed previously active and is now inactive, mark as inactivated
-				incrementCounts(component, counts, IDX_INACTIVATED);
-				debugToFile(component, "Inactivated");
-				conceptAffected = true;
-			} else if (!previouslyExistedActive && !previouslyExistedInactive) {
-				incrementCounts(component, counts, IDX_NEW_INACTIVE);
-			} else if (previouslyExistedInactive && isChangedSinceLastRelease(component)) {
-				incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
+			} else {
+				if (!previouslyExistedActive && !previouslyExistedInactive) {
+					incrementCounts(component, counts, IDX_NEW_INACTIVE);
+					debugToFile(component, "New Inactive");
+					conceptAffected = true;
+				} else if (previouslyExistedActive) {
+					//Existed previously active and is now inactive, mark as inactivated
+					incrementCounts(component, counts, IDX_INACTIVATED);
+					debugToFile(component, "Inactivated");
+					conceptAffected = true;
+				} else if (previouslyExistedInactive) {
+					if (isChangedSinceLastRelease(component)) {
+						incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
+						debugToFile(component, "Changed Inactive");
+						conceptAffected = true;
+					}
+				}
 			}
-			incrementCounts(component, counts, IDX_TOTAL);
-			debugToFile(component, "Total");
 		}
 		if (conceptAffected) {
 			counts[IDX_CONCEPTS_AFFECTED]++;
