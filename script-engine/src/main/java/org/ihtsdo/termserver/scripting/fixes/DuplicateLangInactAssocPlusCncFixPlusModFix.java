@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.*;
+import java.lang.IllegalArgumentException;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -315,13 +316,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					continue nextConcept;
 				}
 				
-				if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).size() > 0) {
+			/*	if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).size() > 0) {
 					processMe.add(c);
 					continue nextConcept;
-				}
+				}*/
 			}
 			 
-			if (!c.isActive()) {
+			/*if (!c.isActive()) {
 				if (getDuplicateRefsetMembers(c, c.getAssociationEntries()).size() > 0) {
 					processMe.add(c);
 					continue nextConcept;
@@ -339,7 +340,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						continue nextConcept;	
 					}
 				}
-			}
+			}*/
 		}
 		setQuiet(false);
 		LOGGER.info("Identified " + processMe.size() + " concepts to process");
@@ -409,13 +410,21 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) || StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
 							LOGGER.warn("Previously released entry(s) have lost effective time: " + thisEntry + " + " + thatEntry);
 							//Have we modified a previously active refset member such that it's now a duplicate with a previously inactive one?
-							//In this case we need to revert the active one back to it's previous value, inactive it
+							//In this case we need to revert the active one back to its previous value, inactive it
 							//and resurrect the previously inactive value instead
 							RefsetMember previousThis = loadPreviousRefsetMember(thisEntry.getId());
 							RefsetMember previousThat = loadPreviousRefsetMember(thatEntry.getId());
 
 							if (previousThis == null || previousThat == null) {
-								throw new TermServerScriptException("Unable to load previous refset member for " + thisEntry + " or " + thatEntry);
+								//It might be that This was published in International and That was published in some Extension, so
+								//This might not exist on the previous extension branch if it was prior to the Extension upgrade, that's OK
+								if (previousThis == null && thisEntry.getModuleId().equals(SCTID_CORE_MODULE)) {
+									LOGGER.warn("No previous 'This' found, was it published in core prior to extension upgrade? " + thisEntry);
+								} else if (previousThat == null && thatEntry.getModuleId().equals(SCTID_CORE_MODULE)) {
+									LOGGER.warn("No previous 'That' found, was it published in core prior to extension upgrade? " + thatEntry);
+								} else {
+									throw new TermServerScriptException("Unable to load previous refset member for " + thisEntry + " or " + thatEntry);
+								}
 							}
 							
 							//If both have been released, and we've recently made one inactive, then that's as good as it gets.  Skip
@@ -430,30 +439,43 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 								//In this case it doesn't matter which one we revert.  Take 'this'
 								duplicatePair = new DuplicatePair().modify(previousThis);
 							} else {
-								//We want to look for the previous entry that has the value which is on our current active member and keep that
-								RefsetMember active = chooseActive(thisEntry, thatEntry, true);
-								if (active == null) {
-									//We already checked for both inactive, so we have two active members here that are duplicates
-									//so we can revert either one of them to fix
-									//But make sure the one we're inactivating is being inactivated
-									previousThis.setActive(false);
-									duplicatePair = new DuplicatePair().modify(previousThis);
-								} else {
-									String additionalFieldName = active.getOnlyAdditionalFieldName();
-									String targetOrValue = active.getField(additionalFieldName);
-									RefsetMember previouslyMatching = choose(previousThis, previousThat, targetOrValue, additionalFieldName, true);
-									if (previouslyMatching == null) {
-										//If _neither_ refset member used this target value and they're now duplicate, then
-										//the one that is currently inactive should be reset to its previous state
-										RefsetMember inactive = chooseActive(thisEntry, thatEntry, false);
-										RefsetMember revert = pickByID(inactive.getId(), previousThis, previousThat);
-										revert.setActive(false);
-										duplicatePair = new DuplicatePair().modify(revert);
+								//First, check if BOTH members are active.   If one of them is International and the other is Extension
+								//then we'll keep the international one and inactivate the extension copy.
+								if (thisEntry.isActive() && thatEntry.isActive()) {
+									extRM  = chooseExtension(thisEntry, thatEntry);
+									if (extRM == null) {
+										throw new IllegalArgumentException("Consider here, two active members in same module.  Pick one at random?");
 									} else {
-										RefsetMember inactivate = choose(previousThis, previousThat, targetOrValue, additionalFieldName, false);
-										previouslyMatching.setActive(true);
-										inactivate.setActive(false);
-										duplicatePair = new DuplicatePair().modify(previouslyMatching, inactivate);
+										extRM.setActive(false);
+										duplicatePair = new DuplicatePair().modify(extRM);
+									}
+								} else {
+									//We want to look for the previous entry that has the value which is on our current active member and keep that
+									RefsetMember active = chooseActive(thisEntry, thatEntry, true);
+									if (active == null) {
+										//We already checked for both inactive, so we have two active members here that are duplicates
+										//so we can revert either one of them to fix
+										//But make sure the one we're inactivating is being inactivated
+										previousThis.setActive(false);
+										duplicatePair = new DuplicatePair().modify(previousThis);
+									} else {
+										String additionalFieldName = active.getOnlyAdditionalFieldName();
+										String targetOrValue = active.getField(additionalFieldName);
+										//Which of the previous entries used this target value? We'll keep that one
+										RefsetMember previouslyMatching = choose(previousThis, previousThat, targetOrValue, additionalFieldName, true);
+										if (previouslyMatching == null) {
+											//If _neither_ refset member used this target value and they're now duplicate, then
+											//the one that is currently inactive should be reset to its previous state
+											RefsetMember inactive = chooseActive(thisEntry, thatEntry, false);
+											RefsetMember revert = pickByID(inactive.getId(), previousThis, previousThat);
+											revert.setActive(false);
+											duplicatePair = new DuplicatePair().modify(revert);
+										} else {
+											RefsetMember inactivate = choose(previousThis, previousThat, targetOrValue, additionalFieldName, false);
+											previouslyMatching.setActive(true);
+											inactivate.setActive(false);
+											duplicatePair = new DuplicatePair().modify(previouslyMatching, inactivate);
+										}
 									}
 								}
 							}
@@ -560,6 +582,28 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		} else {
 			return thisEntry.isActive() ? thatEntry : thisEntry;
 		}
+	}
+
+	private RefsetMember chooseInternational(RefsetMember thisEntry, RefsetMember thatEntry) {
+		if ((isInternational(thisEntry) && isInternational(thatEntry)) ||
+				(!isInternational(thisEntry) && !isInternational(thatEntry))) {
+			LOGGER.warn("Unable to find single International member of pair " + thisEntry + " vs " + thatEntry);
+			return null;
+		}
+		return isInternational(thisEntry) ? thisEntry : thatEntry;
+	}
+	
+	private RefsetMember chooseExtension(RefsetMember thisEntry, RefsetMember thatEntry) {
+		if ((isInternational(thisEntry) && isInternational(thatEntry)) ||
+				(!isInternational(thisEntry) && !isInternational(thatEntry))) {
+			LOGGER.warn("Unable to find single Extension member of pair " + thisEntry + " vs " + thatEntry);
+			return null;
+		}
+		return isInternational(thisEntry) ? thatEntry : thisEntry;
+	}
+
+	private boolean isInternational(RefsetMember rm) {
+		return SnomedUtils.hasModule(rm, INTERNATIONAL_MODULES);
 	}
 
 	private RefsetMember hasModule(String[] targetModules, boolean matchLogic, RefsetMember... refsetMembers) {
