@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.nuva;
+package org.ihtsdo.termserver.scripting.pipeline.nuva;
 
 import java.io.*;
 import java.util.*;
@@ -8,6 +8,7 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.RDFDataMgr;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.github.jsonldjava.shaded.com.google.common.collect.Streams;
@@ -22,10 +23,12 @@ public class NuvaScript extends TermServerScript {
 	protected static int FILE_IDX_NUVA_DATA_RDF = 0;
 	protected static int FILE_IDX_NUVA_METADATA_RDF = 1;
 	protected static final String NUVA_NS= "http://data.esante.gouv.fr/NUVA#";
+	protected static final String SNOMED_LABEL = "SNOMED-CT-";
 
 	public final String TAB_SUMMARY = "Summary";
 	public final String TAB_VACCINES = "Vaccines";
 	public final String TAB_VALENCES = "Valences";
+	public final String TAB_DISEASES = "Diseases";
 	public final String TAB_NUVA_DATA = "NUVA Data";
 	public final String TAB_NUVA_METADATA = "NUVA MetaData";
 
@@ -36,6 +39,7 @@ public class NuvaScript extends TermServerScript {
 			TAB_SUMMARY,
 			TAB_VACCINES,
 			TAB_VALENCES,
+			TAB_DISEASES,
 			TAB_NUVA_DATA,
 			TAB_NUVA_METADATA};
 
@@ -44,9 +48,10 @@ public class NuvaScript extends TermServerScript {
 		ID("http://www.w3.org/2004/02/skos/core#notation"),
 		CODE("http://www.w3.org/2000/01/rdf-schema#label"),
 		TYPE("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-		CLASS("http://www.w3.org/2000/01/rdf-schema#subClassOf"),
+		SUBCLASSOF("http://www.w3.org/2000/01/rdf-schema#subClassOf"),
 		COMMENT("http://www.w3.org/2000/01/rdf-schema#comment"),
 		CREATED("http://purl.org/dc/terms/created"),
+		DISEASE("http://data.esante.gouv.fr/NUVA#Disease"),
 		LABEL("http://www.w3.org/2000/01/rdf-schema#label"),
 		HIDDEN_LABEL("http://www.w3.org/2004/02/skos/core#hiddenLabel"),
 		MODIFIED("http://purl.org/dc/terms/modified"),
@@ -62,8 +67,9 @@ public class NuvaScript extends TermServerScript {
 
 	public enum NuvaClass {
 		VACCINE("Vaccine"),
-		VALENCE("Valence");
-		
+		VALENCE("Valence"),
+		DISEASE("Disease");
+
 		public final String value;
 
 		NuvaClass(String className) {
@@ -87,7 +93,7 @@ public class NuvaScript extends TermServerScript {
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
 			report.getArchiveManager().setRunIntegrityChecks(false);
 			report.init(args);
-			//report.loadProjectSnapshot(false);
+			report.loadProjectSnapshot();
 			report.postInit();
 			report.runReport();
 		} finally {
@@ -113,8 +119,9 @@ public class NuvaScript extends TermServerScript {
 		ReportSheetManager.targetFolderId = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO";  //NUVA
 		String[] columnHeadings = new String[] {
 				"Summary Item, Count",
-				"Code, Abstract, Translations, Valences, Exact Matches, HiddenLabels, Created",
-				"Code, Label, Treat Diseases, Created",
+				"Code, Is Abstract, Translation Count, Valences, Equivalent SCT, HiddenLabels, Created, Other Exact Matches",
+				"Code, Label, Treats Diseases, Created",
+				"Code, Translations, Created",
 				"Code, Type, Class, Translations, Additional Properties",
 				"Code, Type, Class, Translations, Additional Properties"
 		};
@@ -143,14 +150,18 @@ public class NuvaScript extends TermServerScript {
 		while (subIterator.hasNext()) {
 			Resource subject = subIterator.next();
 			//Get the class property and we'll report the Vaccines on their own tab
-			Statement classStmt = subject.getProperty(model.getProperty(NuvaUri.CLASS.value));
+			Statement classStmt = subject.getProperty(model.getProperty(NuvaUri.SUBCLASSOF.value));
 			if (classStmt != null && isObject(classStmt, NuvaClass.VACCINE)) {
 				reportVaccine(subject);
 				continue;
 			} else if (classStmt != null && isObject(classStmt, NuvaClass.VALENCE)) {
 				reportValence(subject);
 				continue;
+			} else if (classStmt != null && isObject(classStmt, NuvaClass.DISEASE)) {
+				reportDisease(subject);
+				continue;
 			}
+
 			StmtIterator stmtIterator = subject.listProperties();
 			String objClass = "Unknown";
 			String type = "Unknown";
@@ -159,7 +170,7 @@ public class NuvaScript extends TermServerScript {
 				Statement stmt = stmtIterator.next();
 				if (isPredicate(stmt, NuvaUri.ID) || isPredicate(stmt, NuvaUri.CODE)) {
 					//We can skip this, subject already listed
-				} else if (isPredicate(stmt, NuvaUri.CLASS)) {
+				} else if (isPredicate(stmt, NuvaUri.SUBCLASSOF)) {
 					objClass = getObject(stmt);
 				} else if (isPredicate(stmt, NuvaUri.TYPE)) {
 					type = getObject(stmt);
@@ -186,16 +197,26 @@ public class NuvaScript extends TermServerScript {
 		String isAbstract = "";
 		List<String> valences = new ArrayList<>();
 		List<String> matches = new ArrayList<>();
+		List<String> snomedCodes = new ArrayList<>();
 		List<String> hiddenLabels = new ArrayList<>();
+		String enLabel = "";
 		while (stmtIterator.hasNext()) {
 			Statement stmt = stmtIterator.next();
 			if (isPredicate(stmt, NuvaUri.COMMENT)) {
-				//TODO Check for @<lang>
+				String translation = getObject(stmt);
+				if (translation.contains("@en")) {
+					enLabel = translation;
+				}
 				translationCount++;
 			} else if (isPredicate(stmt ,NuvaUri.VALENCE)) {
 				valences.add(getObject(stmt));
 			} else if (isPredicate(stmt ,NuvaUri.MATCH)) {
-				matches.add(getObject(stmt));
+				String match = getObject(stmt);
+				if (match.startsWith(SNOMED_LABEL)) {
+					snomedCodes.add(match.substring(SNOMED_LABEL.length()));
+				} else {
+					matches.add(match);
+				}
 			} else if (isPredicate(stmt ,NuvaUri.HIDDEN_LABEL)) {
 				hiddenLabels.add(getObject(stmt));
 			} else if (isPredicate(stmt ,NuvaUri.CREATED)) {
@@ -204,7 +225,7 @@ public class NuvaScript extends TermServerScript {
 				isAbstract = getObject(stmt).equals("true")?"Y":"N";
 			}
 		}
-		report(getTab(TAB_VACCINES), subject.toString().replace(NUVA_NS, ""), isAbstract, translationCount, strList(valences), strList(matches), strList(hiddenLabels), created);
+		report(getTab(TAB_VACCINES), subject.toString().replace(NUVA_NS, ""), isAbstract, translationCount + "\n" + enLabel, strList(valences), strSctList(snomedCodes), strList(hiddenLabels), created, strList(matches));
 	}
 	
 	private void reportValence(Resource subject) throws TermServerScriptException {
@@ -215,7 +236,10 @@ public class NuvaScript extends TermServerScript {
 		while (stmtIterator.hasNext()) {
 			Statement stmt = stmtIterator.next();
 			if (isPredicate(stmt ,NuvaUri.LABEL)) {
-				label = getObject(stmt);
+				String translation = getObject(stmt);
+				if (hasLanguage(stmt, "en")) {
+					label = translation;
+				}
 			} else if (isPredicate(stmt ,NuvaUri.PREVENTS)) {
 				prevents.add(getObject(stmt));
 			} else if (isPredicate(stmt ,NuvaUri.CREATED)) {
@@ -225,9 +249,44 @@ public class NuvaScript extends TermServerScript {
 		report(getTab(TAB_VALENCES), subject.toString().replace(NUVA_NS, ""), label, strList(prevents), created);
 	}
 
+	private void reportDisease(Resource subject) throws TermServerScriptException {
+		StmtIterator stmtIterator = subject.listProperties();
+		int translationCount = 0;
+		String enLabel = "";
+		String created = "";
+		while (stmtIterator.hasNext()) {
+			Statement stmt = stmtIterator.next();
+			if (isPredicate(stmt, NuvaUri.LABEL)) {
+				String translation = getObject(stmt);
+				if (hasLanguage(stmt, "en")) {
+					enLabel = translation;
+				}
+				translationCount++;
+			} else if (isPredicate(stmt ,NuvaUri.CREATED)) {
+				created = getObject(stmt);
+			}
+		}
+		report(getTab(TAB_DISEASES), subject.toString().replace(NUVA_NS, ""), translationCount + "\n" + enLabel, created);
+	}
+
 	private String strList(List<String> list) {
 		return list.stream()
 				.collect(Collectors.joining("\n"));
+	}
+
+	private String strSctList(List<String> list) {
+		return list.stream()
+				.map(s -> getSctItem(s))
+				.collect(Collectors.joining("\n"));
+	}
+
+	private String getSctItem(String sctId) {
+		try {
+			Concept c = gl.getConcept(sctId, false, false);
+			return c == null ? sctId : c.toString();
+		} catch (Exception e) {
+			return sctId + ": " + e.getMessage();
+		}
 	}
 
 	private boolean hasKnownPredicate(Statement p) {
@@ -241,6 +300,19 @@ public class NuvaScript extends TermServerScript {
 	
 	private String toString(Statement stmt) {
 		return getPredicate(stmt) + " --> " + getObject(stmt);
+	}
+
+	private boolean hasLanguage(Statement stmt, String lang) {
+		if (stmt.getObject().isLiteral()) {
+			try {
+				//String langStr = stmt.getObject().asLiteral().getLanguage();
+				return stmt.getObject().asLiteral().getLanguage().equals(lang);
+			} catch (Exception e) {
+				LOGGER.warn(e.getMessage() + ": " + stmt);
+				return false;
+			}
+		}
+		return false;
 	}
 
 	private String getObject(Statement stmt) {
