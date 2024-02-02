@@ -34,8 +34,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> allIdentifiedConcepts;
 	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
-	private boolean includeDependencies = false;
-	
+	private boolean includeDependencies = true;
 	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
@@ -54,24 +53,25 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		//ExtractExtensionComponents delta = new ExtractExtensionComponents();
-		ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
+		ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		//ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
+
 			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
-			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			//delta.moduleId = "11000181102"; //Estonia
-			//delta.moduleId = "83821000000107"; //UK Composition Module
-			delta.moduleId = "999000011000000103"; //UK Clinical Extension
-			//delta.moduleId = "57091000202101";  //Norway module for medicines
-			//delta.moduleId = "332351000009108"; //Vet Extension
+			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "51000202101"; //Norway Module
-			delta.moduleId="999000011000000103"; // UK Clinical Extension
+			delta.moduleId = "57091000202101";  //Norway module for medicines
+			//delta.moduleId="999000011000000103"; // UK Clinical Extension
+			//delta.moduleId = "83821000000107"; //UK Composition Module
+			//delta.moduleId = "731000124108";  //US Module
+			//delta.moduleId = "332351000009108"; //Vet Extension
+
 			delta.newIdsRequired = false;
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
