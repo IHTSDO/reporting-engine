@@ -11,13 +11,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
- * INFRA-5176 Add an attribute to a given ECL substrate where required
- * INFRA-5236 Add DueTo to Abrasions
- * QI-731 Add DueTo = Traumatic Event for all open fractures
- * QI-802 Add 42752001 |Due to (attribute)| = 1148742001 |Intentional event (event)|
- *    to all << 59274003 |Intentional drug overdose (disorder)| 
- */
 public class AddAttributeIfRequired extends BatchFix {
 	
 	private Set<String> exclusions;
@@ -35,6 +28,7 @@ public class AddAttributeIfRequired extends BatchFix {
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
+			fix.runStandAlone = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -70,11 +64,16 @@ public class AddAttributeIfRequired extends BatchFix {
 		//QI-801
 		subsetECL = "<< 59369008 |Accidental drug overdose (disorder)|";
 		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("418019003 |Accidental event (event)|"));
-		*/	
+
 		//QI-802
 		subsetECL = "<< 59274003 |Intentional drug overdose (disorder)|";
 		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("1148742001 |Intentional event (event)|"));
-		
+		*/
+
+		//INFRA-12357
+		subsetECL = "<<276239002 |Therapy (regime/therapy)|";
+		relTemplate = new RelationshipTemplate(METHOD, gl.getConcept("360270004 |Therapy - action (qualifier value)|"));
+
 		exclusions = new HashSet<>();
 		super.postInit();
 	}
