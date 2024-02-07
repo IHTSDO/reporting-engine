@@ -219,6 +219,10 @@ RefsetMember extends Component implements ScriptConstants {
 	}
 	
 	public String toString() {
+		return toString(false);
+	}
+	
+	public String toString(boolean includeModuleId) {
 		String additionalStr = "";
 		boolean isFirst = true;
 		for (String key : additionalFields.keySet()) {
@@ -228,7 +232,7 @@ RefsetMember extends Component implements ScriptConstants {
 		}
 		String activeIndicator = isActive()?"":"*";
 		String arrow = additionalStr.isEmpty() ? "" : " -> ";
-		return "[" + activeIndicator + "RM]:" + getId() + " - " + refsetId + " : " + referencedComponentId + arrow + additionalStr;
+		return "[" + activeIndicator + "RM]:" + getId() + " - " + refsetId + " : " + referencedComponentId + arrow + additionalStr + (includeModuleId ? " (Module: " + this.getModuleId() + ")" : "");
 	}
 
 	/**
