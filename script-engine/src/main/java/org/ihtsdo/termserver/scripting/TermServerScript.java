@@ -1633,6 +1633,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (quiet) {
 			return false;
 		}
+
 		//Have we whiteListed this concept?
 		if (!ignoreWhiteList && c != null && whiteListedConceptIds.contains(c.getId())) {
 			String detailsStr = writeToString(details);

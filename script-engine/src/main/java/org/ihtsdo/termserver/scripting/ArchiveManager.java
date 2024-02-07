@@ -23,6 +23,7 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.dao.DataLoader;
+import org.ihtsdo.termserver.scripting.dao.S3Manager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -990,5 +991,9 @@ public class ArchiveManager implements ScriptConstants {
 
 	public void setExpectStatedParents(boolean expectStatedParents) {
 		this.expectStatedParents = expectStatedParents;
+	}
+
+	public S3Manager getS3Manager() throws TermServerScriptException {
+		return ((ArchiveDataLoader)getArchiveDataLoader()).getS3Manager();
 	}
 }
