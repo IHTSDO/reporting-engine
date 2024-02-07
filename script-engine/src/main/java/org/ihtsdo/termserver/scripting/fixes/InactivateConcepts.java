@@ -42,10 +42,11 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.inputFileHasHeaderRow = false;
 			fix.expectNullConcepts = false;
-			fix.groupByIssue = true;
+			fix.groupByIssue = false;
 			fix.reportNoChange = false;
-			fix.selfDetermining = true;
-			fix.subsetECL = "< 168123008 |Sample sent for examination (situation)|.";
+			fix.selfDetermining = false;
+			fix.runStandAlone = true;
+			//fix.subsetECL = "< 168123008 |Sample sent for examination (situation)|.";
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -251,6 +252,9 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 
 		//Do we need to align the incoming concept's inactivation indicator?
 		InactivationIndicator origII = incomingConcept.getInactivationIndicator();
+		if (origII == null) {
+			throw new ValidationFailure(incomingConcept, "Incoming association from " + incomingConcept + " has no inactivation indicator");
+		}
 		boolean iiChanged = false;
 		if (!origII.equals(reason)) {
 			incomingConcept.setInactivationIndicator(reason);
@@ -296,7 +300,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c;
-		
+		Concept replacement = null;
+
 		if (StringUtils.isNumeric(lineItems[0])) {
 			c = gl.getConcept(lineItems[0]);
 		} else {
@@ -310,8 +315,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		}
 		
 		/*
-		Concept replacement = null;
-		int idxReplacement = 1;		 
+		int idxReplacement = 1;
 		if (lineItems.length > 2) {
 			idxReplacement = 2;
 			//In this case, column 1 will be in inactivation reason
@@ -344,17 +348,19 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//Specific to IHTSDO-175
 		//inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
 		//replacement = gl.getConcept(" 782902008 |Implantation procedure (procedure)|");
-		inactivationIndicators.put(c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-		
+		//inactivationIndicators.put(c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+		inactivationIndicators.put(c, InactivationIndicator.OUTDATED);
+		replacement = gl.getConcept("399097000 |Administration of anesthesia (procedure)|");
+
 		//Give C an issue of one of it's parents to try to batch sibling concepts together
 		c.setIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
 		
-		/*if (replacement != null) {
+		if (replacement != null) {
 			replacements.put(c, replacement);
 			return Collections.singletonList(c);
 		} else if (!expectReplacements){
 			return Collections.singletonList(c);
-		}*/
+		}
 		return null;
 	}
 }
