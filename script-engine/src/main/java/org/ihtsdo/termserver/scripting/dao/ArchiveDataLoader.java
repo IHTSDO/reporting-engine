@@ -90,4 +90,8 @@ public class ArchiveDataLoader implements DataLoader {
 	private static String getConfigurationPrefix() {
 		return ArchiveLoaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
 	}
+
+	public S3Manager getS3Manager() {
+		return s3Manager;
+	}
 }
