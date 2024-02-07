@@ -7,6 +7,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.snomed.otf.script.dao.LocalProperties;
 import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
+import org.springframework.core.io.ResourceLoader;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -20,6 +21,7 @@ public class S3Manager {
 	private String awsSecretKey;
 
 	private StandAloneResourceConfig standAloneResourceConfig;
+	private SimpleStorageResourceLoader simpleStorageResourceLoader;
 	private ResourceManager resourceManager;
 
 	public S3Manager(StandAloneResourceConfig standAloneResourceConfig) {
@@ -71,7 +73,7 @@ public class S3Manager {
 					//AWS will still attempt to connect locally to discover its credentials, so let's only
 					//do debugging at "WARN"   See logback.xml file for configuration
 				}
-				SimpleStorageResourceLoader simpleStorageResourceLoader = new SimpleStorageResourceLoader(s3Client);
+				simpleStorageResourceLoader = new SimpleStorageResourceLoader(s3Client);
 				simpleStorageResourceLoader.setTaskExecutor(task -> {
 				});
 				resourceManager = new ResourceManager(standAloneResourceConfig, simpleStorageResourceLoader);
@@ -116,5 +118,12 @@ public class S3Manager {
 	// For debugging
 	public StandAloneResourceConfig getStandAloneResourceConfig() {
 		return standAloneResourceConfig;
+	}
+
+	public ResourceLoader getResourceLoader() throws TermServerScriptException {
+		if (simpleStorageResourceLoader == null) {
+			getResourceManager();
+		}
+		return simpleStorageResourceLoader;
 	}
 }
