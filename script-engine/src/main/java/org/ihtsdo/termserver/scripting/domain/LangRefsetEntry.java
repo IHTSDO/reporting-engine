@@ -101,8 +101,8 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 				"[ " + getReferencedComponentId() + " is " + 
 				(getAcceptabilityId() == null ? "null" : SnomedUtils.translateAcceptability(getAcceptabilityId())) +
 				" in " + getRefsetId() + 
-				(detail? " - ET" + effectiveTime : "" ) +
-				(detail? " - " + id : "" ) +
+				(detail? " - ET: " + (effectiveTime == null ? "N/A":effectiveTime) : "" ) +
+				(detail? " - Module: " + moduleId : "" ) +
 				" ]";
 		} catch (Exception e) {
 			return e.getMessage();
