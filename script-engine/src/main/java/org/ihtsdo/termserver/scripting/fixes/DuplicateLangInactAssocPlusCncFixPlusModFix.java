@@ -10,6 +10,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.web.client.RestClientResponseException;
@@ -58,6 +59,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	public void init(String[] args) throws TermServerScriptException {
 		ArchiveManager mgr = getArchiveManager();
 		mgr.setPopulateReleasedFlag(true);
+		SnapshotGenerator.setSkipSave(true); //No need to save to disk if we need a fresh copy every time. 
 		//mgr.setRunIntegrityChecks(false);  //MSSP-1087
 		super.init(args);
 	}
@@ -65,7 +67,16 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		defaultModuleId = project.getMetadata().getDefaultModuleId();
-		super.postInit();
+		String[] columnHeadings = new String[]{
+				"TaskId, JobName, SCTID, FSN, SemTag, Severity, Action, Before, After, , ",
+				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , "
+		};
+
+		String[] tabNames = new String[]{
+				"Changes Made",
+				"Decisions Taken"
+		};
+		postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override
@@ -162,7 +173,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				} else {
 					for (RefsetMember modify : duplicatePair.modify) {
 						RefsetMember original = d.getLangRefsetEntry(modify.getId());
-						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original, modify);
+						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original.toString(true), modify.toString(true));
 						updateRefsetMember(t, modify, "");
 						changesMade++;
 					}
@@ -184,7 +195,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				} else {
 					for (RefsetMember modify : duplicatePair.modify) {
 						RefsetMember original = d.getLangRefsetEntry(modify.getId());
-						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original, modify);
+						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original.toString(true), modify.toString(true));
 						updateRefsetMember(t, modify, "");
 						changesMade++;
 					}
@@ -290,15 +301,15 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		for (final Concept c : gl.getAllConcepts()) {
 			boolean hasChanges = SnomedUtils.hasChanges(c);
 			for (Description d : c.getDescriptions()) {
-				/*if (d.getId().equals("61401000195115")) {
+				if (d.getId().equals("788841000124119")) {
 						LOGGER.debug("here");
-				}*/
+				}
 				
 				//Too many of these in the international edition - discuss elsewhere
 				//OK we'll do them if they've been touched in this authoring cycle
 				if (project.getBranchPath().contains("SNOMEDCT-") || hasChanges) {
 					//Switch to just process those 
-					if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
+					/*if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 						processMe.add(c);
 						continue nextConcept;
 					}
@@ -308,7 +319,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							processMe.add(c);
 							continue nextConcept;
 						}
-					}
+					}*/
 				}
 				
 				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
@@ -448,6 +459,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 									} else {
 										extRM.setActive(false);
 										duplicatePair = new DuplicatePair().modify(extRM);
+										report(SECONDARY_REPORT, c, Severity.MEDIUM, ReportActionType.INFO, "International RM retained", intRM);
+										report(SECONDARY_REPORT, c, Severity.MEDIUM, ReportActionType.INFO, "Extension RM inactivated", extRM);
 									}
 								} else {
 									//We want to look for the previous entry that has the value which is on our current active member and keep that
@@ -458,6 +471,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 										//But make sure the one we're inactivating is being inactivated
 										previousThis.setActive(false);
 										duplicatePair = new DuplicatePair().modify(previousThis);
+										report(SECONDARY_REPORT, c, Severity.MEDIUM, ReportActionType.INFO, "Inactivating previous 'this'", previousThis);
 									} else {
 										String additionalFieldName = active.getOnlyAdditionalFieldName();
 										String targetOrValue = active.getField(additionalFieldName);
