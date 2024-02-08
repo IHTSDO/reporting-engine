@@ -8,6 +8,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.module.storage.ModuleMetadata;
+import org.snomed.module.storage.ModuleStorageCoordinator;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.core.io.ResourceLoader;
 
@@ -22,9 +23,10 @@ public class ArchiveCurator extends TermServerReport {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveCurator.class);
 
 	private Map<String, String> extensionModuleMap = new HashMap<>();
-	Pattern msFilePattern = Pattern.compile("ManagedService([A-Z]{2}).*?([0-9]{8})T[0-9]{6}Z");
-	Pattern intFilePattern = Pattern.compile("International.*?([0-9]{8})T120000Z");
-
+	private Pattern msFilePattern = Pattern.compile("ManagedService([A-Z]{2}).*?([0-9]{8})T[0-9]{6}Z");
+	private Pattern intFilePattern = Pattern.compile("International.*?([0-9]{8})T120000Z");
+	private ModuleStorageCoordinator moduleStorageCoordinator;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ArchiveCurator curator = new ArchiveCurator();
 		try {
@@ -43,12 +45,18 @@ public class ArchiveCurator extends TermServerReport {
 		config.init("versioned-content");
 		ResourceLoader rl = getArchiveManager().getS3Manager().getResourceLoader();
 		ResourceManager rm = new ResourceManager(config, rl);
+		moduleStorageCoordinator = ModuleStorageCoordinator.initDev(rm);
+		
 		LOGGER.info("Processing all archives in " + rm.getCachePath());
 		//Arrays.sort(dirListing, NumberAwareStringComparator.INSTANCE);
 		for (String archiveStr : rm.listCachedFilenames(null)){
-			if (archiveStr.endsWith(".zip")) {
-				LOGGER.info("Processing: " + archiveStr);
-				ModuleMetadata m = determineMetadata(archiveStr);
+			try {
+				if (archiveStr.endsWith(".zip")) {
+					LOGGER.info("Processing: " + archiveStr);
+					determinelMetadata(archiveStr);
+				}
+			} catch (Exception e) {
+				report(PRIMARY_REPORT, archiveStr, e);
 			}
 		}
 	}
@@ -56,21 +64,27 @@ public class ArchiveCurator extends TermServerReport {
 	private ModuleMetadata determineMetadata(String archiveStr) {
 		//Determine the two letter extension code and the release date from the archive filename
 		Matcher extMatcher = msFilePattern.matcher(archiveStr);
-
+		String cs;
+		String et;
 		if (extMatcher.find()) {
-			String extStr = extMatcher.group(1);
-			String ET = extMatcher.group(2);
-			LOGGER.info("Identified: {}_{}", extStr, ET);
+			cs = extMatcher.group(1);
+			et = extMatcher.group(2);
+			LOGGER.info("Identified: {}_{}", cs, et);
 		} else {
 			Matcher intMatcher = intFilePattern.matcher(archiveStr);
 			if (intMatcher.find()) {
-				String ET = intMatcher.group(1);
-				LOGGER.info("Identified: INT_{}", ET);
+				et = intMatcher.group(1);
+				cs = "INT";
+				LOGGER.info("Identified: INT_{}", et);
 			} else {
 				LOGGER.warn("Pattern not found in the input string: " + archiveStr);
 			}
 		}
-		return null;
+		
+		ModuleMetadata mm = new ModuleMetadata()
+				.withCodeSystemShortName(cs)
+				.withEffectiveTime(et)
+				.withIdentifyingModuleId(extensionModuleMap.get(cs));
 	}
 
 	private void populateExtensionModuleMap() {
