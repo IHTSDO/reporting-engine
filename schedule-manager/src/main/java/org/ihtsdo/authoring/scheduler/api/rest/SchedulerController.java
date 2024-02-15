@@ -142,7 +142,7 @@ public class SchedulerController {
 		throws BusinessServiceException {
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
 		
-		return santise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
+		return sanitise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
 	}
 
 	@Operation(summary="List batches")
@@ -289,8 +289,17 @@ public class SchedulerController {
 			@RequestBody Set<WhiteListedConcept> whiteList) throws BusinessServiceException {
 		scheduleService.setWhiteList(typeName, jobName, codeSystemShortname, whiteList);
 	}
+
+	@Operation(summary="Clear any jobs that have been stuck for more than 10 hours.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "OK")
+	})
+	@RequestMapping(value="/jobs/clearStuckJobs", method= RequestMethod.POST)
+	public int clearStuckJobs() throws BusinessServiceException {
+		return scheduleService.clearStuckJobs();
+	}
 	
-	private List<JobRun> santise(Page<JobRun> jobRuns) {
+	private List<JobRun> sanitise(Page<JobRun> jobRuns) {
 		return jobRuns.stream()
 				.peek(j -> j.suppressParameters())
 				.peek(j -> j.setTerminologyServerUrl(null))

@@ -24,6 +24,9 @@ public interface JobRunRepository extends CrudRepository<JobRun, UUID> {
 	@Query("SELECT jr FROM JobRun jr WHERE status IN (?1)")
 	Page<JobRun> findByStatus(Set<JobStatus> statusFilter, Pageable pageable);
 
+	@Query("SELECT jr FROM JobRun jr WHERE status IN (?1)")
+	List<JobRun> findAllByStatus(Set<JobStatus> statusFilter);
+
 	@Query("SELECT jr FROM JobRun jr WHERE (requestTime > ?1 OR resultTime > ?1) " +
 	" AND status IN (?2)")
 	Page<JobRun> findByStatusSinceDate(Date sinceDate, Set<JobStatus> statusFilter, Pageable pageable);
