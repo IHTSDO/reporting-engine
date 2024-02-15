@@ -147,17 +147,15 @@ public class SchedulerController {
 
 	@Operation(summary="List batches")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
-	@RequestMapping(value="/jobs/listbatches")
-	@GetMapping
+	@GetMapping(value="/jobs/listbatches")
 	public Iterable<JobRunBatch> listLastBatch(@RequestParam(required=false, defaultValue = "0") final Long number) {
 		return batchTools.getLastNBatches(number);
 	}
 
 	@Operation(summary="Get batch")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
-	@RequestMapping(value="/jobs/batch/{id}")
-	@GetMapping
-	public JobRunBatch getBatch(@PathVariable final Long id) {
+	@GetMapping(value="/jobs/batch/{id}")
+	public List<JobRun> getBatch(@PathVariable final Long id) {
 		return batchTools.getBatch(id);
 	}
 
