@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +32,9 @@ public class DrugTermGenerator extends TermGenerator {
 	private String[] vitamins = new String[] {" A ", " B ", " C ", " D ", " E ", " G "};
 	
 	private List<Concept> neverAbbrev = new ArrayList<>();
+	private Map<Concept, String> overridePTs = new HashMap<>();
 	
-	public DrugTermGenerator (TermServerScript parent) {
+	public DrugTermGenerator(TermServerScript parent) {
 		this.parent = parent;
 		neverAbbrev.add(MICROGRAM);
 		neverAbbrev.add(MICROLITER);
@@ -42,6 +44,8 @@ public class DrugTermGenerator extends TermGenerator {
 		neverAbbrev.add(PICOGRAM);
 		neverAbbrev.add(UNIT);
 		neverAbbrev.add(MILLION_UNIT);
+
+		overridePTs.put(INTERNATIONAL_UNIT, "unit");
 	}
 	
 	public DrugTermGenerator includeUnitOfPresentation(Boolean state) {
@@ -124,6 +128,10 @@ public class DrugTermGenerator extends TermGenerator {
 			ensureCaptialization(d);
 		}
 		String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType);
+		if (StringUtils.isEmpty(replacementTerm)) {
+			throw new TermServerScriptException("Failed to create term for " + c);
+		}
+		
 		if (d.getTerm() != null) {
 			replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
 		}
@@ -565,14 +573,17 @@ public class DrugTermGenerator extends TermGenerator {
 			Concept boSS = SnomedUtils.getTarget(c, new Concept[] {HAS_BOSS}, r.getGroupId(), charType);
 			
 			//Are we adding the strength?
-			Concept strength = SnomedUtils.getTarget (c, new Concept[] {HAS_PRES_STRENGTH_VALUE, HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
+			String strength = null;
+			Object strengthObj = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_PRES_STRENGTH_VALUE, HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
+			if (strengthObj != null) {
+				strength = strengthObj.toString();
+			}
 			
 			//Are we adding the denominator strength and units?
 			String denominatorStr = "";
 			if (specifyDenominator || hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				denominatorStr = "/";
-				Concept denStren = SnomedUtils.getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType);
-				String denStrenStr = SnomedUtils.deconstructFSN(denStren.getFsn())[0];
+				String denStrenStr = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType).toString();
 				if (!denStrenStr.equals("1") || isFSN) {
 					denominatorStr += denStrenStr + " ";
 				}
@@ -605,7 +616,7 @@ public class DrugTermGenerator extends TermGenerator {
 		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attrib, ActiveState.ACTIVE).size() > 0;
 	}
 
-	private String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, String denominatorStr, boolean isFSN, String langRefset) throws TermServerScriptException {
+	private String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, String strength, Concept unit, String denominatorStr, boolean isFSN, String langRefset) throws TermServerScriptException {
 		boolean separateBoSS = (boSS!= null && !boSS.equals(ingredient));
 		String ingredientTerm="";
 		
@@ -624,7 +635,7 @@ public class DrugTermGenerator extends TermGenerator {
 		
 		//Now add the Strength
 		if (strength != null) {
-			ingredientTerm += " " + SnomedUtils.deconstructFSN(strength.getFsn())[0];
+			ingredientTerm += " " + strength;
 		}
 		
 		if (unit != null) {
@@ -643,6 +654,11 @@ public class DrugTermGenerator extends TermGenerator {
 	private String getTermForConcat(Concept c, boolean useFSN, String langRefset) throws TermServerScriptException {
 		Description desc;
 		String term;
+		//Do we have a PT override for this concept?
+		if (overridePTs.containsKey(c)) {
+			return overridePTs.get(c);
+		}
+
 		if (useFSN) {
 			desc = c.getFSNDescription();
 			term = SnomedUtils.deconstructFSN(desc.getTerm())[0];
