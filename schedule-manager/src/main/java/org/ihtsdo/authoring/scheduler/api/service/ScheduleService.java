@@ -6,7 +6,6 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -44,4 +43,5 @@ public interface ScheduleService {
 
 	public Page<JobRun> listAllJobsRun(Set<JobStatus> statusFilter, Integer sinceMins, Pageable pageable);
 
+    public int clearStuckJobs();
 }
