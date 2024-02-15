@@ -11,7 +11,6 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.authoring.scheduler.api.AuthenticationService;
 import org.ihtsdo.authoring.scheduler.api.mq.Transmitter;
-import org.ihtsdo.authoring.scheduler.api.repository.*;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +24,8 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
 
 public class ScheduleServiceImpl implements ScheduleService {
+
+	private static final int STUCK_JOB_HOURS = 10;
 	
 	@Autowired
     JobRunRepository jobRunRepository;
@@ -378,5 +379,20 @@ public class ScheduleServiceImpl implements ScheduleService {
 			return jobRunRepository.findSinceDate(sinceDate, pageable);
 		}
 	}
-	
+
+	@Override
+	public int clearStuckJobs() {
+		int jobsCleared = 0;
+		Set<JobStatus> stuckStatuses = Set.of(JobStatus.Scheduled, JobStatus.Running);
+		for (JobRun jobRun : jobRunRepository.findAllByStatus(stuckStatuses)) {
+			if (jobRun.getRequestTime().before(new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(STUCK_JOB_HOURS)))) {
+				LOGGER.warn("JobRun {} has been stuck in {} status for over {} hours.  Marking as failed.", jobRun, jobRun.getStatus(), STUCK_JOB_HOURS);
+				jobRun.setStatus(JobStatus.Failed);
+				jobRunRepository.save(jobRun);
+				jobsCleared++;
+			}
+		}
+		return jobsCleared;
+	}
+
 }
