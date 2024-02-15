@@ -44,7 +44,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
 
-	DrugTermGeneratorCD termGenerator = new DrugTermGeneratorCD(this);
+	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	Set<Concept> createMPFs = new HashSet<>();
 	Set<Concept> knownMPFs = new HashSet<>();

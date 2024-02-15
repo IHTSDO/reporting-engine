@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
+import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
@@ -61,7 +61,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	Set<Concept> presAttributes = new HashSet<>();
 	Set<Concept> concAttributes = new HashSet<>();
 	
-	TermGenerator termGenerator = new DrugTermGeneratorCD(this);
+	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	private static String INJECTION = "injection";
 	private static String INFUSION = "infusion";
