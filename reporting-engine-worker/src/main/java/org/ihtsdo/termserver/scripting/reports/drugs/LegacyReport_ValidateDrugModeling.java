@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
+import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
@@ -61,14 +61,14 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 	Set<Concept> presAttributes = new HashSet<>();
 	Set<Concept> concAttributes = new HashSet<>();
 	
-	TermGenerator termGenerator = new DrugTermGeneratorCD(this);
+	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	private static String INJECTION = "injection";
 	private static String INFUSION = "infusion";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(RECENT_CHANGES_ONLY, "true");
+		params.put(RECENT_CHANGES_ONLY, "false");
 		TermServerReport.run(LegacyReport_ValidateDrugModeling.class, args, params);
 	}
 	
@@ -515,9 +515,6 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 	/**
 	 * For Pattern 2A Drugs (liquids) where we have both a presentation strength and a concentration
 	 * report these values and confirm if the units change between the two, and if the calculation is correct
-	 * @param concept
-	 * @return
-	 * @throws TermServerScriptException 
 	 */
 	private void validateConcentrationStrength(Concept c) throws TermServerScriptException {
 		String issueStr = "Presentation/Concentration mismatch";
