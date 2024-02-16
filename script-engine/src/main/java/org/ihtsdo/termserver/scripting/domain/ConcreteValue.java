@@ -1,13 +1,25 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public class ConcreteValue {
 
-	public enum ConcreteValueType { INTEGER, DECIMAL, STRING }
-	
+	public enum ConcreteValueType {
+		@SerializedName("INTEGER") INTEGER,
+		@SerializedName("DECIMAL") DECIMAL,
+		@SerializedName("STRING") STRING }
+
+	@SerializedName("dataType")
+	@Expose
 	private ConcreteValueType dataType;
-	
+
+	@SerializedName("value")
+	@Expose
 	private String value;
-	
+
+	@SerializedName("valueWithPrefix")
+	@Expose
 	private String valueWithPrefix;
 
 	public ConcreteValue(ConcreteValueType cvType, String value) {

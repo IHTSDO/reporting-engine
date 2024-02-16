@@ -10,16 +10,20 @@ public class RelationshipSerializer implements JsonSerializer<Relationship>, Scr
 	public JsonElement serialize(Relationship r, Type typeOfSrc,
 			JsonSerializationContext context) {
 		final JsonObject json = new JsonObject();
-		json.addProperty("effectiveTime", r.getEffectiveTime());
+
 		json.addProperty("moduleId",r.getModuleId());
 		json.addProperty("active", r.isActive());
 		json.addProperty("released", r.isReleased());
 		json.addProperty("relationshipId", r.getRelationshipId());
-		
-		json.add("type", createTypeJson(r));
-		json.add("target", createTargetJson(r));
-		
 		json.addProperty("sourceId", r.getSourceId());
+		if (r.isConcrete()) {
+			json.add("concreteValue", createConcreteValueJson(r));
+			json.add("target", new JsonObject());
+			//json.addProperty("value", r.getConcreteValue().getValueWithPrefix());
+		} else {
+			json.add("target", createTargetJson(r));
+		}
+		json.add("type", createTypeJson(r));
 		json.addProperty("groupId", r.getGroupId());
 		json.addProperty("characteristicType", r.getCharacteristicType().toString());
 		if (r.getModifier() == null) {
@@ -31,6 +35,7 @@ public class RelationshipSerializer implements JsonSerializer<Relationship>, Scr
 		} else {
 			json.addProperty("modifier", r.getModifier().toString());
 		}
+		json.addProperty("effectiveTime", r.getEffectiveTime());
 		
 		return json;
 	}
@@ -44,16 +49,28 @@ public class RelationshipSerializer implements JsonSerializer<Relationship>, Scr
 
 	private JsonElement createTargetJson(Relationship r) {
 		JsonObject target = new JsonObject();
-		if (r.getTarget() == null) {
+		if (r.isConcrete()) {
+			throw new IllegalArgumentException("Call createConcreteValue() for concrete relationship: " + r);
+		} else if (r.getTarget() == null) {
 			throw new IllegalArgumentException("Null Target when serializing relationship: " + r);
+		} else {
+			target.addProperty("effectiveTime", r.getTarget().getEffectiveTime());
+			target.addProperty("moduleId", r.getTarget().getModuleId());
+			target.addProperty("active", r.getTarget().isActive());
+			target.addProperty("conceptId", r.getTarget().getConceptId());
+			target.addProperty("fsn", r.getTarget().getFsn());
+			target.addProperty("definitionStatus", r.getTarget().getDefinitionStatus().toString());
 		}
-		target.addProperty("effectiveTime", r.getTarget().getEffectiveTime());
-		target.addProperty("moduleId", r.getTarget().getModuleId());
-		target.addProperty("active", r.getTarget().isActive());
-		target.addProperty("conceptId", r.getTarget().getConceptId());
-		target.addProperty("fsn", r.getTarget().getFsn());
-		target.addProperty("definitionStatus", r.getTarget().getDefinitionStatus().toString());
 		return target;
+	}
+
+	private JsonElement createConcreteValueJson(Relationship r) {
+		JsonObject cvJson = new JsonObject();
+		ConcreteValue cv = r.getConcreteValue();
+		cvJson.addProperty("dataType", cv.getDataType().toString());
+		cvJson.addProperty("value", cv.getValue());
+		cvJson.addProperty("valueWithPrefix", cv.getValueWithPrefix());
+		return cvJson;
 	}
 
 }
