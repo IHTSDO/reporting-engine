@@ -1761,8 +1761,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static void runHeadless(Integer envNum) {
 		headlessEnvironment = envNum;
 	}
-	
+
 	protected boolean inScope(Component c) {
+		return inScope(c, true);
+	}
+
+	protected boolean inScope(Component c, boolean includeExpectedExtensionModules) {
 		//RP-349 Allow MS customers to run reports against MAIN.
 		//In this case all concepts are "in scope" to allow MS customers to see
 		//what changes to international concepts might affect them
@@ -1780,7 +1784,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					throw new IllegalArgumentException("Extension does not have expectedExtensionModules metadata populated.  Cannot continue.");
 				}
 			}
-			return project.getMetadata().getExpectedExtensionModules().contains(c.getModuleId());
+			if (includeExpectedExtensionModules) {
+				return project.getMetadata().getExpectedExtensionModules().contains(c.getModuleId());
+			} else {
+				return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+			}
 		}
 		return true;
 	}
