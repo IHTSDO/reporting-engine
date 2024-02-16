@@ -72,17 +72,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Set<String> stopWords = new HashSet<>();
 	List<String> wordsOftenTypedInReverse = new ArrayList<>();
 	List<String> wordsOftenTypedTwice = new ArrayList<>();
-	String NBSPSTR = "\u00A0";
-	String ZEROSP = "\u200B";
-	String LONG_DASH = "—";
-	String EN_DASH = "\u2013";
-	String EM_DASH = "\u2014";
-	String RIGHT_APOS = "\u2019";
-	String LEFT_APOS = "\u2018";
-	String RIGHT_QUOTE = "\u201D";
-	String LEFT_QUOTE = "\u201C";
-	String GRAVE_ACCENT = "\u0060";
-	String ACUTE_ACCENT = "\u00B4";
+	private static final String NBSPSTR = "\u00A0";
+	private static final String ZEROSP = "\u200B";
+	private static final String LONG_DASH = "—";
+	private static final String EN_DASH = "\u2013";
+	private static final String EM_DASH = "\u2014";
+	private static final String RIGHT_APOS = "\u2019";
+	private static final String LEFT_APOS = "\u2018";
+	private static final String RIGHT_QUOTE = "\u201D";
+	private static final String LEFT_QUOTE = "\u201C";
+	private static final String GRAVE_ACCENT = "\u0060";
+	private static final String ACUTE_ACCENT = "\u00B4";
 	
 	//See https://regex101.com/r/CAlQjx/1/
 	public static final String SCTID_FSN_REGEX = "(\\d{7,})(\\s+)?\\|(.+?)\\|";
