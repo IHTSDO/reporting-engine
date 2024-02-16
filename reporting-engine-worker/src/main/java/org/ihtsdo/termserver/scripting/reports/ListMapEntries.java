@@ -58,12 +58,20 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 			exclusions = findConcepts(excludeECL);
 		}
 
-		String[] columnHeadings = new String[] {
-				(reverseMap?"Map Target, Count, Concept, RefsetMember" : "SCTID, FSN, SemTag, MapTarget, RefsetMember"),
-				"SCTID, FSN, SemTag, Refset Member"};
-		String[] tabNames = new String[] {
-				"Map",
-				"No Map Target"};
+		String[] columnHeadings;
+		String[] tabNames;
+
+		if (reverseMap) {
+			columnHeadings = new String[]{
+					"Map Target, Count, Concept, RefsetMember",
+					"SCTID, FSN, SemTag, Refset Member" };
+			tabNames = new String[]{
+					"Map",
+					"No Map Target" };
+		} else{
+			columnHeadings = new String[]{ "SCTID, FSN, SemTag, MapTarget, RefsetMember"};
+			tabNames = new String[]{"Map" };
+		}
 		super.postInit(tabNames, columnHeadings, false);
 
 	}
@@ -79,7 +87,9 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List all Map Entries")
-				.withDescription("This report lists map entries for the specified map.  Optionally compact (one row per entry) and optionally reversed, where the map target is the left hand column.")
+				.withDescription("This report lists map entries for the specified map. " +
+						"Optionally compact (one row per entry) and optionally reversed, where the map target is the left hand column. " +
+						"Since a reverse mapping makes no sense where there is no map target, these map entries will be listed in a second tab.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -114,9 +124,11 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 					memberStr = memberStr.substring(0, MAX_CELL_SIZE) + "...";
 					LOGGER.warn("List of members truncated for mapTarget {}", mapTarget);
 				}
+				countIssue(null, members.size());
 				report(PRIMARY_REPORT,mapTarget,members.size(),concepts,memberStr);
 			} else {
 				for (RefsetMember rm : members) {
+					countIssue(null);
 					report(PRIMARY_REPORT,mapTarget, gl.getConcept(rm.getReferencedComponentId()), rm);
 				}
 			}
@@ -158,6 +170,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 			}
 			for (RefsetMember rm : c.getOtherRefsetMembers()) {
 				if (rm.isActive() && rm.getRefsetId().equals(mapConcept.getId())) {
+					countIssue(c);
 					report(c, rm.getField(MAP_TARGET), rm);
 				}
 			}
