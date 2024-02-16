@@ -183,9 +183,9 @@ public class TermServerClient {
 					c = response.getBody();
 					updatedOK = true;
 					LOGGER.info("Updated concept " + c.getConceptId());
-				} catch (Exception e) {
+				} catch (RestClientResponseException e) {
 					tries++;
-					if (tries >= MAX_TRIES) {
+					if (tries >= MAX_TRIES || e.getRawStatusCode() == 400) {
 						throw new TermServerScriptException("Failed to update concept: " + c + " after " + tries + " attempts due to " + e.getMessage(), e);
 					}
 					LOGGER.debug("Update of concept failed, trying again....",e);
