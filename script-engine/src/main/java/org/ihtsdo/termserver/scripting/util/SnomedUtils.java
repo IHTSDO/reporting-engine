@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -1651,6 +1652,33 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return null;
 	}
 
+	public static RelationshipGroup findMatchingOrDescendantGroup(Concept c, RelationshipGroup g, CharacteristicType charType) throws TermServerScriptException {
+		nextPotentialMatch:
+		for (RelationshipGroup potentialMatch : c.getRelationshipGroups(charType)) {
+			if (potentialMatch.size() == g.size()) {
+				nextRelationship:
+				for (IRelationship r1 : potentialMatch.getIRelationships()) {
+					for (IRelationship r2 : g.getIRelationships()) {
+						if (r1.getType().equals(r2.getType()) || r1.getType().getAncestors(RF2Constants.NOT_SET).contains(r2.getType())) {
+							if (r1.isConcrete() && r2.isConcrete()) {
+								if (r1.getConcreteValue().equals(r2.getConcreteValue())) {
+									continue nextRelationship;
+								}
+							} else if (r1.getTarget().equals(r2.getTarget()) || r1.getTarget().getAncestors(RF2Constants.NOT_SET).contains(r2.getTarget())) {
+								continue nextRelationship;
+							}
+						}
+					}
+					//No match found for r1 in g.  Try next group.
+					continue nextPotentialMatch;
+				}
+				//All r1s found a match - we've found a group match
+				return potentialMatch;
+			}
+		}
+		return null;
+	}
+
 	public static boolean isFreeGroup(CharacteristicType charType, Concept c, int checkIfFree) {
 		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
 			if (g.getGroupId() == checkIfFree) {
@@ -2564,5 +2592,17 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			throw new TermServerScriptException("Unable to find single shallowest concept from " + concepts);
 		}
 		return siblings.iterator().next();
+	}
+
+	public static RelationshipGroup createRelationshipGroup(GraphLoader gl, String[][] concepts) throws TermServerScriptException {
+		RelationshipGroup group = new RelationshipGroup(NOT_SET);
+		for (String[] concept : concepts) {
+			group.addRelationship(createRelationshipTemplate(gl, concept[0], concept[1]));
+		}
+		return group;
+	}
+
+	public static RelationshipTemplate createRelationshipTemplate(GraphLoader gl, String c1, String c2) throws TermServerScriptException {
+		return new  RelationshipTemplate(gl.getConcept(c1), gl.getConcept(c2));
 	}
 }
