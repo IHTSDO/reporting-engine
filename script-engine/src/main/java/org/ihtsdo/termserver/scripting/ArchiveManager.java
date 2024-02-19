@@ -388,6 +388,10 @@ public class ArchiveManager implements ScriptConstants {
 			allowStaleData = originalStateDataFlag;
 		} catch (Exception e) {
 			String msg = ExceptionUtils.getExceptionCause("Unable to load " + ts.getProject(), e);
+			if (e instanceof TermServerScriptException) {
+				//No need to include the cause here, it's already in the message
+				msg = "Unable to load " + ts.getProject();
+			}
 			throw new TermServerScriptException (msg, e);
 		}
 		LOGGER.info("Snapshot loading complete, checking integrity");
