@@ -454,6 +454,15 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
 		super.postInit(tabNames, columnHeadings, csvOutput);
+
+		if (gl.getIntegrityWarnings().size() > 0) {
+			report(PRIMARY_REPORT, "***********  Snapshot Integrity Warnings  ***********");
+			for (String warning : gl.getIntegrityWarnings()) {
+				report(PRIMARY_REPORT, warning);
+			}
+			report(PRIMARY_REPORT, "******************************************************");
+			report(PRIMARY_REPORT, "");
+		}
 	}
 	
 	public void instantiate(JobRun jobRun, ApplicationContext appContext) {

@@ -73,6 +73,8 @@ public class GraphLoader implements ScriptConstants {
 	
 	private TransitiveClosure transitiveClosure;
 	private TransitiveClosure previousTransitiveClosure;
+
+	private List<String> integrityWarnings = new ArrayList<>();
 	
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
@@ -122,6 +124,7 @@ public class GraphLoader implements ScriptConstants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
+		integrityWarnings = new ArrayList<>();
 		
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
@@ -1846,21 +1849,27 @@ public class GraphLoader implements ScriptConstants {
 		//into the non-staging collection only if all duplications have been resolved.
 		LOGGER.info("Finalising MRCM from Staging Area");
 		List<String> conflictingAttributes = new ArrayList<>();
-		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPreCoord, mrcmAttributeRangeMapPreCoord, conflictingAttributes);
-		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPostCoord, mrcmAttributeRangeMapPostCoord, conflictingAttributes);
-		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapAll, mrcmAttributeRangeMapAll, conflictingAttributes);
-		finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapNewPreCoord, mrcmAttributeRangeMapNewPreCoord, conflictingAttributes);
-	
+		boolean preCoordAcceptable= finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPreCoord, mrcmAttributeRangeMapPreCoord, conflictingAttributes);
+		boolean postCoordAcceptable = finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPostCoord, mrcmAttributeRangeMapPostCoord, conflictingAttributes);
+		boolean allCoordAcceptable = finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapAll, mrcmAttributeRangeMapAll, conflictingAttributes);
+		boolean newCoordAcceptable = finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapNewPreCoord, mrcmAttributeRangeMapNewPreCoord, conflictingAttributes);
+		boolean allContentAcceptable = preCoordAcceptable && postCoordAcceptable && allCoordAcceptable && newCoordAcceptable;
+
 		if (conflictingAttributes.size() > 0) {
 			String msg = "MRCM Attribute Range File conflicts: \n";
 			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
-			throw new TermServerScriptException(msg);
+			if (allContentAcceptable) {
+				integrityWarnings.add(msg);
+			} else {
+				throw new TermServerScriptException(msg);
+			}
 		}
 	}
 
-	private void finaliseMRCMAttributeRange(
+	private boolean finaliseMRCMAttributeRange(
 			Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMap,
 			Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMap, List<String> conflictingAttributes) throws TermServerScriptException {
+		boolean acceptablyFinalised = true;
 		mrcmAttributeRangeMap.clear();
 		for (Concept refComp : mrcmStagingAttributeRangeMap.keySet()) {
 			Map<String, MRCMAttributeRange> conflictingRanges = mrcmStagingAttributeRangeMap.get(refComp);
@@ -1868,19 +1877,57 @@ public class GraphLoader implements ScriptConstants {
 				//No Conflict in this case
 				mrcmAttributeRangeMap.put(refComp, conflictingRanges.values().iterator().next());
 			} else {
-				//We're OK as long as only 1 of the ranges is active.  Store that one.   Otherwise, add to conflicts list to report
-				for (MRCMAttributeRange ar : conflictingRanges.values()) {
-					MRCMAttributeRange existing = mrcmAttributeRangeMap.get(refComp);
-					//We have a problem if the existing one is also active
-					//We'll collect all conflicts up and report back on all of them in the calling function
-					if (existing != null && existing.isActive() && ar.isActive()) {
-						String contentType = translateContentType(ar.getContentTypeId());
-						conflictingAttributes.add(contentType + ": " + refComp);
-					} else if (existing == null || ar.isActive()) {
-						mrcmAttributeRangeMap.put(refComp, ar);
+				//Assuming the conflict is between an International Row and an Extension Row for the same concept
+				//but with distinct UUIDs, we'll let the extension row win.
+				MRCMAttributeRange winningAR = pickWinningMRCMAttributeRange(refComp, conflictingRanges, conflictingAttributes);
+				if (winningAR == null) {
+					//We're OK as long as only 1 of the ranges is active.  Store that one.   Otherwise, add to conflicts list to report
+					for (MRCMAttributeRange ar : conflictingRanges.values()) {
+						MRCMAttributeRange existing = mrcmAttributeRangeMap.get(refComp);
+						//We have a problem if the existing one is also active
+						//We'll collect all conflicts up and report back on all of them in the calling function
+						if (existing != null && existing.isActive() && ar.isActive()) {
+							String contentType = translateContentType(ar.getContentTypeId());
+							String detail = " (" + ar.getId() + " in module " + ar.getModuleId() + " vs " + existing.getId() + " in module " + existing.getModuleId() + ")";
+							conflictingAttributes.add(contentType + ": " + refComp + detail);
+							acceptablyFinalised = false;
+						} else if (existing == null || ar.isActive()) {
+							mrcmAttributeRangeMap.put(refComp, ar);
+						}
 					}
+				} else {
+					mrcmAttributeRangeMap.put(refComp, winningAR);
 				}
 			}
 		}
+		return acceptablyFinalised;
+	}
+
+	private MRCMAttributeRange pickWinningMRCMAttributeRange(Concept refComp, Map<String, MRCMAttributeRange> conflictingRanges, List<String> conflictingAttributes) throws TermServerScriptException {
+		//Return 1 active row for each of INT and EXT, or null if there's no active row, or multiple active rows
+		MRCMAttributeRange intAR = pickActiveMRCMAttributeRange(conflictingRanges, true);
+		MRCMAttributeRange extAR = pickActiveMRCMAttributeRange(conflictingRanges, false);
+		if (intAR != null && extAR != null) {
+			String contentType = translateContentType(intAR.getContentTypeId());
+			String detail = " (" + intAR.getId() + " in module " + intAR.getModuleId() + " vs " + extAR.getId() + " in module " + extAR.getModuleId() + ")";
+			conflictingAttributes.add(contentType + ": " + refComp + detail);
+			return extAR;
+		}
+		return null;
+	}
+
+	private MRCMAttributeRange pickActiveMRCMAttributeRange(Map<String, MRCMAttributeRange> conflictingRanges, boolean isInternational) {
+		List<MRCMAttributeRange> activeRanges = conflictingRanges.values().stream()
+				.filter(ar -> ar.isActive())
+				.filter(ar -> isInternational == SnomedUtils.isInternational(ar))
+				.collect(Collectors.toList());
+		if (activeRanges.size() == 1) {
+			return activeRanges.get(0);
+		}
+		return null;
+	}
+
+	public List<String> getIntegrityWarnings() {
+		return integrityWarnings;
 	}
 }
