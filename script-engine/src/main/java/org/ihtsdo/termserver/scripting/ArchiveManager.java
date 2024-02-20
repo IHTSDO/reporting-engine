@@ -831,8 +831,8 @@ public class ArchiveManager implements ScriptConstants {
 						gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 					}
 				} else if (fileName.contains("sct2_StatedRelationship_" )) {
-					LOGGER.info("Loading StatedRelationship " + fileType + " file.");
-					gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
+					LOGGER.info("Skipping StatedRelationship " + fileType + " file.");
+					//gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
 				} else if (fileName.contains("sct2_RelationshipConcrete" )) {
 					LOGGER.info("Loading Concrete Relationship " + fileType + " file.");
 					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
