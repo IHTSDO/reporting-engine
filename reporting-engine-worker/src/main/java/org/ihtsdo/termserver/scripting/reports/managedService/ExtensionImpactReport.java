@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricDataUser;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricStatsGenerator;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -89,7 +90,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		getArchiveManager(true).reset(false);
 		Project previousProject = project.clone();
 		//boolean loadEditionArchive = false;
-		
+		SnapshotGenerator.setSkipSave(true); //This takes a copy of the graph in memory, so avoid for this expensive report.
+
 		if (StringUtils.isEmpty(getJobRun().getParamValue(INTERNATIONAL_RELEASE))) {
 			Branch branch = tsClient.getBranch("MAIN");
 			project.setBranchPath("MAIN");
@@ -457,6 +459,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	@Override
 	protected void recordFinalWords() throws TermServerScriptException {
 		report(PRIMARY_REPORT,"Proposed upgrade to", proposedUpgrade);
+		SnapshotGenerator.setSkipSave(false); //reset for subsequent reuse
+
 	}
 
 }
