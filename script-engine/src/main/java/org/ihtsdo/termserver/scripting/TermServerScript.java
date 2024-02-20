@@ -1386,6 +1386,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			recordSummaryText("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
 			recordSummaryText("Started at: " + startTime);
 		}
+		//Allow report to have some final word before completing.  Override if required
+		recordFinalWords();
+
 		recordSummaryText("Finished at: " + endTime);
 		if (getReportManager() != null) {
 			recordSummaryText("Processing Report URL: " + getReportManager().getUrl());
@@ -1394,7 +1397,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		flushFiles(false);
 	}
-	
+
+	protected void recordFinalWords() throws TermServerScriptException {
+		//Override in base class if required
+	}
+
 	private synchronized void recordSummaryText(String msg) {
 		info (msg);
 		if (getReportManager() != null) {
