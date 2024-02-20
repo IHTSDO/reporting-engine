@@ -40,10 +40,11 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private Map<Concept, String> historicalAssociationStrMap;
 	
 	private String[][] columnNames;  //Used for both column names, and to track totals
+	private String proposedUpgrade;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240301T120000Z.zip");
 		TermServerReport.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -94,13 +95,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			project.setBranchPath("MAIN");
 			project.setKey("MAIN");
 			project.setMetadata(branch.getMetadata());
+			proposedUpgrade = "MAIN";
 		} else {
 			projectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
 			project.setKey(projectKey);
 			project.setBranchPath(projectKey);
 			//loadEditionArchive = true;
+			proposedUpgrade = projectKey;
 		}
-		addSummaryInformation("Proposed upgrade to", projectKey);
 
 		try {
 			incomingDataKey = project.getKey();
@@ -198,6 +200,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		for (Concept topLevelConcept : topLevelHierarchies) {
 			LOGGER.info("Processing - " + topLevelConcept);
 			Set<String> thisHierarchy = getHierarchy(topLevelConcept);
+			/*if (thisHierarchy.contains("1297037002")) {
+				LOGGER.info("Debug here");
+			}*/
 			
 			reportInactivations(topLevelConcept, thisHierarchy, columnNames[0]);
 			reportTranslations(topLevelConcept, thisHierarchy, columnNames[1]);
@@ -222,6 +227,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		Set<Concept> yesInScopeDescendentsCache = new HashSet<>();
 		
 		for (String sctId : thisHierarchy) {
+			/*if (sctId.equals("1297037002")) {
+				LOGGER.info("Debug here");
+			}*/
 			Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
 			//If this concept is already inactive, or doesn't yet exist we don't need to count it
 			if (currentConcept == null || !currentConcept.isActive()) {
@@ -444,6 +452,11 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private boolean hasTranslation(Concept c) {
 		return c.getDescriptions().stream()
 				.anyMatch(d -> !d.getLang().equals("en"));
+	}
+
+	@Override
+	protected void recordFinalWords() throws TermServerScriptException {
+		report(PRIMARY_REPORT,"Proposed upgrade to", proposedUpgrade);
 	}
 
 }
