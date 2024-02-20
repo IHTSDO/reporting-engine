@@ -123,6 +123,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		this.ignoreInputFileForReportName = true;
 		super.init(run);
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
+		if (includeLegacyIssues && unpromotedChangesOnly) {
+			throw new TermServerScriptException("Cannot include legacy issues when only unpromoted changes are being processed. Unpromoted content cannot also be 'legacy'.");
+		}
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
 		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
