@@ -244,8 +244,13 @@ public class HistoricDataUser extends TermServerReport {
 			datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
 			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
 		} else {
-			idx += 23;
+			idx++;
+			datum.hierarchy = lineItems[++idx];
+			idx += 21;
 			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
+			if (datum.histAssocTargets.size() == 1 && datum.histAssocTargets.get(0).equals("")) {
+				datum.histAssocTargets = null;  //Save the memory!
+			}
 		}
 		return datum;
 	}
