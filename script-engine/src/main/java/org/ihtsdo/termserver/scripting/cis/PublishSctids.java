@@ -29,16 +29,18 @@ public class PublishSctids extends TermServerReport {
 	public static String ASSIGNED = "Assigned";
 	public static String PUBLISHED = "Published";
 
-	Map<String, Set<String>> newSctidsByNamespace = new HashMap<>();
-	Map<String, Set<String>> oldSctidsByNamespace = new HashMap<>();
+	private Map<String, Set<String>> newSctidsByNamespace = new HashMap<>();
+	private Map<String, Set<String>> oldSctidsByNamespace = new HashMap<>();
 
-	Set<Long> missingIds = new HashSet<>();
-	Map<String, Set<Long>> wrongStatusMap = new HashMap<>();
-	int correctlyRecorded = 0;
+	private Set<Long> missingIds = new HashSet<>();
+	private Map<String, Set<Long>> wrongStatusMap = new HashMap<>();
+	private int correctlyRecorded = 0;
 
-	Set<String> namespaces = new HashSet<>();
-	String targetET = "20231130";
-	int batchSize = 100;
+	private Set<String> namespaces = new HashSet<>();
+	private String targetET = "20231130";
+	private int batchSize = 100;
+	private boolean includeLegacySCTIDS = true;
+	private boolean publishInternationalSCTIDS = true;
 
 	private CisClient cisClient;
 	
@@ -65,6 +67,10 @@ public class PublishSctids extends TermServerReport {
 	}
 
 	private void filterOutOldSCTIDs() {
+		if (includeLegacySCTIDS) {
+			return;
+		}
+
 		for (String namespace : newSctidsByNamespace.keySet()) {
 			 newSctidsByNamespace.get(namespace).removeAll(oldSctidsByNamespace.get(namespace));
 		}
@@ -78,20 +84,31 @@ public class PublishSctids extends TermServerReport {
 
 
 	private void publishSCTIDS() throws TermServerScriptException {
+		if (newSctidsByNamespace.isEmpty()) {
+			LOGGER.info("No SCTIDs to publish");
+			report(PRIMARY_REPORT, "No SCTIDs detected to publish");
+			return;
+		}
+
 		for (String namespace : newSctidsByNamespace.keySet()) {
 			List<String> sctids = new ArrayList<>(newSctidsByNamespace.get(namespace));
-			if (namespace.equals("0") || sctids.size() == 0) {
+			if ((!publishInternationalSCTIDS && namespace.equals("0"))
+					|| sctids.size() == 0) {
 				LOGGER.info("Skipping " + sctids.size() + " sctids for namespace " + namespace);
 				continue;
 			}
 			LOGGER.info("Processing " + sctids.size() + " sctids for namespace " + namespace);
 			List<List<String>> batches = Lists.partition(sctids, batchSize);
+			int batchCount = 0;
+			int originalBatchSize = batches.size();  //This will change as we remove empty batches
 			for (List<String> batch : batches) {
+				LOGGER.debug("Processing batch {} of {} sctids", (++batchCount + "/" + originalBatchSize), batch.size());
 				//Filter out those records that are currently 'Reserved'
-				batch = removeAndReportReserved(batch);
+				//Take a copy of the list because the loop doesn't like becoming empty during processing!
+				batch = removeAndReportReserved(new ArrayList<String>(batch));
 				//Have we lost all of them?
 				if (batch.isEmpty()) {
-					LOGGER.info("Skipping empty batch");
+					LOGGER.info("Skipping empty batch - none remain to be published after filtering.");
 					continue;
 				}
 				CisBulkRequest cisBulkRequest = new CisBulkRequest("RP-836 Bulk publish of " + batch.size() + " sctids",
@@ -157,7 +174,7 @@ public class PublishSctids extends TermServerReport {
 
 						//If we're looking for new SCTIDs we're interested in them matching the ET
 						//If we're looking for old SCTIDs, then we're interested in them NOT matching the ET
-						if ( findNewSCTIDs != effectiveTime.equals(this.targetET)) {
+						if (!includeLegacySCTIDS && findNewSCTIDs != effectiveTime.equals(this.targetET)) {
 							continue;
 						}
 
