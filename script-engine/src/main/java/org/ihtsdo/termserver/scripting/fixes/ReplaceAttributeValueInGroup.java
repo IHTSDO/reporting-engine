@@ -59,28 +59,28 @@ public class ReplaceAttributeValueInGroup extends BatchFix {
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task task, Concept localConcept, String info) throws TermServerScriptException {
 		int changesMade = 0;
 		try {
-			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-			changesMade = switchValues(task, loadedConcept);
+			Concept loadedConcept = loadConcept(localConcept, task.getBranchPath());
+			changesMade = switchValues(task, loadedConcept, localConcept);
 			if (changesMade > 0) {
 				updateConcept(task, loadedConcept, info);
 			}
 		} catch (ValidationFailure v) {
-			report(task, concept, v);
+			report(task, localConcept, v);
 		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+			report(task, localConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changesMade;
 	}
 	
-	private int switchValues(Task t, Concept c) throws TermServerScriptException, ValidationFailure {
+	private int switchValues(Task t, Concept loadedConcept, Concept localConcept) throws TermServerScriptException, ValidationFailure {
 		int changesMade = 0;
 		//Find the group that matches the target, and replace the attribute value
-		RelationshipGroup group = SnomedUtils.findMatchingOrDescendantGroup(c, targetGroup, CharacteristicType.STATED_RELATIONSHIP);
+		RelationshipGroup group = SnomedUtils.findMatchingOrDescendantGroup(localConcept, targetGroup, CharacteristicType.STATED_RELATIONSHIP);
 		if (group == null) {
-			throw new ValidationFailure(c, "Unable to find group to replace");
+			throw new ValidationFailure(loadedConcept, "Unable to find group to replace");
 		}
 		//Find the matching attribute (might be a descendent) via the type
 		for (Relationship r : group.getRelationships()) {
@@ -89,7 +89,7 @@ public class ReplaceAttributeValueInGroup extends BatchFix {
 				//BUT it might be that the original attribute had a more specific type, keep that.
 				RelationshipTemplate rt = replaceAttributeTemplate.clone();
 				rt.setType(r.getType());
-				changesMade = replaceRelationship(t, c, r, rt);
+				changesMade = replaceRelationship(t, loadedConcept, r, rt);
 				break;
 			}
 		}
