@@ -1360,7 +1360,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (criticalIssues.size() > 0) {
-			recordSummaryText ("\nCritical Issues Encountered (" + criticalIssues.size() + ")\n========================");
+			recordSummaryText("\nCritical Issues Encountered (" + criticalIssues.size() + ")\n========================");
 			for (String thisCriticalIssue : criticalIssues) {
 				recordSummaryText(thisCriticalIssue);
 			}
@@ -1375,7 +1375,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		for (String key : reportLast) {
 			if (summaryDetails.containsKey(key)) {
 				String display = summaryDetails.get(key).toString();
-				recordSummaryText (key + (display.isEmpty()?"":": ") + display);
+				recordSummaryText(key + (display.isEmpty()?"":": ") + display);
 			}
 		}
 		

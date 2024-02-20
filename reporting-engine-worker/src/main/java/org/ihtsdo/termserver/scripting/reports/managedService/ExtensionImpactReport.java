@@ -43,7 +43,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20231001T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
 		TermServerReport.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -100,6 +100,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			project.setBranchPath(projectKey);
 			//loadEditionArchive = true;
 		}
+		addSummaryInformation("Proposed upgrade to", projectKey);
 
 		try {
 			incomingDataKey = project.getKey();
