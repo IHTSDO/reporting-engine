@@ -64,9 +64,7 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 	}
 
 	public InactivationIndicatorEntry addConceptNotCurrentInactivationIndicator(Concept c, Description d) throws TermServerScriptException, ValidationFailure {
-		InactivationIndicatorEntry cnc = InactivationIndicatorEntry.withDefaults(d);
-		cnc.setInactivationReasonId(SCTID_INACT_CONCEPT_NON_CURRENT);
-		cnc.setModuleId(d.getModuleId());
+		InactivationIndicatorEntry cnc = InactivationIndicatorEntry.withDefaults(d, SCTID_INACT_CONCEPT_NON_CURRENT);
 		d.addInactivationIndicator(cnc);
 		return cnc;
 	}
