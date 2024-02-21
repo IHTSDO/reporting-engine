@@ -14,10 +14,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.TermGenerator;
+import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -36,39 +33,25 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
-	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
-	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
 	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	
-	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
-	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
-	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
+
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
-	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
+
 	private List<Concept> bannedMpParents;
-	//private Set<RelationshipGroup> reportedForBoSSPAIViolation = new HashSet<>();
-	private Set<BaseMDF> reportedBaseMDFCombos = new HashSet<>();
-	
+
 	private boolean isRecentlyTouchedConceptsOnly = false;
 	private Set<Concept> recentlyTouchedConcepts;
 	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
-	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
-	
-	Set<Concept> presAttributes = new HashSet<>();
-	Set<Concept> concAttributes = new HashSet<>();
-	
-	TermGenerator termGenerator = new DrugTermGenerator(this);
-	
-	private static String INJECTION = "injection";
-	private static String INFUSION = "infusion";
-	
+	TermGenerator termGenerator = new VaccineTermGenerator(this);
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(RECENT_CHANGES_ONLY, "true");
+		params.put(RECENT_CHANGES_ONLY, "false");
 		TermServerReport.run(VaccineValidation.class, args, params);
 	}
 	
@@ -84,21 +67,8 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
-		populateAcceptableDoseFormMaps();
 		populateGrouperSubstances();
-		populateBaseMDFMap();
-		
 		super.postInit(tabNames, columnHeadings, false);
-		
-		presAttributes.add(HAS_PRES_STRENGTH_VALUE);
-		presAttributes.add(HAS_PRES_STRENGTH_UNIT);
-		presAttributes.add(HAS_PRES_STRENGTH_DENOM_UNIT);
-		presAttributes.add(HAS_PRES_STRENGTH_DENOM_VALUE);
-		
-		concAttributes.add(HAS_CONC_STRENGTH_VALUE);
-		concAttributes.add(HAS_CONC_STRENGTH_UNIT);
-		concAttributes.add(HAS_CONC_STRENGTH_DENOM_UNIT);
-		concAttributes.add(HAS_CONC_STRENGTH_DENOM_VALUE);
 		
 		bannedMpParents = new ArrayList<>();
 		bannedMpParents.add(gl.getConcept("763158003 |Medicinal product (product)|"));
@@ -160,6 +130,13 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			/*if (c.getId().equals("714209004")) {
 				LOGGER.debug ("here");
 			}*/
+
+			if (isCD(c) || isMPF(c) || isMPFOnly(c)) {
+				String issueStr = "Vaccines should only exist at MP/MPO level";
+				initialiseSummaryInformation(issueStr);
+				report (c, issueStr);
+				continue;
+			}
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
 			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
@@ -168,67 +145,24 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				report (c, issueStr);
 				continue;
 			}
-			
-			
-			if (isMP(c) || isMPF(c)) {
-				//DRUGS-585
-				validateNoModifiedSubstances(c);
-				
-				//RP-199
-				checkForRedundantConcept(c);
-			}
-			
-			//DRUGS-784
-			if (isCD(c) || isMPF(c)) {
-				validateAcceptableDoseForm(c);
-			}
-			
+
 			// DRUGS-281, DRUGS-282, DRUGS-269
 			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
 				validateTerming(c, allDrugTypes);
 			}
-			
-			//DRUGS-267
-			validateIngredientsAgainstBoSS(c);
-			//DRUGS-1021
-			if (isCD(c)) {
-				checkBossPaiPdfCombinations(c);
-			}
-			
-			//DRUGS-793
-			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
-				checkForBossGroupers(c);
-				checkForPaiGroupers(c);
-			}
+
 			
 			//DRUGS-296 
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().equals(MEDICINAL_PRODUCT)) {
 				validateStatedVsInferredAttributes(c, HAS_ACTIVE_INGRED, allDrugTypes);
 				validateStatedVsInferredAttributes(c, HAS_PRECISE_INGRED, allDrugTypes);
-				validateStatedVsInferredAttributes(c, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
 			}
-			
-			//DRUGS-603: DRUGS-686 - Various modelling rules
-			//RP-186
-			if (isCD(c)) {
-				validateCdModellingRules(c);
-			}
-			
+
 			//RP-189
 			validateProductModellingRules(c);
 			
-			//DRUGS-518
-			if (SnomedUtils.isConceptType(c, cds)) {
-				checkForInferredGroupsNotStated(c);
-			}
-			
-			//DRUGS-51?
-			if (isCD(c)) {
-				validateConcentrationStrength(c);
-				validateStrengthNormalization(c);
-			}
-			
+
 			if (SnomedUtils.isConceptType(c, allDrugTypes)) {
 				//RP-191
 				ensureStatedInferredAttributesEqual(c);
@@ -249,25 +183,8 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			//RP-175
 			validateAttributeRules(c);
 			
-			
-			if (isCD(c)) {
-				//RP-188
-				checkCdUnitConsistency(c);
-				
-				//RP-504
-				checkMissingDoseFormGrouper(c);
-			}
 		}
 		LOGGER.info ("Drugs validation complete");
-	}
-
-	private void checkForRedundantConcept(Concept c) throws TermServerScriptException {
-		//MP / MP with no inferred descendants are not required
-		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
-		initialiseSummary(issueStr);
-		if (c.getDescendants(NOT_SET).size() == 0) {
-			report (c, issueStr);
-		}
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
@@ -338,75 +255,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		}
 	}
 	
-	private void populateBaseMDFMap() throws TermServerScriptException {
-		baseMDFMap = new HashMap<>();
-		for (Concept c : allDrugs) {
-			DrugUtils.setConceptType(c);
-			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-				Concept mdf = getMDF(c);
-				for (RelationshipGroup rg : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-					//Skip the ungrouped concepts, we're only interested in groups featuring an ingredient
-					if (!rg.isGrouped()) {
-						continue;
-					}
-					BaseMDF baseMDF = getBaseMDF(rg, mdf);
-					Set<RelationshipGroup> groups = baseMDFMap.get(baseMDF);
-					if (groups == null) {
-						groups = new HashSet<RelationshipGroup>();
-						baseMDFMap.put(baseMDF, groups);
-					}
-					groups.add(rg);
-				}
-			}
-		}
-	}
-	
-	private void checkForBossGroupers(Concept c) throws TermServerScriptException {
-		String issueStr = "Grouper substance used as BoSS";
-		initialiseSummary(issueStr);
-		for (Concept boss : SnomedUtils.getTargets(c, new Concept[] {HAS_BOSS}, CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (grouperSubstanceUsage.containsKey(boss)) {
-				report (c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
-			}
-		}
-	}
-	
-	private void checkForPaiGroupers(Concept c) throws TermServerScriptException {
-		String issueStr = "Grouper substance used as PAI";
-		initialiseSummary(issueStr);
-		for (Concept pai : SnomedUtils.getTargets(c, new Concept[] {HAS_PRECISE_INGRED}, CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (grouperSubstanceUsage.containsKey(pai)) {
-				report (c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
-			}
-		}
-	}
-
-	private void validateAcceptableDoseForm(Concept c) throws TermServerScriptException {
-		String issueStr1 = c.getConceptType() + " uses unlisted dose form";
-		String issueStr2 = c.getConceptType() + " uses unacceptable dose form";
-		initialiseSummary(issueStr1);
-		initialiseSummary(issueStr2);
-		
-		Map<Concept, Boolean> acceptableDoseForms;
-		if (isMPF(c)) {
-			acceptableDoseForms = acceptableMpfDoseForms;
-		} else {
-			acceptableDoseForms = acceptableCdDoseForms;
-		}
-		
-		acceptableDoseForms.put(gl.getConcept("785898006 |Conventional release solution for irrigation (dose form)|"), Boolean.TRUE);
-		acceptableDoseForms.put(gl.getConcept("785910004 |Prolonged-release intralesional implant (dose form)|"), Boolean.TRUE);
-		
-		Concept thisDoseForm = SnomedUtils.getTarget(c, doseFormTypes, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
-		//Is this dose form acceptable?
-		if (acceptableDoseForms.containsKey(thisDoseForm)) {
-			if (acceptableDoseForms.get(thisDoseForm).equals(Boolean.FALSE)) {
-				report (c, issueStr2, thisDoseForm);
-			}
-		} else {
-			report (c, issueStr1, thisDoseForm);
-		}
-	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
 		issueSummaryMap.entrySet().stream()
@@ -419,89 +267,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
-	/**
-	*	Acutation should be modeled with presentation strength and unit of presentation.
-	*	Has presentation strength denominator unit (attribute) cannot be 258773002|Milliliter (qualifier value)
-	*	Has concentration strength denominator unit (attribute) cannot be 732936001|Tablet (unit of presentation)
-	*	Has presentation strength denominator unit (attribute) cannot be 258684004|milligram (qualifier value)
-	*	Has concentration strength numerator unit (attribute) cannot be 258727004|milliequivalent (qualifier value)
-	 * @throws TermServerScriptException 
-	*/
-	private void validateCdModellingRules(Concept c) throws TermServerScriptException {
-		String issueStr = "Group contains > 1 presentation/concentration strength";
-		String issue2Str = "Group contains > 1 presentation/concentration strength";
-		String issue3Str = "Invalid drugs model";
-		String issue4Str = "CD with multiple inferred parents";
-		initialiseSummary(issueStr);
-		initialiseSummary(issue2Str);
-		initialiseSummary(issue3Str);
-		initialiseSummary(issue4Str);
-		
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (g.isGrouped()) {
-				Set<Relationship> ps = g.getType(HAS_PRES_STRENGTH_VALUE);
-				Set<Relationship> psdu = g.getType(HAS_PRES_STRENGTH_DENOM_UNIT);
-				Set<Relationship> csdu = g.getType(HAS_CONC_STRENGTH_DENOM_UNIT);
-				Set<Relationship> csnu = g.getType(HAS_CONC_STRENGTH_UNIT);
-				if (psdu.size() > 1 || csdu.size() > 1) {
-					report(c, issueStr, g);
-					return;
-				} 
-				if (c.getFsn().toLowerCase().contains("actuation")) {
-					if (ps.size() < 1 || psdu.size() < 1) {
-						report(c, issue2Str, g);
-						return;
-					}
-				}
-				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLILITER)) {
-					report (c, issue3Str, psdu.iterator().next());
-				}
-				if (csdu.size() == 1 && csdu.iterator().next().getTarget().equals(gl.getConcept("732936001|Tablet|"))) {
-					report (c, issue3Str, csdu.iterator().next());
-				}
-				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLIGRAM)) {
-					report (c, issue3Str, psdu.iterator().next());
-				}
-				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
-					report (c, issue3Str, csdu.iterator().next());
-				}
-				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258728009|microequivalent|"))) {
-					report (c, issue3Str, csdu.iterator().next());
-				}
-				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258718000|millimole|"))) {
-					report (c, issue3Str, csdu.iterator().next());
-				}
-			}
-		}
-		
-		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
-			report (c, issue4Str, getParentsJoinedStr(c));
-		}
-	}
-
-	private String getParentsJoinedStr(Concept c) {
-		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
-				.map(p -> p.getFsn())
-				.collect(Collectors.joining(", \n"));
-	}
-
-	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
-		String issueStr = c.getConceptType() + " has modified ingredient";
-		initialiseSummary(issueStr);
-		//Check all ingredients for any that themselves have modification relationships
-		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getType().equals(HAS_PRECISE_INGRED) || r.getType().equals(HAS_ACTIVE_INGRED) ) {
-				Concept ingredient = r.getTarget();
-				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					if (ir.getType().equals(IS_MODIFICATION_OF)) {
-						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
-					}
-				}
-			}
-		}
-	}
-	
-
 	private void validateProductModellingRules(Concept c) throws TermServerScriptException {
 		String issueStr = "Product has more than one manufactured dose form attribute in Inferred Form";
 		String issueStr2 = "Product has more than one manufactured dose form attribute in Stated Form";
@@ -513,126 +278,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		}
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
 			report (c, issueStr2);
-		}
-	}
-
-	/**
-	 * For Pattern 2A Drugs (liquids) where we have both a presentation strength and a concentration
-	 * report these values and confirm if the units change between the two, and if the calculation is correct
-	 * @param concept
-	 * @return
-	 * @throws TermServerScriptException 
-	 */
-	private void validateConcentrationStrength(Concept c) throws TermServerScriptException {
-		String issueStr = "Presentation/Concentration mismatch";
-		initialiseSummary(issueStr);
-		//For each group, do we have both a concentration and a presentation?
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			ConcreteIngredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
-			if (i.presStrength != null && i.concStrength != null) {
-				boolean unitsChange = false;
-				boolean issueDetected = false;
-				//Does the unit change between presentation and strength?
-				if (!i.presNumeratorUnit.equals(i.concNumeratorUnit) || ! i.presDenomUnit.equals(i.concDenomUnit)) {
-					unitsChange = true;
-				}
-				
-				//Normalise the numbers
-				BigDecimal presStrength = new BigDecimal(i.presStrength);
-				BigDecimal concStrength = new BigDecimal(i.concStrength);
-				if (!i.presNumeratorUnit.equals(i.concNumeratorUnit)) {
-					concStrength = concStrength.multiply(calculateUnitFactor (i.presNumeratorUnit, i.concNumeratorUnit));
-				}
-				
-				BigDecimal presDenomQuantity = new BigDecimal (i.presDenomQuantity);
-				BigDecimal concDenomQuantity = new BigDecimal (i.concDenomQuantity);
-				if (!i.presDenomUnit.equals(i.concDenomUnit)) {
-					concDenomQuantity = concDenomQuantity.multiply(calculateUnitFactor (i.presDenomUnit, i.concDenomUnit));
-				}
-				
-				//Do they give the same ratio when we divide
-				BigDecimal presRatio = presStrength.divide(presDenomQuantity, 3, RoundingMode.HALF_UP);
-				BigDecimal concRatio = concStrength.divide(concDenomQuantity, 3, RoundingMode.HALF_UP);
-				
-				if (!presRatio.equals(concRatio)) {
-					issueDetected = true;
-				}
-				report (c, issueStr, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
-			}
-		}
-	}
-
-	private BigDecimal calculateUnitFactor(Concept unit1, Concept unit2) {
-		BigDecimal factor = new BigDecimal(1);  //If we don't work out a different, multiple so strength unchanged
-		//Is it a solid or liquid?
-		
-		int unit1Idx = ArrayUtils.indexOf(solidUnits, unit1);
-		int unit2Idx = -1;
-		
-		if (unit1Idx != -1) {
-			unit2Idx = ArrayUtils.indexOf(solidUnits, unit2);
-		} else {
-			//Try liquid
-			unit1Idx = ArrayUtils.indexOf(liquidUnits, unit1);
-			if (unit1Idx != -1) {
-				unit2Idx = ArrayUtils.indexOf(liquidUnits, unit2);
-			}
-		}
-		
-		if (unit1Idx != -1) {
-			if (unit2Idx == -1) {
-				throw new IllegalArgumentException("Units lost between " + unit1 + " and " + unit2 );
-			} else if (unit1Idx == unit2Idx) {
-				throw new IllegalArgumentException("Units previously detected different between " + unit1 + " and " + unit2 );
-			}
-			
-			factor = unit1Idx > unit2Idx ? new BigDecimal(0.001D) : new BigDecimal(1000) ; 
-		}
-		return factor;
-	}
-	
-	private void validateStrengthNormalization(Concept c) throws TermServerScriptException {
-		//For each group, validate any relevant units
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			ConcreteIngredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
-			if (i.presStrength != null) {
-				validateStrengthNormalization(c, i.presNumeratorUnit, i.presStrength);
-				validateStrengthNormalization(c, i.presDenomUnit, i.presDenomQuantity);
-			}
-		
-			if(i.concStrength != null) {
-				validateStrengthNormalization(c, i.concNumeratorUnit, i.concStrength);
-				validateStrengthNormalization(c, i.concDenomUnit, i.concDenomQuantity);
-			}
-		}
-	}
-	
-
-	private void validateStrengthNormalization(Concept c, Concept unit, String strengthStr) throws TermServerScriptException {
-		String issueStr = "Strength Normalization Issue";
-		initialiseSummary(issueStr);
-		String issueStr2 = "Strength Normalization Issue >= 1000000 unit";
-		initialiseSummary(issueStr2);
-		
-		//Are we working with a known solid or liquid unit?
-		int unitIdx = ArrayUtils.indexOf(solidUnits, unit);
-		if (unitIdx == -1) { //Try liquid
-			unitIdx = ArrayUtils.indexOf(liquidUnits, unit);
-		}
-		
-		if (unitIdx != -1) {
-			Double strength = Double.parseDouble(strengthStr);
-			if (strength > 1000 || strength < 1) {
-				report(c, issueStr, strengthStr + " " + unit.getPreferredSynonym());
-			}
-		}
-		
-		//767525000 |Unit (qualifier value)|
-		if (unit.getConceptId().equals("767525000")) {
-			Double strength = Double.parseDouble(strengthStr);
-			if (strength >= 1000000) {
-				report(c, issueStr2, strengthStr + " " + unit.getPreferredSynonym());
-			}
 		}
 	}
 
@@ -720,121 +365,8 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		}
 	}
 
-	private void validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
-		String issueStr  = "Active ingredient is a subtype of BoSS.  Expected modification.";
-		String issue2Str = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
-		initialiseSummary(issueStr);
-		initialiseSummary(issue2Str);
-		
-		Set<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
-		//Check BOSS attributes against active ingredients - must be in the same relationship group
-		Set<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
-		for (Relationship bRel : bossAttributes) {
-			incrementSummaryInformation("BoSS attributes checked");
-			boolean matchFound = false;
-			Concept boSS = bRel.getTarget();
-			for (Relationship iRel : ingredientRels) {
-				Concept ingred = iRel.getTarget();
-				if (bRel.getGroupId() == iRel.getGroupId()) {
-					boolean isSelf = boSS.equals(ingred);
-					boolean isSubType = gl.getDescendantsCache().getDescendants(boSS).contains(ingred);
-					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
-					
-					if (isSelf || isSubType || isModificationOf) {
-						matchFound = true;
-						if (isSubType) {
-							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
-							report (concept, issueStr, ingred, boSS);
-						} else if (isModificationOf) {
-							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
-						} else if (isSelf) {
-							incrementSummaryInformation("BoSS matches ingredient");
-						}
-					}
-				}
-			}
-			if (!matchFound) {
-				report (concept, issue2Str, boSS);
-			}
-		}
-	}
-	
-	private BaseMDF getBaseMDF(RelationshipGroup rg, Concept mdf) {
-		Concept boSS = rg.getValueForType(HAS_BOSS);
-		Concept pai =  rg.getValueForType(HAS_PRECISE_INGRED);
-		//What is the base of the ingredient
-		Set<Concept> ingredBases = Collections.singleton(pai);
-		if (!boSS.equals(pai)) {
-			ingredBases = DrugUtils.getSubstanceBase(pai, boSS);
-		}
-		
-		if (ingredBases.size() != 1) {
-			LOGGER.debug("Unable to obtain single BoSS from " + rg.toString());
-			return null;
-		} else {
-			Concept base = ingredBases.iterator().next();
-			return new BaseMDF(base, mdf);
-		}
-	}
-	
-	private void checkBossPaiPdfCombinations(Concept concept) throws TermServerScriptException {
-		String issueStr  = "BoSS-PAI combination differs";
-		initialiseSummary(issueStr);
-		
-		for (RelationshipGroup rg : concept.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			//Have we already reported this role group for a BossPAI violation?
-			if (!rg.isGrouped() /*|| reportedForBoSSPAIViolation.contains(rg)*/) {
-				continue;
-			}
-			//What is this BaseMDF?  Find all other RelGroups that have that same base and pharm dose form
-			Concept mdf = getMDF(concept);
-			BaseMDF baseMDF = getBaseMDF(rg, mdf);
-			
-			if (baseMDF == null) {
-				LOGGER.debug("Failed to obtain baseMDF in " + concept);
-				continue;
-			}
-			
-			if (reportedBaseMDFCombos.contains(baseMDF)) {
-				continue;
-			}
-			
-			Concept boSS = rg.getValueForType(HAS_BOSS);
-			Concept pai =  rg.getValueForType(HAS_PRECISE_INGRED);
-			BoSSPAI boSSPAI = new BoSSPAI(boSS, pai);
-			Set<RelationshipGroup> relGroups = baseMDFMap.get(baseMDF);
-			if (relGroups == null) {
-				LOGGER.debug("Unable to find stored relGroups against " + baseMDF + " from " + concept);
-			} else {
-				String mismatchingDetails = "";
-				Set<BoSSPAI> bossPAIcombosReported = new HashSet<>();
-				for (RelationshipGroup rg2 : relGroups) {
-					//Now do we also match on Boss & PAI?
-					Concept boSS2 = rg2.getValueForType(HAS_BOSS);
-					Concept pai2 =  rg2.getValueForType(HAS_PRECISE_INGRED);
-					BoSSPAI boSSPAI2 = new BoSSPAI(boSS2, pai2);
-					if (bossPAIcombosReported.contains(boSSPAI2)) {
-						continue;
-					}
-					if (!boSS.equals(boSS2) || !pai.equals(pai2)) {
-						if (mismatchingDetails.length() > 0) {
-							mismatchingDetails += "\n";
-						} else {
-							//First time through, add the original boSSPAI as well as the matching one
-							mismatchingDetails += boSSPAI + "\n";
-						}
-						mismatchingDetails += boSSPAI2 + " eg " + rg2.getSourceConcept().toStringPref();
-						bossPAIcombosReported.add(boSSPAI2);
-					}
-				}
-				if (mismatchingDetails.length() > 0) {
-					report(concept, issueStr, baseMDF, mismatchingDetails);
-					reportedBaseMDFCombos.add(baseMDF);
-				}
-			}
-		}
-	}
-	
+
+
 	private Concept getMDF(Concept concept) {
 		return getMDF(concept, false);
 	}
@@ -1057,6 +589,12 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		validateParentTagCombo(c, gl.getConcept("763760008 |Medicinal product categorized by structure (product)| "), "(product)", issueStr5);
 	}
 
+	private String getParentsJoinedStr(Concept c) {
+		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
+				.map(p -> p.getFsn())
+				.collect(Collectors.joining(", \n"));
+	}
+
 	private void validateParentTagCombo(Concept c, Concept targetParent, 
 			String targetSemtag, String issueStr) throws TermServerScriptException {
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
@@ -1125,17 +663,11 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				report(c, issueStr, g);
 			}
 		}
-		
-		issueStr =  "CD/MPF must feature exactly 1 dose form";
-		initialiseSummary(issueStr);
-		if ((isMPF(c) || isCD(c)) && 
-				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE).size() != 1) {
-			report(c, issueStr);
-		}
+
 		
 		issueStr = "Unexpected attribute type used";
-		if (isMP(c) || isMPF(c)) {
-			Concept[] allowedAttributes = isMP(c) ? mpValidAttributes : mpfValidAttributes;
+		if (isMP(c)) {
+			Concept[] allowedAttributes = mpValidAttributes;
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				//Is this relationship type allowed?
 				boolean allowed = false;
@@ -1191,159 +723,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
 			report (c, issueStr);
 		}
-		
-		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
-		initialiseSummary(issueStr);
-		if (isCD(c)) {
-			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-				Set<Concept> thesePresAttributes = new HashSet<>(presAttributes);
-				Set<Concept> theseConcAttributes = new HashSet<>(concAttributes);
-				
-				//We'll remove attributes from our local copy of these arrays until there are none left
-				for (Relationship r : g.getRelationships()) {
-					if (isPresAttribute(r.getType()) || isConcAttribute(r.getType())) {
-						Set<Concept> attributeSet = isPresAttribute(r.getType()) ? thesePresAttributes : theseConcAttributes;
-						if (attributeSet.contains(r.getType())) {
-							attributeSet.remove(r.getType());
-						} else {
-							report (c, issueStr, r);
-						}
-					}
-				}
-				
-				if (thesePresAttributes.size() != 4 && !thesePresAttributes.isEmpty()) {
-					report(c, issueStr, g);
-				}
-				
-				if (theseConcAttributes.size() != 4 && !theseConcAttributes.isEmpty()) {
-					report(c, issueStr, g);
-				}
-			}
-		}
-		
-	}
-		
-	boolean isPresAttribute(Concept type) {
-		return presAttributes.contains(type);
-	}
-	
-	boolean isConcAttribute(Concept type) {
-		return concAttributes.contains(type);
-	}
-	
-	
-	private void checkCdUnitConsistency(Concept c) throws TermServerScriptException {
-		String issueStr1 = "CD has > 1 unit of presentation";
-		String issueStr2 = "CD has incorrect presentation denominator strength unit count";
-		String issueStr3 = "CD has inconsistent presentation units";
-		initialiseSummary(issueStr1);
-		initialiseSummary(issueStr2);
-		initialiseSummary(issueStr3);
-		
-		//Do we have a unit of presentation?
-		Set<Relationship> unitsOfPres = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
-		if (unitsOfPres.size() > 1) {
-			report (c, issueStr1);
-		} else if (unitsOfPres.size() == 1) {
-			Concept unitOfPres = unitsOfPres.iterator().next().getTarget();
-			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-				if (!g.isGrouped() || g.size() == 1) {
-					continue;
-				}
-				Set<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
-				if (presDenomUnits.size() != 1) {
-					report (c, issueStr2, g);
-				} else if (!unitOfPres.equals(presDenomUnits.iterator().next().getTarget())) {
-					report (c, issueStr3, unitOfPres, g);
-				}
-				incrementSummaryInformation("CD groups checked for presentation unit consistency");
-			}
-		}
-	}
-	
 
-	/** Identify Clinical drug concepts that have the same BoSS/PAI/strength but for which one the dose form contains 
-	 * "injection" and the other "infusion" and for which there is not an inferred parent that has the same BoSS/PAI/strength 
-	 * with a dose form that contains "infusion and/or injection".
-	 * @throws TermServerScriptException 
-	 */
-	private void checkMissingDoseFormGrouper(Concept c) throws TermServerScriptException {
-		//Does this CD's dose form contain the word injection or infusion?
-		Concept doseForm = getDoseForm(c);
-		if (doseForm.getFsn().toLowerCase().contains(INJECTION) && 
-				!doseForm.getFsn().toLowerCase().contains(INFUSION)) {
-			List<Concept> infusionSiblings = findInfusionSiblings(c);
-			if (infusionSiblings.size() > 0) {
-				validateDoseFormGrouperParent(c, infusionSiblings.get(0));
-			}
-			//Don't need to report the first one, already reported.
-			boolean isFirst = true;
-			for (Concept infusionSibling : infusionSiblings) {
-				if (isFirst) {
-					isFirst = false;
-				} else {
-					validateDoseFormGrouperParent(infusionSibling, c);
-				}
-			}
-		}
-	}
-
-	private Concept getDoseForm(Concept c) throws TermServerScriptException {
-		String issueStr1 = "Invalid count of dose form attributes";
-		initialiseSummary(issueStr1);
-		
-		Set<Concept> doseForms = SnomedUtils.getTargets(c, doseFormTypes, CharacteristicType.STATED_RELATIONSHIP);
-		if (doseForms.size() != 1) {
-			report (c, issueStr1, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-			throw new TermServerScriptException("Please fix invalid dose form modelling on " + c + " unable to continue.");
-		}
-		return doseForms.iterator().next();
-	}
-
-	private List<Concept> findInfusionSiblings(Concept c) throws TermServerScriptException {
-		List<Concept> matchingSiblings = new ArrayList<>();
-		nextConcept:
-		for (Concept sibling : allDrugs) {
-			DrugUtils.setConceptType(c);
-			if (!isCD(sibling)) {
-				continue nextConcept;
-			}
-			
-			if (!sibling.getFsn().toLowerCase().contains(INFUSION) ||
-				sibling.getFsn().toLowerCase().contains(INJECTION)) {
-				continue nextConcept;
-			}
-			
-			if (DrugUtils.matchesBossPAIStrength(c, sibling)) {
-				matchingSiblings.add(sibling);
-			}
-		}
-		return matchingSiblings;
-	}
-	
-
-
-	private void validateDoseFormGrouperParent(Concept c, Concept sibling) throws TermServerScriptException {
-		String issueStr = "CD Infusion/Injection pair missing grouper parent";
-		initialiseSummary(issueStr);
-		
-		boolean hasGrouperParent = false;
-		nextParent:
-		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (!DrugUtils.matchesBossPAIStrength(c, parent)) {
-				continue nextParent;
-			}
-			
-			String parentDoseFormFsn = getDoseForm(parent).getFsn().toLowerCase();
-			if (!parentDoseFormFsn.contains(INFUSION) || !parentDoseFormFsn.contains(INJECTION)) {
-				continue nextParent;
-			}
-			hasGrouperParent = true;
-			break;
-		}
-		if (!hasGrouperParent) {
-			report (c, issueStr, "Sibling: " + sibling);
-		}
 	}
 
 	private int getTagLevel(Concept c) throws TermServerScriptException {
@@ -1369,27 +749,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		return super.report (PRIMARY_REPORT, c, details);
 	}
 	
-	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
-		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug ("Loading " + fileName );
-		try {
-			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
-			boolean isHeader = true;
-			for (String line : lines) {
-				String[] items = line.split(TAB);
-				if (!isHeader) {
-					Concept c = gl.getConcept(items[0]);
-					acceptableMpfDoseForms.put(c, items[2].equals("yes"));
-					acceptableCdDoseForms.put(c, items[3].equals("yes"));
-				} else {
-					isHeader = false;
-				}
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read " + fileName, e);
-		}
-	}
-	
+
 
 	private boolean isMP(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
@@ -1429,65 +789,5 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		}
 	}
 	
-	class BaseMDF {
-		Concept baseSubstance;
-		Concept pharmDoseForm;
-		int hashCode;
-		
-		public BaseMDF (Concept baseSubstance, Concept pharmDoseForm) {
-			this.baseSubstance = baseSubstance;
-			this.pharmDoseForm = pharmDoseForm;
-			hashCode = (baseSubstance.toString() + pharmDoseForm.toString()).hashCode();
-		}
-		
-		@Override
-		public boolean equals (Object other) {
-			if (other instanceof BaseMDF) {
-				BaseMDF otherBaseMDF = (BaseMDF)other;
-				return this.baseSubstance.equals(otherBaseMDF.baseSubstance) && this.pharmDoseForm.equals(otherBaseMDF.pharmDoseForm);
-			}
-			return false;
-		}
-		
-		@Override
-		public int hashCode() {
-			return hashCode;
-		}
-		
-		@Override
-		public String toString() {
-			return baseSubstance.toStringPref() + " as " + pharmDoseForm.toStringPref();
-		}
-	}
-	
-	class BoSSPAI {
-		Concept boSS;
-		Concept pai;
-		int hashCode;
-		
-		public BoSSPAI (Concept boSS, Concept pai) {
-			this.boSS = boSS;
-			this.pai = pai;
-			hashCode = (boSS.toString() + pai.toString()).hashCode();
-		}
-		
-		@Override
-		public boolean equals (Object other) {
-			if (other instanceof BoSSPAI) {
-				BoSSPAI otherBoSSPAI = (BoSSPAI)other;
-				return this.boSS.equals(otherBoSSPAI.boSS) && this.pai.equals(otherBoSSPAI.pai);
-			}
-			return false;
-		}
-		
-		@Override
-		public int hashCode() {
-			return hashCode;
-		}
-		
-		@Override
-		public String toString() {
-			return  boSS.toStringPref() + " / " + pai.toStringPref();
-		}
-	}
+
 }
