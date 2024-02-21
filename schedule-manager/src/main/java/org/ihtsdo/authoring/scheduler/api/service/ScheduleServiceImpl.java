@@ -5,12 +5,12 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PostConstruct;
 
-import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.repository.*;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.authoring.scheduler.api.AuthenticationService;
 import org.ihtsdo.authoring.scheduler.api.mq.Transmitter;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,9 @@ import org.springframework.scheduling.support.CronTrigger;
 public class ScheduleServiceImpl implements ScheduleService {
 
 	private static final int STUCK_JOB_HOURS = 10;
-	
+
+	private static final int DEBUG_LENGTH_LIMIT = 50000;
+
 	@Autowired
     JobRunRepository jobRunRepository;
 	
@@ -231,6 +233,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 				//so we can update the correct one in the db, otherwise we save a fresh copy
 				jobRun.getParameters().setId(savedJob.get().getParameters().getId());
 			}
+			//We'll allow for the sender to have already truncated the debug info to the limit and added ...[truncated]
+			jobRun.setDebugInfo(StringUtils.truncate(jobRun.getDebugInfo(), DEBUG_LENGTH_LIMIT + 15));
 			LOGGER.info("Saving job response: {}", jobRun);
 			jobRunRepository.save(jobRun);
 		} catch (Exception e) {
