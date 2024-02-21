@@ -251,8 +251,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Release Issues Report")
 				.withDescription("This report lists a range of potential issues identified in INFRA-2723. " + 
-						"For example 1. Descriptions where the module id does not match the concept module id and, 2. Inactive concepts without an active Preferred Term. "  +
-						"Note that the 'Issues' count here refers to components added/modified in the current authoring cycle.")
+						"\nThe options that can be selected are:" +
+						"\nUnpromoted: New changes on the branch that have not been promoted yet. Can be task or project." +
+						"\nLegacy: This will include all issues, including old legacy ones - should NOT be combined with Unpromoted." +
+						"\nNo box checked: Report will check all new (unversioned) issues, regardless of the branch they were authored on.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
