@@ -87,8 +87,8 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List all Map Entries")
-				.withDescription("This report lists map entries for the specified map. " +
-						"Optionally compact (one row per entry) and optionally reversed, where the map target is the left hand column. " +
+				.withDescription("This report lists the entries of the selected map. You have the option to view them in a compact format, " +
+						"showing one entry per row, and/or in reverse order, placing the map target in the first column on the left. " +
 						"Since a reverse mapping makes no sense where there is no map target, these map entries will be listed in a second tab.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
