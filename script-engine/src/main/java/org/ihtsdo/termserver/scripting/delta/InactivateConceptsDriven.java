@@ -82,9 +82,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 		
 		//Create CNC indicators for all active descriptions
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			InactivationIndicatorEntry dii = InactivationIndicatorEntry.withDefaults(d);
-			dii.setModuleId(moduleId);
-			dii.setInactivationReasonId(SCTID_INACT_CONCEPT_NON_CURRENT);
+			InactivationIndicatorEntry dii = InactivationIndicatorEntry.withDefaults(d,SCTID_INACT_CONCEPT_NON_CURRENT);
 			d.addInactivationIndicator(dii);
 		}
 		
