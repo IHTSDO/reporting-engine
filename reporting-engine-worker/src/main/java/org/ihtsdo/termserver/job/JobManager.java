@@ -6,6 +6,7 @@ import java.util.*;
 import jakarta.annotation.PostConstruct;
 
 //import org.ihtsdo.otf.resourcemanager.*;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.job.mq.Transmitter;
 import org.ihtsdo.termserver.scripting.JobClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -18,10 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.apache.commons.lang.StringUtils;
 
 @Component
 public class JobManager {
+
+	private static final int DEBUG_LENGTH_LIMIT = 50000;
 	
 	static final String METADATA = "METADATA";
 
@@ -136,6 +138,7 @@ public class JobManager {
 				Date endTime = new Date();
 				jobRun.setResultTime(endTime);
 				jobRun.setExecutionTime((endTime.getTime() - startTime.getTime())/1000);
+				jobRun.setDebugInfo(StringUtils.truncate(jobRun.getDebugInfo(), DEBUG_LENGTH_LIMIT));
 				transmitter.send(this, jobRun);
 			}
 			try {
