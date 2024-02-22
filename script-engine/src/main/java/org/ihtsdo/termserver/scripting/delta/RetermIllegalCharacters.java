@@ -56,7 +56,7 @@ public class RetermIllegalCharacters extends DeltaGenerator {
 	protected void retermIllegalCharacters() throws TermServerScriptException {
 		nextConcept:
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-		//for (Concept c : Collections.singleton(gl.getConcept("776207001|Product containing only human regular insulin (medicinal product)|"))) {
+		//for (Concept c : Collections.singleton(gl.getConcept("2031000221103"))) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (inScope(d, false)) {
 					for (String illegalCharacter : illegalReplacementMap.keySet()) {
@@ -90,9 +90,21 @@ public class RetermIllegalCharacters extends DeltaGenerator {
 					Description replacementDesc = d.clone(descIdGenerator.getSCTID());
 					replacementDesc.setTerm(replacement);
 					d.setActive(false);
-					InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(d, RF2Constants.SCTID_INACT_NON_CONFORMANCE);
-					d.addInactivationIndicator(ii);
 					c.addDescription(replacementDesc);
+					//Is c inactive?  Add a Concept non current indicator if so, and replace the CNC indicator on the description
+					//we're inactivating
+					if (!c.isActive()) {
+						InactivationIndicatorEntry cnc = InactivationIndicatorEntry.withDefaults(d, RF2Constants.SCTID_INACT_CONCEPT_NON_CURRENT);
+						replacementDesc.addInactivationIndicator(cnc);
+						report(c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "Concept non-Current added to " + replacementDesc.getId());
+
+						InactivationIndicatorEntry ii = d.getInactivationIndicatorEntries().iterator().next();
+						ii.setInactivationReasonId(RF2Constants.SCTID_INACT_NON_CONFORMANCE);
+						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, "CNC -> NCEP for " + d.getId());
+					} else {
+						InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(d, RF2Constants.SCTID_INACT_NON_CONFORMANCE);
+						d.addInactivationIndicator(ii);
+					}
 					report(c, d, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, d);
 					report(c, d, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacementDesc);
 				}
