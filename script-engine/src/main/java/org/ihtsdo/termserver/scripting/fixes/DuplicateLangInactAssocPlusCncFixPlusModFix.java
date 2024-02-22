@@ -192,14 +192,17 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					d.getInactivationIndicatorEntries().remove(duplicatePair.delete);
 					changesMade++;
 					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
-				} else {
-					for (RefsetMember modify : duplicatePair.modify) {
-						RefsetMember original = d.getLangRefsetEntry(modify.getId());
-						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original.toString(true), modify.toString(true));
-						updateRefsetMember(t, modify, "");
-						changesMade++;
-					}
-				}	
+				}
+
+				//We may instead or also want to modify one of the pairs
+				for (RefsetMember modify : duplicatePair.modify) {
+					RefsetMember original = d.getInactivationIndicatorEntry(modify.getId());
+					report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original.toString(true), modify.toString(true));
+					updateRefsetMember(t, modify, "");
+					//And we want to replace that ii on the description to avoid changing it further
+					d.addInactivationIndicator((InactivationIndicatorEntry)modify);
+					changesMade++;
+				}
 			}
 			
 			if (!inScope(d)) {
@@ -297,19 +300,19 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("601000119109"))) {	
+		//for (final Concept c : Collections.singleton(gl.getConcept("207604009"))) {
 		for (final Concept c : gl.getAllConcepts()) {
-			boolean hasChanges = SnomedUtils.hasChanges(c);
+ 			boolean hasChanges = SnomedUtils.hasChanges(c);
 			for (Description d : c.getDescriptions()) {
-				if (d.getId().equals("788841000124119")) {
+				/*if (d.getId().equals("788841000124119")) {
 						LOGGER.debug("here");
-				}
+				}*/
 				
 				//Too many of these in the international edition - discuss elsewhere
 				//OK we'll do them if they've been touched in this authoring cycle
 				if (project.getBranchPath().contains("SNOMEDCT-") || hasChanges) {
 					//Switch to just process those 
-					/*if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
+					if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
 						processMe.add(c);
 						continue nextConcept;
 					}
@@ -319,7 +322,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							processMe.add(c);
 							continue nextConcept;
 						}
-					}*/
+					}
 				}
 				
 				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
@@ -327,13 +330,22 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					continue nextConcept;
 				}
 				
-			/*	if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).size() > 0) {
+				if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).size() > 0) {
+					//Check for all published and only one active - that's as good as it gets
+					if (!asGoodAsItGets(d.getInactivationIndicatorEntries())) {
+						processMe.add(c);
+						continue nextConcept;
+					}
+				}
+
+				//If we have multiple active inactivation indicators, address that
+				if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1) {
 					processMe.add(c);
 					continue nextConcept;
-				}*/
+				}
 			}
 			 
-			/*if (!c.isActive()) {
+			if (!c.isActive()) {
 				if (getDuplicateRefsetMembers(c, c.getAssociationEntries()).size() > 0) {
 					processMe.add(c);
 					continue nextConcept;
@@ -351,13 +363,31 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						continue nextConcept;	
 					}
 				}
-			}*/
+			}
 		}
 		setQuiet(false);
 		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
-	
+
+	private boolean asGoodAsItGets(List<? extends RefsetMember> refsetMembers) {
+		//If we have one active and the rest are inactive, and all have been published,
+		//then we can't improve on that situation
+		boolean hasOneActive = false;
+		for (RefsetMember rm : refsetMembers) {
+			if (rm.isActive()) {
+				if (hasOneActive) {
+					return false;
+				}
+				hasOneActive = true;
+			}
+			if (!rm.isReleased()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 	private boolean hasMissingConceptInactiveIndicator(Concept c) {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -519,13 +549,66 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						}
 					}
 				}
+
+				if (duplicatePair == null
+						&& c instanceof Description
+						&& thisEntry instanceof InactivationIndicatorEntry) {
+					duplicatePair = resolveCNCInactivationIndicatorDuplicates(
+							(InactivationIndicatorEntry)thisEntry,
+							(InactivationIndicatorEntry)thatEntry);
+				}
+
 				if (duplicatePair != null) {
-					LOGGER.debug(duplicatePair.toString());
+					//Don't log if it's likely we're not goign to improve the sitation
+					if (!asGoodAsItGets(List.of(thisEntry, thatEntry))) {
+						LOGGER.debug(duplicatePair.toString());
+					}
 					duplicatePairs.add(duplicatePair);
 				}
 			}
 		}
 		return duplicatePairs;
+	}
+
+	private DuplicatePair resolveCNCInactivationIndicatorDuplicates(InactivationIndicatorEntry thisEntry, InactivationIndicatorEntry thatEntry) {
+		//Have we inactivated a description with an inactivation indicator?   Remove the new II if so,
+		//and swap its value onto the CNC indicator which is no longer required.
+		List<InactivationIndicatorEntry> ii = List.of(thisEntry, thatEntry);
+		InactivationIndicatorEntry cnc = pickByValue(ii, SCTID_INACT_CONCEPT_NON_CURRENT, true);
+		InactivationIndicatorEntry newII = pickByValue(ii, SCTID_INACT_CONCEPT_NON_CURRENT, false);
+		if (cnc == null || newII == null) {
+			return null;
+		}
+		//We'll keep the CNC indicator and inactivate the new one
+		DuplicatePair duplicatePair = new DuplicatePair(cnc, newII);
+		InactivationIndicatorEntry modified = cnc.clone(true);
+		modified.setInactivationReasonId(newII.getInactivationReasonId());
+		duplicatePair.modify(modified);
+		return duplicatePair;
+	}
+
+	private InactivationIndicatorEntry pickByValue(List<InactivationIndicatorEntry> ii, String value, boolean match) {
+		List<InactivationIndicatorEntry> potentialPicks = new ArrayList<>();
+		for (InactivationIndicatorEntry entry : ii) {
+			if (match == entry.getInactivationReasonId().equals(value)) {
+				potentialPicks.add(entry);
+			}
+		}
+		if (potentialPicks.size() == 0) {
+			return null;
+		} else if (potentialPicks.size() == 1) {
+			return potentialPicks.get(0);
+		} else {
+			//Don't worry if they're both released and only one is active
+			if(potentialPicks.size() == 2
+					&& potentialPicks.get(0).isReleased() && potentialPicks.get(1).isReleased()
+					&& 	(potentialPicks.get(0).isActive() || potentialPicks.get(1).isActive())
+					&& 	(!potentialPicks.get(0).isActive() || !potentialPicks.get(1).isActive())) {
+				return null;
+			}
+			LOGGER.warn("Multiple active inactivation indicators " +( match?"matching":"not matching ") + " value " + value + " found on " + ii);
+		}
+		return null;
 	}
 
 	private boolean duplicationRecentlyResolved(RefsetMember thisEntry, RefsetMember thatEntry) throws TermServerScriptException {
