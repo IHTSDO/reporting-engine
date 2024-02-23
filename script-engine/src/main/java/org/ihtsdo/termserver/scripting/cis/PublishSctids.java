@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.cis;
 import com.google.common.collect.Lists;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtils;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.client.CisClient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.slf4j.Logger;
@@ -22,6 +23,8 @@ import java.util.zip.ZipInputStream;
 public class PublishSctids extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PublishSctids.class);
+
+	private enum ACTION {PUBLISH, REGISTER};
 
 	public static String AVAILABLE = "Available";
 	public static String RESERVED = "Reserved";
@@ -105,32 +108,57 @@ public class PublishSctids extends TermServerReport {
 				LOGGER.debug("Processing batch {} of {} sctids", (++batchCount + "/" + originalBatchSize), batch.size());
 				//Filter out those records that are currently 'Reserved'
 				//Take a copy of the list because the loop doesn't like becoming empty during processing!
-				batch = removeAndReportReserved(new ArrayList<String>(batch));
+				batch = removeAndReportReserved(namespace, new ArrayList<String>(batch));
 				//Have we lost all of them?
 				if (batch.isEmpty()) {
 					LOGGER.info("Skipping empty batch - none remain to be published after filtering.");
 					continue;
 				}
-				CisBulkRequest cisBulkRequest = new CisBulkRequest("RP-836 Bulk publish of " + batch.size() + " sctids",
-						Long.parseLong(namespace),
-						batch,
-						"Script-Engine");
-				CisResponse response = cisClient.publishSctids(cisBulkRequest);
-				List<CisRecord> records = cisClient.getBulkJobBlocking(response.getId());
-				report(SECONDARY_REPORT, cisBulkRequest, response);
-				for (CisRecord record : records) {
-					incrementSummaryInformation("SCTIDs published namespace " + namespace);
-					report(TERTIARY_REPORT, record.getSctid(), response.getId(), record.getStatus());
-				}
-				LOGGER.info("Published {} SCTIDS for namespace {}", records.size(), namespace);
+
+				transitionSCTIDS(batch, namespace, ACTION.PUBLISH);
 				flushFilesWithWait(false);
 			}
 		}
 	}
 
-	private List<String> removeAndReportReserved(List<String> batch) throws TermServerScriptException {
+	private void transitionSCTIDS(List<String> batch, String namespace, ACTION action) throws TermServerScriptException {
+		String actionStr = action.toString().toLowerCase();
+
+		CisResponse response = null;
+		String requestStr = null;
+		switch (action) {
+			case REGISTER:
+				CisBulkRegisterRequest cisBulkRegisterRequest = new CisBulkRegisterRequest("RP-836 Bulk " + actionStr + " of " + batch.size() + " sctids",
+						Long.parseLong(namespace),
+						batch,
+						"Script-Engine");
+				requestStr = cisBulkRegisterRequest.toString();
+				response = cisClient.registerSctids(cisBulkRegisterRequest);
+				break;
+			case PUBLISH:
+				CisBulkRequest cisBulkRequest = new CisBulkRequest("RP-836 Bulk " + actionStr + " of " + batch.size() + " sctids",
+						Long.parseLong(namespace),
+						batch,
+						"Script-Engine");
+				requestStr = cisBulkRequest.toString();
+				response = cisClient.publishSctids(cisBulkRequest);
+				break;
+			default:
+				throw new TermServerScriptException("Unsupported action: " + action);
+		}
+		List<CisRecord> records = cisClient.getBulkJobBlocking(response.getId());
+		report(SECONDARY_REPORT, requestStr, response);
+		for (CisRecord record : records) {
+			incrementSummaryInformation("SCTIDs " + actionStr + "ed namespace " + namespace);
+			report(TERTIARY_REPORT, record.getSctid(), response.getId(), record.getStatus());
+		}
+		LOGGER.info(StringUtils.capitalizeFirstLetter(actionStr) + "ed {} SCTIDS for namespace {}", records.size(), namespace);
+	}
+
+	private List<String> removeAndReportReserved(String namespace, List<String> batch) throws TermServerScriptException {
 		//We need to recover the current state so we can 'Assign' SCTIDs that are currently only at Status 'Reserved'
 		List<CisRecord> currentStatus = cisClient.getSCTIDs(batch);
+		List<String> availableSCTIDs = new ArrayList<>();
 		for (CisRecord record : currentStatus) {
 			if (record.getStatus().equals(RESERVED)) {
 				incrementSummaryInformation("SCTIDs stuck at reserved");
@@ -140,16 +168,25 @@ public class PublishSctids extends TermServerReport {
 				incrementSummaryInformation("SCTIDs already published");
 				report(TERTIARY_REPORT, record.getSctid(), "SCTID is already published.", record);
 				batch.remove(record.getSctid().toString());
+			} else if (!record.getStatus().equals(AVAILABLE)) {
+				incrementSummaryInformation("SCTIDs state " + record.getStatus());
+				report(TERTIARY_REPORT, record.getSctid(), "SCTID status: " + record.getStatus() + " moving to be ASSIGNED", record);
+				availableSCTIDs.add(record.getSctid().toString());
 			} else if (!record.getStatus().equals(ASSIGNED)) {
 				incrementSummaryInformation("SCTIDs state " + record.getStatus());
 				report(TERTIARY_REPORT, record.getSctid(), "SCTID status: " + record.getStatus() + " cannot be published.", record);
 				batch.remove(record.getSctid().toString());
 			}
 		}
+
+		if (availableSCTIDs.size() > 0) {
+			transitionSCTIDS(availableSCTIDs, namespace, ACTION.REGISTER);
+		}
+
 		return batch;
 	}
 
-	private void assignSCTIDS(List<CisRecord> records) {
+	private void registerSCTIDS(List<CisRecord> records) {
 		//We just need the IDs of those records that are reserved
 
 	}

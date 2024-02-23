@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.termserver.scripting.cis.CisBulkRegisterRequest;
 import org.ihtsdo.termserver.scripting.cis.CisBulkRequest;
 import org.ihtsdo.termserver.scripting.cis.CisRecord;
 import org.ihtsdo.termserver.scripting.cis.CisResponse;
@@ -73,6 +74,14 @@ public class CisClient {
 				"/api/sct/bulk/publish?token=" + token,
 				HttpMethod.PUT,
 				new HttpEntity<>(cisBulkRequest, headers),
+				CisResponse.class).getBody();
+	}
+
+	public CisResponse registerSctids(CisBulkRegisterRequest cisBulkRegisterRequest) {
+		return	restTemplate.exchange(
+				"/api/sct/bulk/register?token=" + token,
+				HttpMethod.POST,
+				new HttpEntity<>(cisBulkRegisterRequest, headers),
 				CisResponse.class).getBody();
 	}
 
