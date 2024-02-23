@@ -104,18 +104,18 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
-				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete);
+				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.remove);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.remove);
 				if (!dryRun) {
 					try {
-						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+						tsClient.deleteRefsetMember(duplicatePair.remove.getId(), t.getBranchPath(), false);
 					} catch (RestClientResponseException e) {
 						report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Failed to delete refset member: " + e.getMessage());
 						return NO_CHANGES_MADE;
 					}
 				}
 				changesMade++;
-				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getInactivationIndicatorEntries(), t);
+				reactivateRemainingMemberIfRequired(c, duplicatePair.remove, c.getInactivationIndicatorEntries(), t);
 			} else {
 				for (RefsetMember modify : duplicatePair.modify) {
 					RefsetMember original = c.getInactivationIndicatorEntry(modify.getId());
@@ -129,13 +129,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		duplicatePairs = getDuplicateRefsetMembers(c, c.getAssociationEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
-				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
+				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.remove);
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.remove, "Kept: " + duplicatePair.keep);
 				if (!dryRun) {
-					tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+					tsClient.deleteRefsetMember(duplicatePair.remove.getId(), t.getBranchPath(), false);
 				}
 				changesMade++;
-				reactivateRemainingMemberIfRequired(c, duplicatePair.delete, c.getAssociationEntries(), t);
+				reactivateRemainingMemberIfRequired(c, duplicatePair.remove, c.getAssociationEntries(), t);
 			} else {
 				for (RefsetMember modify : duplicatePair.modify) {
 					RefsetMember original = c.getAssociationEntry(modify.getId());
@@ -161,15 +161,15 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				if (duplicatePair.isDeleting()) {
-					LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.delete);
-					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
+					LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.remove);
+					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.remove, "Kept: " + duplicatePair.keep);
 					if (!dryRun) {
-						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+						tsClient.deleteRefsetMember(duplicatePair.remove.getId(), t.getBranchPath(), false);
 					}
 					//Remove this from the concept also so that we don't eg also modify its module id further down
-					d.getLangRefsetEntries().remove(duplicatePair.delete);
+					d.getLangRefsetEntries().remove(duplicatePair.remove);
 					changesMade++;
-					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
+					reactivateRemainingMemberIfRequired(c, duplicatePair.remove, d.getLangRefsetEntries(), t);
 				} else {
 					for (RefsetMember modify : duplicatePair.modify) {
 						RefsetMember original = d.getLangRefsetEntry(modify.getId());
@@ -183,25 +183,37 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				if (duplicatePair.isDeleting()) {
-					LOGGER.debug((dryRun?"Dry Run (so not) r":"R") + "emoving duplicate: " + duplicatePair.delete);
-					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.delete, "Kept: " + duplicatePair.keep);
-					if (!dryRun) {
-						tsClient.deleteRefsetMember(duplicatePair.delete.getId(), t.getBranchPath(), false);
+					LOGGER.debug((dryRun?"Dry Run (so not) r":"R") + "emoving duplicate: " + duplicatePair.remove);
+					ReportActionType action = ReportActionType.REFSET_MEMBER_DELETED;
+					if (duplicatePair.remove.isReleased()) {
+						action = ReportActionType.REFSET_MEMBER_INACTIVATED;
 					}
+					if (!dryRun) {
+						if (duplicatePair.remove.isReleased()) {
+							duplicatePair.remove.setActive(false);
+							tsClient.updateRefsetMember(duplicatePair.remove, t.getBranchPath());
+						} else {
+							tsClient.deleteRefsetMember(duplicatePair.remove.getId(), t.getBranchPath(), false);
+						}
+					}
+					report(t, c, Severity.LOW, action, duplicatePair.remove, "Kept: " + duplicatePair.keep);
+
 					//Remove this from the concept also so that we don't eg also modify its module id further down
-					d.getInactivationIndicatorEntries().remove(duplicatePair.delete);
+					d.getInactivationIndicatorEntries().remove(duplicatePair.remove);
 					changesMade++;
-					reactivateRemainingMemberIfRequired(c, duplicatePair.delete, d.getLangRefsetEntries(), t);
+					reactivateRemainingMemberIfRequired(c, duplicatePair.remove, d.getLangRefsetEntries(), t);
 				}
 
 				//We may instead or also want to modify one of the pairs
-				for (RefsetMember modify : duplicatePair.modify) {
-					RefsetMember original = d.getInactivationIndicatorEntry(modify.getId());
-					report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original.toString(true), modify.toString(true));
-					updateRefsetMember(t, modify, "");
-					//And we want to replace that ii on the description to avoid changing it further
-					d.addInactivationIndicator((InactivationIndicatorEntry)modify);
-					changesMade++;
+				if (duplicatePair.modify != null) {
+					for (RefsetMember modify : duplicatePair.modify) {
+						RefsetMember original = d.getInactivationIndicatorEntry(modify.getId());
+						report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, original.toString(true), modify.toString(true));
+						updateRefsetMember(t, modify, "");
+						//And we want to replace that ii on the description to avoid changing it further
+						d.addInactivationIndicator((InactivationIndicatorEntry) modify);
+						changesMade++;
+					}
 				}
 			}
 			
@@ -213,6 +225,9 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				/*if (d.getId().equals("3902340014")) {
 					LOGGER.debug("here");
 				}*/
+				if (loaded == null) {
+					loaded = loadConcept(c, t.getBranchPath());
+				}
 				Description dLoaded = loaded.getDescription(d.getDescriptionId());
 				//We'll set the indicator directly on the description in the browser object
 				//and let the TS work out if it needs to add a new refset member or reactive one
@@ -300,7 +315,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		final List<Component> processMe = new ArrayList<Component>();
 		
 		nextConcept:
-		//for (final Concept c : Collections.singleton(gl.getConcept("207604009"))) {
+		//for (final Concept c : Collections.singleton(gl.getConcept("226760005"))) {
 		for (final Concept c : gl.getAllConcepts()) {
  			boolean hasChanges = SnomedUtils.hasChanges(c);
 			for (Description d : c.getDescriptions()) {
@@ -571,6 +586,10 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	}
 
 	private DuplicatePair resolveCNCInactivationIndicatorDuplicates(InactivationIndicatorEntry thisEntry, InactivationIndicatorEntry thatEntry) {
+		//Are both published and only one active?  That's not a duplicate, it's "as good as it gets"
+		if (asGoodAsItGets(List.of(thisEntry, thatEntry))) {
+			return null;
+		}
 		//Have we inactivated a description with an inactivation indicator?   Remove the new II if so,
 		//and swap its value onto the CNC indicator which is no longer required.
 		List<InactivationIndicatorEntry> ii = List.of(thisEntry, thatEntry);
@@ -717,7 +736,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private boolean mentioned(List<DuplicatePair> duplicatePairs, RefsetMember rm) {
 		for (DuplicatePair pair : duplicatePairs) {
 			if (pair.isDeleting()) {
-				if (pair.keep.equals(rm) || pair.delete.equals(rm)) {
+				if (pair.keep.equals(rm) || pair.remove.equals(rm)) {
 					return true;
 				}
 			} else {
@@ -736,12 +755,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 
 	class DuplicatePair {
 		RefsetMember keep;
-		RefsetMember delete;
+		RefsetMember remove;
 		Set<RefsetMember> modify;
 		
 		DuplicatePair (RefsetMember keep, RefsetMember delete) {
 			this.keep = keep;
-			this.delete = delete;
+			this.remove = delete;
 		}
 		
 		DuplicatePair () {
@@ -753,12 +772,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		}
 		
 		public boolean isDeleting() {
-			return delete != null;
+			return remove != null;
 		}
 		
 		public String toString() {
 			if (isDeleting()) {
-				return "Delete: " + delete + " vs Keep: " + keep;
+				return "Delete: " + remove + " vs Keep: " + keep;
 			}
 			return "Modify: " + modify.toString();
 		}
