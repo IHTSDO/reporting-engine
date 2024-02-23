@@ -365,7 +365,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		//Do we have Stated Relationships that need to be converted to axioms?
 		//We'll try merging those with any existing axioms.
-		if (hasDirtyNotFromAxiomRelationships(c)) {
+		if (hasDirtyNotFromAxiomRelationships(c) || hasDirtyAxiom(c)) {
 			convertStatedRelationshipsToAxioms(c, true);
 			for (AxiomEntry a : AxiomUtils.convertClassAxiomsToAxiomEntries(c)) {
 				a.setModuleId(targetModuleId);
@@ -402,7 +402,16 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 
-	
+	private boolean hasDirtyAxiom(Concept c) {
+		for (AxiomEntry a : c.getAxiomEntries()) {
+			if (a.isDirty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
 	private boolean hasDirtyNotFromAxiomRelationships(Concept c) {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.isActive() && !r.fromAxiom() && r.isDirty()) {

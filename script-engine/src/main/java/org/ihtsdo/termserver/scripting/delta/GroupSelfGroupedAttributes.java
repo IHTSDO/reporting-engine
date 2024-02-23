@@ -63,6 +63,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				//report(c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_REMOVED, r.getGroupId() + "--> 1", r);
 				r.setGroupId(1);
 				r.setDirty();
+				r.getAxiomEntry().setDirty();
 				changesMade = true;
 			}
 		}
@@ -70,7 +71,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			//We need to reset relationship groups
 			c.recalculateGroups();
 			String after = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-			report(c, Severity.LOW, ReportActionType.INFO, before, after);
+			int groupCount = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false).size();
+			report(c, Severity.LOW, ReportActionType.INFO, before, after, "Group count: " + groupCount);
 		}
 	}
 
