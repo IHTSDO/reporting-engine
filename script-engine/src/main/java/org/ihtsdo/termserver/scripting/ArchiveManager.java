@@ -82,6 +82,10 @@ public class ArchiveManager implements ScriptConstants {
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
 			LOGGER.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName());
+			if (forceReuse == true) {
+				LOGGER.info("Re-use request denied due to change in ownership.");
+				forceReuse = false;
+			}
 			singleton.gl = ts.getGraphLoader();
 		} else {
 			LOGGER.info("Archive manager being reused in: " + ts.getClass().getSimpleName()); 
