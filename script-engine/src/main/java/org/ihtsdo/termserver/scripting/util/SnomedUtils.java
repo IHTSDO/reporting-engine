@@ -2607,4 +2607,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	public static RelationshipTemplate createRelationshipTemplate(GraphLoader gl, String c1, String c2) throws TermServerScriptException {
 		return new  RelationshipTemplate(gl.getConcept(c1), gl.getConcept(c2));
 	}
+
+    public static Set<Concept> getHistoricalAssocationTargets(Concept c, GraphLoader gl) throws TermServerScriptException {
+		Set<Concept> targets = new HashSet<>();
+		for (AssociationEntry h : c.getAssociationEntries()) {
+			targets.add(gl.getConcept(h.getTargetComponentId()));
+		}
+		return targets;
+    }
 }
