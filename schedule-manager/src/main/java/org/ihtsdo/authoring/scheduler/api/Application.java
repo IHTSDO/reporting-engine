@@ -3,20 +3,28 @@ package org.ihtsdo.authoring.scheduler.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-
 import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.google.gdata.util.common.base.StringUtil;
+import org.ihtsdo.authoring.scheduler.api.configuration.ModuleStorageResourceConfig;
 import org.ihtsdo.authoring.scheduler.api.mq.ActiveMQConnectionFactoryForAutoscaling;
+import org.ihtsdo.otf.resourcemanager.ResourceManager;
+import org.snomed.module.storage.ModuleStorageCoordinator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
 
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Objects;
 import java.util.TimeZone;
 
 @SpringBootApplication
@@ -47,6 +55,34 @@ public class Application {
 	@Bean
 	public ActiveMQConnectionFactoryForAutoscaling autoScalingFactory() {
 		return new ActiveMQConnectionFactoryForAutoscaling();
+	}
+
+	@Bean
+	public ResourceManager resourceManager(@Autowired ModuleStorageResourceConfig resourceConfiguration, @Autowired ResourceLoader cloudResourceLoader) {
+		return new ResourceManager(resourceConfiguration, cloudResourceLoader);
+	}
+
+	@Bean
+	public ModuleStorageCoordinator moduleStorageCoordinator(@Autowired ResourceManager resourceManager, @Value("${schedule.manager.terminology.server.uri}") final String terminologyServerUrl) {
+		return switch (Objects.requireNonNull(getEnvironment(terminologyServerUrl))) {
+			case "prod" -> ModuleStorageCoordinator.initProd(resourceManager);
+			case "uat" -> ModuleStorageCoordinator.initUat(resourceManager);
+			case "dev" -> ModuleStorageCoordinator.initDev(resourceManager);
+			default -> null;
+		};
+	}
+
+	private String getEnvironment(String terminologyServerUrl)  {
+		URI uri;
+		try {
+			uri = new URI(terminologyServerUrl);
+		} catch (URISyntaxException e) {
+			System.out.println("Failed to detect environment. Error message: " + e.getMessage());
+			return StringUtil.EMPTY_STRING;
+		}
+		String domain = uri.getHost();
+		domain = domain.startsWith("www.") ? domain.substring(4) : domain;
+		return (domain.contains("-") ? domain.substring(0, domain.lastIndexOf("-")) : domain.substring(0, domain.indexOf("."))).toLowerCase();
 	}
 
 /*	@Bean
