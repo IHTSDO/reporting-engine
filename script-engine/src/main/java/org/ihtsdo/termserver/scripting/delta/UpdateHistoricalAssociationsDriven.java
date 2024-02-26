@@ -24,6 +24,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
 
 	private Map<Concept, UpdateAction> replacementMap = new HashMap<>();
+	private Map<Concept, String> cathyNotes = new HashMap<>();
+	private Set<Concept> reportedAsAdditional = new HashSet<>();
 
 	private List<String> targetPrefixes = Arrays.asList(new String[] {"OE ", "CO ", "O/E", "C/O", "Complaining of", "On examination"});
 
@@ -53,9 +55,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
-				"SCTID, FSN, SemTag, Severity, Action, Details, Details, , ",
+				"SCTID, FSN, SemTag, Severity, Action, Details, Details, Cathy Notes, , ",
 				"Issue, Detail",
-				"SCTID, FSN, SemTag, Notes, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc"
+				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, "
 		};
 
 		String[] tabNames = new String[]{
@@ -71,6 +73,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		populateReplacementMap();
 		populateUpdatedReplacementMap();
 		checkForRecentInactivations();
+		populateCathyNotes();
 		
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			/*if (!c.getId().equals("164427005")) {
@@ -213,6 +216,27 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 	}
 
+	private void populateCathyNotes() throws TermServerScriptException {
+		int lineNo = 0;
+		try {
+			for (String line : Files.readAllLines(getInputFile(2).toPath(), Charset.defaultCharset())) {
+					lineNo++;
+					String[] items = line.split(TAB);
+					Concept c = gl.getConcept(items[0]);
+					String notes = items[1];
+					if (items.length == 3) {
+						notes += " " + items[2];
+					}
+					if (cathyNotes.containsKey(c)) {
+						throw new TermServerScriptException("Notes for " + c + " already seen.  Was " + cathyNotes.get(c) + " now " + notes);
+					}
+					cathyNotes.put(c, notes);
+			}
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to read " + getInputFile(3),e);
+		}
+	}
+
 	private List<Concept> splitConcepts(String replacementsStr) {
 		String[] conceptIds = replacementsStr.split(",");
 		return Arrays.stream(conceptIds).map(s -> gl.getConceptSafely(s)).collect(Collectors.toList());
@@ -224,9 +248,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				LOGGER.warn("Unpopulated " + c.getId());
 				continue;
 			}
-			if (c.isActive() || !inScope(c) ||
+			if (c.isActive() ||
+					!inScope(c) ||
 					manageManually.contains(c.getId()) ||
-					replacementMap.containsKey(c)) {
+					replacementMap.containsKey(c) ||
+					reportedAsAdditional.contains(c)) {
 				continue;
 			}
 			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
@@ -242,11 +268,13 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 			//Can we find a sibling for this concept - same text with different prefix?
 			Concept sibling = findSibling(c);
-			String[] siblingData = new String[] {"", "", ""};
+			String[] siblingData = new String[] {"", "", "", ""};
 			if (sibling != null) {
+				reportedAsAdditional.add(sibling);
 				siblingData[0] = sibling.toString();
 				siblingData[1] = sibling.isActive()?"Y":"N";
-				siblingData[2] = SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl, true);
+				siblingData[2] = replacementMap.containsKey(sibling)?"Y":"N";
+				siblingData[3] = SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl, true);
 			}
 
 			Concept cousin = findCousin(c);
@@ -256,8 +284,28 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				cousinData[1] = cousin.isActive()?"Y":"N";
 				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl, true);
 			}
-			report(TERTIARY_REPORT, c, notes, assocStr, siblingData, cousinData);
+			String mismatchFlag = hasMismatchedAssociations(c, sibling, cousin)?"Y":"N";
+			report(TERTIARY_REPORT, c, notes, mismatchFlag, assocStr, siblingData, cousinData);
 		}
+	}
+
+	private boolean hasMismatchedAssociations(Concept... concepts) throws TermServerScriptException {
+		//Do these concepts all have the same historical associations?
+		Set<Concept> targets = new HashSet<>();
+		for (Concept c : concepts) {
+			if (c == null) {
+				continue;
+			}
+			if (targets.isEmpty()) {
+				targets = SnomedUtils.getHistoricalAssocationTargets(c, gl);
+			} else {
+				Set<Concept> theseTargets = SnomedUtils.getHistoricalAssocationTargets(c, gl);
+				if (!targets.equals(theseTargets)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private String checkForProcessInclusionNOS(Concept c) {
@@ -399,6 +447,14 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		action.inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 		action.replacements = Arrays.asList(replacement);
 		return action;
+	}
+
+	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+		if (cathyNotes.containsKey(c)) {
+			return report(PRIMARY_REPORT, c, details, cathyNotes.get(c));
+		} else {
+			return report(PRIMARY_REPORT, c, details);
+		}
 	}
 
 	class UpdateAction {
