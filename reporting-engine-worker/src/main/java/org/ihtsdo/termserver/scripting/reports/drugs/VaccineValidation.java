@@ -108,7 +108,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 
 	private void validateDrugsModeling() throws TermServerScriptException {
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
-		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		double conceptsConsidered = 0;
 		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
 		for (Concept c : allDrugs) {
@@ -151,6 +150,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				validateTerming(c, allDrugTypes);
 			}
 
+			validateNoModifiedSubstances(c);
 			
 			//DRUGS-296 
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
@@ -185,6 +185,22 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			
 		}
 		LOGGER.info ("Drugs validation complete");
+	}
+
+	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
+		String issueStr = c.getConceptType() + " has modified ingredient";
+		initialiseSummary(issueStr);
+		//Check all ingredients for any that themselves have modification relationships
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getType().equals(HAS_PRECISE_INGRED) || r.getType().equals(HAS_ACTIVE_INGRED) ) {
+				Concept ingredient = r.getTarget();
+				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (ir.getType().equals(IS_MODIFICATION_OF)) {
+						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
+					}
+				}
+			}
+		}
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
@@ -554,9 +570,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			}
 		}
 		
-		if (isCD(c)) {
-			validateParentSemTags(c, "(medicinal product form)", issueStr2);
-		} else if (isMPOnly(c)) {
+		if (isMPOnly(c)) {
 			validateParentSemTags(c, "(medicinal product)", issueStr2);
 		} else if (isMPFOnly(c)) {
 			//Complex one this.   An MPF-Only should have at least one parent which is an MPF (not only)
@@ -643,12 +657,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			report(c, issueStr);
 		}
 		
-		issueStr =  "CD must have one or more 'Has precise active ingredient' attributes";
-		initialiseSummary(issueStr);
-		if (isCD(c) && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE).size() < 1) {
-			report(c, issueStr);
-		}
-		
 		issueStr =  "MP/MPF must not feature any role groups";
 		//We mean traditional role groups here, so filter out self grouped
 		initialiseSummary(issueStr);
@@ -693,13 +701,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-		
-		issueStr =  "CD must feature 'precisely' in the FSN";
-		initialiseSummary(issueStr);
-		if (isCD(c) && !c.getFsn().contains("precisely")) { 
-			report (c, issueStr);
-		}
-		
+
 		issueStr = "Precise MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
@@ -711,14 +713,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		//So we must fall back to using fsn lexical search
 		issueStr = "'Only' and 'precisely' must have a count of base";
 		initialiseSummary(issueStr);
-		if (isCD(c)) {
-			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
-				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
-			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-				if (true);
-				report (c, issueStr);
-			}
-		} else if ((isMP(c) || isMPF(c)) && 
+		if ((isMP(c) || isMPF(c)) &&
 				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
 			report (c, issueStr);
