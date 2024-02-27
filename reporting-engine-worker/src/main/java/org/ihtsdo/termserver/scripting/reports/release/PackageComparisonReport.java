@@ -155,10 +155,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
-				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
+				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
+				.add(THIS_DEPENDENCY).withType(JobParameter.Type.RELEASE_ARCHIVE).withOptions(INT)
+				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.RELEASE_ARCHIVE).withOptions(INT)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.GOOGLE.name())
 				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.CSV.name())
