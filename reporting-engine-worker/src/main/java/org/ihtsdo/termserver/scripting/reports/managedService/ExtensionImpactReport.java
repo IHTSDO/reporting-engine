@@ -52,7 +52,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(INTERNATIONAL_RELEASE).withType(JobParameter.Type.STRING)
+				.add(INTERNATIONAL_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withOptions(INT)
 				.build();
 
 		return new Job()

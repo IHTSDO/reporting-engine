@@ -42,8 +42,8 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
-				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
+				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
 

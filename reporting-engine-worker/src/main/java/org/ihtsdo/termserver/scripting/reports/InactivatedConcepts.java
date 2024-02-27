@@ -53,7 +53,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(SEMTAG_FILTER_PARAM).withType(Type.STRING)
-				.add(RELEASE).withType(Type.STRING)
+				.add(RELEASE).withType(Type.RELEASE_ARCHIVE)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
