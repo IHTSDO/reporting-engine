@@ -45,7 +45,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
 				.build();
 		
 		return new Job()
