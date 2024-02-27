@@ -133,6 +133,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	public void setLoadOtherReferenceSets(boolean loadOtherReferenceSets) {
+		LOGGER.info("Setting loadOtherReferenceSets to " + loadOtherReferenceSets);
 		this.loadOtherReferenceSets = loadOtherReferenceSets;
 	}
 
@@ -482,7 +483,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	private boolean checkForPhantomConcept(Concept c) {
-		if (c.isActive() == null) {
+		if (c.getActive() == null) {
 			//Now SOMETHING had a reference to this concept, so let's try and work out what and
 			//report that, rather than talk about a concept that doesn't exist
 			String msg = determineSourceofPhantomConcept(c);
