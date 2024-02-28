@@ -848,32 +848,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 	
-	protected int removeRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
-		return removeRelationship(t, c, r, "");
-	}
-	
-	protected int removeRelationshipGroup(Task t, Concept c, RelationshipGroup g) throws TermServerScriptException {
-		int changesMade = 0;
-		for (Relationship r : g.getRelationships()) {
-			changesMade += removeRelationship(t, c, r, "");
-		}
-		return changesMade;
-	}
-	
-	protected int removeRelationship(Task t, Concept c, Relationship r, String reasonPrefix) throws TermServerScriptException {
-		//Are we inactivating or deleting this relationship?
-		ReportActionType action = ReportActionType.UNKNOWN;
-		if (!r.isReleased()) {
-			r.setActive(false);
-			c.removeRelationship(r);
-			action = ReportActionType.RELATIONSHIP_DELETED;
-		} else {
-			c.inactivateRelationship(r);
-			action = ReportActionType.RELATIONSHIP_INACTIVATED;
-		}
-		report (t, c, Severity.LOW, action, reasonPrefix + r);
-		return CHANGE_MADE;
-	}
+
 	
 	protected void removeDescription(Task t, Concept c, Description d, InactivationIndicator i) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
@@ -1039,111 +1014,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		RelationshipTemplate.Mode mode = ensureTypeUnique ? Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS : Mode.UNIQUE_TYPE_IN_THIS_GROUP;
 		return replaceRelationship(t, c, type, value, groupId, mode); 
 	}
-	
-	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, RelationshipTemplate.Mode mode) throws TermServerScriptException {
-		int changesMade = 0;
-		
-		if (type == null || value == null) {
-			if (value == null) {
-				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept";
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			} else if (type == null) {
-				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			}
-			return NO_CHANGES_MADE;
-		}
-		//Do we already have this relationship active in the target group (or at all if self grouped)?
-		Set<Relationship> rels;
-		if (groupId == SELFGROUPED) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					value,
-					ActiveState.ACTIVE);
-		} else {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-														type,
-														value,
-														groupId,
-														ActiveState.ACTIVE);
-		}
-		if (rels.size() > 1) {
-			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
-			return NO_CHANGES_MADE;
-		} else if (rels.size() == 1) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
-			return NO_CHANGES_MADE;
-		}
-		
-		//Do we have it inactive?
-		if (groupId == SELFGROUPED) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					value,
-					ActiveState.INACTIVE);
-		} else {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-														type,
-														value,
-														groupId,
-														ActiveState.INACTIVE);
-		}
-		if (rels.size() >= 1) {
-			Relationship rel = rels.iterator().next();
-			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
-			rel.setActive(true);
-			return CHANGE_MADE;
-		}
-		
-		//Or do we need to create and add?
-		//Is this type (or type/value) unique for the concept
-		//or (new feature) do we want to replace any attributes of the same type if they exist
-		if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS ||
-				mode == RelationshipTemplate.Mode.REPLACE_TYPE_IN_THIS_GROUP) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					ActiveState.ACTIVE);
-			if (rels.size() > 0) {
-				if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS) {
-					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, type + " attribute type already exists: " + rels.iterator().next());
-					return changesMade;
-				} else {
-					//Removing existing relationships of the same type, but only in this group
-					rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-							type,
-							groupId);
-					for (Relationship remove : rels) {
-						changesMade += removeRelationship(t, c, remove);
-					}
-				}
-			}
-		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS) {
-			RelationshipTemplate rt = new RelationshipTemplate(type,value);
-			rels = c.getRelationships(rt, ActiveState.ACTIVE);
-			if (rels.size() > 0) {
-				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
-				return changesMade;
-			}
-		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP) {
-			RelationshipTemplate rt = new RelationshipTemplate(type,value);
-			RelationshipGroup g = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
-			rels = g.getRelationshipsWithType(rt.getType());
-			if (rels.size() > 0) {
-				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
-				return changesMade;
-			}
-		}
-		
-		//Add the new relationship
-		if (groupId == SELFGROUPED) {
-			groupId = SnomedUtils.getFirstFreeGroup(c);
-		}
-		Relationship newRel = new Relationship (c, type, value, groupId);
-		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
-		c.addRelationship(newRel);
-		changesMade++;
-		return changesMade;
-	}
+
 	
 	protected int replaceRelationship(Task t, Concept c, IRelationship from, IRelationship to) throws TermServerScriptException {
 		int changesMade = 0;
