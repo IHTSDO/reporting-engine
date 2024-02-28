@@ -140,7 +140,8 @@ public class AxiomUtils implements ScriptConstants {
 	}
 
 	private static Relationship toRelationship(org.ihtsdo.termserver.scripting.domain.Relationship r) {
-		return new Relationship(Long.parseLong(r.getType().getId()), 
+		return new Relationship(r.getGroupId(),
+				Long.parseLong(r.getType().getId()),
 				Long.parseLong(r.getTarget().getId()));
 	}
 
@@ -148,7 +149,11 @@ public class AxiomUtils implements ScriptConstants {
 		List<AxiomEntry> axiomEntries = new ArrayList<>();
 		for (Axiom axiom : c.getClassAxioms()) {
 			AxiomEntry a = new AxiomEntry();
-			a.setId(UUID.randomUUID().toString());
+			if (axiom.getId() == null) {
+				a.setId(UUID.randomUUID().toString());
+			} else {
+				a.setId(axiom.getId());
+			}
 			a.setEffectiveTime(axiom.getEffectiveTime());
 			a.setActive(true);
 			a.setModuleId(c.getModuleId());

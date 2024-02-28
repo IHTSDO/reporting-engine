@@ -17,6 +17,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1557,6 +1558,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (quiet) {
 			return;
 		}
+
+		//If we're using BatchFix methods in a non-BatchFix script, we'll use a more usual report method.
+		if (task == null && !(this instanceof BatchFix) && component != null && component instanceof Concept) {
+			report(PRIMARY_REPORT, (Concept)component, severity, actionType, details);
+			return;
+		}
+
 		if (component != null) {
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
@@ -1589,12 +1597,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		String type = (component == null ? "" : component.getReportedType());
 		String id = (component == null ? "" : component.getId());
 		StringBuffer sb = new StringBuffer();
-		
+
 		sb.append(key + COMMA + desc + COMMA + id + COMMA_QUOTE)
-		.append( name + QUOTE_COMMA);
+				.append(name + QUOTE_COMMA);
 		if (stateComponentType) {
 			sb.append(type + COMMA );
 		}
+
 		sb.append( severity + COMMA + actionType );
 		for (Object detail : details) {
 			if (detail == null) {
@@ -1977,16 +1986,58 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		finalWords.add(msg);
 	}
 
+	public void restateInferredRelationships(Concept c) throws TermServerScriptException {
+		//Work through all inferred groups and collect any that aren't also stated, to state
+		List<RelationshipGroup> toBeStated = new ArrayList<>();
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
+
+		nextInferredGroup:
+		for (RelationshipGroup inferredGroup : inferredGroups) {
+			boolean matchFound = false;
+			for (RelationshipGroup statedGroup : statedGroups) {
+				if (inferredGroup.equals(statedGroup)) {
+					matchFound = true;
+					continue nextInferredGroup;
+				}
+			}
+			if (!matchFound) {
+				toBeStated.add(inferredGroup);
+			}
+		}
+		stateRelationshipGroups(c, toBeStated);
+	}
+
+	private int stateRelationshipGroups(Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
+		int changesMade = 0;
+		for (RelationshipGroup g : toBeStated) {
+			//Group 0 must remain group 0.  Otherwise find an available group number
+			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
+			changesMade += stateRelationshipGroup(c, g, freeGroup);
+		}
+		return changesMade;
+	}
+
+	private int stateRelationshipGroup(Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
+		int changesMade = 0;
+		for (Relationship r : g.getRelationships()) {
+			Relationship newRel = r.clone(null);
+			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+			newRel.setGroupId(freeGroup);
+			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE);
+		}
+		return changesMade;
+	}
+
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, RelationshipTemplate.Mode mode) throws TermServerScriptException {
 		int changesMade = 0;
-
 		if (type == null || value == null) {
 			if (value == null) {
 				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept";
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
 			} else if (type == null) {
 				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
 			}
 			return NO_CHANGES_MADE;
 		}
@@ -2005,10 +2056,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					ActiveState.ACTIVE);
 		}
 		if (rels.size() > 1) {
-			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
+			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
 			return NO_CHANGES_MADE;
 		} else if (rels.size() == 1) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
 			return NO_CHANGES_MADE;
 		}
 
@@ -2058,7 +2109,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			RelationshipTemplate rt = new RelationshipTemplate(type,value);
 			rels = c.getRelationships(rt, ActiveState.ACTIVE);
 			if (rels.size() > 0) {
-				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
+				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
 				return changesMade;
 			}
 		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP) {
@@ -2066,7 +2117,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			RelationshipGroup g = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
 			rels = g.getRelationshipsWithType(rt.getType());
 			if (rels.size() > 0) {
-				report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
+				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
 				return changesMade;
 			}
 		}
@@ -2076,7 +2127,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			groupId = SnomedUtils.getFirstFreeGroup(c);
 		}
 		Relationship newRel = new Relationship (c, type, value, groupId);
-		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 		c.addRelationship(newRel);
 		changesMade++;
 		return changesMade;

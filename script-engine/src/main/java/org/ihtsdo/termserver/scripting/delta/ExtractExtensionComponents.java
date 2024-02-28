@@ -1065,49 +1065,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return true;
 	}
 
-	public void restateInferredRelationships(Concept c) throws TermServerScriptException {
-		//Work through all inferred groups and collect any that aren't also stated, to state
-		List<RelationshipGroup> toBeStated = new ArrayList<>();
-		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
-		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
-
-		nextInferredGroup:
-		for (RelationshipGroup inferredGroup : inferredGroups) {
-			boolean matchFound = false;
-			for (RelationshipGroup statedGroup : statedGroups) {
-				if (inferredGroup.equals(statedGroup)) {
-					matchFound = true;
-					continue nextInferredGroup;
-				}
-			}
-			if (!matchFound) {
-				toBeStated.add(inferredGroup);
-			}
-		}
-		stateRelationshipGroups(c, toBeStated);
-	}
-
-	private int stateRelationshipGroups(Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
-		int changesMade = 0;
-		for (RelationshipGroup g : toBeStated) {
-			//Group 0 must remain group 0.  Otherwise find an available group number
-			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
-			changesMade += stateRelationshipGroup(c, g, freeGroup);
-		}
-		return changesMade;
-	}
-
-	private int stateRelationshipGroup(Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
-		int changesMade = 0;
-		for (Relationship r : g.getRelationships()) {
-			Relationship newRel = r.clone(null);
-			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
-			newRel.setGroupId(freeGroup);
-			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE);
-		}
-		return changesMade;
-	}
-
 	private Description findMatchingDescription(Description d, Concept conceptOnTS) {
 		Description match = conceptOnTS.getDescription(d.getId());
 		if (match != null) {
