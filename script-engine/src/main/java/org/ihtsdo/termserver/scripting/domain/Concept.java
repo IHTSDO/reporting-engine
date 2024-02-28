@@ -1506,6 +1506,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				return axiom;
 			}
 		}
+
 		//All existing concepts should have an active axiom
 		//So no need to reactivate inactive ones.  
 		//We will only add a new one if this is a new concept to create
