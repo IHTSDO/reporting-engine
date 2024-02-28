@@ -1383,6 +1383,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			Relationship r = null;
 			if (ir instanceof RelationshipTemplate) {
 				r = ir.instantiate(this, group.getGroupId());
+			} else {
+				r = (Relationship) ir;
 			}
 			//Do we have one of these relationships available to be reused?
 			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {

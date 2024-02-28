@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
@@ -51,7 +52,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	Map<Concept, Concept> knownReplacements = new HashMap<>();
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
-	
+
+	private boolean copyInferredRelationshipsToStatedWhereMissing = false;
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		//ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
@@ -66,8 +69,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "51000202101"; //Norway Module
-			delta.moduleId = "57091000202101";  //Norway module for medicines
-			//delta.moduleId="999000011000000103"; // UK Clinical Extension
+			//delta.moduleId = "57091000202101";  //Norway module for medicines
+			delta.moduleId = "999000011000000103"; // UK Clinical Extension
 			//delta.moduleId = "83821000000107"; //UK Composition Module
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "332351000009108"; //Vet Extension
@@ -363,46 +366,54 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		initialiseSummaryInformation("Unexpected dependencies included");
 		LOGGER.info ("Extracting specified concepts");
 		for (Component thisComponent : componentsToProcess) {
-			Concept thisConcept = (Concept)thisComponent;
+			extractComponent(thisComponent, componentsToProcess, true);
+		}
+		return componentsToProcess;
+	}
+
+	protected void extractComponent(Component thisComponent, List<Component> componentsToProcess, boolean doAdditionalProcessing) throws TermServerScriptException {
+		Concept thisConcept = (Concept)thisComponent;
 			/*if (thisConcept.getId().equals("445028008")) {
 				LOGGER.debug("here");
 			}*/
-
-			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
-			if (thisConcept.getModuleId() == null) {
-				report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
-				continue;
-			}
-			
-			if (!thisConcept.isActive()) {
-				report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
-				continue;
-			}
-			
-			//Have we already processed this concept because it was a dependency of another concept?
-			if (allModifiedConcepts.contains(thisConcept)) {
-				report(thisConcept, Severity.LOW, ReportActionType.INFO, "Concept specified for transfer but already processed as a dependency (or is duplicate).");
-				continue;
-			}
-			try {
-				if (!switchModule(thisConcept, componentsToProcess)) {
-					addSummaryInformation("Specified but no movement: " + thisConcept, null);
-					incrementSummaryInformation("Concepts no movement required");
-				} else if (thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) &&
-							SnomedUtils.countAttributes(thisConcept, CharacteristicType.STATED_RELATIONSHIP) == 0) {
-					//Check we're not ending up with a Fully Defined concept with only ISAs
-					report(thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept FD with only ISAs ", thisConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-				}
-				doAdditionalProcessing(thisConcept);
-			} catch (TermServerScriptException e) {
-				report(thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
-			}
+		if (copyInferredRelationshipsToStatedWhereMissing) {
+			restateInferredRelationships(thisConcept);
 		}
-		return componentsToProcess;
-		
+
+		//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
+		if (thisConcept.getModuleId() == null) {
+			report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
+			return;
+		}
+
+		if (!thisConcept.isActive()) {
+			report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
+			return;
+		}
+
+		//Have we already processed this concept because it was a dependency of another concept?
+		if (allModifiedConcepts.contains(thisConcept)) {
+			report(thisConcept, Severity.LOW, ReportActionType.INFO, "Concept specified for transfer but already processed as a dependency (or is duplicate).");
+			return;
+		}
+		try {
+			if (!switchModule(thisConcept, componentsToProcess)) {
+				addSummaryInformation("Specified but no movement: " + thisConcept, null);
+				incrementSummaryInformation("Concepts no movement required");
+			} else if (thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) &&
+					SnomedUtils.countAttributes(thisConcept, CharacteristicType.STATED_RELATIONSHIP) == 0) {
+				//Check we're not ending up with a Fully Defined concept with only ISAs
+				report(thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept FD with only ISAs ", thisConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			}
+			if (doAdditionalProcessing) {
+				doAdditionalProcessing(thisConcept, componentsToProcess);
+			}
+		} catch (TermServerScriptException e) {
+			report(thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+		}
 	}
 
-	protected void doAdditionalProcessing(Concept c) throws TermServerScriptException {
+	protected void doAdditionalProcessing(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		//Override this method in subclasses to do additional processing
 	}
 
@@ -1051,8 +1062,50 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				}
 			}
 		}
-		
 		return true;
+	}
+
+	public void restateInferredRelationships(Concept c) throws TermServerScriptException {
+		//Work through all inferred groups and collect any that aren't also stated, to state
+		List<RelationshipGroup> toBeStated = new ArrayList<>();
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
+
+		nextInferredGroup:
+		for (RelationshipGroup inferredGroup : inferredGroups) {
+			boolean matchFound = false;
+			for (RelationshipGroup statedGroup : statedGroups) {
+				if (inferredGroup.equals(statedGroup)) {
+					matchFound = true;
+					continue nextInferredGroup;
+				}
+			}
+			if (!matchFound) {
+				toBeStated.add(inferredGroup);
+			}
+		}
+		stateRelationshipGroups(c, toBeStated);
+	}
+
+	private int stateRelationshipGroups(Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
+		int changesMade = 0;
+		for (RelationshipGroup g : toBeStated) {
+			//Group 0 must remain group 0.  Otherwise find an available group number
+			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
+			changesMade += stateRelationshipGroup(c, g, freeGroup);
+		}
+		return changesMade;
+	}
+
+	private int stateRelationshipGroup(Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
+		int changesMade = 0;
+		for (Relationship r : g.getRelationships()) {
+			Relationship newRel = r.clone(null);
+			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+			newRel.setGroupId(freeGroup);
+			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE);
+		}
+		return changesMade;
 	}
 
 	private Description findMatchingDescription(Description d, Concept conceptOnTS) {
