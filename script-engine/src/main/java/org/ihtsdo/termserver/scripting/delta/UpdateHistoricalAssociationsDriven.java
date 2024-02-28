@@ -41,7 +41,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		UpdateHistoricalAssociationsDriven delta = new UpdateHistoricalAssociationsDriven();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
 			delta.newIdsRequired = false; 
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
@@ -69,12 +69,12 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void process() throws ValidationFailure, TermServerScriptException {
-		
+
+		populateCathyNotes();
 		populateReplacementMap();
 		populateUpdatedReplacementMap();
 		checkForRecentInactivations();
-		populateCathyNotes();
-		
+
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			/*if (!c.getId().equals("164427005")) {
 				continue;
@@ -228,12 +228,16 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 						notes += " " + items[2];
 					}
 					if (cathyNotes.containsKey(c)) {
-						throw new TermServerScriptException("Notes for " + c + " already seen.  Was " + cathyNotes.get(c) + " now " + notes);
+						//If we're saying the same thing, it's cool
+						if (cathyNotes.get(c).equals(notes)) {
+							continue;
+						}
+						notes = cathyNotes.get(c) + " + " + notes;
 					}
 					cathyNotes.put(c, notes);
 			}
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to read " + getInputFile(3),e);
+			throw new TermServerScriptException("Failed to read " + getInputFile(2) + " at line " + lineNo,e);
 		}
 	}
 
@@ -255,7 +259,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					reportedAsAdditional.contains(c)) {
 				continue;
 			}
-			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true);
 			String notes = "";
 			//For 'NOS' concepts, we may pull them into our main processing set
 			if (c.getFsn().contains("NOS")) {
