@@ -442,10 +442,16 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	protected void createOutputArchive() throws TermServerScriptException {
+		createOutputArchive(true);
+	}
+
+	protected void createOutputArchive(boolean outputModifiedComponents) throws TermServerScriptException {
 		if (dryRun) {
 			LOGGER.info("Dry run, skipping archive creation");
 		} else {
-			outputModifiedComponents(true);
+			if (outputModifiedComponents) {
+				outputModifiedComponents(true);
+			}
 			getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
 			File archive = SnomedUtils.createArchive(new File(outputDirName));
 			String msg = "Created " + archive.getName();
