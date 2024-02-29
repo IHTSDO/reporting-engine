@@ -1678,13 +1678,16 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				.collect(Collectors.toList());
 	}
 
+	public Concept cloneAsNewConcept() {
+		return cloneAsNewConcept(null);
+	}
 	/**
 	 * Create a clone that can be used as a new concept.  So only stated modelling and 
 	 * no references back to the original axioms
 	 */
-	public Concept cloneAsNewConcept() {
+	public Concept cloneAsNewConcept(String sctid) {
 		Concept clone = this.clone();  //Will not copy inferred rels unless keepIds = true;
-
+		clone.setId(sctid);
 		//remove any inactive components
 		clone.removeInactiveComponents();
 		
