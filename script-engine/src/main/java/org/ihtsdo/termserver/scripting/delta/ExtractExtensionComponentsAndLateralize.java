@@ -54,7 +54,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 	}
 
 	private void createLateralizedConcept(Concept c, Concept laterality) throws TermServerScriptException {
-		Concept clone = c.cloneAsNewConcept();
+		Concept clone = c.cloneAsNewConcept(conIdGenerator.getSCTID());
 		//Lateralize the concepts in the role groups
 		Collection<RelationshipGroup> originalGroups = clone.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
 		for (RelationshipGroup g : originalGroups) {
@@ -65,9 +65,9 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 				lateralizeGroup(g, RIGHT, false);
 			}
 			if (laterality.equals(BILATERAL)) {
-				RelationshipGroup g2 = g.clone(SnomedUtils.getFirstFreeGroup(clone));
-				lateralizeGroup(g2, RIGHT, true);
-				clone.addRelationshipGroup(g2, null);
+				RelationshipGroup gClone = g.clone(SnomedUtils.getFirstFreeGroup(clone));
+				lateralizeGroup(gClone, RIGHT, true);
+				clone.addRelationshipGroup(gClone, null);
 			}
 		}
 		lateralizeFsn(c, clone, laterality);
@@ -79,9 +79,11 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			if (isBodyStructure(r.getTarget())) {
 				Concept lateralizedBodyStructure = findLateralizedCounterpart(r.getTarget(), laterality, overrideCurrentLaterality);
 				if (lateralizedBodyStructure == null) {
-					throw new TermServerScriptException("Failed to find lateralized counterpart for " + r.getTarget() + " with laterality " + laterality);
+					//throw new TermServerScriptException("Failed to find lateralized counterpart for " + r.getTarget() + " with laterality " + laterality);
+					report(r.getSource(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Failed to find lateralized counterpart for " + r.getTarget() + " with laterality " + laterality + " - continuing with unlateralized concept.");
+				} else {
+					r.setTarget(lateralizedBodyStructure);
 				}
-				r.setTarget(lateralizedBodyStructure);
 			}
 		}
 	}
@@ -100,7 +102,9 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 				} else {
 					laterlizedFsn = clone.getFsn().replace(bodyStructureStr, lateralityStr + " " + bodyStructureStr);
 				}
+
 				clone.getFSNDescription().setTerm(laterlizedFsn);
+				clone.setFsn(laterlizedFsn);
 				successfulLaterlization = true;
 				break;
 			}
@@ -108,13 +112,25 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 
 		if (!successfulLaterlization) {
 			//We'll add the lateralized body structure to the end of the FSN
+			//Or, if it's "using", before "using"
 			String[] fsnParts = SnomedUtils.deconstructFSN(clone.getFsn());
 			String lateralizedBodyStructurePT = getBodyStructurePT(clone);
-			if (laterality.equals(BILATERAL)) {
+
+			if (laterality.equals(BILATERAL) || !lateralizedBodyStructurePT.contains("right")) {
 				lateralizedBodyStructurePT = lateralizedBodyStructurePT.replace("left", "right and left");
 			}
+
+			//If the body structure was not able to be lateralized, we'll need to force the laterality for the FSN
+			if (!lateralizedBodyStructurePT.contains(lateralityStr)) {
+				lateralizedBodyStructurePT += " (" + lateralityStr + ")";
+			}
 			String laterlizedFsn = fsnParts[0] + " of " + lateralizedBodyStructurePT + " " + fsnParts[1];
+			if (fsnParts[0].contains(" using ")) {
+				int cutPoint = fsnParts[0].indexOf(" using ");
+				laterlizedFsn = fsnParts[0].substring(0, cutPoint) + " of " + lateralizedBodyStructurePT + fsnParts[0].substring(cutPoint) + " " + fsnParts[1];
+			}
 			clone.getFSNDescription().setTerm(laterlizedFsn);
+			clone.setFsn(laterlizedFsn);
 		}
 		
 		/*if (!successfulLaterlization) {
@@ -142,7 +158,8 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		//Bilateral concepts will have an acceptable "both" synonym
 		if (laterality.equals(BILATERAL)) {
 			String bothTerm = pt.replace("bilateral", "both");
-			if (!bothTerm.endsWith("structure")) {
+			//if (!bothTerm.endsWith("structure")) {
+			if (!bothTerm.endsWith(")")) {
 				if (bothTerm.contains(" with ")) {
 					bothTerm = bothTerm.replace(" with ", "s with ");
 				} else if (bothTerm.contains(" using ")) {
@@ -154,6 +171,16 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			Description bothDesc = Description.withDefaults(bothTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			clone.addDescription(bothDesc);
 		}
+
+		//Let's give these descriptions some identifiers!
+		clone.getDescriptions(ActiveState.ACTIVE).stream()
+				.forEach(d -> {
+                    try {
+                        d.setId(descIdGenerator.getSCTID());
+                    } catch (TermServerScriptException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     private Set<String> getBodyStructureStrs(Concept original) throws TermServerScriptException {
@@ -165,6 +192,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 						bodyStructureStrs.add(d.getTerm().toLowerCase());
 					}
 					String pt = r.getTarget().getPreferredSynonym().toLowerCase();
+					String origPT = pt;
 					bodyStructureStrs.add(pt);
 
 					if (pt.contains("structure")) {
@@ -177,8 +205,13 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 					}
 
 					//Also for the case X structure of Y, we'll try just "of Y"
-					if (pt.contains("structure of ")) {
+					if (origPT.contains("structure of ")) {
 						String[] parts = pt.split("structure");
+						bodyStructureStrs.add(parts[1]);
+					}
+
+					if (origPT.contains("structure of joint of ")) {
+						String[] parts = pt.split("structure of joint ");
 						bodyStructureStrs.add(parts[1]);
 					}
 				}
@@ -206,10 +239,14 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		//So try that first, and if not, we'll try the laterality in every place.
 		Concept lateralizedCounterpart = null;
 		String lateralityStr = laterality.getPreferredSynonym().toLowerCase();
+		String lateralityStrCapitalized = laterality.getPreferredSynonym();
 		String unlateralizedFsn = unlaterlizedConcept.getFsn();
 
 		if (overrideCurrentLaterality) {
-			String lateralizedFsn = unlateralizedFsn.replace("left", lateralityStr).replace("right", lateralityStr);
+			String lateralizedFsn = unlateralizedFsn.replace("left", lateralityStr)
+					.replace("Left", lateralityStrCapitalized)
+					.replace("right", lateralityStr)
+					.replace("Right", lateralityStrCapitalized);
 			lateralizedCounterpart = findBodyStructureWithFsn(lateralizedFsn);
 		}
 
