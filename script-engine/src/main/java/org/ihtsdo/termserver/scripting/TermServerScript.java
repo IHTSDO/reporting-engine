@@ -2020,10 +2020,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	private int stateRelationshipGroup(Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
 		int changesMade = 0;
+		AxiomEntry axiom = null;
+		//Does c already have an axiom we can merge these relationships into?
+		if (c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 0) {
+			axiom = c.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next();
+		}
+
 		for (Relationship r : g.getRelationships()) {
 			Relationship newRel = r.clone(null);
 			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 			newRel.setGroupId(freeGroup);
+			newRel.setAxiomEntry(axiom);
 			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE);
 		}
 		return changesMade;
