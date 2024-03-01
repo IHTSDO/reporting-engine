@@ -28,7 +28,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	Concept COMPONENT;
 
-	private final int BatchSize = 25;
+	//private final int BatchSize = 25;
+	private final int BatchSize = 99999;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		GroupSelfGroupedAttributes delta = new GroupSelfGroupedAttributes();
@@ -46,7 +47,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		//hierarchies.add(OBSERVABLE_ENTITY);
+		hierarchies.add(OBSERVABLE_ENTITY);
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));

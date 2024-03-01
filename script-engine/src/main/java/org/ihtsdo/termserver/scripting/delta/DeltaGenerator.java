@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -46,7 +47,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
-	protected String moduleId="900000000000207008";
+	protected String moduleId = SCTID_CORE_MODULE;
 	protected String nameSpace="0";
 	protected String targetModuleId = SCTID_CORE_MODULE;
 	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",   //GB
@@ -139,6 +140,21 @@ public abstract class DeltaGenerator extends TermServerScript {
 		String response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			nameSpace = response;
+		}
+
+		//If we're working in an extension and the module is still core, suggest
+		//the default module for that project
+		if (!projectName.endsWith(".zip")){
+			try{
+				scaClient = new AuthoringServicesClient(url, authenticatedCookie);
+				project = scaClient.getProject(projectName);
+				if (project.getBranchPath().contains("SNOMEDCT-")
+						&& project.getMetadata() != null) {
+					moduleId = project.getMetadata().getDefaultModuleId();
+				}
+			} catch (Exception e) {
+				LOGGER.error("Failed to retrieve project metadata for " + projectName, e);
+			}
 		}
 		
 		print ("Considering which moduleId(s)? [" + moduleId + "]: ");
