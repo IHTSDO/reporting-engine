@@ -296,15 +296,19 @@ public abstract class DeltaGenerator extends TermServerScript {
 		writeToRF2File(assocDeltaFilename, assocHeader);
 	}
 	
-	protected void outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
+	protected int outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
 		LOGGER.info ("Outputting to RF2 in " + outputDirName + "...");
+		int conceptsOutput = 0;
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {
-				outputRF2((Concept)thisConcept, alwaysCheckSubComponents);
+				if (outputRF2((Concept)thisConcept, alwaysCheckSubComponents)) {
+					conceptsOutput++;
+				}
 			} catch (TermServerScriptException e) {
 				report ((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
+		return conceptsOutput;
 	}
 	
 	protected void outputRF2(ComponentType componentType, String[] columns) throws TermServerScriptException {
@@ -362,11 +366,14 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
-	protected void outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
+	protected boolean outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
+		boolean conceptOutput = false;
+		//TODO: Keep note of concepts output and augement with axioms if changed without concept
 		if (c.isDirty()) {
 			writeToRF2File(conDeltaFilename, c.toRF2());
+			conceptOutput = true;
 		} else if (!checkAllComponents) {
-			return;
+			return conceptOutput;
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
@@ -416,6 +423,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		for (AxiomEntry a: c.getAxiomEntries()) {
 			outputRF2(a);
 		}
+		return conceptOutput;
 	}
 
 	private boolean hasDirtyAxiom(Concept c) {
@@ -457,23 +465,28 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 
-	protected void createOutputArchive() throws TermServerScriptException {
-		createOutputArchive(true);
+	protected int createOutputArchive() throws TermServerScriptException {
+		return createOutputArchive(true);
 	}
 
-	protected void createOutputArchive(boolean outputModifiedComponents) throws TermServerScriptException {
+	protected int createOutputArchive(boolean outputModifiedComponents) throws TermServerScriptException {
 		if (dryRun) {
-			LOGGER.info("Dry run, skipping archive creation");
+			String msg = "Dry run, skipping archive creation";
+			LOGGER.info(msg);
+			report((Concept) null, Severity.NONE, ReportActionType.INFO, msg);
 		} else {
+			int conceptsOutput = NOT_SET;
 			if (outputModifiedComponents) {
-				outputModifiedComponents(true);
+				conceptsOutput = outputModifiedComponents(true);
 			}
 			getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
 			File archive = SnomedUtils.createArchive(new File(outputDirName));
-			String msg = "Created " + archive.getName();
+			String msg = "Created " + archive.getName() + " containing " + conceptsOutput + " concepts";
 			LOGGER.info(msg);
 			report((Concept) null, Severity.NONE, ReportActionType.INFO, msg);
+			return conceptsOutput;
 		}
+		return 0;
 	}
 
 }
