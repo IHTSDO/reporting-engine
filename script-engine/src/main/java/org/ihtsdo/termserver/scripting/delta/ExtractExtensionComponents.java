@@ -2,9 +2,9 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
@@ -43,7 +43,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 50;
+	private Integer conceptsPerArchive = 3;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 
@@ -53,11 +53,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	Map<Concept, Concept> knownReplacements = new HashMap<>();
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 
-	private boolean copyInferredRelationshipsToStatedWhereMissing = false;
+	protected boolean copyInferredRelationshipsToStatedWhereMissing = true;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		ExtractExtensionComponents delta = new ExtractExtensionComponents();
-		//ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
+		//ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
@@ -75,7 +75,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "332351000009108"; //Vet Extension
 
-			delta.newIdsRequired = false;
+			delta.newIdsRequired = true;
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
@@ -135,7 +135,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private void preProcessConcepts(List<Component> componentsOfInterest, boolean viaReview) throws TermServerScriptException {
 		archiveBatches = new ArrayDeque<>();
 		Set<Component> excludeComponents = new HashSet<>();
+		Set<Component> componentsSeen = new HashSet<>();
 		for (Component c : componentsOfInterest) {
+			if (componentsSeen.contains(c)) {
+				LOGGER.warn("Duplicate concept identified for transfer: " + c);
+				continue;
+			} else {
+				componentsSeen.add(c);
+			}
+
 			if (c.getModuleId() == null) {
 				//if (viaReview) {
 					String msg = viaReview ? "Concept appearing in review has been deleted?" : "Concept not found in target location";
@@ -182,7 +190,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private void assignConceptsToBatches(List<Component> componentsOfInterest) throws TermServerScriptException {
 		//Work through these and group parents with children.
-		//However if a parent has more children than we have concepts in a task, 
+		//However, if a parent has more children than we have concepts in a task,
 		//then we have a problem.
 		Map<Concept, Set<Concept>> parentChildMap = new HashMap<>();
 		Set<Concept> allocatedConcepts = new HashSet<>();
@@ -215,8 +223,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (descendantsToImport.size() >= conceptsPerArchive) {
 					//We'll need to load this concept in it's own import and promote to the project 
 					//so it's available as a parent for subsequent loads
-					requiresFirstPassLoad.add(c);
-					continue;
+					//requiresFirstPassLoad.add(c);
+					//continue;
+					LOGGER.warn("Exceeding batch size by " + (descendantsToImport.size() - conceptsPerArchive) + " for " + c + " (" + descendantsToImport.size() + " descendants).  Consider pre-importing and promoting first.");
 				}
 				//Don't want to import a concept twice, but if we do, we have a problem
 				int origSize = descendantsToImport.size();
@@ -281,7 +290,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				.count();
 		mapCount += parentChildMap.size();  //Also add 1 for each parent 
 		if (((int)mapCount + footlooseConcepts.size()) != componentsOfInterest.size()) {
-			throw new TermServerScriptException("Expected " + mapCount + " + " +  footlooseConcepts.size() + " to equals expected " + componentsOfInterest.size() + " concepts.");
+			//Which concepts have gone missing?
+			Set<Concept> allocated = parentChildMap.values().stream()
+					.flatMap(l -> l.stream())
+					.collect(Collectors.toSet());
+			allocated.addAll(parentChildMap.keySet());
+			allocated.addAll(footlooseConcepts);
+			componentsOfInterest.removeAll(allocated);
+			componentsOfInterest.stream()
+					.forEach(c -> LOGGER.error("Gone missing: " + c));
+			throw new TermServerScriptException("Batched count " + mapCount + " + " +  footlooseConcepts.size() + " does not equal expected " + componentsOfInterest.size() + " concepts.");
 		}
 		
 		//Add these batches into our queue, as we log the size of each one

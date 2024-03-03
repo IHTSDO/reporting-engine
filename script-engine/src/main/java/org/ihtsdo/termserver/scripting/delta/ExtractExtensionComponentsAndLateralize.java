@@ -40,7 +40,9 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		}
 
 		if (existingLateralizedConcept == null) {
-			createLateralizedConcept(c, laterality);
+			Concept newLateralizedConcept = createLateralizedConcept(c, laterality);
+			gl.registerConcept(newLateralizedConcept);
+			LOGGER.info("Lateralized concept created: " + newLateralizedConcept);
 		} else {
 			//If this concept is already on our list to process, we don't need to take any action.
 			if (componentsToProcess.contains(existingLateralizedConcept)) {
@@ -53,7 +55,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		}
 	}
 
-	private void createLateralizedConcept(Concept c, Concept laterality) throws TermServerScriptException {
+	private Concept createLateralizedConcept(Concept c, Concept laterality) throws TermServerScriptException {
 		Concept clone = c.cloneAsNewConcept(conIdGenerator.getSCTID());
 		//Lateralize the concepts in the role groups
 		Collection<RelationshipGroup> originalGroups = clone.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
@@ -71,7 +73,11 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			}
 		}
 		lateralizeFsn(c, clone, laterality);
+		clone.setDirty();
+		SnomedUtils.getAllComponents(clone).forEach(concept -> concept.setDirty());
+
 		report(clone, Severity.LOW, ReportActionType.CONCEPT_ADDED, SnomedUtils.getDescriptions(clone), clone.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+		return clone;
 	}
 
 	private void lateralizeGroup(RelationshipGroup g, Concept laterality, boolean overrideCurrentLaterality) throws TermServerScriptException {
@@ -116,6 +122,10 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			String[] fsnParts = SnomedUtils.deconstructFSN(clone.getFsn());
 			String lateralizedBodyStructurePT = getBodyStructurePT(clone);
 
+			if (lateralizedBodyStructurePT == null) {
+				throw new TermServerScriptException("Failed to find lateralized body structure for " + clone);
+			}
+
 			if (laterality.equals(BILATERAL) || !lateralizedBodyStructurePT.contains("right")) {
 				lateralizedBodyStructurePT = lateralizedBodyStructurePT.replace("left", "right and left");
 			}
@@ -143,7 +153,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
         normalizeDescriptions(clone, laterality);
 	}
 
-    private void normalizeDescriptions(Concept clone, Concept laterality) {
+    private void normalizeDescriptions(Concept clone, Concept laterality) throws TermServerScriptException {
         //remove all non-FSN descriptions and add them back in based on the FSN
 		clone.getDescriptions(ActiveState.ACTIVE).stream()
 				.filter(d -> !d.getType().equals(DescriptionType.FSN))
@@ -177,6 +187,8 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 				.forEach(d -> {
                     try {
                         d.setId(descIdGenerator.getSCTID());
+						d.setConceptId(clone.getId());
+						d.getLangRefsetEntries().forEach(l -> l.setReferencedComponentId(d.getId()));
                     } catch (TermServerScriptException e) {
                         throw new RuntimeException(e);
                     }
@@ -185,6 +197,15 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 
     private Set<String> getBodyStructureStrs(Concept original) throws TermServerScriptException {
 		Set<String> bodyStructureStrs = new LinkedHashSet<>();  //Preserve insertion order
+
+		if (original.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			String msg = "No stated relationship groups found for " + original;
+			if (!copyInferredRelationshipsToStatedWhereMissing) {
+				msg += " do you need to set copyInferredRelationshipsToStatedWhereMissing to true? in parent class?";
+			}
+			throw new TermServerScriptException(msg);
+		}
+
 		for (RelationshipGroup g : original.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 			for (Relationship r : g.getRelationships()) {
 				if (isBodyStructure(r.getTarget())) {
