@@ -72,18 +72,16 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
-	}
-
-	private void runReport() throws TermServerScriptException, InterruptedException {
-
-
-
-		//determineExistingConcepts(getTab(TAB_TOP_100));
-
 		
-		/*importIntoTask(successfullyModelled);
-		generateAlternateIdentifierFile(successfullyModelled);*/
+		scheme = gl.getConcept(SCTID_LOINC_CODE_SYSTEM);
+		externalContentModule = SCTID_LOINC_EXTENSION_MODULE;
 	}
+
+	/*private void runReport() throws TermServerScriptException, InterruptedException {
+		//determineExistingConcepts(getTab(TAB_TOP_100));
+		importIntoTask(successfullyModelled);
+		generateAlternateIdentifierFile(successfullyModelled);
+	}*/
 
 
 	@Override

@@ -1841,4 +1841,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			}
 		}
 	}
+
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		Concept otherConcept = (Concept) other;
+		return getDefinitionStatus().equals(otherConcept.getDefinitionStatus());
+	}
 }

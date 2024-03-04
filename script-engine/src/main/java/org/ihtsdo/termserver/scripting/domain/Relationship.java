@@ -547,4 +547,14 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		return getId() + ": " + toString();
 	}
 
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		Relationship otherRel = (Relationship) other;
+		//We're not going to worry about groupId for now
+		//Also new relationships won't yet know what their source concepts are
+		return this.getCharacteristicType().equals(otherRel.getCharacteristicType())
+				&& this.getType().equals(otherRel.getType())
+				&& this.getTarget().equals(otherRel.getType());
+	}
+
 }
