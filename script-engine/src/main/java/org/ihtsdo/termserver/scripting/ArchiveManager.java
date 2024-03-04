@@ -828,10 +828,12 @@ public class ArchiveManager implements ScriptConstants {
 			
 			if (fileName.contains(fileType)) {
 				boolean loadTheReferenceSet = false;
-
 				if (fileName.contains("sct2_Concept_" )) {
 					LOGGER.info("Loading Concept " + fileType + " file: " + fileName);
 					gl.loadConceptFile(is, isReleased);
+				} if (fileName.contains("Identifier" )) {
+					LOGGER.info("Loading Alternate Identifier " + fileType + " file: " + fileName);
+					gl.loadAlternateIdentifierFile(is, isReleased);
 				} else if (fileName.contains("sct2_Relationship_" )) {
 					LOGGER.info("Loading Relationship " + fileType + " file.");
 					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);

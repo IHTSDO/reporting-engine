@@ -37,6 +37,7 @@ public class GraphLoader implements ScriptConstants {
 	private Map<String, Concept> fsnMap = null;
 	private Map<String, Concept> usptMap = null;
 	private Map<String, Concept> gbptMap = null;
+	private Map<Concept, Map<String, String>> alternateIdentifierMap = null;
 	private Set<String> excludedModules;
 	public static int MAX_DEPTH = 1000;
 	private Set<String> orphanetConceptIds;
@@ -782,6 +783,34 @@ public class GraphLoader implements ScriptConstants {
 			}
 		}
 	}
+	
+	public void loadAlternateIdentifierFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				//Allow trailing empty fields
+				String[] lineItems = line.split(FIELD_DELIMITER, -1);
+
+				if (lineItems[IDX_ACTIVE].equals("1")) {
+					String altId = lineItems[IDX_ID];
+					String sctId = lineItems[REF_IDX_REFCOMPID];
+					String schemeId = lineItems[REF_IDX_REFSETID];
+					Concept scheme = getConcept(schemeId);
+					Map<String, String> schemeMap = alternateIdentifierMap.get(scheme);
+					if (schemeMap == null) {
+						schemeMap = new HashMap<>();
+						alternateIdentifierMap.put(scheme, schemeMap);
+					}
+					schemeMap.put(altId, sctId);
+				}
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+	
 	
 	public int loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
