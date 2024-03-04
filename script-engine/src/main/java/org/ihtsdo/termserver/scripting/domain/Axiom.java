@@ -179,4 +179,9 @@ public class Axiom extends Expressable implements ScriptConstants {
 				.filter(r -> r.getType().equals(type))
 				.collect(Collectors.toSet());
 	}
+
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		throw new IllegalArgumentException("Wasn't expecting to compare Axioms!");
+	}
 }

@@ -275,4 +275,10 @@ RefsetMember extends Component implements ScriptConstants {
 	public String toStringWithId() {
 		return getId() + ": " + toString();
 	}
+
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		RefsetMember otherRM = (RefsetMember)other;
+		return this.getAdditionalFields().equals(otherRM.getAdditionalFields());
+	}
 }

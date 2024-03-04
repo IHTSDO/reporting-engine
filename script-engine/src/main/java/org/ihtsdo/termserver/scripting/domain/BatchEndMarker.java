@@ -37,4 +37,8 @@ public class BatchEndMarker extends Component {
 		return null;
 	}
 
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		throw new IllegalArgumentException("Wasn't expecting to compare BatchEndMarkers!");
+	}
 }

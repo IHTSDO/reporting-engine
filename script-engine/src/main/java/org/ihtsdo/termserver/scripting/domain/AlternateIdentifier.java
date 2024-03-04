@@ -124,4 +124,11 @@ AlternateIdentifier extends Component implements ScriptConstants {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		AlternateIdentifier otherAltId = (AlternateIdentifier)other;
+		return this.getIdentifierSchemeId().equals(otherAltId.getIdentifierSchemeId())
+				&& this.getReferencedComponentId().equals(otherAltId.getReferencedComponentId());
+	}
 }
