@@ -57,30 +57,39 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		report(tabIdx, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
 		return concept;
 	}
+	
+	public void outputRF2(Concept concept) throws TermServerScriptException {
+		super.outputRF2(concept);
+	}
 
-	private void populateIds(Concept concept, String enforceModule) throws TermServerScriptException {
+	public void populateIds(Concept concept, String enforceModule) throws TermServerScriptException {
 		convertAcceptabilitiesToRf2(concept);
 		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
-			if (enforceModule != null) {
-				c.setModuleId(enforceModule);
-			}
-			c.setDirty();
-			if (c.getId() == null) {
-				switch (c.getComponentType()) {
-					case CONCEPT : setConceptId(c);
-						break;
-					case DESCRIPTION : setDescriptionId(c);
-						break;
-					case INFERRED_RELATIONSHIP : 
-						setRelationshipId(c);
-					case STATED_RELATIONSHIP : 
-						//No need to do anything here because we'll convert 
-						//stated to an axiom and we're not expecting any inferred
-						break;
-					case ALTERNATE_IDENTIFIER :
-						break;  //Has its own ID.  RefCompId will be set via Concept
-					default: c.setId(UUID.randomUUID().toString());
-				}
+			populateComponentId(c, enforceModule);
+		}
+	}
+	
+	public void populateComponentId(Component c, String enforceModule) throws TermServerScriptException {
+		if (enforceModule != null) {
+			c.setModuleId(enforceModule);
+		}
+		c.setDirty();
+		
+		if (c.getId() == null) {
+			switch (c.getComponentType()) {
+				case CONCEPT : setConceptId(c);
+					break;
+				case DESCRIPTION : setDescriptionId(c);
+					break;
+				case INFERRED_RELATIONSHIP : 
+					setRelationshipId(c);
+				case STATED_RELATIONSHIP : 
+					//No need to do anything here because we'll convert 
+					//stated to an axiom and we're not expecting any inferred
+					break;
+				case ALTERNATE_IDENTIFIER :
+					break;  //Has its own ID.  RefCompId will be set via Concept
+				default: c.setId(UUID.randomUUID().toString());
 			}
 		}
 	}

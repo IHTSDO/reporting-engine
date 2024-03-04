@@ -2047,4 +2047,8 @@ public class GraphLoader implements ScriptConstants {
 	public List<String> getIntegrityWarnings() {
 		return integrityWarnings;
 	}
+
+	public Map<String, String> getSchemaMap(Concept scheme) {
+		return alternateIdentifierMap.get(scheme);
+	}
 }

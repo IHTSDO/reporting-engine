@@ -2624,11 +2624,50 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return new  RelationshipTemplate(gl.getConcept(c1), gl.getConcept(c2));
 	}
 
-    public static Set<Concept> getHistoricalAssocationTargets(Concept c, GraphLoader gl) throws TermServerScriptException {
+	public static Set<Concept> getHistoricalAssocationTargets(Concept c, GraphLoader gl) throws TermServerScriptException {
 		Set<Concept> targets = new HashSet<>();
 		for (AssociationEntry h : c.getAssociationEntries()) {
 			targets.add(gl.getConcept(h.getTargetComponentId()));
 		}
 		return targets;
-    }
+	}
+
+	//The array structure returned as pairs shows components from the left either
+	//changed or not present on the right, and visa versa.
+	public static List<Component[]> compareComponents(Concept left, Concept right) {
+		List<Component[]> changeSet = new ArrayList<>();
+		//Find a match for every component, or list it.
+		//TODO work out the "best match" that we can say has been modified
+		Collection<Component> leftComponents = SnomedUtils.getAllComponents(left);
+		Collection<Component> rightComponents = SnomedUtils.getAllComponents(right);
+		
+		nextLeftComponent:
+		for (Component leftComponent : leftComponents) {
+			for (Component rightComponent : rightComponents) {
+				if (leftComponent.getClass().equals(rightComponent.getClass())) {
+					if (leftComponent.matchesMutableFields(rightComponent)) {
+						continue nextLeftComponent;
+					}
+				}
+				//If we're here, then our left component (prior existing), no longer
+				//has a matching component in the latest version and should be removed
+				changeSet.add(new Component[] {leftComponent, null});
+			}
+		}
+		
+		nextRightComponent:
+		for (Component rightComponent : rightComponents) {
+			for (Component leftComponent : leftComponents) {
+				if (rightComponent.getClass().equals(leftComponent.getClass())) {
+					if (rightComponent.matchesMutableFields(leftComponent)) {
+						continue nextRightComponent;
+					}
+				}
+				//If we're here, then our left component (prior existing), no longer
+				//has a matching component in the latest version and should be removed
+				changeSet.add(new Component[] {null, rightComponent});
+			}
+		}
+		return changeSet;
+	}
 }

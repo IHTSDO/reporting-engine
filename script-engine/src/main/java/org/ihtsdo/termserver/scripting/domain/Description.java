@@ -877,4 +877,11 @@ public class Description extends Component implements ScriptConstants {
 		}
 		return null;
 	}
+
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		Description otherDesc = (Description) other;
+		return this.getType().equals(otherDesc.getType())
+				&& this.getTerm().equals(otherDesc.getTerm());
+	}
 }
