@@ -44,7 +44,7 @@ public class IdGenerator implements ScriptConstants{
 	static private boolean configFileReset = false;
 	
 	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
-		if (sctidFilename.toLowerCase().equals("dummy")) {
+		if (sctidFilename.toLowerCase().endsWith("dummy")) {
 			return new IdGenerator(p);
 		}
 		

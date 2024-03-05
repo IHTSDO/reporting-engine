@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -149,5 +150,10 @@ public class LoincRf2MapExpansion extends LoincScript {
 	@Override
 	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
 		return null;
+	}
+
+	@Override
+	protected void reportMissingMappings(int tab) {
+		throw new NotImplementedException();
 	}
 }

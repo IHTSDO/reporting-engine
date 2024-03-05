@@ -96,6 +96,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			}
 			if (args[x].equals("-m")) {
 				sourceModuleIds = Set.of(args[++x].split(","));
+				targetModuleId = sourceModuleIds.iterator().next();
 			}
 			if (args[x].equals("-iC")) {
 				conIdGenerator = initialiseIdGenerator(args[++x], PartitionIdentifier.CONCEPT);

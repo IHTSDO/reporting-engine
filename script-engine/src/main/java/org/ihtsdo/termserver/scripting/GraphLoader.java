@@ -37,7 +37,7 @@ public class GraphLoader implements ScriptConstants {
 	private Map<String, Concept> fsnMap = null;
 	private Map<String, Concept> usptMap = null;
 	private Map<String, Concept> gbptMap = null;
-	private Map<Concept, Map<String, String>> alternateIdentifierMap = null;
+	private Map<Concept, Map<String, String>> alternateIdentifierMap = new HashMap<>();
 	private Set<String> excludedModules;
 	public static int MAX_DEPTH = 1000;
 	private Set<String> orphanetConceptIds;
@@ -129,6 +129,7 @@ public class GraphLoader implements ScriptConstants {
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
 		integrityWarnings = new ArrayList<>();
+		alternateIdentifierMap = new HashMap<>();
 		
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
@@ -797,6 +798,10 @@ public class GraphLoader implements ScriptConstants {
 					String altId = lineItems[IDX_ID];
 					String sctId = lineItems[REF_IDX_REFCOMPID];
 					String schemeId = lineItems[REF_IDX_REFSETID];
+					//As a temporary measure, correct the scheme id
+					if (schemeId.equals(SCTID_LOINC_CODE_SYSTEM)) {
+						schemeId = SCTID_LOINC_SCHEMA;
+					}
 					Concept scheme = getConcept(schemeId);
 					Map<String, String> schemeMap = alternateIdentifierMap.get(scheme);
 					if (schemeMap == null) {

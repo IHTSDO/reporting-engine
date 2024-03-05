@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -9,7 +7,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -37,8 +34,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_2.75_Active_Lab_NonVet.tsv"
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
-
-	private List<String> previousIterationLoincNums = new ArrayList<>();
+	
+	//private List<String> previousIterationLoincNums = new ArrayList<>();
 	int existedPreviousIteration = 0;
 
 	protected String[] tabNames = new String[] {
@@ -72,8 +69,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
-		
-		scheme = gl.getConcept(SCTID_LOINC_CODE_SYSTEM);
+		scheme = gl.getConcept(SCTID_LOINC_SCHEMA);
 		externalContentModule = SCTID_LOINC_EXTENSION_MODULE;
 	}
 
@@ -102,13 +98,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		attributePartMapManager = new AttributePartMapManager(this, loincParts, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 
-		reportOnDetailMappingWithUsage();
+		//reportOnDetailMappingWithUsage();
 
-		loadLastIterationLoincNums();
+		//loadLastIterationLoincNums();
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 	}
 
-	private void loadLastIterationLoincNums() {
+/*	private void loadLastIterationLoincNums() {
 		LOGGER.info ("Loading LoincNums from previous iteration: " + getInputFile(FILE_IDX_PREVIOUS_ITERATION));
 		BufferedReader in = null;
 		try {
@@ -128,9 +124,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				} catch (IOException e) {}
 			}
 		}
-	}
+	}*/
 
-	private void reportOnDetailMappingWithUsage() throws TermServerScriptException {
+	/*private void reportOnDetailMappingWithUsage() throws TermServerScriptException {
 		Map<String, LoincUsage> loincPartNumUsages = new HashMap<>();
 		Map<String, Set<String>> LDTColumnNamesForPart = new HashMap<>();
 		List<String> partNumTypesOfInterest = Arrays.asList("COMPONENT", "CHALLENGE", "DIVISORS", "METHOD", "PROPERTY", "SCALE", "SYSTEM", "TIME");
@@ -194,9 +190,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				report(summaryTabIdx, mappedLoincPartNum, " is mapped but no longer used in detail file");
 			}
 		}
-	}
+	}*/
 
-	private void populateLoincPartNumUsage(String loincNum, List<String> partNumTypesOfInterest, Map<String, LoincUsage> loincPartNumUsages, Map<String, Set<String>> LDTColumnNamesForPart) {
+	/*private void populateLoincPartNumUsage(String loincNum, List<String> partNumTypesOfInterest, Map<String, LoincUsage> loincPartNumUsages, Map<String, Set<String>> LDTColumnNamesForPart) {
 		for (LoincDetail loincDetail : loincDetailMap.get(loincNum).values()) {
 			// Is this a part we're interested in?
 			if (!partNumTypesOfInterest.contains(loincDetail.getPartTypeName())) {
@@ -218,7 +214,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			}
 			LDTColumnNames.add(loincDetail.getLDTColumnName());
 		}
-	}
+	}*/
 
 	@Override
 	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
@@ -231,10 +227,11 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				successfullyModelledConcepts.add(templatedConcept);
 			}
 		}
-		Set<String> successfullyModelledLoincNums = successfullyModelledConcepts.stream()
+		/*Set<String> successfullyModelledLoincNums = successfullyModelledConcepts.stream()
 				.map(ltc -> ltc.getExternalIdentifier())
 				.collect(Collectors.toSet());
-		//Report LoincNums modelled in the previous iteration that didn't make this round
+		
+		Report LoincNums modelled in the previous iteration that didn't make this round
 		int removedThisIteration = 0;
 		for (String loincNum : previousIterationLoincNums) {
 			if (!successfullyModelledLoincNums.contains(loincNum)) {
@@ -245,7 +242,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 						"",
 						loincNumToLoincTermMap.get(loincNum).getDisplayName());
 			}
-		}
+		}*/
 
 		//Report summary of LoincNums existing/new/removed
 		int newThisIteration = successfullyModelledConcepts.size() - existedPreviousIteration;
@@ -253,7 +250,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		report(tabIdx, "");
 		report(tabIdx, "LoincNums existing in previous iteration", existedPreviousIteration);
 		report(tabIdx, "LoincNums new this iteration", newThisIteration);
-		report(tabIdx, "LoincNums removed this iteration", removedThisIteration);
+		//report(tabIdx, "LoincNums removed this iteration", removedThisIteration);
 
 		return successfullyModelledConcepts;
 	}
@@ -270,6 +267,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 		//Does this LoincNum feature an objectionable word?  Skip if so.
 		for (String objectionableWord : objectionableWords) {
+			if (loincNumToLoincTermMap.get(loincNum).getDisplayName() == null) {
+				LOGGER.debug("Unable to obtain display name for " + loincNum);
+			}
 			if (loincNumToLoincTermMap.get(loincNum).getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
@@ -279,7 +279,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			}
 		}
 		
-		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(loincNum, loincDetailMap);
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(this, loincNum, loincDetailMap);
 		if (templatedConcept == null) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
@@ -313,17 +313,19 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		String existingSCG = "N/A";
 		String modelDiff = "";
 		String proposedSCG = proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		String existingLoincConceptStr = "N/A";
-		//Did we have this loincNum in the previous iteration?
+		
+		/*String existingLoincConceptStr = "N/A";
+		Did we have this loincNum in the previous iteration?
 		String previousIterationIndicator = "NEW";
 		if (previousIterationLoincNums.contains(loincNum)) {
 			previousIterationIndicator = "EXISTING";
 			existedPreviousIteration++;
-		}
+		}*/
+		
 		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
 				.map(d -> d.toString())
 				.collect(Collectors.joining("\n"));
-		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, previousIterationIndicator, loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, /*previousIterationIndicator*/ "N/A", loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
 	}
 
 	/*private void populateLoincNumMap() throws TermServerScriptException {
@@ -343,4 +345,5 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		batchProcess.inflightInit(args);
 		batchProcess.runJob();
 	}*/
+	
 }
