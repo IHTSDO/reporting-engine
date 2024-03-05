@@ -84,8 +84,9 @@ public class AttributePartMapManager implements LoincScriptConstants {
 					loincNum,
 					loincPartNum,
 					"No attribute mapping available");
+			ls.addMissingMapping(loincPartNum, loincNum);
 		}
-		return rt;	
+		return rt;
 	}
 	
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {

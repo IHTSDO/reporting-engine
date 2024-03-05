@@ -8,10 +8,15 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ContentPipelineManager extends TermServerScript implements ContentPipeLineConstants {
 
 	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API};
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
+	
 	protected static final RunMode runMode = RunMode.INCREMENTAL_DELTA;
 	
 	protected static int FILE_IDX_CONCEPT_IDS = 6;
@@ -34,20 +39,20 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			loadProjectSnapshot(false);
 			postInit();
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null);
-			conceptCreator.initialiseGenerators(new String[]{"-nS","1010000", "-iR", "16470", "-m", "11010000107"});
+			conceptCreator.initialiseGenerators(new String[]{"-nS","1010000", "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
 			importExternalContent();
 			importPartMap();
 			Set<TemplatedConcept> successfullyModelled = doModeling();
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
-			TemplatedConcept.reportMissingMappings(getTab(TAB_MAP_ME));
+			reportMissingMappings(getTab(TAB_MAP_ME));
 			flushFiles(false);
 			switch (runMode) {
 				case NEW: outputAllConceptsToDelta(successfullyModelled);
 					break;
 				case INCREMENTAL_API:
-					determineChangeSet(successfullyModelled);
 				case INCREMENTAL_DELTA:
-					throw new TermServerScriptException("TBC");
+					determineChangeSet(successfullyModelled);
+					break;
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
@@ -65,6 +70,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 		}
 	}
+
+	protected abstract void reportMissingMappings(int tabIdx) throws TermServerScriptException;
 
 	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
@@ -92,9 +99,19 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Concept concept = tc.getConcept();
 			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
 			//Do we already have this concept?
+			Concept existingConcept = null;
 			String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
-			 
-			if (existingConceptSCTID == null) {
+			if (existingConceptSCTID != null) {
+				existingConcept = gl.getConcept(existingConceptSCTID, false, false);
+				if (existingConcept == null) {
+					String msg = "Alternate identifier " + tc.getExternalIdentifier() + " --> " + existingConceptSCTID + " but existing concept not found.  Did it get deleted?  Reusing ID.";
+					//throw new TermServerScriptException(");
+					addFinalWords(msg);
+					concept.setId(existingConceptSCTID);
+				}
+			}
+ 
+			if (existingConcept == null) {
 				//This concept is entirely new, prepare to output all
 				if (runMode.equals(RunMode.INCREMENTAL_DELTA)) {
 					conceptCreator.populateIds(concept, existingConceptSCTID);
@@ -102,11 +119,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				changeSet.add(tc);
 				dirtyConcepts.add(concept);
 			} else {
-				SnomedUtils.getAllComponents(concept).forEach(c -> c.setClean());
-				Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
-				if (existingConcept == null) {
-					throw new TermServerScriptException("Alternate identifier " + tc.getExternalIdentifier() + " --> " + existingConceptSCTID + " but existing concept not found");
-				}
+				SnomedUtils.getAllComponents(concept).forEach(c -> { 
+					c.setClean();
+					//Normalise module
+					c.setModuleId(conceptCreator.getTargetModuleId());
+				});
 				List<Component[]> differences = SnomedUtils.compareComponents(existingConcept, tc.getConcept());
 				for (Component[] difference : differences) {
 					Component existingComponent = difference[0];

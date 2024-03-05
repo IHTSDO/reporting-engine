@@ -155,7 +155,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return null;
 	}
 
-	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
+	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
 		/*if (loincNum.equals("50407-6")) {
 			LOGGER.debug("Check for missing component - should result in loinc term being dropped entirely");
@@ -163,7 +163,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
-			templatedConcept.populateParts(details);
+			templatedConcept.populateParts(ls, details);
 			templatedConcept.populateTerms(loincNum, details);
 			if (detailsIndicatePrimitiveConcept(loincNum) || 
 					templatedConcept.hasProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE)) {
@@ -374,7 +374,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return term;
 	}
 
-	private void populateParts(Map<String, LoincDetail> details) throws TermServerScriptException {
+	private void populateParts(LoincScript ls, Map<String, LoincDetail> details) throws TermServerScriptException {
 		concept = Concept.withDefaults(Integer.toString((++conceptsModelled)));
 		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
@@ -442,6 +442,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					concept.addIssue(issue, ",\n");
 					concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 					partNumsUnmapped.add(loincDetail.getPartNumber());
+					ls.addMissingMapping(loincDetail.getPartNumber(), loincDetail.getLoincNum());
 					
 					//Record the fact that we failed to find a map on a per property basis
 					//addFailedMapping(loincNum, loincDetail.getPartNumber());

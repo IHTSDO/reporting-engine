@@ -23,6 +23,8 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	protected Map<String, LoincPart> loincParts = new HashMap<>();
 	protected Map<String, String> partMapNotes = new HashMap<>();
 	
+	protected Map<LoincPart, Set<LoincTerm>> missingPartMappings = new HashMap<>();
+	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
 
@@ -35,6 +37,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
+		tabForFinalWords = SECONDARY_REPORT;
 		
 		//Just temporarily, we need to create some concepts that aren't visible yet
 		gl.registerConcept("10021010000100 |Platelet poor plasma or whole blood specimen (specimen)|"); 
@@ -223,7 +226,32 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	protected String getPartMapNotes(String partNum) {
 		return partMapNotes.containsKey(partNum) ? partMapNotes.get(partNum) : "";
 	}
+	
+	@Override
+	protected void reportMissingMappings(int tabIdx) throws TermServerScriptException {
+		for (LoincPart loincPart : missingPartMappings.keySet()) {
+			Set<LoincTerm> loincTerms = missingPartMappings.get(loincPart);
+			//Calculate a total priority based on the sum of the LOINC Term priorities
+			int totalPriority = loincTerms.stream()
+					.mapToInt(lt -> LoincUtils.getLoincTermPriority(lt))
+					.sum();
+			report(tabIdx, 
+					loincPart.getPartNumber(),
+					loincPart.getPartName(),
+					loincPart.getPartTypeName(),
+					totalPriority,
+					loincTerms.size());
+		}
+	}
 
+	public void addMissingMapping(String loincPartNum, String loincNum) {
+		LoincPart loincPart = loincParts.get(loincPartNum);
+		Set<LoincTerm> loincTerms = missingPartMappings.get(loincPart);
+		//Have we seen this one before?
+		if (loincTerms == null) {
+			loincTerms = new HashSet<>();
+			missingPartMappings.put(loincPart, loincTerms);
+		}
+		loincTerms.add(loincNumToLoincTermMap.get(loincNum));
+	}
 }
-
-
