@@ -31,6 +31,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String sRelSnapshotFilename;
 	protected String descSnapshotFilename;
 	protected String langSnapshotFilename;
+	protected String altIdSnapshotFilename;
 	protected String edition = "INT";
 	protected boolean leaveArchiveUncompressed = false;
 	
@@ -53,6 +54,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
+	protected String[] altIdHeader = new String[] {"alternateIdentifier","effectiveTime","active","moduleId","identifierSchemeId","referencedComponentId"};
 
 	private boolean isIntialised = false;
 	private File fileLocation;
@@ -181,6 +183,9 @@ public class SnapshotGenerator extends TermServerScript {
 		owlSnapshotFilename = termDir + "sct2_sRefset_OWLExpressionSnapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(owlSnapshotFilename, owlHeader);
 		
+		altIdSnapshotFilename = termDir + "sct2_Identifier_Snapshot_"+edition+"_" + today + ".txt";
+		writeToRF2File(altIdSnapshotFilename, altIdHeader);
+		
 		getRF2Manager().flushFiles(false);
 	}
 	
@@ -192,6 +197,14 @@ public class SnapshotGenerator extends TermServerScript {
 		Set<Concept> allConcepts = new HashSet<>(gl.getAllConcepts());
 		for (Concept thisConcept : allConcepts) {
 			outputRF2(thisConcept);
+		}
+		
+		//Alt Identifier file is independent from
+		for (Map.Entry<Concept, Map<String, String>> entry : gl.getAlternateIdentifierMap().entrySet()) {
+			Concept schema = entry.getKey();
+			for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+				writeToRF2File(altIdSnapshotFilename, generateAltIdentiferRow(schema, schemaEntry.getKey(), schemaEntry.getValue()));
+			}
 		}
 	}
 	
@@ -225,6 +238,17 @@ public class SnapshotGenerator extends TermServerScript {
 		for (AxiomEntry o: c.getAxiomEntries()) {
 			writeToRF2File(owlSnapshotFilename, o.toRF2());
 		}
+		
+	}
+
+	private String[] generateAltIdentiferRow(Concept schema, String altId, String referencedComponentId) {
+		return new String[] {
+				altId,
+				"",
+				"1",
+				SCTID_LOINC_EXTENSION_MODULE,
+				schema.getId(),
+				referencedComponentId};
 	}
 
 	protected void outputRF2(Description d) throws TermServerScriptException {

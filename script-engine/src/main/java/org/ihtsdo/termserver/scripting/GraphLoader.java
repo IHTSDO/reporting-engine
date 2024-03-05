@@ -2056,4 +2056,8 @@ public class GraphLoader implements ScriptConstants {
 	public Map<String, String> getSchemaMap(Concept scheme) {
 		return alternateIdentifierMap.get(scheme);
 	}
+	
+	public Map<Concept, Map<String, String>> getAlternateIdentifierMap() {
+		return alternateIdentifierMap;
+	}
 }
