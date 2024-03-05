@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.CharMatcher;
@@ -82,6 +81,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean ignoreWhiteList = false;
 	protected boolean allowMissingExpectedModules = false;
 	protected boolean allowDirectoryInputFile = false;
+	protected int tabForFinalWords = PRIMARY_REPORT;
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
@@ -494,11 +494,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		} finally {
 			try {
 				if (finalWords.size() > 0) {
-					report(PRIMARY_REPORT, "");
-					report(PRIMARY_REPORT, "", "***********************************");
-					report(PRIMARY_REPORT, "");
+					report(tabForFinalWords, "");
+					report(tabForFinalWords, "", "***********************************");
+					report(tabForFinalWords, "");
 					for (String finalMsg : finalWords) {
-						report(PRIMARY_REPORT, finalMsg);
+						report(tabForFinalWords, finalMsg);
 					}
 				}
 				flushFiles(true);
@@ -1744,7 +1744,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public void setInputFile(int idx, File file) throws TermServerScriptException {
-		if (!file.canRead() || (!file.isFile() && !allowDirectoryInputFile)) {
+		//Allow Dummy file for basic sequential integer SCTID Generators.
+		if (!file.getName().equals("Dummy") && 
+				(!file.canRead() || (!file.isFile() && !allowDirectoryInputFile))) {
 			throw new TermServerScriptException("Unable to read specified file: " + file);
 		}
 		inputFiles.set(idx, file);

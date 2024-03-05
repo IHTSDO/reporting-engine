@@ -3,8 +3,6 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class LoincUsage implements Comparable<Object> {
 	private static int MAX_EXAMPLES = 3;
 	boolean analysed = false;
@@ -18,10 +16,10 @@ public class LoincUsage implements Comparable<Object> {
 	
 	public void analyze() {
 		for (LoincTerm loincTerm : usage) {
-			int thisPriority = getLoincTermPriority(loincTerm);
+			int thisPriority = LoincUtils.getLoincTermPriority(loincTerm);
 			for (int x = 0; x < MAX_EXAMPLES; x++) {
 				if (x >= topRankedLoincTerms.size() || 
-						thisPriority > getLoincTermPriority(topRankedLoincTerms.get(x))) {
+						thisPriority > LoincUtils.getLoincTermPriority(topRankedLoincTerms.get(x))) {
 					topRankedLoincTerms.add(x, loincTerm);
 					break;
 				}
@@ -30,16 +28,7 @@ public class LoincUsage implements Comparable<Object> {
 		}
 		analysed = true;
 	}
-	
-	private int getLoincTermPriority (LoincTerm loincTerm) {
-		int thisPriority = 0;
-		String rankStr = loincTerm.getCommonOrderRank();
-		if (!StringUtils.isEmpty(rankStr) && !rankStr.equals("0")) {
-			thisPriority = 2000 / Integer.parseInt(rankStr);
-		}
-		return thisPriority;
-	}
-	
+
 	public List<LoincTerm> getTopRankedLoincTerms() {
 		if (!analysed) {
 			analyze();

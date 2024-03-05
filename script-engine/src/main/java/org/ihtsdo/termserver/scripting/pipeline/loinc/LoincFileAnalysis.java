@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.slf4j.Logger;
@@ -133,5 +134,10 @@ public class LoincFileAnalysis extends LoincScript {
 	@Override
 	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
 		throw new IllegalStateException("This class is not expected to do any modelling");
+	}
+	
+	@Override
+	protected void reportMissingMappings(int tab) {
+		throw new NotImplementedException();
 	}
 }

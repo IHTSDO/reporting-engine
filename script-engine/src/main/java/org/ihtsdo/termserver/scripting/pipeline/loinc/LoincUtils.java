@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -66,6 +67,15 @@ public class LoincUtils implements RF2Constants {
 				.filter(c -> c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE))
 				.collect(Collectors.toList())
 				);
+	}
+	
+	public static int getLoincTermPriority (LoincTerm loincTerm) {
+		int thisPriority = 0;
+		String rankStr = loincTerm.getCommonOrderRank();
+		if (!StringUtils.isEmpty(rankStr) && !rankStr.equals("0")) {
+			thisPriority = 2000 / Integer.parseInt(rankStr);
+		}
+		return thisPriority;
 	}
 	
 }

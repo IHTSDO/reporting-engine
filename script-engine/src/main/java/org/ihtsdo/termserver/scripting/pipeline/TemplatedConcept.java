@@ -4,9 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public abstract class TemplatedConcept implements ScriptConstants, ConceptWrapper {
 
@@ -15,6 +13,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	protected static Set<String> partNumsMapped = new HashSet<>();
 	protected static Set<String> partNumsUnmapped = new HashSet<>();
+	
 	protected static int mapped = 0;
 	protected static int unmapped = 0;
 	protected static int skipped = 0;
@@ -29,10 +28,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		cpm.report(tabIdx, "Parts skipped", skipped);
 		cpm.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
 		cpm.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
-	}
-
-	public static void reportMissingMappings(int tab) throws TermServerScriptException {
-		throw new TermServerScriptException("Not implemented");
 	}
 
 	public String getExternalIdentifier() {

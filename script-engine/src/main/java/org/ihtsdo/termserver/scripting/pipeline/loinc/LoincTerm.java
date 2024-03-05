@@ -394,15 +394,27 @@ public class LoincTerm {
 		//loincTerm.setChangeReasonPublic(csv.get(29));
 		loincTerm.setCommonTestRank(csv.get(30));
 		loincTerm.setCommonOrderRank(csv.get(31));
-		loincTerm.setCommonSItestRank(csv.get(32));
+		
+		//Does not exist from LOINC 2.77
+		//loincTerm.setCommonSItestRank(csv.get(32));
 		//loincTerm.setHl7AttachmentStructure(csv.get(33));
 		//loincTerm.setExternalCopyrightLink(csv.get(34));
-		loincTerm.setPanelType(csv.get(35));
+		//loincTerm.setPanelType(csv.get(35));
 		//loincTerm.setAskatOrderEntry(csv.get(36));
 		//loincTerm.setAssociatedObservations(csv.get(37));
 		//loincTerm.setVersionFirstReleased(csv.get(38));
 		//loincTerm.setValidHL7AttachmentRequest(csv.get(39));
-		loincTerm.setDisplayName(csv.get(40));
+		//loincTerm.setDisplayName(csv.get(40));
+		
+		
+		//loincTerm.setHl7AttachmentStructure(csv.get(32));
+		//loincTerm.setExternalCopyrightLink(csv.get(33));
+		//loincTerm.setPanelType(csv.get(34));
+		//loincTerm.setAskatOrderEntry(csv.get(35));
+		//loincTerm.setAssociatedObservations(csv.get(36));
+		//loincTerm.setVersionFirstReleased(csv.get(37));
+		//loincTerm.setValidHL7AttachmentRequest(csv.get(38));
+		loincTerm.setDisplayName(csv.get(39));
 		return loincTerm;
 	}
 	

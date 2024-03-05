@@ -63,7 +63,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 	}
 
 	public void populateIds(Concept concept, String enforceModule) throws TermServerScriptException {
-		convertAcceptabilitiesToRf2(concept);
+		//convertAcceptabilitiesToRf2(concept);
+		//This is no longer required as adding acceptabilities will have already created LangRefsetEntries.
 		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
 			populateComponentId(c, enforceModule);
 		}
@@ -120,7 +121,7 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		r.setId(relId);
 	}
 
-	private void convertAcceptabilitiesToRf2(Concept concept) throws TermServerScriptException {
+	/*private void convertAcceptabilitiesToRf2(Concept concept) throws TermServerScriptException {
 		for (Description d : concept.getDescriptions()) {
 			for (Map.Entry<String, Acceptability> entry : d.getAcceptabilityMap().entrySet()) {
 				LangRefsetEntry l = new LangRefsetEntry();
@@ -132,7 +133,7 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 				d.addLangRefsetEntry(l);
 			}
 		}
-	}
+	}*/
 
 	public void finish() {
 		closeIdGenerators();
@@ -155,5 +156,9 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 			infRel.setModuleId(c.getModuleId());
 			c.addRelationship(infRel);
 		}
+	}
+
+	public String getTargetModuleId() {
+		return targetModuleId;
 	}
 }
