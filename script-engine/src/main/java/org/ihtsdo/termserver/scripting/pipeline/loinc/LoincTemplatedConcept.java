@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 public abstract class LoincTemplatedConcept extends TemplatedConcept implements  LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
-
+	private static final int GROUP_1 = 1;
 	private static final String semTag = " (observable entity)";
 
 	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
@@ -181,9 +181,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	private void populateTerms(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
 		String ptTemplateStr = preferredTermTemplate;
-		Set<String> partTypeSeen = new HashSet<>();
 		
-		/*for (LoincDetail detail : details.values()) {
+		/*Set<String> partTypeSeen = new HashSet<>();
+		for (LoincDetail detail : details.values()) {
 			//We have multiple details for the component, so no need to try populate multiple times
 			if (!partTypeSeen.contains(detail.getPartTypeName())) {
 				ptTemplateStr = populateTermTemplateFromAttribute(ptTemplateStr, detail);
@@ -252,7 +252,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}*/
 
 	private String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
-		//Do we have any slots left to fill?  Find their attributetypes via the slot map
+		//Do we have any slots left to fill?  Find their attribute types via the slot map
 		String [] templateItems = org.apache.commons.lang3.StringUtils.substringsBetween(ptTemplateStr,"[", "]");
 		if (templateItems == null) {
 			return ptTemplateStr;
@@ -428,7 +428,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			for (RelationshipTemplate rt : attributesToAdd) {
 				if (rt != null) {
 					mapped++;
-					concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
+					//concept.addRelationship(rt, SnomedUtils.getFirstFreeGroup(concept));
+					//New Observables model.  Everything grouped
+					concept.addRelationship(rt, GROUP_1);
 				} else if (!expectNullMap){
 					unmapped++;
 					String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
@@ -494,7 +496,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	protected abstract List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException;
 
-	private RelationshipTemplate  getAttributeForLoincPart(int idxTab, LoincDetail loincDetail) throws TermServerScriptException {
+	private RelationshipTemplate getAttributeForLoincPart(int idxTab, LoincDetail loincDetail) throws TermServerScriptException {
 		//Now given the template that we've chosen for this LOINC Term, what attribute
 		//type would we use?
 		Concept attributeType = typeMap.get(loincDetail.getPartTypeName());
