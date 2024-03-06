@@ -41,15 +41,15 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		return conceptCreator;
 	}
 
-	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts, String enforceModule) throws TermServerScriptException {
+	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts) throws TermServerScriptException {
 		for (Concept concept : concepts) {
-			writeConceptToRF2(tabIdx, concept, "", enforceModule);
+			writeConceptToRF2(tabIdx, concept, "");
 		}
 	}
 
-	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info, String enforceModule) throws TermServerScriptException {
+	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
 		concept.setId(null);
-		populateIds(concept, enforceModule);
+		populateIds(concept);
 		//Populate expression now because rels turn to axioms when we output
 		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		incrementSummaryInformation("Concepts created");
@@ -62,11 +62,11 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		super.outputRF2(concept);
 	}
 
-	public void populateIds(Concept concept, String enforceModule) throws TermServerScriptException {
+	public void populateIds(Concept concept) throws TermServerScriptException {
 		//convertAcceptabilitiesToRf2(concept);
 		//This is no longer required as adding acceptabilities will have already created LangRefsetEntries.
 		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
-			populateComponentId(c, enforceModule);
+			populateComponentId(c, targetModuleId);
 		}
 	}
 	

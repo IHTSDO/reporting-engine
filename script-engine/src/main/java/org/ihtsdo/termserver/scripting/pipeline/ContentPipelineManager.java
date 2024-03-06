@@ -1,12 +1,16 @@
 package org.ihtsdo.termserver.scripting.pipeline;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
+import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +82,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Concept concept = tc.getConcept();
 			try {
 				conceptCreator.copyStatedRelsToInferred(concept);
-				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getExternalIdentifier(), externalContentModule);
+				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getExternalIdentifier());
 			} catch (Exception e) {
 				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getExternalIdentifier(), e);
 			}
@@ -88,6 +92,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 
 	private Set<TemplatedConcept> determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+		LOGGER.info("Determining change set for " + successfullyModelled.size() + " successfully modelled concepts");
+		Set<ComponentType> skipForComparison = Set.of(
+				ComponentType.INFERRED_RELATIONSHIP,
+				ComponentType.LANGREFSET);
 		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
 		Set<TemplatedConcept> changeSet = new HashSet<>();
@@ -101,6 +109,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Do we already have this concept?
 			Concept existingConcept = null;
 			String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
+			String previousIterationIndicator = null;
+			Set<String> differencesList = new HashSet<>();
 			if (existingConceptSCTID != null) {
 				existingConcept = gl.getConcept(existingConceptSCTID, false, false);
 				if (existingConcept == null) {
@@ -108,26 +118,42 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					//throw new TermServerScriptException(");
 					addFinalWords(msg);
 					concept.setId(existingConceptSCTID);
+					previousIterationIndicator = "Resurrected";
+				} else {
+					//Temporarily correct all Alternate Identifiers
+					existingConcept.setAlternateIdentifiers(new HashSet<>());
+					existingConcept.addAlternateIdentifier(tc.getExternalIdentifier(), scheme.getId());
 				}
 			}
- 
+			
 			if (existingConcept == null) {
 				//This concept is entirely new, prepare to output all
 				if (runMode.equals(RunMode.INCREMENTAL_DELTA)) {
-					conceptCreator.populateIds(concept, existingConceptSCTID);
+					conceptCreator.populateIds(concept);
 				}
 				changeSet.add(tc);
 				dirtyConcepts.add(concept);
+				if (previousIterationIndicator == null) {
+					previousIterationIndicator = "New";
+					differencesList.add("All New");
+				}
 			} else {
 				SnomedUtils.getAllComponents(concept).forEach(c -> { 
 					c.setClean();
 					//Normalise module
 					c.setModuleId(conceptCreator.getTargetModuleId());
 				});
-				List<Component[]> differences = SnomedUtils.compareComponents(existingConcept, tc.getConcept());
+				List<Component[]> differences = SnomedUtils.compareComponents(existingConcept, tc.getConcept(), skipForComparison);
+				if (differences.size() == 0) {
+					previousIterationIndicator = "Unchanged";
+					differencesList.add("All Unchanged");
+				}
+				
 				for (Component[] difference : differences) {
+					previousIterationIndicator = "Updated";
 					Component existingComponent = difference[0];
 					Component newlyModelledComponent = difference[1];
+					differencesList.add(newlyModelledComponent.getComponentType().toString());
 					//If we have both, then just output the change
 					if (existingComponent != null && newlyModelledComponent != null) {
 						newlyModelledComponent.setId(existingComponent.getId());
@@ -152,13 +178,55 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				}
 			}
 			
+			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
+			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
+			
 			for (Concept dirtyConcept : dirtyConcepts) {
 				conceptCreator.outputRF2(dirtyConcept);
 			}
 		}
+		
+		//What external codes do we currently have that we _aren't_ going forward with.
+		//Those need to be inactivated
+		Set<String> inactivatingCodes =  new HashSet<>(altIdentifierMap.keySet());
+		inactivatingCodes.removeAll(successfullyModelled.stream().map(m -> m.getExternalIdentifier()).collect(Collectors.toSet()));
+		for (String inactivatingCode : inactivatingCodes) {
+			String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
+			Concept existingConcept = gl.getConcept(existingConceptSCTID);
+			List<String> differencesList = inactivateConcept(existingConcept);
+			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
+			doProposedModelComparison(inactivatingCode, null, existingConcept, "Removed", differencesListStr);
+		
+			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
+			//So - temporarily again - we'll normalize the scheme id
+			//Temporarily correct all Alternate Identifiers
+			existingConcept.setAlternateIdentifiers(new HashSet<>());
+			existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
+		}
 		return changeSet;
 	}
 
+
+	private List<String> inactivateConcept(Concept c) {
+		List<String> differencesList = new ArrayList<>();
+		//To inactivate a concept we need to inactivate the concept itself and the OWL axiom.
+		//The descriptions remain active and we'll let classification sort out the inferred relationships
+		if (c.isActive()) {
+			c.setActive(false);
+			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c);
+			ii.setModuleId(externalContentModule);
+			c.addInactivationIndicator(ii);
+			differencesList.add("CONCEPT");
+		}
+		
+		for (AxiomEntry a : c.getAxiomEntries(ActiveState.ACTIVE, true)) {
+			a.setActive(false);
+			differencesList.add("AXIOM");
+		}
+		return differencesList;
+	}
+
+	protected abstract void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept, String statusStr, String differencesListStr) throws TermServerScriptException;
 
 	protected abstract void importExternalContent() throws TermServerScriptException;
 

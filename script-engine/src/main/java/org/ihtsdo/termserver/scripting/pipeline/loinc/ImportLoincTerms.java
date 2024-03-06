@@ -62,7 +62,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"Item, Info, Details, ,",
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, LoincName, Issues, ",
-				"LoincNum, This Iteration, Template, Proposed Descriptions, Current Model, Proposed Model, Difference,"  + commonLoincColumns,
+				"LoincNum, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , "
@@ -291,7 +291,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			if (insufficientTermPopulation) {
 				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
 			} else if (!templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
-				doProposedModelComparison(loincNum, templatedConcept);
+				//We'll move this call to later when we work out the change set
+				//doProposedModelComparison(loincNum, templatedConcept);
 			}
 			
 			if (templatedConcept.getConcept().hasIssues()) {
@@ -305,27 +306,31 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		return templatedConcept;
 	}
 
-	private void doProposedModelComparison(String loincNum, LoincTemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
+	protected void doProposedModelComparison(String loincNum, TemplatedConcept loincTemplatedConcept, Concept existingConcept, String previousIterationIndicator, String differencesStr) throws TermServerScriptException {
 		//Do we have this loincNum
-		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
+		Concept proposedLoincConcept = null;
+		if (loincTemplatedConcept != null) {
+			proposedLoincConcept = loincTemplatedConcept.getConcept();
+		}
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 		
-		String existingSCG = "N/A";
-		String modelDiff = "";
+		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);;
 		String proposedSCG = proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		
-		/*String existingLoincConceptStr = "N/A";
-		Did we have this loincNum in the previous iteration?
-		String previousIterationIndicator = "NEW";
-		if (previousIterationLoincNums.contains(loincNum)) {
-			previousIterationIndicator = "EXISTING";
-			existedPreviousIteration++;
-		}*/
-		
-		String proposedDescriptionsStr = SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
+		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
 				.map(d -> d.toString())
 				.collect(Collectors.joining("\n"));
-		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, /*previousIterationIndicator*/ "N/A", loincTemplatedConcept.getClass().getSimpleName(), proposedDescriptionsStr, existingSCG, proposedSCG, modelDiff, loincTerm.getCommonColumns());
+		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
+				.map(d -> d.toString())
+				.collect(Collectors.joining("\n"));
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, previousIterationIndicator,
+				loincTemplatedConcept.getClass().getSimpleName(),
+				differencesStr,
+				proposedDescriptionsStr,
+				previousDescriptionsStr,
+				proposedSCG, 
+				previousSCG,
+				differencesStr,
+				loincTerm.getCommonColumns());
 	}
 
 	/*private void populateLoincNumMap() throws TermServerScriptException {
