@@ -1,126 +1,279 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
-import org.ihtsdo.otf.utils.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.dao.VersionedContentLoaderConfig;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
+import org.ihtsdo.termserver.scripting.domain.Branch;
+import org.ihtsdo.termserver.scripting.domain.CodeSystem;
+import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.module.storage.ModuleMetadata;
 import org.snomed.module.storage.ModuleStorageCoordinator;
+import org.snomed.module.storage.ModuleStorageCoordinatorException;
 import org.snomed.otf.script.dao.ReportSheetManager;
+import org.snomed.otf.script.dao.StandAloneResourceConfig;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ArchiveCurator extends TermServerReport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveCurator.class);
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveCurator.class);
-	private static final String INT = "INT";
+    private final ResourceManager resourceManagerSource;
+    private final ResourceManager resourceManagerTarget;
+    private final ModuleStorageCoordinator moduleStorageCoordinator;
 
-	private Map<String, String> extensionModuleMap = new HashMap<>();
-	private Pattern msFilePattern = Pattern.compile("ManagedService([A-Z]{2}).*?([0-9]{8})T[0-9]{6}Z");
-	private Pattern intFilePattern = Pattern.compile("International.*?([0-9]{8})T120000Z");
-	private ModuleStorageCoordinator moduleStorageCoordinator;
-	private String localCache = "UNKNOWN";
+    public ArchiveCurator() throws TermServerScriptException {
+        resourceManagerSource = resourceManagerSource(); // Copy packages from this bucket
+        resourceManagerTarget = resourceManagerTarget(); // Paste packages to this bucket
+        moduleStorageCoordinator = moduleStorageCoordinator();
+    }
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		ArchiveCurator curator = new ArchiveCurator();
-		try {
-			ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
-			curator.init(args);
-			curator.postInit(null, new String[] {"Archive, Result, , ,"}, false);
-			curator.curateArchives();
-		} finally {
-			curator.finish();
-		}
-	}
+    public static void main(String[] args) throws ScriptException, IOException, InterruptedException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException {
+        ArchiveCurator curator = new ArchiveCurator();
+        try {
+            ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
+            curator.init(args);
+            curator.postInit(
+                    new String[]{
+                            // Tabs
+                            "Code Systems",
+                            "Versions"
+                    },
+                    new String[]{
+                            // Columns
+                            "Code System, Status, Comment,",
+                            "Code System, Effective Time, Status, Time (seconds), Comment,"
+                    },
+                    false);
+            curator.curateArchives();
+        } finally {
+            curator.finish();
+        }
+    }
 
-	private void curateArchives() throws TermServerScriptException, IOException {
-		populateExtensionModuleMap();
-		VersionedContentLoaderConfig config = new VersionedContentLoaderConfig();
-		config.init("versioned-content");
-		ResourceLoader rl = getArchiveManager().getS3Manager().getResourceLoader();
-		ResourceManager rm = new ResourceManager(config, rl);
-		localCache = rm.getCachePath();
-		moduleStorageCoordinator = ModuleStorageCoordinator.initDev(rm);
+    private Set<String> extractPotentialPackages(String shortName, String effectiveTime, Set<String> potentialPackages) {
+        Set<String> potentials = new HashSet<>();
 
-		LOGGER.info("Processing all archives in " + rm.getCachePath());
-		List<ModuleMetadata> metadataList = new ArrayList<>();
-		for (String archiveStr : rm.listCachedFilenames(null)){
-			try {
-				if (archiveStr.endsWith(".zip")) {
-					LOGGER.info("Processing: " + archiveStr);
-					metadataList.add(determineInitialMetadata(archiveStr));
-				}
-			} catch (Exception e) {
-				String msg = "Failed to determine initial metadata: " + archiveStr;
-				LOGGER.warn(msg, e);
-				report(PRIMARY_REPORT, archiveStr, ExceptionUtils.getExceptionCause(msg, e));
-			}
-		}
+        for (String potentialPackage : potentialPackages) {
+            String shorterName = shortName == "INT" ? "International" : shortName;
+            boolean containsShortName = potentialPackage.contains(shorterName);
+            boolean containsEffectiveTime = potentialPackage.contains(effectiveTime);
 
-		ModuleMetadata.sortByCS(metadataList, false);
-		for (ModuleMetadata metadata : metadataList) {
-			try {
-				moduleStorageCoordinator.generateMetadata(metadata);
-				report(PRIMARY_REPORT, metadata.getFilename(), metadata);
-			} catch (Exception e) {
-				String msg = "Failed to process archive: " + metadata.getFilename();
-				LOGGER.warn(msg, e);
-				report(PRIMARY_REPORT, metadata.getFilename(), ExceptionUtils.getExceptionCause(msg, e));
-			}
-		}
-	}
+            if (containsShortName && containsEffectiveTime) {
+                potentials.add(potentialPackage);
+            }
+        }
 
-	private ModuleMetadata determineInitialMetadata(String archiveStr) throws TermServerScriptException {
-		try {
-			//Determine the two letter extension code and the release date from the archive filename
-			Matcher extMatcher = msFilePattern.matcher(archiveStr);
-			String cs = "UNKNOWN";
-			String et = "UNKNOWN";
+        return potentials;
+    }
 
-			if (extMatcher.find()) {
-				cs = extMatcher.group(1);
-				et = extMatcher.group(2);
-				LOGGER.info("Identified: {}_{}", cs, et);
-			} else {
-				Matcher intMatcher = intFilePattern.matcher(archiveStr);
-				if (intMatcher.find()) {
-					et = intMatcher.group(1);
-					cs = INT;
-					LOGGER.info("Identified: INT_{}", et);
-				} else {
-					LOGGER.warn("Pattern not found in the input string: " + archiveStr);
-				}
-			}
+    private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
+        Set<CodeSystemTuple> tuples = getTuples();
+        Set<String> potentialPackages = resourceManagerSource.listFilenamesBySuffix(".zip");
+        int counter = 0;
+        int size = tuples.size();
+        Map<String, List<ModuleMetadata>> allReleases = moduleStorageCoordinator.getAllReleases();
+        nextTuple:
+        for (CodeSystemTuple tuple : tuples) {
+            flushFiles(false);
+            long start = System.currentTimeMillis();
+            counter = counter + 1;
+            String codeSystemShortName = tuple.getCodeSystemShortName();
+            String moduleId = tuple.getModuleId();
+            String effectiveTime = tuple.getEffectiveTime();
 
-			return new ModuleMetadata()
-					.withCodeSystemShortName(cs)
-					.withEffectiveTime(Integer.parseInt(et))
-					.withIdentifyingModuleId(extensionModuleMap.get(cs))
-					.withFile(new File(localCache + File.separator + archiveStr));
-		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to determine metadata for archive: " + archiveStr, e);
-		}
-	}
+            LOGGER.info("Processing {}_{}/{} ({}/{})", codeSystemShortName, moduleId, effectiveTime, counter, size);
+            Set<String> potentials = extractPotentialPackages(codeSystemShortName, effectiveTime, potentialPackages);
+            if (potentials.isEmpty()) {
+                LOGGER.info("No published RF2 package found for {}_{}/{}; skipping.", codeSystemShortName, moduleId, effectiveTime);
+                report(1, codeSystemShortName, effectiveTime, "SKIPPED", timeTaken(start), "No RF2 package found");
+                continue;
+            }
 
-	private void populateExtensionModuleMap() {
-		for (Project p : scaClient.listProjects()) {
-			if (p.getKey().length() == 2) {
-				LOGGER.info("Project: " + p.getKey() + " " + p.getMetadata().getDefaultModuleId());
-				extensionModuleMap.put(p.getKey(), p.getMetadata().getDefaultModuleId());
-			}
-		}
-		extensionModuleMap.put("INT", SCTID_CORE_MODULE);
-	}
+            if (potentials.size() > 1) {
+                LOGGER.info("Too many published RF2 packages found for {}_{}/{}; skipping.", codeSystemShortName, moduleId, effectiveTime);
+                report(1, codeSystemShortName, effectiveTime, "SKIPPED", timeTaken(start), "Too many RF2 packages found");
+                continue;
+            }
 
+            List<ModuleMetadata> moduleMetadata = allReleases.get(codeSystemShortName);
+            if (moduleMetadata != null && !moduleMetadata.isEmpty()) {
+                for (ModuleMetadata moduleMetadatum : moduleMetadata) {
+                    if (moduleMetadatum.getEffectiveTime().toString().equals(effectiveTime)) {
+                        LOGGER.info("Entry already exists for {}_{}/{}; skipping.", codeSystemShortName, moduleId, effectiveTime);
+                        report(1, codeSystemShortName, effectiveTime, "SKIPPED", timeTaken(start), "Already exists");
+                        continue nextTuple;
+                    }
+                }
+            }
 
+            String potential = potentials.iterator().next();
+            try (InputStream inputStream = resourceManagerSource.readResourceStream(potential)) {
+                LOGGER.info("Uploading new entry to {}_{}/{}...", codeSystemShortName, moduleId, effectiveTime);
+                String exceptionMessage = null;
+                File rf2Package = toFile(inputStream, potential, exceptionMessage);
 
+                if (rf2Package == null) {
+                    report(1, codeSystemShortName, effectiveTime, "FAILED", timeTaken(start), exceptionMessage);
+                    LOGGER.error("Cannot create local file for {}_{}/{}; {}", codeSystemShortName, moduleId, effectiveTime, exceptionMessage);
+                    continue nextTuple;
+                }
+
+                moduleStorageCoordinator.upload(codeSystemShortName, moduleId, effectiveTime, rf2Package);
+                report(1, codeSystemShortName, effectiveTime, "UPLOADED", timeTaken(start), "");
+                LOGGER.info("Successfully uploaded to {}_{}/{}", codeSystemShortName, moduleId, effectiveTime);
+            } catch (Exception e) {
+                report(1, codeSystemShortName, effectiveTime, "FAILED", timeTaken(start), e.getMessage());
+                LOGGER.error("Cannot upload to {}_{}/{}; moving onto next.", codeSystemShortName, moduleId, effectiveTime, e);
+            }
+        }
+    }
+
+    private float timeTaken(long start) {
+        long end = System.currentTimeMillis();
+        return (end - start) / 1000F;
+    }
+
+    private File toFile(InputStream inputStream, String fileName, String exceptionMessage) {
+        try {
+            String tempDir = System.getProperty("java.io.tmpdir");
+            File file = new File(tempDir, fileName);
+            if (file.createNewFile()) {
+                try (OutputStream output = new FileOutputStream(file)) {
+                    inputStream.transferTo(output);
+                }
+
+                file.deleteOnExit();
+                return file;
+            } else {
+                LOGGER.error("Failed to convert InputStream to File; file already exists.");
+                exceptionMessage = "File already exists";
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to convert InputStream to File.", e);
+        }
+
+        return null;
+    }
+
+    private Set<CodeSystemTuple> getTuples() throws TermServerScriptException {
+        List<CodeSystem> codeSystems = tsClient.getCodeSystems();
+        Set<CodeSystemTuple> codeSystemTuples = new TreeSet<>((o1, o2) -> {
+            boolean o1isInt = Objects.equals(o1.getCodeSystemShortName(), "INT");
+            boolean o2isInt = Objects.equals(o2.getCodeSystemShortName(), "INT");
+
+            if (o1isInt && !o2isInt) {
+                return -1;
+            } else if (!o1isInt && o2isInt) {
+                return 1;
+            } else {
+                if (o1.getCodeSystemShortName().equals(o2.getCodeSystemShortName())) {
+                    return o1.getEffectiveTime().compareTo(o2.getEffectiveTime());
+                } else {
+                    return o1.getCodeSystemShortName().compareTo(o2.getCodeSystemShortName());
+                }
+            }
+        });
+
+        for (CodeSystem codeSystem : codeSystems) {
+            String shortName = codeSystem.getShortName();
+            if (shortName.endsWith("FIX") || shortName.endsWith("UPD")) {
+                report(0, shortName, "SKIPPED", "Temporary fix project.");
+                continue;
+            }
+
+            if (shortName.endsWith("AU")) {
+                report(0, shortName, "SKIPPED", "Whitelisted");
+                continue;
+            }
+
+            String branchPath = codeSystem.getBranchPath();
+            Branch branch = tsClient.getBranch(branchPath);
+            if (branch == null) {
+                report(0, shortName, "SKIPPED", "Cannot find corresponding branch on term server.");
+                continue;
+            }
+
+            Metadata metadata = branch.getMetadata();
+            if (metadata == null) {
+                report(0, shortName, "SKIPPED", "Cannot find corresponding metadata.");
+                continue;
+            }
+
+            String defaultModuleId = metadata.getDefaultModuleId();
+            if (defaultModuleId == null && shortName.equals("SNOMEDCT")) {
+                if (Objects.equals("MAIN", branchPath)) {
+                    defaultModuleId = SCTID_CORE_MODULE;
+                }
+            }
+
+            if (defaultModuleId == null) {
+                report(0, shortName, "SKIPPED", "Cannot find default module id.");
+                continue;
+            }
+
+            LOGGER.info("Finding versions for CodeSystem {}", shortName);
+            List<CodeSystemVersion> codeSystemVersions = tsClient.getCodeSystemVersions(shortName);
+            if (codeSystemVersions.isEmpty()) {
+                report(0, shortName, "SKIPPED", "No versions available.");
+                continue;
+            }
+
+            report(0, shortName, "PENDING", codeSystemVersions.size() + " versions will be processed.");
+            for (CodeSystemVersion codeSystemVersion : codeSystemVersions) {
+                String shorterName = Objects.equals(shortName, "SNOMEDCT") ? "INT" : shortName.split("-")[1];
+                CodeSystemTuple codeSystemTuple = new CodeSystemTuple(shorterName, defaultModuleId, codeSystemVersion.getEffectiveDate().toString());
+                codeSystemTuples.add(codeSystemTuple);
+            }
+        }
+
+        return codeSystemTuples;
+    }
+
+    private ResourceManager resourceManagerSource() throws TermServerScriptException {
+        StandAloneResourceConfig versionedContentLoaderConfig = new StandAloneResourceConfig();
+        versionedContentLoaderConfig.init("versioned-content-source", false);
+        ResourceLoader resourceLoader = getArchiveManager().getS3Manager().getResourceLoader();
+        return new ResourceManager(versionedContentLoaderConfig, resourceLoader);
+    }
+
+    private ResourceManager resourceManagerTarget() throws TermServerScriptException {
+        StandAloneResourceConfig versionedContentLoaderConfig = new StandAloneResourceConfig();
+        versionedContentLoaderConfig.init("versioned-content", false);
+        ResourceLoader resourceLoader = getArchiveManager().getS3Manager().getResourceLoader();
+        return new ResourceManager(versionedContentLoaderConfig, resourceLoader);
+    }
+
+    private ModuleStorageCoordinator moduleStorageCoordinator() {
+        return ModuleStorageCoordinator.initDev(resourceManagerTarget);
+    }
+
+    private static class CodeSystemTuple {
+        private final String codeSystemShortName;
+        private final String moduleId;
+        private final String effectiveTime;
+
+        public CodeSystemTuple(String codeSystemShortName, String moduleId, String effectiveTime) {
+            this.codeSystemShortName = codeSystemShortName;
+            this.moduleId = moduleId;
+            this.effectiveTime = effectiveTime;
+        }
+
+        public String getCodeSystemShortName() {
+            return codeSystemShortName;
+        }
+
+        public String getModuleId() {
+            return moduleId;
+        }
+
+        public String getEffectiveTime() {
+            return effectiveTime;
+        }
+    }
 }
