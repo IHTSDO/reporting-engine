@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,6 +139,12 @@ public class LoincFileAnalysis extends LoincScript {
 	
 	@Override
 	protected void reportMissingMappings(int tab) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	protected void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept,
+			String statusStr, String differencesListStr) throws TermServerScriptException {
 		throw new NotImplementedException();
 	}
 }

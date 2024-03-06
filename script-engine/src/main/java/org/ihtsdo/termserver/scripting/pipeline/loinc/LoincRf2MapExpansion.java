@@ -156,4 +156,10 @@ public class LoincRf2MapExpansion extends LoincScript {
 	protected void reportMissingMappings(int tab) {
 		throw new NotImplementedException();
 	}
+
+	@Override
+	protected void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept,
+			String statusStr, String differencesListStr) throws TermServerScriptException {
+		throw new NotImplementedException();
+	}
 }
