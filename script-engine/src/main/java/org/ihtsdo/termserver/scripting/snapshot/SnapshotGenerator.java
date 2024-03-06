@@ -199,7 +199,7 @@ public class SnapshotGenerator extends TermServerScript {
 			outputRF2(thisConcept);
 		}
 		
-		//Alt Identifier file is independent from
+		//Alt Identifier file is independent from individual concepts
 		for (Map.Entry<Concept, Map<String, String>> entry : gl.getAlternateIdentifierMap().entrySet()) {
 			Concept schema = entry.getKey();
 			for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {

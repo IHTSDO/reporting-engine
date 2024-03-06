@@ -2634,7 +2634,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 	//The array structure returned as pairs shows components from the left either
 	//changed or not present on the right, and visa versa.
-	public static List<Component[]> compareComponents(Concept left, Concept right) {
+	public static List<Component[]> compareComponents(Concept left, Concept right, Set<ComponentType> skipForComparison) {
 		List<Component[]> changeSet = new ArrayList<>();
 		//Find a match for every component, or list it.
 		//TODO work out the "best match" that we can say has been modified
@@ -2643,20 +2643,26 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		
 		nextLeftComponent:
 		for (Component leftComponent : leftComponents) {
+			if (skipForComparison != null && skipForComparison.contains(leftComponent.getComponentType())) {
+				continue nextLeftComponent;
+			}
 			for (Component rightComponent : rightComponents) {
 				if (leftComponent.getClass().equals(rightComponent.getClass())) {
 					if (leftComponent.matchesMutableFields(rightComponent)) {
 						continue nextLeftComponent;
 					}
 				}
-				//If we're here, then our left component (prior existing), no longer
-				//has a matching component in the latest version and should be removed
-				changeSet.add(new Component[] {leftComponent, null});
 			}
+			//If we're here, then our left component (prior existing), no longer
+			//has a matching component in the latest version and should be removed
+			changeSet.add(new Component[] {leftComponent, null});
 		}
 		
 		nextRightComponent:
 		for (Component rightComponent : rightComponents) {
+			if (skipForComparison != null && skipForComparison.contains(rightComponent.getComponentType())) {
+				continue nextRightComponent;
+			}
 			for (Component leftComponent : leftComponents) {
 				if (rightComponent.getClass().equals(leftComponent.getClass())) {
 					if (rightComponent.matchesMutableFields(leftComponent)) {
