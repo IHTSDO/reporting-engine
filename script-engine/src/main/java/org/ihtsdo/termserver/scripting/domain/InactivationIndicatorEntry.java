@@ -53,9 +53,10 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		return i;
 	}
 	
-	public static InactivationIndicatorEntry withDefaults (Concept c) {
+	public static InactivationIndicatorEntry withDefaults (Concept c, String sctIdInactivationIndicator) {
 		InactivationIndicatorEntry i = withDefaults();
 		i.setRefsetId(SCTID_CON_INACT_IND_REFSET);
+		i.setInactivationReasonId(sctIdInactivationIndicator);
 		i.setReferencedComponentId(c.getId());
 		return i;
 	}

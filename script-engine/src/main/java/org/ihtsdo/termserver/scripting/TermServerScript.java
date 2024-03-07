@@ -911,6 +911,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void convertStatedRelationshipsToAxioms(Concept c, boolean mergeExistingAxioms) {
+		convertStatedRelationshipsToAxioms(c, mergeExistingAxioms, false);
+	}
+
+	protected void convertStatedRelationshipsToAxioms(Concept c, boolean mergeExistingAxioms, boolean leaveStatedRelationships) {
 		//We might have already done this if an error condition has occurred.
 		//Skip if there are not stated relationships
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH).size() == 0) {
@@ -945,6 +949,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 	
 			//We'll remove the stated relationships as they get converted to the axiom
+			//Unless we want to keep it so we can easily form the expression
 			Set<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 			for (Relationship rel : rels) {
 				//Ignore inactive rels, unless they come from an inactive axiom, in which case leave them there
@@ -955,7 +960,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						if (!rel.getAxiom().isActive()) {
 							rel.getAxiom().getRelationships().add(rel);
 						}
-						c.removeRelationship(rel, true); //Safe to remove it even if published - will exist in axiom
+
+						if (leaveStatedRelationships) {
+							rel.setAxiom(a);
+						} else {
+							c.removeRelationship(rel, true); //Safe to remove it even if published - will exist in axiom
+						}
 					}
 					continue;
 				}
@@ -979,7 +989,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				thisAxiom.getRelationships().add(rel);
 				if (!rel.fromAxiom() && !rel.isActive()) {
 					//Historically inactive stated relationship, leave it be
-				} else {
+				} else if (!leaveStatedRelationships) {
 					c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
 				}
 			}

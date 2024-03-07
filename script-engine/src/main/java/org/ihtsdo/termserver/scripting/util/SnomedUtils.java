@@ -29,12 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
 
 	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
@@ -2634,45 +2629,45 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 	//The array structure returned as pairs shows components from the left either
 	//changed or not present on the right, and visa versa.
-	public static List<Component[]> compareComponents(Concept left, Concept right, Set<ComponentType> skipForComparison) {
-		List<Component[]> changeSet = new ArrayList<>();
+	public static List<ComponentComparisonResult> compareComponents(Concept left, Concept right, Set<ComponentType> skipForComparison) {
+		List<ComponentComparisonResult> changeSet = new ArrayList<>();
 		//Find a match for every component, or list it.
 		//TODO work out the "best match" that we can say has been modified
-		Collection<Component> leftComponents = SnomedUtils.getAllComponents(left);
+		Collection<Component> leftComponents = SnomedUtils.getAllComponents(left)
+				.stream()
+				.filter(lc -> !skipForComparison.contains(lc.getComponentType()))
+				.collect(Collectors.toList());
 		Collection<Component> rightComponents = SnomedUtils.getAllComponents(right);
 		
 		nextLeftComponent:
 		for (Component leftComponent : leftComponents) {
-			if (skipForComparison != null && skipForComparison.contains(leftComponent.getComponentType())) {
-				continue nextLeftComponent;
-			}
 			for (Component rightComponent : rightComponents) {
 				if (leftComponent.getClass().equals(rightComponent.getClass())) {
 					if (leftComponent.matchesMutableFields(rightComponent)) {
+						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).matches());
 						continue nextLeftComponent;
 					}
 				}
 			}
 			//If we're here, then our left component (prior existing), no longer
 			//has a matching component in the latest version and should be removed
-			changeSet.add(new Component[] {leftComponent, null});
+			changeSet.add(new ComponentComparisonResult(leftComponent, null));
 		}
 		
 		nextRightComponent:
 		for (Component rightComponent : rightComponents) {
-			if (skipForComparison != null && skipForComparison.contains(rightComponent.getComponentType())) {
-				continue nextRightComponent;
-			}
 			for (Component leftComponent : leftComponents) {
 				if (rightComponent.getClass().equals(leftComponent.getClass())) {
 					if (rightComponent.matchesMutableFields(leftComponent)) {
+						//We don't need to store this, since we'll already have a left -> right 
+						//comparison that matched.
 						continue nextRightComponent;
 					}
 				}
-				//If we're here, then our left component (prior existing), no longer
-				//has a matching component in the latest version and should be removed
-				changeSet.add(new Component[] {null, rightComponent});
 			}
+			//If we're here, then our left component (prior existing), no longer
+			//has a matching component in the latest version and should be removed
+			changeSet.add(new ComponentComparisonResult(null, rightComponent));
 		}
 		return changeSet;
 	}

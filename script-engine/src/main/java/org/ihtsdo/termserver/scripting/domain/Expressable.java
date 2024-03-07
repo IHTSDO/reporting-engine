@@ -18,6 +18,10 @@ public abstract class Expressable extends Component implements ScriptConstants {
 	public abstract Collection<Concept> getParents(CharacteristicType charType);
 	
 	public String toExpression(CharacteristicType charType) {
+		//Inactive concepts do not have expressions
+		if (!isActive()) {
+			return "Concept Inactive";
+		}
 		String expression = getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
 		
 		//Parents may not be maintained if we're working with a loaded concept.

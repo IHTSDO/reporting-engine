@@ -1,14 +1,6 @@
 package org.ihtsdo.termserver.scripting;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
@@ -20,12 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class IdGenerator implements ScriptConstants{
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(IdGenerator.class);
 
 	private String fileName;
 	private BufferedReader availableSctIds;
@@ -177,7 +164,7 @@ public class IdGenerator implements ScriptConstants{
 		if (dummySequence > 100) {
 			ofWhich = " of which " + (dummySequence - 100) + " were dummy.";
 		}
-		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids in namespace " + namespace + " " + ofWhich;
+		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids in namespace " + namespace + ofWhich;
 	}
 	
 	public void isExtension(boolean b) {

@@ -6,11 +6,10 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
-import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +27,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected static int FILE_IDX_PREVIOUS_ITERATION = 8;
 	
 	protected Concept scheme;
+	protected String namespace;
 	protected String externalContentModule;
-
 	protected Rf2ConceptCreator conceptCreator;
-
 	protected int additionalThreadCount = 0;
 
 	protected void ingestExternalContent(String[] args) throws TermServerScriptException {
@@ -42,8 +40,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
-			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null);
-			conceptCreator.initialiseGenerators(new String[]{"-nS","1010000", "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
+			getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
+			getReportManager().disableTab(getTab(TAB_MAP_ME));
+			getReportManager().disableTab(getTab(TAB_IOI));
+			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null, this.getNamespace());
+			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
 			importExternalContent();
 			importPartMap();
 			Set<TemplatedConcept> successfullyModelled = doModeling();
@@ -102,10 +103,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		Set<Concept> dirtyConcepts = new HashSet<>();
 		
 		for (TemplatedConcept tc : successfullyModelled) {
-			dirtyConcepts.clear();
 			//Set this concept to be clean.  We'll mark dirty where differences exist
 			Concept concept = tc.getConcept();
 			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
+
 			//Do we already have this concept?
 			Concept existingConcept = null;
 			String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
@@ -119,6 +120,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					addFinalWords(msg);
 					concept.setId(existingConceptSCTID);
 					previousIterationIndicator = "Resurrected";
+					differencesList.add("Resurrected");
 				} else {
 					//Temporarily correct all Alternate Identifiers
 					existingConcept.setAlternateIdentifiers(new HashSet<>());
@@ -137,31 +139,59 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					previousIterationIndicator = "New";
 					differencesList.add("All New");
 				}
+				convertStatedRelationshipsToAxioms(concept, true, true);
+				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
 			} else {
 				SnomedUtils.getAllComponents(concept).forEach(c -> { 
 					c.setClean();
 					//Normalise module
 					c.setModuleId(conceptCreator.getTargetModuleId());
 				});
-				List<Component[]> differences = SnomedUtils.compareComponents(existingConcept, tc.getConcept(), skipForComparison);
-				if (differences.size() == 0) {
+				//We need to populate the concept SCTID before we can create axiom entries
+				concept.setId(existingConcept.getId());
+				convertStatedRelationshipsToAxioms(concept, true, true);
+				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
+
+				List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(existingConcept, tc.getConcept(), skipForComparison);
+				if (!ComponentComparisonResult.hasChanges(componentComparisonResults)) {
 					previousIterationIndicator = "Unchanged";
 					differencesList.add("All Unchanged");
 				}
 				
-				for (Component[] difference : differences) {
-					previousIterationIndicator = "Updated";
-					Component existingComponent = difference[0];
-					Component newlyModelledComponent = difference[1];
-					differencesList.add(newlyModelledComponent.getComponentType().toString());
+				for (ComponentComparisonResult componentComparisonResult : componentComparisonResults) {
+					Component existingComponent = componentComparisonResult.getLeft();
+					Component newlyModelledComponent = componentComparisonResult.getRight();
+
+					if (!componentComparisonResult.isMatch() && existingConcept != null) {
+						previousIterationIndicator = "Updated";
+						differencesList.add(componentComparisonResult.getComponentTypeStr());
+					}
+					
 					//If we have both, then just output the change
 					if (existingComponent != null && newlyModelledComponent != null) {
 						newlyModelledComponent.setId(existingComponent.getId());
-						newlyModelledComponent.setDirty();
-						dirtyConcepts.add(concept);
-						//And we'll have the axiom id too
-						String axiomId = existingConcept.getFirstActiveClassAxiom().getAxiomId();
-						concept.getFirstActiveClassAxiom().setId(axiomId);
+						
+						if (!componentComparisonResult.isMatch()) {
+							newlyModelledComponent.setDirty();
+							dirtyConcepts.add(concept);
+						}
+						
+						//Any component specific actions?
+						switch (existingComponent.getComponentType()) {
+							case CONCEPT:
+								//And we'll have the axiom id too
+								String axiomId = existingConcept.getFirstActiveClassAxiom().getAxiomId();
+								concept.getFirstActiveClassAxiom().setId(axiomId);
+								break;
+							case DESCRIPTION:
+								//Copy over the langRefset entries from the existing description
+								//I'm assuming we're never going to change the acceptability
+								List<LangRefsetEntry> lrs = ((Description)existingComponent).getLangRefsetEntries();
+								((Description)newlyModelledComponent).setLangRefsetEntries(lrs);
+								break;
+							default:
+								break;
+						}
 					} else if (existingComponent != null && newlyModelledComponent == null) {
 						//If we have an existing component and it has no newly Modelled counterpart, 
 						//then inactivate it
@@ -180,10 +210,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			
 			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
-			
-			for (Concept dirtyConcept : dirtyConcepts) {
-				conceptCreator.outputRF2(dirtyConcept);
-			}
+		}
+		
+		for (Concept dirtyConcept : dirtyConcepts) {
+			conceptCreator.outputRF2(dirtyConcept);
 		}
 		
 		//What external codes do we currently have that we _aren't_ going forward with.
@@ -206,14 +236,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return changeSet;
 	}
 
-
 	private List<String> inactivateConcept(Concept c) {
 		List<String> differencesList = new ArrayList<>();
 		//To inactivate a concept we need to inactivate the concept itself and the OWL axiom.
 		//The descriptions remain active and we'll let classification sort out the inferred relationships
 		if (c.isActive()) {
 			c.setActive(false);
-			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c);
+			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c, SCTID_INACT_OUTDATED);
 			ii.setModuleId(externalContentModule);
 			c.addInactivationIndicator(ii);
 			differencesList.add("CONCEPT");
@@ -244,5 +273,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 		}
 		throw new TermServerScriptException("Tab '" + tabName + "' not recognised");
+	}
+	
+	protected String getNamespace() {
+		return namespace;
 	}
 }
