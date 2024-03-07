@@ -42,9 +42,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected int taskThrottle = 5;
 	protected int restartFromTask = NOT_SET;
 	protected int conceptThrottle = 2;
-	protected String targetAuthor;
-	protected String targetReviewer;
-	protected String[] author_reviewer;
+	protected List<String> authors;
+	protected List<String> reviewers;
 	protected String[] emailDetails;
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 	protected boolean populateEditPanel = true;
@@ -106,7 +105,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	
 	protected Batch formIntoBatch (List<Component> allComponents) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask(author_reviewer);
+		Task task = batch.addNewTask(getNextAuthor(), getNextReviewer());
 		//Do we need to prioritize some components?
 		if (priorityComponents.size() > 0) {
 			List<Component> unprioritized = new ArrayList<> (allComponents);
@@ -134,11 +133,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					//If we're on the same issue, don't break the task
 					if (!lastIssue.equals(thisComponent.getIssues()) &&
 							!peekAheadFits(asConcepts(allComponents), currentPosition,remainingSpace)) {
-						task = batch.addNewTask(author_reviewer);
+						task = batch.addNewTask(getNextAuthor(), getNextReviewer());
 					}
 				} else if (task.size() >= thisTaskMaxSize ||
 						(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
-					task = batch.addNewTask(author_reviewer);
+					task = batch.addNewTask(getNextAuthor(), getNextReviewer());
 				}
 				task.add(thisComponent);
 				lastIssue = thisComponent.getIssues();
@@ -150,6 +149,19 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return batch;
 	}
 	
+	protected String getNextAuthor() {
+		int nextAuthorIdx = Task.getNextTaskSequence()%authors.size();
+		return authors.get(nextAuthorIdx);
+	}
+	
+	protected String getNextReviewer() {
+		if (reviewers == null || reviewers.size() == 0) {
+			return null;
+		}
+		int nextReviewerIdx = Task.getNextTaskSequence()%reviewers.size();
+		return reviewers.get(nextReviewerIdx);
+	}
+
 	private boolean peekAheadFits(List<Concept> concepts, int pos, int remainingSpace) {
 		//Given the issue of the current position, can we fit all successive concepts with the same issue into the 
 		//same task, or do we need to start a new one?
@@ -167,13 +179,13 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		Batch batch = new Batch(getScriptName());
 		int componentsToProcess = 0;
 		for (List<Component> thisSet : allComponentList) {
-			Task task = batch.addNewTask(author_reviewer);
+			Task task = batch.addNewTask(getNextAuthor(), getNextReviewer());
 			if (thisSet.size() > 0) {
 				String lastIssue = thisSet.get(0).getIssues();
 				for (Component thisComponent : thisSet) {
 					if (task.size() >= taskSize ||
 							(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
-						task = batch.addNewTask(author_reviewer);
+						task = batch.addNewTask(getNextAuthor(), getNextReviewer());
 					}
 					task.add(thisComponent);
 					componentsToProcess++;
@@ -417,17 +429,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 		
 		//Reassign the task to the intended author.  Set at task or processing level
-		String taskAuthor = task.getAssignedAuthor();
-		if (taskAuthor == null) {
-			taskAuthor = targetAuthor;
-		}
-		
-		if (taskAuthor != null && !taskAuthor.isEmpty()) {
-			String reviewMsg = task.getReviewer() == null? "" : " into review for " + task.getReviewer(); 
-			LOGGER.debug("Assigning " + task + " to " + taskAuthor + reviewMsg);
-		}
-		
-		scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, taskAuthor, task.getReviewer());
+		String reviewMsg = task.getReviewer() == null? "" : " into review for " + task.getReviewer(); 
+		LOGGER.debug("Assigning " + task + " to " + task.getAssignedAuthor() + reviewMsg);
+		scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, task.getAssignedAuthor(), task.getReviewer());
 	}
 
 	//Override if working with Refsets or Descriptions directly
@@ -456,7 +460,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		if (jobRun.getParamValue(RESTART_FROM_TASK) != null) {
 			restartFromTask = Integer.parseInt(jobRun.getParamValue(RESTART_FROM_TASK));
 		}
-		author_reviewer = new String[] { jobRun.getUser() };
+		authors = List.of(jobRun.getUser());
 	}
 	
 	public void inflightInit (String[] args) throws TermServerScriptException {
@@ -502,10 +506,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				restartFromTask = Integer.parseInt(thisArg);
 				isRestartFromTask = false;
 			} else if (isAuthor) {
-				targetAuthor = thisArg.toLowerCase();
+				authors = Arrays.asList(thisArg.toLowerCase().split(","));
 				isAuthor = false;
 			} else if (isReviewer) {
-				targetReviewer = thisArg.toLowerCase();
+				reviewers = Arrays.asList(thisArg.toLowerCase().split(","));
 				isReviewer = false;
 			} else if (isTaskSize) {
 				taskSize = Integer.parseInt(thisArg);
@@ -515,13 +519,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				LOGGER.info ("Limiting number of tasks being created to " + processingLimit);
 				isLimit = false;
 			}
-		}
-		
-		
-		if (targetReviewer != null) {
-			author_reviewer = new String[] { targetAuthor, targetReviewer };
-		} else {
-			author_reviewer = new String[] { targetAuthor };
 		}
 		
 		//For batch fixes we generally need to know if the components we're modifying have been
@@ -578,17 +575,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 		}
 		
-		if (targetAuthor == null) {
+		if (authors == null) {
 			if (jobRun != null && jobRun.getParamValue(AUTHOR) != null) {
-				targetAuthor = jobRun.getParamValue(AUTHOR);
+				authors = Arrays.asList(jobRun.getParamValue(AUTHOR).split(","));
 			} else {
 				throw new TermServerScriptException("No target author detected in command line arguments");
-			}
-		} else {
-			if (targetReviewer != null) {
-				author_reviewer = new String[] { targetAuthor, targetReviewer };
-			} else {
-				author_reviewer = new String[] { targetAuthor };
 			}
 		}
 		
