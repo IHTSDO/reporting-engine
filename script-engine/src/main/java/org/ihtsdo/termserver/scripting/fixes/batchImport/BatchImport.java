@@ -181,7 +181,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		for (Concept thisChild : getRootConcept().getChildren(CharacteristicType.STATED_RELATIONSHIP)) {
 			BatchImportConcept child = (BatchImportConcept) thisChild;
 			if (thisTask == null || thisTask.size() >= taskSize) {
-				thisTask = batch.addNewTask(author_reviewer);
+				thisTask = batch.addNewTask(getNextAuthor(), null);
 			}
 			//We can be sure that all descendants will not exceed our batch limit, having already validated
 			thisTask.add(child);

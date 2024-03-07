@@ -25,10 +25,6 @@ import org.slf4j.LoggerFactory;
 
 public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DrugsReTerming.class);
-
-	String[] author_reviewer = new String[] {targetAuthor};
-	
 	protected DrugsReTerming(BatchFix clone) {
 		super(clone);
 	}
@@ -210,14 +206,14 @@ public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
 
 	protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException {
 		Batch batch = new Batch(getReportName());
-		Task task = batch.addNewTask(author_reviewer);
+		Task task = batch.addNewTask(getNextAuthor());
 
 		for (Concept thisConcept : allConcepts) {
 			if (((ConceptChange) thisConcept).getSkipReason() != null) {
 				report(task, thisConcept, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept marked as excluded");
 			} else {
 				if (task.size() >= taskSize) {
-					task = batch.addNewTask(author_reviewer);
+					task = batch.addNewTask(getNextAuthor());
 				}
 				task.add(thisConcept);
 			}

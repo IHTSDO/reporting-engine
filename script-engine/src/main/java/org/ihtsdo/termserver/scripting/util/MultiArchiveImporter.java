@@ -41,7 +41,7 @@ public class MultiArchiveImporter extends BatchFix {
 			importer.classifyTasks = true;
 			importer.allowDirectoryInputFile = true;
 			importer.init(args);
-			importer.postInit(null, new String[] {"Task, Archive, Result"}, false);
+			importer.postInit(null, new String[] {"Task, Archive, User, Result"}, false);
 			importer.importArchives();
 		} finally {
 			importer.finish();
@@ -67,7 +67,7 @@ public class MultiArchiveImporter extends BatchFix {
 		String result = "OK";
 		Task task = null;
 		try {
-			task = new Task(null, author_reviewer);
+			task = new Task(null, getNextAuthor(), getNextReviewer());
 			task.setSummary(taskPrefix + "Import " + thisArchive.getName());
 			createTask(task);
 			if (!dryRun) {
@@ -84,7 +84,7 @@ public class MultiArchiveImporter extends BatchFix {
 			LOGGER.error("Failure to import " + thisArchive, e);
 			result = e.toString();
 		}
-		report(PRIMARY_REPORT, task.getKey(), thisArchive.getName(), result);
+		report(PRIMARY_REPORT, task.getKey(), thisArchive.getName(), task.getAssignedAuthor(), result);
 	}
 
 	@Override
