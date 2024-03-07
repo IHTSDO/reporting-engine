@@ -375,7 +375,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	private void populateParts(LoincScript ls, Map<String, LoincDetail> details) throws TermServerScriptException {
-		concept = Concept.withDefaults(Integer.toString((++conceptsModelled)));
+		concept = Concept.withDefaults(null);
 		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);

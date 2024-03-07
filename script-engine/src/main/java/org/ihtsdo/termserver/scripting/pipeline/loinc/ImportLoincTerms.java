@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -62,7 +61,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"Item, Info, Details, ,",
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, LoincName, Issues, ",
-				"LoincNum, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
+				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , "
@@ -71,6 +70,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		super.postInit(tabNames, columnHeadings, false);
 		scheme = gl.getConcept(SCTID_LOINC_SCHEMA);
 		externalContentModule = SCTID_LOINC_EXTENSION_MODULE;
+		namespace = "1010000";
 	}
 
 	/*private void runReport() throws TermServerScriptException, InterruptedException {
@@ -314,22 +314,20 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 		
-		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);;
-		String proposedSCG = proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
-				.map(d -> d.toString())
-				.collect(Collectors.joining("\n"));
-		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.prioritise(proposedLoincConcept.getDescriptions()).stream()
-				.map(d -> d.toString())
-				.collect(Collectors.joining("\n"));
-		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), loincNum, previousIterationIndicator,
-				loincTemplatedConcept.getClass().getSimpleName(),
+		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String proposedSCG = proposedLoincConcept == null ? "N/A" : proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedLoincConcept);
+		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(existingConcept);
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), 
+				loincNum, 
+				proposedLoincConcept != null ? proposedLoincConcept.getId() : existingConcept.getId(),
+				previousIterationIndicator,
+				loincTemplatedConcept == null ? "N/A" : loincTemplatedConcept.getClass().getSimpleName(),
 				differencesStr,
 				proposedDescriptionsStr,
 				previousDescriptionsStr,
 				proposedSCG, 
 				previousSCG,
-				differencesStr,
 				loincTerm.getCommonColumns());
 	}
 
