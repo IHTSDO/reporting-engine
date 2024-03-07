@@ -132,7 +132,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public Concept(String conceptId) {
-		this.conceptId = conceptId;
+		setId(conceptId);
 		
 		//default values
 		this.definitionStatus = DefinitionStatus.PRIMITIVE;
@@ -206,7 +206,6 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public void setConceptId(String conceptId) {
 		setId(conceptId);
-		this.conceptId = conceptId;
 	}
 
 	public String getFsn() {
@@ -460,7 +459,6 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public void removeRelationship(Relationship r, boolean force) {
-		CharacteristicType charType = r.getCharacteristicType();
 		if (!StringUtils.isEmpty(r.getEffectiveTime()) && !force) {
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
@@ -1107,6 +1105,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		return axiomEntries;
 	}
+
+	public void setAxiomEntries(List<AxiomEntry> axiomEntries) {
+		this.axiomEntries = axiomEntries;
+	}
 	
 	public List<AxiomEntry> getAxiomEntries(ActiveState activeState, boolean includeGCIs) {
 		switch (activeState) {
@@ -1185,13 +1187,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		return siblings;
 	}
-
-	@Override
-	public String getId() {
-		return conceptId;
-	}
 	
 	public void setId(String id) {
+		super.setId(id);
 		conceptId = id;
 	}
 

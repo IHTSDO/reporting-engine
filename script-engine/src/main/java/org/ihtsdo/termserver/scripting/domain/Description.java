@@ -474,6 +474,10 @@ public class Description extends Component implements ScriptConstants {
 		}
 		return null;
 	}
+	
+	public void setLangRefsetEntries(List<LangRefsetEntry> langrefsetEntries) {
+		this.langRefsetEntries = langrefsetEntries;
+	}
 
 	/**
 	 * @return true if this description is preferred in any dialect.

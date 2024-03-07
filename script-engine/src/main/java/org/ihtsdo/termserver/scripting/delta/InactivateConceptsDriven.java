@@ -65,9 +65,8 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 		//Inactivate concept, and ensure that it's now primitive
 		inactivateComponent(c);
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-		InactivationIndicatorEntry cii = InactivationIndicatorEntry.withDefaults(c);
+		InactivationIndicatorEntry cii = InactivationIndicatorEntry.withDefaults(c, SCTID_INACT_CLASS_DERIVED_COMPONENT);
 		cii.setModuleId(targetModuleId);
-		cii.setInactivationReasonId(SCTID_INACT_CLASS_DERIVED_COMPONENT);
 		c.addInactivationIndicator(cii);
 		
 		//Inactivate Axioms

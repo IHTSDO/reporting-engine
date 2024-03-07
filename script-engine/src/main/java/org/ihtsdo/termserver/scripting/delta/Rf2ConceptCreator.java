@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -10,19 +9,12 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class Rf2ConceptCreator extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Rf2ConceptCreator.class);
-
-	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile) throws TermServerScriptException {
+	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile, String namespace) throws TermServerScriptException {
 		Rf2ConceptCreator conceptCreator = new Rf2ConceptCreator();
 		if (clone != null) {
 			conceptCreator.setReportManager(clone.getReportManager());
@@ -30,13 +22,13 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 			conceptCreator.tsClient = clone.getTSClient();
 			conceptCreator.edition = "INT";
 		}
-		
 		conceptCreator.initialiseOutputDirectory();
 		conceptCreator.initialiseFileHeaders();
+		conceptCreator.nameSpace = namespace;
 		
-		conceptCreator.conIdGenerator = conceptCreator.initialiseIdGenerator(conIdFile, PartitionIdentifier.CONCEPT);
-		conceptCreator.descIdGenerator = conceptCreator.initialiseIdGenerator(descIdFile, PartitionIdentifier.DESCRIPTION);
-		conceptCreator.relIdGenerator = conceptCreator.initialiseIdGenerator(relIdFile, PartitionIdentifier.RELATIONSHIP);
+		conceptCreator.conIdGenerator = conceptCreator.initialiseIdGenerator(conIdFile, PartitionIdentifier.CONCEPT, namespace);
+		conceptCreator.descIdGenerator = conceptCreator.initialiseIdGenerator(descIdFile, PartitionIdentifier.DESCRIPTION, namespace);
+		conceptCreator.relIdGenerator = conceptCreator.initialiseIdGenerator(relIdFile, PartitionIdentifier.RELATIONSHIP, namespace);
 	
 		return conceptCreator;
 	}

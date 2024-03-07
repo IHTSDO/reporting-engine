@@ -113,6 +113,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
+	protected IdGenerator initialiseIdGenerator(File file, PartitionIdentifier partition, String namespace) throws TermServerScriptException {
+		IdGenerator idGenerator = initialiseIdGenerator(file, partition);
+		idGenerator.setNamespace(namespace);
+		return idGenerator;
+	}
+	
 	protected IdGenerator initialiseIdGenerator(File file, PartitionIdentifier partition) throws TermServerScriptException {
 		String filePath = file == null ? "dummy" : file.getAbsolutePath();
 		return initialiseIdGenerator(filePath, partition);
