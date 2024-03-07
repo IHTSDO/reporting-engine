@@ -65,7 +65,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 
 		for (String bucketId : dispositionBuckets.keySet()) {
 			if (dispositionBuckets.get(bucketId).size() <= taskSize ) {
-				Task task = batch.addNewTask(author_reviewer);
+				Task task = batch.addNewTask(getNextAuthor());
 				task.setTaskInfo(bucketId);
 				
 				for (Concept concept : dispositionBuckets.get(bucketId)) {
@@ -128,7 +128,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 	private void splitBucketIntoNeighbourhoods(Batch batch, String bucketId, Collection<Concept> remainingConceptsToGroup) throws TermServerScriptException {
 		int initialSize = remainingConceptsToGroup.size();
 		while (remainingConceptsToGroup.size() >  0) {
-			Task task = batch.addNewTask(author_reviewer);
+			Task task = batch.addNewTask(getNextAuthor());
 			task.setTaskInfo(bucketId);
 			//First identify the lowest concept which will initially be a leaf node
 			Concept currentFocus = findLowestConcept(remainingConceptsToGroup);

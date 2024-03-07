@@ -255,7 +255,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 	@Override
 	protected Batch formIntoBatch (List<Component> allConcepts) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask(author_reviewer);
+		Task task = batch.addNewTask(getNextAuthor());
 		
 		//Include siblings of the specified concepts
 		includeSiblings(allConcepts);
@@ -277,7 +277,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 					unallocated.remove(thisConcept);
 				}
 				LOGGER.debug (task + " (" + task.size() + ")");
-				task = batch.addNewTask(author_reviewer);
+				task = batch.addNewTask(getNextAuthor());
 			}
 		}
 		batch.consolidateIntoLargeTasks(taskSize, 0); //Tasks are large enough already, no wiggle room!

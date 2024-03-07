@@ -32,7 +32,6 @@ public class UpsertMetadata extends BatchFix implements ScriptConstants{
 			fix.headers = "CodeSystem, Severity, Action, Detail";
 			fix.additionalReportColumns="";
 			fix.selfDetermining = true;
-			fix.targetAuthor = "empty";
 			fix.init(args);
 			fix.postInit();
 			fix.upsertMetadata();

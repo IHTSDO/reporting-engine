@@ -30,15 +30,19 @@ public class Batch implements IBatch, RF2Constants {
 		this(fileName);
 		this.gl = gl;
 	}
+	
+	public Task addNewTask(String author) {
+		return addNewTask(author, null);
+	}
 
-	public Task addNewTask(String[] author_reviewer) {
-		Task task = new Task(this, author_reviewer);
+	public Task addNewTask(String author, String reviewer) {
+		Task task = new Task(this, author, reviewer);
 		tasks.add(task);
 		return task;
 	}
 
-	public Task insertNewTask(Task after, String[] author_reviewer) {
-		Task task = new Task(this, author_reviewer);
+	public Task insertNewTask(Task after, String author, String reviewer) {
+		Task task = new Task(this, author, reviewer);
 		tasks.add(tasks.indexOf(after), task);
 		return task;
 	}
