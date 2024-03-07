@@ -44,7 +44,7 @@ public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 
 	public int touchConcepts() throws TermServerScriptException {
 		Batch b = new Batch ("foo");
-		Task t = b.addNewTask(new String[] { "bar" });
+		Task t = b.addNewTask("bar", null);
 		t.setBranchPath(targetTaskPath);
 		allComponentsToProcess = processFile(getInputFile());
 		for (Concept c : asConcepts(allComponentsToProcess)) {
