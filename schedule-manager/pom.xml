@@ -6,7 +6,7 @@
 
 	<parent>
 		<groupId>org.snomed.otf</groupId>
-		<version>7.2.0</version>
+		<version>7.2.1-SNAPSHOT</version>
 		<artifactId>reporting-engine</artifactId>
 	</parent>
 
