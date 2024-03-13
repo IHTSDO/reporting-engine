@@ -56,8 +56,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	protected boolean copyInferredRelationshipsToStatedWhereMissing = true;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		//ExtractExtensionComponents delta = new ExtractExtensionComponents();
-		ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
+		ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		// ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
@@ -1035,11 +1035,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 							gbEntry.setActive(true);
 							gbEntry.setEffectiveTime(null);
 							gbEntry.setDirty();
-						} else {
-							//Otherwise, clone the US entry to use as GB
-							LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
-							d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
 						}
+
+						LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
+						d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
 					}
 				}
 			}
