@@ -40,8 +40,11 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	public void init (JobRun run) throws TermServerScriptException {
 		commonInit(run, singleTemplateMode);
 		if (!singleTemplateMode) {
-			String subsetECL = "<< 125605004";  // QI-5 |Fracture of bone (disorder)|
-			String[] templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
+			String subsetECL = "";
+			String[] templateNames = new String[] {};
+
+			subsetECL = "<< 125605004";  // QI-5 |Fracture of bone (disorder)|
+			templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
 											"templates/fracture/Fracture Dislocation of Bone Structure.json"};
 			populateTemplates(subsetECL, templateNames);
 			
@@ -235,12 +238,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			subsetECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ";
 			templateNames = new String[] {	"templates/Degenerative disorder.json"};
 			populateTemplates(subsetECL, templateNames);
-	
-			//Replaced with production template Congenital [morphology] of [body structure] 
-			/*subsetECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
-			templateNames = new String[] {	"templates/Congenital Malformation.json"};
-			populateTemplates(subsetECL, templateNames);*/
-			
+
 			subsetECL = "<< 131148009|Bleeding|"; //QI-319
 			templateNames = new String[] { "templates/Bleeding - disorder.json"};
 			populateTemplates(subsetECL, templateNames);
@@ -413,24 +411,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			templateNames = new String[] { "templates/morphologies/Retention.json" };
 			populateTemplates(null, templateNames);
 			
-			/*templateNames = new String[] { "templates/anatomy/Anatomical Parts.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/anatomy/Entity in region.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/anatomy/Hair follicle.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/anatomy/Region of region.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/anatomy/Skin of body.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/anatomy/Skin of part of body.json" };
-			populateTemplates(null, templateNames);*/
-			
 			templateNames = new String[] { "templates/procedures/MRI.json" };
 			populateTemplates(null, templateNames);
 			
@@ -529,7 +509,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			templateNames = new String[] { "templates/morphologies/Dislocation.json" };
 			populateTemplates(null, templateNames);
 			
-			templateNames = new String[] { "templates/procedures/PlacementOfStent.json" };
+			templateNames = new String[] { "templates/procedures/InsertionOfStent.json" };
 			populateTemplates(null, templateNames);
 			
 			templateNames = new String[] { "templates/Toxic due to plant.json" };
@@ -546,7 +526,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			
 			//Do this one last to pick up whatever is left under Disease
 			subsetECL = "<< 64572001 |Disease (disorder)|"; 
-			templateNames = new String[] {	"templates/Disease.json" };
+			templateNames = new String[] { "templates/Disease.json" };
 			populateTemplates(subsetECL, templateNames);
 			
 			populateTemplatesFromTS();
