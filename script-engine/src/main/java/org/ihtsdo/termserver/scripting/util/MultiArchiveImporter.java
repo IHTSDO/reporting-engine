@@ -49,14 +49,21 @@ public class MultiArchiveImporter extends BatchFix {
 	}
 
 	private void importArchives() throws TermServerScriptException {
-		LOGGER.info("Processing all archives in " + getInputFile());
+		String limitStr = processingLimit == NOT_SET ? "all" : processingLimit + "";
+		LOGGER.info("Processing " + limitStr + " archives in " + getInputFile());
 		String[] dirListing = getInputFile().list();
 		Arrays.sort(dirListing, NumberAwareStringComparator.INSTANCE);
+		int archivesProcessed = 0;
 		for (String archiveStr : dirListing){
 			File thisArchive = new File(getInputFile() + File.separator + archiveStr);
 			if (thisArchive.getPath().endsWith(".zip")) {
 				LOGGER.info("Processing: " + thisArchive);
 				importArchive(thisArchive);
+				archivesProcessed++;
+				if (processingLimit != NOT_SET && archivesProcessed >= processingLimit) {
+					LOGGER.info("Processing limit of " + processingLimit + " reached.  Exiting.");
+					break;
+				}
 			} else {
 				LOGGER.info("Skipping non archive: " + thisArchive);
 			}

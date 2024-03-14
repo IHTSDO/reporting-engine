@@ -147,10 +147,15 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (!projectName.endsWith(".zip")){
 			try{
 				scaClient = new AuthoringServicesClient(url, authenticatedCookie);
-				project = scaClient.getProject(projectName);
-				if (project.getBranchPath().contains("SNOMEDCT-")
-						&& project.getMetadata() != null) {
-					moduleId = project.getMetadata().getDefaultModuleId();
+				//MAIN is not a project, but we know what the default module is
+				if (projectName.toUpperCase().equals("MAIN")) {
+					moduleId = SCTID_CORE_MODULE;
+				} else {
+					project = scaClient.getProject(projectName);
+					if (project.getBranchPath().contains("SNOMEDCT-")
+							&& project.getMetadata() != null) {
+						moduleId = project.getMetadata().getDefaultModuleId();
+					}
 				}
 			} catch (Exception e) {
 				LOGGER.error("Failed to retrieve project metadata for " + projectName, e);
@@ -470,14 +475,17 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	protected int createOutputArchive(boolean outputModifiedComponents) throws TermServerScriptException {
+		return createOutputArchive(outputModifiedComponents, 0);
+	}
+
+	protected int createOutputArchive(boolean outputModifiedComponents, int conceptsOutput) throws TermServerScriptException {
 		if (dryRun) {
 			String msg = "Dry run, skipping archive creation";
 			LOGGER.info(msg);
 			report((Concept) null, Severity.NONE, ReportActionType.INFO, msg);
 		} else {
-			int conceptsOutput = NOT_SET;
 			if (outputModifiedComponents) {
-				conceptsOutput = outputModifiedComponents(true);
+				conceptsOutput += outputModifiedComponents(true);
 			}
 			getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
 			File archive = SnomedUtils.createArchive(new File(outputDirName));
