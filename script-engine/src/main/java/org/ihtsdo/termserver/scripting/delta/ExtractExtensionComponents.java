@@ -1027,18 +1027,24 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
 					usEntry.setModuleId(targetModuleId);
 					usEntry.setDirty();
-					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).size() ==0) {
+					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).size() == 0) {
 						//Might be an inactive GB refset entry that we can reuse
+						//In which case, bring it into line with the US value
 						List<LangRefsetEntry> gbInactiveLangRefs = d.getLangRefsetEntries(ActiveState.INACTIVE, GB_ENG_LANG_REFSET);
 						if (gbInactiveLangRefs.size() > 0) {
+							LOGGER.debug("Reactivating GB langrefset entry " + d.getDescriptionId());
 							LangRefsetEntry gbEntry = gbInactiveLangRefs.get(0);
 							gbEntry.setActive(true);
 							gbEntry.setEffectiveTime(null);
+							gbEntry.setModuleId(targetModuleId);
+							gbEntry.setAcceptabilityId(usEntry.getAcceptabilityId());
 							gbEntry.setDirty();
+							d.addLangRefsetEntry(gbEntry);
+						} else {
+							//Otherwise, clone the US entry to use as GB
+							LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
+							d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
 						}
-
-						LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
-						d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
 					}
 				}
 			}
@@ -1053,7 +1059,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					// This ensures existing langrefset entries are re-used if present, or a new one is created.
 					d.setAcceptability(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(gbEntry.getAcceptabilityId()));
 				}
-
 			}
 		}
 		
