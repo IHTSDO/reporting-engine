@@ -67,7 +67,8 @@ public class ReportDataBroker implements DataBroker {
             //In case we're running on a PC we need to convert backslashes to forward
             String filePath = outputFile.getPath().replaceAll("\\\\", "/");
             InputStream is = IOUtils.toInputStream(data, StandardCharsets.UTF_8);
-            LOGGER.info("Uploading to S3: " + outputFile);
+            s3Manager.getResourceManager().getBucketNamePath();
+            LOGGER.info("Uploading to S3 ({}): {}", s3Manager.getResourceManager().getBucketNamePath(),  outputFile);
             s3Manager.getResourceManager().writeResource(filePath, is);
         } catch (Exception e) {
             throw new TermServerScriptException(e);
