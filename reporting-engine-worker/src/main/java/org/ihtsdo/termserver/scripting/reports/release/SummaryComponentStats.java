@@ -132,10 +132,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
 		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
-		//params.put(REPORT_OUTPUT_TYPES, "S3");
-		//params.put(REPORT_FORMAT_TYPE, "JSON");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20231001T120000Z.zip");
+		params.put(REPORT_OUTPUT_TYPES, "S3");
+		params.put(REPORT_FORMAT_TYPE, "JSON");
 		//params.put(MODULES, "731000124108");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}

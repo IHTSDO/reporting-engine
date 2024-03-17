@@ -67,6 +67,10 @@ public class HistoricDataUser extends TermServerReport {
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
 			compareTwoSnapshots = true;
 			projectKey = getJobRun().getParamValue(THIS_RELEASE);
+			//Have we got what looks like a zip file but someone left the .zip off?
+			if (projectKey.contains("T120000") && !projectKey.endsWith(".zip")) {
+				throw new TermServerScriptException("Suspect release '" + projectKey + "' should end with .zip");
+			}
 			//If this release has been specified, the previous must also be, explicitly
 			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
 				throw new TermServerScriptException("Previous release must be specified if current release is.");
