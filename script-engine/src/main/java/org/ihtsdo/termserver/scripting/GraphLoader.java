@@ -600,8 +600,8 @@ public class GraphLoader implements ScriptConstants {
 		} 
 	}
 	
-	public Concept getConcept(String identifier) throws TermServerScriptException {
-		return getConcept(identifier.trim(), true, true);
+	public Concept getConcept(String sctid) throws TermServerScriptException {
+		return getConcept(sctid.trim(), true, true);
 	}
 	
 	public Concept getConceptSafely (String identifier) {

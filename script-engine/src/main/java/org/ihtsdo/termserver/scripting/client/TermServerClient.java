@@ -199,8 +199,11 @@ public class TermServerClient {
 	}
 
 	public Concept getConcept(String sctid, String branchPath) throws TermServerScriptException {
-			String url = getConceptBrowserPath(branchPath) + "/" + sctid;
-			return restTemplate.getForObject(url, Concept.class);
+		String url = getConceptBrowserPath(branchPath) + "/" + sctid;
+		Concept concept = restTemplate.getForObject(url, Concept.class);
+		concept.setId(concept.getConceptId());  //RestTemplate is not calling the setter so this is cheaper
+		//than writing a custom deserializer
+		return concept;
 	}
 
 	public Description getDescription(String descriptionId, String branchPath) {
