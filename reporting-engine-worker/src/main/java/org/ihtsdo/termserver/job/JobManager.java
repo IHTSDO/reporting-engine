@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.job;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 import jakarta.annotation.PostConstruct;
