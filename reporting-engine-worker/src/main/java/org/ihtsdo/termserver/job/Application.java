@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 @EnableJms
 public class Application  {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
-
 	static TermServerScript job;
 	
 	@Bean
