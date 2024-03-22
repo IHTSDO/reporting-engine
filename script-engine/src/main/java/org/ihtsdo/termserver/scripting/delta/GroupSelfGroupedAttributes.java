@@ -39,15 +39,15 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			delta.init(args);
 			delta.loadProjectSnapshot();
 			delta.postInit();
-			delta.process();
-			delta.createOutputArchive(false);
+			int lastBatchSize = delta.process();
+			delta.createOutputArchive(false, lastBatchSize);
 		} finally {
 			delta.finish();
 		}
 	}
 
 	public void postInit() throws TermServerScriptException {
-		//hierarchies.add(OBSERVABLE_ENTITY);
+		hierarchies.add(OBSERVABLE_ENTITY);
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
@@ -64,6 +64,9 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		allowRepeatingTypes = List.of(
 				gl.getConcept("704321009 |Characterizes (attribute)| ")
 		);
+
+		//We're not moving modules here, so the source and target modules are the same
+		targetModuleId = moduleId;
 
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Before, After, Group Count, Has Repeated Attribute Type,",
@@ -83,7 +86,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		postInit(tabNames, columnHeadings, false);
 	}
 
-	private void process() throws ValidationFailure, TermServerScriptException, IOException {
+	private int process() throws ValidationFailure, TermServerScriptException, IOException {
 		int conceptsInThisBatch = 0;
 		for (Concept hierarchy : hierarchies) {
 			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
@@ -102,10 +105,13 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 							initialiseFileHeaders();
 							conceptsInThisBatch = 0;
 						}
+					} else {
+						report(SECONDARY_REPORT, c, before);
 					}
 				}
 			}
 		}
+		return conceptsInThisBatch;
 	}
 
 	private boolean groupSelfGroupedAttributes(Concept c, String before) throws TermServerScriptException {
