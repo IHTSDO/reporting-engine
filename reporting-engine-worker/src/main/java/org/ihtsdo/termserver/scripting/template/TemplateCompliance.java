@@ -120,8 +120,26 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		}
 		
 		super.init(jobRun);
-		
-		//Have we been called via the reporting platform?
+
+		String templateServerUrl = "Server not specified";
+
+		//Have we been called via the reporting platform or are we running standalone?
+		if (appContext == null) {
+			templateServerUrl = getServerUrl();
+		} else {
+			templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
+		}
+		if (!templateServerUrl.endsWith("template-service/") && (!templateServerUrl.endsWith("template-service"))) {
+			if (templateServerUrl.endsWith("/")) {
+				templateServerUrl += "template-service";
+			} else {
+				templateServerUrl += "/template-service";
+			}
+		}
+
+		LOGGER.info("Connecting to template server: " + templateServerUrl + " with cookie starting: " + authenticatedCookie.substring(0, 15));
+		tsc = new TemplateServiceClient(templateServerUrl, authenticatedCookie);
+
 		if (appContext == null && jobRun.getParameters().getValue(ECL) == null) {
 			localRunInit();
 		} else {
@@ -129,12 +147,6 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 			includeOrphanet = jobRun.getParameters().getMandatoryBoolean(INCLUDE_ORPHANET);
 			subsetECL = jobRun.getMandatoryParamValue(ECL);
 
-			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
-			if (!templateServerUrl.endsWith("template-service/") && (!templateServerUrl.endsWith("template-service"))) {
-				templateServerUrl += "/template-service";
-				templateServerUrl = templateServerUrl.replace("//template-service", "/template-service");
-			}
-			
 			//Do we have a template name to load, or some actual template language?
 			String templateName = jobRun.getParamValue(TEMPLATE_NAME);
 			String template = jobRun.getParamValue(TEMPLATE);
@@ -144,9 +156,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 			} else if (StringUtils.isEmpty(templateName) && StringUtils.isEmpty(template)) {
 				throw new TermServerScriptException("Neither published template name nor template code were specified");
 			}
-			
-			tsc = new TemplateServiceClient(templateServerUrl, authenticatedCookie);
-			
+
 			if (!StringUtils.isEmpty(templateName)) {
 				try {
 					templates.add(loadTemplate('A',templateName));

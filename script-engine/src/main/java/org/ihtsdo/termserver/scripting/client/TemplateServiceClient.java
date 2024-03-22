@@ -20,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.*;
+import org.springframework.web.util.UriUtils;
 
 /**
  * Client can either load a template from the template service, or from a local resource
@@ -89,7 +90,8 @@ public class TemplateServiceClient {
 	
 	public ConceptTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
 		ResponseEntity<ConceptTemplate> response = restTemplate.exchange(
-				TEMPLATES + templateName,
+				//TEMPLATES +  UriUtils.encodePath(templateName, "UTF-8"), - this gives us double URL encoding
+				TEMPLATES +  templateName,
 				HttpMethod.GET,
 				null,
 				ConceptTemplate.class);
