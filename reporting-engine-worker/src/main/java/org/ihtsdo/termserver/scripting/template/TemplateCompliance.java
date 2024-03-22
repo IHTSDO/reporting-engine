@@ -56,9 +56,12 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		//params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..* @roleGroup]] { [[~0..1]] 260686004 |Method (attribute)| = [[ +id ( < 129264002 |Action (qualifier value)| ) @procedure ]], [[~1..1]] [[ +id (<< 363704007 |Procedure site (attribute)| ) @Proceduresite ]] = [[ +id ( << 54308001 |Structure of gum and supporting structure of tooth (body structure)| ) @PeriodontalStructure ]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[ +id (<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363701004 |Direct substance (attribute)| = [[+id (<< 105590001 |Substance (substance)| ) @Directsubstance]], [[~0..1]] 363699004 |Direct device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Directdevice]], [[~0..1]] 424226004 |Using device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Usingdevice]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 105590001 |Substance (substance)| ) @Usingsubstance]] }, [[~0..1 @roleGroup2]] {[[~0..1]] 363702006 |Has focus (attribute)| = [[ +id ( << 105995000 |Disorder of teeth AND/OR supporting structures (disorder)| ) @Hasfocus ]]}, [[~0..* @roleGroup3]] { [[~0..1]] 260686004 |Method (attribute)| = [[ +id ( < 129264002 |Action (qualifier value)| ) @procedure2 ]], [[~0..1]] [[ +id (<< 363704007 |Procedure site (attribute)| ) @Proceduresite ]] = [[ +id ( < 442083009 |Anatomical or acquired body structure (body structure)| ) @PeriodontalStructure2 ]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[ +id (<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology2 ]], [[~0..1]] 363701004 |Direct substance (attribute)| = [[+id (<< 105590001 |Substance (substance)| ) @Directsubstance2]], [[~0..1]] 363699004 |Direct device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Directdevice2]], [[~0..1]] 424226004 |Using device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Usingdevice2]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 105590001 |Substance (substance)| ) @Usingsubstance2]] }");
 		//params.put(TEMPLATE_NAME, "Fracture dislocation of [body structure] (disorder) - v1.0");
 		
-		params.put(ECL, "<< 64572001 |Disease (disorder)|");
-		params.put(TEMPLATE, "64572001 |Disease (disorder)| : [[~0..1]] { [[~0..1]] 42752001 |Due to (attribute)| = [[ +id ( * ) @dueTo]]  } , [[~0..1]] { [[~0..1]] 263502005 |Clinical course (attribute)| = [[ +id (< 288524001 |Courses (qualifier value)| ) @course]] } , [[~1..* @rolegroup]]{ [[~0..1]] 116676008 |Associated morphology (attribute)| = [[+id(<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363698007 |Finding site (attribute)| = [[+id(< 123037004 |Body structure (body structure)| )]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id(< 282032007 |Periods of life (qualifier value)| ) @occur]], [[~0..1]] 370135005 |Pathological process (attribute)| = [[ +id ( < 308489006 |Pathological process (qualifier value)| ) @proc]], [[~0..1]] 246075003 |Causative agent (attribute)| = [[ +id (< 410607006 |Organism (organism)| OR < 105590001 |Substance (substance)| OR < 78621006 |Physical force (physical force)| ) @causative]] }");
-		
+		//params.put(ECL, "<< 64572001 |Disease (disorder)|");
+		//params.put(TEMPLATE, "64572001 |Disease (disorder)| : [[~0..1]] { [[~0..1]] 42752001 |Due to (attribute)| = [[ +id ( * ) @dueTo]]  } , [[~0..1]] { [[~0..1]] 263502005 |Clinical course (attribute)| = [[ +id (< 288524001 |Courses (qualifier value)| ) @course]] } , [[~1..* @rolegroup]]{ [[~0..1]] 116676008 |Associated morphology (attribute)| = [[+id(<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363698007 |Finding site (attribute)| = [[+id(< 123037004 |Body structure (body structure)| )]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id(< 282032007 |Periods of life (qualifier value)| ) @occur]], [[~0..1]] 370135005 |Pathological process (attribute)| = [[ +id ( < 308489006 |Pathological process (qualifier value)| ) @proc]], [[~0..1]] 246075003 |Causative agent (attribute)| = [[ +id (< 410607006 |Organism (organism)| OR < 105590001 |Substance (substance)| OR < 78621006 |Physical force (physical force)| ) @causative]] }");
+
+		params.put(ECL, "<< 263063009 |Fracture dislocation of joint (disorder)|");
+		params.put(TEMPLATE_NAME, "Fracture dislocation of [body structure] (disorder) - v1.0");
+
 		params.put(INCLUDE_COMPLEX, "false");
 		params.put(INCLUDE_ORPHANET, "false");
 		TermServerReport.run(TemplateCompliance.class, args, params);
@@ -117,8 +120,27 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		}
 		
 		super.init(jobRun);
+
+		String templateServerUrl = "Server not specified";
+
+		//Have we been called via the reporting platform or are we running standalone?
+		if (appContext == null) {
+			templateServerUrl = getServerUrl();
+		} else {
+			templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
+		}
+		if (!templateServerUrl.endsWith("template-service/") && (!templateServerUrl.endsWith("template-service"))) {
+			if (templateServerUrl.endsWith("/")) {
+				templateServerUrl += "template-service";
+			} else {
+				templateServerUrl += "/template-service";
+			}
+		}
+
+		LOGGER.info("Connecting to template server: " + templateServerUrl + " with cookie starting: " + authenticatedCookie.substring(0, 15));
+		tsc = new TemplateServiceClient(templateServerUrl, authenticatedCookie);
 		
-		//Have we been called via the reporting platform?
+
 		if (appContext == null && jobRun.getParameters().getValue(ECL) == null) {
 			localRunInit();
 		} else {
@@ -126,11 +148,6 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 			includeOrphanet = jobRun.getParameters().getMandatoryBoolean(INCLUDE_ORPHANET);
 			subsetECL = jobRun.getMandatoryParamValue(ECL);
 
-			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
-			if (!templateServerUrl.endsWith("template-service/") && (!templateServerUrl.endsWith("template-service"))) {
-				templateServerUrl += "/template-service";
-			}
-			
 			//Do we have a template name to load, or some actual template language?
 			String templateName = jobRun.getParamValue(TEMPLATE_NAME);
 			String template = jobRun.getParamValue(TEMPLATE);
@@ -140,9 +157,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 			} else if (StringUtils.isEmpty(templateName) && StringUtils.isEmpty(template)) {
 				throw new TermServerScriptException("Neither published template name nor template code were specified");
 			}
-			
-			tsc = new TemplateServiceClient(templateServerUrl, authenticatedCookie);
-			
+
 			if (!StringUtils.isEmpty(templateName)) {
 				try {
 					templates.add(loadTemplate('A',templateName));
