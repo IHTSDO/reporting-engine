@@ -37,7 +37,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceAttributeTypes.class);
 
-	String ecl = "(<<62317000 |Prosthodontic procedure (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|) OR (<118817003 |Procedure on oral cavity (procedure)| : 424226004 |Using device (attribute)| = <<53350007 |Prosthesis, device (physical object)|)";
+	String ecl = "<< 71388002 |Procedure (procedure)| : 425391005 |Using access device (attribute)| = *";
 	Map<Concept, Concept> replaceTypesMap;
 	RelationshipTemplate addAttribute = null;
 	RelationshipTemplate whereAttributePresent = null;
@@ -65,31 +65,8 @@ public class ReplaceAttributeTypes extends BatchFix {
 
 	public void postInit() throws TermServerScriptException {
 		replaceTypesMap = new HashMap<>();
-		/*replaceTypesMap.put(gl.getConcept("118586006 |Ratio (property) (qualifier value)| "), 
-				gl.getConcept("784316008 |Arbitrary fraction (property) (qualifier value)|"));
-		addAttribute = new RelationshipTemplate(gl.getConcept("704325000 |Relative to (attribute)| "),
-				gl.getConcept("48583005 |Immunoglobulin E (substance)|"));
-		replaceTypesMap.put(gl.getConcept("424361007 |Using substance (attribute)|"), 
-				gl.getConcept("363701004 |Direct substance (attribute)|"));
-		replaceTypesMap.put(gl.getConcept("405814001 |Procedure site - Indirect (attribute)|"), 
-				gl.getConcept("405813007 |Procedure site - Direct (attribute)|"));
-		replaceTypesMap.put(gl.getConcept("704324001 |Process output (attribute)| "), 
-				gl.getConcept("1003735000 |Process acts on (attribute)| "));*/
-		
-		/*replaceTypesMap.put(gl.getConcept("405813007 |Procedure site - Direct|"), 
-				gl.getConcept("405814001 |Procedure site - Indirect|"));
-		
-		replaceTypesMap.put(gl.getConcept("363699004 |Direct device|"), 
-				gl.getConcept("363710007 |Indirect device|"));
-		
-		replaceTypesMap.put(gl.getConcept("424361007 |Using substance|"), 
-				gl.getConcept("363701004 |Direct substance|"));
-		
-		whereAttributePresent = new RelationshipTemplate(gl.getConcept("260686004 |Method|"), 
-				gl.getConcept("129332006 |Irrigation - action|"));*/
-		
-		replaceTypesMap.put(gl.getConcept("424226004 |Using device (attribute)|"), 
-				gl.getConcept("363699004 |Direct device (attribute)|"));
+		replaceTypesMap.put(gl.getConcept("425391005 |Using access device (attribute)|"),
+				gl.getConcept("424226004 |Using device (attribute)|"));
 		super.postInit();
 	}
 
@@ -110,9 +87,10 @@ public class ReplaceAttributeTypes extends BatchFix {
 	
 	private int replaceAttributeTypes(Task t, Concept c) throws TermServerScriptException, ValidationFailure {
 		int changesMade = 0;
-		
+		boolean includeDuplicationWarning = false;
 		//Work group at a time and ensure the group contains the required attribute - if specified
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			int replacedAttributesEncouteredInGroup = 0; //Either because we did the replacement or because they're already present
 			if (whereAttributePresent == null || g.containsTypeValue(whereAttributePresent)) {
 				for (Concept targetType : replaceTypesMap.keySet()) {
 					for (Relationship r : g.getRelationships(ActiveState.ACTIVE)) {
@@ -120,14 +98,24 @@ public class ReplaceAttributeTypes extends BatchFix {
 							Relationship replacement = r.clone();
 							replacement.setType(replaceTypesMap.get(targetType));
 							changesMade += replaceRelationship(t, c, r, replacement);
+							replacedAttributesEncouteredInGroup++;
+						} else if (replaceTypesMap.values().contains(r.getType())) {
+							replacedAttributesEncouteredInGroup++;
 						}
 					}
 				}
+			}
+			if (replacedAttributesEncouteredInGroup > 1) {
+				includeDuplicationWarning = true;
 			}
 		}
 		
 		if (addAttribute != null) {
 			changesMade += addRelationship(t, c, addAttribute, SnomedUtils.getFirstFreeGroup(c));
+		}
+
+		if (includeDuplicationWarning) {
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Duplicate attributes encountered in concept", c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 		}
 		return changesMade;
 	}
@@ -136,17 +124,16 @@ public class ReplaceAttributeTypes extends BatchFix {
 		LOGGER.info("Identifying concepts to process");
 		
 		//First report those which we are NOT going to process
-		findConcepts(ecl).stream()
+		/*findConcepts(ecl).stream()
 				.filter(c -> !meetsProcessingCriteria(c))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.forEach(c -> { 
 					try {
 						report((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept did not meeting processing criteria", c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 					} catch (TermServerScriptException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				});
+				});*/
 		
 		return findConcepts(ecl).stream()
 			.filter(c -> meetsProcessingCriteria(c))
