@@ -22,6 +22,7 @@ import java.util.*;
 
 public class ArchiveCurator extends TermServerReport {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveCurator.class);
+    private static final List<String> NON_PUBLISHED_PACKAGE_TERMS = List.of("_MEMBER_", "_BETA_", "_PREPROD_", "_PREPRODUCTION_", "_Fake_", "_Identifier_", "f", "x", "MSSP", "ISRS", "RECALL");
 
     private final ResourceManager resourceManagerSource;
     private final ResourceManager resourceManagerTarget;
@@ -42,12 +43,14 @@ public class ArchiveCurator extends TermServerReport {
                     new String[]{
                             // Tabs
                             "Code Systems",
-                            "Versions"
+                            "Versions",
+                            "Ambiguous packages"
                     },
                     new String[]{
                             // Columns
                             "Code System, Status, Comment,",
-                            "Code System, Effective Time, Status, Time (seconds), Comment,"
+                            "Code System, Effective Time, Status, Time (seconds), Comment,",
+                            "Code System, Effective Time, Package Name"
                     },
                     false);
             curator.curateArchives();
@@ -65,6 +68,8 @@ public class ArchiveCurator extends TermServerReport {
             boolean containsEffectiveTime = potentialPackage.contains(effectiveTime);
 
             if (containsShortName && containsEffectiveTime) {
+                // e.g. xx/rf2.zip => rf2.zip
+                potentialPackage = potentialPackage.substring(potentialPackage.lastIndexOf('/') + 1);
                 potentials.add(potentialPackage);
             }
         }
@@ -75,11 +80,13 @@ public class ArchiveCurator extends TermServerReport {
     private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
         Set<CodeSystemTuple> tuples = getTuples();
         Set<String> potentialPackages = resourceManagerSource.listFilenamesBySuffix(".zip");
+        potentialPackages.removeIf(p -> p.contains("published_build_backup")); // Remove backup packages
         int counter = 0;
         int size = tuples.size();
         Map<String, List<ModuleMetadata>> allReleases = moduleStorageCoordinator.getAllReleases();
         nextTuple:
         for (CodeSystemTuple tuple : tuples) {
+            sleep(1_000);
             flushFiles(false);
             long start = System.currentTimeMillis();
             counter = counter + 1;
@@ -96,9 +103,21 @@ public class ArchiveCurator extends TermServerReport {
             }
 
             if (potentials.size() > 1) {
-                LOGGER.info("Too many published RF2 packages found for {}_{}/{}; skipping.", codeSystemShortName, moduleId, effectiveTime);
-                report(1, codeSystemShortName, effectiveTime, "SKIPPED", timeTaken(start), "Too many RF2 packages found");
-                continue;
+                Set<String> potentialsCopy = new HashSet<>(potentials);
+                for (String nonPublishedPackageTerm : NON_PUBLISHED_PACKAGE_TERMS) {
+                    potentials.removeIf(p -> p.contains(nonPublishedPackageTerm));
+                    potentials.removeIf(p -> p.startsWith(nonPublishedPackageTerm));
+                }
+
+                if (potentials.size() != 1) {
+                    LOGGER.info("Too many published RF2 packages found for {}_{}/{}; skipping.", codeSystemShortName, moduleId, effectiveTime);
+                    report(1, codeSystemShortName, effectiveTime, "SKIPPED", timeTaken(start), "Too many RF2 packages found: " + String.join(",", potentialsCopy));
+                    for (String potenitalCopy : potentialsCopy) {
+                        report(2, codeSystemShortName, effectiveTime, potenitalCopy);
+                    }
+
+                    continue;
+                }
             }
 
             List<ModuleMetadata> moduleMetadata = allReleases.get(codeSystemShortName);
@@ -251,6 +270,14 @@ public class ArchiveCurator extends TermServerReport {
 
     private ModuleStorageCoordinator moduleStorageCoordinator() {
         return ModuleStorageCoordinator.initDev(resourceManagerTarget);
+    }
+
+    private void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // ignore
+        }
     }
 
     private static class CodeSystemTuple {
