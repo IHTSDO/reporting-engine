@@ -57,13 +57,17 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, Cathy Notes, , ",
 				"Issue, Detail",
-				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, "
+				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, ",
+				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc, Mentioned in Tab 3",
+				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc"
 		};
 
 		String[] tabNames = new String[]{
 				"Delta Records Created",
 				"Other processing issues",
-				"Additional Inactive Concepts"
+				"Additional Inactive Concepts",
+				"Concepts moved elsewhere",
+				"Inactivated without indicator"
 		};
 		postInit(tabNames, columnHeadings, false);
 	}
@@ -90,12 +94,14 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					}
 					InactivationIndicatorEntry i = indicators.get(0);
 					InactivationIndicator prevInactValue = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId());
-					//We're going to skip concepts that are currently ambigous and just say what they're set to
-					if (prevInactValue.equals(InactivationIndicator.AMBIGUOUS)) {
+
+					//We're going to skip concepts that are currently ambiguous and just say what they're set to
+					//We're now also updating some of these
+					/*if (prevInactValue.equals(InactivationIndicator.AMBIGUOUS)) {
 						String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
 						report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, assocStr, "Supplied: " + replacementMap.get(c));
 						continue;
-					}
+					}*/
 
 					//Have we got some specific inactivation indicator we're expecting to use?
 					InactivationIndicator newII = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
@@ -107,10 +113,12 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					if (!action.inactivationIndicator.equals(prevInactValue)) {
 						i.setInactivationReasonId(SnomedUtils.translateInactivationIndicator(newII));
 						i.setEffectiveTime(null);  //Will mark as dirty
-						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> " + newII);
+						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> " + newII, "");
 					}
 
-					replaceHistoricalAssociations(c);
+					if (!action.associationsUnchanged) {
+						replaceHistoricalAssociations(c);
+					}
 					
 				} else {
 					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is active");
@@ -120,7 +128,6 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void replaceHistoricalAssociations(Concept c) throws TermServerScriptException {
-
 		UpdateAction action = replacementMap.get(c);
 		List<Concept> updatedReplacements = new ArrayList<>(action.replacements);
 		for (Concept replacement : action.replacements) {
@@ -200,13 +207,26 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					if (inactivationIndicatorStr.contains("Ambiguous")) {
 						inactivationIndicator = InactivationIndicator.AMBIGUOUS;
 						association = Association.POSS_EQUIV_TO;
+					} else if (inactivationIndicatorStr.contains("Outdated")) {
+						inactivationIndicator = InactivationIndicator.OUTDATED;
+						association = Association.REPLACED_BY;
+					}else if (inactivationIndicatorStr.contains("CDC")) {
+						inactivationIndicator = InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
+						association = Association.REPLACED_BY;
 					}
-					List<Concept> replacements = splitConcepts(replacementsStr);
+
 					UpdateAction action = new UpdateAction();
 					action.inactivationIndicator = inactivationIndicator;
-					action.replacements = replacements;
-					action.type = association;
 					replacementMap.put(inactive, action);
+
+					if (replacementsStr.equals("UNCHANGED")) {
+						action.associationsUnchanged = true;
+					} else {
+						List<Concept> replacements = splitConcepts(replacementsStr);
+						action.replacements = replacements;
+						action.type = association;
+					}
+
 				} catch (Exception e) {
 					report(SECONDARY_REPORT,"Failed to parse line (2nd file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
 				}
@@ -248,15 +268,29 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	private void checkForRecentInactivations() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			if (c.getFSNDescription() == null) {
+			//slow us down a wee bit, just to avoid tripping the google rate limiting
+            try {
+                Thread.sleep(2);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            if (c.getFSNDescription() == null) {
 				LOGGER.warn("Unpopulated " + c.getId());
 				continue;
 			}
-			if (c.isActive() ||
-					!inScope(c) ||
+			if (c.isActive()) {
+				continue;
+			}
+			if (!inScope(c) ||
 					manageManually.contains(c.getId()) ||
 					replacementMap.containsKey(c) ||
 					reportedAsAdditional.contains(c)) {
+				if (c.getInactivationIndicator() == null) {
+					report(QUINARY_REPORT, c, c.getEffectiveTime(), SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
+				} else if (c.getInactivationIndicator().equals(InactivationIndicator.MOVED_ELSEWHERE)) {
+					//We're also going to report concepts that are not OE/CO but are marked as "Moved To"
+					report(QUATERNARY_REPORT, c, c.getEffectiveTime(), SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
+				}
 				continue;
 			}
 			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true);
@@ -317,6 +351,13 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		if (replacementMap.containsKey(c)) {
 			return "Already included for processing";
 		}
+
+		//Is this concept in fact already fine?
+		if (c.getInactivationIndicator().equals(InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT)) {
+			return "Not included for processing - already inactivated as CDC.";
+		}
+
+
 		//Do we have one association target or more?
 		List<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
 				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
@@ -334,7 +375,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					.withInactivationIndicator(InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT)
 					.withReplacements(assocTargets);
 		} else {
-			return "Not included for processing due to lack of existing associations";
+			return "Not included for NOS processing due to lack of existing associations";
 		}
 		replacementMap.put(c, action);
 		return "Included for processing - CDC";
@@ -391,6 +432,10 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 
 		for (Concept sibling : gl.getAllConcepts()) {
+			//Don't compare with self
+			if (sibling.equals(c)) {
+				continue;
+			}
 			for (Description d : sibling.getDescriptions()) {
 				String thisTerm = d.getTerm();
 				if (d.getType().equals(DescriptionType.FSN)) {
@@ -427,6 +472,10 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 
 		for (Concept cousin : gl.getAllConcepts()) {
+			//Don't compare with self
+			if (cousin.equals(c)) {
+				continue;
+			}
 			for (Description d : cousin.getDescriptions()) {
 				if (targetFsn.equalsIgnoreCase(d.getTerm())) {
 					return cousin;
@@ -462,12 +511,17 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	class UpdateAction {
+		public boolean associationsUnchanged = false;
 		Association type;
 		InactivationIndicator inactivationIndicator;
 		List<Concept> replacements;
 
 		public String toString() {
-			return inactivationIndicator + ": " + type + " " + replacements.stream().map(c -> c.toString()).collect(Collectors.joining(", "));
+			String replacementsStr = "UNCHANGED";
+			if (this.replacements != null) {
+				replacementsStr = this.replacements.stream().map(c -> c.toString()).collect(Collectors.joining(","));
+			}
+			return inactivationIndicator + ": " + type + " " + replacementsStr;
 		}
 
 		public UpdateAction withInactivationIndicator(InactivationIndicator inactivationIndicator) {

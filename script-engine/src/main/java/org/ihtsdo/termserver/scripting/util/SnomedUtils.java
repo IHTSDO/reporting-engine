@@ -720,7 +720,8 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 
 	public static String prettyPrintHistoricalAssociations(Concept c, GraphLoader gl, boolean includeInactivationIndicator) throws TermServerScriptException {
-		String associations = includeInactivationIndicator? c.getInactivationIndicator() + "\n" : "";
+		String inactIndicatorStr = c.getInactivationIndicator() == null ? "NOT SET": c.getInactivationIndicator().toString();
+		String associations = includeInactivationIndicator? inactIndicatorStr + "\n" : "";
 		boolean isFirst = true;
 		for (AssociationEntry assoc : c.getAssociationEntries(ActiveState.ACTIVE, true))  {
 			if (!isFirst) {
