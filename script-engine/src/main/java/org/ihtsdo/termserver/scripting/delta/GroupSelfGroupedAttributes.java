@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -9,10 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class GroupSelfGroupedAttributes extends DeltaGenerator implements ScriptConstants{
 
@@ -35,6 +33,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		GroupSelfGroupedAttributes delta = new GroupSelfGroupedAttributes();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			delta.getArchiveManager(true).setPopulateReleasedFlag(true);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);
 			delta.loadProjectSnapshot();
@@ -49,6 +48,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	public void postInit() throws TermServerScriptException {
 		hierarchies.add(OBSERVABLE_ENTITY);
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
+
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
@@ -88,11 +88,15 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private int process() throws ValidationFailure, TermServerScriptException, IOException {
 		int conceptsInThisBatch = 0;
-		for (Concept hierarchy : hierarchies) {
-			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
-				if (inScope(c)) {
+		//for (Concept hierarchy : hierarchies) {
+		//	for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
+		{{
+			Concept c = gl.getConcept("193711000052101 |Number of high alcohol consumption occasions per unit time (observable entity)|");
+
+			if (inScope(c)) {
 					String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 					restateInferredRelationships(c);
+					removeRedundandGroups((Task) null, c);
 					boolean changesMade = groupSelfGroupedAttributes(c, before);
 					if (changesMade) {
 						outputRF2(c, true);
