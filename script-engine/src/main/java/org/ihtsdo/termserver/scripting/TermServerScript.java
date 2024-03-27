@@ -2169,4 +2169,90 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return CHANGE_MADE;
 	}
 
+	protected int removeRedundandGroups(Task t, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		List<RelationshipGroup> originalGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP));
+		Set<RelationshipGroup> removedGroups = new HashSet<>();
+
+		for (RelationshipGroup originalGroup : originalGroups) {
+			if (removedGroups.contains(originalGroup) || originalGroup.size() == 0) {
+				continue;
+			}
+			for (RelationshipGroup potentialRedundancy : originalGroups) {
+				//Don't compare self, removed or empty groups
+				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId() ||
+						potentialRedundancy.size() == 0 ||
+						removedGroups.contains(potentialRedundancy)) {
+					continue;
+				}
+				boolean aCoversB = SnomedUtils.covers(originalGroup, potentialRedundancy, gl.getAncestorsCache());
+				boolean bCoversA = SnomedUtils.covers(potentialRedundancy, originalGroup, gl.getAncestorsCache());
+				RelationshipGroup groupToRemove = null;
+				if (aCoversB || bCoversA) {
+					//If they're the same, remove the potential - likely to be a higher group number
+					if (aCoversB && bCoversA && potentialRedundancy.size() <= originalGroup.size()) {
+						groupToRemove = potentialRedundancy;
+					} else if (aCoversB && potentialRedundancy.size() <= originalGroup.size()) {
+						groupToRemove = potentialRedundancy;
+					} else if (bCoversA && potentialRedundancy.size() >= originalGroup.size()) {
+						groupToRemove = originalGroup;
+					} else if (bCoversA && potentialRedundancy.size() < originalGroup.size()) {
+						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Group of larger size appears redundant - check!");
+						groupToRemove = originalGroup;
+					} else {
+						LOGGER.warn ("DEBUG HERE, Redundancy in " + c);
+					}
+
+					if (groupToRemove != null && groupToRemove.size() > 0) {
+						removedGroups.add(groupToRemove);
+						report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed:", groupToRemove);
+						for (Relationship r : groupToRemove.getRelationships()) {
+							changesMade += removeRelationship(t, c, r);
+						}
+					}
+				}
+			}
+		}
+		if (changesMade > 0) {
+			shuffleDown(t,c);
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+				report (t, c, Severity.LOW, ReportActionType.INFO, "Post redundancy removal group", g);
+			}
+		}
+		return changesMade;
+	}
+
+	protected void shuffleDown(Task t, Concept c) throws TermServerScriptException {
+		List<RelationshipGroup> newGroups = new ArrayList<>();
+		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			//Have we missed out the ungrouped group? fill in if so
+			if (group.isGrouped() && newGroups.size() == 0) {
+				newGroups.add(new RelationshipGroup(UNGROUPED));
+			}
+			//Since we're working with the true concept relationships here, this will have
+			//the effect of changing the groupId in all affected relationships
+			if (group.getGroupId() != newGroups.size()) {
+				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Shuffling stated group " + group.getGroupId() + " to " + newGroups.size());
+				group.setGroupId(newGroups.size());
+				//If we have relationships without SCTIDs here, see if we can pinch them from inactive relationships
+				int reuseCount = 0;
+				for (Relationship moved : new ArrayList<>(group.getRelationships())) {
+					if (StringUtils.isEmpty(moved.getId())) {
+						Set<Relationship> existingInactives = c.getRelationships(moved, ActiveState.INACTIVE);
+						if (existingInactives.size() > 0) {
+							group.removeRelationship(moved);
+							c.removeRelationship(moved, true);  //It's OK to force removal, the axiom will still exist.
+							Relationship reuse = existingInactives.iterator().next();
+							reuse.setActive(true);
+							group.addRelationship(reuse);
+							c.addRelationship(reuse);
+							reuseCount++;
+						}
+					}
+				}
+				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Reused " + reuseCount + " inactivated Ids");
+			}
+			newGroups.add(group);
+		}
+	}
 }
