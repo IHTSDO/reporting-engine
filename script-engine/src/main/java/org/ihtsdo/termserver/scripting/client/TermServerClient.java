@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
@@ -95,6 +97,8 @@ public class TermServerClient {
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.additionalMessageConverters(new FormHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
+				.setConnectTimeout(Duration.of(10, ChronoUnit.SECONDS))
+				.setReadTimeout(Duration.of(5, ChronoUnit.MINUTES))
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
