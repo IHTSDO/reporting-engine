@@ -89,7 +89,7 @@ public class HistoricalAssociationsCrossingMajorHierarchies extends TermServerRe
 			}
 			conceptsChecked++;
 			//Check all historical associations
-			for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE)) {
+			for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE)) {
 				Concept target = gl.getConcept(a.getTargetComponentId());
 				String targetSemTag = SnomedUtils.deconstructFSN(target.getFsn())[1];
 				
