@@ -19,6 +19,7 @@ public class LoincDetail {
 	public static String COMPNUM_PN = "COMPNUM_PN";
 	public static String COMPDENOM_PN = "COMPDENOM_PN";
 	public static String PROPERTY = "PROPERTYMIXEDCASE_PN";
+	public static String COMPNUMSUFFIX_PN = "COMPNUMSUFFIX_PN";
 	
 	private String loincNum;
 	private String partNumber;	
