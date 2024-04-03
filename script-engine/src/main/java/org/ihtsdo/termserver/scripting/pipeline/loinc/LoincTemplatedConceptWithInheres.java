@@ -15,6 +15,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
 
+	private static List<String> suffixExceptions = List.of("LP438877-5", "LP438878-3", "LP134392-2");
+
 	private LoincTemplatedConceptWithInheres(String loincNum) {
 		super(loincNum);
 	}
@@ -67,15 +69,26 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
 			}
 		}
+
+		if (detailPresent(loincNum, LoincDetail.COMPNUMSUFFIX_PN)) {
+			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPNUMSUFFIX_PN);
+			if (suffixExceptions.contains(componentDetail.getPartNumber())) {
+				//use the COMPNUM_PN LP name to include in FSN and PT in the Inheres in slot for terming.
+				String compNumPartName = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName();
+				slotTermMap.put("COMPONENT", compNumPartName);
+			}
+		}
 		
 		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
 			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART3_PN);
-			slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
+			slotTermMap.put("COMPONENT", componentDetail.getPartName());
+			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 		
 		if (detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
 			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART4_PN);
-			slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
+			slotTermMap.put("COMPONENT", componentDetail.getPartName());
+			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 		
 		//If we didn't find the component, return a null so that we record that failed mapping usage
