@@ -151,15 +151,16 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			case "Temp" :
 			case "Type" :
 			case "Vol" : return LoincTemplatedConceptWithInheres.create(loincNum);
+			case "Susc" : return LoincTemplatedConceptWithSusceptibility.create(loincNum);
 		}
 		return null;
 	}
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		/*if (loincNum.equals("50407-6")) {
-			LOGGER.debug("Check for missing component - should result in loinc term being dropped entirely");
-		}*/
+		if (loincNum.equals("65756-9")) {
+			LOGGER.debug("Check biophage exception 65756-9");
+		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
@@ -610,12 +611,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			return null;
 		}
 		if (!attributePartMapManager.containsMappingForLoincPartNum(loincPartNum)) {
-			throw new TermServerScriptException("Unable to find any attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ")" );
+			throw new TermServerScriptException("Unable to find any attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ") - " + loincDetail.getPartName());
 		}
 		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
 
 		if (rt == null) {
-			throw new TermServerScriptException("Unable to find appropriate attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ")" );
+			throw new TermServerScriptException("Unable to find appropriate attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ") - " + loincDetail.getPartName());
 		}
 
 		rt = applyTemplateSpecificRules(loincPartNum, rt);
