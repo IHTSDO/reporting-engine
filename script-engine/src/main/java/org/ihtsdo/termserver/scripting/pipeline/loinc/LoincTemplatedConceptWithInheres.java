@@ -41,7 +41,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
-		Concept inheresIn = gl.getConcept("704319004 |Inheres in (attribute)|");
+		Concept componentAttribType = typeMap.get("COMPONENT");
 		
 		//We can't yet deal with "given"
 		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
@@ -53,20 +53,23 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			return attributes;
 		}
 
-		if (!CompNumPnIsSafe(loincNum)) {
+		if (CompNumPnIsSafe(loincNum)) {
+			//Use COMPNUM_PN LOINC Part map to model SCT Component
+			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+		} else {
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
+					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 				}
 				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
 			}
 			
 			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 			}
 			
 			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, inheresIn);
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 			}
 		}
 
