@@ -859,10 +859,16 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 
 	protected Description addDescription(Task t, Concept c, Description d) throws TermServerScriptException {
+		return addDescription(t, c, d, true);
+	}
+
+	protected Description addDescription(Task t, Concept c, Description d, boolean alertIfAlreadyPresent) throws TermServerScriptException {
 		Description reuseMe = c.findTerm(d.getTerm());
 		if (reuseMe != null) {
 			if (reuseMe.isActive()) {
-				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + reuseMe);
+				if (alertIfAlreadyPresent) {
+					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + reuseMe);
+				}
 			} else {
 				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + reuseMe);
 				reuseMe.setActive(true);
