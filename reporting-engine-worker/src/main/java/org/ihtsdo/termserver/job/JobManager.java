@@ -28,9 +28,9 @@ public class JobManager {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JobManager.class);
 
-	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
-	Map<String, JobType> knownJobTypes = new HashMap<>();
-	Map<String, Integer> expectedDurations = new HashMap<>();
+	private Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
+	private Map<String, JobType> knownJobTypes = new HashMap<>();
+	private Map<String, Integer> expectedDurations = new HashMap<>();
 	
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
@@ -174,22 +174,22 @@ public class JobManager {
 		return true;
 	}
 
-	private void transmitMetadata() {
+	public JobMetadata getMetadata() {
 		for (Map.Entry<String, Class<? extends JobClass>> knownJobClass : knownJobs.entrySet()) {
 			try {
 				Job thisJob = constructJob(knownJobClass.getValue());
-				
+
 				//Some jobs shouldn't see the light of day.
 				//TODO Make this code environment aware so it allows testing status in Dev and UAT
 				if (thisJob.getProductionStatus() == null) {
 					TermServerScript.info(thisJob.getName() + " does not indicate its production status.  Skipping");
 					continue;
 				}
-				
+
 				if (thisJob.getProductionStatus().equals(Job.ProductionStatus.HIDEME)) {
 					continue;
 				}
-				
+
 				JobType indicatedType = thisJob.getCategory().getType();
 				if (indicatedType == null) {
 					indicatedType = new JobType(JobType.REPORT);
@@ -220,7 +220,11 @@ public class JobManager {
 		}
 		JobMetadata metadata = new JobMetadata();
 		metadata.setJobTypes(new ArrayList<>(knownJobTypes.values()));
-		transmitter.send(metadata);
+		return metadata;
+	}
+
+	private void transmitMetadata() {
+		transmitter.send(getMetadata());
 	}
 	
 }
