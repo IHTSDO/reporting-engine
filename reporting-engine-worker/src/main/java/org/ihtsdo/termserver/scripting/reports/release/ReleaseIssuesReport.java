@@ -108,6 +108,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	private List<String> expectedExtensionModules = null;
 
+	private static final int MAX_DESC_LENGTH = 255;
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
@@ -284,6 +286,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 		
 		LOGGER.info("...description rules");
+		maxLengthCheck();
 		fullStopInSynonym();
 		missingFSN_PT();
 		unexpectedCharacters();
@@ -596,6 +599,31 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						if (reported) {
 							// TODO: Should report Legacy and Fresh issues separately.
 							incrementSummaryInformation("Fresh Issues Reported");
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void maxLengthCheck() throws TermServerScriptException {
+		String issueStr = "Synonym exceeds " + MAX_DESC_LENGTH + " characters";
+		initialiseSummary(issueStr);
+		for (Concept c : allConceptsSorted) {
+			if (whiteListedConceptIds.contains(c.getId())) {
+				continue;
+			}
+			//Only look at concepts that have been in some way edited in this release cycle
+			//Unless we're interested in legacy issues
+			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+						continue;
+					}
+
+					if (inScope(d)) {
+						if (d.getTerm().length() > MAX_DESC_LENGTH) {
+							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
 						}
 					}
 				}
