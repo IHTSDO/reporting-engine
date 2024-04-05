@@ -118,10 +118,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
 		switch (loincDetail.getPartName()) {
-			/*case "Ratio" :
-			case "MRto" :
+			case "NFr" :
+			case "MFr" :
+			case "CFr" :
+			case "AFr" :
 			case "VFr" :
-			case "NFr" : return LoincTemplatedConceptWithRelative.create(loincNum);*/
+			case "SFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
 			case "ACnc" :
 			case "Angle" :
 			case "CCnc" :
