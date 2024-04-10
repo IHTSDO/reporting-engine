@@ -36,6 +36,9 @@ public class ApplicationProperties extends StandAloneResourceConfig {
     @Value("${versioned-content.cloud.bucketName}")
     private String versionedContentTargetCloudBucketName;
 
+    @Value("${versioned-content.cloud.path}")
+    private String versionedContentTargetCloudPath;
+
     public static ApplicationProperties from(ApplicationProperties applicationProperties) {
         ApplicationProperties clone = new ApplicationProperties();
         clone.versionedContentSourceReadOnly = applicationProperties.versionedContentSourceReadOnly;
@@ -47,6 +50,7 @@ public class ApplicationProperties extends StandAloneResourceConfig {
         clone.versionedContentTargetUseCloud = applicationProperties.versionedContentTargetUseCloud;
         clone.versionedContentTargetLocalPath = applicationProperties.versionedContentTargetLocalPath;
         clone.versionedContentTargetCloudBucketName = applicationProperties.versionedContentTargetCloudBucketName;
+        clone.versionedContentTargetCloudPath = applicationProperties.versionedContentTargetCloudPath;
 
         return clone;
     }
@@ -92,5 +96,8 @@ public class ApplicationProperties extends StandAloneResourceConfig {
 
     public String getVersionedContentTargetCloudBucketName() {
         return versionedContentTargetCloudBucketName;
+    }
+    public String getVersionedContentTargetCloudPath() {
+        return versionedContentTargetCloudPath;
     }
 }
