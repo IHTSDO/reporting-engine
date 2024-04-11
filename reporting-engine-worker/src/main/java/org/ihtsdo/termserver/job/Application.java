@@ -3,8 +3,6 @@ package org.ihtsdo.termserver.job;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
-
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.ihtsdo.termserver.job.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -21,12 +19,14 @@ import org.springframework.jms.support.converter.MessageType;
 
 import java.util.TimeZone;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
-@ComponentScan(basePackages = {"org.ihtsdo.termserver.job", "org.ihtsdo.termserver.scripting", "org.snomed.otf.scheduler.domain"})
+@ComponentScan(basePackages = {
+		"org.ihtsdo.termserver.job",
+		"org.ihtsdo.termserver.scripting",
+		"org.snomed.otf.scheduler.domain",
+		"org.snomed.otf.script.dao"
+})
 @EnableJms
 public class Application  {
 
