@@ -1,11 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.managedService;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -14,24 +14,18 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.apache.commons.lang.StringUtils;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class UntranslatedConcepts extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(UntranslatedConcepts.class);
-
 	private String intEffectiveTime;
 	boolean includeLegacyIssues = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<<404684003 |Clinical finding (finding)|");
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
-		TermServerReport.run(UntranslatedConcepts.class, args, params);
+		TermServerScript.run(UntranslatedConcepts.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
@@ -41,7 +35,8 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 			throw new TermServerScriptException("Untranslated Concepts report cannot be run against MAIN");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		
 		if (project.getMetadata() != null && project.getMetadata().getDependencyRelease() != null) {
@@ -51,7 +46,8 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		}
 		
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Concept Effective Time"};
+			"Id, FSN, SemTag, Concept Effective Time, English Preferred Term (acceptability), Case Significance"};
+
 		String[] tabNames = new String[] {	
 				"Untranslated Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
@@ -77,18 +73,34 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest;
+
 		if (subsetECL != null && !subsetECL.isEmpty()) {
 			conceptsOfInterest = findConcepts(subsetECL);
 		} else {
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
-		for (Concept c : scopeAndSort(conceptsOfInterest)) {
-			report(c, c.getEffectiveTime());
-			countIssue(c);
+		for (Concept concept : scopeAndSort(conceptsOfInterest)) {
+			StringBuilder englishPreferredTerm = new StringBuilder();
+			StringBuilder caseSignificance = new StringBuilder();
+            List<Description> descriptions = concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+
+			for(Description description : descriptions) {
+				if (!caseSignificance.isEmpty()) {
+					englishPreferredTerm.append("\n");
+					caseSignificance.append("\n");
+				}
+
+				englishPreferredTerm.append(description.getTerm());
+				caseSignificance.append(SnomedUtils.translateCaseSignificanceFromEnum(description.getCaseSignificance()));
+			}
+
+			report(concept, concept.getEffectiveTime(), englishPreferredTerm, caseSignificance);
+			countIssue(concept);
 		}
 	}
 	
@@ -108,8 +120,8 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 
 	private String getTranslations(Concept c) {
 		return c.getDescriptions(ActiveState.ACTIVE).stream()
-			.filter(d -> inScope(d))
-			.map(d -> d.getTerm())
+			.filter(this::inScope)
+			.map(Description::getTerm)
 			.collect(Collectors.joining(", \n"));
 	}
 
@@ -117,8 +129,8 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		//We're going to sort on top level hierarchy, then alphabetically
 		//filter for appropriate scope at the same time - avoids problems with FSNs without semtags
 		return superSet.stream()
-		.filter (c -> inScope(c))
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-		.collect(Collectors.toList());
+			.filter (this::inScope)
+			.sorted(SnomedUtils::compareSemTagFSN)
+			.toList();
 	}
 }
