@@ -19,7 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -64,6 +67,9 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
     private String currentMonthsXmlFileName;
     private String lastMonthsXmlFileName;
 
+    @Autowired
+    GmdnSFTPClient gmdnSFTPClient;
+
     private record GmdnAnalysis(List<Element> newActiveNodes, List<Element> obsoleteNodes, List<Element> modifiedNodes,
                                 List<String> oldTerms) {
     }
@@ -79,6 +85,18 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
         LOGGER.info("Initialising {}", REPORT_NAME);
         ReportSheetManager.targetFolderId = REPORT_FOLDER_ID;
         currentMonthName = DateUtils.getCurrentMonthName();
+
+        //Are we running in a Spring context?
+        ApplicationContext appContext = this.getApplicationContext();
+
+        if (appContext == null) {
+            //No, we're running standalone, create a new instance
+            LOGGER.info("No Spring context available, creating new GmdnSFTPClient");
+            gmdnSFTPClient = new GmdnSFTPClient();
+        } else {
+            LOGGER.info("Running as Spring, creating new GmdnSFTPClient");
+            gmdnSFTPClient = appContext.getBean(GmdnSFTPClient.class);
+        }
 
         LocalDate now = LocalDate.now();
         LocalDate lastMonth = now.minusMonths(1);
@@ -163,7 +181,6 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
             report(TAB_STATUS, LocalDateTime.now().format(TIME_FORMATTER), "Zip files already exist, not downloading again.", CELL_OK);
         } else {
             try {
-                GmdnSFTPClient gmdnSFTPClient = new GmdnSFTPClient();
                 gmdnSFTPClient.downloadGmdnFiles(lastMonthsZipFileName, currentMonthsZipFileName);
             } catch (GmdnException e) {
                 report(TAB_STATUS, LocalDateTime.now().format(TIME_FORMATTER), "Download of " + lastMonthsZipFileName + " Failed", CELL_ERROR);
