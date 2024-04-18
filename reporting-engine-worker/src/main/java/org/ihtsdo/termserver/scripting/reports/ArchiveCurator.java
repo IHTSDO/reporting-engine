@@ -129,7 +129,7 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
 
     private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
         LOGGER.info("Attempting to read from target bucket.");
-        Set<String> strings = resourceManagerTarget.listFilenamesBySuffix(".zip");
+        Set<String> strings = resourceManagerTarget.listFilenames();
         LOGGER.info("targetBucket size: {}", strings.size());
         Set<CodeSystemTuple> tuples = getTuples();
         LOGGER.info("Found {} tuples.", tuples.size());
