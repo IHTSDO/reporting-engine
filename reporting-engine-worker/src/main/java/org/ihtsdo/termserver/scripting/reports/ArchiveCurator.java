@@ -129,7 +129,7 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
 
     private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
         LOGGER.info("Attempting to read from target bucket.");
-        Set<String> strings = resourceManagerTarget.listFilenames();
+        Set<String> strings = resourceManagerTarget.listFilenamesBySuffix(".zip");
         LOGGER.info("targetBucket size: {}", strings.size());
         Set<CodeSystemTuple> tuples = getTuples();
         LOGGER.info("Found {} tuples.", tuples.size());
@@ -404,7 +404,7 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
 
             return output;
         } catch (Exception e) {
-            logger.info("Using fallback as count as {} cannot be converted to integer.", input);
+            LOGGER.info("Using fallback as count as {} cannot be converted to integer.", input);
             return fallback;
         }
     }
