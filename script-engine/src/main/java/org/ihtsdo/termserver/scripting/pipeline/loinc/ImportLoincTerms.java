@@ -318,9 +318,10 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		String proposedSCG = proposedLoincConcept == null ? "N/A" : proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedLoincConcept);
 		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(existingConcept);
-		report(getTab(TAB_PROPOSED_MODEL_COMPARISON), 
+		String existingConceptId = existingConcept == null ? "N/A" : existingConcept.getId();
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
 				loincNum, 
-				proposedLoincConcept != null ? proposedLoincConcept.getId() : existingConcept.getId(),
+				proposedLoincConcept != null ? proposedLoincConcept.getId() : existingConceptId,
 				previousIterationIndicator,
 				loincTemplatedConcept == null ? "N/A" : loincTemplatedConcept.getClass().getSimpleName(),
 				differencesStr,
