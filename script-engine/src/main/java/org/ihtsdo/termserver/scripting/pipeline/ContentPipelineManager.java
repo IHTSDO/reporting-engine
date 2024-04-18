@@ -37,6 +37,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			runStandAlone = false;
 			getGraphLoader().setExcludedModules(new HashSet<>());
 			getArchiveManager().setRunIntegrityChecks(false);
+			getArchiveManager().setPopulateReleasedFlag(true);  //Needed for working out if we're deleteing or inactivating
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
@@ -222,16 +223,21 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		inactivatingCodes.removeAll(successfullyModelled.stream().map(m -> m.getExternalIdentifier()).collect(Collectors.toSet()));
 		for (String inactivatingCode : inactivatingCodes) {
 			String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
-			Concept existingConcept = gl.getConcept(existingConceptSCTID);
-			List<String> differencesList = inactivateConcept(existingConcept);
-			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
+			Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
+			String differencesListStr = "Concept already removed";
+			if (existingConcept != null) {
+				List<String> differencesList = inactivateConcept(existingConcept);
+				differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
+			}
 			doProposedModelComparison(inactivatingCode, null, existingConcept, "Removed", differencesListStr);
 		
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 			//So - temporarily again - we'll normalize the scheme id
 			//Temporarily correct all Alternate Identifiers
-			existingConcept.setAlternateIdentifiers(new HashSet<>());
-			existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
+			if (existingConcept != null) {
+				existingConcept.setAlternateIdentifiers(new HashSet<>());
+				existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
+			}
 		}
 		return changeSet;
 	}
