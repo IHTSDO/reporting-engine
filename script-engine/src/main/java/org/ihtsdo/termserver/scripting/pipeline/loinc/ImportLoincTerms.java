@@ -44,7 +44,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_MAP_ME,
 			TAB_IMPORT_STATUS,
-			TAB_IOI };
+			TAB_IOI,
+			TAB_STATS};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		new ImportLoincTerms().ingestExternalContent(args);
@@ -64,7 +65,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
 				"PartNum, PartName, PartType, PriorityIndex, Usage Count, Top Priority Usage, ",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
-				"Category, LoincNum, Detail, , , "
+				"Category, LoincNum, Detail, , , ",
+				"Property, Included, Excluded, Excluded in Top 20K"
 		};
 
 		super.postInit(tabNames, columnHeadings, false);

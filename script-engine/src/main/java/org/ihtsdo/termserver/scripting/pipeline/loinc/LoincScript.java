@@ -2,12 +2,14 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 
@@ -241,6 +243,33 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 					loincPart.getPartTypeName(),
 					totalPriority,
 					loincTerms.size());
+		}
+	}
+
+	protected void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+		Set<String> successfullyModelledLoincNums = successfullyModelled.stream()
+				.map(tc -> tc.getExternalIdentifier())
+				.collect(Collectors.toSet());
+
+		Map<String, List<LoincTerm>> included = loincNumToLoincTermMap.values().stream()
+				.filter(lt -> successfullyModelledLoincNums.contains(lt.getLoincNum()))
+				.collect(Collectors.groupingBy(LoincTerm::getProperty));
+
+		//Sort remaining Loinc Terms by Property
+		Map<String, List<LoincTerm>> excluded = loincNumToLoincTermMap.values().stream()
+				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getLoincNum()))
+				.collect(Collectors.groupingBy(LoincTerm::getProperty));
+
+		Map<String, List<LoincTerm>> excludedInTop20K = loincNumToLoincTermMap.values().stream()
+				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getLoincNum()))
+				.filter(lt -> lt.getCommonTestRank() != null && !lt.getCommonTestRank().equals("0"))
+				.collect(Collectors.groupingBy(LoincTerm::getProperty));
+
+		for (Map.Entry<String, List<LoincTerm>> entry : excluded.entrySet()) {
+			int includedCount = included.getOrDefault(entry.getKey(), new ArrayList<>()).size();
+			int excludedCount = entry.getValue().size();
+			int excludedInTop20KCount = excludedInTop20K.getOrDefault(entry.getKey(), new ArrayList<>()).size();
+			report(tabIdx, entry.getKey(), includedCount, excludedCount, excludedInTop20KCount);
 		}
 	}
 
