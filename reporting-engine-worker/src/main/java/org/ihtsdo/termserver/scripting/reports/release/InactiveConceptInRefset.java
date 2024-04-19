@@ -54,6 +54,11 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		getArchiveManager().setPopulateReleasedFlag(true);
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		super.init(run);
+
+		//Doesn't make sense to include the last release if we're also working with unpromoted changes
+		if (unpromotedChangesOnly && getJobRun().getParameters().getMandatoryBoolean(INCLUDE_LAST_RELEASE)) {
+			throw new TermServerScriptException("Cannot include last release when also working with unpromoted changes");
+		}
 	}
 
 	public void postInit() throws TermServerScriptException {
@@ -101,6 +106,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		JobParameters params = new JobParameters()
 				.add(INCLUDE_LAST_RELEASE).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
 				.add(EXT_REF_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
+				.add(UNPROMOTED_CHANGES_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
@@ -110,8 +116,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				" Warning: because this report involves inactive concepts, it cannot use ECL and therefore takes ~40 minutes to run.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
-				.withTag(INT)
-				.withTag(MS)
+				.withTag(INT).withTag(MS)
 				.withExpectedDuration(40)
 				.build();
 	}
@@ -125,6 +130,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			inactivatedConcepts = gl.getAllConcepts().stream()
 					.filter(c -> !c.isActive())
 					.filter(c -> inScope(c))
+					.filter(c -> (!unpromotedChangesOnly || unpromotedChangesHelper.hasUnpromotedChange(c)))
 					.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
 					.collect(Collectors.toList());
 		} else {

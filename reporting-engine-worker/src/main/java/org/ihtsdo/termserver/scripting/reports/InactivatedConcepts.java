@@ -24,10 +24,11 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 
 	static final String RELEASE = "Release Package";
 	static final String SEMTAG_FILTER_PARAM = "Filter for SemTag";
+
 	private String prevRelease;
 	private String thisEffectiveTime;
 	private String semtagFilter;
-	
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
@@ -38,7 +39,13 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		semtagFilter = run.getParamValue(SEMTAG_FILTER_PARAM);
+		//Unpromoted changes only is picked up by the TermServerReport parent class as part of init
 		super.init(run);
+
+		//Running unpromoted changes only can't work with a release archive
+		if (unpromotedChangesOnly && !StringUtils.isEmpty(run.getParamValue(RELEASE))) {
+			throw new TermServerScriptException("Unpromoted changes only is not supported for use with a release package");
+		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -53,6 +60,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(SEMTAG_FILTER_PARAM).withType(Type.STRING)
+				.add(UNPROMOTED_CHANGES_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
 				.add(RELEASE).withType(Type.RELEASE_ARCHIVE)
 				.build();
 		return new Job()
@@ -88,12 +96,12 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 		//We want inactive concepts modified either in the current release cycle or in the 
 		//latest release if we're looking at a particular release package
 		//Optionally for a specific semantic tag
+		//Also optionally, unpromoted changes only
 		return !c.isActive() 
 				&& hasRequiredSemTag(c)
-				&& ( 
-					(thisEffectiveTime == null && StringUtils.isEmpty(c.getEffectiveTime()) ||
-					(thisEffectiveTime != null && thisEffectiveTime.equals(c.getEffectiveTime())))
-				);
+				&& ((thisEffectiveTime == null && StringUtils.isEmpty(c.getEffectiveTime()) ||
+					(thisEffectiveTime != null && thisEffectiveTime.equals(c.getEffectiveTime()))))
+				&& (!unpromotedChangesOnly || unpromotedChangesHelper.hasUnpromotedChange(c));
 	}
 	
 	private boolean hasRequiredSemTag(Concept c) {
@@ -125,8 +133,8 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 		//filter for appropriate scope at the same time - avoids problems with FSNs without semtags
 		return superSet.stream()
 		.filter (c -> inScope(c))
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-		.collect(Collectors.toList());
+		.sorted(SnomedUtils::compareSemTagFSN)
+		.toList();
 	}
 	
 }
