@@ -41,8 +41,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
-			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
-			//getReportManager().disableTab(getTab(TAB_MAP_ME));
+			getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
+			getReportManager().disableTab(getTab(TAB_MAP_ME));
 			getReportManager().disableTab(getTab(TAB_IOI));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null, this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
@@ -51,6 +51,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Set<TemplatedConcept> successfullyModelled = doModeling();
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
 			reportMissingMappings(getTab(TAB_MAP_ME));
+			reportExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
 			flushFiles(false);
 			switch (runMode) {
 				case NEW: outputAllConceptsToDelta(successfullyModelled);
@@ -78,6 +79,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected abstract void reportMissingMappings(int tabIdx) throws TermServerScriptException;
+
+	protected abstract void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException;
 
 	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {

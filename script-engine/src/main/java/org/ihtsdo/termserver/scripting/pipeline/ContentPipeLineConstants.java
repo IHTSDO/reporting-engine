@@ -9,4 +9,5 @@ public interface ContentPipeLineConstants {
 	public final String TAB_MAP_ME = "Map Me!";
 	public final String TAB_IMPORT_STATUS = "Import Status";
 	public final String TAB_IOI = "Items of Interest";
+	public final String TAB_STATS = "Property Stats";
 }
