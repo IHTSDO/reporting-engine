@@ -32,9 +32,9 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.RELEASE_ARCHIVE).withOptions(INT)
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.RELEASE_ARCHIVE).withOptions(INT)
+				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
 
