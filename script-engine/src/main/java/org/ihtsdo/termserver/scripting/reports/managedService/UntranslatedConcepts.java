@@ -46,7 +46,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		}
 		
 		String[] columnHeadings = new String[] {
-			"Id, FSN, SemTag, Concept Effective Time, English Preferred Term (acceptability), Case Significance"};
+			"Id, FSN, SemTag, Concept Effective Time, English Preferred Term, Case Significance"};
 
 		String[] tabNames = new String[] {	
 				"Untranslated Concepts"};
