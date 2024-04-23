@@ -21,6 +21,7 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.Script;
 
 public class GraphLoader implements ScriptConstants {
 
@@ -1377,21 +1378,20 @@ public class GraphLoader implements ScriptConstants {
 	}
 
 	private void populateAllComponents() {
-		System.out.println("Populating maps of all components...");
+		Script.print("Populating maps of all components.");
 		allComponents = new HashMap<String, Component>();
 		componentOwnerMap = new HashMap<Component, Concept>();
+		int tenPercent = getAllConcepts().size()/10;
+		int conceptsProcessed = 0;
 		
 		for (Concept c : getAllConcepts()) {
-			
-			/*if (c.getId().equals("128559007")) {
-				TermServerScript.debug("here");
-			}*/
+			if (++conceptsProcessed % tenPercent == 0) {
+				Script.print(".");
+			}
+
 			allComponents.put(c.getId(), c);
 			componentOwnerMap.put(c,  c);
 			for (Description d : c.getDescriptions()) {
-				/*if (d.getId().equals("5169695010")) {
-					TermServerScript.debug("Debug here\n");
-				}*/
 				populateDescriptionComponents(c, d);
 			}
 			
@@ -1408,17 +1408,16 @@ public class GraphLoader implements ScriptConstants {
 				//Have we historically swapped ID from stated to inferred
 				if (allComponents.containsKey(r.getRelationshipId())) {
 					if (r.isActive()) {
-						System.out.println("All Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
+						Script.print("\nAll Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
 						allComponents.put(r.getRelationshipId(), r);
 					} else if (allComponents.get(r.getRelationshipId()).isActive()) {
-						System.out.println("Ignoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
+						Script.print("\nIgnoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
 					} else {
-						System.out.println("Two inactive components share the same id of " + r.getId() + ": " + r + " and " + allComponents.get(r.getId()));
+						Script.print("\nTwo inactive components share the same id of " + r.getId() + ": " + r + " and " + allComponents.get(r.getId()));
 					}
 				} else {
 					allComponents.put(r.getRelationshipId(), r);
 				}
-				
 				componentOwnerMap.put(r,  c);
 			}
 
@@ -1437,7 +1436,7 @@ public class GraphLoader implements ScriptConstants {
 				componentOwnerMap.put(a, c);
 			}
 		}
-		System.out.print("Component owner map complete with " + componentOwnerMap.size() + " entries.\n");
+		Script.println("\nComponent owner map complete with " + componentOwnerMap.size() + " entries.");
 	}
 
 	private void populateDescriptionComponents(Concept c, Description d) {
