@@ -111,6 +111,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
+					.map(String::trim)
 					.collect(Collectors.toList());
 		}
 		
