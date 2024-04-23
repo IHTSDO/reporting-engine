@@ -117,6 +117,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
+					.map(String::trim)
 					.collect(Collectors.toList());
 		}
 		
