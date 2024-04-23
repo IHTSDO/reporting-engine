@@ -393,7 +393,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		//Do we have Stated Relationships that need to be converted to axioms?
 		//We'll try merging those with any existing axioms.
-		if (hasDirtyNotFromAxiomRelationships(c) || hasDirtyAxiom(c)) {
+		if (hasDirtyNotFromAxiomRelationships(c)) {
+			//In the case of eg reasserting an inactive axiom, we don't want to merge axioms
 			convertStatedRelationshipsToAxioms(c, true);
 			for (AxiomEntry a : AxiomUtils.convertClassAxiomsToAxiomEntries(c)) {
 				a.setModuleId(targetModuleId);
