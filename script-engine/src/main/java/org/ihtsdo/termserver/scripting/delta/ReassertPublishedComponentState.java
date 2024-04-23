@@ -23,8 +23,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedComponentState.class);
 
 	String[] componentsToProcess = new String[] {
-			"711938022",
-			"711939025"};
+			"60dc7be3-717c-5259-fb3a-37c244962595"};
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ReassertPublishedComponentState delta = new ReassertPublishedComponentState();
