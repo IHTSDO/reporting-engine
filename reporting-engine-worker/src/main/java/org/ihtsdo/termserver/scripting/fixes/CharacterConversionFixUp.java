@@ -51,7 +51,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(CHARACTER_CONVERSION).withType(JobParameter.Type.DROPDOWN)
-					.withValues(KnownCharacterConversions.ß_TO_SS.name(), "TBC").withDefaultValue(KnownCharacterConversions.ß_TO_SS.name()).withMandatory()
+					.withOptions(KnownCharacterConversions.ß_TO_SS.name()).withDefaultValue(KnownCharacterConversions.ß_TO_SS.name()).withMandatory()
 				.add(DRY_RUN).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
 				.build();
 		return new Job()
@@ -59,7 +59,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 				.withName("Character Conversion Fix-up")
 				.withDescription("This report creates a single task which replaces descriptions containing the selected ")
 				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withTag(MS)
+				.withTag(MS).withTag(INT)
 				.withParameters(params)
 				.build();
 	}
