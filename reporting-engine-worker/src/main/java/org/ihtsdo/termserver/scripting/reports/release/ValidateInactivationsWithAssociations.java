@@ -164,7 +164,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
-						case SCTID_INACT_COMPONENT_MEANING_UNKNOWN :
+						case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN:
 							associationsWithCardinality.add(new AssociationCardinality("0..0", null, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;

@@ -654,7 +654,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case SCTID_INACT_PENDING_MOVE : return InactivationIndicator.PENDING_MOVE;
 			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT : return InactivationIndicator.NOT_SEMANTICALLY_EQUIVALENT;
-			case SCTID_INACT_COMPONENT_MEANING_UNKNOWN : return InactivationIndicator.COMPONENT_MEANING_UNKNOWN;
+			case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN: return InactivationIndicator.MEANING_OF_COMPONENT_UNKNOWN;
 			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
 			case SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR : return InactivationIndicator.GRAMMATICAL_DESCRIPTION_ERROR;
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
@@ -674,7 +674,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			case PENDING_MOVE : return SCTID_INACT_PENDING_MOVE;
 			case NONCONFORMANCE_TO_EDITORIAL_POLICY : return SCTID_INACT_NON_CONFORMANCE;
 			case NOT_SEMANTICALLY_EQUIVALENT : return SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT;
-			case COMPONENT_MEANING_UNKNOWN : return SCTID_INACT_COMPONENT_MEANING_UNKNOWN;
+			case MEANING_OF_COMPONENT_UNKNOWN: return SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN;
 			case CLASSIFICATION_DERIVED_COMPONENT : return SCTID_INACT_CLASS_DERIVED_COMPONENT;
 			case GRAMMATICAL_DESCRIPTION_ERROR : return SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR;
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator  " + ii.toString());
