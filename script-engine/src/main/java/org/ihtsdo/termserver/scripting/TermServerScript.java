@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.CharMatcher;
@@ -208,7 +207,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				if (!getInputFile().canRead()) {
 					throw new TermServerScriptException ("Unable to read input file: " + thisFile);
 				}
-				info ("Reading data (fileIdx " + fileIdx + ") from " + thisFile.getAbsolutePath());
+				LOGGER.info("Reading data (fileIdx " + fileIdx + ") from " + thisFile.getAbsolutePath());
 			} else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
@@ -227,7 +226,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	private void init() throws TermServerScriptException {
 		if (restartPosition == 0) {
-			info ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
+			LOGGER.info("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
 			restartPosition = 1;
 		}
 		
@@ -249,17 +248,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					project.setKey(projectName.substring(projectName.lastIndexOf("/")));
 				}
 			} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
-				info ("Loading release: " + projectName); 
+				LOGGER.info("Loading release: " + projectName); 
 				loadingRelease = true;
 				project.setKey(projectName);
 			} else {
 				if (runStandAlone) {
-					info ("Running stand alone. Guessing project path to be MAIN/" + projectName);
+					LOGGER.info("Running stand alone. Guessing project path to be MAIN/" + projectName);
 					project.setBranchPath("MAIN/" + projectName);
 				} else {
 					try {
 						project = scaClient.getProject(projectName);
-						info ("Recovered project " + project.getKey() + " with branch path: " + project.getBranchPath());
+						LOGGER.info("Recovered project " + project.getKey() + " with branch path: " + project.getBranchPath());
 					} catch (RestClientException e) {
 						throw new TermServerScriptException("Unable to recover project: " + projectName,e);
 					}
@@ -267,7 +266,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				project.setKey(projectName);
 			}
 		} else {
-			warn("Project already set as " + project);
+			LOGGER.warn("Project already set as " + project);
 		}
 		
 		if (taskKey != null) {
@@ -292,12 +291,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (headlessEnvironment != null) {
 			envChoice = headlessEnvironment;
 		} else {
-			info ("Select an environment ");
+			println("Select an environment ");
 			for (int i=0; i < environments.length; i++) {
-				println ("  " + i + ": " + environments[i]);
+				println("  " + i + ": " + environments[i]);
 			}
 			
-			print ("Choice: ");
+			print("Choice: ");
 			String choice = STDIN.nextLine().trim();
 			envChoice = Integer.parseInt(choice);
 		}
@@ -322,7 +321,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (headlessEnvironment == null) {
-			print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
+			print("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
 			String response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				projectName = response;
@@ -332,7 +331,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 		
 			if (restartPosition != NOT_SET) {
-				print ("Restarting from position [" +restartPosition + "]: ");
+				print("Restarting from position [" +restartPosition + "]: ");
 				response = STDIN.nextLine().trim();
 				if (!response.isEmpty()) {
 					restartPosition = Integer.parseInt(response);
@@ -353,7 +352,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			projectName = jobRun.getProject();
 		} else if ((jobRun == null && projectName == null) || 
 				(jobRun != null && StringUtils.isEmpty(jobRun.getProject()))) {
-			warn("No project specified, running against MAIN");
+			LOGGER.warn("No project specified, running against MAIN");
 			projectName = "MAIN";
 		}
 		
@@ -420,7 +419,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 		}
 		
-		info ("Init Complete. Project Key determined: " + project.getKey() + " on " + project.getBranchPath());
+		LOGGER.info("Init Complete. Project Key determined: " + project.getKey() + " on " + project.getBranchPath());
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -466,8 +465,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public void instantiate(JobRun jobRun, ApplicationContext appContext) {
 		try {
-			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
-			debug ("Application context has " + (appContext == null?"not " : "") + "been supplied");
+			LOGGER.debug("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
+			LOGGER.debug("Application context has " + (appContext == null?"not " : "") + "been supplied");
 			this.appContext = appContext;
 			this.jobRun = jobRun;
 
@@ -489,7 +488,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			String msg = "Failed to complete " + jobRun.getJobName() + ExceptionUtils.getExceptionCause("", e);
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
-			error(msg, e);
+			LOGGER.error(msg, e);
 		} finally {
 			try {
 				if (finalWords.size() > 0) {
@@ -518,12 +517,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					jobRun.setIssuesReported(issueCount);
 				}
 			} catch (Exception e2) {
-				error("Failed to set result URL in final block", e2);
+				LOGGER.error("Failed to set result URL in final block", e2);
 			}
 			
 			//Are we still writing our snapshot to disk?  Don't move on to anything else while we are
 			while (asyncSnapshotCacheInProgress) {
-				warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
+				LOGGER.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
 				try {
 					Thread.sleep(5 * 1000);
 				} catch (InterruptedException e) {
@@ -634,7 +633,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
 			if (runStandAlone) {
-				debug ("Loading: " + gl.getConcept(sctid) + " from local store");
+				LOGGER.debug("Loading: " + gl.getConcept(sctid) + " from local store");
 				return gl.getConcept(sctid).cloneWithIds();
 			}
 		}
@@ -655,7 +654,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
 			if (runStandAlone) {
-				debug ("Loading: " + gl.getDescription(sctId) + " from local store");
+				LOGGER.debug("Loading: " + gl.getDescription(sctId) + " from local store");
 				return gl.getDescription(sctId).clone(null, true);
 			}
 		}
@@ -665,7 +664,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
 				|| e.getMessage().contains("404 Not Found")
 				|| e.getMessage().contains("NOT_FOUND")) {
-				debug ("Unable to find description " + sctId + " on branch " + branchPath);
+				LOGGER.debug("Unable to find description " + sctId + " on branch " + branchPath);
 				return null;
 			}
 			e.printStackTrace();
@@ -697,7 +696,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected Concept loadConcept(TermServerClient client, String sctId, String branchPath) throws TermServerScriptException {
 		Concept concept =  gl.getConcept(sctId);
 		try {
-			debug ("Loading: " + concept + " from TS branch " + branchPath);
+			LOGGER.debug("Loading: " + concept + " from TS branch " + branchPath);
 			Concept loadedConcept = client.getConcept(sctId, branchPath);
 			loadedConcept.setLoaded(true);
 			convertAxiomsToRelationships(loadedConcept, loadedConcept.getClassAxioms());
@@ -707,7 +706,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
 					|| e.getMessage().contains("404 Not Found")
 					|| e.getMessage().contains("NOT_FOUND")) {
-				debug ("Unable to find " + concept + " on branch " + branchPath);
+				LOGGER.debug("Unable to find " + concept + " on branch " + branchPath);
 				return null;
 			}
 			e.printStackTrace();
@@ -721,12 +720,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected RefsetMember loadRefsetMember(String uuid, String branch) throws TermServerScriptException {
-		debug ("Loading refset member " + uuid + " from " +branch);
+		LOGGER.debug("Loading refset member " + uuid + " from " + branch);
 		return tsClient.getRefsetMember(uuid, branch);
 	}
 	
 	protected LangRefsetEntry loadLangRefsetMember(String uuid, String branch) throws TermServerScriptException {
-		debug ("Loading refset member " + uuid + " from " +branch);
+		LOGGER.debug("Loading refset member " + uuid + " from " + branch);
 		return tsClient.getLangRefsetMember(uuid, branch);
 	}
 	
@@ -735,12 +734,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			String previousBranchPath = getArchiveManager(true).getPreviousBranch(project);
 			project.setPreviousBranchPath(previousBranchPath);
 		}
-		debug ("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
+		LOGGER.debug("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
 		return tsClient.getRefsetMember(uuid, project.getPreviousBranchPath());
 	}
 	
 	protected RefsetMember updateRefsetMember(RefsetMember rm) throws TermServerScriptException {
-		debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getId());
+		LOGGER.debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getId());
 		if (dryRun) {
 			return rm;
 		} else {
@@ -780,14 +779,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					validateConcept(t, c);
 				}
 				
-				debug ("Updating state of " + c + (info == null?"":info));
+				LOGGER.debug("Updating state of " + c + (info == null?"":info));
 				return tsClient.updateConcept(c, t.getBranchPath());
 			} catch (ValidationFailure e) {
 				throw e;
 			} catch (Exception e) {
 				String excpStr =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 				String msg = "Failed to update " + c + " in TS due to " + excpStr;
-				error (msg + " JSON = " + gson.toJson(c), e);
+				LOGGER.error(msg + " JSON = " + gson.toJson(c), e);
 				throw new TermServerScriptException(msg,e); 
 			}
 		} 
@@ -796,7 +795,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
 		//We need to populate new components with UUIDs for validation
 		Concept uuidClone = c.cloneWithUUIDs();
-		debug("Validating " + c);
+		LOGGER.debug("Validating " + c);
 		
 		//We should not be modifying any stated relationships
 		if (!expectStatedRelationshipInactivations) {
@@ -809,10 +808,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
-			debug("Validation clear: " + c);
+			LOGGER.debug("Validation clear: " + c);
 		} else {
 			Set<String> warningsReported = new HashSet<>();
-			debug("Validation issues: " + validations.length);
+			LOGGER.debug("Validation issues: " + validations.length);
 			for (DroolsResponse response : validations) {
 				if (response.getSeverity().equals(DroolsResponse.Severity.ERROR)) {
 					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage());
@@ -882,7 +881,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				String msg = "Failed to create " + c + " in TS due to " + getMessage(e);
 				if (attempt <= 2) {
 					incrementSummaryInformation("Concepts creation exceptions");
-					warn (msg + " retrying...");
+					LOGGER.warn(msg + " retrying...");
 					try {
 						Thread.sleep(5 * 1000);
 					} catch(InterruptedException ie) {}
@@ -894,7 +893,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	private Concept attemptConceptCreation(Task t, Concept c, String info, boolean validate) throws Exception {
-		debug ((dryRun ?"Dry run creating ":"Creating ") + (c.getConceptType() != null ?c.getConceptType() + " ":"") + c + info);
+		LOGGER.debug((dryRun ?"Dry run creating ":"Creating ") + (c.getConceptType() != null ?c.getConceptType() + " ":"") + c + info);
 		convertStatedRelationshipsToAxioms(c, false);
 		if (!dryRun) {
 			if (validate) {
@@ -969,7 +968,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				//Don't add an inactive relationship to an active axiom
 				if (thisAxiom.isActive() != rel.isActive()) {
 					if (!rel.isActive()) {
-						warn("Skipping axiomification of " + rel + " due to active axiom");
+						LOGGER.warn("Skipping axiomification of " + rel + " due to active axiom");
 					} else {
 						throw new IllegalStateException ("Active stated conflict between " + rel + " and " + thisAxiom);
 					}
@@ -1031,7 +1030,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		try {
-			debug ((dryRun ?"Dry run deleting ":"Deleting ") + c );
+			LOGGER.debug((dryRun ?"Dry run deleting ":"Deleting ") + c );
 			if (!dryRun) {
 				tsClient.deleteConcept(c.getConceptId(), t.getBranchPath());
 			}
@@ -1044,7 +1043,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected int deleteDescription(Task t, Description d) throws TermServerScriptException {
 		try {
-			debug ((dryRun ?"Dry run deleting ":"Deleting ") + d );
+			LOGGER.debug((dryRun ?"Dry run deleting ":"Deleting ") + d );
 			if (!dryRun) {
 				tsClient.deleteDescription(d.getId(), t.getBranchPath());
 			}
@@ -1075,7 +1074,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected int deleteRefsetMember(Task t, String uuid, boolean force) throws TermServerScriptException {
 		try {
-			debug ((dryRun ?"Dry run deleting ":"Deleting ") + uuid );
+			LOGGER.debug((dryRun ?"Dry run deleting ":"Deleting ") + uuid );
 			if (!dryRun) {
 				tsClient.deleteRefsetMember(uuid, t.getBranchPath(), force); 
 			}
@@ -1087,7 +1086,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected int updateRefsetMember(Task t, RefsetMember r, String info) throws TermServerScriptException {
-		debug ( (dryRun? "Dry run ":"") + "Updating state of " + r + info);
+		LOGGER.debug((dryRun? "Dry run ":"") + "Updating state of " + r + info);
 		if (!dryRun) {
 			tsClient.updateRefsetMember(t.getBranchPath(), r, false); //Don't force delete
 		}
@@ -1123,7 +1122,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		try {
 			return findConcepts(ecl, true, true);
 		} catch (Exception e) {
-			error("Exception while recovering " + ecl + 
+			LOGGER.error("Exception while recovering " + ecl + 
 			info == null ? "" : " in " + info +
 			". Skipping.", e);
 		}
@@ -1136,6 +1135,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public Collection<Concept> findConcepts(String ecl, boolean quiet) throws TermServerScriptException {
 		return findConcepts(ecl, quiet, true);
+	}
+	
+	public Collection<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
+		return findConcepts(branch, ecl, true, false, CharacteristicType.INFERRED_RELATIONSHIP);  //Don't use local store when some other branch specified
 	}
 	
 	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean useLocalStoreIfSimple) throws TermServerScriptException {
@@ -1158,7 +1161,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			
 			if (!archiveEclWarningGiven.contains(branch)) {
-				warn ("Not using " + branch + " to recover ECL.  Using " + historicECLBranch + " instead.");
+				LOGGER.warn("Not using " + branch + " to recover ECL.  Using " + historicECLBranch + " instead.");
 				archiveEclWarningGiven.add(branch);
 			}
 			branch = historicECLBranch;
@@ -1170,21 +1173,21 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 		//If this is the first time we've seen these results, check for duplicates
 		if (!wasCached) {
-			debug(concepts.size() + " concepts recovered.  Checking for duplicates...");
+			LOGGER.debug(concepts.size() + " concepts recovered.  Checking for duplicates...");
 			//Failure in the pagination can cause duplicates.  Check for this
 			Set<Concept> uniqConcepts = new HashSet<>(concepts);
 			if (uniqConcepts.size() != concepts.size()) {
-				warn("Duplicates detected " + concepts.size() + " vs " + uniqConcepts.size() + " - identifying...");
+				LOGGER.warn("Duplicates detected " + concepts.size() + " vs " + uniqConcepts.size() + " - identifying...");
 				//Work out what the actual duplication is
 				for (Concept c : uniqConcepts) {
 					concepts.remove(c);
 				}
 				for (Concept c : concepts) {
-					warn ("Duplicate concept received from ECL: " + c);
+					LOGGER.warn("Duplicate concept received from ECL: " + c);
 				}
 				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
 			}
-			debug("No duplicates detected.");
+			LOGGER.debug("No duplicates detected.");
 		}
 		return concepts; 
 	}
@@ -1244,7 +1247,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected List<Component> processFile(File file) throws TermServerScriptException {
 		Set<Component> allComponents= new LinkedHashSet<>();
-		debug ("Loading input file " + file.getAbsolutePath());
+		LOGGER.debug("Loading input file " + file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
 			lines = StringUtils.removeBlankLines(lines);
@@ -1271,14 +1274,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							allComponents.addAll(components);
 						} else {
 							if (!expectNullConcepts) {
-								debug ("Skipped line " + lineNum + ": '" + lines.get(lineNum) + "', malformed or not required?");
+								LOGGER.debug("Skipped line " + lineNum + ": '" + lines.get(lineNum) + "', malformed or not required?");
 							}
 						}
 					} catch (Exception e) {
 						throw new TermServerScriptException("Failed to load line " + lineNum + ": '" + lines.get(lineNum) + "' due to ",e);
 					}
 				} else {
-					debug ("Skipping blank line " + lineNum);
+					LOGGER.debug("Skipping blank line " + lineNum);
 				}
 			}
 			addSummaryInformation(CONCEPTS_IN_FILE, allComponents);
@@ -1327,7 +1330,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public void finish() throws TermServerScriptException {
-		info (BREAK);
+		LOGGER.info(BREAK);
 		List<String> reportLast = new ArrayList<String>(Arrays.asList("Issue count", "Report lines written"));
 		
 		List<String> criticalIssues = new ArrayList<String>();
@@ -1355,7 +1358,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
 				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 				double avg = Math.round((c/t) * 10) / 10.0;
-				recordSummaryText ("Concepts per task: " + avg);
+				recordSummaryText("Concepts per task: " + avg);
 			}
 		}
 		
@@ -1402,7 +1405,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private synchronized void recordSummaryText(String msg) {
-		info (msg);
+		LOGGER.info(msg);
 		if (getReportManager() != null) {
 			if (summaryTabIdx != NOT_SET) {
 				try {
@@ -1416,11 +1419,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					}
 					writeToReportFile (summaryTabIdx, msg);
 				} catch (Exception e) {
-					error ("Failed to write summary info: " + msg, e);
+					LOGGER.error("Failed to write summary info: " + msg, e);
 				}
 			}
 		} else {
-			info ("Unable to report: " + msg);
+			LOGGER.info("Unable to report: " + msg);
 		}
 	}
 	
@@ -1489,12 +1492,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 				
 			} catch (Exception e) {
-				error ("Recoverable hiccup while setting report name",e);
+				LOGGER.error("Recoverable hiccup while setting report name",e);
 			}
 		}
 		
 		if (reportName.contains("null")) {
-			warn ("Report name contains 'null' did you specify to load FSNs only?");
+			LOGGER.warn("Report name contains 'null' did you specify to load FSNs only?");
 		}
 		
 		return reportName;
@@ -1588,7 +1591,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					}
 				}
 				addSummaryInformation(key, value);
-				info ( key + " : " + value);
+				LOGGER.info( key + " : " + value);
 			}
 		}
 		String key = (task == null? "" :  task.getKey());
@@ -1635,7 +1638,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//Have we whiteListed this concept?
 		if (!ignoreWhiteList && c != null && whiteListedConceptIds.contains(c.getId())) {
 			String detailsStr = writeToString(details);
-			warn("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
+			LOGGER.warn("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 			return false;
 		} else {
@@ -1929,7 +1932,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		try {
 			return getReplacement(reportTabIdx, context, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {
-			warn(e);
+			LOGGER.error("Failed to find a replacement for {}", inactiveConcept, e);
 		}
 		return null;
 	}
@@ -1939,7 +1942,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return getReplacement(notes, context, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {
 			notes.add(e.getMessage());
-			warn(e);
+			LOGGER.error("Failed to find a replacement for {}", inactiveConcept, e);
 		}
 		return null;
 	}
