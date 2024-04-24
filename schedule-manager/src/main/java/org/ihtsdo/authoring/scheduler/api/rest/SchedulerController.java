@@ -16,15 +16,11 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -118,7 +114,7 @@ public class SchedulerController {
 			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.GET)
-	public List<JobRun> listJobsRun(HttpServletRequest request,
+	public Page<JobRun> listJobsRun(HttpServletRequest request,
 			@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@RequestParam(required=false, defaultValue="0") final Integer page,
@@ -126,7 +122,7 @@ public class SchedulerController {
 			@RequestParam(required=false) final String user) throws BusinessServiceException {
 		
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
-		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable).getContent();
+		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable);
 	}
 	
 	@Operation(summary="List all jobs run")
@@ -134,15 +130,17 @@ public class SchedulerController {
 			@ApiResponse(responseCode = "200", description = "OK")
 	})
 	@RequestMapping(value="/jobs/runs", method= RequestMethod.GET)
-	public List<JobRun> listAllJobsRun(HttpServletRequest request,
+	public Page<JobRun> listAllJobsRun(HttpServletRequest request,
 			@RequestParam(required=false) final Set<JobStatus> statusFilter,
 			@RequestParam(required=false) final Integer sinceMins,
 			@RequestParam(required=false, defaultValue="0") final Integer page,
 			@RequestParam(required=false, defaultValue="50") final Integer size)
 		throws BusinessServiceException {
-		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
 		
-		return sanitise(scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable));
+		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
+		Page<JobRun> jobRunPage = scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable);
+		sanitise(jobRunPage);
+		return jobRunPage;
 	}
 
 	@Operation(summary="List batches")
@@ -297,12 +295,11 @@ public class SchedulerController {
 		return scheduleService.clearStuckJobs();
 	}
 	
-	private List<JobRun> sanitise(Page<JobRun> jobRuns) {
-		return jobRuns.stream()
+	private void sanitise(Page<JobRun> jobRuns) {
+		jobRuns.stream()
 				.peek(j -> j.suppressParameters())
 				.peek(j -> j.setTerminologyServerUrl(null))
 				.peek(j -> j.setIssuesReported(null))
-				.peek(j -> j.setDebugInfo(null))
-				.collect(Collectors.toList());
+				.peek(j -> j.setDebugInfo(null));
 	}
 }
