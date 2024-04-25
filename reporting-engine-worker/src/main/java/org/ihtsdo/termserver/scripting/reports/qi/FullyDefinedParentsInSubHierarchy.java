@@ -32,7 +32,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
-		additionalReportColumns = "FSN, SemTag, Stated Parents, Calculated PPPs";
+		additionalReportColumns = "FSN, SemTag, Stated Parents, Stated Parents' Module, Calculated PPPs";
 		super.init(run);
 	}
 	
@@ -54,9 +54,9 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 	public void runJob() throws TermServerScriptException {
 		Set<Concept> conceptsOfInterest = findConcepts(subsetECL)
 				.stream()
-				.filter(c -> inScope(c))
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-				.collect(Collectors.toSet());
+				.filter(this::inScope)
+				.sorted(SnomedUtils::compareSemTagFSN)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 		
 		nextConcept:
 		for (Concept c : conceptsOfInterest) {
@@ -66,11 +66,15 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 							.stream()
 							.map(p -> defStatus(p) + p.toString())
 							.collect(Collectors.joining(", \n"));
+					String parentModStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
+							.stream()
+							.map(p -> p.getModuleId())
+							.collect(Collectors.joining(", \n"));
 					List<Concept> PPPs = determineProximalPrimitiveParents(c);
 					String PPPStr = PPPs.stream()
 							.map(p -> p.toString())
 							.collect(Collectors.joining(", \n"));
-					report (c, parentStr, PPPStr);
+					report (c, parentStr, parentModStr, PPPStr);
 					countIssue(c);
 					continue nextConcept;
 				}
