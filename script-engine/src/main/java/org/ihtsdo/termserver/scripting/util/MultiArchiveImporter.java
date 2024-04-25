@@ -28,7 +28,7 @@ public class MultiArchiveImporter extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
-	private final static String taskPrefix = "INFRA-9531 ";
+	private final static String taskPrefix = "";
 
 	protected MultiArchiveImporter(BatchFix clone) {
 		super(clone);
@@ -56,10 +56,16 @@ public class MultiArchiveImporter extends BatchFix {
 		int archivesProcessed = 0;
 		for (String archiveStr : dirListing){
 			File thisArchive = new File(getInputFile() + File.separator + archiveStr);
+
 			if (thisArchive.getPath().endsWith(".zip")) {
+				archivesProcessed++;
+				if (archivesProcessed < restartFromTask) {
+					LOGGER.info("Skipping archive " + thisArchive + " as we're restarting from task " + restartFromTask);
+					continue;
+				}
 				LOGGER.info("Processing: " + thisArchive);
 				importArchive(thisArchive);
-				archivesProcessed++;
+
 				if (processingLimit != NOT_SET && archivesProcessed >= processingLimit) {
 					LOGGER.info("Processing limit of " + processingLimit + " reached.  Exiting.");
 					break;
