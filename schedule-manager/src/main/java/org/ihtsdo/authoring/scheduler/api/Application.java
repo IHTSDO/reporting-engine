@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.gdata.util.common.base.StringUtil;
+
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.configuration.ModuleStorageResourceConfig;
 import org.ihtsdo.authoring.scheduler.api.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
@@ -64,6 +66,10 @@ public class Application {
 
 	@Bean
 	public ModuleStorageCoordinator moduleStorageCoordinator(@Autowired ResourceManager resourceManager, @Value("${schedule.manager.terminology.server.uri}") final String terminologyServerUrl) {
+		if (StringUtils.isEmpty(terminologyServerUrl)) {
+			throw new IllegalArgumentException("No value supplied for schedule.manager.terminology.server.uri in application.properties file (or Consul)");
+		}
+		
 		return switch (Objects.requireNonNull(getEnvironment(terminologyServerUrl))) {
 			case "prod" -> ModuleStorageCoordinator.initProd(resourceManager);
 			case "uat" -> ModuleStorageCoordinator.initUat(resourceManager);
