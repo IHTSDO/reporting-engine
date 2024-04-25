@@ -72,6 +72,10 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 		selfDetermining = true;
 		classifyTasks = false;
 
+		if (projectName.length() != 2) {
+			throw new TermServerScriptException("This script should only be run against a country's master project eg 'CH'");
+		}
+
 		JobRun jobRun = getJobRun();
 		dryRun = jobRun.getParamBoolean(DRY_RUN);
 		taskSize = Integer.MAX_VALUE;
@@ -102,6 +106,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 				String newTerm = d.getTerm().replace(match, replace);
 				replaceDescription(t, c, d, newTerm, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, false, "");
 				changesMade++;
+				countIssue(c);
 			}
 		}
 		return changesMade;
