@@ -31,7 +31,8 @@ public class WebSecurityConfig {
 			"/",
 			"/version",
 			// Swagger API Docs:
-			"/swagger-ui/**"
+			"/swagger-ui/**",
+			"/v3/api-docs/**"
 	};
 
 	@Bean
