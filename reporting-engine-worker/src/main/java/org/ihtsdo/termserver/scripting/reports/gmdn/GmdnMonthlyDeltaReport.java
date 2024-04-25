@@ -45,7 +45,7 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd yyyy HH:mm:ss");
     private static final String REPORT_NAME = "GMDN Monthly Delta";
-    private static final String REPORT_DESCRIPTION = "This report generates deltas for the GMDN data for this month";
+    private static final String REPORT_DESCRIPTION = "This report generates deltas for the GMDN (Global Medical Device Nomenclature) data for this month";
     private static final String REPORT_CATEGORY = JobCategory.ADHOC_QUERIES;
     private static final String REPORT_FOLDER_ID = "1Ox_3dZue1JSZiXDh-bBSEV2PBLQR1SXx";
     private static final String LOCAL_WORKING_DIRECTORY = "/tmp/";
