@@ -26,6 +26,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	private Map<Concept, UpdateAction> replacementMap = new HashMap<>();
 	private Map<Concept, String> cathyNotes = new HashMap<>();
 	private Set<Concept> reportedAsAdditional = new HashSet<>();
+	private Set<Concept> updatedConcepts = new HashSet<>();
 
 	private List<String> targetPrefixes = Arrays.asList(new String[] {"OE ", "CO ", "O/E", "C/O", "Complaining of", "On examination"});
 
@@ -58,22 +59,24 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, Cathy Notes, , ",
 				"Issue, Detail",
 				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, ",
-				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc, Mentioned in Tab 3",
-				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc"
+				/*"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc, Mentioned in Tab 3",
+				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc",*/
+				"SCTID, FSN, SemTag, Updated, Final State"
 		};
 
 		String[] tabNames = new String[]{
 				"Delta Records Created",
 				"Other processing issues",
 				"Additional Inactive Concepts",
-				"Concepts moved elsewhere",
-				"Inactivated without indicator"
+				/*"Concepts moved elsewhere",
+				"Inactivated without indicator",*/
+				"Final State"
 		};
 		postInit(tabNames, columnHeadings, false);
 	}
 
 	private void process() throws ValidationFailure, TermServerScriptException {
-
+		
 		populateCathyNotes();
 		populateReplacementMap();
 		populateUpdatedReplacementMap();
@@ -86,44 +89,51 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			//Is this a concept we've been told to replace the associations on?
 			if (replacementMap.containsKey(c)) {
 				if (!c.isActive()) {
-					//Change the Inactivation Indicator
-					List<InactivationIndicatorEntry> indicators = c.getInactivationIndicatorEntries(ActiveState.ACTIVE);
-					if (indicators.size() != 1) {
-						report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept has " + indicators.size() + " active inactivation indicators");
-						continue;
-					}
-					InactivationIndicatorEntry i = indicators.get(0);
-					InactivationIndicator prevInactValue = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId());
-
-					//We're going to skip concepts that are currently ambiguous and just say what they're set to
-					//We're now also updating some of these
-					/*if (prevInactValue.equals(InactivationIndicator.AMBIGUOUS)) {
-						String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
-						report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, assocStr, "Supplied: " + replacementMap.get(c));
-						continue;
-					}*/
-
-					//Have we got some specific inactivation indicator we're expecting to use?
-					InactivationIndicator newII = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
-					UpdateAction action = replacementMap.get(c);
-					if (action != null && action.inactivationIndicator != null) {
-						newII = action.inactivationIndicator;
-					}
-
-					if (!action.inactivationIndicator.equals(prevInactValue)) {
-						i.setInactivationReasonId(SnomedUtils.translateInactivationIndicator(newII));
-						i.setEffectiveTime(null);  //Will mark as dirty
-						report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> " + newII, "");
-					}
-
-					if (!action.associationsUnchanged) {
-						replaceHistoricalAssociations(c);
-					}
-					
+					processConcept(c);
 				} else {
 					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is active");
 				}
 			}
+		}
+		
+		doFinalStateTab();
+	}
+
+	private void processConcept(Concept c) throws TermServerScriptException {
+			//Change the Inactivation Indicator
+		List<InactivationIndicatorEntry> indicators = c.getInactivationIndicatorEntries(ActiveState.ACTIVE);
+		if (indicators.size() != 1) {
+			report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept has " + indicators.size() + " active inactivation indicators");
+			return;
+		}
+
+		InactivationIndicatorEntry i = indicators.get(0);
+		InactivationIndicator prevInactValue = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId());
+
+		//We're going to skip concepts that are currently ambiguous and just say what they're set to
+		//We're now also updating some of these
+		/*if (prevInactValue.equals(InactivationIndicator.AMBIGUOUS)) {
+			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+			report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, assocStr, "Supplied: " + replacementMap.get(c));
+			continue;
+		}*/
+
+		//Have we got some specific inactivation indicator we're expecting to use?
+		InactivationIndicator newII = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+		UpdateAction action = replacementMap.get(c);
+		if (action != null && action.inactivationIndicator != null) {
+			newII = action.inactivationIndicator;
+		}
+
+		if (!action.inactivationIndicator.equals(prevInactValue)) {
+			i.setInactivationReasonId(SnomedUtils.translateInactivationIndicator(newII));
+			i.setEffectiveTime(null);  //Will mark as dirty
+			report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> " + newII, "");
+			updatedConcepts.add(c);
+		}
+
+		if (!action.associationsUnchanged) {
+			replaceHistoricalAssociations(c);
 		}
 	}
 
@@ -165,6 +175,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			c.getAssociationEntries().add(assoc);
 		}
 		String newAssocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl);
+		updatedConcepts.add(c);
 		report(c, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, prevAssocStr, newAssocStr);
 	}
 
@@ -210,7 +221,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					} else if (inactivationIndicatorStr.contains("Outdated")) {
 						inactivationIndicator = InactivationIndicator.OUTDATED;
 						association = Association.REPLACED_BY;
-					}else if (inactivationIndicatorStr.contains("CDC")) {
+					} else if (inactivationIndicatorStr.contains("CDC")) {
 						inactivationIndicator = InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
 						association = Association.REPLACED_BY;
 					}
@@ -285,12 +296,12 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					manageManually.contains(c.getId()) ||
 					replacementMap.containsKey(c) ||
 					reportedAsAdditional.contains(c)) {
-				if (c.getInactivationIndicator() == null) {
+				/*if (c.getInactivationIndicator() == null) {
 					report(QUINARY_REPORT, c, c.getEffectiveTime(), SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
 				} else if (c.getInactivationIndicator().equals(InactivationIndicator.MOVED_ELSEWHERE)) {
 					//We're also going to report concepts that are not OE/CO but are marked as "Moved To"
 					report(QUATERNARY_REPORT, c, c.getEffectiveTime(), SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
-				}
+				}*/
 				continue;
 			}
 			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true);
@@ -508,6 +519,27 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		} else {
 			return report(PRIMARY_REPORT, c, details);
 		}
+	}
+
+	private void doFinalStateTab() throws TermServerScriptException {
+		Set<Concept> finalStateConceptsReported = new HashSet<>();
+		for (Concept c : SnomedUtils.sort(updatedConcepts)) {
+			if (finalStateConceptsReported.contains(c)) {
+				continue;
+			}
+			finalTabReport(c, finalStateConceptsReported);
+			finalTabReport(findSibling(c), finalStateConceptsReported);
+			finalTabReport(findCousin(c), finalStateConceptsReported);
+		}
+	}
+
+	private void finalTabReport(Concept c, Set<Concept> finalStateConceptsReported) throws TermServerScriptException {
+		if (c == null) {
+			return;
+		}
+		String updated = updatedConcepts.contains(c) ? "Y" : "N";
+		report(QUATERNARY_REPORT, c, updated, SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
+		finalStateConceptsReported.add(c);
 	}
 
 	class UpdateAction {
