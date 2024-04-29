@@ -45,7 +45,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240301T120000Z.zip");
+		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240301T120000Z.zip");
 		TermServerReport.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -149,7 +149,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 		
 		columnNames = new String[][] {	{"Has Inactivated Stated Parent", "Inactivated Concept Used As Stated Parent", "Has Inactivated Stated Attribute", "Inactivated Concept Used In Stated Modelling", "Has Inactivated Inferred Parent", "Inactivated Concept Used As Inferred Parent"},
-										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation", "Translated Concept Inactivated - Replacement Requires Translation"}};
+										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation", "Translated Concept Inactivated - Replacement Requires Translation", "Translated Concept Inactivated - No Replacement Specified"}};
 		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
@@ -295,6 +295,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		int changedFSNCount = 0;
 		int changedFSNCountNoCurrent = 0;
 		int translatedInactivatedCount = 0;
+		int translatedInactivatedWithoutReplacement = 0;
 		Set<String> conceptReplacementSeen = new HashSet<>();
 		
 		for (String sctId : thisHierarchy) {
@@ -334,22 +335,28 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 					hasTranslation(currentConcept)) {
 				//Can't use association entries because of course _this_ snapshot doesn't know 
 				//about the inactivation.  Pull it from the datum instead
-				for (String histAssocTarget : datum.histAssocTargets) {
-					//Only count a given replacement once
-					if (!conceptReplacementSeen.contains(histAssocTarget)) {
-						Concept targetConcept = gl.getConcept(histAssocTarget, false, false);
-						//If we don't have this concept then we'll already have counted it
-						if (targetConcept != null && !hasTranslation(targetConcept)) {
-							translatedInactivatedCount++;
-							incrementSummaryInformation(summaryNames[3]);
+				if (datum.histAssocTargets == null) {
+					translatedInactivatedWithoutReplacement++;
+					incrementSummaryInformation(summaryNames[4]);
+					LOGGER.warn("Concept " + currentConcept + " has been inactivated but no replacement specified.  Check historical associations.");
+				} else {
+					for (String histAssocTarget : datum.histAssocTargets) {
+						//Only count a given replacement once
+						if (!conceptReplacementSeen.contains(histAssocTarget)) {
+							Concept targetConcept = gl.getConcept(histAssocTarget, false, false);
+							//If we don't have this concept then we'll already have counted it
+							if (targetConcept != null && !hasTranslation(targetConcept)) {
+								translatedInactivatedCount++;
+								incrementSummaryInformation(summaryNames[3]);
+							}
+							conceptReplacementSeen.add(histAssocTarget);
 						}
-						conceptReplacementSeen.add(histAssocTarget);
 					}
 				}
 			}
 		}
 		
-		report(TERTIARY_REPORT, topLevelConcept, newConceptCount, changedFSNCount, changedFSNCountNoCurrent, translatedInactivatedCount);
+		report(TERTIARY_REPORT, topLevelConcept, newConceptCount, changedFSNCount, changedFSNCountNoCurrent, translatedInactivatedCount, translatedInactivatedWithoutReplacement);
 	}
 
 	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {
