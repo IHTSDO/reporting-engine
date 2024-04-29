@@ -2250,7 +2250,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						}
 					}
 				}
-				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Reused " + reuseCount + " inactivated Ids");
+
+				if (reuseCount > 0) {
+					report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Reused " + reuseCount + " inactivated ids");
+				}
 			}
 			newGroups.add(group);
 		}
