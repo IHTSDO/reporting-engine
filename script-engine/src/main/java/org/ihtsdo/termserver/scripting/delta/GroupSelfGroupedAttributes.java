@@ -24,7 +24,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private List<Concept> allowRepeatingTypes = new ArrayList<>();
 
-	Concept COMPONENT;
+	private Concept COMPONENT;
 
 	private final int BatchSize = 25;
 	//private final int BatchSize = 99999;
@@ -48,7 +48,6 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	public void postInit() throws TermServerScriptException {
 		hierarchies.add(OBSERVABLE_ENTITY);
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
-
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
@@ -78,7 +77,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 		String[] tabNames = new String[]{
 				"SelfGroupedAttributes - Grouped",
-				"No changes made",
+				"No changes required",
 				"Repeated Attribute - Illegal",
 				"Repeated Attribute - Component",
 				"Repeated Attribute - Singles"
@@ -88,17 +87,17 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private int process() throws ValidationFailure, TermServerScriptException, IOException {
 		int conceptsInThisBatch = 0;
-		//for (Concept hierarchy : hierarchies) {
-		//	for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
-		{{
-			Concept c = gl.getConcept("193711000052101 |Number of high alcohol consumption occasions per unit time (observable entity)|");
+		for (Concept hierarchy : hierarchies) {
+			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
+		//{{
+		//	Concept c = gl.getConcept("193711000052101 |Number of high alcohol consumption occasions per unit time (observable entity)|");
 
 			if (inScope(c)) {
 					String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 					restateInferredRelationships(c);
 					removeRedundandGroups((Task) null, c);
-					boolean changesMade = groupSelfGroupedAttributes(c, before);
-					if (changesMade) {
+					int reportToTabIdx = groupSelfGroupedAttributes(c, before);
+					if (reportToTabIdx == PRIMARY_REPORT) {
 						outputRF2(c, true);
 						conceptsInThisBatch++;
 						if (conceptsInThisBatch >= BatchSize) {
@@ -110,7 +109,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 							conceptsInThisBatch = 0;
 						}
 					} else {
-						report(SECONDARY_REPORT, c, before);
+						LOGGER.debug("Concept reason for no change already recorded in tab " + reportToTabIdx + " for " + c);
 					}
 				}
 			}
@@ -118,7 +117,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		return conceptsInThisBatch;
 	}
 
-	private boolean groupSelfGroupedAttributes(Concept c, String before) throws TermServerScriptException {
+	private int groupSelfGroupedAttributes(Concept c, String before) throws TermServerScriptException {
+		int reportToTabIdx = PRIMARY_REPORT;
 		boolean changesMade = false;
 		Set<Concept> typesSeen = new HashSet<>();
 		int viableGroup = calculateViableGroup(c);
@@ -172,6 +172,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			boolean proceedToDelta = false;
 			if (before.equals(after)) {
 				report(SECONDARY_REPORT, c, after);
+				reportToTabIdx = SECONDARY_REPORT;
 			} else if (hasIllegalMultipleSameType) {
 				int tabIdx = TERTIARY_REPORT;  //Default to illegal
 				if (hasRepeatedComponentType) {
@@ -180,6 +181,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 					tabIdx = QUINARY_REPORT;
 				}
 				report(tabIdx, c, before, after);
+				reportToTabIdx = tabIdx;
 			} else {
 				proceedToDelta = true;
 				int groupCount = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false).size();
@@ -189,8 +191,10 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			if (!proceedToDelta) {
 				changesMade = false;
 			}
+		} else {
+			reportToTabIdx = SECONDARY_REPORT;
 		}
-		return changesMade;
+		return reportToTabIdx;
 	}
 
 	private int calculateViableGroup(Concept c) {

@@ -69,6 +69,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
 	
 	protected boolean batchDelimitersDetected = false;
+	protected int archivesCreated = 0;
 	
 	protected void init (String[] args) throws TermServerScriptException {
 		//We definitely need to finish saving a snapshot to disk before we start making changes
@@ -480,8 +481,9 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	protected int createOutputArchive(boolean outputModifiedComponents, int conceptsOutput) throws TermServerScriptException {
+		archivesCreated++;
 		if (dryRun) {
-			String msg = "Dry run, skipping archive creation";
+			String msg = "Dry run, skipping archive No. " + archivesCreated + " creation";
 			LOGGER.info(msg);
 			report((Concept) null, Severity.NONE, ReportActionType.INFO, msg);
 		} else {
