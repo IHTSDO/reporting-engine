@@ -7,7 +7,10 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
+import org.ihtsdo.termserver.scripting.delta.GroupSelfGroupedAttributes;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import org.snomed.otf.script.Script;
 
@@ -15,6 +18,8 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 public class Concept extends Expressable implements ScriptConstants, Comparable<Concept>  {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
 	@SerializedName(value="conceptId", alternate="id")
 	@Expose
@@ -96,8 +101,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	Set<Concept> statedChildren;  //Lazy create Set to reduce memory footprint
 	Set<Concept> inferredChildren;
 	
-	Collection<RelationshipGroup> statedRelationshipGroups;
-	Collection<RelationshipGroup> inferredRelationshipGroups;
+	List<RelationshipGroup> statedRelationshipGroups;
+	List<RelationshipGroup> inferredRelationshipGroups;
 	private Set<RefsetMember> otherRefsetMembers;
 
 	public void reset() {
@@ -263,7 +268,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			}
 			return preferredSynonym;
 		} catch (Exception e) {
-			TermServerScript.warn(this + ": " + e.getMessage());
+			LOGGER.warn("{}: {}", this, e.getMessage());
 			return "";
 		}
 	}
@@ -436,7 +441,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				.collect(Collectors.toSet());
 		this.relationships = newRelationshipSet;
 		if (this.relationships.size() == sizeBefore) {
-			TermServerScript.debug("Failed to remove relationship: " + r);
+			LOGGER.debug("Failed to remove relationship: {}", r);
 		}
 		
 		removeParentIfRequired(r);
@@ -734,7 +739,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 						}
 					}
 				} else {
-					TermServerScript.warn (thisDescription + " is active with no Acceptability map or Language Refset entries (since " + thisDescription.getEffectiveTime() + ").");
+					LOGGER.warn(thisDescription + " is active with no Acceptability map or Language Refset entries (since " + thisDescription.getEffectiveTime() + ").");
 				}
 			}
 		}
@@ -1332,7 +1337,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, boolean includeIsA) {
-		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
+		List<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
 			boolean flatten = characteristicType.equals(CharacteristicType.INFERRED_RELATIONSHIP);
 			//RelationshipGroups will be distinct from the axioms they came from
@@ -1369,6 +1374,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				inferredRelationshipGroups = relationshipGroups;
 			}
 		}
+		relationshipGroups.sort(Comparator.comparing(RelationshipGroup::getGroupId));
 		return relationshipGroups;
 	}
 
