@@ -500,4 +500,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return 0;
 	}
 
+	protected boolean inScope(Component c, boolean includeExpectedExtensionModules) {
+		if (project.getKey().endsWith(".zip")) {
+				//If we're working from a zip file, then we're targetting whatever module we said as part of this Delta generation
+				return c.getModuleId().equals(moduleId);
+		}
+		return super.inScope(c, includeExpectedExtensionModules);
+	}
+
 }
