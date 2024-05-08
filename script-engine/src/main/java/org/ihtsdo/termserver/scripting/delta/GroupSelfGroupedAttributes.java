@@ -34,6 +34,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.getArchiveManager(true).setPopulateReleasedFlag(true);
+			delta.getArchiveManager(true).setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);
 			delta.loadProjectSnapshot();
@@ -46,7 +47,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		hierarchies.add(OBSERVABLE_ENTITY);
+		//hierarchies.add(OBSERVABLE_ENTITY);
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
@@ -61,7 +62,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				gl.getConcept("370134009 |Time aspect (attribute)|"));
 
 		allowRepeatingTypes = List.of(
-				gl.getConcept("704321009 |Characterizes (attribute)| ")
+				gl.getConcept("704321009 |Characterizes (attribute)| "),
+				COMPONENT
 		);
 
 		//We're not moving modules here, so the source and target modules are the same
@@ -71,7 +73,6 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				"SCTID, FSN, SemTag, Severity, Action, Before, After, Group Count, Has Repeated Attribute Type,",
 				"SCTID, FSN, SemTag, Expression",
 				"SCTID, FSN, SemTag, Before, After",
-				"SCTID, FSN, SemTag, Before, After",
 				"SCTID, FSN, SemTag, Before, After"
 		};
 
@@ -79,7 +80,6 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				"SelfGroupedAttributes - Grouped",
 				"No changes required",
 				"Repeated Attribute - Illegal",
-				"Repeated Attribute - Component",
 				"Repeated Attribute - Singles"
 		};
 		postInit(tabNames, columnHeadings, false);
@@ -89,13 +89,11 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		int conceptsInThisBatch = 0;
 		for (Concept hierarchy : hierarchies) {
 			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
-		//{{
-		//	Concept c = gl.getConcept("193711000052101 |Number of high alcohol consumption occasions per unit time (observable entity)|");
-
-			if (inScope(c)) {
+				if (inScope(c)) {
 					String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 					restateInferredRelationships(c);
 					removeRedundandGroups((Task) null, c);
+					c.recalculateGroups();
 					int reportToTabIdx = groupSelfGroupedAttributes(c, before);
 					if (reportToTabIdx == PRIMARY_REPORT) {
 						outputRF2(c, true);
@@ -126,7 +124,6 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		AxiomEntry axiomEntry = null;
 		boolean hasMultipleSameType = false;
 		boolean hasIllegalMultipleSameType = false;
-		boolean hasRepeatedComponentType = false;
 		boolean hasRepeatedSingleType = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (skipAttributeTypes.contains(r.getType())) {
@@ -139,8 +136,6 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 					hasIllegalMultipleSameType = true;
 					if (singleTypes.contains(r.getType())) {
 						hasRepeatedSingleType = true;
-					} else if (r.getType().equals(COMPONENT)) {
-						hasRepeatedComponentType = true;
 					}
 				}
 			} else {
@@ -169,27 +164,19 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			//We need to reset relationship groups
 			c.recalculateGroups();
 			String after = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-			boolean proceedToDelta = false;
 			if (before.equals(after)) {
 				report(SECONDARY_REPORT, c, after);
 				reportToTabIdx = SECONDARY_REPORT;
 			} else if (hasIllegalMultipleSameType) {
 				int tabIdx = TERTIARY_REPORT;  //Default to illegal
-				if (hasRepeatedComponentType) {
+				if (hasRepeatedSingleType) {
 					tabIdx = QUATERNARY_REPORT;
-				} else if (hasRepeatedSingleType) {
-					tabIdx = QUINARY_REPORT;
 				}
 				report(tabIdx, c, before, after);
 				reportToTabIdx = tabIdx;
 			} else {
-				proceedToDelta = true;
 				int groupCount = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false).size();
 				report(c, Severity.LOW, ReportActionType.INFO, before, after, groupCount, hasMultipleSameType?"Y":"N");
-			}
-
-			if (!proceedToDelta) {
-				changesMade = false;
 			}
 		} else {
 			reportToTabIdx = SECONDARY_REPORT;
@@ -199,7 +186,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private int calculateViableGroup(Concept c) {
 		int viableGroup = 1;
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false)) {
+  		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false)) {
 			for (Relationship r : g.getRelationships()) {
 				if (skipAttributeTypes.contains(r.getType())) {
 					viableGroup++;
@@ -214,7 +201,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	private boolean inScope(Concept c) {
-		/*if (!c.getConceptId().equals("396631001")) {
+		/*if (!c.getConceptId().equals("699126008")) {
 			return false;
 		}*/
 
