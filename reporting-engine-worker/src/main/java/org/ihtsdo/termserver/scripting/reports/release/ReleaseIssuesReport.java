@@ -607,7 +607,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void maxLengthCheck() throws TermServerScriptException {
-		String issueStr = "Synonym exceeds " + MAX_DESC_LENGTH + " characters";
+		String issueStr = "Description (not TextDefn) exceeds " + MAX_DESC_LENGTH + " characters";
 		initialiseSummary(issueStr);
 		for (Concept c : allConceptsSorted) {
 			if (whiteListedConceptIds.contains(c.getId())) {
