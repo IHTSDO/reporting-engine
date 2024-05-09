@@ -36,18 +36,24 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private String currentReleasePath;
 	private Map<String, Map<TotalsIndex, Integer>> fileTotals = new TreeMap<>();
 	
-	private Map<String, String> rightFilesLineCounts = new HashMap<>();
-	private static final String LINE_COUNT_FILENAME = "right_files_line_counts.txt";
+	private Map<String, Integer> leftFilesLineCounts = new HashMap<>();
+	private Map<String, Integer> rightFilesLineCounts = new HashMap<>();
+	private Map<String, Integer> headersDiffCounts = new HashMap<>();
+	private static final String LEFT_FILES_LINE_COUNT_FILENAME = "left_files_line_counts.txt";
+	private static final String RIGHT_FILES_LINE_COUNT_FILENAME = "right_files_line_counts.txt";
+	private static final String HEADERS_DIFF_FILENAME = "diff__headers.txt";
+	private static final String FILES_DIFF_FILENAME = "diff__files.txt";
 	
-	private String[] columnHeadings = new String[] {
-			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Total"
+	private final String[] columnHeadings = new String[] {
+			"Filename, Header, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Total"
 	};
 
-	private String[] tabNames = new String[] {
+	private final String[] tabNames = new String[] {
 			"File Comparison"
 	};
 
 	enum TotalsIndex {
+		HEADER,
 		NEW,
 		CHANGED,
 		INACTIVATED,
@@ -85,11 +91,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(MODULES, "11000181102");*/
 
 		// SE Extension
-		params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-11-22T17:15:10/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20231130T120000Z.zip");
+		/*params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-11-22T17:15:10/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20231130T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230731T120000Z.zip");
 		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-05-19T07:39:38/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20230531T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
-		params.put(MODULES, "45991000052106");
+		params.put(MODULES, "45991000052106");*/
 
 		// DK Extension
 		/*params.put(PREV_RELEASE, "dk/snomed_ct_denmark_extension_releases/2022-09-23T12:02:14/output-files/SnomedCT_ManagedServiceDK_PRODUCTION_DK1000005_20220930T120000Z.zip");
@@ -104,6 +110,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(MODULES, "11000172109");*/
+
+		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
+		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/previous/SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20231115T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
+		params.put(MODULES, "11000172109");
 
 		// NZ Extension
 		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
@@ -267,7 +279,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private boolean matches(String filename) {
-		return filename.matches("diff_.*(sct2|der2)_.*(Snapshot).*") && !filename.matches("diff_.*_no_(first|1_7)_col.txt");
+		return filename.matches("(sct2|der2)_.*(Snapshot).*") && !filename.matches("(sct2|der2)_.*_no_(first|1_7)_col.txt");
 	}
 
 
@@ -276,13 +288,15 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
 		try {
-			//Load the file containing the line counts for the right files
-			loadLineCountFile(diffDir);
-			
-			// Process file list diff file
-			processFileList(diffDir, "diff_file_list.txt");
+			// Load the files containing the line counts for the left and right files and header diff count
+			loadTabDelimitedFile(diffDir, LEFT_FILES_LINE_COUNT_FILENAME, leftFilesLineCounts);
+			loadTabDelimitedFile(diffDir, RIGHT_FILES_LINE_COUNT_FILENAME, rightFilesLineCounts);
+			loadTabDelimitedFile(diffDir, HEADERS_DIFF_FILENAME, headersDiffCounts);
 
-			report(FILE_COMPARISON_TAB, "Files that remain static:");
+			// Process files list diff file
+			processFilesList(diffDir, FILES_DIFF_FILENAME);
+
+			report(FILE_COMPARISON_TAB, "Files changed:");
 
 			// Process content diff files (snapshot files only)
 			try (Stream<Path> stream = Files.list(diffDir)) { //.filter(file -> !Files.isDirectory(file))) {
@@ -291,6 +305,14 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						.filter(this::matches)
 						.sorted(String::compareToIgnoreCase)
 						.forEach(filename -> process(diffDir, filename));
+			}
+
+			// Add header diff count
+			for (Map.Entry<String, Integer> entry : headersDiffCounts.entrySet()) {
+				fileTotals.computeIfPresent(entry.getKey(), (k, v) -> {
+					v.computeIfPresent(TotalsIndex.HEADER, (k1, v1) -> entry.getValue());
+					return v;
+				});
 			}
 
 			// Delete all temporary and diff files after processing
@@ -305,17 +327,20 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 	}
 
-	private void loadLineCountFile(Path outputDir) {
-		try (BufferedReader br = new BufferedReader(new FileReader(outputDir + File.separator + LINE_COUNT_FILENAME , StandardCharsets.UTF_8))) {
+	private void loadTabDelimitedFile(Path outputDir, String filename, Map<String, Integer> files) {
+		try (BufferedReader br = new BufferedReader(new FileReader(outputDir + File.separator + filename, StandardCharsets.UTF_8))) {
 			String line;
 			while ((line = br.readLine()) != null) {
-				String[] parts = line.split("\t"); 
-				String filename = parts[0]; 
-				String lineCount = parts[1];
-				rightFilesLineCounts.put(filename, lineCount);
+				String[] parts = line.split(TAB);
+				String name = parts[0];
+				if (!matches(name)) {
+					continue;
+				}
+				Integer count = Integer.valueOf(parts[1]);
+				files.put(name, count);
 			}
 		} catch (Exception e) {
-			LOGGER.warn("Failed to populate right files line counts due to " + e);;
+			LOGGER.warn("Failed to load " + filename + " file due to " + e);
 		}
 	}
 
@@ -465,7 +490,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return "\"" + arg + "\"";
 	}
 
-	private void processFileList(Path path, String filename) throws TermServerScriptException {
+	private void processFilesList(Path path, String filename) throws TermServerScriptException {
 		Set<String> created = new TreeSet<>();
 		Set<String> deleted = new TreeSet<>();
 
@@ -479,8 +504,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					continue;
 				}
 
-				// Start from index = 4 to exclude "<" or ">" followed by space and "./"
-				String value = line.substring(4);
+				// Start from index = 2 to exclude "<" or ">" and a space
+				String value = line.substring(2);
+
+				if (!matches(value)) {
+					continue;
+				}
 
 				switch (ch) {
 					// For the same component deleted indicator always comes before created indicator in the file
@@ -505,17 +534,33 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 			report(FILE_COMPARISON_TAB, "Files created: " + created.size());
 			for (String file : created) {
-				String lineCount = "Unknown";
 				if (rightFilesLineCounts.containsKey(file)) {
-					lineCount = rightFilesLineCounts.get(file);
+					Integer lineCount = rightFilesLineCounts.get(file);
+					Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
+					for (TotalsIndex index : TotalsIndex.values()) {
+						totals.put(index, 0);
+					}
+					totals.put(TotalsIndex.NEW, lineCount);
+					totals.put(TotalsIndex.TOTAL, lineCount);
+					fileTotals.put(file, totals);
 				}
-				report(FILE_COMPARISON_TAB, file, lineCount);
+				report(FILE_COMPARISON_TAB, file, "* See line count without header line in the NEW column in the section below");
 			}
 			report(FILE_COMPARISON_TAB, "");
 
 			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size());
 			for (String file : deleted) {
-				report(FILE_COMPARISON_TAB, file);
+				if (leftFilesLineCounts.containsKey(file)) {
+					Integer lineCount = leftFilesLineCounts.get(file);
+					Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
+					for (TotalsIndex index : TotalsIndex.values()) {
+						totals.put(index, 0);
+					}
+					totals.put(TotalsIndex.DELETED, lineCount);
+					totals.put(TotalsIndex.TOTAL, lineCount);
+					fileTotals.put(file, totals);
+				}
+				report(FILE_COMPARISON_TAB, file, "* See line count without header line the DELETED column in the section below");
 			}
 			report(FILE_COMPARISON_TAB, "");
 

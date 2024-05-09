@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Check for 3 input variables
+# Check for 5 input variables
 if [ $# -lt 5 ]
 	then
-		echo "Not enough arguments supplied. Usage: run_compare.sh <Left Archive Name> <Left Archive Location> <Right Archive Name> <Right Archive Location> <Run Folder>" >&2
+		echo "Not enough arguments supplied. Usage: run-compare-packages.sh <Previous Archive Name> <Previous Archive Location> <Current Archive Name> <Current Archive Location> <Run Folder>" >&2
 		exit 1
 fi
 
@@ -18,13 +18,11 @@ rootFolder=$(pwd)
 
 # Debug
 echo "Running script with the following parameters:"
-echo $previousName
-echo $previousZip
-echo $currentName
-echo $currentZip
-echo $runFolder
+echo "Previous package ${previousName}: ${previousZip}"
+echo "Current package ${currentName}: ${currentZip}"
+echo "Run folder: ${runFolder}"
 
-echo "Root folder:"
+echo -n "Root folder: "
 echo $rootFolder
 
 # Create a new folder and copy the main scripts into it
