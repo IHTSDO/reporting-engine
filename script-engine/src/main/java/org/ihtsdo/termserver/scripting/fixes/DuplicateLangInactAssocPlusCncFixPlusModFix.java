@@ -156,6 +156,29 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			/*if (d.getId().equals("2966088011")) {
 				LOGGER.debug("here");
 			}*/
+
+			//Do we have active LangRefset members on inactive descriptions? Check scope on the LRSM, not the description
+			//As we (eg Swiss) may have a description that is inactive in the International edition
+			if (!d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE).size() > 0) {
+				ReportActionType action = ReportActionType.REFSET_MEMBER_INACTIVATED;
+				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+					if (inScope(l)) {
+						if (!dryRun) {
+							if (l.isReleased()) {
+								l.setActive(false);
+								tsClient.updateRefsetMember(l, t.getBranchPath());
+							} else {
+								tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
+							}
+						}
+						if (!l.isReleased()) {
+							action = ReportActionType.REFSET_MEMBER_DELETED;
+						}
+						report(t, c, Severity.LOW, action, "Active LRSM removed on inactive description", l);
+						changesMade++;
+					}
+				}
+			}
 			
 			//Langrefset entries should be checked, regardless if the description is inScope or not
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
@@ -338,6 +361,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							continue nextConcept;
 						}
 					}
+				}
+
+				//Do we have active LangRefset members on inactive descriptions?
+				if (!d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE).size() > 0) {
+					processMe.add(c);
+					continue nextConcept;
 				}
 				
 				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
