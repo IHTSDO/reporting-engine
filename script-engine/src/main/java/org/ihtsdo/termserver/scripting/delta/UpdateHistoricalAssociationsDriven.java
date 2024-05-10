@@ -61,7 +61,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, ",
 				/*"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc, Mentioned in Tab 3",
 				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc",*/
-				"SCTID, FSN, SemTag, Updated, Final State"
+				"SCTID, FSN, SemTag, ConceptGroup, Still Active, Updated, Final State"
 		};
 
 		String[] tabNames = new String[]{
@@ -447,13 +447,15 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				break;
 			}
 		}
-
+		//TODO The performance of this loop is abysmal.  Pass in the target FSN preformed as an array, rather than re-creating
+		//those strings for every description in SNOMED.   And they're all checked for every line we output, so N x 500K
+		//We could also cache all these modified descriptions in a map.
 		for (Concept sibling : gl.getAllConcepts()) {
 			//Don't compare with self
 			if (sibling.equals(c)) {
 				continue;
 			}
-			for (Description d : sibling.getDescriptions()) {
+			for (Description d : sibling.getDescriptions()) {  //This line is OK, it doens't create a new collection
 				String thisTerm = d.getTerm();
 				if (d.getType().equals(DescriptionType.FSN)) {
 					thisTerm = SnomedUtils.deconstructFSN(thisTerm, true)[0];
@@ -529,22 +531,25 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	private void doFinalStateTab() throws TermServerScriptException {
 		Set<Concept> finalStateConceptsReported = new HashSet<>();
+		int conceptGroup = 0;
 		for (Concept c : SnomedUtils.sort(updatedConcepts)) {
 			if (finalStateConceptsReported.contains(c)) {
 				continue;
 			}
-			finalTabReport(c, finalStateConceptsReported);
-			finalTabReport(findSibling(c), finalStateConceptsReported);
-			finalTabReport(findCousin(c), finalStateConceptsReported);
+			conceptGroup++;
+			finalTabReport(c, conceptGroup, finalStateConceptsReported);
+			finalTabReport(findSibling(c), conceptGroup, finalStateConceptsReported);
+			finalTabReport(findCousin(c), conceptGroup, finalStateConceptsReported);
 		}
 	}
 
-	private void finalTabReport(Concept c, Set<Concept> finalStateConceptsReported) throws TermServerScriptException {
+	private void finalTabReport(Concept c, int conceptGroup, Set<Concept> finalStateConceptsReported) throws TermServerScriptException {
 		if (c == null) {
 			return;
 		}
 		String updated = updatedConcepts.contains(c) ? "Y" : "N";
-		report(QUATERNARY_REPORT, c, updated, SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
+		String active = c.isActive() ? "Y" : "N";
+		report(QUATERNARY_REPORT, c, conceptGroup, active, updated, SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
 		finalStateConceptsReported.add(c);
 	}
 
