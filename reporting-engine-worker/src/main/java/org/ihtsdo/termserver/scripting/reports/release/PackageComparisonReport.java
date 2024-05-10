@@ -72,6 +72,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		// International
 		/*params.put(PREV_RELEASE, "international/international_edition_releases/previous/SnomedCT_InternationalRF2_PRODUCTION_20231201T120000Z.zip");
 		params.put(THIS_RELEASE, "international/international_edition_releases/current/SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");*/
+		params.put(THIS_RELEASE, "international/international_edition_releases/current/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version3.zip");
+		params.put(PREV_RELEASE, "international/international_edition_releases/previous/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version2.zip");
 
 		// US Edition
 		/*params.put(THIS_RELEASE, "us/us_edition_releases/current/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20240301T120000Z.zip");
@@ -111,11 +113,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(MODULES, "11000172109");*/
 
-		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
+		/*params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
 		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/previous/SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20231115T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
-		params.put(MODULES, "11000172109");
+		params.put(MODULES, "11000172109");*/
 
 		// NZ Extension
 		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
@@ -626,11 +628,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
 								ValuePair valuePair = new ValuePair(oldValue, data);
 								if (valuePair.isActive()) {
-									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
 										count(totals, TotalsIndex.CHANGED);
 									}
 								} else if (valuePair.isInactive()) {
-									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
 										count(totals, TotalsIndex.CHANGED_INACTIVE);
 									}
 								} else if (valuePair.isInactivated()) {
@@ -715,12 +717,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 								ValuePair valuePair = new ValuePair(oldValue, data);
 								if (valuePair.isActive()) {
 									// Changed since last release
-									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
 										count(totals, TotalsIndex.CHANGED);
 									}
 								} else if (valuePair.isInactive()) {
 									// Changed since last release
-									if (valuePair.currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
 										count(totals, TotalsIndex.CHANGED_INACTIVE);
 									}
 								} else if (valuePair.isInactivated()) {
@@ -801,12 +803,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 								ValuePair valuePair = new ValuePair(oldValue, data);
 								if (valuePair.isActive()) {
 									// Remains active and changed since last release
-									if (valuePair.currentValue[CON_IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
 										count(totals, TotalsIndex.CHANGED);
 									}
 								} else if (valuePair.isInactive()) {
 									// Remains inactive and changed since last release
-									if (valuePair.currentValue[CON_IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0) {
+									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
 										count(totals, TotalsIndex.CHANGED_INACTIVE);
 									}
 								} else if (valuePair.isInactivated()) {
@@ -862,6 +864,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		ValuePair(String[] previousValue, String[] currentValue) {
 			this.previousValue = previousValue;
 			this.currentValue = currentValue;
+		}
+
+		boolean isChanged(String thisEffectiveTime, String previousEffectiveTime) {
+			return thisEffectiveTime.equals(previousEffectiveTime) || currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0;
 		}
 
 		boolean isActiveMovedModule() {
