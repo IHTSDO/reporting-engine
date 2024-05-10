@@ -45,7 +45,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final String FILES_DIFF_FILENAME = "diff__files.txt";
 	
 	private final String[] columnHeadings = new String[] {
-			"Filename, Header, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Total"
+			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Header, Total"
 	};
 
 	private final String[] tabNames = new String[] {
@@ -53,7 +53,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	};
 
 	enum TotalsIndex {
-		HEADER,
 		NEW,
 		CHANGED,
 		INACTIVATED,
@@ -63,6 +62,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		NEW_INACTIVE,
 		CHANGED_INACTIVE,
 		DELETED,
+		HEADER,
 		TOTAL
 	}
 
@@ -72,8 +72,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		// International
 		/*params.put(PREV_RELEASE, "international/international_edition_releases/previous/SnomedCT_InternationalRF2_PRODUCTION_20231201T120000Z.zip");
 		params.put(THIS_RELEASE, "international/international_edition_releases/current/SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");*/
-		params.put(THIS_RELEASE, "international/international_edition_releases/current/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version3.zip");
-		params.put(PREV_RELEASE, "international/international_edition_releases/previous/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version2.zip");
+		/*params.put(THIS_RELEASE, "international/international_edition_releases/current/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version3.zip");
+		params.put(PREV_RELEASE, "international/international_edition_releases/previous/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version2.zip");*/
 
 		// US Edition
 		/*params.put(THIS_RELEASE, "us/us_edition_releases/current/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20240301T120000Z.zip");
@@ -113,11 +113,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(MODULES, "11000172109");*/
 
-		/*params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
+		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
 		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/previous/SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20231115T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
-		params.put(MODULES, "11000172109");*/
+		params.put(MODULES, "11000172109");
 
 		// NZ Extension
 		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
@@ -472,6 +472,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			scsDetails[TotalsIndex.NEW_INACTIVE.ordinal() + 1] = scsTotals[IDX_NEW_INACTIVE];
 			scsDetails[TotalsIndex.CHANGED_INACTIVE.ordinal() + 1] = scsTotals[IDX_CHANGED_INACTIVE];
 			scsDetails[TotalsIndex.DELETED.ordinal() + 1] = 0; // missing in SCS
+			scsDetails[TotalsIndex.HEADER.ordinal() + 1] = 0; // missing in SCS
 
 			scsDetails[TotalsIndex.TOTAL.ordinal() + 1] =
 					scsTotals[IDX_NEW] +
@@ -534,7 +535,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				}
 			}
 
-			report(FILE_COMPARISON_TAB, "Files created: " + created.size());
+			report(FILE_COMPARISON_TAB, "Files created: " + created.size(), "Totals for the new files are included in the relevant sections below");
 			for (String file : created) {
 				if (rightFilesLineCounts.containsKey(file)) {
 					Integer lineCount = rightFilesLineCounts.get(file);
@@ -546,11 +547,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					totals.put(TotalsIndex.TOTAL, lineCount);
 					fileTotals.put(file, totals);
 				}
-				report(FILE_COMPARISON_TAB, file, "* See line count without header line in the NEW column in the section below");
+				report(FILE_COMPARISON_TAB, file);
 			}
 			report(FILE_COMPARISON_TAB, "");
 
-			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size());
+			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size(), "Totals for the deleted files are included in the relevant sections below");
 			for (String file : deleted) {
 				if (leftFilesLineCounts.containsKey(file)) {
 					Integer lineCount = leftFilesLineCounts.get(file);
@@ -562,7 +563,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					totals.put(TotalsIndex.TOTAL, lineCount);
 					fileTotals.put(file, totals);
 				}
-				report(FILE_COMPARISON_TAB, file, "* See line count without header line the DELETED column in the section below");
+				report(FILE_COMPARISON_TAB, file);
 			}
 			report(FILE_COMPARISON_TAB, "");
 
