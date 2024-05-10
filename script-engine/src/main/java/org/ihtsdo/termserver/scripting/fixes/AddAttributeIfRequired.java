@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class AddAttributeIfRequired extends BatchFix {
@@ -68,11 +69,15 @@ public class AddAttributeIfRequired extends BatchFix {
 		//QI-802
 		subsetECL = "<< 59274003 |Intentional drug overdose (disorder)|";
 		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("1148742001 |Intentional event (event)|"));
-		*/
 
 		//INFRA-12357
 		subsetECL = "<<276239002 |Therapy (regime/therapy)|";
 		relTemplate = new RelationshipTemplate(METHOD, gl.getConcept("360270004 |Therapy - action (qualifier value)|"));
+		*/
+
+		//INFRA-12889
+		subsetECL = "(^ 723264001) MINUS ( << 423857001 |Structure of half of body lateral to midsagittal plane (body structure)| MINUS ( * : 272741003 |Laterality (ttribute)| = ( 7771000 |Left (qualifier value)| OR 24028007 |Right (qualifier value)| OR 51440002 |Right and left (qualifier alue)| )))";
+		relTemplate = new RelationshipTemplate(gl.getConcept("272741003 |Laterality (attribute)|"), gl.getConcept("182353008 |Side|"));
 
 		exclusions = new HashSet<>();
 		super.postInit();
@@ -117,6 +122,6 @@ public class AddAttributeIfRequired extends BatchFix {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return new ArrayList<>(findConcepts(subsetECL));
+		return new ArrayList<>(SnomedUtils.sort(findConcepts(subsetECL)));
 	}
 }
