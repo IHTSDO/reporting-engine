@@ -26,7 +26,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private Concept COMPONENT;
 
-	//private final int BatchSize = 25;
+	//private final int BatchSize = 30;
 	private final int BatchSize = 99999;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -47,8 +47,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		//hierarchies.add(OBSERVABLE_ENTITY);
-		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
+		hierarchies.add(OBSERVABLE_ENTITY);
+		//hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
@@ -200,7 +200,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		return viableGroup;
 	}
 
-	private boolean inScope(Concept c) {
+	private boolean inScope(Concept c) throws TermServerScriptException {
 		/*if (!c.getConceptId().equals("699126008")) {
 			return false;
 		}*/
@@ -212,7 +212,11 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 		//But also, we're looking for concepts that have more the one self grouped attribute
 		boolean hasSelfGroupedAttribute = false;
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false)) {
+
+		//Work through both exising stated grouped, plus any that would need to be copied over from the inferred view
+		List<RelationshipGroup> combinedGroups = determineInferredRelGroupsToBeStated(c);
+		combinedGroups.addAll(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false));
+		for (RelationshipGroup g : combinedGroups) {
 			//Ignore group 0
 			if (g.getGroupId() == 0) {
 				continue;
@@ -226,6 +230,28 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			}
 		}
 		return false;
+	}
+
+	public List<RelationshipGroup> determineInferredRelGroupsToBeStated(Concept c) throws TermServerScriptException {
+		//Work through all inferred groups and collect any that aren't also stated, to state
+		List<RelationshipGroup> toBeStated = new ArrayList<>();
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
+
+		nextInferredGroup:
+		for (RelationshipGroup inferredGroup : inferredGroups) {
+			boolean matchFound = false;
+			for (RelationshipGroup statedGroup : statedGroups) {
+				if (inferredGroup.equals(statedGroup)) {
+					matchFound = true;
+					continue nextInferredGroup;
+				}
+			}
+			if (!matchFound) {
+				toBeStated.add(inferredGroup);
+			}
+		}
+		return toBeStated;
 	}
 
 }
