@@ -2140,6 +2140,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		Relationship newRel = new Relationship (c, type, value, groupId);
 		//Copying relationships from elsewhere indicates they have not been released in their current condition
 		newRel.setReleased(false);
+		newRel.setDirty();
 		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 		c.addRelationship(newRel);
 		changesMade++;
