@@ -8,14 +8,19 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.managedService.ConceptsMissingMultiLanguageTranslations;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 public class CharacterConversionFixUp extends BatchFix implements ScriptConstants, ReportClass {
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(CharacterConversionFixUp.class);
+
 	enum KnownCharacterConversions { ß_TO_SS };
 	
 	private static final String CHARACTER_CONVERSION = "Character Conversion";
@@ -71,13 +76,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 		populateTaskDescription = true;
 		selfDetermining = true;
 		classifyTasks = false;
-
-		if (projectName.length() != 2) {
-			throw new TermServerScriptException("This script should only be run against a country's master project eg 'CH'");
-		}
-
 		JobRun jobRun = getJobRun();
-		dryRun = jobRun.getParamBoolean(DRY_RUN);
 		taskSize = Integer.MAX_VALUE;
 		String characterConversionStr = jobRun.getMandatoryParamValue(CHARACTER_CONVERSION);
 		currentConversionType = KnownCharacterConversions.valueOf(characterConversionStr);
@@ -87,6 +86,16 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 		} else {
 			throw new TermServerScriptException("Unknown Character Conversion specified: " + characterConversionStr);
 		}
+	}
+
+	public void init (JobRun run) throws TermServerScriptException {
+		super.init(run);
+
+		if (projectName.length() != 2) {
+			throw new TermServerScriptException("This script should only be run against a country's master project eg 'CH'");
+		}
+		dryRun = jobRun.getParamBoolean(DRY_RUN);
+		LOGGER.info("Dry Run mode configured: " + dryRun);
 	}
 
 	@Override
@@ -119,7 +128,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 		List<DescriptionType> descTypes = new ArrayList<>();
 		descTypes.add(DescriptionType.FSN);
 		descTypes.add(DescriptionType.SYNONYM);
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		for (Concept c : allPotential) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE, descTypes)) {
 				if (inScope(d) && d.getTerm().contains(match)) {
@@ -128,7 +137,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 }
