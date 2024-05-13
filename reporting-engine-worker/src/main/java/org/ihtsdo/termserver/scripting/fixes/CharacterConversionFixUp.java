@@ -63,7 +63,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DEVOPS))
 				.withName("Character Conversion Fix-up")
 				.withDescription("This report creates a single task which replaces descriptions containing the selected ")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withTag(MS).withTag(INT)
 				.withParameters(params)
 				.build();
