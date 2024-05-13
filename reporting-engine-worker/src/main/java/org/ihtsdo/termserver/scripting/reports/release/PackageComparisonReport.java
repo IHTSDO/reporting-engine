@@ -98,6 +98,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-05-19T07:39:38/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20230531T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
 		params.put(MODULES, "45991000052106");*/
+		params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/current/xSnomedCT_ManagedServiceSE_PREPRODUCTION_SE1000052_20240531T120000Z_version2.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
+		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/previous/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20231130T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230731T120000Z.zip");
+		params.put(MODULES, "45991000052106");
 
 		// DK Extension
 		/*params.put(PREV_RELEASE, "dk/snomed_ct_denmark_extension_releases/2022-09-23T12:02:14/output-files/SnomedCT_ManagedServiceDK_PRODUCTION_DK1000005_20220930T120000Z.zip");
@@ -112,12 +117,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		params.put(MODULES, "11000172109");*/
-
-		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
+		/*params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
 		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/previous/SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20231115T120000Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
-		params.put(MODULES, "11000172109");
+		params.put(MODULES, "11000172109");*/
 
 		// NZ Extension
 		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
@@ -147,6 +151,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public void init(JobRun run) throws TermServerScriptException {
 		previousReleasePath = run.getParamValue(PREV_RELEASE);
 		currentReleasePath = run.getParamValue(THIS_RELEASE);
+
+		if (previousReleasePath.equals(currentReleasePath)) {
+			throw new TermServerScriptException("Previous and current release paths must be different");
+		}
+
 		super.init(run);
 	}
 
@@ -222,15 +231,23 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		File previousRelease = new File(previousReleasePath);
 		File currentRelease = new File(currentReleasePath);
 
+		String previousReleaseName = previousRelease.getName();
+		String currentReleaseName = currentRelease.getName();
+
+		if (previousReleaseName.equals(currentReleaseName)) {
+			previousReleaseName = "Previous_" + previousReleaseName;
+			currentReleaseName = "Current_" + currentReleaseName;
+		}
+
 		String uploadFolder = String.join("_",
 				LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd-HHmm")),
-				previousRelease.getName(),
-				currentRelease.getName());
+				previousReleaseName,
+				currentReleaseName);
 
 		String[] scriptArguments = new String[]{
-				doubleQuote(previousRelease.getName()),
+				doubleQuote(previousReleaseName),
 				doubleQuote(previousRelease.getPath()),
-				doubleQuote(currentRelease.getName()),
+				doubleQuote(currentReleaseName),
 				doubleQuote(currentRelease.getPath()),
 				doubleQuote(uploadFolder)
 		};
