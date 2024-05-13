@@ -1,52 +1,35 @@
 package org.ihtsdo.termserver.scripting.template;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.ReportSheetManager;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
+public class NormaliseConceptsDriven extends BatchFix {
 
-/**
- * Normalize concepts selected via ECL
- * That is to say, copy all the inferred relationships into the stated form
- * and set the proximal primitive parent
- */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class NormaliseConcepts extends BatchFix {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConceptsDriven.class);
 
 	Concept ppp;
-	Boolean useStatedECL = true;
-	//private String ecl = "<< 66191007 |Transient arthropathy (disorder)|";
-	//private String ecl = "<! 267038008 |Edema (finding)|";
-	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
-	//private String ecl = "<! 409063005 |Counseling (procedure)|";
-	//private String ecl = "<< 10942006 |Plication (procedure)|  ";
-	//private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
-	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
-	//private String ecl = "< 3253007 |Discoloration of skin (finding)|";
-	//private String ecl = "< 67889009 |Irrigation (procedure)|";
-	//private String ecl = "< 11429006 |Consultation (procedure)| ";
-	//private String ecl = "< 14766002 |Aspiration (procedure)| ";
-	private String ecl = "<! 59108006 |Injection (procedure)|";
-	
-	public NormaliseConcepts(BatchFix clone) {
+
+	public NormaliseConceptsDriven(BatchFix clone) {
 		super(clone);
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
-		NormaliseConcepts app = new NormaliseConcepts(null);
+		NormaliseConceptsDriven app = new NormaliseConceptsDriven(null);
 		try {
 			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
 			app.classifyTasks = false;
@@ -64,7 +47,6 @@ public class NormaliseConcepts extends BatchFix {
 	
 	protected void init(String[] args) throws TermServerScriptException {
 		reportNoChange = false;
-		selfDetermining = true;
 		summaryTabIdx = SECONDARY_REPORT;
 		super.init(args);
 	}
@@ -74,11 +56,6 @@ public class NormaliseConcepts extends BatchFix {
 				"Report Metadata, Detail, Detail"};
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata"};
-		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
-		//ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
-		//ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
-		//ppp = gl.getConcept("71388002 |Procedure (procedure)|");
-		//This can be passed through as null now, and calculated from the top level hierarchy
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -183,7 +160,8 @@ public class NormaliseConcepts extends BatchFix {
 		return changesMade;
 	}
 
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+>>>>>>> 00c9a7f1b (INFRA-12848 Add class to normalize concepts based on list loaded from a text file)
 		//First pass attempt to remodel because we don't want to batch anything that results 
 		//in no changes being made.
 		Set<Concept> changesRequired = new HashSet<>();
@@ -192,9 +170,6 @@ public class NormaliseConcepts extends BatchFix {
 		setQuiet(true);
 		CharacteristicType charType = useStatedECL ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
 		for (Concept concept : findConcepts(ecl, true, charType)) {
-			/*if (concept.getId().equals("428979007")) {
-				LOGGER.debug("here");
-			}*/
 			//Make changes to a clone of the concept so we don't affect our local copy
 			Concept clone = concept.cloneWithIds();
 			int changesMade = normaliseConcept(null, clone);
@@ -207,6 +182,6 @@ public class NormaliseConcepts extends BatchFix {
 		setQuiet(false);
 		addSummaryInformation("Concepts no change required", noChangesRequired.size());
 		return asComponents(changesRequired);
-	}
+	}*/
 	
 }

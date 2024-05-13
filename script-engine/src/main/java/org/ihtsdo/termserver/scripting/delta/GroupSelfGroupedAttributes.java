@@ -47,8 +47,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		hierarchies.add(OBSERVABLE_ENTITY);
-		//hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
+		//hierarchies.add(OBSERVABLE_ENTITY);
+		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
