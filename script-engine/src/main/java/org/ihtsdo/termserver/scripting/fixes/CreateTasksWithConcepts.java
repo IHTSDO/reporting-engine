@@ -19,16 +19,15 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants{
 	
 	String[] conceptsToProcess = new String[] {
-			"285598005","285603002","285604008",
-			"285605009","285606005","285607001",
-			"285608006","285609003","285610008",
-			"285611007","285612000","285613005",
-			"285614004","285615003","285616002",
-			"285617006","285618001","285619009",
-			"285631006","285633009","285634003",
-			"285635002","285637005","285638000",
-			"285639008","285640005","285641009",
-			"285642002","285643007","285644001"	
+			"104685000","12843005","2406000",
+			"241671007","401295002","412857008",
+			"423911002","42423000","442039000",
+			"44340006","444225007","445881001",
+			"446323000","446889005","446913004",
+			"447317003","45681003","710213002",
+			"710214008","710215009","710216005",
+			"710217001","710219003","711359007",
+			"71387007","76145000","773298008"
 	};
 	
 	protected CreateTasksWithConcepts(BatchFix clone) {
@@ -41,7 +40,9 @@ public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants
 			ReportSheetManager.targetFolderId="1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
+			fix.selfDetermining = true;
 			fix.reportNoChange = true;
+			fix.taskPrefix = "";  //TODO Set this for each batch
 			fix.expectNullConcepts = true; 
 			fix.validateConceptOnUpdate = false;
 			fix.init(args);
