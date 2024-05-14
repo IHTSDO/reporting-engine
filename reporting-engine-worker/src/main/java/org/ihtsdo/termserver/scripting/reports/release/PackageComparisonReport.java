@@ -552,7 +552,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				}
 			}
 
-			report(FILE_COMPARISON_TAB, "Files created: " + created.size(), "Totals for the new files are included in the relevant sections below");
+			report(FILE_COMPARISON_TAB, "Files created: " + created.size() + ". See file totals in the relevant sections below");
 			for (String file : created) {
 				if (rightFilesLineCounts.containsKey(file)) {
 					Integer lineCount = rightFilesLineCounts.get(file);
@@ -568,7 +568,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			}
 			report(FILE_COMPARISON_TAB, "");
 
-			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size(), "Totals for the deleted files are included in the relevant sections below");
+			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size() + ". See file totals in the relevant sections below");
 			for (String file : deleted) {
 				if (leftFilesLineCounts.containsKey(file)) {
 					Integer lineCount = leftFilesLineCounts.get(file);
