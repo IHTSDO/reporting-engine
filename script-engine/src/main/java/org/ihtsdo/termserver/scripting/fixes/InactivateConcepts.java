@@ -9,20 +9,14 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/*
- * INFRA-2496, QI-135, DRUGS-667, IHTSDO-175
- * Inactivate concepts where a replacement exists - driven by list.
- * 
- * DEVICES-92 Straight inactivation, driven by list, no replacement
- * 
- * TMO-66 Inactivate numbers.
- * 
- * INFRA-11734 Inactivate << 168123008 |Sample sent for examination (situation)|.
- */
 public class InactivateConcepts extends BatchFix implements ScriptConstants {
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateConcepts.class);
+
 	private InactivationIndicator defaultInactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
@@ -31,6 +25,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 	boolean expectReplacements = false;
 	boolean autoInactivateChildren = false;
 	boolean rewireChildrenToGrandparents = false;
+
+	List<Concept> exceptions = new ArrayList<>();
 	
 	protected InactivateConcepts(BatchFix clone) {
 		super(clone);
@@ -44,9 +40,9 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			fix.expectNullConcepts = false;
 			fix.groupByIssue = false;
 			fix.reportNoChange = false;
-			fix.selfDetermining = false;
-			fix.runStandAlone = true;
-			//fix.subsetECL = "< 168123008 |Sample sent for examination (situation)|.";
+			fix.selfDetermining = true;
+			//fix.runStandAlone = true;
+			fix.subsetECL = "< 415229000 |Racial group (racial group)|";
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -55,6 +51,17 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		} finally {
 			fix.finish();
 		}
+	}
+
+	public void postInit() throws TermServerScriptException {
+		super.postInit();
+		exceptions.add(gl.getConcept("413464008 |African race (racial group)|"));
+		exceptions.add(gl.getConcept("413773004 |Caucasian (racial group)|"));
+		exceptions.add(gl.getConcept("413582008 |Asian race (racial group)|"));
+		exceptions.add(gl.getConcept("413491005 |American Indian race (racial group)|"));
+		exceptions.add(gl.getConcept("414752008 |Mixed racial group (racial group)|"));
+		exceptions.add(gl.getConcept("415794004 |Unknown racial group (racial group)|"));
+		exceptions.add(gl.getConcept("1336109002 |Pacific islander (racial group)|"));
 	}
 
 	@Override
@@ -69,7 +76,11 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 				updateConcept(t, loadedConcept, info);
 			}
 		} else {
-			changesMade = deleteConcept(t, loadedConcept);
+			if (!exceptions.contains(c)) {
+				changesMade = deleteConcept(t, loadedConcept);
+			} else {
+				report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept saved from deletion by exception list");
+			}
 		}
 		return changesMade;
 	}
@@ -80,6 +91,9 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		if (expectReplacements && replacement == null) {
 			throw new ValidationFailure(c, "Unable to inactivate without replacement");
 		}
+		//Is this concept an exception, that we're not going to inactivate?
+		//We're still going to inactivate its children if so
+		boolean isException = exceptions.contains(c);
 		
 		Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 		
@@ -91,17 +105,18 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			}
 			return NO_CHANGES_MADE;
 		}
-		
-		//Check for this concept being the target of any historical associations and rewire them to the replacement
-		//With the same inactivation reasons
+
 		InactivationIndicator inactivationIndicator = inactivationIndicators.get(c);
-		
 		if (inactivationIndicator == null) {
 			inactivationIndicator = defaultInactivationIndicator;
 		}
-		
-		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
-		
+
+		if (!isException) {
+			//Check for this concept being the target of any historical associations and rewire them to the replacement
+			//With the same inactivation reasons
+			checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
+		}
+
 		//How many children do we have to do something different with?
 		//Use locally held concept when traversing transitive closure
 		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendants(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
@@ -112,6 +127,10 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		
 		//Check for any stated children and remove this concept as a parent
 		for (Concept child : gl.getConcept(c.getConceptId()).getDescendants(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
+			if (exceptions.contains(child)) {
+				LOGGER.warn("Child " + child + " is an exception to inactivation, but parent being inactivated.  Needs rewired to grandparent or higher?");
+				continue;
+			}
 			//Have we already inactivated this child
 			if (!inactivations.containsKey(child)) {
 				t.remove(child);
@@ -140,39 +159,49 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		c.setActive(false);
-		c.setEffectiveTime(null);
-		
-		String histAssocType = "Unknown Historical Association";
-		if ((replacement== null || replacement.equals(NULL_CONCEPT)) && !inactivationIndicator.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-			if (inactivationIndicator != null) {
-				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "File specified " + inactivationIndicator + " inactivation but no HistAssoc found. Switching to NCEP");
-			}
-			c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-			c.setAssociationTargets(new AssociationTargets());
-			report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
-		} else {
-			c.setInactivationIndicator(inactivationIndicator);
-			switch (inactivationIndicator) {
-				case OUTDATED : c.setAssociationTargets(AssociationTargets.replacedBy(replacement));
-								histAssocType = " replaced by ";
-								break;
-				case AMBIGUOUS : c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
-								histAssocType = " possibly equiv to ";
-								break;
-				case NONCONFORMANCE_TO_EDITORIAL_POLICY :	c.setAssociationTargets(new AssociationTargets());
-															histAssocType = "";
-															break;
-				default : throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
-			}
-			
-			if (replacement != null && !replacement.equals(NULL_CONCEPT)) {
-				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + replacement);
+
+		if (!isException) {
+			c.setActive(false);
+			c.setEffectiveTime(null);
+
+			String histAssocType = "Unknown Historical Association";
+			if ((replacement == null || replacement.equals(NULL_CONCEPT)) && !inactivationIndicator.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+				if (inactivationIndicator != null) {
+					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "File specified " + inactivationIndicator + " inactivation but no HistAssoc found. Switching to NCEP");
+				}
+				c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+				c.setAssociationTargets(new AssociationTargets());
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
 			} else {
-				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator);
+				c.setInactivationIndicator(inactivationIndicator);
+				switch (inactivationIndicator) {
+					case OUTDATED:
+						c.setAssociationTargets(AssociationTargets.replacedBy(replacement));
+						histAssocType = " replaced by ";
+						break;
+					case AMBIGUOUS:
+						c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+						histAssocType = " possibly equiv to ";
+						break;
+					case NONCONFORMANCE_TO_EDITORIAL_POLICY:
+						c.setAssociationTargets(new AssociationTargets());
+						histAssocType = "";
+						break;
+					default:
+						throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
+				}
+
+				if (replacement != null && !replacement.equals(NULL_CONCEPT)) {
+					report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + replacement);
+				} else {
+					report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator);
+				}
 			}
+			inactivations.put(c, t);
+		} else {
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept saved from inactivation by exception list");
 		}
-		inactivations.put(c, t);
+
 		return CHANGE_MADE;
 	}
 
