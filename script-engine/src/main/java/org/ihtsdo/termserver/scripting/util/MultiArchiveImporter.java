@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -26,13 +27,18 @@ import org.slf4j.LoggerFactory;
 
 public class MultiArchiveImporter extends BatchFix {
 
+	enum MODE { TASK_PER_ARCHIVE, ALL_ARCHIVES_IN_ONE_TASK };
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
 	private final static String taskPrefix = "";
+	private final static MODE mode = MODE.ALL_ARCHIVES_IN_ONE_TASK;
 
 	protected MultiArchiveImporter(BatchFix clone) {
 		super(clone);
 	}
+
+	private Task lastTaskCreated = null;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		MultiArchiveImporter importer = new MultiArchiveImporter(null);
@@ -74,23 +80,28 @@ public class MultiArchiveImporter extends BatchFix {
 				LOGGER.info("Skipping non archive: " + thisArchive);
 			}
 		}
+
+		if (classifyTasks && mode == MODE.ALL_ARCHIVES_IN_ONE_TASK) {
+			classify(lastTaskCreated);
+		}
 	}
 
 	private void importArchive(File thisArchive) throws TermServerScriptException {
 		String result = "OK";
-		Task task = null;
+		Task task = mode == MODE.ALL_ARCHIVES_IN_ONE_TASK ? lastTaskCreated : null;
 		try {
-			task = new Task(null, getNextAuthor(), getNextReviewer());
-			task.setSummary(taskPrefix + "Import " + thisArchive.getName());
-			createTask(task);
+			if (task == null || mode == MODE.TASK_PER_ARCHIVE) {
+				task = new Task(null, getNextAuthor(), getNextReviewer());
+				lastTaskCreated = task;
+				task.setSummary(taskPrefix + "Import " + thisArchive.getName());
+				createTask(task);
+			}
+
 			if (!dryRun) {
 				tsClient.importArchive(task.getBranchPath(), ImportType.DELTA, thisArchive);
 				updateTask(task, getReportName(), getReportManager().getUrl());
-				if (classifyTasks) {
-					LOGGER.info ("Classifying " + task);
-					Classification classification = scaClient.classify(task.getKey());
-					LOGGER.debug(classification.toString());
-					tsClient.waitForCompletion(task.getBranchPath(), classification);
+				if (classifyTasks && mode == MODE.TASK_PER_ARCHIVE) {
+					classify(task);
 				}
 			}
 		} catch (Exception e) {
@@ -98,6 +109,18 @@ public class MultiArchiveImporter extends BatchFix {
 			result = e.toString();
 		}
 		report(PRIMARY_REPORT, task.getKey(), thisArchive.getName(), task.getAssignedAuthor(), result);
+	}
+
+	private void classify(Task task) throws TermServerScriptException {
+		try {
+			LOGGER.info ("Classifying " + task);
+			Classification classification = null;
+			classification = scaClient.classify(task.getKey());
+			LOGGER.debug(classification.toString());
+			tsClient.waitForCompletion(task.getBranchPath(), classification);
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(e);
+		}
 	}
 
 	@Override
