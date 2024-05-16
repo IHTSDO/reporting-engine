@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
 public class AxiomEntry extends RefsetMember implements ScriptConstants {

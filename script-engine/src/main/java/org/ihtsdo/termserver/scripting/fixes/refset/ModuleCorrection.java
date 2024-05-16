@@ -8,7 +8,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Refset;
-import org.ihtsdo.termserver.scripting.domain.RefsetMember;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;

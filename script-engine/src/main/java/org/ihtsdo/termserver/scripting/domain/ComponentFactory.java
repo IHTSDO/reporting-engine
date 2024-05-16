@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class ComponentFactory {

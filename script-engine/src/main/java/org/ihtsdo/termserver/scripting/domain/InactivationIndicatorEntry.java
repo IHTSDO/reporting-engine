@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	valueId
 public class InactivationIndicatorEntry extends RefsetMember implements ScriptConstants {

@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId
 public class MRCMAttributeRange extends RefsetMember implements ScriptConstants {

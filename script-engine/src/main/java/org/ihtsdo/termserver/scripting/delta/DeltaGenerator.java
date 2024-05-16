@@ -10,6 +10,7 @@ import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -40,6 +41,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String textDfnDeltaFilename;
 	protected String langDeltaFilename;
 	protected String altIdDeltaFilename;
+	protected String compAnnotDeltaFilename;
 	protected String edition = "INT";
 	
 	protected String eclSubset = null;
@@ -61,7 +63,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
 	protected String[] altIdHeader = new String[] {"alternateIdentifier","effectiveTime","active","moduleId","identifierSchemeId","referencedComponentId"};
-	
+	protected String[] compAnnotHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","languageDialectCode","typeId","value"};
+
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;
 	protected IdGenerator relIdGenerator;
@@ -300,6 +303,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		assocDeltaFilename = refDir + "Content/der2_cRefset_AssociationDelta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.HISTORICAL_ASSOCIATION, assocDeltaFilename);
 		writeToRF2File(assocDeltaFilename, assocHeader);
+
+		compAnnotDeltaFilename = refDir + "Metadata/der2_scsRefset_ComponentAnnotationStringValueDelta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.COMPONENT_ANNOTATION, compAnnotDeltaFilename);
+		writeToRF2File(compAnnotDeltaFilename, compAnnotHeader);
 	}
 	
 	protected int outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
@@ -326,20 +333,29 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (d.isDirty()) {
 			writeToRF2File(descDeltaFilename, d.toRF2());
 		}
+		//Does this component itself have an associated annotations?
+		outputComponentAnnotations(d);
+
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
 			if (lang.isDirty()) {
 				writeToRF2File(langDeltaFilename, lang.toRF2());
 			}
+			//Does this component itself have an associated annotations?
+			outputComponentAnnotations(lang);
 		}
 		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 			if (i.isDirty()) {
 				writeToRF2File(attribValDeltaFilename, i.toRF2());
 			}
+			//Does this component itself have an associated annotations?
+			outputComponentAnnotations(i);
 		}
 		for (AssociationEntry a : d.getAssociationEntries()) {
 			if (a.isDirty()) {
 				writeToRF2File(assocDeltaFilename, a.toRF2());
 			}
+			//Does this component itself have an associated annotations?
+			outputComponentAnnotations(a);
 		}
 	}
 	
@@ -352,24 +368,47 @@ public abstract class DeltaGenerator extends TermServerScript {
 				default: writeToRF2File(relDeltaFilename, r.toRF2());
 			}
 		}
+		//Does this component itself have an associated annotations?
+		outputComponentAnnotations(r);
 	}
 	
 	protected void outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
 		if (i.isDirty()) {
 			writeToRF2File(attribValDeltaFilename, i.toRF2());
 		}
+		//Does this component itself have an associated annotations?
+		outputComponentAnnotations(i);
 	}
-	
+
+	private void outputComponentAnnotations(Component c) throws TermServerScriptException {
+		for (ComponentAnnotationEntry cae: c.getComponentAnnotationEntries()) {
+			outputRF2(cae);
+		}
+	}
+
 	protected void outputRF2(AssociationEntry h) throws TermServerScriptException {
 		if (h.isDirty()) {
 			writeToRF2File(assocDeltaFilename, h.toRF2());
 		}
+		//Does this component itself have an associated annotations?
+		outputComponentAnnotations(h);
 	}
 	
 	protected void outputRF2(AxiomEntry a) throws TermServerScriptException {
 		if (a.isDirty()) {
 			writeToRF2File(owlDeltaFilename, a.toRF2());
 		}
+		//Does this component itself have an associated annotations?
+		outputComponentAnnotations(a);
+	}
+
+	protected void outputRF2(ComponentAnnotationEntry cae) throws TermServerScriptException {
+		if (cae.isDirty()) {
+			writeToRF2File(compAnnotDeltaFilename, cae.toRF2());
+		}
+		//Does this component itself have an associated annotations?
+		//This will be an annotation on an annotation - MCHMOOS
+		outputComponentAnnotations(cae);
 	}
 	
 	protected boolean outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
@@ -430,6 +469,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 		for (AxiomEntry a: c.getAxiomEntries()) {
 			outputRF2(a);
 		}
+
+		outputComponentAnnotations(c);
 		return conceptOutput;
 	}
 
