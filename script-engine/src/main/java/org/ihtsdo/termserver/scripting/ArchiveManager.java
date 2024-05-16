@@ -871,7 +871,11 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (fileName.contains("MRCMAttributeRange")) {
 					LOGGER.info("Loading MRCM AttributeRange File: " + fileName);
 					gl.loadMRCMAttributeRangeFile(is, isReleased);
-				} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
+				} else if (fileName.contains("ComponentAnnotationStringValue")) {
+					LOGGER.info("Loading ComponentAnnotationStringValue File: " + fileName);
+					gl.loadComponentAnnotationFile(is, isReleased);
+				}
+				else if (loadOtherReferenceSets && fileName.contains("Refset")) {
 					loadTheReferenceSet = true;
 				}
 

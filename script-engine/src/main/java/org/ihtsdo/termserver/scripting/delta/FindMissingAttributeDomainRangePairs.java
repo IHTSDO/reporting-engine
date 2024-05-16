@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Branch;
-import org.ihtsdo.termserver.scripting.domain.RefsetMember;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.io.File;

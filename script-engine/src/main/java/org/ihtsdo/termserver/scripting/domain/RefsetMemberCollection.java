@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 import com.google.gson.annotations.*;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 
 public class RefsetMemberCollection {
 	

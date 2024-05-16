@@ -10,6 +10,8 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -1124,6 +1126,70 @@ public class GraphLoader implements ScriptConstants {
 			if (d != null) {
 				return d.getInactivationIndicatorEntry(indicatorId);
 			}
+		}
+		return null;
+	}
+
+	public void loadComponentAnnotationFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
+					continue;
+				}
+				String id = lineItems[IDX_ID];
+
+				String revertEffectiveTime = null;
+				if (detectNoChangeDelta && isReleased != null && !isReleased) {
+					//Recover this entry for the component - concept or description
+					ComponentAnnotationEntry cae = getComponentAnnotationEntry(lineItems[REF_IDX_REFCOMPID], lineItems[IDX_ID]);
+					if (cae != null) {
+						Component c = SnomedUtils.getParentComponent(cae, this);
+						revertEffectiveTime = detectNoChangeDelta(c, cae, lineItems);
+					}
+				}
+
+				ComponentAnnotationEntry componentAnnotationEntry = ComponentAnnotationEntry.fromRf2(lineItems);
+
+				//Only set the released flag if it's not set already
+				if (componentAnnotationEntry.isReleased() == null) {
+					componentAnnotationEntry.setReleased(isReleased);
+				}
+
+				if (revertEffectiveTime != null) {
+					componentAnnotationEntry.setEffectiveTime(revertEffectiveTime);
+				}
+
+				Concept c = getConcept(lineItems[COMP_ANNOT_IDX_REFCOMPID]);
+				//Do we already have this cae?  Copy the released flag if so
+				ComponentAnnotationEntry existing = c.getComponentAnnotationEntry(id);
+				if (existing != null) {
+					componentAnnotationEntry.setReleased(existing.getReleased());
+					if (isRecordPreviousState() && !isReleased) {
+						String previousState = existing.getMutableFields();
+						componentAnnotationEntry.addIssue(previousState);
+					}
+				}
+
+				c.addComponentAnnotationEntry(componentAnnotationEntry);
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+
+	private ComponentAnnotationEntry getComponentAnnotationEntry(String componentId, String annotationId) throws TermServerScriptException {
+		if (SnomedUtils.isConceptSctid(componentId)) {
+			Concept c = getConcept(componentId, false, false);
+			if (c != null) {
+				return c.getComponentAnnotationEntry(annotationId);
+			}
+		} else {
+			throw new TermServerScriptException("Component Annotation Entry for other component types not yet supported");
 		}
 		return null;
 	}
