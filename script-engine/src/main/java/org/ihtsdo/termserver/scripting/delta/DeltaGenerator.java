@@ -403,7 +403,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	protected void outputRF2(ComponentAnnotationEntry cae) throws TermServerScriptException {
-		if (cae.isDirty()) {
+		if (cae.isDirty() && !dryRun) {
 			writeToRF2File(compAnnotDeltaFilename, cae.toRF2());
 		}
 		//Does this component itself have an associated annotations?
@@ -496,7 +496,9 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected void outputRF2(Concept c) throws TermServerScriptException {
 		//By default, check for modified descriptions and relationships 
 		//even if the concept has not been modified.
-		outputRF2(c, true);
+		if (!dryRun) {
+			outputRF2(c, true);
+		}
 	}
 	
 
