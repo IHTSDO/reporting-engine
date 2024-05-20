@@ -4,21 +4,16 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
-import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class AddAttributionAnnotations extends DeltaGenerator implements ScriptConstants{
 
@@ -34,7 +29,7 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
-			delta.getArchiveManager().setAllowStaleData(true);
+			//delta.getArchiveManager().setAllowStaleData(true);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
 			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
@@ -74,6 +69,8 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 		String processingDetail = "Orphanet attribution added";
 		ReportActionType action = ReportActionType.NO_CHANGE;
 		String rmStr = "";
+		String textDefn = "";
+		String textDefnET = "";
 		if (c.hasIssues()) {
 			processingDetail = c.getIssues();
 		} else if (!hasTextDef) {
@@ -92,8 +89,16 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			action = ReportActionType.REFSET_MEMBER_ADDED;
 			changesMade++;
 			countIssue(c);
+			List<Description> textDefinitions = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
+			textDefn = textDefinitions.stream()
+					.map(d -> d.getTerm())
+					.collect(Collectors.joining(",\n"));
+			textDefnET = textDefinitions.stream()
+					.findFirst()
+					.map(d -> d.getEffectiveTime())
+					.orElse("");
 		}
-		report(c, Severity.LOW, action, processingDetail, rmStr);
+		report(c, Severity.LOW, action, processingDetail, rmStr, textDefn, textDefnET);
 		return changesMade;
 	}
 
