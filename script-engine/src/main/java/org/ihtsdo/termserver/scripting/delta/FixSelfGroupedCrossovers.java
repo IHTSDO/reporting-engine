@@ -80,6 +80,9 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		int conceptsInThisBatch = 0;
 		for (Concept hierarchy : hierarchies) {
 			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
+				/*if (c.getId().equals("407715006")) {
+					LOGGER.debug("Debug here");
+				}*/
 				if (inScope(c)) {
 					String beforeStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 					String beforeInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
@@ -116,7 +119,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		List<RelationshipGroup> selfGroups = identifyGroups(c, true);
 		Set<RelationshipGroup> groupsToRemove = new HashSet<>();
 		
-		//Work through all of the populated groups and see if we can match an
+		//Work through all the populated groups and see if we can match an
 		//attribute type with a self grouped relationship where the populated 
 		//group is an ancestor of the self grouped value.   Phew!  Make sense?
 		for (RelationshipGroup populatedGroup : populatedGroups) {
@@ -129,6 +132,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 						if (resolvesCrossover(r, r2)) {
 							r.setTarget(r2.getTarget());
 							r.setDirty();
+							report(PRIMARY_REPORT, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, r);
 							changesMade = true;
 							groupsToRemove.add(selfGroup);
 						}
@@ -163,17 +167,21 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 	private boolean reportIllegalGrouping(Concept c, String beforeStated, String beforeInferred, String after) throws TermServerScriptException {
 		Set<Concept> typesSeen = new HashSet<>();
 		boolean hasIllegalMultipleSameType = false;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (skipAttributeTypes.contains(r.getType())) {
-				continue;
-			}
-
-			if (typesSeen.contains(r.getType())) {
-				if (!allowRepeatingTypes.contains(r.getType())) {
-					hasIllegalMultipleSameType = true;
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			typesSeen.clear();
+			for (Relationship r : g.getRelationships()) {
+				if (skipAttributeTypes.contains(r.getType())) {
+					continue;
 				}
-			} else {
-				typesSeen.add(r.getType());
+
+				if (typesSeen.contains(r.getType())) {
+					if (!allowRepeatingTypes.contains(r.getType())) {
+						hasIllegalMultipleSameType = true;
+						break;
+					}
+				} else {
+					typesSeen.add(r.getType());
+				}
 			}
 		}
 		
