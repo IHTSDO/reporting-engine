@@ -2138,6 +2138,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			groupId = SnomedUtils.getFirstFreeGroup(c);
 		}
 		Relationship newRel = new Relationship (c, type, value, groupId);
+		//Copying relationships from elsewhere indicates they have not been released in their current condition
+		newRel.setReleased(false);
 		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 		c.addRelationship(newRel);
 		changesMade++;
@@ -2159,7 +2161,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int removeRelationship(Task t, Concept c, Relationship r, String reasonPrefix) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
 		ReportActionType action = ReportActionType.UNKNOWN;
-		if (!r.isReleased()) {
+
+		if (!r.fromAxiom() && r.isReleased() == null) {
+			throw new TermServerScriptException("Attempted to remove Relationship " + r + " with no released status");
+		}
+		//Since stated relationsips aren't really inactivated, if this rel has come from an
+		//axiom, we can just say it's deleted
+		if (r.fromAxiom() || !r.isReleased()) {
 			r.setActive(false);
 			c.removeRelationship(r);
 			action = ReportActionType.RELATIONSHIP_DELETED;
@@ -2167,7 +2175,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			c.inactivateRelationship(r);
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
 		}
-		report (t, c, Severity.LOW, action, reasonPrefix + r);
+		report(t, c, Severity.LOW, action, reasonPrefix + r);
 		return CHANGE_MADE;
 	}
 
