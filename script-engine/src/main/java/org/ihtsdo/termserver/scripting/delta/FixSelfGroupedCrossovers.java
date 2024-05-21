@@ -24,8 +24,8 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 
 	private Concept COMPONENT;
 
-	private final int BatchSize = 25;
-	//private final int BatchSize = 99999;
+	//private final int BatchSize = 25;
+	private final int BatchSize = 99999;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		FixSelfGroupedCrossovers delta = new FixSelfGroupedCrossovers();
@@ -63,7 +63,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		targetModuleId = moduleId;
 
 		String[] columnHeadings = new String[]{
-				"SCTID, FSN, SemTag, Severity, Action, Before, After, ",
+				"SCTID, FSN, SemTag, Severity, Action, Before (Stated), Before (Inferred), After (Stated), ",
 				"SCTID, FSN, SemTag, Expression",
 				"SCTID, FSN, SemTag, Before, After",
 		};
@@ -81,20 +81,23 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		for (Concept hierarchy : hierarchies) {
 			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
 				if (inScope(c)) {
-					String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+					String beforeStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+					String beforeInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
 					restateInferredRelationships(c);
 					removeRedundandGroups((Task) null, c);
 					c.recalculateGroups();
-					int reportToTabIdx = fixSelfGroupedCrossover(c, before);
+					int reportToTabIdx = fixSelfGroupedCrossover(c, beforeStated, beforeInferred);
 					if (reportToTabIdx == PRIMARY_REPORT) {
 						outputRF2(c, true);
 						conceptsInThisBatch++;
 						if (conceptsInThisBatch >= BatchSize) {
-							createOutputArchive(false, conceptsInThisBatch);
+							if (!dryRun) {
+								createOutputArchive(false, conceptsInThisBatch);
+								outputDirName = "output"; //Reset so we don't end up with _1_1_1
+								initialiseOutputDirectory();
+								initialiseFileHeaders();
+							}
 							gl.setAllComponentsClean();
-							outputDirName = "output"; //Reset so we don't end up with _1_1_1
-							initialiseOutputDirectory();
-							initialiseFileHeaders();
 							conceptsInThisBatch = 0;
 						}
 					} else {
@@ -106,7 +109,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		return conceptsInThisBatch;
 	}
 
-	private int fixSelfGroupedCrossover(Concept c, String before) throws TermServerScriptException {
+	private int fixSelfGroupedCrossover(Concept c, String beforeStated, String beforeInferred) throws TermServerScriptException {
 		int reportToTabIdx = PRIMARY_REPORT;
 		boolean changesMade = false;
 		List<RelationshipGroup> populatedGroups = identifyGroups(c, false);
@@ -128,16 +131,18 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 							r.setDirty();
 							changesMade = true;
 							groupsToRemove.add(selfGroup);
-							String crossoverStr = r.toString() + "\n" + r2.toString();
-							report(c, Severity.LOW, ReportActionType.INFO, "Crossover resolved", crossoverStr);
 						}
 					}
 				}
 			}
 		}
+
+		for (RelationshipGroup groupToRemove : groupsToRemove) {
+			removeRelationshipGroup((Task)null, c, groupToRemove);
+		}
 		
 		String after = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		boolean isIllegal = reportIllegalGrouping(c, before, after);
+		boolean isIllegal = reportIllegalGrouping(c, beforeStated, beforeInferred, after);
 		
 		if (isIllegal) {
 			reportToTabIdx = TERTIARY_REPORT;
@@ -146,7 +151,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 			if (changesMade) {
 				c.recalculateGroups();
 				int groupCount = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false).size();
-				report(c, Severity.LOW, ReportActionType.INFO, before, after, groupCount);
+				report(c, Severity.LOW, ReportActionType.INFO, beforeStated, beforeInferred, after, groupCount);
 			} else {
 				report(SECONDARY_REPORT, c, after);
 				reportToTabIdx = SECONDARY_REPORT;
@@ -155,7 +160,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		return reportToTabIdx;
 	}
 
-	private boolean reportIllegalGrouping(Concept c, String before, String after) throws TermServerScriptException {
+	private boolean reportIllegalGrouping(Concept c, String beforeStated, String beforeInferred, String after) throws TermServerScriptException {
 		Set<Concept> typesSeen = new HashSet<>();
 		boolean hasIllegalMultipleSameType = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -173,7 +178,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		}
 		
 		if (hasIllegalMultipleSameType) {
-			report(TERTIARY_REPORT, c, before, after);
+			report(TERTIARY_REPORT, c, beforeStated, beforeInferred, after);
 		}
 		
 		return hasIllegalMultipleSameType;
@@ -194,10 +199,16 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 	}
 
 	private List<RelationshipGroup> identifyGroups(Concept c, boolean selfGrouped) {
+		//Determine if group is self grouped, and then return the set which either matches that, or does not match
 		return c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false)
 				.stream()
-				.filter(g -> (g.size() == 1) == selfGrouped)
+				.filter(g -> isSelfGrouped(g) == selfGrouped)
 				.toList();
+
+	}
+
+	private boolean isSelfGrouped(RelationshipGroup rg) {
+		return rg.size() == 1;
 	}
 
 	private boolean inScope(Concept c) {

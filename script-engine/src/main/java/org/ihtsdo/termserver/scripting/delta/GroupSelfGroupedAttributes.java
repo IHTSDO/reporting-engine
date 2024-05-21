@@ -26,8 +26,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private Concept COMPONENT;
 
-	private final int BatchSize = 25;
-	//private final int BatchSize = 99999;
+	//private final int BatchSize = 25;
+	private final int BatchSize = 99999;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		GroupSelfGroupedAttributes delta = new GroupSelfGroupedAttributes();
