@@ -79,7 +79,13 @@ public class GmdnSFTPClient {
             ftpDownloadAFile(file1);
             ftpDownloadAFile(file2);
         } finally {
-            ftpLogout();
+            try {
+                // If we failed to log in, then we'll also fail to log out, so just report that
+                // but don't throw another exception or that's all we'll report to the user
+                ftpLogout();
+            } catch (GmdnException e) {
+                LOGGER.error("Error in logging out", e);
+            }
         }
     }
 
@@ -89,14 +95,14 @@ public class GmdnSFTPClient {
             ftpClient.connect(ftpHostName, ftpPort);
 
             if (!ftpClient.login(ftpUserName, ftpPassword)) {
-                throw new GmdnException("Could not login to the server: {}", ftpHostName);
+                throw new GmdnException("Could not login to the server: {} client failed without offering a reason", ftpHostName);
             }
 
             ftpClient.enterLocalPassiveMode();
             ftpClient.execPROT(FTP_PROTECTION_LEVEL);
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         } catch (IOException e) {
-            throw new GmdnException("Unable to login", e);
+            throw new GmdnException("Unable to login to {} as {} ", ftpHostName, ftpUserName, e);
         }
     }
 
@@ -105,13 +111,10 @@ public class GmdnSFTPClient {
             if (ftpClient.retrieveFile(REMOTE_DIRECTORY + fileName, outputStream)) {
                 LOGGER.info("File has been downloaded successfully: {}", fileName);
             } else {
-                LOGGER.error("Error in downloading file: {}", fileName);
-                LOGGER.error("Reply code: {}", ftpClient.getReplyCode());
-                LOGGER.error("Reply string: {}", ftpClient.getReplyString());
-                throw new GmdnException("Could not download: {}", fileName);
+                throw new GmdnException("Could not download {} due to client reporting error {} {}", fileName, ftpClient.getReplyCode(), ftpClient.getReplyString());
             }
         } catch (IOException e) {
-            throw new GmdnException("Unable to logout", e);
+            throw new GmdnException("Unable to download GMDN file: {} due to IOException", fileName, e);
         }
     }
 

@@ -172,8 +172,8 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
     }
 
     private void downloadZipFiles() throws GmdnException, TermServerScriptException {
-        LOGGER.info("Expecting last months ZIP file: {}", lastMonthsZipFileName);
-        LOGGER.info("Expecting this months ZIP file: {}", currentMonthsZipFileName);
+        LOGGER.info("Downloading - expecting last months ZIP file: {}", lastMonthsZipFileName);
+        LOGGER.info("and this months ZIP file: {}", currentMonthsZipFileName);
 
         if (Files.exists(Paths.get(LOCAL_WORKING_DIRECTORY + lastMonthsZipFileName)) && Files.exists(Paths.get(LOCAL_WORKING_DIRECTORY + currentMonthsZipFileName))) {
             LOGGER.info("Zip files already exist, not downloading again.");
@@ -193,8 +193,8 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
     }
 
     private void unzipFilesToXml() throws GmdnException, TermServerScriptException {
-        LOGGER.info("Expecting last months XML file: {}", lastMonthsXmlFileName);
-        LOGGER.info("Expecting this months XML file: {}", currentMonthsXmlFileName);
+        LOGGER.info("Unzipping - expecting last months XML file: {}", lastMonthsXmlFileName);
+        LOGGER.info("and this months XML file: {}", currentMonthsXmlFileName);
 
         if (Files.exists(Paths.get(LOCAL_WORKING_DIRECTORY + lastMonthsXmlFileName)) && Files.exists(Paths.get(LOCAL_WORKING_DIRECTORY + currentMonthsXmlFileName))) {
             LOGGER.info("Xml files already exist, not unzipping again.");
