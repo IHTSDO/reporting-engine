@@ -16,7 +16,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupSelfGroupedAttributes.class);
 
-	private final List<Concept> hierarchies = new ArrayList<>();
+	private List<String> eclSelections = new ArrayList<>();
 
 	private final List<Concept> skipAttributeTypes = new ArrayList<>();
 
@@ -34,7 +34,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.getArchiveManager(true).setPopulateReleasedFlag(true);
-			delta.getArchiveManager(true).setRunIntegrityChecks(false);
+			//delta.getArchiveManager(true).setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);
 			delta.loadProjectSnapshot();
@@ -47,8 +47,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		//hierarchies.add(OBSERVABLE_ENTITY);
-		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure| : 246093002 |Component (attribute)| = *"));
+		//eclSelections.add("<< "  + OBSERVABLE_ENTITY.getConceptId());
+		eclSelections.add("<< 386053000 |Evaluation procedure| : 246093002 |Component (attribute)| = *");
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
@@ -87,8 +87,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 
 	private int process() throws ValidationFailure, TermServerScriptException, IOException {
 		int conceptsInThisBatch = 0;
-		for (Concept hierarchy : hierarchies) {
-			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
+		for (String eclSelection : eclSelections) {
+			for (Concept c : SnomedUtils.sort(findConcepts(eclSelection))) {
 				if (inScope(c)) {
 					String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 					restateInferredRelationships(c);
