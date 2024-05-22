@@ -38,7 +38,6 @@ import static org.ihtsdo.termserver.scripting.reports.gmdn.utils.GmdnFields.*;
  * GmdnMonthlyDeltaReport is a report class that generates deltas for the GMDN data for this month.
  * It extends the TermServerReport class and implements the ReportClass interface.
  */
-@Component
 public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportClass {
     private static final Logger LOGGER = LoggerFactory.getLogger(GmdnMonthlyDeltaReport.class);
 
@@ -66,7 +65,6 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
     private String currentMonthsXmlFileName;
     private String lastMonthsXmlFileName;
 
-    @Autowired
     GmdnSFTPClient gmdnSFTPClient;
 
     private record GmdnAnalysis(List<Element> newActiveNodes, List<Element> obsoleteNodes, List<Element> modifiedNodes,

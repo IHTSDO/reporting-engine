@@ -88,7 +88,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private List<String> finalWords = new ArrayList<>();
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
-	protected ApplicationContext appContext;
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail, AdditionalDetail, ";
 	protected String secondaryReportColumns = "ActionDetail, ";

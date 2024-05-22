@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.LocalProperties;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.FileOutputStream;
@@ -17,12 +18,15 @@ import java.io.OutputStream;
  * GmdnSFTPClient is a component class that handles the downloading of files from an SFTP server.
  * It uses FTPSClient from the Apache Commons Net library to establish a secure FTP connection.
  */
+@Lazy
 @Service
 public class GmdnSFTPClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(GmdnSFTPClient.class);
     public static final String FTP_PROTECTION_LEVEL = "P"; // P=Private
     public static final String DOWNLOAD_DIRECTORY = "/tmp/";
     public static final String REMOTE_DIRECTORY = "/";
+
+    private boolean isInitialised = false;
 
     @Value("${gmdn.report.ftp.host}")
     private String ftpHostName;
@@ -40,7 +44,6 @@ public class GmdnSFTPClient {
 
     public static void main(String[] args) {
         GmdnSFTPClient gmdnSFTPClient = new GmdnSFTPClient();
-
         try {
             gmdnSFTPClient.downloadGmdnFiles("gmdnData24_3.zip", "gmdnData24_4.zip");
         } catch (GmdnException e) {
@@ -48,22 +51,8 @@ public class GmdnSFTPClient {
         }
     }
 
+    @Lazy
     public GmdnSFTPClient() {
-		if (StringUtils.isEmpty(ftpHostName)) {
-            loadProperties();
-        }
-    }
-
-    private void loadProperties() {
-        try {
-            LocalProperties properties = new LocalProperties(null);
-            this.ftpHostName = properties.getProperty("gmdn.report.ftp.host");
-            this.ftpPort = properties.getIntegerProperty("gmdn.report.ftp.port", 21);
-            this.ftpUserName = properties.getProperty("gmdn.report.ftp.username");
-            this.ftpPassword = properties.getProperty("gmdn.report.ftp.password");
-        } catch (Exception e) {
-            LOGGER.error("Failed to load properties file", e);
-        }
     }
 
     /**
@@ -74,6 +63,17 @@ public class GmdnSFTPClient {
      * @throws GmdnException if there is an error during the download process
      */
     public void downloadGmdnFiles(String file1, String file2) throws GmdnException {
+        if (!isInitialised) {
+            if (StringUtils.isEmpty(ftpHostName)) {
+                loadProperties();
+            }
+            isInitialised = true;
+        }
+
+        if (StringUtils.isEmpty(ftpHostName)) {
+            throw new GmdnException("Configuration error, GMDN Hostname has not been supplied");
+        }
+        
         try {
             ftpLogin();
             ftpDownloadAFile(file1);
@@ -89,7 +89,20 @@ public class GmdnSFTPClient {
         }
     }
 
+    private void loadProperties() {
+        try {
+            LocalProperties properties = new LocalProperties(null);
+            this.ftpHostName = properties.getProperty("gmdn.report.ftp.host");
+            this.ftpPort = properties.getIntegerProperty("gmdn.report.ftp.port", 21);
+            this.ftpUserName = properties.getProperty("gmdn.report.ftp.username");
+            this.ftpPassword = properties.getProperty("gmdn.report.ftp.password");
+        } catch (Exception e) {
+            LOGGER.error("Failed to load local properties file", e);
+        }
+    }
+
     private void ftpLogin() throws GmdnException {
+        LOGGER.info("Logging in to FTP server: {} as {}", ftpHostName, ftpUserName);
         try {
             ftpClient = new FTPSClient();
             ftpClient.connect(ftpHostName, ftpPort);
@@ -104,6 +117,7 @@ public class GmdnSFTPClient {
         } catch (IOException e) {
             throw new GmdnException("Unable to login to {} as {} ", ftpHostName, ftpUserName, e);
         }
+        LOGGER.info("FTP Server Login successful");
     }
 
     private void ftpDownloadAFile(String fileName) throws GmdnException {

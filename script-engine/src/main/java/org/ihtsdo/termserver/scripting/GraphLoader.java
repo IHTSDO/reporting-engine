@@ -803,8 +803,11 @@ public class GraphLoader implements ScriptConstants {
 					
 					//If we've already received a newer version of this component, say
 					//by loading INT first and a published MS 2nd, then skip
+
+					//If we're loading a cached snapshot, then we don't know if the record is released or not
+					//so in that case, we don't expected to see any previous verison, so don't skip in that case
 					if (!StringUtils.isEmpty(d.getEffectiveTime()) 
-							&& isReleased
+							&& (isReleased != null && isReleased)
 							&& (d.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 						//System.out.println("Skipping incoming published description row, older than that held");
 						continue;
