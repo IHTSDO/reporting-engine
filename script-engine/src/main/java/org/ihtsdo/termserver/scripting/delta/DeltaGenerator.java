@@ -148,7 +148,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 
 		//If we're working in an extension and the module is still core, suggest
 		//the default module for that project
-		if (!projectName.endsWith(".zip")){
+		if (!projectName.endsWith(".zip") && moduleId.equals(SCTID_CORE_MODULE)){
 			try{
 				scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 				//MAIN is not a project, but we know what the default module is
