@@ -410,8 +410,11 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		LOGGER.info("Setting all components to be clean");
+
+		//Make sure to include stated rels in our clean up, otherwise delta generators
+		//will output every axiom!
 		gl.getAllConcepts().stream()
-			.flatMap(c -> SnomedUtils.getAllComponents(c).stream())
+			.flatMap(c -> SnomedUtils.getAllComponents(c, true).stream())
 			.forEach(Component::setClean);
 	}
 	

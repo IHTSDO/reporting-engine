@@ -139,6 +139,7 @@ public class RelationshipGroup implements ScriptConstants {
 	}
 	
 	public void addRelationship (IRelationship r) {
+		r.setGroupId(groupId);
 		relationships.add(r);
 	}
 	
@@ -180,11 +181,16 @@ public class RelationshipGroup implements ScriptConstants {
 						!lhs.isConcrete() && rhs.isConcrete()) {
 					continue;
 				}
-				
-				if (((lhs.isConcrete() && rhs.isConcrete()) &&
-						lhs.getType().equals(rhs.getType()) && lhs.getConcreteValue().equals(rhs.getConcreteValue()))) {
+				if ((!lhs.isConcrete() && lhs.getTarget() == null) ||
+					(!rhs.isConcrete() && rhs.getTarget() == null)){
+					throw new IllegalArgumentException("Null target in non concrete relationship" + lhs);
+				}
+
+				if ((lhs.isConcrete() && rhs.isConcrete()) &&
+						lhs.getType().equals(rhs.getType()) && lhs.getConcreteValue().equals(rhs.getConcreteValue())) {
 					continue nextLhsRel;
-				} else if (lhs.getType().equals(rhs.getType()) && lhs.getTarget().equals(rhs.getTarget())) {
+				} else if ((!lhs.isConcrete() && !rhs.isConcrete()) &&
+						lhs.getType().equals(rhs.getType()) && lhs.getTarget().equals(rhs.getTarget())) {
 					continue nextLhsRel;
 				}
 			}

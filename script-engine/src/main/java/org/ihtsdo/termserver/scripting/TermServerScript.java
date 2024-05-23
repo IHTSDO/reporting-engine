@@ -17,6 +17,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
+import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
@@ -1741,7 +1742,15 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public File getInputFile(int idx) {
 		return inputFiles.get(idx);
 	}
-	
+
+	public File getInputFileOrThrow(int idx) {
+		File file = getInputFile(idx);
+		if (file == null) {
+			throw new IllegalArgumentException("No input file specified with index: " + idx);
+		}
+		return file;
+	}
+
 	public void setInputFile(int idx, File file) throws TermServerScriptException {
 		if (!file.canRead() || (!file.isFile() && !allowDirectoryInputFile)) {
 			throw new TermServerScriptException("Unable to read specified file: " + file);
@@ -2035,16 +2044,24 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 			newRel.setGroupId(freeGroup);
 			newRel.setAxiomEntry(axiom);
-			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE);
+			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getConcreteValue(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE, false);
 		}
 		return changesMade;
 	}
 
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, RelationshipTemplate.Mode mode) throws TermServerScriptException {
+		return replaceRelationship(t, c, type, value, (ConcreteValue)null, groupId, mode);
+	}
+
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, RelationshipTemplate.Mode mode) throws TermServerScriptException {
+		return replaceRelationship(t, c, type, value, concreteValue, groupId, mode, true);
+	}
+
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, RelationshipTemplate.Mode mode, boolean reportAlreadyExisting) throws TermServerScriptException {
 		int changesMade = 0;
-		if (type == null || value == null) {
-			if (value == null) {
-				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept";
+		if (type == null || (value == null && concreteValue == null)) {
+			if (value == null && concreteValue == null) {
+				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept / concrete value";
 				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
 			} else if (type == null) {
 				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
@@ -2053,40 +2070,19 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return NO_CHANGES_MADE;
 		}
 		//Do we already have this relationship active in the target group (or at all if self grouped)?
-		Set<Relationship> rels;
-		if (groupId == SELFGROUPED) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					value,
-					ActiveState.ACTIVE);
-		} else {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					value,
-					groupId,
-					ActiveState.ACTIVE);
-		}
+		Set<Relationship> rels = findExistingRelationships(c, type, value, concreteValue, groupId, ActiveState.ACTIVE);
 		if (rels.size() > 1) {
 			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
 			return NO_CHANGES_MADE;
 		} else if (rels.size() == 1) {
-			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
+			if (reportAlreadyExisting) {
+				report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
+			}
 			return NO_CHANGES_MADE;
 		}
 
 		//Do we have it inactive?
-		if (groupId == SELFGROUPED) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					value,
-					ActiveState.INACTIVE);
-		} else {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					value,
-					groupId,
-					ActiveState.INACTIVE);
-		}
+		rels = findExistingRelationships(c, type, value, concreteValue, groupId, ActiveState.INACTIVE);
 		if (rels.size() >= 1) {
 			Relationship rel = rels.iterator().next();
 			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
@@ -2145,6 +2141,38 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		c.addRelationship(newRel);
 		changesMade++;
 		return changesMade;
+	}
+
+	private Set<Relationship> findExistingRelationships(Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, ActiveState activeState) {
+		Set<Relationship> rels;
+		if (concreteValue == null) {
+			if (groupId == SELFGROUPED) {
+				rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+						type,
+						value,
+						activeState);
+			} else {
+				rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+						type,
+						value,
+						groupId,
+						activeState);
+			}
+		} else {
+			if (groupId == SELFGROUPED) {
+				rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+						type,
+						concreteValue,
+						activeState);
+			} else {
+				rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+						type,
+						concreteValue,
+						groupId,
+						activeState);
+			}
+		}
+		return rels;
 	}
 
 	protected int removeRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {

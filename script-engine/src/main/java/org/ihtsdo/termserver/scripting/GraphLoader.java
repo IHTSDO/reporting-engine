@@ -184,7 +184,7 @@ public class GraphLoader implements ScriptConstants {
 				}
 				
 				/*if (lineItems[REL_IDX_ID].equals("243605023")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}*/
 				
 				String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.RELATIONSHIP);
@@ -196,7 +196,7 @@ public class GraphLoader implements ScriptConstants {
 				characteristicType = SnomedUtils.translateCharacteristicType(lineItems[REL_IDX_CHARACTERISTICTYPEID]);
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
-					TermServerScript.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
+					LOGGER.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
 				//Dutch extension has phantom concept referenced in an inactive stated relationship
 				if (lineItems[REL_IDX_DESTINATIONID].equals("39451000146106")) {
@@ -208,7 +208,7 @@ public class GraphLoader implements ScriptConstants {
 				/*if ( lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_INFERRED_RELATIONSHIP) 
 						&& thisConcept.getId().equals("422435005") 
 						&& lineItems[REL_IDX_TYPEID].equals("116680003")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}*/
 				
 				/*if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
@@ -280,18 +280,18 @@ public class GraphLoader implements ScriptConstants {
 				}
 				
 				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
-					TermServerScript.debug("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
+					LOGGER.debug("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
 				}
 				
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
 				/*if (conceptId == 10504007L) {
-					TermServerScript.debug("Here");
+					LOGGER.debug("Here");
 				}
 				
 				if (lineItems[IDX_ID].equals("1e684afa-9319-4b24-9489-40caef554e13")) {
-					TermServerScript.debug ("here");
+					LOGGER.debug ("here");
 				}*/
 				
 				try {
@@ -501,7 +501,7 @@ public class GraphLoader implements ScriptConstants {
 		String typeId = lineItems[REL_IDX_TYPEID];
 		
 		if (sourceId.length() < 4 || typeId.length() < 4 ) {
-			TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " t" + typeId);
+			LOGGER.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " t" + typeId);
 		}
 		Concept type = getConcept(typeId);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
@@ -518,7 +518,7 @@ public class GraphLoader implements ScriptConstants {
 		} else {
 			String destId = lineItems[REL_IDX_DESTINATIONID];
 			if (destId.length() < 4 ) {
-				TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": d" + destId );
+				LOGGER.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": d" + destId );
 			}
 			Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 			r = new Relationship(source, type, destination, groupNum);
@@ -565,7 +565,7 @@ public class GraphLoader implements ScriptConstants {
 			r.setEffectiveTime(revertEffectiveTime);
 		}
 /*		if (r.getType().equals(IS_A) && r.getSourceId().equals("555621000005106")) {
-			TermServerScript.debug("here");
+			LOGGER.debug("here");
 		}*/
 		
 		addRelationshipToConcept(charType, r, isDelta);
@@ -583,7 +583,7 @@ public class GraphLoader implements ScriptConstants {
 			
 			/*if (r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
 					r.getSourceId().contentEquals("21731004") && !r.isActive()) {
-				TermServerScript.debug("here");
+				LOGGER.debug("here");
 			}*/
 			
 			if (r.isActive()) {
@@ -707,7 +707,7 @@ public class GraphLoader implements ScriptConstants {
 				}
 				
 				/*if (lineItems[IDX_ID].equals("394576009")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}*/
 
 				//We might already have received some details about this concept
@@ -778,7 +778,7 @@ public class GraphLoader implements ScriptConstants {
 				}
 				
 				/*if (lineItems[DES_IDX_ID].equals("63241000195117")) {
-					TermServerScript.debug("Debug Here");
+					LOGGER.debug("Debug Here");
 				}*/
 				
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
@@ -869,14 +869,14 @@ public class GraphLoader implements ScriptConstants {
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
 				
 				/*if (langRefsetEntry.getId().equals("85a10b1f-a8ad-4c73-92bd-d6a0ef67cfa8")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}
 				
 				if (langRefsetEntry.getId().equals("e66a48eb-9824-4a62-99ff-ee7058b878ca")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}*/
 				/*if (langRefsetEntry.getReferencedComponentId().equals("2643877015") || langRefsetEntry.getReferencedComponentId().equals("2643878013")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}*/
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
@@ -1022,7 +1022,7 @@ public class GraphLoader implements ScriptConstants {
 	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
 		startingPoint.setDepth(currentDepth);
 		/*if (startingPoint.getConceptId().equals("210431006")) {
-			//TermServerScript.debug ("Checkpoint");
+			//LOGGER.debug ("Checkpoint");
 		}*/
 		
 		for (Concept child : startingPoint.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -1032,7 +1032,7 @@ public class GraphLoader implements ScriptConstants {
 			try {
 				populateHierarchyDepth(child, currentDepth + 1);
 			} catch (TermServerScriptException e) {
-				TermServerScript.debug ("Exception path: " + startingPoint + " -> " + child);
+				LOGGER.debug ("Exception path: " + startingPoint + " -> " + child);
 				throw (e);
 			}
 		}
@@ -1052,7 +1052,7 @@ public class GraphLoader implements ScriptConstants {
 				String id = lineItems[IDX_ID];
 				
 				/*if (id.equals("f0046c6b-287b-545f-aae5-f0a4b9946a0a")) {
-					TermServerScript.debug("here");
+					LOGGER.debug("here");
 				}*/
 				
 				String revertEffectiveTime = null;
@@ -1079,7 +1079,7 @@ public class GraphLoader implements ScriptConstants {
 				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 					/*if (c.getConceptId().equals("198308002")) {
-						TermServerScript.debug("Check Here");
+						LOGGER.debug("Check Here");
 					}*/
 					//Do we already have this indicator?  Copy the released flag if so
 					InactivationIndicatorEntry existing = c.getInactivationIndicatorEntry(id);
@@ -1095,7 +1095,7 @@ public class GraphLoader implements ScriptConstants {
 				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
 					/*if (d.getDescriptionId().equals("1221136011")) {
-						TermServerScript.debug("Check here");
+						LOGGER.debug("Check here");
 					}*/
 					//Do we already have this indicator?  Copy the released flag if so
 					InactivationIndicatorEntry existing = d.getInactivationIndicatorEntry(id);
