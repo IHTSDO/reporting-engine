@@ -104,9 +104,11 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 
 	private List<Concept> getCandidateConcepts() throws TermServerScriptException {
 		List<Concept> candidateConcepts = new ArrayList<>();
+		int lineNum = 0;
 		try {
 			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
 			for (String line : lines) {
+				lineNum++;
 				String[] columns = line.split(TAB);
 				if (columns[IDX_ID].equals("id")) {
 					//Skip the header line
@@ -120,8 +122,8 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 				}
 				candidateConcepts.add(gl.getConcept(sctid));
 			}
-		} catch (TermServerScriptException | IOException e) {
-			throw new TermServerScriptException("Failed to read input file", e);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to read input file at line " + lineNum, e);
 		}
 		return SnomedUtils.sort(candidateConcepts);
 	}
