@@ -1812,4 +1812,24 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		return null;
 	}
+
+	//Set the same axiom details on all stated relationships - if possible
+	public void normalizeStatedRelationships() {
+		AxiomEntry axiomEntry = null;
+		for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getAxiomEntry() != null) {
+				if (axiomEntry == null) {
+					axiomEntry = r.getAxiomEntry();
+				} else if (!axiomEntry.equals(r.getAxiomEntry())) {
+					throw new IllegalStateException("Concept " + conceptId + " has multiple axioms in use");
+				}
+			}
+		}
+		//Now set all axioms that don't know about that axiom to the same one
+		for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getAxiomEntry() == null) {
+				r.setAxiomEntry(axiomEntry);
+			}
+		}
+	}
 }

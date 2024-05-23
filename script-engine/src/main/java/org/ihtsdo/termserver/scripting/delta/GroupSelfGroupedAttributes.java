@@ -47,8 +47,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		//eclSelections.add("<< "  + OBSERVABLE_ENTITY.getConceptId());
-		eclSelections.add("<< 386053000 |Evaluation procedure| : 246093002 |Component (attribute)| = *");
+		eclSelections.add("<< "  + OBSERVABLE_ENTITY.getConceptId());
+		//eclSelections.add("<< 386053000 |Evaluation procedure| : 246093002 |Component (attribute)| = *");
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
