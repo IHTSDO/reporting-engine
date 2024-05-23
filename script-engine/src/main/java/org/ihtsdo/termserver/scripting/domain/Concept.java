@@ -1367,14 +1367,15 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			relationshipGroups = axiomGroupMap.values().stream()
 					.flatMap(a -> a.values().stream())
 					.collect(Collectors.toList());
-			
+
+			relationshipGroups.sort(Comparator.comparing(RelationshipGroup::getGroupId));
+
 			if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
 				statedRelationshipGroups = relationshipGroups;
 			} else {
 				inferredRelationshipGroups = relationshipGroups;
 			}
 		}
-		relationshipGroups.sort(Comparator.comparing(RelationshipGroup::getGroupId));
 		return relationshipGroups;
 	}
 
