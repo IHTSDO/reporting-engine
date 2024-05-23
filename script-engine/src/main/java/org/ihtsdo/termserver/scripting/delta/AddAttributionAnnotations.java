@@ -19,7 +19,10 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 
 	private Concept annotationType = null;
 	private String annotationStr = "Inserm Orphanet";
-	private final int BatchSize = 50;
+	private final int BatchSize = 999999;
+
+	Set<Concept> confirmedConcepts;
+	Set<Concept> conceptsAnnotated = new HashSet<>();
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AddAttributionAnnotations.class);
 
@@ -29,14 +32,27 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
+			delta.inputFileHasHeaderRow = true;
 			//delta.getArchiveManager().setAllowStaleData(true);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
+			delta.loadConfirmationFile();
 			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
 			int lastBatchSize = delta.process();
 			delta.createOutputArchive(false, lastBatchSize);
 		} finally {
 			delta.finish();
+		}
+	}
+
+	private void loadConfirmationFile() throws TermServerScriptException {
+		if (getInputFile() != null) {
+			confirmedConcepts = processFile().stream()
+					.map(c -> (Concept)c)
+					.collect(Collectors.toSet());
+			LOGGER.info("Checking annotations against list of " + confirmedConcepts.size() + " concepts");
+		} else {
+			LOGGER.info("No confirmation file provided, processing full set");
 		}
 	}
 
@@ -57,6 +73,15 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 				conceptsInThisBatch = 0;
 			}
 		}
+		//Were any concepts confirmed for annotations that we didn't annotate?
+		if (confirmedConcepts != null) {
+			Set<Concept> unannotated = new HashSet<>(confirmedConcepts);
+			unannotated.removeAll(conceptsAnnotated);
+			for (Concept c : unannotated) {
+				report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept confirmed for annotation, but was marked invalid or missing", "");
+			}
+		}
+
 		return conceptsInThisBatch;
 	}
 
@@ -69,8 +94,6 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 		String processingDetail = "Orphanet attribution added";
 		ReportActionType action = ReportActionType.NO_CHANGE;
 		String rmStr = "";
-		String textDefn = "";
-		String textDefnET = "";
 		if (c.hasIssues()) {
 			processingDetail = c.getIssues();
 		} else if (!hasTextDef) {
@@ -81,6 +104,8 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			processingDetail = "No recent text definition";
 		} else if (c.getComponentAnnotationEntries().size() > 0) {
 			processingDetail = "Already has annotation";
+		} else if (confirmedConcepts != null && !confirmedConcepts.contains(c)) {
+			processingDetail = "Concept not confirmed for annotation";
 		} else {
 			ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(c, annotationType, annotationStr);
 			c.addComponentAnnotationEntry(cae);
@@ -89,24 +114,30 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			action = ReportActionType.REFSET_MEMBER_ADDED;
 			changesMade++;
 			countIssue(c);
-			List<Description> textDefinitions = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
-			textDefn = textDefinitions.stream()
-					.map(d -> d.getTerm())
-					.collect(Collectors.joining(",\n"));
-			textDefnET = textDefinitions.stream()
-					.findFirst()
-					.map(d -> d.getEffectiveTime())
-					.orElse("");
+			conceptsAnnotated.add(c);
+
 		}
-		report(c, Severity.LOW, action, processingDetail, rmStr, textDefn, textDefnET);
+		report(c, Severity.LOW, action, processingDetail, rmStr);
 		return changesMade;
+	}
+
+	private void report(Concept c, Severity severity, ReportActionType action, String processingDetail, String rmStr) throws TermServerScriptException {
+		List<Description> textDefinitions = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
+		String textDefn = textDefinitions.stream()
+				.map(d -> d.getTerm())
+				.collect(Collectors.joining(",\n"));
+		String textDefnET = textDefinitions.stream()
+				.findFirst()
+				.map(d -> d.getEffectiveTime())
+				.orElse("");
+		report(c, severity, action, processingDetail, rmStr, textDefn, textDefnET);
 	}
 
 	private List<Concept> getCandidateConcepts() throws TermServerScriptException {
 		List<Concept> candidateConcepts = new ArrayList<>();
 		int lineNum = 0;
 		try {
-			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			List<String> lines = Files.readLines(getInputFileOrThrow(2), Charsets.UTF_8);
 			for (String line : lines) {
 				lineNum++;
 				String[] columns = line.split(TAB);
