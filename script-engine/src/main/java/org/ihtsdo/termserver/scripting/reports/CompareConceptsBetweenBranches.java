@@ -47,7 +47,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"ConceptId, FSN, SemTag, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count, Concern"};
+				"ConceptId, FSN, SemTag, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count (Ignoring skipped types), Concern"};
 		String[] tabNames = new String[] {	
 				"Comparing MAIN to " + project.getKey()};
 		super.postInit(tabNames, columnHeadings, false);
@@ -89,10 +89,13 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 				String beforeInferred = before.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
 				String afterStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 				String afterInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
-				int roleGroupCount = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP).size();
+				long roleGroupCount = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)
+						.stream()
+						.filter(g -> !isEntirelySkippedAttributes(g))
+						.count();
 				String concern = checkConceptForConcern(c) ? "Y" : "N";
 				if (!beforeStated.equals(afterStated) || !beforeInferred.equals(afterInferred)) {
-					report (c, beforeStated, beforeInferred, afterStated, afterInferred, roleGroupCount);
+					report (c, beforeStated, beforeInferred, afterStated, afterInferred, roleGroupCount, concern);
 				}
 			}
 		}
@@ -133,5 +136,15 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 		}
 		return false;
 	}
+
+	private boolean isEntirelySkippedAttributes(RelationshipGroup g) {
+		for (Relationship r : g.getRelationships()) {
+			if (!skipAttributeTypes.contains(r.getType())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 }
