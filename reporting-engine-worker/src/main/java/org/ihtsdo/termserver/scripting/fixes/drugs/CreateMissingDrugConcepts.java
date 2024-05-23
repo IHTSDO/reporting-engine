@@ -112,8 +112,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
-		dryRun = jobRun.getParamBoolean(DRY_RUN);
-		taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
+		//dryRun = jobRun.getParamBoolean(DRY_RUN);
+		dryRun = true;
+		//taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
+		taskSize = 5;
 	}
 	
 	public void postInit() throws TermServerScriptException {
