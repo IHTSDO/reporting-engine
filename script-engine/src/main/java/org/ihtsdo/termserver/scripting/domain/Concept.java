@@ -389,8 +389,30 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return matches;
 	}
 
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ConcreteValue concreteValue, ActiveState activeState) {
+		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
+		Set<Relationship> matches = new HashSet<Relationship>();
+		for (Relationship r : potentialMatches) {
+			if (concreteValue == null || r.getConcreteValue().equals(concreteValue)) {
+				matches.add(r);
+			}
+		}
+		return matches;
+	}
+
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, int groupId, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, target, activeState);
+		Set<Relationship> matches = new HashSet<Relationship>();
+		for (Relationship r : potentialMatches) {
+			if (groupId == NOT_SET || r.getGroupId() == groupId) {
+				matches.add(r);
+			}
+		}
+		return matches;
+	}
+
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ConcreteValue concreteValue, int groupId, ActiveState activeState) {
+		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, concreteValue, activeState);
 		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {

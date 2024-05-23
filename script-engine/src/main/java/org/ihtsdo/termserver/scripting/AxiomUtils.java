@@ -140,9 +140,29 @@ public class AxiomUtils implements ScriptConstants {
 	}
 
 	private static Relationship toRelationship(org.ihtsdo.termserver.scripting.domain.Relationship r) {
-		return new Relationship(r.getGroupId(),
-				Long.parseLong(r.getType().getId()),
-				Long.parseLong(r.getTarget().getId()));
+		if (r.isConcrete()) {
+			ConcreteValue cv = toConcreteValue(r.getConcreteValue());
+			return new Relationship(r.getGroupId(),
+					Long.parseLong(r.getType().getId()),
+					cv);
+		} else {
+			return new Relationship(r.getGroupId(),
+					Long.parseLong(r.getType().getId()),
+					Long.parseLong(r.getTarget().getId()));
+		}
+	}
+
+	private static ConcreteValue toConcreteValue(org.ihtsdo.termserver.scripting.domain.ConcreteValue cv) {
+		return new ConcreteValue(toConcreteValueType(cv.getDataType()), cv.getValue());
+	}
+
+	private static ConcreteValue.Type toConcreteValueType(org.ihtsdo.termserver.scripting.domain.ConcreteValue.ConcreteValueType cvType) {
+		switch (cvType) {
+			case DECIMAL : return ConcreteValue.Type.DECIMAL;
+			case INTEGER : return ConcreteValue.Type.INTEGER;
+			case STRING : return ConcreteValue.Type.STRING;
+			default : throw new IllegalArgumentException("Unexpected concrete value type: " + cvType);
+		}
 	}
 
 	public static List<AxiomEntry> convertClassAxiomsToAxiomEntries(Concept c) throws TermServerScriptException {

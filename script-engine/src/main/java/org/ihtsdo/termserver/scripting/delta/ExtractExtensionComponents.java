@@ -36,14 +36,14 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
 	private boolean includeDependencies = true;
-	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
+	private boolean includeInferredParents = true;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
-	private Integer conceptsPerArchive = 3;
+	private Integer conceptsPerArchive = 9999;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 
@@ -69,8 +69,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.moduleId = "11000181102"; //Estonia
 			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "51000202101"; //Norway Module
-			//delta.moduleId = "57091000202101";  //Norway module for medicines
-			delta.moduleId = "999000011000000103"; // UK Clinical Extension
+			delta.moduleId = "57091000202101";  //Norway module for medicines
+			//delta.moduleId = "999000011000000103"; // UK Clinical Extension
 			//delta.moduleId = "83821000000107"; //UK Composition Module
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "332351000009108"; //Vet Extension
@@ -391,9 +391,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	protected void extractComponent(Component thisComponent, List<Component> componentsToProcess, boolean doAdditionalProcessing) throws TermServerScriptException {
 		Concept thisConcept = (Concept)thisComponent;
-			/*if (thisConcept.getId().equals("445028008")) {
-				LOGGER.debug("here");
-			}*/
+
 		if (copyInferredRelationshipsToStatedWhereMissing) {
 			restateInferredRelationships(thisConcept);
 		}

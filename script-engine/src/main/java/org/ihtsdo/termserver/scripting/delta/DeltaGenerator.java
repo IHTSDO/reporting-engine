@@ -516,6 +516,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	protected int createOutputArchive() throws TermServerScriptException {
+		//Make sure our output is up to date before we start creating the archive
+		flushFilesWithWait(false);
 		return createOutputArchive(true);
 	}
 
