@@ -31,6 +31,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 		Map<String, String> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, Boolean.TRUE.toString());
 		params.put(ECL, "<< 386053000 |Evaluation procedure|");
+		//params.put(ECL, "<< 363787002 |Observable entity (observable entity)|");
 		TermServerReport.run(CompareConceptsBetweenBranches.class, args, params);
 	}
 	
@@ -47,7 +48,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"ConceptId, FSN, SemTag, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count (Ignoring skipped types), Concern"};
+				"ConceptId, FSN, SemTag, Has Stated Changes, Has Inferred Changes, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count (Ignoring skipped types), Concern"};
 		String[] tabNames = new String[] {	
 				"Comparing MAIN to " + project.getKey()};
 		super.postInit(tabNames, columnHeadings, false);
@@ -89,20 +90,46 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 				String beforeInferred = before.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
 				String afterStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 				String afterInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
+				String hasStatedChanges = beforeStated.equals(afterStated)? "N" : "Y";
+				String hasInferredChanges = beforeInferred.equals(afterInferred)? "N" : "Y";
 				long roleGroupCount = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)
 						.stream()
 						.filter(g -> !isEntirelySkippedAttributes(g))
 						.count();
-				String concern = checkConceptForConcern(c) ? "Y" : "N";
+				String concern = checkConceptForConcerns(c, before);
 				if (!beforeStated.equals(afterStated) || !beforeInferred.equals(afterInferred)) {
-					report (c, beforeStated, beforeInferred, afterStated, afterInferred, roleGroupCount, concern);
+					report (c, hasStatedChanges, hasInferredChanges, beforeStated, beforeInferred, afterStated, afterInferred, roleGroupCount, concern);
 				}
 			}
 		}
 
 	}
 
-	private boolean checkConceptForConcern(Concept c) {
+	private String checkConceptForConcerns(Concept c, Concept before) {
+		String concerns = "";
+		if (stillHasSelfGroupedAttributes(c)) {
+			concerns += "Remaining Self Grouped Attributes";
+		}
+		if (startedWithFullerModel(before)) {
+			if (!concerns.isEmpty()) {
+				concerns += ",\n";
+			}
+			concerns += "Started with fuller model";
+		}
+		return concerns;
+	}
+
+	private boolean startedWithFullerModel(Concept c) {
+		//Check stated groups and return true if any contained more than one attribute
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false)) {
+			if (g.size() > 1) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean stillHasSelfGroupedAttributes(Concept c) {
 		//We have concerns about concepts that have self-grouped attributes and other grouped attributes
 		boolean hasSelfGroupedAttribute = false;
 		boolean hasOtherGroup = false;
