@@ -55,7 +55,6 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 
 		allKnownDrugs = MEDICINAL_PRODUCT.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 
-
 		String[] columnHeadings = new String[] {
 				"SCTID, FSN, SemTag, Ingredient Count, Count of Base, Expression, Definition Status, Drug Class, MP Descendants, MPO Descendants, MPF Descendants, MPFO Descendants, RMPF Descedants, RMPFO Descendants, CD Descendants, RCD Descendants, Unknown Descendants, MP Ancestors, MPO Ancestors, MPF Ancestors, MPFO Ancestors, RMPF Ancestors, RMPFO Ancestors, CD Ancestors, RCD Ancestors, Unknown Ancestors "
 				};
@@ -75,7 +74,7 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Unique Attribute Pairs")
+				.withName("Drugs Content Explorer")
 				.withDescription("This report lists combinations of dose forms and units along with usage counts and examples.  Also BoSS/PAI/MDF combinations.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
