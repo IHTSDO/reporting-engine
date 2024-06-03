@@ -58,7 +58,7 @@ public class RecreateConceptFromBranch implements RF2Constants {
 	}
 
 	protected void init(String[] args) {
-		axiomService = new AxiomRelationshipConversionService (null);
+		axiomService = new AxiomRelationshipConversionService (NEVER_GROUPED_ATTRIBUTES);
 		for (int i=0; i < args.length ; i++) {
 			switch (args[i]) {
 				case "-e" : es = new ElasticSearchClient(args[i+1]);

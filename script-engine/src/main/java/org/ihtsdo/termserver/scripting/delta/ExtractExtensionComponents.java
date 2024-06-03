@@ -41,7 +41,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
 	private static String secondaryCheckPath = "MAIN";
-	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
+	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 	
 	private Integer conceptsPerArchive = 9999;
 	Queue<List<Component>> archiveBatches = null;
