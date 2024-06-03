@@ -62,8 +62,8 @@ public class NormaliseConceptsDriven extends NormaliseConcepts {
 
 		//Have we specified a ppp in the issues field?
 		Concept newPPP = checkConceptForSpecifiedPPP(c);
-		changesMade += checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false);
-		
+		changesMade += checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false, null);
+
 		//Remove any redundant relationships, or they'll be missing from the inferred view
 		changesMade += removeRedundandRelationships(t,c);
 		
