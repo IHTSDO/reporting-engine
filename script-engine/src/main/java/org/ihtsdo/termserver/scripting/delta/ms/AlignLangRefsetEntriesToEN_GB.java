@@ -6,9 +6,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -17,6 +21,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements ScriptConstants {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(AlignLangRefsetEntriesToEN_GB.class);
+	
 	//String langRefsetId = "271000210107";  //New Zealand English language reference set (foundation metadata concept)
 	String langRefsetId = "21000220103"; // Irish language reference set (foundation metadata concept)|
 	String previousRelease = "MAIN/2021-01-31";
@@ -39,7 +45,7 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
