@@ -4,7 +4,6 @@ import org.ihtsdo.otf.RF2Constants;
 
 public interface IRelationship extends RF2Constants {
 
-
 	public Concept getType();
 	public void setType(Concept type);
 	
@@ -30,4 +29,6 @@ public interface IRelationship extends RF2Constants {
 	IRelationship clone();
 
     Relationship instantiate(Concept source, int groupId);
+
+	void setDirty();
 }

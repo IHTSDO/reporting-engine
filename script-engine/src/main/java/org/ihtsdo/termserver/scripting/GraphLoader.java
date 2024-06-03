@@ -189,7 +189,7 @@ public class GraphLoader implements ScriptConstants {
 				
 				String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.RELATIONSHIP);
 				if (msg != null) {
-					TermServerScript.warn(msg);
+					LOGGER.warn(msg);
 				}
 				
 				//Might need to modify the characteristic type for Additional Relationships
@@ -212,7 +212,7 @@ public class GraphLoader implements ScriptConstants {
 				}*/
 				
 				/*if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
-					TermServerScript.warn("Didn't expected to see any more of these! " + String.join(" ", lineItems));
+					LOGGER.warn("Didn't expected to see any more of these! " + String.join(" ", lineItems));
 				}*/
 				
 				//If we've already received a newer version of this component, say
@@ -286,11 +286,11 @@ public class GraphLoader implements ScriptConstants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
-				/*if (conceptId == 10504007L) {
+				/*if (conceptId == 241834008L) {
 					LOGGER.debug("Here");
-				}
+				}*/
 				
-				if (lineItems[IDX_ID].equals("1e684afa-9319-4b24-9489-40caef554e13")) {
+				/*if (lineItems[IDX_ID].equals("1e684afa-9319-4b24-9489-40caef554e13")) {
 					LOGGER.debug ("here");
 				}*/
 				
@@ -316,7 +316,7 @@ public class GraphLoader implements ScriptConstants {
 								&& replacedAxiomEntry.getEffectiveTime().compareTo(axiomEntry.getEffectiveTime()) > 0) {
 							ignoredAxioms++;
 							if (ignoredAxioms < 5) {
-								TermServerScript.warn("Ignoring " + axiomEntry.getEffectiveTime() + " since " + replacedAxiomEntry.getEffectiveTime() + " " + replacedAxiomEntry.getId() + " already held");
+								LOGGER.warn("Ignoring " + axiomEntry.getEffectiveTime() + " since " + replacedAxiomEntry.getEffectiveTime() + " " + replacedAxiomEntry.getId() + " already held");
 							} 
 							continue;
 						}
@@ -329,10 +329,13 @@ public class GraphLoader implements ScriptConstants {
 						//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 						if (replacedAxiom != null) {
 							Set<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
+							//Set the axiom on the relationships, otherwise they won't match existing ones
+							replacedRelationships.forEach(r -> r.setAxiomEntry(axiomEntry));
 							alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
-							for (Relationship r : replacedRelationships) {
+							//We've taken these out entirely.   Don't leave inactive stated relationship in concept
+							/*for (Relationship r : replacedRelationships) {
 								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
-							}
+							}*/
 						}
 					}
 					c.getAxiomEntries().add(axiomEntry);
@@ -367,13 +370,15 @@ public class GraphLoader implements ScriptConstants {
 						if (relationships.size() == 0) {
 							log.append("Check here - zero RHS relationships");
 						}
-						
+
 						//If we already have relationships loaded from this axiom then it may be that 
 						//a subsequent version does not feature them, and we'll have to remove them.
 						removeRelsNoLongerFeaturedInAxiom(c, axiomEntry.getId(), relationships);
 						
 						//Now we might need to adjust the active flag if the axiom is being inactivated
 						//Or juggle the groupId, since individual axioms don't know about each other's existence
+						//Ensure the relationships know what their axiom is, so they match with those on the concept
+						relationships.forEach(r -> r.setAxiomEntry(axiomEntry));
 						alignAxiomRelationships(c, relationships, axiomEntry, axiomEntry.isActive());
 						
 						//Although axiom may have been published, relationships that were not previously
@@ -387,7 +392,17 @@ public class GraphLoader implements ScriptConstants {
 						}
 						
 						for (Relationship r : relationships) {
-							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+							if (r.isActive()) {
+								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+							} else {
+								//Don't leave inactive stated relationships in the concept as they have no substance
+								//and cause problems with Sets because they don't have IDs and can't be distinguished
+								//from the same relationship inserted back in a 2nd time as active
+								//But do we have any relationships for this axiom, or has it been inactive for a while?
+								if (c.getRelationships(axiomEntry).size() > 0) {
+									c.removeRelationship(r, true);
+								}
+							}
 						}
 					} else {
 						//Are we looking at a special axiom: Transitive, Reflexive or RoleChain?
@@ -395,6 +410,11 @@ public class GraphLoader implements ScriptConstants {
 							c.mergeObjectPropertyAxiomRepresentation(axiomService.asObjectPropertyAxiom(lineItems[REF_IDX_AXIOM_STR]));
 						}
 					}
+
+					/*if (conceptId == 241834008) {
+						LOGGER.debug("Here");
+					}*/
+
 				} catch (ConversionException e) {
 					throw new TermServerScriptException("Failed to load axiom: " + line, e);
 				}
@@ -406,6 +426,7 @@ public class GraphLoader implements ScriptConstants {
 		if (ignoredAxioms > 0) {
 			System.err.println("Ignored " + ignoredAxioms + " already held with later effective time");
 		}
+
 	}
 	
 	private void removeRelsNoLongerFeaturedInAxiom(Concept c, String axiomId, Set<Relationship> currentAxiomRels) {
@@ -441,7 +462,6 @@ public class GraphLoader implements ScriptConstants {
 			g.setAxiom(axiomEntry);
 			g.setModule(axiomEntry.getModuleId());
 			g.setReleased(axiomEntry.isReleased());
-			
 			//Set the effectiveTime last as changing the other attributes will blank it
 			g.setEffectiveTime(axiomEntry.getEffectiveTime());
 		}
@@ -597,7 +617,7 @@ public class GraphLoader implements ScriptConstants {
 					source.removeParent(r.getCharacteristicType(),r.getTarget());
 					target.removeChild(r.getCharacteristicType(),r.getSource());
 				} else {
-					//TermServerScript.warn("Not removing parent/child relationship as exists in other axiom / alternative relationship: " + r);
+					//LOGGER.warn("Not removing parent/child relationship as exists in other axiom / alternative relationship: " + r);
 				}
 			}
 		} 
@@ -788,7 +808,7 @@ public class GraphLoader implements ScriptConstants {
 				} else {
 					String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.DESCRIPTION);
 					if (msg != null) {
-						TermServerScript.warn(msg);
+						LOGGER.warn(msg);
 					}
 				}
 				
@@ -907,9 +927,9 @@ public class GraphLoader implements ScriptConstants {
 					if (isReleased != null && !isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
 						//Have we already reported this duplicate?
 						if (duplicateLangRefsetIdsReported.contains(original)) {
-							TermServerScript.warn("Seeing additional duplication for " + original.getId());
+							LOGGER.warn("Seeing additional duplication for " + original.getId());
 						} else {
-							TermServerScript.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
+							LOGGER.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
 							duplicateLangRefsetIdsReported.add(original);
 						}
 					}
@@ -1693,7 +1713,7 @@ public class GraphLoader implements ScriptConstants {
 			}
 			//Is the component in it's original state any different to the new rows?
 			if (!differsOtherThanEffectiveTime(c.toRF2(), lineItems)) {
-				TermServerScript.warn("No change delta detected for " + c + " reverting effective time");
+				LOGGER.warn("No change delta detected for " + c + " reverting effective time");
 				c.setDirty();
 				return c.getEffectiveTime();
 			}

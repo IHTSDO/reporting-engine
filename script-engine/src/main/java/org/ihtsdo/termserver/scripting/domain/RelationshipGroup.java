@@ -130,6 +130,12 @@ public class RelationshipGroup implements ScriptConstants {
 			r.setGroupId(groupId);
 		}
 	}
+
+	public void setDirty() {
+		for (IRelationship r : relationships) {
+			r.setDirty();
+		}
+	}
 	
 	public void addIssue (Concept c) {
 		if (issues == null) {

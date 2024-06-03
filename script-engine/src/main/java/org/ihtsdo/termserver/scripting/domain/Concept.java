@@ -442,6 +442,15 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return null;
 	}
 
+	/**
+	 * Return all relationships that belong to the specified axiom
+	 */
+	public Set<Relationship> getRelationships(AxiomEntry a) {
+		return relationships.stream()
+				.filter(r -> r.getAxiomEntry() != null && r.getAxiomEntry().equals(a))
+				.collect(Collectors.toSet());
+	}
+
 	public void setRelationships(Set<Relationship> relationships) {
 		this.relationships = relationships;
 	}

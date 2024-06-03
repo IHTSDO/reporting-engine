@@ -6,13 +6,18 @@ import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
+	
 	@SerializedName("relationshipId")
 	@Expose
 	private String relationshipId;
@@ -239,10 +244,11 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 				if (target == null) {
 					throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
 				}
-				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
+				int hash = Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
+				return hash;
 			}
 		} catch (NullPointerException e) {
-			TermServerScript.debug("Null pointer here");
+			LOGGER.debug("Null pointer here");
 			throw e;
 		}
 	}
@@ -255,6 +261,9 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		if ((other instanceof Relationship) == false) {
 			return false;
 		}
+		/*if (this.toString().equals("[S1:2a8120] 116686009 |Has specimen (attribute)| -> 119361006 |Plasma specimen (specimen)|")) {
+			LOGGER.debug("Debug here");
+		}*/
 		Relationship rhs = ((Relationship) other);
 		
 		//Must be of the same characteristic type
@@ -271,7 +280,8 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		if (ignoreAxiom == false && (
 				(this.getAxiomEntry() != null && rhs.getAxiomEntry() == null) ||
 				(this.getAxiomEntry() == null && rhs.getAxiomEntry() != null) ||
-				(this.getAxiomEntry() != null && rhs.getAxiomEntry() != null && !this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())))) {
+				(this.getAxiomEntry() != null && rhs.getAxiomEntry() != null &&
+				!this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())))) {
 			return false;
 		}
 		
