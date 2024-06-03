@@ -27,7 +27,7 @@ public class AxiomUtils implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AxiomUtils.class);
 
-	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<>());
+	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 
 	public static Set<org.ihtsdo.termserver.scripting.domain.Relationship> getRHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {
 		Set<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new HashSet<>();
