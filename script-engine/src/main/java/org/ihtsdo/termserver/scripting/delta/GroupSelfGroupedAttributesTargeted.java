@@ -87,7 +87,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 	private int process() throws ValidationFailure, TermServerScriptException, IOException {
 		int conceptsInThisBatch = 0;
 		for (Concept c :  SnomedUtils.sort(findConcepts(eclSelection))) {
-			/*if (c.getId().equals("407715006")) {
+			/*if (c.getId().equals("313919000")) {
 				LOGGER.debug("Debug here");
 			}*/
 			if (inScope(c)) {

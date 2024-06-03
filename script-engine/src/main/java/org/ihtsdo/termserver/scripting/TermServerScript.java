@@ -2273,6 +2273,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (group.getGroupId() != newGroups.size()) {
 				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Shuffling stated group " + group.getGroupId() + " to " + newGroups.size());
 				group.setGroupId(newGroups.size());
+				group.setDirty();
 				//If we have relationships without SCTIDs here, see if we can pinch them from inactive relationships
 				int reuseCount = 0;
 				for (Relationship moved : new ArrayList<>(group.getRelationships())) {
@@ -2283,6 +2284,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							c.removeRelationship(moved, true);  //It's OK to force removal, the axiom will still exist.
 							Relationship reuse = existingInactives.iterator().next();
 							reuse.setActive(true);
+							reuse.setDirty();
 							group.addRelationship(reuse);
 							c.addRelationship(reuse);
 							reuseCount++;

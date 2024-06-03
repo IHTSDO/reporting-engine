@@ -153,4 +153,8 @@ public class RelationshipTemplate implements IRelationship {
 		}
 		return this.hashCode() == ((RelationshipTemplate)other).hashCode();
 	}
+
+	public void setDirty() {
+		//Do nothing.  Makes no sense until template is instantiated
+	}
 }
