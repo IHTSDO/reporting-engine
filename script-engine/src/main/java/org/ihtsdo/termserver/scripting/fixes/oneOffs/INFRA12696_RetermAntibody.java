@@ -1,6 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes.oneOffs;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
