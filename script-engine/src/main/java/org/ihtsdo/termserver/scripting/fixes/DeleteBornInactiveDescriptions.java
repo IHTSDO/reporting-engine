@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
