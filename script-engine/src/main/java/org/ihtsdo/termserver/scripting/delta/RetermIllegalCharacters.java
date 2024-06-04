@@ -1,6 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
