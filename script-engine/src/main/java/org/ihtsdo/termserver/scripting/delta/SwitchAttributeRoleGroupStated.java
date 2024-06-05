@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
@@ -14,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class SwitchAttributeRoleGroup extends DeltaGenerator {
+public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 	
 	private Set<String> exclusions;
 	private RelationshipTemplate relTemplate;
@@ -22,7 +21,7 @@ public class SwitchAttributeRoleGroup extends DeltaGenerator {
 	private final int BatchSize = 99999;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		SwitchAttributeRoleGroup delta = new SwitchAttributeRoleGroup();
+		SwitchAttributeRoleGroupStated delta = new SwitchAttributeRoleGroupStated();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			delta.runStandAlone = true;
