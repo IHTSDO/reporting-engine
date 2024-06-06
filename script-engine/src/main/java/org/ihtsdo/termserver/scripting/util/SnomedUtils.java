@@ -2156,6 +2156,16 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return getAllComponents(c, false);
 	}
 
+	public static Collection<Component> getAllComponents(Component c) {
+		if (c instanceof Concept) {
+			return getAllComponents((Concept)c);
+		} else if (c instanceof Description) {
+			return getAllComponents((Description)c);
+		} else {
+			throw new IllegalArgumentException("Unexpected component type: " + c.getClass().getSimpleName());
+		}
+	}
+
 	public static Collection<Component> getAllComponents(Concept c, boolean includeStatedRels) {
 		List<Component> components = new ArrayList<>();
 		
@@ -2181,24 +2191,15 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			.forEach(components::add);
 		}
 		
-		//Descriptions and their associated indicators, associations and langrefstes
+		//Descriptions and their associated indicators, associations and langrefsets
 		c.getDescriptions().stream()
-			.forEach(components::add);
-		
-		c.getDescriptions().stream()
-		.flatMap(d ->  d.getLangRefsetEntries().stream())
-		.forEach(components::add);
-		
-		c.getDescriptions().stream()
-			.flatMap(d ->  d.getInactivationIndicatorEntries().stream())
-			.forEach(components::add);
-		
-		c.getDescriptions().stream()
-			.flatMap(d ->  d.getAssociationEntries().stream())
-			.forEach(components::add);
+			.forEach(d -> {
+				components.add(d);
+				components.addAll(getAllComponents(d));
+			});
 
 		components.addAll(c.getOtherRefsetMembers());
-		
+		components.addAll(c.getComponentAnnotationEntries());
 		return components;
 	}
 	
@@ -2207,6 +2208,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		components.addAll(d.getLangRefsetEntries());
 		components.addAll(d.getInactivationIndicatorEntries());
 		components.addAll(d.getAssociationEntries());
+		components.addAll(d.getComponentAnnotationEntries());
 		return components;
 	}
 	
