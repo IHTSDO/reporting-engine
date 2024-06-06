@@ -16,6 +16,7 @@ import java.util.Map;
 
 public class InactivateLangRefsetMembersInWrongLanguage extends DeltaGenerator implements ScriptConstants {
 
+	private boolean allowEnglishTermsInLangRefset = false;
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateLangRefsetMembersInWrongLanguage.class);
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -37,11 +38,13 @@ public class InactivateLangRefsetMembersInWrongLanguage extends DeltaGenerator i
 	private void process() throws TermServerScriptException {
 		Map<String, String> refsetLangCodeMap = generateRefsetLangCodeMap();
 
-		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
+		for (Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
 				//It's OK - for example - to have an English term in the Dutch LangRefset
 				//So skip 'en' terms, unless it's the FSN
-				if (d.getType().equals(DescriptionType.FSN) || !d.getLang().equals("en")) {
+				if (!allowEnglishTermsInLangRefset ||
+						d.getType().equals(DescriptionType.FSN) ||
+						!d.getLang().equals("en")) {
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						String expectedLangCode = refsetLangCodeMap.get(l.getRefsetId());
 						if (expectedLangCode == null) {
