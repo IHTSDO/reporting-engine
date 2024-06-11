@@ -1,12 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -18,7 +15,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class DrugsContentExplorer extends TermServerReport implements ReportClass {
 
