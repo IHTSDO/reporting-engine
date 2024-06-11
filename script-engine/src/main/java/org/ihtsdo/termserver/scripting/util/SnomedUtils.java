@@ -2688,7 +2688,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return c instanceof AxiomEntry || c instanceof Concept || c instanceof AlternateIdentifier;
 	}
 
-	public static String translateActiveState(Component c) {
+	public static String translateActiveStateToRF2(Component c) {
 		String activeStr = "0";
 		if (c.isActive() != null && c.isActive().equals(true)) {
 			activeStr = "1";
@@ -2699,16 +2699,25 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	public static List<String> extractSCTIDs(String input) {
 		// List to store the extracted numbers
 		List<String> sctIds = new ArrayList<>();
-		
+
 		// Create a Matcher object
 		Matcher matcher = sctIdPattern.matcher(input);
-		
+
 		// Find and add all matches to the list
 		while (matcher.find()) {
 			sctIds.add(matcher.group());
 		}
-		
+
 		// Return the list of extracted numbers
 		return sctIds;
 	}
+
+	public static String translateActiveState(Component c) {
+		String activeStr = "N";
+		if (c.isActive() != null && c.isActive().equals(true)) {
+			activeStr = "Y";
+		}
+		return activeStr;
+	}
+	
 }
