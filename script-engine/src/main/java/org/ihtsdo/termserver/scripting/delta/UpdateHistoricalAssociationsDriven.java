@@ -38,6 +38,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			"141853004","141870007","141874003","141857003","141864001",
 			"141819003","140962005","163432001"
 	});
+
+	private Map<Concept, List<String>> normalisedDescriptionMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		UpdateHistoricalAssociationsDriven delta = new UpdateHistoricalAssociationsDriven();
@@ -80,7 +82,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		populateCathyNotes();
 		populateReplacementMap();
 		populateUpdatedReplacementMap();
-		checkForRecentInactivations();
+		populateNormalisedDescriptionMap();
+		//checkForRecentInactivations();
 
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			/*if (!c.getId().equals("164427005")) {
@@ -97,6 +100,21 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 		
 		doFinalStateTab();
+	}
+
+	private void populateNormalisedDescriptionMap() {
+		for (Concept c : gl.getAllConcepts()) {
+			List<String> thisConceptTerms = new ArrayList<>();
+			normalisedDescriptionMap.put(c, thisConceptTerms);
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				String thisTerm = d.getTerm();
+				if (d.getType().equals(DescriptionType.FSN)) {
+					thisTerm = SnomedUtils.deconstructFSN(thisTerm, true)[0];
+				}
+				thisTerm = thisTerm.replace("-", "").replaceAll("  ", " ");
+				thisConceptTerms.add(thisTerm);
+			}
+		}
 	}
 
 	private void processConcept(Concept c) throws TermServerScriptException {
@@ -128,6 +146,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		if (!action.inactivationIndicator.equals(prevInactValue)) {
 			i.setInactivationReasonId(SnomedUtils.translateInactivationIndicator(newII));
 			i.setEffectiveTime(null);  //Will mark as dirty
+			c.setInactivationIndicator(newII);
 			report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, prevInactValue + " --> " + newII, "");
 			updatedConcepts.add(c);
 		}
@@ -441,29 +460,29 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				break;
 			}
 		}
-		//TODO The performance of this loop is abysmal.  Pass in the target FSN preformed as an array, rather than re-creating
-		//those strings for every description in SNOMED.   And they're all checked for every line we output, so N x 500K
-		//We could also cache all these modified descriptions in a map.
+		
+		List<String> targetFSNs = new ArrayList<>();
+		
+		//Check for all alternative prefixes
+		//Pre-generate these so we're not doing that inside the loop with all concepts
+		for (String siblingPrefix : targetPrefixes) {
+			if (siblingPrefix.equals(thisPrefix)) {
+				continue;
+			}
+
+			String targetFsn = siblingPrefix + " " + rootFsn;
+			targetFsn = targetFsn.replace("  ", " ").trim();
+			targetFSNs.add(targetFsn);
+		}
+
 		for (Concept sibling : gl.getAllConcepts()) {
 			//Don't compare with self
 			if (sibling.equals(c)) {
 				continue;
 			}
-			for (Description d : sibling.getDescriptions()) {  //This line is OK, it doens't create a new collection
-				String thisTerm = d.getTerm();
-				if (d.getType().equals(DescriptionType.FSN)) {
-					thisTerm = SnomedUtils.deconstructFSN(thisTerm, true)[0];
-				}
-				thisTerm = thisTerm.replace("-", "").replaceAll("  ", " ");
-				//Check for all alternative prefixes
-				for (String siblingPrefix : targetPrefixes) {
-					if (siblingPrefix.equals(thisPrefix)) {
-						continue;
-					}
-
-					String targetFsn = siblingPrefix + " " + rootFsn;
-					targetFsn = targetFsn.replace("  ", " ").trim();
-
+			
+			for (String thisTerm : normalisedDescriptionMap.get(sibling)) {
+				for (String targetFsn : targetFSNs) {
 					if (targetFsn.equalsIgnoreCase(thisTerm)) {
 						return sibling;
 					}
@@ -489,8 +508,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			if (cousin.equals(c)) {
 				continue;
 			}
-			for (Description d : cousin.getDescriptions()) {
-				if (targetFsn.equalsIgnoreCase(d.getTerm())) {
+			for (String term : normalisedDescriptionMap.get(cousin)) {
+				if (targetFsn.equalsIgnoreCase(term)) {
 					return cousin;
 				}
 			}
