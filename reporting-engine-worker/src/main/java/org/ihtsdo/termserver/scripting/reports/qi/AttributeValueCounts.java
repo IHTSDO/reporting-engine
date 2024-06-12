@@ -49,9 +49,8 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<< 417893002|Deformity| ");
-		params.put(ECL, "*");
-		params.put(ATTRIBUTE_TYPE, "363713009 |Has interpretation|");
+		params.put(ECL, "<< 373873005 |Pharmaceutical / biologic product (product)|");
+		params.put(ATTRIBUTE_TYPE, "127489000 |Has active ingredient|");
 		TermServerReport.run(AttributeValueCounts.class, args, params);
 	}
 	
@@ -61,7 +60,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		getArchiveManager().setPopulateHierarchyDepth(true);
 		super.init(run);
 		
-		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
+		String attribStr = run.getMandatoryParamValue(ATTRIBUTE_TYPE);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			targetAttributeType = gl.getConcept(attribStr);
 		}
@@ -85,7 +84,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.add(IGNORE_ECL).withType(JobParameter.Type.ECL)
-				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT)
+				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withMandatory()
 				.add(MIN_SIZE_INTEREST).withType(JobParameter.Type.STRING).withDefaultValue("50")
 				//TODO Add the characteristic type dropdown
 				.build();
@@ -93,7 +92,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Attribute Value Counts")
-				.withDescription("This report counts of attribute values used for concepts matching the specified ECL, with optionally some specified concepts filtered out.  Additionally, an indicator is given of how much activity there has been against the conepts using this attribtue value, and what other attribute value(s) it is most often seen in combination with.")
+				.withDescription("This report counts of attribute values used with a particular attribute type, in concepts matching the specified ECL, with optionally some specified concepts filtered out.  Additionally, an indicator is given of how much activity there has been against the concepts using this attribtue value, and what other attribute value(s) it is most often seen in combination with.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -135,9 +134,6 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 			}
 		}
 		
-		//TODO We're also interested in the primitive concepts above this attribute value.
-		//I don't think this is right as it doesn't consider deep concepts that have no subsumption
-		//relationship with concepts higher up.  I think I've got a 'find common ancestor somewhere...
 		LOGGER.info ("Outputting counts");
 		Set<Concept> targets = new HashSet<>(valueCounts.asMap().keySet());
 		if (!targets.isEmpty()) {
@@ -227,57 +223,5 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		}
 		return count;
 	}
-
-	/*private Concept calculateHighestConceptOrParent(Set<Concept> concepts) throws TermServerScriptException {
-		//Find the smallest depth indicator
-		Integer minimumDepth = null;
-		for (Concept c : concepts) {
-			if (minimumDepth == null || c.getDepth() < minimumDepth) {
-				minimumDepth = c.getDepth();
-			}
-		}
-		//What all concepts are at that depth?
-		final int minDepth = minimumDepth;
-		Set<Concept> equiDepthConcepts = concepts.stream()
-				.filter(c -> c.getDepth() == minDepth)
-				.collect(Collectors.toSet());
-		
-		if (equiDepthConcepts.size() == 1) {
-			return equiDepthConcepts.iterator().next();
-		} else {
-			//Find the first common ancestor of these equiDepthConcepts
-			Set<Concept> commonAncestors = null;
-			for (Concept equiDepthConcept : equiDepthConcepts) {
-				if (commonAncestors == null) {
-					commonAncestors = new HashSet<>(ancestorCache.getAncestors(equiDepthConcept));
-				} else {
-					commonAncestors.retainAll(ancestorCache.getAncestors(equiDepthConcept));
-				}
-			}
-			return deepestConcept(commonAncestors);
-		}
-	}
-
-	private Concept deepestConcept(Set<Concept> concepts) throws TermServerScriptException {
-		//Find the greatest depth indicator
-		Integer maximumDepth = null;
-		for (Concept c : concepts) {
-			if (maximumDepth == null || c.getDepth() < maximumDepth) {
-				maximumDepth = c.getDepth();
-			}
-		}
-		
-		//What all concepts are at that depth?
-		final int maxDepth = maximumDepth;
-		Set<Concept> siblings = concepts.stream()
-				.filter(c -> c.getDepth() == maxDepth)
-				.collect(Collectors.toSet());
-		
-		if (siblings.size() != 1) {
-			throw new TermServerScriptException("Unable to find deepest concept from " + concepts);
-		}
-		return siblings.iterator().next();
-	}
-*/
 
 }
