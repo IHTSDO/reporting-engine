@@ -2548,7 +2548,11 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			if (commonAncestors == null) {
 				commonAncestors = new HashSet<>(ancestorsCache.getAncestors(c));
 			} else {
-				commonAncestors.retainAll(ancestorsCache.getAncestors(c));
+				Set<Concept> theseAncestors = ancestorsCache.getAncestors(c);
+				if (!theseAncestors.contains(ROOT_CONCEPT)) {
+					throw new TermServerScriptException(c + " failed to report the root concept as an ancestor");
+				}
+				commonAncestors.retainAll(theseAncestors);
 			}
 		}
 		return findDeepestConcept(commonAncestors);
@@ -2559,12 +2563,20 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 
 	public static Concept findDeepestConcept(Collection<Concept> concepts, boolean ensureUnique) throws TermServerScriptException {
+		if (concepts == null || concepts.size() == 0) {
+			throw new TermServerScriptException("Request to find maximum depth, but no set of concepts given to work with");
+		}
+		
 		//Find the greatest depth indicator
 		Integer maximumDepth = null;
 		for (Concept c : concepts) {
 			if (maximumDepth == null || c.getDepth() > maximumDepth) {
 				maximumDepth = c.getDepth();
 			}
+		}
+		
+		if (maximumDepth == null) {
+			throw new TermServerScriptException("Unable to determine maximum depth from set of " + concepts.size() + " concepts");
 		}
 
 		//What all concepts are at that depth?
