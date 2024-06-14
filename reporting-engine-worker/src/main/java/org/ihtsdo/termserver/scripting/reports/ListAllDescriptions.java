@@ -23,17 +23,15 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 	private static final Logger LOGGER = LoggerFactory.getLogger(ListAllDescriptions.class);
 
 	private static String DESCRIPTION_PER_LINE = "Description Per Line";
+	private static String VERBOSE_MODE = "Verbose Mode";
 	private Set<Concept> alreadyReported = new HashSet<>();
 	private boolean descriptionPerLine = false;
+	private boolean verboseMode = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(SUB_HIERARCHY, "43959009 |Cataract of eye due to diabetes mellitus (disorder)|");
-		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
-		//params.put(SUB_HIERARCHY, "25093002 |Disorder of eye due to diabetes mellitus (disorder)|");
-		//params.put(SUB_HIERARCHY, "19598007 |Generalized epilepsy (disorder)|");
-		//params.put(SUB_HIERARCHY, "84757009 |Epilepsy (disorder)|"); 
-		params.put(ECL, "<<84757009 |Epilepsy (disorder)|"); 
+		params.put(ECL, "^ 1157358007 |International Classification for Nursing Practice reference set|"); 
+		params.put(VERBOSE_MODE, "true");
 		TermServerReport.run(ListAllDescriptions.class, args, params);
 	}
 	
@@ -42,6 +40,11 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		additionalReportColumns="FSN, SemTag, Defn, Parents, Description";
 		
 		descriptionPerLine = run.getParamBoolean(DESCRIPTION_PER_LINE);
+		verboseMode = run.getParamBoolean(VERBOSE_MODE);
+		
+		if (verboseMode) {
+			additionalReportColumns="FSN, SemTag, Defn, Parents, Langs Present, Desc Type, Lang, Preferred In, Desc Id, Term";
+		}
 		super.init(run);
 	}
 
@@ -50,13 +53,17 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(DESCRIPTION_PER_LINE).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+				.add(VERBOSE_MODE).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List all Descriptions")
 				.withDescription("This report lists all descriptions in a given hierarchy." +
-						"The issues count will show the number of concepts reported.")
+						"The issues count will show the number of concepts reported." + 
+						"Description per line will do just that, and verbose mode will " +
+						"repeat the concept details on every line, and split the descriptions " +
+						"up into their component fields - for easy filtering.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -82,7 +89,23 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		List<Description> descriptions = c.getDescriptions(ActiveState.ACTIVE);
 		SnomedUtils.prioritise(descriptions);
 		
-		if (descriptionPerLine) {
+		if (verboseMode) {
+			String langsPresent = descriptions.stream()
+					.map(Description::getLang)
+					.sorted()
+					.distinct()
+					.collect(Collectors.joining(","));
+			
+			for (Description d : descriptions) {
+				report(c, defn, parents,
+					langsPresent,
+					d.getType(),
+					d.getLang(),
+					getPreferredIn(d),
+					d.getId(),
+					d.getTerm());
+			}
+		} else if (descriptionPerLine) {
 			report(c, defn, parents);
 			for (Description d : descriptions) {
 				report((Concept)null, "", "", d);
@@ -96,6 +119,15 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		
 		incrementSummaryInformation("Concepts reported");
 		countIssue(c);
+	}
+
+	private String getPreferredIn(Description d) {
+		return d.getLangRefsetEntries().stream()
+				.filter(LangRefsetEntry::isActive)
+				.filter(l -> l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM))
+				.map(l -> l.getRefsetId())
+				.sorted()
+				.collect(Collectors.joining(",\n"));
 	}
 
 	private String getParentsStr(Concept c) {
