@@ -47,8 +47,9 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		eclSelections.add("<< "  + OBSERVABLE_ENTITY.getConceptId());
-		//eclSelections.add("<< 386053000 |Evaluation procedure| : 246093002 |Component (attribute)| = *");
+		//eclSelections.add("<< " + OBSERVABLE_ENTITY.getConceptId());
+		eclSelections.add("<< 386053000 |Evaluation procedure|");
+		//eclSelections.add("<< 386053000 |Evaluation procedure| OR << " + OBSERVABLE_ENTITY.getConceptId());
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
@@ -200,10 +201,10 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		return viableGroup;
 	}
 
-	private boolean inScope(Concept c) throws TermServerScriptException {
-		/*if (!c.getConceptId().equals("699126008")) {
+/*	private boolean inScope(Concept c) throws TermServerScriptException {
+		if (!c.getConceptId().equals("699126008")) {
 			return false;
-		}*/
+		}
 
 		//Are we in scope more generally?
 		if (!super.inScope(c)) {
@@ -213,7 +214,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		//But also, we're looking for concepts that have more the one self grouped attribute
 		boolean hasSelfGroupedAttribute = false;
 
-		//Work through both exising stated grouped, plus any that would need to be copied over from the inferred view
+		//Work through both existing stated grouped, plus any that would need to be copied over from the inferred view
 		List<RelationshipGroup> combinedGroups = determineInferredRelGroupsToBeStated(c);
 		combinedGroups.addAll(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, false));
 		for (RelationshipGroup g : combinedGroups) {
@@ -230,7 +231,56 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			}
 		}
 		return false;
+	}*/
+	
+	private boolean inScope(Concept c) {
+
+		//Are we in scope more generally?
+		if (!super.inScope(c)) {
+			return false;
+		}
+
+		//But also, we're looking for concepts that have more than one group
+		//where one group (which we're not skipping) is self grouped
+		boolean containsSelfGroup = false;
+		boolean containsOtherGroup = false;
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, false)) {
+			//Ignore group 0 
+			if (g.getGroupId() == 0) {
+				continue;
+			}
+			if (g.size() == 1) {
+				//Skip attribute types we're ignoring
+				if (containsSkippedAttribute(g)) {
+					continue;
+				} else {
+					//If we _already_ have a self group, then two self grouped attributes
+					//Meets our criteria
+					if (containsSelfGroup) {
+						return true;
+					}
+					containsSelfGroup = true;
+				}
+			} else {
+				containsOtherGroup = true;
+			}
+			
+			if (containsSelfGroup && containsOtherGroup) {
+				return true;
+			}
+		}
+		return false;
 	}
+	
+	private boolean containsSkippedAttribute(RelationshipGroup g) {
+		for (Relationship r : g.getRelationships()) {
+			if (skipAttributeTypes.contains(r.getType())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 	public List<RelationshipGroup> determineInferredRelGroupsToBeStated(Concept c) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
