@@ -71,44 +71,47 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 				return;
 			}
 			
-			if (fileName.contains("sct2_Concept_" )) {
-				LOGGER.info("Loading Concept unpromoted delta file.");
+			if (fileName.contains("sct2_Concept_")) {
+				LOGGER.info("Loading unpromoted Concept delta file: " + fileName);
 				loadFile(is, IDX_ID);
-			} else if (fileName.contains("sct2_Relationship_" )) {
-				LOGGER.info("Loading Relationship unpromoted delta file.");
+			} else if (fileName.contains("sct2_Relationship_")) {
+				LOGGER.info("Loading unpromoted Relationship delta file: " + fileName);
 				loadFile(is, REL_IDX_SOURCEID);
-			} else if (fileName.contains("sct2_StatedRelationship_" )) {
-				LOGGER.info("Loading StatedRelationship unpromoted delta file.");
+			} else if (fileName.contains("sct2_StatedRelationship_")) {
+				LOGGER.info("Loading unpromoted Stated Relationship delta file: " + fileName);
 				loadFile(is, REL_IDX_SOURCEID);
-			} else if (fileName.contains("sct2_RelationshipConcrete" )) {
-				LOGGER.info("Loading unpromoted Concrete Relationship delta file.");
+			} else if (fileName.contains("sct2_RelationshipConcrete")) {
+				LOGGER.info("Loading unpromoted Concrete Relationship delta file: " + fileName);
 				loadFile(is, REL_IDX_SOURCEID);
-			} else if (fileName.contains("sct2_sRefset_OWL" )) {
-				LOGGER.info("Loading unpromoted Axiom delta refset file.");
+			} else if (fileName.contains("sct2_sRefset_OWL")) {
+				LOGGER.info("Loading unpromoted Axiom delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
-			} else if (fileName.contains("sct2_Description_" )) {
-				LOGGER.info("Loading unpromoted Description delta file.");
+			} else if (fileName.contains("sct2_Description_")) {
+				LOGGER.info("Loading unpromoted Description delta file: " + fileName);
 				loadFile(is, DES_IDX_CONCEPTID);
-			} else if (fileName.contains("sct2_TextDefinition_" )) {
-				LOGGER.info("Loading unpromoted Text Definition delta file.");
+			} else if (fileName.contains("sct2_TextDefinition_")) {
+				LOGGER.info("Loading unpromoted Text Definition delta file: " + fileName);
 				loadFile(is, DES_IDX_CONCEPTID);
-			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-				LOGGER.info("Loading unpromoted Concept Inactivation Indicator delta file.");
+			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet")) {
+				LOGGER.info("Loading unpromoted Concept Inactivation Indicator delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
-			} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-				LOGGER.info("Loading unpromoted Description Inactivation Indicator delta file.");
+			} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet")) {
+				LOGGER.info("Loading unpromoted Description Inactivation Indicator delta file: " + fileName);
 				loadFile(is, NOT_SET);
-			} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-				LOGGER.info("Loading unpromoted Concept/Description Inactivation Indicators delta file.");
+			} else if (fileName.contains("der2_cRefset_AttributeValue")) {
+				LOGGER.info("Loading unpromoted Attribute Value delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
-			} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
-				LOGGER.info("Loading unpromoted Historical Association File: " + fileName);
+			} else if (fileName.contains("Association")) { // || fileName.contains("AssociationReferenceSet")) {
+				LOGGER.info("Loading unpromoted Historical Association delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("Language")) {
-				LOGGER.info("Loading unpromoted delta Language Reference Set File - " + fileName);
+				LOGGER.info("Loading unpromoted Language Reference Set delta file: " + fileName);
+				loadFile(is, REF_IDX_REFCOMPID);
+			} else if (fileName.contains("Annotation")) {
+				LOGGER.info("Loading unpromoted Annotation delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
-				LOGGER.info("Loading unpromoted other Reference Set File - " + fileName);
+				LOGGER.info("Loading unpromoted other Reference Set delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			}
 
