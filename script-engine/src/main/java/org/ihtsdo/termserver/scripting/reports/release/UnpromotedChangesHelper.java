@@ -101,14 +101,14 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 			} else if (fileName.contains("der2_cRefset_AttributeValue")) {
 				LOGGER.info("Loading unpromoted Attribute Value delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
-			} else if (fileName.contains("Association")) { // || fileName.contains("AssociationReferenceSet")) {
+			} else if (fileName.contains("Association")) {
 				LOGGER.info("Loading unpromoted Historical Association delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("Language")) {
 				LOGGER.info("Loading unpromoted Language Reference Set delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
-			} else if (fileName.contains("Annotation")) {
-				LOGGER.info("Loading unpromoted Annotation delta file: " + fileName);
+			} else if (fileName.contains("ComponentAnnotationStringValue")) {
+				LOGGER.info("Loading unpromoted Component Annotation delta file: " + fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
 				LOGGER.info("Loading unpromoted other Reference Set delta file: " + fileName);
