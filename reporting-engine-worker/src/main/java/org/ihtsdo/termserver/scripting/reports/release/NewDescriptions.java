@@ -16,8 +16,6 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.util.concurrent.AtomicLongMap;
-
 /**
  * RP-414
  */
@@ -25,13 +23,11 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(NewDescriptions.class);
 	
-	AtomicLongMap<String> componentCounts = AtomicLongMap.create();
-	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(UNPROMOTED_CHANGES_ONLY, Boolean.FALSE.toString());
-		params.put(UNPROMOTED_CHANGES_ONLY, Boolean.TRUE.toString());
-		params.put(ECL, "1299152003 |Adult-onset progressive leukoencephalopathy, early-onset deafness (disorder)|");
+		params.put(UNPROMOTED_CHANGES_ONLY, Boolean.FALSE.toString());
+		//params.put(UNPROMOTED_CHANGES_ONLY, Boolean.TRUE.toString());
+		params.put(ECL, "<< 60700002");
 		TermServerReport.run(NewDescriptions.class, args, params);
 	}
 	
@@ -43,10 +39,6 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
-		
-		/*if (run.getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY) && project.getKey().equals("MAIN")) {
-			throw new TermServerScriptException("UnpromotedChangesOnly makes no sense when running against MAIN");
-		}*/
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -114,19 +106,12 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		conceptsOfInterest.sort(Comparator.comparing(Concept::getSemTag).thenComparing(Concept::getFsn));
 		LOGGER.debug("Sorted.");
 		
-		/*List<Description> unpromotedDescriptions = null;
-		if (jobRun.getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY)) {
-			unpromotedDescriptions = tsClient.getUnpromotedDescriptions(project.getBranchPath(), true);
-			LOGGER.info("Recovered " + unpromotedDescriptions.size() + " unpromoted descriptions");
-		}*/
-		
 		for (Concept c : conceptsOfInterest) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isReleased() == null) {
 					throw new TermServerScriptException("Released flag not populated. Code issues - should not use cached project snapshot when released flag is required");
 				}
 				if (!d.isReleased() && inScope(d) && unpromotedCheck(d)) {
-						//(unpromotedDescriptions == null || unpromotedDescriptions.contains(d))) {
 					int tabIdx = d.getType().equals(DescriptionType.TEXT_DEFINITION) ? SECONDARY_REPORT : PRIMARY_REPORT;
 					report(tabIdx, c, d.getLang(), d.getId(), d.getTerm(), d);
 					countIssue(c);
