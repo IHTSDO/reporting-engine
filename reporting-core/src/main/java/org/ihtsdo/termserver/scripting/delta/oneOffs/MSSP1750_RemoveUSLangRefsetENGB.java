@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.otf.RF2Constants.ReportActionType;
-import org.ihtsdo.otf.RF2Constants.Severity;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
@@ -19,15 +17,15 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 	Inactivate all.
 */
 public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements ScriptConstants{
-	
+
 	public static String US_MODULE = "731000124108";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		MSSP1750_RemoveUSLangRefsetENGB delta = new MSSP1750_RemoveUSLangRefsetENGB();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.moduleId = US_MODULE;
+			delta.getArchiveManager().setPopulateReleaseFlag(true);
+			delta.targetModuleId = US_MODULE;
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
@@ -40,7 +38,7 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 		}
 	}
 
-	private void process() throws ValidationFailure, TermServerScriptException {
+	public void process() throws ValidationFailure, TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				boolean changesMade = false;

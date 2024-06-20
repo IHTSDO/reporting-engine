@@ -9,11 +9,16 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements ScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA9963_NewUUIDsCommonFrenchCH.class);
 
 	public static String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
 	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
@@ -28,7 +33,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		INFRA9963_NewUUIDsCommonFrenchCH delta = new INFRA9963_NewUUIDsCommonFrenchCH();
 		try {
-			delta.moduleId = SCTID_CH_MOD;
+			delta.targetModuleId = SCTID_CH_MOD;
 			delta.runStandAlone = true;
 			//delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; 
@@ -41,17 +46,21 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				delta.descIdGenerator.finish();
 			}
 		}
 	}
 	
-	public void process() throws TermServerScriptException, IOException {
-		loadCommonFrenchRelease();
+	public void process() throws TermServerScriptException {
+		try {
+			loadCommonFrenchRelease();
+		} catch (IOException e) {
+			throw new TermServerScriptException(e);
+		}
 		int conceptsProcessed = 0;
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (conceptsProcessed++%10000==0) {
-				info("Concepts processed: " + (conceptsProcessed-1));
+				LOGGER.info("Concepts processed: " + (conceptsProcessed-1));
 				getRF2Manager().flushFiles(false);
 			}
 			processConcept(c);
@@ -108,7 +117,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 					ch.setActive(true);
 					ch.setRefsetId(SCTID_CH_LRS);
 					ch.setModuleId(SCTID_CH_MOD);
-					d.addLangRefsetEntry(ch, false, true);
+					d.addLangRefsetEntry(ch, false);
 					alreadyReported = ch.getId();
 					report(c, Severity.LOW, ReportActionType.LANG_REFSET_CLONED, d, ch.toStringWithModule(), info + "was: " + lrsToClone.toStringWithModule());
 				}
@@ -125,7 +134,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 					l.setActive(false);
 					c.setModified();
 					report(c, Severity.LOW, ReportActionType.LANG_REFSET_INACTIVATED, d, l.toStringWithModule());
-					d.addLangRefsetEntry(cloneLRS, false, true);  //Is replacement, so don't modify existing refsets
+					d.addLangRefsetEntry(cloneLRS, false);  //Is replacement, so don't modify existing refsets
 					report(c, Severity.LOW, ReportActionType.LANG_REFSET_CREATED, d, cloneLRS.toStringWithModule());
 					if (!cloneLRS.getModuleId().equals(SCTID_CH_MOD)) {
 						report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, d, "CF LRS not in Swiss Module");
@@ -137,7 +146,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 				//Do we have a modified inactivation indicator for this description?
 				if (cfInactivationIndicatorsMapSept.containsKey(d.getId())) {
 					if (d.isActive()) {
-						warn("Check inactivation indicator on active description " + d);
+						LOGGER.warn("Check inactivation indicator on active description " + d);
 					}
 					InactivationIndicatorEntry i = cfInactivationIndicatorsMapSept.get(d.getId());
 					if (i.getEffectiveTime().equals(ET)) {
@@ -156,7 +165,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 	}
 	
 	private void loadCommonFrenchRelease() throws IOException, TermServerScriptException {
-		info("Loading " + getInputFile());
+		LOGGER.info("Loading " + getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -173,7 +182,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		info("Finished Loading " + getInputFile());
+		LOGGER.info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {
@@ -185,13 +194,13 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 			
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Description_" )) {
-					info("Loading Description " + fileType + " file.");
+					LOGGER.info("Loading Description " + fileType + " file.");
 					loadDescriptionFile(is);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
+					LOGGER.info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 					loadInactivationIndicatorFile(is);
 				} else if (fileName.contains("Language")) {
-					info("Loading " + fileType + " Language Reference Set File - " + fileName);
+					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
 					loadLanguageFile(is);
 				}
 			}

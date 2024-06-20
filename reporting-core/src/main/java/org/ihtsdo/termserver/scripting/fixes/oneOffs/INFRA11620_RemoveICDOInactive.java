@@ -7,30 +7,26 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class INFRA11620_RemoveICDOInactive extends BatchFix {
 
 	private static final String RefsetOfInterest = "446608001"; // |SNOMED CT to ICD-O simple map|
-	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA11620_RemoveICDOInactive.class);
 
 	protected INFRA11620_RemoveICDOInactive(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		INFRA11620_RemoveICDOInactive fix = new INFRA11620_RemoveICDOInactive(null);
 		try {
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.runStandAlone = true;
-			fix.getArchiveManager(true).setLoadOtherReferenceSets(true);
-			fix.getArchiveManager(true).setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setLoadOtherReferenceSets(true);
+			fix.getArchiveManager().setPopulateReleaseFlag(true);
 			fix.populateTaskDescription = false;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);

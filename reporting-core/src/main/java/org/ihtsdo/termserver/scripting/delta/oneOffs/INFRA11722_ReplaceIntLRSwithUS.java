@@ -45,8 +45,8 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 		INFRA11722_ReplaceIntLRSwithUS delta = new INFRA11722_ReplaceIntLRSwithUS();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.moduleId = US_MODULE;
+			delta.getArchiveManager().setPopulateReleaseFlag(true);
+			delta.targetModuleId = US_MODULE;
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
@@ -59,7 +59,7 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 		}
 	}
 
-	private void loadUSLangRefsets() throws IOException, TermServerScriptException {
+	private void loadUSLangRefsets() throws IOException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -81,7 +81,7 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 		}
 	}
 
-	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException {
+	public void loadLanguageFile(InputStream is) throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
 		int linesLoaded = 0;
@@ -104,10 +104,10 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 	}
 
 
-	private void process() throws ValidationFailure, TermServerScriptException {
+	protected void process() throws ValidationFailure, TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (c.getId().equals("1076391000119106")) {
-				debug("Check what's happening here");
+				LOGGER.debug("Check what's happening here");
 			}
 			//Is the concept in the US namespace?
 			if (hasUSNamespace(c.getId())) {
@@ -116,7 +116,7 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.getId().equals("800611000124115")) {
-					debug("Check what's happening here");
+					LOGGER.debug("Check what's happening here");
 				}
 				//For each new gb langrefset, check if we have one for this description
 				//in the US edition and if so, swap it in.
@@ -129,11 +129,11 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 						if (!usGbLRS.getId().equals(l.getId())) {
 							//Check that the US GB version is inactive
 							if (usGbLRS.isActive()) {
-								debug("Check what's happening here");
+								LOGGER.debug("Check what's happening here");
 							}
 							//Make sure we don't already have this UUID in the International Edition
 							if (gl.getComponentMap().containsKey(usGbLRS.getId())) {
-								debug("Check what's happening here");
+								LOGGER.debug("Check what's happening here");
 							}
 							//Inactivate the INT version (this should result in a delta) and promote the US one.
 							l.setActive(false);
