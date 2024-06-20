@@ -27,7 +27,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 		InactivateConceptsDriven delta = new InactivateConceptsDriven();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.moduleId = "57101000202106";  //NO
+			delta.targetModuleId = "57101000202106";  //NO
 			delta.newIdsRequired = false; 
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
@@ -66,7 +66,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 		inactivateComponent(c);
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		InactivationIndicatorEntry cii = InactivationIndicatorEntry.withDefaults(c);
-		cii.setModuleId(moduleId);
+		cii.setModuleId(targetModuleId);
 		cii.setInactivationReasonId(SCTID_INACT_CLASS_DERIVED_COMPONENT);
 		c.addInactivationIndicator(cii);
 		

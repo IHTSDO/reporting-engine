@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
@@ -24,7 +25,7 @@ public class CreateMissingLangRefsetEntries extends DeltaGenerator implements Sc
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CreateMissingLangRefsetEntries delta = new CreateMissingLangRefsetEntries();
 		try {
-			delta.moduleId = "554471000005108";
+			delta.sourceModuleIds = Set.of("554471000005108");
 			delta.runStandAlone = true;
 			//delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
@@ -46,12 +47,12 @@ public class CreateMissingLangRefsetEntries extends DeltaGenerator implements Sc
 	public void process() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			for (Description d : c.getDescriptions()) {
-				if (d.isActive() && d.getModuleId().equals(moduleId) 
+				if (d.isActive() && sourceModuleIds.contains(d.getModuleId())
 						&& d.getType().equals(DescriptionType.FSN) 
 						&& !d.isPreferred() ) {
 					//Let's give it a language refset entry in the appropriate module
 					LangRefsetEntry l = LangRefsetEntry.withDefaults(d, langRefsetId, SCTID_PREFERRED_TERM);
-					l.setModuleId(moduleId);
+					l.setModuleId(targetModuleId);
 					l.setRefsetId(langRefsetId);
 					d.addLangRefsetEntry(l);
 					c.setModified();

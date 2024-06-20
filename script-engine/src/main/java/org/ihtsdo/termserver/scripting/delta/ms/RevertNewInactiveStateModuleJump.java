@@ -34,12 +34,11 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
 
-	String revertToModule = "15561000146104";
-	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RevertNewInactiveStateModuleJump delta = new RevertNewInactiveStateModuleJump();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.targetModuleId = "15561000146104";
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false;
@@ -87,12 +86,12 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 			}
 			//Work through all the components for this concept
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				if (!c.isActive() && c.getModuleId().equals(moduleId)
-						&& c.getIssues().contains(revertToModule)) {
+				if (!c.isActive() && sourceModuleIds.contains(c.getModuleId())
+						&& c.getIssues().contains(targetModuleId)) {
 					//Only need to worry if it was also previously inactive
 					String[] previousState = c.getIssues().split(",");
 					if (previousState[0].equals("0")) {
-						c.setModuleId(revertToModule);
+						c.setModuleId(targetModuleId);
 						c.setDirty();
 						concept.setModified();
 						if (!c.isReleased()) {
@@ -115,8 +114,8 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 
 	private void switchDescriptionComponentsIfRequired(Concept concept, Description d) throws TermServerScriptException {
 		for (Component c : SnomedUtils.getAllComponents(d)) {
-			if (c.getModuleId().equals(moduleId)) {
-				c.setModuleId(revertToModule);
+			if (sourceModuleIds.contains(c.getModuleId())) {
+				c.setModuleId(targetModuleId);
 				c.setDirty();
 				report(concept, ReportActionType.MODULE_CHANGE_MADE, c.getComponentType(), c);
 			}

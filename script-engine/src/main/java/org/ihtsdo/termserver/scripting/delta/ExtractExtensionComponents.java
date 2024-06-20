@@ -64,16 +64,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 
-			//delta.moduleId = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
-			//delta.moduleId = "32506021000036107"; //AU Module
-			//delta.moduleId = "11000181102"; //Estonia
-			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.moduleId = "51000202101"; //Norway Module
-			delta.moduleId = "57091000202101";  //Norway module for medicines
-			//delta.moduleId = "999000011000000103"; // UK Clinical Extension
-			//delta.moduleId = "83821000000107"; //UK Composition Module
-			//delta.moduleId = "731000124108";  //US Module
-			//delta.moduleId = "332351000009108"; //Vet Extension
+			//delta.sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
+			//delta.sourceModuleIds = "32506021000036107"; //AU Module
+			//delta.sourceModuleIds = "11000181102"; //Estonia
+			//delta.sourceModuleIds = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
+			//delta.sourceModuleIds = "51000202101"; //Norway Module
+			delta.sourceModuleIds = Set.of("57091000202101");  //Norway module for medicines
+			//delta.sourceModuleIds = "999000011000000103"; // UK Clinical Extension
+			//delta.sourceModuleIds = "83821000000107"; //UK Composition Module
+			//delta.sourceModuleIds = "731000124108";  //US Module
+			//delta.sourceModuleIds = "332351000009108"; //Vet Extension
 
 			delta.newIdsRequired = true;
 			delta.getArchiveManager().setRunIntegrityChecks(false);
@@ -458,7 +458,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//And even then we might do it, if it's missing from the target server (eg NEBCSR)
 		if (conceptOnTS.equals(NULL_CONCEPT)) {
 			//NEBCSR is a bit loose with its modules.  Allow CORE to be used without complaining
-			if (!c.getModuleId().equals(moduleId) && !c.getModuleId().equals(SCTID_CORE_MODULE)) {
+			if (!sourceModuleIds.contains(c.getModuleId()) && !c.getModuleId().equals(SCTID_CORE_MODULE)) {
 				report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
 			}
 			//Was this concept originally specified, or picked up as a dependency?

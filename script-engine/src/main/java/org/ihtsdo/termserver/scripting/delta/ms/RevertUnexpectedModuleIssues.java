@@ -197,7 +197,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				if (publishedComponent == null) {
 					if (component.getId().contains("-")) {
 						component.setDirty();
-						component.setModuleId(moduleId);
+						component.setModuleId(targetModuleId);
 						report(c, ReportActionType.INFO, "Apparently modified Core component doesn't exist in " + intReleaseBranch);
 						report(c, ReportActionType.MODULE_CHANGE_MADE, component.getComponentType(), component);
 						componentModified = true;
@@ -212,7 +212,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				//otherwise, revert the core component
 				if (component.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP) &&
 						publishedComponent.isActive() != component.isActive()) {
-					component.setModuleId(moduleId);
+					component.setModuleId(targetModuleId);
 					report(c, ReportActionType.MODULE_CHANGE_MADE, component.getComponentType(), component);
 				} else {
 					component.setActive(publishedComponent.isActive());

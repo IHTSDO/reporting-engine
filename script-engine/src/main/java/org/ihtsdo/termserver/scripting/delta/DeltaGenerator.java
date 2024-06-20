@@ -49,7 +49,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
-	protected String moduleId = SCTID_CORE_MODULE;
+	//protected String moduleId = SCTID_CORE_MODULE;
+	protected Set<String> sourceModuleIds = new HashSet<>();
 	protected String nameSpace="0";
 	protected String targetModuleId = SCTID_CORE_MODULE;
 	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",   //GB
@@ -94,7 +95,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				nameSpace = args[++x];
 			}
 			if (args[x].equals("-m")) {
-				moduleId = args[++x];
+				sourceModuleIds = Set.of(args[++x].split(","));
 			}
 			if (args[x].equals("-iC")) {
 				conIdGenerator = initialiseIdGenerator(args[++x], PartitionIdentifier.CONCEPT);
@@ -146,30 +147,36 @@ public abstract class DeltaGenerator extends TermServerScript {
 			nameSpace = response;
 		}
 
-		//If we're working in an extension and the module is still core, suggest
+		//If we're working in an extension and the source modules haven't been set, suggest
 		//the default module for that project
-		if (!projectName.endsWith(".zip") && moduleId.equals(SCTID_CORE_MODULE)){
+		if (!projectName.endsWith(".zip") && sourceModuleIds.isEmpty()){
 			try{
 				scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 				//MAIN is not a project, but we know what the default module is
 				if (projectName.toUpperCase().equals("MAIN")) {
-					moduleId = SCTID_CORE_MODULE;
+					sourceModuleIds = Set.of(INTERNATIONAL_MODULES);
 				} else {
 					project = scaClient.getProject(projectName);
 					if (project.getBranchPath().contains("SNOMEDCT-")
 							&& project.getMetadata() != null) {
-						moduleId = project.getMetadata().getDefaultModuleId();
+						sourceModuleIds.add(project.getMetadata().getDefaultModuleId());
+						if (project.getMetadata().getExpectedExtensionModules() != null) {
+							sourceModuleIds.addAll(project.getMetadata().getExpectedExtensionModules());
+						}
 					}
 				}
 			} catch (Exception e) {
 				LOGGER.error("Failed to retrieve project metadata for " + projectName, e);
 			}
 		}
-		
-		print ("Considering which moduleId(s)? [" + moduleId + "]: ");
+
+		if (sourceModuleIds.isEmpty()) {
+			sourceModuleIds = Set.of(SCTID_CORE_MODULE, SCTID_MODEL_MODULE);
+		}
+		print ("Considering which moduleId(s)? [" + StringUtils.join(sourceModuleIds, ",") + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
-			moduleId = response;
+			sourceModuleIds = Set.of(response.split(COMMA));
 		}
 		
 		print ("Targetting which language code? [" + languageCode + "]: ");
@@ -191,7 +198,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			edition = response;
 		}
 		
-		if (moduleId.isEmpty() || targetLangRefsetIds  == null) {
+		if (sourceModuleIds.isEmpty() || targetLangRefsetIds  == null) {
 			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
 			throw new TermServerScriptException(msg);
 		}
@@ -437,10 +444,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 			//In the case of eg reasserting an inactive axiom, we don't want to merge axioms
 			convertStatedRelationshipsToAxioms(c, true);
 			for (AxiomEntry a : AxiomUtils.convertClassAxiomsToAxiomEntries(c)) {
-				a.setModuleId(targetModuleId);
+				String axiomModuleId = targetModuleId == null ? c.getModuleId() : targetModuleId;
+				a.setModuleId(axiomModuleId);
 				a.setEffectiveTime(null);
 				c.getAxiomEntries().add(a);
-				if (!c.getModuleId().equals(targetModuleId)) {
+				if (!c.getModuleId().equals(axiomModuleId)) {
 					LOGGER.warn("Mismatch between Concept and Axiom module: " + c + " " + a);
 				}
 			}
@@ -547,8 +555,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 
 	protected boolean inScope(Component c, boolean includeExpectedExtensionModules) {
 		if (project.getKey().endsWith(".zip")) {
-				//If we're working from a zip file, then we're targetting whatever module we said as part of this Delta generation
-				return c.getModuleId().equals(moduleId);
+				//If we're working from a zip file, then we're targeting whatever module we said as part of this Delta generation
+				return sourceModuleIds.contains(c.getModuleId());
 		}
 		return super.inScope(c, includeExpectedExtensionModules);
 	}
