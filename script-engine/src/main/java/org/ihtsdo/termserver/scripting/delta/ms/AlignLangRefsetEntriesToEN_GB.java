@@ -32,7 +32,7 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 		try {
 			ReportSheetManager.targetFolderId = "1KGVf5QpzlohZsa0Cn9QDxs-fpaEtYaZC"; //Delta Generation / Managed Service
 			//delta.moduleId = "21000210109";  //NZ Module
-			delta.moduleId = "11000220105";  //IE Module
+			delta.targetModuleId = "11000220105";  //IE Module
 			delta.runStandAlone = true;
 			delta.newIdsRequired = false; 
 			delta.additionalReportColumns = "FSN,SemTag,Severity,Action,LangRefset, Detail,";
@@ -107,7 +107,7 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 					}
 				}
 
-				l.setModuleId(moduleId);
+				l.setModuleId(targetModuleId);
 				l.setRefsetId(langRefsetId);
 				d.addLangRefsetEntry(l);
 				l.setDirty();
@@ -123,7 +123,7 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 			Description enGbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
 			if (enGbPT == null) {
 				//This is fine if this is an MS concept.  But if it's not...
-				if (!c.getModuleId().equals(moduleId)) {
+				if (!c.getModuleId().equals(targetModuleId)) {
 					report(c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Int concept missing GB PT?");
 				}
 			} else {
