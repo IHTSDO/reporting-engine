@@ -17,15 +17,10 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupSelfGroupedAttributes.class);
 
 	private List<String> eclSelections = new ArrayList<>();
-
 	private final List<Concept> skipAttributeTypes = new ArrayList<>();
-
 	private List<Concept> singleTypes = new ArrayList<>();
-
 	private List<Concept> allowRepeatingTypes = new ArrayList<>();
-
 	private Concept COMPONENT;
-
 	//private final int BatchSize = 30;
 	private final int BatchSize = 99999;
 
@@ -34,8 +29,9 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.getArchiveManager(true).setPopulateReleasedFlag(true);
-			//delta.getArchiveManager(true).setRunIntegrityChecks(false);
+			delta.getArchiveManager(true).setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
+			delta.sourceModuleIds = Set.of("1326031000000103","83821000000107","999000011000000103","999000011000001104","999000021000000109","999000021000001108","999000031000000106","999000041000000102");
 			delta.init(args);
 			delta.loadProjectSnapshot();
 			delta.postInit();
@@ -47,8 +43,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	public void postInit() throws TermServerScriptException {
-		//eclSelections.add("<< " + OBSERVABLE_ENTITY.getConceptId());
-		eclSelections.add("<< 386053000 |Evaluation procedure|");
+		eclSelections.add("<< " + OBSERVABLE_ENTITY.getConceptId());
+		//eclSelections.add("<< 386053000 |Evaluation procedure|");
 		//eclSelections.add("<< 386053000 |Evaluation procedure| OR << " + OBSERVABLE_ENTITY.getConceptId());
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
@@ -67,8 +63,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				COMPONENT
 		);
 
-		//We're not moving modules here, so the source and target modules are the same
-		targetModuleId = moduleId;
+		//We're not moving modules here, so don't set the targetModuleId so that it remains unchanged
+		targetModuleId = null;
 
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Before, After, Group Count, Has Repeated Attribute Type,",
@@ -153,6 +149,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			}
 			changesMade = true;
 		}
+
 		if (changesMade) {
 			//Any relationships that were copied over from inferred need to be merged into the axiom
 			if (axiomEntry != null) {
@@ -234,9 +231,8 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}*/
 	
 	private boolean inScope(Concept c) {
-
 		//Are we in scope more generally?
-		if (!super.inScope(c)) {
+ 		if (!super.inScope(c)) {
 			return false;
 		}
 
