@@ -45,15 +45,19 @@ public abstract class NegativeDeltaGenerator extends DeltaGenerator {
 		writeToRF2File(attribValDeltaFilename, attribValHeader);
 	}
 
-	protected void outputRF2(Description d) throws TermServerScriptException {
+	protected boolean outputRF2(Description d) throws TermServerScriptException {
+		boolean componentOutput = false;
 		if (d.isDeleted()) {
 			writeToRF2File(descDeltaFilename, d.toRF2Deletion());
+			componentOutput = true;
 		}
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
 			if (lang.isDeleted()) {
 				writeToRF2File(langDeltaFilename, lang.toRF2Deletion());
+				componentOutput = true;
 			}
 		}
+		return componentOutput;
 	}
 
 	protected void outputRF2(Relationship r) throws TermServerScriptException {

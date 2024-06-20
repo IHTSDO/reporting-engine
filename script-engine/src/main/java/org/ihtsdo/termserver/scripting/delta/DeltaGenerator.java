@@ -336,9 +336,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 		writeToRF2File(fileName, columns);
 	}
 
-	protected void outputRF2(Description d) throws TermServerScriptException {
+	protected boolean outputRF2(Description d) throws TermServerScriptException {
+		boolean componentOutput = false;
 		if (d.isDirty()) {
 			writeToRF2File(descDeltaFilename, d.toRF2());
+			componentOutput = true;
 		}
 		//Does this component itself have an associated annotations?
 		outputComponentAnnotations(d);
@@ -346,6 +348,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
 			if (lang.isDirty()) {
 				writeToRF2File(langDeltaFilename, lang.toRF2());
+				componentOutput = true;
 			}
 			//Does this component itself have an associated annotations?
 			outputComponentAnnotations(lang);
@@ -353,6 +356,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 			if (i.isDirty()) {
 				writeToRF2File(attribValDeltaFilename, i.toRF2());
+				componentOutput = true;
 			}
 			//Does this component itself have an associated annotations?
 			outputComponentAnnotations(i);
@@ -360,10 +364,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		for (AssociationEntry a : d.getAssociationEntries()) {
 			if (a.isDirty()) {
 				writeToRF2File(assocDeltaFilename, a.toRF2());
+				componentOutput = true;
 			}
 			//Does this component itself have an associated annotations?
 			outputComponentAnnotations(a);
 		}
+		return componentOutput;
 	}
 	
 	protected void outputRF2(Relationship r) throws TermServerScriptException {
@@ -429,7 +435,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
+			conceptOutput |= outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
 		}
 		
 		for (AlternateIdentifier a : c.getAlternateIdentifiers()) {
@@ -451,6 +457,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				if (!c.getModuleId().equals(axiomModuleId)) {
 					LOGGER.warn("Mismatch between Concept and Axiom module: " + c + " " + a);
 				}
+				conceptOutput = true;
 			}
 			
 			//Now output inferred relationships
