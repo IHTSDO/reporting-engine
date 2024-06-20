@@ -33,7 +33,7 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 		UnfixableLangRefsetDuplicates delta = new UnfixableLangRefsetDuplicates();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.moduleId = US_MODULE;
+			delta.sourceModuleIds = Set.of(US_MODULE);
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships

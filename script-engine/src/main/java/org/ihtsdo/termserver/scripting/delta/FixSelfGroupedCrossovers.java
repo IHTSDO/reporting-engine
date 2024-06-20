@@ -59,8 +59,8 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 				COMPONENT
 		);
 
-		//We're not moving modules here, so the source and target modules are the same
-		targetModuleId = moduleId;
+		//We're not moving modules here, so set target module to be null so we don't change it
+		targetModuleId = null;
 
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Before (Stated), Before (Inferred), After (Stated), ",

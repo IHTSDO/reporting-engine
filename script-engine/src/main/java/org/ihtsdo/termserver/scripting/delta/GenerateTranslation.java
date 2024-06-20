@@ -59,7 +59,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				languageCode="sv";
 				edition="SE1000052";
 				langToRefsetMap.put(languageCode, "46011000052107");
-				moduleId = "45991000052106";
+				targetModuleId = "45991000052106";
 				break;
 			case BELGIUM:
 				nameSpace = "1000172";
@@ -67,7 +67,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				edition="BE1000172";
 				langToRefsetMap.put("fr", "21000172104");
 				langToRefsetMap.put("nl", "31000172101");
-				moduleId = "11000172109";
+				targetModuleId = "11000172109";
 				break;
 		}
 	}
@@ -260,7 +260,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.setTerm(term);
 		d.setType(DescriptionType.SYNONYM);
 		d.setCaseSignificance(caseSignificance);
-		d.setModuleId(moduleId);
+		d.setModuleId(targetModuleId);
 		d.setDirty();
 		addLangRefsetEntry(d, acceptabilityId);
 		return d;
@@ -272,7 +272,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		l.setRefsetId(langToRefsetMap.get(d.getLang()));
 		l.setActive(true);
 		l.setEffectiveTime(null);
-		l.setModuleId(moduleId);
+		l.setModuleId(targetModuleId);
 		l.setAcceptabilityId(acceptabilitySCTID);
 		l.setReferencedComponentId(d.getDescriptionId());
 		l.setDirty();

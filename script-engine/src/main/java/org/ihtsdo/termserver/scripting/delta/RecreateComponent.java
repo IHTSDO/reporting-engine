@@ -42,7 +42,7 @@ public class RecreateComponent extends DeltaGenerator {
 		h.setRefsetId("900000000000523009");
 		h.setActive(false);
 		h.setEffectiveTime(null);
-		h.setModuleId(moduleId);
+		h.setModuleId(targetModuleId);
 		h.setReferencedComponentId("376166005");
 		h.setTargetComponentId("370769002");
 		h.setDirty();

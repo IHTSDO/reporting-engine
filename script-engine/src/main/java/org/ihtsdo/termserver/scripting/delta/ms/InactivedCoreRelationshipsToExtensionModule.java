@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -39,7 +40,7 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivedCoreRelationshipsToExtensionModule delta = new InactivedCoreRelationshipsToExtensionModule();
 		try {
-			delta.moduleId = "51000202101";
+			delta.targetModuleId = "51000202101";
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
@@ -108,7 +109,7 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 				return semTagModuleMap.get(key);
 			}
 		}
-		return moduleId;
+		return targetModuleId;
 	}
 
 }

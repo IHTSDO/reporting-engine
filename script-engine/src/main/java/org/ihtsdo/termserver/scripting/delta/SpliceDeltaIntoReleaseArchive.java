@@ -46,7 +46,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		SpliceDeltaIntoReleaseArchive delta = new SpliceDeltaIntoReleaseArchive();
 		try {
-			delta.moduleId = SCTID_CH_MOD;
+			delta.sourceModuleIds = Set.of(SCTID_CH_MOD);
 			delta.runStandAlone = true;
 			//delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; 

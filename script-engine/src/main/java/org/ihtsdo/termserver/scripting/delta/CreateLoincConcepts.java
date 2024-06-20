@@ -62,7 +62,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			delta.edition="INT";
 			delta.languageCode="en";
 			delta.inputFileDelimiter = TSV_FIELD_DELIMITER;
-			delta.moduleId = "715515008"; // |LOINC - SNOMED CT Cooperation Project module (core metadata concept)|
+			delta.targetModuleId = "715515008"; // |LOINC - SNOMED CT Cooperation Project module (core metadata concept)|
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -105,7 +105,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		isAObservable.setActive(true);
 		isAObservable.setGroupId(UNGROUPED);
 		isAObservable.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
-		isAObservable.setModuleId(moduleId);
+		isAObservable.setModuleId(targetModuleId);
 		isAObservable.setModifier(Modifier.EXISTENTIAL);
 	}
 
@@ -126,7 +126,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			l.setRefsetId(langRefsetId);
 			l.setActive(true);
 			l.setEffectiveTime(null);
-			l.setModuleId(moduleId);
+			l.setModuleId(targetModuleId);
 			l.setAcceptabilityId(sctIdAcceptability);
 			l.setReferencedComponentId(d.getDescriptionId());
 			l.setDirty();
@@ -140,7 +140,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			throws TermServerScriptException {
 		if (lineItems.length > 3) {
 			Concept concept = new Concept(conIdGenerator.getSCTID());
-			concept.setModuleId(moduleId);
+			concept.setModuleId(targetModuleId);
 			concept.setDirty();
 			if (is99_2) {
 				addFsnAndPT(concept, lineItems[LoincElement.LOINC_FSN_99_2.geIdx()]);
@@ -169,7 +169,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		pt.setConceptId(concept.getConceptId());
 		pt.setType(DescriptionType.SYNONYM);
 		pt.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-		pt.setModuleId(moduleId);
+		pt.setModuleId(targetModuleId);
 		pt.setDirty();
 		addLangRefsetEntry(pt, SCTID_PREFERRED_TERM);
 		concept.addDescription(pt);
@@ -184,7 +184,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		Description syn = new Description(descIdGenerator.getSCTID());
 		syn.setTerm(prefix + data);
 		syn.setActive(true);
-		syn.setModuleId(moduleId);
+		syn.setModuleId(targetModuleId);
 		syn.setLang(languageCode);
 		syn.setType(DescriptionType.SYNONYM);
 		syn.setConceptId(concept.getConceptId());
@@ -204,7 +204,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			Concept target = gl.getConcept(targetSctid);
 			Relationship rel = new Relationship (source, type, target, UNGROUPED);
 			rel.setRelationshipId(relIdGenerator.getSCTID());
-			rel.setModuleId(moduleId);
+			rel.setModuleId(targetModuleId);
 			rel.setActive(true);
 			rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 			rel.setModifier(Modifier.EXISTENTIAL);
