@@ -6,8 +6,12 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator implements ScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ISRS1400_SwitchModuleOfNewCNCIndicators.class);
 
 	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
 	public static String SCTID_CH_MOD = "2011000195101"; //Swiss Module
@@ -15,7 +19,7 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ISRS1400_SwitchModuleOfNewCNCIndicators delta = new ISRS1400_SwitchModuleOfNewCNCIndicators();
 		try {
-			delta.moduleId = SCTID_CH_MOD;
+			delta.targetModuleId = SCTID_CH_MOD;
 			delta.runStandAlone = true;
 			//delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; 
@@ -28,7 +32,7 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				info(delta.descIdGenerator.finish());
+				LOGGER.info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -37,7 +41,7 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 		int conceptsProcessed = 0;
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (conceptsProcessed++%10000==0) {
-				info("Concepts processed: " + (conceptsProcessed-1));
+				LOGGER.info("Concepts processed: " + (conceptsProcessed-1));
 				getRF2Manager().flushFiles(false);
 			}
 			processConcept(c);
