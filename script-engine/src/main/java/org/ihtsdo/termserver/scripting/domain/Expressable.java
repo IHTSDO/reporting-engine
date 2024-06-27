@@ -43,7 +43,9 @@ public abstract class Expressable extends Component implements ScriptConstants {
 				expression += ",\n";
 			}
 			expression += group.isGrouped() ? "{" : "";
-			expression += group.getRelationships().stream().map(p -> "  " + p.toString())
+			expression += group.getRelationships().stream()
+					.map(r -> "  " + r.toString())
+					.sorted()
 					.collect(Collectors.joining (",\n"));
 			expression += group.isGrouped() ? " }" : "";
 		}

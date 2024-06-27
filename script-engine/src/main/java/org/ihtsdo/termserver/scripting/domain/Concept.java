@@ -1193,6 +1193,13 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		conceptId = id;
 	}
 
+	public String getId() {
+		if (id == null && conceptId != null) {
+			super.setId(conceptId);
+		}
+		return super.getId();
+	}
+
 	@Override
 	public String getReportedName() {
 		return getFsn();

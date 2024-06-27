@@ -42,8 +42,8 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		Concept componentAttribType = typeMap.get("COMPONENT");
 		
 		//We can't yet deal with "given"
-		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
-			getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName().endsWith(" given")) {
+		if (detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN) &&
+			getLoincDetail(loincNum, LoincDetail.COMPONENTCORE_PN).getPartName().endsWith(" given")) {
 			String issue = "Skipping concept using 'given'";
 			cpm.report(getTab(TAB_IOI), issue, loincNum);
 			issues.add(issue);
@@ -51,37 +51,32 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 			return attributes;
 		}
 		
-		if (CompNumPnIsSafe(loincNum)) {
-			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-		} else {
-			if (detailPresent(loincNum, LoincDetail.COMPNUM_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-				if (detailPresent(loincNum, LoincDetail.COMPDENOM_PN)) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
-				}
-			}
-			
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-				}
-				if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
-				}
-			}
-			
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART3_PN);
-				slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
-			}
-			
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART4_PN);
-				slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
+		if (detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN)) {
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+			if (detailPresent(loincNum, LoincDetail.COMPDENOM_PN)) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
 			}
 		}
-		
+
+		if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+			if (attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+			}
+			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+			}
+		}
+
+		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
+			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART3_PN);
+			slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
+		}
+
+		if (detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART4_PN);
+			slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
+		}
+
 		//If we didn't find the component, return a null so that we record that failed mapping usage
 		if (attributes.size() == 0) {
 			attributes.add(null);
