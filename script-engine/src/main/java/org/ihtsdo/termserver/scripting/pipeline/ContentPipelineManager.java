@@ -53,16 +53,18 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			reportMissingMappings(getTab(TAB_MAP_ME));
 			reportExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
 			flushFiles(false);
+			Map<String, Integer> summaryCounts = new HashMap<>();
 			switch (runMode) {
-				case NEW: outputAllConceptsToDelta(successfullyModelled);
+				case NEW: outputAllConceptsToDelta(successfullyModelled, summaryCounts);
 					break;
 				case INCREMENTAL_API:
 				case INCREMENTAL_DELTA:
-					determineChangeSet(successfullyModelled);
+					determineChangeSet(successfullyModelled, summaryCounts);
 					break;
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
+			reportSummaryCounts(summaryCounts);
 		} finally {
 			while (additionalThreadCount > 0) {
 				try {
@@ -78,11 +80,18 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 	}
 
+	private void reportSummaryCounts(Map<String, Integer> summaryCounts) throws TermServerScriptException {
+		report(getTab(TAB_SUMMARY), "");
+		for (String key : summaryCounts.keySet()) {
+			report(getTab(TAB_SUMMARY), key, summaryCounts.get(key));
+		}
+	}
+
 	protected abstract void reportMissingMappings(int tabIdx) throws TermServerScriptException;
 
 	protected abstract void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException;
 
-	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled, Map<String, Integer> summaryCounts) throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {
@@ -96,7 +105,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 	
 
-	private Set<TemplatedConcept> determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	private Set<TemplatedConcept> determineChangeSet(Set<TemplatedConcept> successfullyModelled, Map<String, Integer> summaryCounts) throws TermServerScriptException {
 		LOGGER.info("Determining change set for " + successfullyModelled.size() + " successfully modelled concepts");
 		Set<ComponentType> skipForComparison = Set.of(
 				ComponentType.INFERRED_RELATIONSHIP,
@@ -219,7 +228,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					}
 				}
 			}
-			
+
+			//Update the summary count based on the comparison to the previous iteration
+			summaryCounts.merge(previousIterationIndicator, 1, Integer::sum);
 			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
 		}
@@ -241,6 +252,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 			}
 			doProposedModelComparison(inactivatingCode, null, existingConcept, "Removed", differencesListStr);
+			summaryCounts.merge("Removed", 1, Integer::sum);
 		
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 			//So - temporarily again - we'll normalize the scheme id

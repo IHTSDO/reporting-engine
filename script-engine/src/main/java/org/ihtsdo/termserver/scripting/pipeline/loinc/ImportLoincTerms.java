@@ -228,30 +228,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				successfullyModelledConcepts.add(templatedConcept);
 			}
 		}
-		/*Set<String> successfullyModelledLoincNums = successfullyModelledConcepts.stream()
-				.map(ltc -> ltc.getExternalIdentifier())
-				.collect(Collectors.toSet());
-		
-		Report LoincNums modelled in the previous iteration that didn't make this round
-		int removedThisIteration = 0;
-		for (String loincNum : previousIterationLoincNums) {
-			if (!successfullyModelledLoincNums.contains(loincNum)) {
-				removedThisIteration++;
-				report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
-						loincNum,
-						"REMOVED",
-						"",
-						loincNumToLoincTermMap.get(loincNum).getDisplayName());
-			}
-		}*/
-
-		//Report summary of LoincNums existing/new/removed
-		int newThisIteration = successfullyModelledConcepts.size() - existedPreviousIteration;
-		int tabIdx = getTab(TAB_SUMMARY);
-		report(tabIdx, "");
-		report(tabIdx, "LoincNums existing in previous iteration", existedPreviousIteration);
-		report(tabIdx, "LoincNums new this iteration", newThisIteration);
-		//report(tabIdx, "LoincNums removed this iteration", removedThisIteration);
 
 		return successfullyModelledConcepts;
 	}
