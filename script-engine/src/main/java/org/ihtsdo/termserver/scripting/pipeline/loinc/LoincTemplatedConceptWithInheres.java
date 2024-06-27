@@ -44,8 +44,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		Concept componentAttribType = typeMap.get("COMPONENT");
 		
 		//We can't yet deal with "given"
-		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
-			getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName().endsWith(" given")) {
+		if (detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN) &&
+			getLoincDetail(loincNum, LoincDetail.COMPONENTCORE_PN).getPartName().endsWith(" given")) {
 			String issue = "Skipping concept using 'given'";
 			cpm.report(getTab(TAB_IOI), issue, loincNum);
 			issues.add(issue);
@@ -53,31 +53,30 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			return attributes;
 		}
 
-		if (CompNumPnIsSafe(loincNum)) {
-			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-		} else {
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-				}
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+		if (detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN)) {
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+		}
+
+		if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+			if(attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
 			}
-			
-			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-			}
-			
-			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
-			}
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+		}
+
+		if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+		}
+
+		if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
 		}
 
 		if (detailPresent(loincNum, LoincDetail.COMPNUMSUFFIX_PN)) {
 			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPNUMSUFFIX_PN);
 			if (suffixExceptions.contains(componentDetail.getPartNumber())) {
 				//use the COMPNUM_PN LP name to include in FSN and PT in the Inheres in slot for terming.
-				String compNumPartName = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName();
+				String compNumPartName = getLoincDetail(loincNum, LoincDetail.COMPONENTCORE_PN).getPartName();
 				slotTermMap.put("COMPONENT", compNumPartName);
 			}
 		}

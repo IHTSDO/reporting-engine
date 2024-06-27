@@ -10,13 +10,11 @@ public class LoincDetail {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincDetail.class);
 
-	public static String COMPONENT_PN = "COMPONENT_PN";
 	public static String COMPONENTCORE_PN = "COMPONENTCORE_PN";
 	public static String COMPSUBPART1_PN = "COMPSUBPART1_PN";
 	public static String COMPSUBPART2_PN = "COMPSUBPART2_PN";
 	public static String COMPSUBPART3_PN = "COMPSUBPART3_PN";
 	public static String COMPSUBPART4_PN = "COMPSUBPART4_PN";
-	public static String COMPNUM_PN = "COMPNUM_PN";
 	public static String COMPDENOM_PN = "COMPDENOM_PN";
 	public static String PROPERTY = "PROPERTYMIXEDCASE_PN";
 	public static String COMPNUMSUFFIX_PN = "COMPNUMSUFFIX_PN";

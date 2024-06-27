@@ -41,7 +41,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
-			getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
+			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
 			getReportManager().disableTab(getTab(TAB_MAP_ME));
 			getReportManager().disableTab(getTab(TAB_IOI));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null, this.getNamespace());
@@ -105,8 +105,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
 		Set<TemplatedConcept> changeSet = new HashSet<>();
 		Set<Concept> dirtyConcepts = new HashSet<>();
+
+		//Sort so that subsequent spreadsheets are somewhat comparable
+		List<TemplatedConcept> sortedModelled = successfullyModelled.stream()
+				.sorted(Comparator.comparing(TemplatedConcept::getExternalIdentifier))
+				.collect(Collectors.toList());
 		
-		for (TemplatedConcept tc : successfullyModelled) {
+		for (TemplatedConcept tc : sortedModelled) {
 			//Set this concept to be clean.  We'll mark dirty where differences exist
 			Concept concept = tc.getConcept();
 			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
@@ -146,6 +151,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				convertStatedRelationshipsToAxioms(concept, true, true);
 				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
 			} else {
+				if (existingConceptSCTID.equals("175851010000107")) {
+					LOGGER.info("Debug here");
+				}
 				SnomedUtils.getAllComponents(concept).forEach(c -> { 
 					c.setClean();
 					//Normalise module

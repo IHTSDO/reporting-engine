@@ -1555,7 +1555,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 
 	public static String getDescriptionsToString(Concept c) {
-		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+		return getDescriptionsToString(c, false);
+	}
+
+	public static String getDescriptionsToString(Concept c, boolean includeInactiveDescriptions) {
+		List<Description> descriptions = includeInactiveDescriptions ? c.getDescriptions() : c.getDescriptions(ActiveState.ACTIVE);
+		return prioritise(descriptions).stream()
 				.map(d -> d.toString()).collect(Collectors.joining(",\n"));
 	}
 	

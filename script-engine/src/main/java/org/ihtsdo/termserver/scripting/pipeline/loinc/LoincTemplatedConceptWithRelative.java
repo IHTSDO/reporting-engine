@@ -41,31 +41,31 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
-		Concept componentAttrib = typeMap.get("COMPONENT");
-		Concept challengeAttrib = typeMap.get("CHALLENGE"); 
-		if (CompNumPnIsSafe(loincNum)) {
-			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
-		} else {
-			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
-			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
-				//Check for percentage
-				if (denom.getPartName().contains("100")) {
-					attributes.add(percentAttribute);
-					slotTermMap.put("PROPERTY", "percentage");
-				}
-			}
-			
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
-				}
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, challengeAttrib);
+		Concept componentAttribType = typeMap.get("COMPONENT");
+		Concept challengeAttribType = typeMap.get("CHALLENGE");
+
+		LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
+		if (denom != null) {
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
+			//Check for percentage
+			if (denom.getPartName().contains("100")) {
+				attributes.add(percentAttribute);
+				slotTermMap.put("PROPERTY", "percentage");
 			}
 		}
-		
+
+		if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+			if(attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+			}
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, challengeAttribType);
+		}
+
+		if (attributes.size() == 0 && detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN)) {
+			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+		}
+
 		//If we didn't find the component, return a null so that we record that failed mapping usage
 		if (attributes.size() == 0) {
 			attributes.add(null);

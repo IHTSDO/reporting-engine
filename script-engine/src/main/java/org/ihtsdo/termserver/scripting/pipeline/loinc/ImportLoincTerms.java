@@ -92,7 +92,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		//executor.execute(() -> loadFullLoincFile());
 		loadFullLoincFile(NOT_SET);
 		loadLoincDetail();
-
 	}
 
 	@Override
@@ -258,8 +257,11 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
-				!loincDetailMap.containsKey(LoincDetail.COMPNUM_PN)) {
+		if (!loincDetailMap.containsKey(LoincDetail.COMPONENTCORE_PN)) {
+			//Do we have consistency between the detail map and the main loincTermMap?
+			if (!loincNumToLoincTermMap.containsKey(loincNum)) {
+				throw new TermServerScriptException("Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");
+			}
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
@@ -319,7 +321,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String proposedSCG = proposedLoincConcept == null ? "N/A" : proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedLoincConcept);
-		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(existingConcept);
+		//We might have inactivated descriptions in the existing concept if they've been changed, so
+		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(existingConcept, true);
 		String existingConceptId = existingConcept == null ? "N/A" : existingConcept.getId();
 		report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
 				loincNum, 
