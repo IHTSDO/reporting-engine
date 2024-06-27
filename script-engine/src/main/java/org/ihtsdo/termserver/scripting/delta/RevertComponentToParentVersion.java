@@ -370,6 +370,8 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 			case GB_ENG_LANG_REFSET:
 			case US_ENG_LANG_REFSET:
 				return langDeltaFilename;
+			case SCTID_OWL_AXIOM_REFSET:
+				return owlDeltaFilename;
 			default:
 				throw new TermServerScriptException(String.format("Cannot get filename for reference set '%s'", refsetId));
 		}
