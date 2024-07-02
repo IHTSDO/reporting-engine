@@ -61,7 +61,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("New Descriptions")
-				.withDescription("This report lists all descriptions and annotations (optionally filtered by ECL) created in the current authoring cycle." +
+				.withDescription("This report lists all descriptions and annotations (optionally filtered by ECL) created in the current authoring cycle. " +
 				"Ticking the 'Unpromoted Changes' box will cause only those new descriptions and annotations that have been created since the last time the project was promoted, to be listed.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
@@ -91,10 +91,10 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 			//We'll complain but skip
 			if (c.isActive()) {
 				if (c.getFsn() == null) {
-					throw new TermServerScriptException ("Integrity Faiure. " + c.getId() + " has no FSN");
+					throw new TermServerScriptException ("Integrity failure. " + c.getId() + " has no FSN");
 				}
 				if (c.getSemTag() == null) {
-					throw new TermServerScriptException ("Integrity Faiure. " + c + " has no Semantic Tag");
+					throw new TermServerScriptException ("Integrity failure. " + c.getId() + " has no Semantic Tag");
 				}
 			} else if (c.getFsn() == null || c.getSemTag() == null){
 				LOGGER.warn ("Inactive concept " + c.getId() + " has a missing or malformed FSN");
@@ -130,10 +130,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 
 	private boolean unpromotedCheck(Component c) {
 		//Are we filtering for unpromoted changes only?
-		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
-			return false;
-		}
-		return true;
+		return !(unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c));
 	}
 
 }
