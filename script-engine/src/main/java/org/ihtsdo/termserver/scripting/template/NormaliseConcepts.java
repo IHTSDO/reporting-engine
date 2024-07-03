@@ -27,7 +27,7 @@ public class NormaliseConcepts extends BatchFix {
 	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
 
 	Concept ppp;
-	Boolean useStatedECL = true;
+	Boolean useStatedECL = false;
 	//private String ecl = "<< 66191007 |Transient arthropathy (disorder)|";
 	//private String ecl = "<! 267038008 |Edema (finding)|";
 	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
@@ -39,7 +39,8 @@ public class NormaliseConcepts extends BatchFix {
 	//private String ecl = "< 67889009 |Irrigation (procedure)|";
 	//private String ecl = "< 11429006 |Consultation (procedure)| ";
 	//private String ecl = "< 14766002 |Aspiration (procedure)| ";
-	private String ecl = "<! 59108006 |Injection (procedure)|";
+	//private String ecl = "<! 59108006 |Injection (procedure)|";
+	private String ecl = "<<782901001 |Insertion procedure (procedure)| MINUS (<<42825003 |Cannulation (procedure)| OR <<45211000 |Catheterization (procedure)| OR << 77343006 |Angiography (procedure)| OR << 418285008 |Angioplasty of blood vessel (procedure)| OR  << 363687006 |Endoscopic procedure (procedure)| OR  << 1296925008 |Insertion of stent (procedure)| OR 77465005 |Transplantation (procedure)|)";
 	
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
