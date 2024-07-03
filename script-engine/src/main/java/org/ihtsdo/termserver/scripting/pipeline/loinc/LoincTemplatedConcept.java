@@ -100,6 +100,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		this.externalIdentifier = loincNum;
 	}
 
+	@Override
+	public boolean isHighUsage() {
+		return !loincNumToLoincTermMap.get(externalIdentifier).getCommonTestRank().equals("0");
+	}
+
 	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rules that apply to all templates:
 
