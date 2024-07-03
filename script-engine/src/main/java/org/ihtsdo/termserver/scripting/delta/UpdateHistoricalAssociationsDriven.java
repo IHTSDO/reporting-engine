@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.jena.update.UpdateAction;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -761,7 +762,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		Association type;
 		InactivationIndicator inactivationIndicator;
 		Set<Concept> replacements;
-		
+
 		public UpdateAction () {
 		}
 
