@@ -1980,7 +1980,7 @@ public class GraphLoader implements ScriptConstants {
 		if (conflictingAttributes.size() > 0) {
 			String msg = "MRCM Attribute Range File conflicts: \n";
 			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
-			if (allContentAcceptable) {
+			if (allContentAcceptable || !runIntegrityChecks) {
 				integrityWarnings.add(msg);
 			} else {
 				throw new TermServerScriptException(msg);

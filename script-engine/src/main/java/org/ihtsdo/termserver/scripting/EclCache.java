@@ -53,7 +53,7 @@ public class EclCache implements ScriptConstants {
 	}
 	
 	public static void reset() {
-		TermServerScript.info("Resetting ECL Cache - all branches wipe");
+		LOGGER.info("Resetting ECL Cache - all branches wipe");
 		branchCaches = new HashMap<>();
 	}
 	
@@ -71,7 +71,7 @@ public class EclCache implements ScriptConstants {
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
-			TermServerScript.warn("EclCache asked to find concepts but no ecl specified.  Returning empty set");
+			LOGGER.warn("EclCache asked to find concepts but no ecl specified.  Returning empty set");
 			return new ArrayList<>();
 		}
 		
@@ -103,7 +103,7 @@ public class EclCache implements ScriptConstants {
 				expansionCache.put(ecl, cached);
 			}
 			if (!quiet) {
-				TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
+				LOGGER.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
 			}
 			return cached;
 		} else if (machineEcl.contains(" OR ") && !machineEcl.contains("(")) {
@@ -111,7 +111,7 @@ public class EclCache implements ScriptConstants {
 			//iterate through them without copying the objects
 			Collection<Concept> combinedSet = new HashSet<>();
 			for (String eclFragment : machineEcl.split(" OR ")) {
-				TermServerScript.debug("Combining request for: " + eclFragment);
+				LOGGER.debug("Combining request for: " + eclFragment);
 				combinedSet.addAll(findConcepts(branch, eclFragment, useLocalStoreIfSimple));
 			}
 			allConcepts = combinedSet;
@@ -142,14 +142,14 @@ public class EclCache implements ScriptConstants {
 						throw new IllegalStateException("ECL is not simple: " + ecl);
 					}
 				}
-				TermServerScript.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
+				LOGGER.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
 			} else {
 				allConcepts = recoverConceptsFromTS(branch, ecl, charType);
 			}
 		}
 		
 		if (allConcepts.size() == 0) {
-			TermServerScript.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
+			LOGGER.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
 			expansionCache.remove(ecl);
 		} else {
 			//Seeing a transient issue where we're getting 0 concepts back on the first call, and the concepts back on a 
@@ -193,7 +193,7 @@ public class EclCache implements ScriptConstants {
 					totalRecovered += collection.getItems().size();
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
-						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
+						LOGGER.debug("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
 					}
 					if (localStorePopulated) {
 						//Recover our locally held copy of these concepts so that we have the full hierarchy populated
@@ -211,7 +211,7 @@ public class EclCache implements ScriptConstants {
 					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
 					//add to the set
 					if (totalRecovered > allConcepts.size()) {
-						TermServerScript.warn ("Duplicates detected");
+						LOGGER.warn ("Duplicates detected");
 					}
 					
 					//Did we get all the concepts that there are?
