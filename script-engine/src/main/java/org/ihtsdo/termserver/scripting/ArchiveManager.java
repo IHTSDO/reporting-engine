@@ -731,7 +731,7 @@ public class ArchiveManager implements ScriptConstants {
 			if (sb.length() > 0) {
 				sb.append(",\n");
 			}
-			sb.append(c + " has no " + charType + " parents");
+			sb.append(c + " has no " + charType + " parents.");
 		}
 		
 		for (Concept parent : parents) {
@@ -739,6 +739,9 @@ public class ArchiveManager implements ScriptConstants {
 				continue;
 			}
 			if (!parent.isActive()) {
+				if (sb.length() > 0) {
+					sb.append(",\n");
+				}
 				sb.append(c + " has inactive " + charType + " parent: " + parent);
 			}
 		}

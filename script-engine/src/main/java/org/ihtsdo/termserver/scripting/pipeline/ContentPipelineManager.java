@@ -32,6 +32,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 
+	protected List<String> activeIndicators = List.of("New", "Unchanged", "Updated", "Resurrected");
+
 	protected void ingestExternalContent(String[] args) throws TermServerScriptException {
 		try {
 			runStandAlone = false;
@@ -231,6 +233,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 			//Update the summary count based on the comparison to the previous iteration
 			summaryCounts.merge(previousIterationIndicator, 1, Integer::sum);
+			//Is this a high usage concept?
+			if (activeIndicators.contains(previousIterationIndicator) && tc.isHighUsage()) {
+				summaryCounts.merge("Active with high usage", 1, Integer::sum);
+			}
 			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
 		}

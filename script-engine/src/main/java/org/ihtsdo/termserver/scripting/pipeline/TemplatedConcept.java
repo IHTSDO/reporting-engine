@@ -37,4 +37,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	public void setExternalIdentifier(String externalIdentifier) {
 		this.externalIdentifier = externalIdentifier;
 	}
+
+	abstract public boolean isHighUsage();
 }

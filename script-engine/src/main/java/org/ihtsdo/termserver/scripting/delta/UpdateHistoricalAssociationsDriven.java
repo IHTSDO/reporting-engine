@@ -132,14 +132,20 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			updatedConcepts.add(c);
 		}
 
-		if (!action.associationsUnchanged) {
+		if (!action.associationTypeUnchanged && !action.associationTargetsUnchanged) {
 			replaceHistoricalAssociations(c);
 		}
 	}
 
 	private void replaceHistoricalAssociations(Concept c) throws TermServerScriptException {
 		UpdateAction action = replacementMap.get(c);
-		List<Concept> updatedReplacements = new ArrayList<>(action.replacements);
+		Set<Concept> updatedReplacements = new HashSet<>(action.replacements);
+
+		//Were we told to keep the existing association targets?
+		if (action.associationTargetsUnchanged) {
+			updatedReplacements = SnomedUtils.getHistoricalAssocationTargets(c, gl);
+		}
+
 		for (Concept replacement : action.replacements) {
 			//Check that our replacement is still active
 			if (!replacement.isActive()) {
@@ -231,9 +237,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					replacementMap.put(inactive, action);
 
 					if (replacementsStr.equals("UNCHANGED")) {
-						action.associationsUnchanged = true;
+						action.associationTargetsUnchanged = true;
 					} else {
-						List<Concept> replacements = splitConcepts(replacementsStr);
+						Set<Concept> replacements = splitConcepts(replacementsStr);
 						action.replacements = replacements;
 						action.type = association;
 					}
@@ -272,9 +278,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 	}
 
-	private List<Concept> splitConcepts(String replacementsStr) {
+	private Set<Concept> splitConcepts(String replacementsStr) {
 		String[] conceptIds = replacementsStr.split(",");
-		return Arrays.stream(conceptIds).map(s -> gl.getConceptSafely(s)).collect(Collectors.toList());
+		return Arrays.stream(conceptIds).map(s -> gl.getConceptSafely(s)).collect(Collectors.toSet());
 	}
 
 	private void checkForRecentInactivations() throws TermServerScriptException {
@@ -370,9 +376,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 
 		//Do we have one association target or more?
-		List<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
+		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
 				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
-				.collect(Collectors.toList());
+				.collect(Collectors.toSet());
 
 		UpdateAction action = null;
 		if (assocTargets.size() == 1) {
@@ -403,9 +409,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			return "Not included for processing - inactivation indicator is not Ambiguous";
 		}
 		//Do we have one association target or more?
-		List<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
+		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
 				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
-				.collect(Collectors.toList());
+				.collect(Collectors.toSet());
 
 		UpdateAction action = null;
 		if (assocTargets.size() == 1) {
@@ -509,7 +515,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		UpdateAction action = new UpdateAction();
 		action.type = Association.REPLACED_BY;
 		action.inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
-		action.replacements = Arrays.asList(replacement);
+		action.replacements = Set.of(replacement);
 		return action;
 	}
 
@@ -543,10 +549,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	class UpdateAction {
-		public boolean associationsUnchanged = false;
+		public boolean associationTargetsUnchanged = false;
+		public boolean associationTypeUnchanged = false;
 		Association type;
 		InactivationIndicator inactivationIndicator;
-		List<Concept> replacements;
+		Set<Concept> replacements;
 
 		public String toString() {
 			String replacementsStr = "UNCHANGED";
@@ -561,7 +568,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			return this;
 		}
 
-		public UpdateAction withReplacements(List<Concept> replacements) {
+		public UpdateAction withReplacements(Set<Concept> replacements) {
 			this.replacements = replacements;
 			return this;
 		}
