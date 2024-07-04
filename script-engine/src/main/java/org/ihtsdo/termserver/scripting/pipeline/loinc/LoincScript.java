@@ -291,6 +291,9 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	public void addMissingMapping(String loincPartNum, String loincNum) {
 		LoincPart loincPart = loincParts.get(loincPartNum);
+		if (loincPart == null) {
+			loincPart = new LoincPart(loincNum, "Unknown Type", "Unknown to Part.csv");
+		}
 		Set<LoincTerm> loincTerms = missingPartMappings.get(loincPart);
 		//Have we seen this one before?
 		if (loincTerms == null) {

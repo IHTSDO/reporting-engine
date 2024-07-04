@@ -53,12 +53,20 @@ public class AttributePartMapManager implements LoincScriptConstants {
 					lineNum++;
 					if (!line.isEmpty() && lineNum > 1) {
 						String[] items = line.split("\t");
+						if (items[9].equals("UNMAPPED")) {
+							continue;
+						}
+						//We have some draft items that didn't get a map - warn about these
+						if (items[9].equals("DRAFT") && items[4].isEmpty()) {
+							LOGGER.warn("Part / Attribute Map Base File contains draft entry with no target at line " + lineNum + " for LoincNum " + items[0]);
+							continue;
+						}
 						if (items.length < 5) {
 							LOGGER.warn("Part / Attribute Map Base File contains invalid number of columns at line " + lineNum);
 						} else {
 							Concept attributeValue = gl.getConcept(items[4], false, false);
 							if (attributeValue == null) {
-								LOGGER.warn("Part / Attribute Map Base File contains unknown concept " + items[4] + " at line " + lineNum);
+								LOGGER.warn("Part / Attribute Map Base File contains unknown concept '" + items[4] + "' at line " + lineNum + " for LoincNum " + items[0]);
 								failureCount++;
 							}
 						}
@@ -90,6 +98,8 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	}
 	
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
+		// Output format from Snap2SNOMED is expected to be:
+		// Source code[0]   Source display  Status  PartTypeName    Target code[4]  Target display  Relationship type code  Relationship type display   No map flag Status[9]
 		loincPartToAttributeMap = new HashMap<>();
 		populateKnownMappings();
 		int lineNum = 0;
@@ -104,7 +114,12 @@ public class AttributePartMapManager implements LoincScriptConstants {
 					lineNum++;
 					if (!line.isEmpty() && lineNum > 1) {
 						String[] items = line.split("\t");
-						String partNum = items[1];
+						//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
+						if (items[9].equals("UNMAPPED") ||
+								(items[9].equals("DRAFT") && items[4].isEmpty())) {
+							continue;
+						}
+						String partNum = items[0];
 						//Have we seen this part before?  Map should now be unique
 						if (partsSeen.contains(partNum)) {
 							mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
