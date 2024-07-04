@@ -46,8 +46,8 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		attributes.add(new RelationshipTemplate(inheresIn, organism));
 		
 		//We can't yet deal with "given"
-		if (detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN) &&
-			getLoincDetail(loincNum, LoincDetail.COMPONENTCORE_PN).getPartName().endsWith(" given")) {
+		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
+			getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName().endsWith(" given")) {
 			String issue = "Skipping concept using 'given'";
 			cpm.report(getTab(TAB_IOI), issue, loincNum);
 			issues.add(issue);
@@ -55,23 +55,24 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 			return attributes;
 		}
 
-		if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
-			if(attributes.isEmpty()) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+		if (CompNumPnIsSafe(loincNum)) {
+			//Use COMPNUM_PN LOINC Part map to model SCT Component
+			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+		} else {
+			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+				if(attributes.isEmpty()) {
+					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+				}
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
 			}
-			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
-		}
 
-		if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
-		}
+			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			}
 
-		if (attributes.size() == 0 && detailPresent(loincNum, LoincDetail.COMPONENTCORE_PN)) {
-			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
-		}
-
-		if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-			addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPONENTCORE_PN, issues, componentAttribType);
+			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			}
 		}
 
 		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {

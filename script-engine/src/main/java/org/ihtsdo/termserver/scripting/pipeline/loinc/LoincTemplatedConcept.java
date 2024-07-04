@@ -40,7 +40,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Concept relativeTo;
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
-	protected static Set<String> skipLDTColumnNames = new HashSet<>();
+	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
 	protected static Map<String, LoincPart> loincParts;
@@ -404,8 +404,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			boolean isComponent = partTypeName.equals("COMPONENT");
 			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 			if (isComponent) {
-				//We're only going to process the COMPONENTCORE_PN as that the mapping we're really interested in.
-				if (!loincDetail.getLDTColumnName().equals(LoincDetail.COMPONENTCORE_PN)) {
+				//We're only going to process the COMPNUM as that the mapping we're really interested in.
+				if (!loincDetail.getLDTColumnName().equals(LoincDetail.COMPNUM_PN)) {
 					continue;
 				}
 				ArrayList<String> issues = new ArrayList<>();
@@ -567,16 +567,17 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	 * If the “PartNumber” and “Part” fields (column B and D) are the same for COMPONENT_PN and COMPNUM
 	 * @throws TermServerScriptException 
 	 */
-	/*protected boolean CompNumPnIsSafe(String loincNum) throws TermServerScriptException {
-		LoincDetail ldComponentCorePn = getLoincDetail(loincNum, LoincDetail.COMPONENTCORE_PN);
+	protected boolean CompNumPnIsSafe(String loincNum) throws TermServerScriptException {
+		LoincDetail ldComponentPn = getLoincDetail(loincNum, LoincDetail.COMPONENT_PN);
+		LoincDetail ldCompNum = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN);
 
-		if (ldComponentPn == null) {
-			throw new TermServerScriptException(loincNum + " detail did not feature COMPONENTCORE_PN");
+		if (ldComponentPn == null || ldCompNum == null) {
+			throw new TermServerScriptException(loincNum + " detail did not feature COMPONENT_PN or COMPNUM_PN");
 		}
 		
 		return ldComponentPn.getPartNumber().equals(ldCompNum.getPartNumber()) &&
 				ldComponentPn.getPartName().equals(ldCompNum.getPartName());
-	}*/
+	}
 
 	protected static LoincDetail getLoincDetailIfPresent(String loincNum, String ldtColumnName) throws TermServerScriptException {
 		//What LoincDetails do we have for this loincNum?

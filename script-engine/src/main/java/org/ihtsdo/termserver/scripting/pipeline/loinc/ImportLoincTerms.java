@@ -233,7 +233,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		if (!loincDetailMap.containsKey(LoincDetail.COMPONENTCORE_PN)) {
+		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
+				!loincDetailMap.containsKey(LoincDetail.COMPNUM_PN)) {
 			//Do we have consistency between the detail map and the main loincTermMap?
 			if (!loincNumToLoincTermMap.containsKey(loincNum)) {
 				throw new TermServerScriptException("Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");

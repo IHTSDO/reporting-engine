@@ -28,8 +28,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
 	private final Map<String, String> partMapNotes;
-	private final Map<String, List<LoincPart>> lexicalMatchingParts = new HashMap<>();
-	
+
 	private int unsuccessfullTypeReplacement = 0;
 	private int successfullTypeReplacement = 0;
 	private int successfullValueReplacement = 0;
@@ -91,7 +90,6 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	}
 	
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
-		populateLexicallyMatchingPartsMap();
 		loincPartToAttributeMap = new HashMap<>();
 		populateKnownMappings();
 		int lineNum = 0;
@@ -122,19 +120,6 @@ public class AttributePartMapManager implements LoincScriptConstants {
 								mappingNotes.add("Inactive concept");
 							}
 							loincPartToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
-
-							if (part != null) {
-								//Are there lexically matching parts that could take the same mapping?
-								String normalisedPartName = normalisePartName(part, true);
-								if (lexicalMatchingParts.containsKey(normalisedPartName)) {
-									for (LoincPart lexicallyMatchingPart : lexicalMatchingParts.get(normalisedPartName)) {
-										if (!lexicallyMatchingPart.getPartNumber().equals(partNum)) {
-											loincPartToAttributeMap.put(lexicallyMatchingPart.getPartNumber(), new RelationshipTemplate(null, attributeValue));
-											lexicallyMatchingMapReuse++;
-										}
-									}
-								}
-							}
 						}
 
 						if (!mappingNotes.isEmpty()) {
@@ -156,35 +141,6 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to read " + attributeMapFile + " at line " + lineNum, e);
 		}
-	}
-
-	private void populateLexicallyMatchingPartsMap() throws TermServerScriptException {
-		// For Component type parts, we may be able to reuse the map for other parts that are a lexical match
-		for (LoincPart part : loincParts.values()) {
-			if (part.getPartTypeName().contains("COMP")) {
-				// Add this part to lexicalMatchingParts
-				String partName = part.getPartName();
-				String normalisedPartName = normalisePartName(part, false);
-				List<LoincPart> lexicallyMatchingParts = lexicalMatchingParts.get(normalisedPartName);
-				if (lexicallyMatchingParts == null) {
-					lexicallyMatchingParts = new ArrayList<>();
-					lexicalMatchingParts.put(partName, lexicallyMatchingParts);
-				}
-				lexicallyMatchingParts.add(part);
-			}
-		}
-	}
-
-	private String normalisePartName(LoincPart part, boolean quiet) throws TermServerScriptException {
-		//If the part name ends in some word containing a full stop, we'll strip that off eg Rhizopus nigricans Ab.IgE
-		String normalisedPartName = part.getPartName().replaceAll(" [A-Z][a-z]+\\.$", "");
-		//Or any of Ab, DNA
-		normalisedPartName = normalisedPartName.replaceAll(" (Ab|DNA)$", "");
-
-		if (!quiet && !normalisedPartName.equals(part.getPartName())) {
-			ls.report(ls.getTab(TAB_IOI), part.getPartNumber(), "Normalised part name: " + part.getPartName() + " --> " + normalisedPartName);
-		}
-		return normalisedPartName;
 	}
 
 	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum,
