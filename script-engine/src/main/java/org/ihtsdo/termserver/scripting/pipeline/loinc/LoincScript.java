@@ -237,13 +237,29 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			int totalPriority = loincTerms.stream()
 					.mapToInt(lt -> LoincUtils.getLoincTermPriority(lt))
 					.sum();
+			String[] highUsageIndicators = getHighUsageIndicators(loincTerms);
 			report(tabIdx, 
 					loincPart.getPartNumber(),
 					loincPart.getPartName(),
 					loincPart.getPartTypeName(),
+					highUsageIndicators[0],
+					highUsageIndicators[1],
 					totalPriority,
 					loincTerms.size());
 		}
+	}
+
+	private String[] getHighUsageIndicators(Set<LoincTerm> loincTerms) {
+		String[] highUsageIndicators = new String[]{"N", "N"};
+		for (LoincTerm loincTerm : loincTerms) {
+			if (loincTerm.isHighUsage()) {
+				highUsageIndicators[0] = "Y";
+			}
+			if (loincTerm.isHighestUsage()) {
+				highUsageIndicators[1] = "Y";
+			}
+		}
+		return highUsageIndicators;
 	}
 
 	protected void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {

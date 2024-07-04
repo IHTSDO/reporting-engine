@@ -102,7 +102,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	@Override
 	public boolean isHighUsage() {
-		return !loincNumToLoincTermMap.get(externalIdentifier).getCommonTestRank().equals("0");
+		return loincNumToLoincTermMap.get(externalIdentifier).isHighUsage();
+	}
+
+	public boolean isHighestUsage() {
+		return loincNumToLoincTermMap.get(externalIdentifier).isHighestUsage();
 	}
 
 	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
@@ -685,7 +689,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		ts.report(tabIdx, "Failed Mapping Already Seen For Other Property", failedMappingAlreadySeenForOtherProperty);
 	}*/
 
-	public static void reportMissingMappings(int tabIdx) {
+	/*public static void reportMissingMappings(int tabIdx) {
 		//This list needs to be sorted based on a rank + usage metric
 		unmappedPartUsageMap.entrySet().stream()
 			.sorted((k1, k2) -> k1.getValue().compareTo(k2.getValue()))
@@ -707,7 +711,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		} catch (TermServerScriptException e) {
 			throw new RuntimeException(e);
 		}
-	}
+	}*/
 	
 	public String toString() {
 		return this.getClass().getSimpleName() + " for loincNum " + externalIdentifier;

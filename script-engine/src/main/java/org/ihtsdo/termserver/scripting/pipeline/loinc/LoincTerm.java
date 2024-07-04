@@ -451,4 +451,12 @@ public class LoincTerm {
 		}
 		return term;
 	}
+
+	public boolean isHighUsage() {
+		return !getCommonTestRank().equals("0");
+	}
+
+	public boolean isHighestUsage() {
+		return !getCommonTestRank().equals("0") && Integer.parseInt(getCommonTestRank()) <= 2000;
+	}
 }

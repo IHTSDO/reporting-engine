@@ -39,4 +39,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	}
 
 	abstract public boolean isHighUsage();
+
+	abstract public boolean isHighestUsage();
 }

@@ -44,7 +44,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			loadProjectSnapshot(false);
 			postInit();
 			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
-			getReportManager().disableTab(getTab(TAB_MAP_ME));
+			//getReportManager().disableTab(getTab(TAB_MAP_ME));
 			//getReportManager().disableTab(getTab(TAB_IOI));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null, this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
@@ -236,6 +236,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Is this a high usage concept?
 			if (activeIndicators.contains(previousIterationIndicator) && tc.isHighUsage()) {
 				summaryCounts.merge("Active with high usage", 1, Integer::sum);
+			}
+			if (activeIndicators.contains(previousIterationIndicator) && tc.isHighestUsage()) {
+				summaryCounts.merge("Active with highest usage", 1, Integer::sum);
 			}
 			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
