@@ -45,7 +45,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		String[] columnHeadings = new String[] {
 				"ConceptId, FSN, SemTag, Lang, DescriptionId, Term, Description",
 				"ConceptId, FSN, SemTag, Lang, DescriptionId, Term, Text Definition",
-				"ConceptId, FSN, SemTag, ReferencedComponentId, Lang, AnnotationId, TypeId, Value, Annotation"
+				"ConceptId, FSN, SemTag, ReferencedComponentId, Lang, AnnotationId, AnnotationType, AnnotationValue, Annotation"
 		};
 		String[] tabNames = new String[] {	
 				"Description", "Text Definition", "Annotation"};
@@ -120,7 +120,8 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 			for (Component comp : SnomedUtils.getAllComponents(c)) {
 				for (ComponentAnnotationEntry a : comp.getComponentAnnotationEntries()) {
 					if (!a.isReleased() && inScope(a) && unpromotedCheck(a)) {
-						report(TERTIARY_REPORT, c, comp.getId(), a.getLanguageDialectCode(), a.getId(), a.getTypeId(), a.getValue(), a);
+						Concept annotationType = gl.getConcept(a.getTypeId());
+						report(TERTIARY_REPORT, c, comp.getId(), a.getLanguageDialectCode(), a.getId(), annotationType.getFsn(), a.getValue(), a);
 						countIssue(c);
 					}
 				}
