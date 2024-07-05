@@ -7,10 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -224,6 +221,23 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		concept.addDescription(fsn);
 		concept.addDescription(lcn);
 		concept.addDescription(colonDesc);
+
+		convertAcceptabilityMapToLangRefsetEntries(concept);
+	}
+
+	private void convertAcceptabilityMapToLangRefsetEntries(Concept c) throws TermServerScriptException {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			for (Entry<String, Acceptability> entry : d.getAcceptabilityMap().entrySet()) {
+				LangRefsetEntry l = new LangRefsetEntry();
+				//ReferencedComponentId will be set when we allocate an SCTID to the Description
+				l.setRefsetId(entry.getKey());
+				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(entry.getValue()));
+				l.setActive(true);
+				l.setModuleId(d.getModuleId());
+				l.setDirty();
+				d.getLangRefsetEntries().add(l);
+			}
+		}
 	}
 
 	/*private String populateTermTemplateFromAttribute(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {

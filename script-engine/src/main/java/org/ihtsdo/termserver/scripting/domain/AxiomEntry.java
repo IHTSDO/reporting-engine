@@ -125,5 +125,11 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 	public void setGCI(boolean isGCI) {
 		this.isGCI = isGCI;
 	}
+
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		AxiomEntry otherAE = (AxiomEntry)other;
+		return this.owlExpression.equals(otherAE.owlExpression);
+	}
 	
 }

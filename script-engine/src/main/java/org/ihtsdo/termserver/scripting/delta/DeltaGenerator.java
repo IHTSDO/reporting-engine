@@ -379,7 +379,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return componentOutput;
 	}
 	
-	protected void outputRF2(Relationship r) throws TermServerScriptException {
+	protected boolean outputRF2(Relationship r) throws TermServerScriptException {
+		boolean componentOutput = false;
 		if (r.isDirty()) {
 			switch (r.getCharacteristicType()) {
 				case STATED_RELATIONSHIP : writeToRF2File(sRelDeltaFilename, r.toRF2());
@@ -387,67 +388,76 @@ public abstract class DeltaGenerator extends TermServerScript {
 				case INFERRED_RELATIONSHIP : 
 				default: writeToRF2File(relDeltaFilename, r.toRF2());
 			}
+			componentOutput = true;
 		}
 		//Does this component itself have an associated annotations?
-		outputComponentAnnotations(r);
+		componentOutput |= outputComponentAnnotations(r);
+		return componentOutput;
 	}
 	
-	protected void outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
+	protected boolean outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
 		if (i.isDirty()) {
 			writeToRF2File(attribValDeltaFilename, i.toRF2());
 		}
 		//Does this component itself have an associated annotations?
 		outputComponentAnnotations(i);
+		return i.isDirty();
 	}
 
-	private void outputComponentAnnotations(Component c) throws TermServerScriptException {
+	private boolean outputComponentAnnotations(Component c) throws TermServerScriptException {
+		boolean componentOutput = false;
 		for (ComponentAnnotationEntry cae: c.getComponentAnnotationEntries()) {
-			outputRF2(cae);
+			componentOutput |= outputRF2(cae);
 		}
+		return componentOutput;
 	}
 
-	protected void outputRF2(AssociationEntry h) throws TermServerScriptException {
+	protected boolean outputRF2(AssociationEntry h) throws TermServerScriptException {
 		if (h.isDirty()) {
 			writeToRF2File(assocDeltaFilename, h.toRF2());
 		}
 		//Does this component itself have an associated annotations?
 		outputComponentAnnotations(h);
+		return h.isDirty();
 	}
 	
-	protected void outputRF2(AxiomEntry a) throws TermServerScriptException {
+	protected boolean outputRF2(AxiomEntry a) throws TermServerScriptException {
 		if (a.isDirty()) {
 			writeToRF2File(owlDeltaFilename, a.toRF2());
 		}
 		//Does this component itself have an associated annotations?
 		outputComponentAnnotations(a);
+		return a.isDirty();
 	}
 
-	protected void outputRF2(ComponentAnnotationEntry cae) throws TermServerScriptException {
+	protected boolean outputRF2(ComponentAnnotationEntry cae) throws TermServerScriptException {
 		if (cae.isDirty() && !dryRun) {
 			writeToRF2File(compAnnotDeltaFilename, cae.toRF2());
 		}
 		//Does this component itself have an associated annotations?
 		//This will be an annotation on an annotation - MCHMOOS
 		outputComponentAnnotations(cae);
+		return cae.isDirty();
 	}
 	
 	protected boolean outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
-		boolean conceptOutput = false;
+		boolean conceptComponentOutput = false;
 		//TODO: Keep note of concepts output and augement with axioms if changed without concept
 		if (c.isDirty()) {
 			writeToRF2File(conDeltaFilename, c.toRF2());
-			conceptOutput = true;
+			conceptComponentOutput = true;
 		} else if (!checkAllComponents) {
-			return conceptOutput;
+			return conceptComponentOutput;
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			conceptOutput |= outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
+			conceptComponentOutput |= outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
 		}
 		
 		for (AlternateIdentifier a : c.getAlternateIdentifiers()) {
 			if (a.isDirty()) {
 				writeToRF2File(altIdDeltaFilename, a.toRF2());
+				conceptComponentOutput = true;
 			}
 		}
 		
@@ -464,36 +474,36 @@ public abstract class DeltaGenerator extends TermServerScript {
 				if (!c.getModuleId().equals(axiomModuleId)) {
 					LOGGER.warn("Mismatch between Concept and Axiom module: " + c + " " + a);
 				}
-				conceptOutput = true;
+				conceptComponentOutput = true;
 			}
 			
 			//Now output inferred relationships
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
-				outputRF2(r);
+				conceptComponentOutput |= outputRF2(r);
 			}
 		} else {
 			for (Relationship r : c.getRelationships()) {
 				//Don't output relationships that are part of an axiom
 				if (!r.fromAxiom()) {
-					outputRF2(r);
+					conceptComponentOutput |= outputRF2(r);
 				}
 			}
 		}
 		
 		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {
-			outputRF2(i);
+			conceptComponentOutput |= outputRF2(i);
 		}
 		
 		for (AssociationEntry h: c.getAssociationEntries()) {
-			outputRF2(h);
+			conceptComponentOutput |= outputRF2(h);
 		}
 		
 		for (AxiomEntry a: c.getAxiomEntries()) {
-			outputRF2(a);
+			conceptComponentOutput |= outputRF2(a);
 		}
 
-		outputComponentAnnotations(c);
-		return conceptOutput;
+		conceptComponentOutput |= outputComponentAnnotations(c);
+		return conceptComponentOutput;
 	}
 
 	private boolean hasDirtyAxiom(Concept c) {
@@ -515,12 +525,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return false;
 	}
 
-	protected void outputRF2(Concept c) throws TermServerScriptException {
+	protected boolean outputRF2(Concept c) throws TermServerScriptException {
 		//By default, check for modified descriptions and relationships 
 		//even if the concept has not been modified.
 		if (!dryRun) {
-			outputRF2(c, true);
+			return outputRF2(c, true);
 		}
+		return true;
 	}
 	
 

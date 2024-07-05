@@ -11,8 +11,12 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Rf2ConceptCreator extends DeltaGenerator {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Rf2ConceptCreator.class);
 
 	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile, String namespace) throws TermServerScriptException {
 		Rf2ConceptCreator conceptCreator = new Rf2ConceptCreator();
@@ -25,7 +29,6 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		conceptCreator.initialiseOutputDirectory();
 		conceptCreator.initialiseFileHeaders();
 		conceptCreator.nameSpace = namespace;
-		
 		conceptCreator.conIdGenerator = conceptCreator.initialiseIdGenerator(conIdFile, PartitionIdentifier.CONCEPT, namespace);
 		conceptCreator.descIdGenerator = conceptCreator.initialiseIdGenerator(descIdFile, PartitionIdentifier.DESCRIPTION, namespace);
 		conceptCreator.relIdGenerator = conceptCreator.initialiseIdGenerator(relIdFile, PartitionIdentifier.RELATIONSHIP, namespace);
@@ -42,75 +45,101 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
 		concept.setId(null);
 		populateIds(concept);
-		//Populate expression now because rels turn to axioms when we output
-		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		incrementSummaryInformation("Concepts created");
-		outputRF2(concept);  //Will only output dirty fields.
-		report(tabIdx, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
+		outputRF2(tabIdx, concept, info);  //Will only output dirty fields.
 		return concept;
 	}
 	
-	public void outputRF2(Concept concept) throws TermServerScriptException {
-		super.outputRF2(concept);
+	public void outputRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
+		if (concept.getId().equals("510491010000108")) {
+			LOGGER.debug("Here");
+		}
+		//Populate expression now because rels turn to axioms when we output
+		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		if (super.outputRF2(concept)) {
+			incrementSummaryInformation("Concepts output to RF2");
+			report(tabIdx, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
+
+			//Set that concept to clean so we don't output it twice
+			SnomedUtils.getAllComponents(concept).stream().forEach(c -> c.setClean());
+		}
 	}
 
 	public void populateIds(Concept concept) throws TermServerScriptException {
-		//convertAcceptabilitiesToRf2(concept);
-		//This is no longer required as adding acceptabilities will have already created LangRefsetEntries.
 		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
-			populateComponentId(c, targetModuleId);
+			populateComponentId(concept, c, targetModuleId);
 		}
 	}
 	
-	public void populateComponentId(Component c, String enforceModule) throws TermServerScriptException {
+	public void populateComponentId(Concept concept, Component c, String enforceModule) throws TermServerScriptException {
 		if (enforceModule != null) {
 			c.setModuleId(enforceModule);
 		}
 		c.setDirty();
 		
-		if (c.getId() == null) {
-			switch (c.getComponentType()) {
-				case CONCEPT : setConceptId(c);
-					break;
-				case DESCRIPTION : setDescriptionId(c);
-					break;
-				case INFERRED_RELATIONSHIP : 
-					setRelationshipId(c);
-				case STATED_RELATIONSHIP : 
-					//No need to do anything here because we'll convert 
-					//stated to an axiom and we're not expecting any inferred
-					break;
-				case ALTERNATE_IDENTIFIER :
-					break;  //Has its own ID.  RefCompId will be set via Concept
-				default: c.setId(UUID.randomUUID().toString());
-			}
+		switch (c.getComponentType()) {
+			case CONCEPT : setConceptId(c);
+				break;
+			case DESCRIPTION : setDescriptionId(concept.getId(), c);
+				break;
+			case INFERRED_RELATIONSHIP :
+				setRelationshipId(c);
+			case STATED_RELATIONSHIP :
+				//No need to do anything here because we'll convert
+				//stated to an axiom and we're not expecting any inferred
+				break;
+			case ALTERNATE_IDENTIFIER :
+				break;  //Has its own ID.  RefCompId will be set via Concept
+			default: c.setId(UUID.randomUUID().toString());
 		}
 	}
 
 	private void setConceptId(Component component) throws TermServerScriptException {
 		Concept c = (Concept)component;
-		String conceptId = conIdGenerator.getSCTID();
-		c.setId(conceptId);
+		String conceptId = c.getConceptId();
+		if (conceptId == null) {
+			conceptId = conIdGenerator.getSCTID();
+			c.setId(conceptId);
+		}
+
+		String finalConceptId = conceptId;
 		c.getDescriptions().stream()
-			.forEach(d -> d.setConceptId(conceptId));
+			.forEach(d -> d.setConceptId(finalConceptId));
 		c.getRelationships().stream()
-			.forEach(d -> d.setSourceId(conceptId));
+			.forEach(d -> d.setSourceId(finalConceptId));
 		c.getAlternateIdentifiers().stream()
-			.forEach(a -> a.setReferencedComponentId(conceptId));
+			.forEach(a -> a.setReferencedComponentId(finalConceptId));
 	}
 	
-	private void setDescriptionId(Component component) throws TermServerScriptException {
+	private void setDescriptionId(String conceptId, Component component) throws TermServerScriptException {
 		Description d = (Description)component;
-		String descId = descIdGenerator.getSCTID();
-		d.setId(descId);
+		d.setConceptId(conceptId);
+		String descId = d.getId();
+		if (descId == null) {
+			descId = descIdGenerator.getSCTID();
+			d.setId(descId);
+		}
+
+		if (d.getConceptId() == null) {
+			throw new TermServerScriptException("Description " + d + " has no concept ID");
+		}
+
+		String finalDescId = descId;
 		d.getLangRefsetEntries().stream()
-			.forEach(l -> l.setReferencedComponentId(descId));
+			.forEach(l -> {
+				l.setReferencedComponentId(finalDescId);
+				if (l.getId() == null) {
+					l.setId(UUID.randomUUID().toString());
+				}
+			});
 	}
 	
 	private void setRelationshipId(Component component) throws TermServerScriptException {
 		Relationship r = (Relationship)component;
-		String relId = relIdGenerator.getSCTID();
-		r.setId(relId);
+		String relId = r.getRelationshipId();
+		if (relId == null) {
+			relId = relIdGenerator.getSCTID();
+			r.setId(relId);
+		}
 	}
 
 	/*private void convertAcceptabilitiesToRf2(Concept concept) throws TermServerScriptException {

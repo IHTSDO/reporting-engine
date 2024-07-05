@@ -60,7 +60,7 @@ public abstract class NegativeDeltaGenerator extends DeltaGenerator {
 		return componentOutput;
 	}
 
-	protected void outputRF2(Relationship r) throws TermServerScriptException {
+	protected boolean outputRF2(Relationship r) throws TermServerScriptException {
 		if (r.isDeleted()) {
 			switch (r.getCharacteristicType()) {
 				case STATED_RELATIONSHIP : writeToRF2File(sRelDeltaFilename, r.toRF2Deletion());
@@ -68,32 +68,39 @@ public abstract class NegativeDeltaGenerator extends DeltaGenerator {
 				case INFERRED_RELATIONSHIP : 
 				default: writeToRF2File(relDeltaFilename, r.toRF2Deletion());
 			}
+			return true;
 		}
+		return false;
 	}
 	
-	protected void outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
+	protected boolean outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
 		if (i.isDeleted()) {
 			writeToRF2File(attribValDeltaFilename, i.toRF2Deletion());
+			return true;
 		}
+		return false;
 	}
 
 	
-	protected void outputRF2(Concept c) throws TermServerScriptException {
+	protected boolean outputRF2(Concept c) throws TermServerScriptException {
+		boolean componentOutput = false;
 		if (c.isDeleted()) {
 			writeToRF2File(conDeltaFilename, c.toRF2Deletion());
+			componentOutput = true;
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);
+			componentOutput |= outputRF2(d);
 		}
 		
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
-			outputRF2(r);
+			componentOutput |= outputRF2(r);
 		}
 		
 		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {
-			outputRF2(i);
+			componentOutput |= outputRF2(i);
 		}
+		return componentOutput;
 	}
 
 }

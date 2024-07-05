@@ -24,7 +24,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected static int FILE_IDX_CONCEPT_IDS = 6;
 	protected static int FILE_IDX_DESC_IDS = 7;
-	protected static int FILE_IDX_PREVIOUS_ITERATION = 8;
+	protected static int FILE_IDX_REL_IDS = 8;
 	
 	protected Concept scheme;
 	protected String namespace;
@@ -47,8 +47,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			getReportManager().disableTab(getTab(TAB_MAP_ME));
 			getReportManager().disableTab(getTab(TAB_IOI));
 			getReportManager().disableTab(getTab(TAB_STATS));
-			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null, this.getNamespace());
-			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
+			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());
+			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
 			importExternalContent();
 			importPartMap();
 			Set<TemplatedConcept> successfullyModelled = doModeling();
@@ -63,6 +63,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				case INCREMENTAL_API:
 				case INCREMENTAL_DELTA:
 					determineChangeSet(successfullyModelled, summaryCounts);
+					conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 					break;
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
@@ -98,7 +99,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (TemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {
-				conceptCreator.copyStatedRelsToInferred(concept);
 				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getExternalIdentifier());
 			} catch (Exception e) {
 				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getExternalIdentifier(), e);
@@ -128,6 +128,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Concept concept = tc.getConcept();
 			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
 
+			if (tc.getExternalIdentifier().equals("12891-8")) {
+				LOGGER.info("Debug here");
+			}
+
 			//Do we already have this concept?
 			Concept existingConcept = null;
 			String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
@@ -148,6 +152,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					existingConcept.addAlternateIdentifier(tc.getExternalIdentifier(), scheme.getId());
 				}
 			}
+
+			//We need to make any adjustments to inferred relationships before we lose the stated ones in the transformation to axioms
+			if (adjustInferredRelationships(concept, existingConcept)) {
+				dirtyConcepts.add(concept);
+			}
 			
 			if (existingConcept == null) {
 				//This concept is entirely new, prepare to output all
@@ -163,20 +172,15 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				convertStatedRelationshipsToAxioms(concept, true, true);
 				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
 			} else {
-				/*if (existingConceptSCTID.equals("175851010000107")) {
-					LOGGER.info("Debug here");
-				}*/
+				if (existingConceptSCTID.equals("89711010000103")) {
+					LOGGER.debug("Here");
+				}
 				SnomedUtils.getAllComponents(concept).forEach(c -> { 
 					c.setClean();
 					//Normalise module
 					c.setModuleId(conceptCreator.getTargetModuleId());
 				});
 
-				//We need to make any adjustments to inferred relationships before we lose the stated ones in the transformation to axioms
-				if (adjustInferredRelationships(concept, existingConcept)) {
-					dirtyConcepts.add(concept);
-				}
-				
 				//We need to populate the concept SCTID before we can create axiom entries
 				concept.setId(existingConcept.getId());
 				convertStatedRelationshipsToAxioms(concept, true, true);
@@ -201,10 +205,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					//If we have both, then just output the change
 					if (existingComponent != null && newlyModelledComponent != null) {
 						newlyModelledComponent.setId(existingComponent.getId());
-						if (!componentComparisonResult.isMatch()) {
+						if (componentComparisonResult.isMatch()) {
+							newlyModelledComponent.setClean();
+						} else {
 							newlyModelledComponent.setDirty();
-							dirtyConcepts.add(concept);
-						}
+							dirtyConcepts.add(concept);}
 						
 						//Any component specific actions?
 						switch (existingComponent.getComponentType()) {
@@ -212,12 +217,16 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 								//And we'll have the axiom id too
 								String axiomId = existingConcept.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next().getId();
 								concept.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next().setId(axiomId);
+								concept.getAlternateIdentifiers().stream()
+									.forEach(a -> a.setReferencedComponentId(existingConceptSCTID));
 								break;
 							case DESCRIPTION:
+								Description desc = (Description)existingComponent;
+								Description newDesc = (Description)newlyModelledComponent;
+								newDesc.setConceptId(existingConcept.getId());
 								//Copy over the langRefset entries from the existing description
 								//I'm assuming we're never going to change the acceptability
-								List<LangRefsetEntry> lrs = ((Description)existingComponent).getLangRefsetEntries();
-								((Description)newlyModelledComponent).setLangRefsetEntries(lrs);
+								newDesc.setLangRefsetEntries(desc.getLangRefsetEntries());
 								break;
 							default:
 								break;
@@ -231,7 +240,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					} else {
 						//If we only have a newly modelled component, give it an id 
 						//and prepare to output
-						conceptCreator.populateComponentId(newlyModelledComponent, externalContentModule);
+						conceptCreator.populateComponentId(existingConcept, newlyModelledComponent, externalContentModule);
 						newlyModelledComponent.setDirty();
 						dirtyConcepts.add(concept);
 					}
@@ -250,11 +259,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
 		}
-		
-		for (Concept dirtyConcept : dirtyConcepts) {
-			conceptCreator.outputRF2(dirtyConcept);
-		}
-		
+
 		//What external codes do we currently have that we _aren't_ going forward with.
 		//Those need to be inactivated
 		Set<String> inactivatingCodes =  new HashSet<>(altIdentifierMap.keySet());
@@ -269,6 +274,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 			doProposedModelComparison(inactivatingCode, null, existingConcept, "Removed", differencesListStr);
 			summaryCounts.merge("Removed", 1, Integer::sum);
+			inactivateConcept(existingConcept);
+			dirtyConcepts.add(existingConcept);
 		
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 			//So - temporarily again - we'll normalize the scheme id
@@ -278,6 +285,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
 			}
 		}
+
+		for (Concept dirtyConcept : dirtyConcepts) {
+			conceptCreator.outputRF2(getTab(TAB_IMPORT_STATUS), dirtyConcept, "");
+		}
 		return changeSet;
 	}
 
@@ -285,12 +296,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		boolean changesMade = false;
 		if (existingConcept == null) {
 			conceptCreator.copyStatedRelsToInferred(concept);
+			changesMade = true;
 		} else {
 			//TODO TEMPORARY CODE
 			//For existing concepts we're going to group inferred relationships if required
 			for (Relationship r : existingConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (r.getGroupId() > 1) {
-					Relationship inferredRelOnNewConcept = r.clone();
+					Relationship inferredRelOnNewConcept = r.cloneWithIds();
 					inferredRelOnNewConcept.setGroupId(1);
 					concept.addRelationship(inferredRelOnNewConcept);
 					changesMade = true;
@@ -303,7 +315,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private List<String> inactivateConcept(Concept c) {
 		List<String> differencesList = new ArrayList<>();
 		//To inactivate a concept we need to inactivate the concept itself and the OWL axiom.
-		//The descriptions remain active and we'll let classification sort out the inferred relationships
+		//The descriptions remain active, and we'll let classification sort out the inferred relationships
 		if (c.isActive()) {
 			c.setActive(false);
 			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c, SCTID_INACT_OUTDATED);

@@ -16,6 +16,9 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.ParseException;
@@ -30,6 +33,8 @@ import java.util.zip.ZipOutputStream;
 
 
 public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements ScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
 
 	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
@@ -314,7 +319,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			outputFile = new File(zipFileName);
 			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(outputFile));
 			String rootLocation = dirToZip.getAbsolutePath() + File.separator;
-			TermServerScript.info("Creating archive : " + zipFileName + " from files found in " + rootLocation);
+			LOGGER.info("Creating archive : " + zipFileName + " from files found in " + rootLocation);
 			addDir(rootLocation, dirToZip, out);
 			out.close();
 		} catch (IOException e) {
@@ -324,7 +329,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				FileUtils.deleteDirectory(dirToZip);
 			} catch (IOException e) {}
 		}
-		TermServerScript.info("Created archive: " + outputFile);
+		LOGGER.info("Created archive: " + outputFile);
 		
 		return outputFile;
 	}
@@ -340,7 +345,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			}
 			FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
 			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length()).replaceAll(BWD_SLASH,FWD_SLASH);
-			TermServerScript.debug(" Adding: " + relativePath);
+			LOGGER.debug(" Adding: " + relativePath);
 			out.putNextEntry(new ZipEntry(relativePath));
 			int len;
 			while ((len = in.read(tmpBuf)) > 0) {
@@ -860,7 +865,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				}
 			}
 		} catch (Exception e) {
-			TermServerScript.warn("Unable to determine concept type of " + c + " due to " + e);
+			LOGGER.warn("Unable to determine concept type of " + c + " due to " + e);
 		}
 	}
 
@@ -978,7 +983,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
-				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+				LOGGER.warn(c + " has multiple " + type + " in group " + groupId);
 			} else if (rels.size() == 1) {
 				if (allowNewConcepts) {
 					return rels.iterator().next().getTarget();
@@ -995,7 +1000,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (Concept type : types) {
 			Set<Relationship> rels = g.getRelationshipsWithType(type);
 			if (rels.size() > 1) {
-				TermServerScript.warn(g + " has multiple " + type);
+				LOGGER.warn(g + " has multiple " + type);
 			} else if (rels.size() == 1) {
 				if (allowNewConcepts) {
 					return rels.iterator().next().getTarget();
@@ -1012,7 +1017,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
-				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+				LOGGER.warn(c + " has multiple " + type + " in group " + groupId);
 			} else if (rels.size() == 1) {
 				Relationship r = rels.iterator().next();
 				if (!r.isConcrete()) {
@@ -1516,7 +1521,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		m.appendTail(sb);
 		
 		if (sb.length() < origLength) {
-			TermServerScript.warn ("Populating FSNs has reduced overall length - check: '" + sb + "'");
+			LOGGER.warn("Populating FSNs has reduced overall length - check: '" + sb + "'");
 		}
 		return sb.toString();
 	}
@@ -2200,6 +2205,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 		components.addAll(c.getOtherRefsetMembers());
 		components.addAll(c.getComponentAnnotationEntries());
+		components.addAll(c.getAlternateIdentifiers());
 		return components;
 	}
 	
@@ -2312,7 +2318,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 		if (!c.isActive() || c.getDepth() == NOT_SET) {
 			if (c.getDepth() == NOT_SET) {
-				TermServerScript.warn("Depth of " + c + " not set.  Is that expected?");
+				LOGGER.warn("Depth of " + c + " not set.  Is that expected?");
 			}
 			return null;  //Hopefully the previous release will know
 		} 
@@ -2328,7 +2334,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			} else if (a.getDepth() == NOT_SET) {
 				//Is this a full concept or have we picked it up from a relationship?
 				if (a.getFsn() == null) {
-					TermServerScript.warn(a + " encountered as ancestor of " + c + " has partial existence");
+					LOGGER.warn(a + " encountered as ancestor of " + c + " has partial existence");
 				} else {
 					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + c.toString() + "\nDefined as: "+ a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
@@ -2642,7 +2648,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 				.stream()
 				.filter(lc -> !skipForComparison.contains(lc.getComponentType()))
 				.collect(Collectors.toList());
-		Collection<Component> rightComponents = SnomedUtils.getAllComponents(right);
+		Collection<Component> rightComponents = SnomedUtils.getAllComponents(right).stream()
+				.filter(rc -> !skipForComparison.contains(rc.getComponentType()))
+				.collect(Collectors.toList());
 		
 		nextLeftComponent:
 		for (Component leftComponent : leftComponents) {
@@ -2651,8 +2659,9 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 					if (leftComponent.matchesMutableFields(rightComponent)) {
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).matches());
 						continue nextLeftComponent;
-					} else if (leftComponent instanceof AxiomEntry) {
+					} else if (leftComponent instanceof AxiomEntry || leftComponent instanceof Concept) {
 						//A modified OWL axiom will not match on mutable fields, but we'll consider them 'the same object' on the assumption that there will be only one
+						//Similarly a concept may change from primitive to defined, but we'll consider them the same object
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).differs());
 						continue nextLeftComponent;
 					}
