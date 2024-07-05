@@ -2651,6 +2651,10 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 					if (leftComponent.matchesMutableFields(rightComponent)) {
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).matches());
 						continue nextLeftComponent;
+					} else if (leftComponent instanceof AxiomEntry) {
+						//A modified OWL axiom will not match on mutable fields, but we'll consider them 'the same object' on the assumption that there will be only one
+						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).differs());
+						continue nextLeftComponent;
 					}
 				}
 			}

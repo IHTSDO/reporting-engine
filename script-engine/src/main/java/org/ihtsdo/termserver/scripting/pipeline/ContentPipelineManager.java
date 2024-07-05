@@ -43,9 +43,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
-			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
-			//getReportManager().disableTab(getTab(TAB_MAP_ME));
-			//getReportManager().disableTab(getTab(TAB_IOI));
+			getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
+			getReportManager().disableTab(getTab(TAB_MAP_ME));
+			getReportManager().disableTab(getTab(TAB_IOI));
+			getReportManager().disableTab(getTab(TAB_STATS));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), null, this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-iR", "16470", "-m", SCTID_LOINC_EXTENSION_MODULE});
 			importExternalContent();
@@ -162,21 +163,24 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				convertStatedRelationshipsToAxioms(concept, true, true);
 				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
 			} else {
-				if (existingConceptSCTID.equals("175851010000107")) {
+				/*if (existingConceptSCTID.equals("175851010000107")) {
 					LOGGER.info("Debug here");
-				}
+				}*/
 				SnomedUtils.getAllComponents(concept).forEach(c -> { 
 					c.setClean();
 					//Normalise module
 					c.setModuleId(conceptCreator.getTargetModuleId());
 				});
+
 				//We need to populate the concept SCTID before we can create axiom entries
 				concept.setId(existingConcept.getId());
 				convertStatedRelationshipsToAxioms(concept, true, true);
 				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
 
 				List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(existingConcept, tc.getConcept(), skipForComparison);
-				if (!ComponentComparisonResult.hasChanges(componentComparisonResults)) {
+				if (ComponentComparisonResult.hasChanges(componentComparisonResults)) {
+					previousIterationIndicator = "Updated";
+				} else {
 					previousIterationIndicator = "Unchanged";
 					differencesList.add("All Unchanged");
 				}
@@ -186,14 +190,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					Component newlyModelledComponent = componentComparisonResult.getRight();
 
 					if (!componentComparisonResult.isMatch() && existingConcept != null) {
-						previousIterationIndicator = "Updated";
 						differencesList.add(componentComparisonResult.getComponentTypeStr());
 					}
 					
 					//If we have both, then just output the change
 					if (existingComponent != null && newlyModelledComponent != null) {
 						newlyModelledComponent.setId(existingComponent.getId());
-						
 						if (!componentComparisonResult.isMatch()) {
 							newlyModelledComponent.setDirty();
 							dirtyConcepts.add(concept);
@@ -203,8 +205,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 						switch (existingComponent.getComponentType()) {
 							case CONCEPT:
 								//And we'll have the axiom id too
-								String axiomId = existingConcept.getFirstActiveClassAxiom().getAxiomId();
-								concept.getFirstActiveClassAxiom().setId(axiomId);
+								String axiomId = existingConcept.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next().getId();
+								concept.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next().setId(axiomId);
 								break;
 							case DESCRIPTION:
 								//Copy over the langRefset entries from the existing description

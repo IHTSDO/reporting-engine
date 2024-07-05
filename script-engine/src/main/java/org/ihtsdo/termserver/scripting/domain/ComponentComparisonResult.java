@@ -45,6 +45,11 @@ public class ComponentComparisonResult {
 		return this;
 	}
 
+	public ComponentComparisonResult differs() {
+		this.comparisonResult = Result.DIFFERS;
+		return this;
+	}
+
 	public static boolean hasChanges(List<ComponentComparisonResult> componentComparisonResults) {
 		for (ComponentComparisonResult comparison : componentComparisonResults) {
 			if (!comparison.comparisonResult.equals(Result.MATCHES)) {
