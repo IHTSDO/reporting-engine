@@ -172,6 +172,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					c.setModuleId(conceptCreator.getTargetModuleId());
 				});
 
+				//We need to make any adjustments to inferred relationships before we lose the stated ones in the transformation to axioms
+				if (adjustInferredRelationships(concept, existingConcept)) {
+					dirtyConcepts.add(concept);
+				}
+				
 				//We need to populate the concept SCTID before we can create axiom entries
 				concept.setId(existingConcept.getId());
 				convertStatedRelationshipsToAxioms(concept, true, true);
@@ -274,6 +279,25 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 		}
 		return changeSet;
+	}
+
+	private boolean adjustInferredRelationships(Concept concept, Concept existingConcept) {
+		boolean changesMade = false;
+		if (existingConcept == null) {
+			conceptCreator.copyStatedRelsToInferred(concept);
+		} else {
+			//TODO TEMPORARY CODE
+			//For existing concepts we're going to group inferred relationships if required
+			for (Relationship r : existingConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (r.getGroupId() > 1) {
+					Relationship inferredRelOnNewConcept = r.clone();
+					inferredRelOnNewConcept.setGroupId(1);
+					concept.addRelationship(inferredRelOnNewConcept);
+					changesMade = true;
+				}
+			}
+		}
+		return changesMade;
 	}
 
 	private List<String> inactivateConcept(Concept c) {
