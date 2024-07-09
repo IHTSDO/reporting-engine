@@ -50,9 +50,9 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 	}
 	
 	public void outputRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
-		if (concept.getId().equals("510491010000108")) {
+		/*if (concept.getId().equals("510491010000108")) {
 			LOGGER.debug("Here");
-		}
+		}*/
 		//Populate expression now because rels turn to axioms when we output
 		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		if (super.outputRF2(concept)) {

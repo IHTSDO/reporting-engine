@@ -522,7 +522,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
 		setQuiet(true);
-		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
+		for (Concept c : LoincUtils.getActiveLoincConcepts(gl)) {
 			//Only process component if we have changes to make
 			if (upgradeLOINCConcept(null, c.cloneWithIds()) > 0) {
 				componentsToProcess.add(c);

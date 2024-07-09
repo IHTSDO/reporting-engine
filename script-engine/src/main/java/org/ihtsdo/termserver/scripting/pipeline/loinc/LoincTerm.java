@@ -3,10 +3,11 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.apache.commons.csv.CSVRecord;
 
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoincTerm {
+public class LoincTerm implements Comparable<LoincTerm> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTerm.class);
 
@@ -458,5 +459,19 @@ public class LoincTerm {
 
 	public boolean isHighestUsage() {
 		return !getCommonTestRank().equals("0") && Integer.parseInt(getCommonTestRank()) <= 2000;
+	}
+
+	public Integer getCommonTestRankNormalized() {
+		//Because 0 is unranked, we actually want to rank it as the highest
+		if (getCommonTestRank().equals("0")) {
+			return Integer.MAX_VALUE;
+		}
+		return Integer.parseInt(getCommonTestRank());
+
+	}
+
+	@Override
+	public int compareTo(@NotNull LoincTerm l) {
+		return getCommonTestRankNormalized().compareTo(l.getCommonTestRankNormalized());
 	}
 }

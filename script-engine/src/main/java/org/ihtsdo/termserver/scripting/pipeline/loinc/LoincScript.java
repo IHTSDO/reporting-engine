@@ -245,12 +245,19 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 					highUsageIndicators[0],
 					highUsageIndicators[1],
 					totalPriority,
-					loincTerms.size());
+					loincTerms.size(),
+					highUsageIndicators[2],
+					highUsageIndicators[3]);
 		}
 	}
 
 	private String[] getHighUsageIndicators(Set<LoincTerm> loincTerms) {
-		String[] highUsageIndicators = new String[]{"N", "N"};
+		//Return an array containing:
+		//High Usage (Y/N) if any of these terms are high usage (top 20K)
+		//Highest Usage (Y/N) if any of these terms are highest usage (top 2K)
+		//Top Priority Usage
+		//Highest Rank
+		String[] highUsageIndicators = new String[]{"N", "N", "", ""};
 		for (LoincTerm loincTerm : loincTerms) {
 			if (loincTerm.isHighUsage()) {
 				highUsageIndicators[0] = "Y";
@@ -259,6 +266,17 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				highUsageIndicators[1] = "Y";
 			}
 		}
+
+		highUsageIndicators[2] = loincTerms.stream()
+				.sorted()
+				.map(lt -> { return "(" + lt.getCommonTestRank() + ") " + lt.getLoincNum() + ": " + lt.getDisplayName(); } )
+				.limit(5)
+				.collect(Collectors.joining(",\n"));
+
+		highUsageIndicators[3] = loincTerms.stream()
+				.sorted()
+				.map(LoincTerm::getCommonTestRank)
+				.findFirst().orElse("0");
 		return highUsageIndicators;
 	}
 

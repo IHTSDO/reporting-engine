@@ -63,7 +63,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
-				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count, Top Priority Usage, ",
+				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count, Top Priority Usage, Higest Rank",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , ",
 				"Property, Included, Excluded, Excluded in Top 20K"
