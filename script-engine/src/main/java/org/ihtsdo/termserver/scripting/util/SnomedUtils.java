@@ -2689,4 +2689,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		}
 		return changeSet;
 	}
+
+	public static String translateActiveState(Component c) {
+		String activeStr = "0";
+		if (c.isActive() != null && c.isActive().equals(true)) {
+			activeStr = "1";
+		}
+		return activeStr;
+	}
 }

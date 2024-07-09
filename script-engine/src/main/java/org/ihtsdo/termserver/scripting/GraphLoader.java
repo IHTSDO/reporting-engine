@@ -15,6 +15,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.mrcm.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
@@ -30,7 +31,7 @@ public class GraphLoader implements ScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
 	private static GraphLoader singleton = null;
-	private Map<String, Concept> concepts = new HashMap<String, Concept>();
+	private Map<String, Concept> concepts = new HashMap<>();
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
@@ -53,16 +54,10 @@ public class GraphLoader implements ScriptConstants {
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
 
-	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapPreCoord = new HashMap<>();
-	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapPostCoord = new HashMap<>();
-	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapAll = new HashMap<>();
-	private Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMapNewPreCoord = new HashMap<>();
-	
-	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapPreCoord = new HashMap<>();
-	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapPostCoord = new HashMap<>();
-	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapAll = new HashMap<>();
-	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMapNewPreCoord = new HashMap<>();
-	private Map<Concept, MRCMDomain> mrcmDomainMap = new HashMap<>();
+	MRCMAttributeRangeManager mrcmAttributeRangeManager = new MRCMAttributeRangeManager(this);
+	MRCMAttributeDomainManager mrcmAttributeDomainManager = new MRCMAttributeDomainManager(this);
+	MRCMDomainManager mrcmDomainManager = new MRCMDomainManager(this);
+	MRCMModuleScopeManager mrcmModuleScopeManager = new MRCMModuleScopeManager(this);
 
 	private boolean detectNoChangeDelta = false;
 	private boolean runIntegrityChecks = true;
@@ -142,15 +137,11 @@ public class GraphLoader implements ScriptConstants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		duplicateLangRefsetEntriesMap= null;
 		duplicateLangRefsetIdsReported = new HashSet<>();
-		mrcmStagingAttributeRangeMapPreCoord = new HashMap<>();
-		mrcmStagingAttributeRangeMapPostCoord = new HashMap<>();
-		mrcmStagingAttributeRangeMapAll = new HashMap<>();
-		mrcmStagingAttributeRangeMapNewPreCoord = new HashMap<>();
-		mrcmAttributeRangeMapPreCoord = new HashMap<>();
-		mrcmAttributeRangeMapPostCoord = new HashMap<>();
-		mrcmAttributeRangeMapAll = new HashMap<>();
-		mrcmAttributeRangeMapNewPreCoord = new HashMap<>();
-		mrcmDomainMap = new HashMap<>();
+
+		mrcmAttributeDomainManager.reset();
+		mrcmAttributeRangeManager.reset();
+		mrcmDomainManager.reset();
+		mrcmModuleScopeManager.reset();
 		
 		System.gc();
 		outputMemoryUsage();
@@ -165,9 +156,6 @@ public class GraphLoader implements ScriptConstants {
 		long freeMemory = runtime.freeMemory();
 
 		LOGGER.info("free memory now: " + format.format(freeMemory / 1024));
-		//LOGGER.info("allocated memory: " + format.format(allocatedMemory / 1024) );
-		//LOGGER.info("max memory: " + format.format(maxMemory / 1024));
-		//LOGGER.info("total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
 	}
 
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
@@ -258,7 +246,7 @@ public class GraphLoader implements ScriptConstants {
 		return concepts;
 	}
 	
-	private boolean isExcluded(String moduleId) {
+	public boolean isExcluded(String moduleId) {
 		return excludedModules.contains(moduleId);
 	}
 
@@ -1377,106 +1365,19 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public void loadMRCMAttributeRangeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-		boolean isHeaderLine = true;
-		String line;
-		while ((line = br.readLine()) != null) {
-			if (!isHeaderLine) {
-				//Allow trailing empty fields
-				String[] lineItems = line.split(FIELD_DELIMITER, -1);
-
-				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
-					continue;
-				}
-				MRCMAttributeRange ar = MRCMAttributeRange.fromRf2(lineItems);
-				
-				//Only set the released flag if it's not set already
-				if (ar.isReleased() == null) {
-					ar.setReleased(isReleased);
-				}
-				Concept refComp = getConcept(ar.getReferencedComponentId());
-				String contentTypeId = lineItems[MRCM_ATTRIB_CONTENT_TYPE];
-				
-				switch(contentTypeId) {
-					case SCTID_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapPreCoord, refComp, ar);
-					break;
-					case SCTID_POST_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapPostCoord, refComp, ar);
-					break;
-					case SCTID_ALL_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapAll, refComp, ar);
-					break;
-					case SCTID_NEW_PRE_COORDINATED_CONTENT : addToMRCMAttributeMap(mrcmStagingAttributeRangeMapNewPreCoord, refComp, ar);
-					break;
-					default : throw new TermServerScriptException("Unrecognised content type in MRCM Attribute Range File: " + contentTypeId);
-				}
-			} else {
-				isHeaderLine = false;
-			}
-		}
-	}
-	
-	private void addToMRCMAttributeMap(Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttribMap, Concept refComp, MRCMAttributeRange ar) throws TermServerScriptException {
-		//Do we already have an entry for this referencedCompoment id?
-		/*if (mrcmAttribMap.containsKey(refComp)) {
-			MRCMAttributeRange existing = mrcmAttribMap.get(refComp);
-			//If this one is inactive and there is an existing one active with a different id, then 
-			//we'll just keep the existing one.
-			if (!existing.getId().equals(ar.getId()) && existing.isActive() && !ar.isActive()) {
-				return;
-			}
-			//If it's the same NOT the same id, we have a problem if the existing one is also active
-			//We'll collect all conflicts up and report back on all of them in the calling function
-			if (!existing.getId().equals(ar.getId()) && existing.isActive() && ar.isActive()) {
-				String contentType = translateContentType(ar.getContentTypeId());
-				conflictingAttributes.add(contentType + ": " + refComp);
-			}
-		}
-		mrcmAttribMap.put(refComp, ar);*/
-		//We'll add all entries to a staging structure initially, to allow conflicts to be resolved
-		//in a delta.
-		Map<String, MRCMAttributeRange> attribRanges = mrcmStagingAttribMap.get(refComp);
-		if (attribRanges == null) {
-			attribRanges = new HashMap<>();
-			mrcmStagingAttribMap.put(refComp, attribRanges);
-		}
-		//This will overwrite any existing MRCM row with the same UUID
-		//And allow multiple rows for exist for a given referenced component id
-		attribRanges.put(ar.getId(), ar);
+		mrcmAttributeRangeManager.loadFile(is, isReleased);
 	}
 
-	private String translateContentType(String contentTypeId) throws TermServerScriptException {
-		switch (contentTypeId) {
-			case SCTID_PRE_COORDINATED_CONTENT : return " Pre-coordinated content ";
-			case SCTID_POST_COORDINATED_CONTENT : return " Post-coordinated content ";
-			case SCTID_ALL_CONTENT : return " All SNOMED content ";
-			case SCTID_NEW_PRE_COORDINATED_CONTENT : return " New Pre-coordinated content ";
-			default : throw new TermServerScriptException ("Unrecognised MRCM content type encountered: " + contentTypeId);
-		}
+	public void loadMRCMAttributeDomainFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		mrcmAttributeDomainManager.loadFile(is, isReleased);
 	}
 
 	public void loadMRCMDomainFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-		boolean isHeaderLine = true;
-		String line;
-		while ((line = br.readLine()) != null) {
-			if (!isHeaderLine) {
-				//Allow trailing empty fields
-				String[] lineItems = line.split(FIELD_DELIMITER, -1);
+		mrcmDomainManager.loadFile(is, isReleased);
+	}
 
-				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
-					continue;
-				}
-				MRCMDomain d = MRCMDomain.fromRf2(lineItems);
-				
-				//Only set the released flag if it's not set already
-				if (d.isReleased() == null) {
-					d.setReleased(isReleased);
-				}
-				Concept refComp = getConcept(d.getReferencedComponentId());
-				mrcmDomainMap.put(refComp, d);
-			} else {
-				isHeaderLine = false;
-			}
-		}
+	public void loadMRCMModuleScopeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		mrcmModuleScopeManager.loadFile(is, isReleased);
 	}
 
 	public Component getComponent(String id) {
@@ -1829,7 +1730,34 @@ public class GraphLoader implements ScriptConstants {
 		}
     }
 
-    public class DuplicatePair {
+	public boolean doCheckForExcludedModules() {
+		return checkForExcludedModules;
+	}
+
+	public MRCMAttributeRangeManager getMRCMAttributeRangeManager() {
+		return mrcmAttributeRangeManager;
+	}
+
+	public MRCMAttributeDomainManager getMRCMAttributeDomainManager() {
+		return mrcmAttributeDomainManager;
+	}
+
+	public MRCMDomainManager getMRCMDomainManager() {
+		return mrcmDomainManager;
+	}
+
+	public MRCMModuleScopeManager getMRCMModuleScopeManager() {
+		return mrcmModuleScopeManager;
+	}
+
+	public void finalizeMRCM() throws TermServerScriptException {
+		mrcmAttributeRangeManager.finaliseFromStagingArea(integrityWarnings);
+		mrcmAttributeDomainManager.finaliseFromStagingArea(integrityWarnings);
+		mrcmDomainManager.finaliseFromStagingArea(integrityWarnings);
+		mrcmModuleScopeManager.finaliseFromStagingArea(integrityWarnings);
+	}
+
+	public class DuplicatePair {
 		private Component keep;
 		private Component inactivate;
 		
@@ -1887,28 +1815,6 @@ public class GraphLoader implements ScriptConstants {
 		return maxEffectiveTime;
 	}
 
-	//Note: No need to return the staging variants of these, as they're only used
-	//temporarily by the GraphLoader
-	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapPreCoord() {
-		return mrcmAttributeRangeMapPreCoord;
-	}
-	
-	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapPostCoord() {
-		return mrcmAttributeRangeMapPostCoord;
-	}
-	
-	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapAll() {
-		return mrcmAttributeRangeMapAll;
-	}
-	
-	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMapNewPreCoord() {
-		return mrcmAttributeRangeMapNewPreCoord;
-	}
-
-	public Map<Concept, MRCMDomain> getMrcmDomainMap() {
-		return mrcmDomainMap;
-	}
-
 	public boolean isRunIntegrityChecks() {
 		return runIntegrityChecks;
 	}
@@ -1963,90 +1869,6 @@ public class GraphLoader implements ScriptConstants {
 
 	public void setAllowIllegalSCTIDs(boolean setting) {
 		allowIllegalSCTIDs = setting;
-	}
-
-	public void finalizeGraph() throws TermServerScriptException {
-		//Only current work required here is to verify that the Delta import has resolved
-		//any apparent conflicts in the MRCM.  Convert the staging collection (which will hold duplicates)
-		//into the non-staging collection only if all duplications have been resolved.
-		LOGGER.info("Finalising MRCM from Staging Area");
-		List<String> conflictingAttributes = new ArrayList<>();
-		boolean preCoordAcceptable= finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPreCoord, mrcmAttributeRangeMapPreCoord, conflictingAttributes);
-		boolean postCoordAcceptable = finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapPostCoord, mrcmAttributeRangeMapPostCoord, conflictingAttributes);
-		boolean allCoordAcceptable = finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapAll, mrcmAttributeRangeMapAll, conflictingAttributes);
-		boolean newCoordAcceptable = finaliseMRCMAttributeRange(mrcmStagingAttributeRangeMapNewPreCoord, mrcmAttributeRangeMapNewPreCoord, conflictingAttributes);
-		boolean allContentAcceptable = preCoordAcceptable && postCoordAcceptable && allCoordAcceptable && newCoordAcceptable;
-
-		if (conflictingAttributes.size() > 0) {
-			String msg = "MRCM Attribute Range File conflicts: \n";
-			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
-			if (allContentAcceptable || !runIntegrityChecks) {
-				integrityWarnings.add(msg);
-			} else {
-				throw new TermServerScriptException(msg);
-			}
-		}
-	}
-
-	private boolean finaliseMRCMAttributeRange(
-			Map<Concept, Map<String, MRCMAttributeRange>> mrcmStagingAttributeRangeMap,
-			Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMap, List<String> conflictingAttributes) throws TermServerScriptException {
-		boolean acceptablyFinalised = true;
-		mrcmAttributeRangeMap.clear();
-		for (Concept refComp : mrcmStagingAttributeRangeMap.keySet()) {
-			Map<String, MRCMAttributeRange> conflictingRanges = mrcmStagingAttributeRangeMap.get(refComp);
-			if (conflictingRanges.size() == 1) {
-				//No Conflict in this case
-				mrcmAttributeRangeMap.put(refComp, conflictingRanges.values().iterator().next());
-			} else {
-				//Assuming the conflict is between an International Row and an Extension Row for the same concept
-				//but with distinct UUIDs, we'll let the extension row win.
-				MRCMAttributeRange winningAR = pickWinningMRCMAttributeRange(refComp, conflictingRanges, conflictingAttributes);
-				if (winningAR == null) {
-					//We're OK as long as only 1 of the ranges is active.  Store that one.   Otherwise, add to conflicts list to report
-					for (MRCMAttributeRange ar : conflictingRanges.values()) {
-						MRCMAttributeRange existing = mrcmAttributeRangeMap.get(refComp);
-						//We have a problem if the existing one is also active
-						//We'll collect all conflicts up and report back on all of them in the calling function
-						if (existing != null && existing.isActive() && ar.isActive()) {
-							String contentType = translateContentType(ar.getContentTypeId());
-							String detail = " (" + ar.getId() + " in module " + ar.getModuleId() + " vs " + existing.getId() + " in module " + existing.getModuleId() + ")";
-							conflictingAttributes.add(contentType + ": " + refComp + detail);
-							acceptablyFinalised = false;
-						} else if (existing == null || ar.isActive()) {
-							mrcmAttributeRangeMap.put(refComp, ar);
-						}
-					}
-				} else {
-					mrcmAttributeRangeMap.put(refComp, winningAR);
-				}
-			}
-		}
-		return acceptablyFinalised;
-	}
-
-	private MRCMAttributeRange pickWinningMRCMAttributeRange(Concept refComp, Map<String, MRCMAttributeRange> conflictingRanges, List<String> conflictingAttributes) throws TermServerScriptException {
-		//Return 1 active row for each of INT and EXT, or null if there's no active row, or multiple active rows
-		MRCMAttributeRange intAR = pickActiveMRCMAttributeRange(conflictingRanges, true);
-		MRCMAttributeRange extAR = pickActiveMRCMAttributeRange(conflictingRanges, false);
-		if (intAR != null && extAR != null) {
-			String contentType = translateContentType(intAR.getContentTypeId());
-			String detail = " (" + intAR.getId() + " in module " + intAR.getModuleId() + " vs " + extAR.getId() + " in module " + extAR.getModuleId() + ")";
-			conflictingAttributes.add(contentType + ": " + refComp + detail);
-			return extAR;
-		}
-		return null;
-	}
-
-	private MRCMAttributeRange pickActiveMRCMAttributeRange(Map<String, MRCMAttributeRange> conflictingRanges, boolean isInternational) {
-		List<MRCMAttributeRange> activeRanges = conflictingRanges.values().stream()
-				.filter(ar -> ar.isActive())
-				.filter(ar -> isInternational == SnomedUtils.isInternational(ar))
-				.collect(Collectors.toList());
-		if (activeRanges.size() == 1) {
-			return activeRanges.get(0);
-		}
-		return null;
 	}
 
 	public List<String> getIntegrityWarnings() {

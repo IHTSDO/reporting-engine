@@ -1,9 +1,8 @@
-package org.ihtsdo.termserver.scripting.domain;
-
-import java.util.*;
+package org.ihtsdo.termserver.scripting.domain.mrcm;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId
 public class MRCMAttributeRange extends RefsetMember implements ScriptConstants {
@@ -16,17 +15,7 @@ public class MRCMAttributeRange extends RefsetMember implements ScriptConstants 
 	public static String[] additionalFieldNames = new String[] {RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
 	
 	public MRCMAttributeRange clone(String newComponentSctId) {
-		MRCMAttributeRange clone = new MRCMAttributeRange();
-		clone.id = UUID.randomUUID().toString();
-		clone.effectiveTime = null;
-		clone.moduleId = this.moduleId;
-		clone.active = this.active;
-		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = newComponentSctId;
-		clone.setAdditionalFields(new HashMap<>(this.additionalFields));
-		clone.isDirty = true; //New components need to be written to any delta
-		clone.released = this.released;
-		return clone;
+		return (MRCMAttributeRange) populateClone(new MRCMAttributeRange(), newComponentSctId);
 	}
 
 	public static MRCMAttributeRange fromRf2(String[] lineItems) throws TermServerScriptException {

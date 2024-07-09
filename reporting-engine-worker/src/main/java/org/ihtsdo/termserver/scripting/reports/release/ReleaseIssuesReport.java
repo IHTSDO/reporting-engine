@@ -16,6 +16,9 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeRange;
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMDomain;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
@@ -1558,14 +1561,36 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
-	private void checkMRCMDomain() throws TermServerScriptException {
-		checkMRCMTerms("MRCM Domain", gl.getMrcmDomainMap().values(), MRCMDomain.additionalFieldNames);
-	}
 
 	private void checkMRCMAttributeRanges() throws TermServerScriptException {
-		checkMRCMTerms("MRCM Attribute Range", gl.getMrcmAttributeRangeMapPreCoord().values(), MRCMAttributeRange.additionalFieldNames);
-		checkMRCMTerms("MRCM Attribute Range", gl.getMrcmAttributeRangeMapPostCoord().values(), MRCMAttributeRange.additionalFieldNames);
+		checkMRCMTerms("MRCM Attribute Range", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPreCoord().values(), MRCMAttributeRange.additionalFieldNames);
+		checkMRCMTerms("MRCM Attribute Range", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPostCoord().values(), MRCMAttributeRange.additionalFieldNames);
+	}
+
+	private void checkMRCMAttributeDomain() throws TermServerScriptException {
+		for (Concept attribute : gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPreCoord().keySet()) {
+			Map<Concept, MRCMAttributeDomain> attributeDomains = gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPreCoord().get(attribute);
+			for (Concept domain : attributeDomains.keySet()) {
+				checkMRCMTerms("MRCM Attribute Domain", attributeDomains.values(), MRCMAttributeDomain.additionalFieldNames);
+			}
+		}
+
+		for (Concept attribute : gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPostCoord().keySet()) {
+			Map<Concept, MRCMAttributeDomain> attributeDomains = gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPostCoord().get(attribute);
+			for (Concept domain : attributeDomains.keySet()) {
+				checkMRCMTerms("MRCM Attribute Domain", attributeDomains.values(), MRCMAttributeDomain.additionalFieldNames);
+			}
+		}
+	}
+
+	private void checkMRCMDomain() throws TermServerScriptException {
+		checkMRCMTerms("MRCM Domain", gl.getMRCMDomainManager().getMrcmDomainMap().values(), MRCMDomain.additionalFieldNames);
+	}
+
+	private void checkMRCMModuleScope() throws TermServerScriptException {
+		for (Concept module : gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap().keySet()) {
+			checkMRCMTerms("MRCM Module Scope", gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap().get(module), MRCMDomain.additionalFieldNames);
+		}
 	}
 	
 	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers, String[] additionalFieldNames) throws TermServerScriptException {
@@ -1592,7 +1617,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Is this field all numeric?  Check concept exists if so
 		String field = rm.getField(fieldName);
-		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field)) {
+		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field) && field.length() > 7) {
 			Concept refConcept = gl.getConcept(field, false, false);
 			if (refConcept == null || !refConcept.isActive()) {
 				report (c, issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);

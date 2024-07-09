@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -69,8 +68,7 @@ public class ArchiveManager implements ScriptConstants {
 	
 	private Project currentlyHeldInMemory;
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
-	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-	
+
 	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
 		return getArchiveManager(ts, appContext, false);
 	}
@@ -83,7 +81,7 @@ public class ArchiveManager implements ScriptConstants {
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
 			LOGGER.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName());
-			if (forceReuse == true) {
+			if (forceReuse) {
 				LOGGER.info("Re-use request denied due to change in ownership.");
 				forceReuse = false;
 			}
@@ -116,19 +114,6 @@ public class ArchiveManager implements ScriptConstants {
 		//Only access via singleton above
 	}
 	
-	protected void info(String msg) {
-		LOGGER.info(msg);
-	}
-	
-	protected void debug(String msg) {
-		TermServerScript.debug(msg);
-	}
-	
-	public static void print (Object msg) {
-		System.out.print (msg.toString());
-	}
-
-
 	public boolean isLoadOtherReferenceSets() {
 		return loadOtherReferenceSets;
 	}
@@ -188,13 +173,13 @@ public class ArchiveManager implements ScriptConstants {
 			//Filter out anything that's not a release date, then sort descending
 			List<CodeSystemVersion> releases = codeSystems.stream()
 			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
-			.collect(Collectors.toList());
+			.toList();
 			
 			if (releases.size() < 2) {
 				throw new TermServerScriptException("Less than 2 previous releases detected");
 			}
 			if (!releases.get(0).getEffectiveDate().toString().equals(previousRelease)) {
-				TermServerScript.warn("Check here - unexpected previous release: " +  releases.get(0).getEffectiveDate() + " expected " + previousRelease);
+				LOGGER.warn("Check here - unexpected previous release: " +  releases.get(0).getEffectiveDate() + " expected " + previousRelease);
 			}
 			return releases.get(1).getBranchPath();
 		} catch (Exception e) {
@@ -211,7 +196,7 @@ public class ArchiveManager implements ScriptConstants {
 			//Filter out anything that's not a release date, then sort descending
 			List<CodeSystemVersion> releases = codeSystems.stream()
 			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
-			.collect(Collectors.toList());
+			.toList();
 			
 			if (releases.size() < 1) {
 				throw new TermServerScriptException("Less than 1 previous releases detected");
@@ -309,9 +294,9 @@ public class ArchiveManager implements ScriptConstants {
 				branch = loadBranch(ts.getProject());
 				isStale = checkIsStale(ts, branch, snapshot);
 				if (isStale) {
-					TermServerScript.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
+					LOGGER.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
 				} else {
-					TermServerScript.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
+					LOGGER.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
 				}
 			}
 
@@ -363,9 +348,9 @@ public class ArchiveManager implements ScriptConstants {
 						} catch (UnrecoverableTermServerScriptException unrecoverable) {
 							throw unrecoverable;
 						} catch (Exception e) {
-							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
+							LOGGER.error("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
 							if (!snapshot.getName().startsWith("releases/")) {
-								LOGGER.info ("Deleting " + snapshot);
+								LOGGER.info("Deleting " + snapshot);
 								try {
 									if (snapshot.isFile()) {
 										snapshot.delete();
@@ -375,7 +360,7 @@ public class ArchiveManager implements ScriptConstants {
 										throw new TermServerScriptException (snapshot + " is neither file nor directory.");
 									}
 								} catch (Exception e2) {
-									TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+									LOGGER.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
 								}
 							} else {
 								LOGGER.info ("Not deleting " + snapshot + " as it's a release.");
@@ -383,7 +368,7 @@ public class ArchiveManager implements ScriptConstants {
 							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
 							//Next time round the snapshot on disk won't be detected and we'll take a different code path
 							if (!loadEditionArchive) {
-								TermServerScript.warn("Attempting to regenerate...");
+								LOGGER.warn("Attempting to regenerate...");
 								loadSnapshot(fsnOnly);
 							} 
 						}
@@ -461,7 +446,7 @@ public class ArchiveManager implements ScriptConstants {
 					}
 					integrityFailureMessage.append(c + " failed to populate depth");
 					String ancestorStr = c.getAncestors(NOT_SET).stream().map(a -> a.toString()).collect(Collectors.joining(","));
-					TermServerScript.warn(c + " ancestors are :" + ancestorStr );
+					LOGGER.warn(c + " ancestors are :" + ancestorStr );
 				}
 			}
 			if (integrityFailureMessage.length() > 0) {
@@ -563,7 +548,7 @@ public class ArchiveManager implements ScriptConstants {
 		ZonedDateTime snapshotCreationLocal = ZonedDateTime.of(snapshotCreation, localZone.toZoneId());
 		ZonedDateTime snapshotCreationUTC = snapshotCreationLocal.withZoneSameInstant(utcZoneID);
 		ZonedDateTime branchHeadUTC = ZonedDateTime.ofInstant(branchHeadTime.toInstant(), utcZoneID);
-		TermServerScript.debug("Comparing branch time: " + branchHeadUTC + " to local " + snapshot.getName() + " snapshot time: " + snapshotCreationUTC);
+		LOGGER.debug("Comparing branch time: " + branchHeadUTC + " to local " + snapshot.getName() + " snapshot time: " + snapshotCreationUTC);
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
@@ -706,7 +691,7 @@ public class ArchiveManager implements ScriptConstants {
 			if (archive.isDirectory()) {
 				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
-				TermServerScript.debug("Loading archive file: " + archive);
+				LOGGER.debug("Loading archive file: " + archive);
 				loadArchiveZip(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
@@ -873,12 +858,18 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
 					LOGGER.info("Loading Historical Association File: " + fileName);
 					gl.loadHistoricalAssociationFile(is, isReleased);
+				} else if (fileName.contains("MRCMModuleScope")) {
+					LOGGER.info("Loading MRCM Module Scope File: " + fileName);
+					gl.loadMRCMModuleScopeFile(is, isReleased);
 				} else if (fileName.contains("MRCMDomain")) {
 					LOGGER.info("Loading MRCM Domain File: " + fileName);
 					gl.loadMRCMDomainFile(is, isReleased);
 				} else if (fileName.contains("MRCMAttributeRange")) {
 					LOGGER.info("Loading MRCM AttributeRange File: " + fileName);
 					gl.loadMRCMAttributeRangeFile(is, isReleased);
+				} else if (fileName.contains("MRCMAttributeDomain")) {
+					LOGGER.info("Loading MRCM AttributeDomain File: " + fileName);
+					gl.loadMRCMAttributeDomainFile(is, isReleased);
 				} else if (fileName.contains("ComponentAnnotationStringValue")) {
 					LOGGER.info("Loading ComponentAnnotationStringValue File: " + fileName);
 					gl.loadComponentAnnotationFile(is, isReleased);
@@ -963,7 +954,7 @@ public class ArchiveManager implements ScriptConstants {
 	public void reset(boolean fullReset) {
 		//Don't reset if we're still saving to disk - need that data!
 		while (ts.getAsyncSnapshotCacheInProgress()) {
-			TermServerScript.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
+			LOGGER.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
 			try {
 				Thread.sleep(5 * 1000);
 			} catch (InterruptedException e) {
@@ -991,7 +982,7 @@ public class ArchiveManager implements ScriptConstants {
 
 	public void setRunIntegrityChecks(boolean runIntegrityChecks) {
 		if (!runIntegrityChecks) {
-			TermServerScript.warn("INTEGRITY CHECK DISABLED - ARE YOU SURE?");
+			LOGGER.warn("INTEGRITY CHECK DISABLED - ARE YOU SURE?");
 		}
 		this.runIntegrityChecks = runIntegrityChecks;
 		this.gl.setRunIntegrityChecks(runIntegrityChecks);
