@@ -12,7 +12,7 @@ public class MRCMAttributeRange extends RefsetMember implements ScriptConstants 
 	private static String RULE_STRENGTH_ID = "ruleStrengthId";
 	private static String CONTENT_TYPE_ID = "contentTypeId";
 	
-	public static String[] additionalFieldNames = new String[] {RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
+	protected static String[] additionalFieldNames = new String[] {RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
 	
 	public MRCMAttributeRange clone(String newComponentSctId) {
 		return (MRCMAttributeRange) populateClone(new MRCMAttributeRange(), newComponentSctId);

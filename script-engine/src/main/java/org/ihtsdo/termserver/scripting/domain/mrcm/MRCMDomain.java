@@ -17,7 +17,7 @@ public class MRCMDomain extends RefsetMember implements ScriptConstants {
 	public static final  String DOMAIN_TEMPLATE_FOR_POSTCOORDINATION = "domainTemplateForPostcoordination";
 	public static final  String GUIDE_URL = "guideURL";
 	
-	public static String[] additionalFieldNames = new String[] {DOMAIN_CONSTRAINT, PARENT_DOMAIN, PROXIMAL_PRIMITIVE_CONSTRAINT, 
+	protected static String[] additionalFieldNames = new String[] {DOMAIN_CONSTRAINT, PARENT_DOMAIN, PROXIMAL_PRIMITIVE_CONSTRAINT,
 			PROXIMAL_PRIMITIVE_REFINEMENT, DOMAIN_TEMPLATE_FOR_PRECOORDINATION, DOMAIN_TEMPLATE_FOR_POSTCOORDINATION, GUIDE_URL};
 	
 	public MRCMDomain clone(String newComponentSctId) {

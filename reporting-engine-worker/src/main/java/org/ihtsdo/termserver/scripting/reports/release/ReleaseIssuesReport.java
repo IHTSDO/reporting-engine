@@ -17,8 +17,6 @@ import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
-import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeRange;
-import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMDomain;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
@@ -345,6 +343,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		LOGGER.info("...MRCM validation");
 		checkMRCMDomain();
 		checkMRCMAttributeRanges();
+		checkMRCMAttributeDomains();
+		checkMRCMModuleScope();
 
 		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -620,21 +620,25 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Only look at concepts that have been in some way edited in this release cycle
 			//Unless we're interested in legacy issues
 			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
-						continue;
-					}
+				checkDescriptionsForExcessiveLength(c, issueStr);
+			}
+		}
+	}
 
-					if (inScope(d)) {
-						if (d.getTerm().length() > MAX_DESC_LENGTH) {
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
-						}
-					}
+	private void checkDescriptionsForExcessiveLength(Concept c, String issueStr) throws TermServerScriptException {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+				continue;
+			}
+
+			if (inScope(d)) {
+				if (d.getTerm().length() > MAX_DESC_LENGTH) {
+					reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
 				}
 			}
 		}
 	}
-	
+
 	//INFRA-2580, MAINT-342 Inactivated concepts without active PT or synonym – new instances only
 	//RP-478 Broaden to take in all concepts - just in case!
 	private void missingFSN_PT() throws TermServerScriptException {
@@ -1521,10 +1525,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	 * @throws TermServerScriptException 
 	 */
 	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
-		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type)) {
-			if (!subHierarchyList.contains(c)) {
-				report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
-			}
+		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type) && !subHierarchyList.contains(c)) {
+			report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
 		}
 	}
 
@@ -1563,41 +1565,37 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void checkMRCMAttributeRanges() throws TermServerScriptException {
-		checkMRCMTerms("MRCM Attribute Range", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPreCoord().values(), MRCMAttributeRange.additionalFieldNames);
-		checkMRCMTerms("MRCM Attribute Range", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPostCoord().values(), MRCMAttributeRange.additionalFieldNames);
+		checkMRCMTerms("MRCM Attribute Range", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPreCoord().values());
+		checkMRCMTerms("MRCM Attribute Range", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPostCoord().values());
 	}
 
-	private void checkMRCMAttributeDomain() throws TermServerScriptException {
+	private void checkMRCMAttributeDomains() throws TermServerScriptException {
 		for (Concept attribute : gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPreCoord().keySet()) {
 			Map<Concept, MRCMAttributeDomain> attributeDomains = gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPreCoord().get(attribute);
-			for (Concept domain : attributeDomains.keySet()) {
-				checkMRCMTerms("MRCM Attribute Domain", attributeDomains.values(), MRCMAttributeDomain.additionalFieldNames);
-			}
+			checkMRCMTerms("MRCM Attribute Domain", attributeDomains.values());
 		}
 
 		for (Concept attribute : gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPostCoord().keySet()) {
 			Map<Concept, MRCMAttributeDomain> attributeDomains = gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPostCoord().get(attribute);
-			for (Concept domain : attributeDomains.keySet()) {
-				checkMRCMTerms("MRCM Attribute Domain", attributeDomains.values(), MRCMAttributeDomain.additionalFieldNames);
-			}
+			checkMRCMTerms("MRCM Attribute Domain", attributeDomains.values());
 		}
 	}
 
 	private void checkMRCMDomain() throws TermServerScriptException {
-		checkMRCMTerms("MRCM Domain", gl.getMRCMDomainManager().getMrcmDomainMap().values(), MRCMDomain.additionalFieldNames);
+		checkMRCMTerms("MRCM Domain", gl.getMRCMDomainManager().getMrcmDomainMap().values());
 	}
 
 	private void checkMRCMModuleScope() throws TermServerScriptException {
 		for (Concept module : gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap().keySet()) {
-			checkMRCMTerms("MRCM Module Scope", gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap().get(module), MRCMDomain.additionalFieldNames);
+			checkMRCMTerms("MRCM Module Scope", gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap().get(module));
 		}
 	}
 	
-	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers, String[] additionalFieldNames) throws TermServerScriptException {
+	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		for (RefsetMember rm : refsetMembers) {
 			if (rm.isActive()) {
 				Concept c = gl.getConcept(rm.getReferencedComponentId());
-				for (String additionalField : additionalFieldNames) {
+				for (String additionalField : rm.getAdditionalFieldNames()) {
 					validateTermsInField(partName, c, rm, additionalField);
 				}
 			}

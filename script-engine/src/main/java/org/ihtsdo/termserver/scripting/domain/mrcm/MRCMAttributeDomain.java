@@ -14,7 +14,7 @@ public class MRCMAttributeDomain extends RefsetMember implements ScriptConstants
 	private static final String RULE_STRENGTH_ID = "ruleStrengthId";
 	private static final String CONTENT_TYPE_ID = "contentTypeId";
 
-	public static final String[] additionalFieldNames = new String[]{DOMAIN_ID, GROUPED, ATTRIBUTE_CARDINALITY, IN_GROUP_CARDINALITY, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
+	protected static final String[] additionalFieldNames = new String[]{DOMAIN_ID, GROUPED, ATTRIBUTE_CARDINALITY, IN_GROUP_CARDINALITY, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
 
 	public static MRCMAttributeDomain fromRf2(String[] lineItems) throws TermServerScriptException {
 		MRCMAttributeDomain r = new MRCMAttributeDomain();

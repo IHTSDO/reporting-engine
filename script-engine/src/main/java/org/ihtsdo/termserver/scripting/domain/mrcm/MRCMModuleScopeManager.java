@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain.mrcm;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
@@ -71,11 +72,7 @@ public class MRCMModuleScopeManager implements ScriptConstants  {
 		//We'll add all entries to a staging structure initially, to allow conflicts to be resolved
 		//in a delta.
 		Concept module = gl.getConcept(ar.getModuleId());
-		Map<UUID, MRCMModuleScope> applicableRefsets = mrcmStagingModuleMap.get(module);
-		if (applicableRefsets == null) {
-			applicableRefsets = new HashMap<>();
-			mrcmStagingModuleMap.put(module, applicableRefsets);
-		}
+		Map<UUID, MRCMModuleScope> applicableRefsets = mrcmStagingModuleMap.computeIfAbsent(module, k -> new HashMap<>());
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given referenced component id
 		UUID uuid = UUID.fromString(ar.getId());
@@ -84,44 +81,46 @@ public class MRCMModuleScopeManager implements ScriptConstants  {
 
 	private boolean finaliseMRCMModuleScope(
 			Map<Concept, Map<UUID, MRCMModuleScope>> mrcmStagingModuleScopeMap,
-			Map<Concept, Set<MRCMModuleScope>> mrcmModuleScopeMap, List<String> unresolvableConflicts) throws TermServerScriptException {
+			Map<Concept, Set<MRCMModuleScope>> mrcmModuleScopeMap, List<String> unresolvableConflicts) {
 		boolean acceptablyFinalised = true;
 		mrcmModuleScopeMap.clear();
-		for (Concept module : mrcmStagingModuleScopeMap.keySet()) {
-			Map<UUID, MRCMModuleScope> refsetsToApplyToModule = mrcmStagingModuleScopeMap.get(module);
+		for (Map.Entry<Concept, Map<UUID, MRCMModuleScope>> entry: mrcmStagingModuleScopeMap.entrySet()) {
+			Concept module = entry.getKey();
+			Map<UUID, MRCMModuleScope> refsetsToApplyToModule = entry.getValue();
 			//Split this into a map per refsetId and if we have more than one refset member specifying that refset for each module
 			Map<String, Set<MRCMModuleScope>> refsetmembersByRefsetId = refsetsToApplyToModule.values().stream()
 					.collect(Collectors.groupingBy(MRCMModuleScope::getRuleRefsetId, Collectors.toSet()));
-			for (String ruleRefset : refsetmembersByRefsetId.keySet()) {
-				Set<MRCMModuleScope> refsetMembers = refsetmembersByRefsetId.get(ruleRefset);
-				if (refsetMembers.size() == 1) {
-					Set<MRCMModuleScope> ruleRefsetToApply = mrcmModuleScopeMap.get(module);
-					if (ruleRefsetToApply == null) {
-						ruleRefsetToApply = new HashSet<>();
-						mrcmModuleScopeMap.put(module, ruleRefsetToApply);
-					}
-					ruleRefsetToApply.add(refsetMembers.iterator().next());
-				} else {
-					//We have multiple refset members for the same module and refset
-					//We need to pick one to apply
-					MRCMModuleScope winningRefset = pickWinningMRCMModuleScope(module, refsetMembers, unresolvableConflicts);
-					if (winningRefset != null) {
-						Set<MRCMModuleScope> ruleRefsetToApply = mrcmModuleScopeMap.get(module);
-						if (ruleRefsetToApply == null) {
-							ruleRefsetToApply = new HashSet<>();
-							mrcmModuleScopeMap.put(module, ruleRefsetToApply);
-						}
-						ruleRefsetToApply.add(winningRefset);
-					} else {
-						acceptablyFinalised = false;
-					}
-				}
+			for (Set<MRCMModuleScope> refsetMembers: refsetmembersByRefsetId.values()) {
+				acceptablyFinalised = finaliseRefsetMembers(module, refsetMembers, unresolvableConflicts);
 			}
 		}
 		return acceptablyFinalised;
 	}
 
-	private MRCMModuleScope pickWinningMRCMModuleScope(Concept refComp,Set<MRCMModuleScope> refsetMembers, List<String> conflictingAttributes) throws TermServerScriptException {
+	private boolean finaliseRefsetMembers(Concept module, Set<MRCMModuleScope> refsetMembers, List<String> unresolvableConflicts) {
+		boolean acceptablyFinalised = true;
+		if (refsetMembers.size() == 1) {
+			Set<MRCMModuleScope> ruleRefsetToApply = mrcmModuleScopeMap.get(module);
+			if (ruleRefsetToApply == null) {
+				ruleRefsetToApply = new HashSet<>();
+				mrcmModuleScopeMap.put(module, ruleRefsetToApply);
+			}
+			ruleRefsetToApply.add(refsetMembers.iterator().next());
+		} else {
+			//We have multiple refset members for the same module and refset
+			//We need to pick one to apply
+			MRCMModuleScope winningRefset = pickWinningMRCMModuleScope(module, refsetMembers, unresolvableConflicts);
+			if (winningRefset != null) {
+				Set<MRCMModuleScope> ruleRefsetToApply = mrcmModuleScopeMap.computeIfAbsent(module, k -> new HashSet<>());
+				ruleRefsetToApply.add(winningRefset);
+			} else {
+				acceptablyFinalised = false;
+			}
+		}
+		return acceptablyFinalised;
+	}
+
+	private MRCMModuleScope pickWinningMRCMModuleScope(Concept refComp,Set<MRCMModuleScope> refsetMembers, List<String> conflictingAttributes) {
 		//Return 1 active row for each of INT and EXT, or null if there's no active row, or multiple active rows
 		MRCMModuleScope intAR = pickActiveMRCMModuleScope(refsetMembers, true);
 		MRCMModuleScope extAR = pickActiveMRCMModuleScope(refsetMembers, false);
@@ -135,9 +134,9 @@ public class MRCMModuleScopeManager implements ScriptConstants  {
 
 	private MRCMModuleScope pickActiveMRCMModuleScope(Set<MRCMModuleScope> refsetMembers, boolean isInternational) {
 		List<MRCMModuleScope> activeRanges = refsetMembers.stream()
-				.filter(ar -> ar.isActive())
+				.filter(Component::isActive)
 				.filter(ar -> isInternational == SnomedUtils.isInternational(ar))
-				.collect(Collectors.toList());
+				.toList();
 		if (activeRanges.size() == 1) {
 			return activeRanges.get(0);
 		}
@@ -152,7 +151,7 @@ public class MRCMModuleScopeManager implements ScriptConstants  {
 		List<String> conflictingAttributes = new ArrayList<>();
 		boolean allContentAcceptable = finaliseMRCMModuleScope(mrcmStagingModuleScopeMap, mrcmModuleScopeMap, conflictingAttributes);
 
-		if (conflictingAttributes.size() > 0) {
+		if (!conflictingAttributes.isEmpty()) {
 			String msg = "MRCM ModuleScope File conflicts: \n";
 			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
 			if (allContentAcceptable || !gl.isRunIntegrityChecks()) {

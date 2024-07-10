@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain.mrcm;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId,domainId,grouped,attributeCardinality,attributeInGroupCardinality,ruleStrengthId,contentTypeId
 public class MRCMAttributeDomainManager implements ScriptConstants  {
 
+	private static final String IN_MODULE = " in module ";
 	private static final Logger LOGGER = LoggerFactory.getLogger(MRCMAttributeDomainManager.class);
 
 	private GraphLoader gl;
@@ -119,19 +120,11 @@ public class MRCMAttributeDomainManager implements ScriptConstants  {
 	private void addToMRCMAttributeDomainMap(Map<Concept, Map<Concept, Map<UUID, MRCMAttributeDomain>>> mrcmStagingAttribDomainMap, Concept refComp, MRCMAttributeDomain ar) throws TermServerScriptException {
 		//We'll add all entries to a staging structure initially, to allow conflicts to be resolved
 		//in a delta.
-		Map<Concept, Map<UUID, MRCMAttributeDomain>> attribDomains = mrcmStagingAttribDomainMap.get(refComp);
-		if (attribDomains == null) {
-			attribDomains = new HashMap<>();
-			mrcmStagingAttribDomainMap.put(refComp, attribDomains);
-		}
+		Map<Concept, Map<UUID, MRCMAttributeDomain>> attribDomains = mrcmStagingAttribDomainMap.computeIfAbsent(refComp, k -> new HashMap<>());
 
 		//What rules do we have for this domain?
 		Concept domain = gl.getConcept(ar.getDomainId());
-		Map<UUID, MRCMAttributeDomain> domainRules = attribDomains.get(domain);
-		if (domainRules == null) {
-			domainRules = new HashMap<>();
-			attribDomains.put(domain, domainRules);
-		}
+		Map<UUID, MRCMAttributeDomain> domainRules = attribDomains.computeIfAbsent(domain, k -> new HashMap<>());
 
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given attribute & domain
@@ -146,52 +139,55 @@ public class MRCMAttributeDomainManager implements ScriptConstants  {
 		mrcmAttributeDomainMap.clear();
 		for (Concept attribute : mrcmStagingAttributeDomainMap.keySet()) {
 			Map<Concept, Map<UUID, MRCMAttributeDomain>> attributeDomainsStaging = mrcmStagingAttributeDomainMap.get(attribute);
-			Map<Concept, MRCMAttributeDomain> attributeDomainsFinal = mrcmAttributeDomainMap.get(attribute);
-			if (attributeDomainsFinal == null) {
-				attributeDomainsFinal = new HashMap<>();
-				mrcmAttributeDomainMap.put(attribute, attributeDomainsFinal);
-			}
+			Map<Concept, MRCMAttributeDomain> attributeDomainsFinal = mrcmAttributeDomainMap.computeIfAbsent(attribute, k -> new HashMap<>());
 
-			for (Concept domain : attributeDomainsStaging.keySet()) {
-				Map<UUID, MRCMAttributeDomain> conflictingRules = attributeDomainsStaging.get(domain);
-				if (conflictingRules.size() == 1) {
-					//No Conflict in this case
-					attributeDomainsFinal.put(domain, conflictingRules.values().iterator().next());
-				} else {
-					//Assuming the conflict is between an International Row and an Extension Row for the same concept
-					//but with distinct UUIDs, we'll let the extension row win.
-					MRCMAttributeDomain winningAD = pickWinningMRCMAttributeDomain(attribute, domain, conflictingRules, unresolvableConflicts);
-					if (winningAD == null) {
-						//We're OK as long as only 1 of the ranges is active.  Store that one.   Otherwise, add to conflicts list to report
-						for (MRCMAttributeDomain ad : conflictingRules.values()) {
-							MRCMAttributeDomain existing = attributeDomainsFinal.get(domain);
-							//We have a problem if the existing one is also active
-							//We'll collect all conflicts up and report back on all of them in the calling function
-							if (existing != null && existing.isActive() && ad.isActive()) {
-								String contentType = translateContentType(ad.getContentTypeId());
-								String detail = " (" + ad.getId() + " in module " + ad.getModuleId() + " vs " + existing.getId() + " in module " + existing.getModuleId() + ")";
-								unresolvableConflicts.add(contentType + ": " + attribute + detail);
-								acceptablyFinalised = false;
-							} else if (existing == null || ad.isActive()) {
-								attributeDomainsFinal.put(domain, ad);
-							}
-						}
-					} else {
-						attributeDomainsFinal.put(domain, winningAD);
-					}
-				}
+			for (Map.Entry<Concept, Map<UUID, MRCMAttributeDomain>> entry: attributeDomainsStaging.entrySet()) {
+				Concept domain = entry.getKey();
+				Map<UUID, MRCMAttributeDomain> conflictingRules = entry.getValue();
+				acceptablyFinalised = finaliseConflictingRules(attribute, domain, conflictingRules, attributeDomainsFinal, unresolvableConflicts) && acceptablyFinalised;
 			}
 		}
 		return acceptablyFinalised;
 	}
 
-	private MRCMAttributeDomain pickWinningMRCMAttributeDomain(Concept attribute, Concept domain, Map<UUID, MRCMAttributeDomain> conflictingRules, List<String> unresolvableConflicts) throws TermServerScriptException {
+	private boolean finaliseConflictingRules(Concept attribute, Concept domain, Map<UUID, MRCMAttributeDomain> conflictingRules, Map<Concept, MRCMAttributeDomain> attributeDomainsFinal, List<String> unresolvableConflicts) throws TermServerScriptException {
+		boolean acceptablyFinalised = true;
+		if (conflictingRules.size() == 1) {
+			//No Conflict in this case
+			attributeDomainsFinal.put(domain, conflictingRules.values().iterator().next());
+		} else {
+			//Assuming the conflict is between an International Row and an Extension Row for the same concept
+			//but with distinct UUIDs, we'll let the extension row win.
+			MRCMAttributeDomain winningAD = pickWinningMRCMAttributeDomain(domain, conflictingRules, unresolvableConflicts);
+			if (winningAD == null) {
+				//We're OK as long as only 1 of the ranges is active.  Store that one.   Otherwise, add to conflicts list to report
+				for (MRCMAttributeDomain ad : conflictingRules.values()) {
+					MRCMAttributeDomain existing = attributeDomainsFinal.get(domain);
+					//We have a problem if the existing one is also active
+					//We'll collect all conflicts up and report back on all of them in the calling function
+					if (existing != null && existing.isActive() && ad.isActiveSafely()) {
+						String contentType = translateContentType(ad.getContentTypeId());
+						String detail = " (" + ad.getId() + IN_MODULE + ad.getModuleId() + " vs " + existing.getId() + IN_MODULE + existing.getModuleId() + ")";
+						unresolvableConflicts.add(contentType + ": " + attribute + detail);
+						acceptablyFinalised = false;
+					} else if (existing == null || ad.isActive()) {
+						attributeDomainsFinal.put(domain, ad);
+					}
+				}
+			} else {
+				attributeDomainsFinal.put(domain, winningAD);
+			}
+		}
+		return acceptablyFinalised;
+	}
+
+	private MRCMAttributeDomain pickWinningMRCMAttributeDomain(Concept domain, Map<UUID, MRCMAttributeDomain> conflictingRules, List<String> unresolvableConflicts) throws TermServerScriptException {
 		//Return 1 active row for each of INT and EXT, or null if there's no active row, or multiple active rows
 		MRCMAttributeDomain intAR = pickActiveMRCMAttributeDomain(conflictingRules, true);
 		MRCMAttributeDomain extAR = pickActiveMRCMAttributeDomain(conflictingRules, false);
 		if (intAR != null && extAR != null) {
 			String contentType = translateContentType(intAR.getContentTypeId());
-			String detail = " (" + intAR.getId() + " in module " + intAR.getModuleId() + " vs " + extAR.getId() + " in module " + extAR.getModuleId() + ")";
+			String detail = " (" + intAR.getId() + IN_MODULE + intAR.getModuleId() + " vs " + extAR.getId() + IN_MODULE + extAR.getModuleId() + ")";
 			unresolvableConflicts.add(contentType + ": " + domain + detail);
 			return extAR;
 		}
@@ -200,9 +196,9 @@ public class MRCMAttributeDomainManager implements ScriptConstants  {
 
 	private MRCMAttributeDomain pickActiveMRCMAttributeDomain(Map<UUID, MRCMAttributeDomain> conflictingRules, boolean isInternational) {
 		List<MRCMAttributeDomain> activeRules = conflictingRules.values().stream()
-				.filter(ar -> ar.isActive())
+				.filter(Component::isActive)
 				.filter(ar -> isInternational == SnomedUtils.isInternational(ar))
-				.collect(Collectors.toList());
+				.toList();
 		if (activeRules.size() == 1) {
 			return activeRules.get(0);
 		}
@@ -221,7 +217,7 @@ public class MRCMAttributeDomainManager implements ScriptConstants  {
 		boolean newCoordAcceptable = finaliseMRCMAttributeDomain(mrcmStagingAttributeDomainMapNewPreCoord, mrcmAttributeDomainMapNewPreCoord, conflictingAttributes);
 		boolean allContentAcceptable = preCoordAcceptable && postCoordAcceptable && allCoordAcceptable && newCoordAcceptable;
 
-		if (conflictingAttributes.size() > 0) {
+		if (!conflictingAttributes.isEmpty()) {
 			String msg = "MRCM Attribute Range File conflicts: \n";
 			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
 			if (allContentAcceptable || !gl.isRunIntegrityChecks()) {

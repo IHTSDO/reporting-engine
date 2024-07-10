@@ -80,14 +80,14 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
-			LOGGER.info("Archive manager under first or new ownership: " + ts.getClass().getSimpleName());
+			LOGGER.info("Archive manager under first or new ownership: {}", ts.getClass().getSimpleName());
 			if (forceReuse) {
 				LOGGER.info("Re-use request denied due to change in ownership.");
 				forceReuse = false;
 			}
 			singleton.gl = ts.getGraphLoader();
 		} else {
-			LOGGER.info("Archive manager being reused in: " + ts.getClass().getSimpleName()); 
+			LOGGER.info("Archive manager being reused in: {}", ts.getClass().getSimpleName());
 		}
 		
 		if (!forceReuse) {
@@ -119,7 +119,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	public void setLoadOtherReferenceSets(boolean loadOtherReferenceSets) {
-		LOGGER.info("Setting loadOtherReferenceSets to " + loadOtherReferenceSets);
+		LOGGER.info("Setting loadOtherReferenceSets to {}", loadOtherReferenceSets);
 		this.loadOtherReferenceSets = loadOtherReferenceSets;
 	}
 
@@ -127,7 +127,7 @@ public class ArchiveManager implements ScriptConstants {
 		String branchPath = project.getBranchPath();
 		String server = "uknown";
 		try {
-			LOGGER.debug ("Checking TS branch metadata: " + branchPath);
+			LOGGER.debug ("Checking TS branch metadata: {}", branchPath);
 			server = ts.getTSClient().getUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//If metadata is empty, or missing previous release, recover parent
@@ -179,7 +179,7 @@ public class ArchiveManager implements ScriptConstants {
 				throw new TermServerScriptException("Less than 2 previous releases detected");
 			}
 			if (!releases.get(0).getEffectiveDate().toString().equals(previousRelease)) {
-				LOGGER.warn("Check here - unexpected previous release: " +  releases.get(0).getEffectiveDate() + " expected " + previousRelease);
+				LOGGER.warn("Check here - unexpected previous release: {} expected {} ", releases.get(0).getEffectiveDate(), previousRelease);
 			}
 			return releases.get(1).getBranchPath();
 		} catch (Exception e) {
@@ -237,7 +237,7 @@ public class ArchiveManager implements ScriptConstants {
 					} else {
 						//Can we find it in S3?
 						String cwd = new File("").getAbsolutePath();
-						LOGGER.info(ts.getDependencyArchive() + " not found locally in " + cwd + ", attempting to download from S3.");
+						LOGGER.info("{} not found locally in {}, attempting to download from S3.", ts.getDependencyArchive(), cwd);
 						getArchiveDataLoader().download(dependency);
 						if (dependency.exists()) {
 							loadArchive(dependency, fsnOnly, "Snapshot", true);
@@ -260,7 +260,7 @@ public class ArchiveManager implements ScriptConstants {
 
 			//Look for an expanded directory by preference
 			File snapshot = getSnapshotPath();
-			LOGGER.info("Snapshot path " + snapshot.getPath());
+			LOGGER.info("Snapshot path {}", snapshot.getPath());
 			if (!snapshot.exists() && !snapshot.getName().endsWith(fileExt)) {
 				//Otherwise, do we have a zip file to play with?
 				snapshot = new File (snapshot.getPath() + fileExt);
@@ -270,10 +270,10 @@ public class ArchiveManager implements ScriptConstants {
 				//If it doesn't exist as a zip file locally either, we can try downloading it from S3
 				try {
 					String cwd = new File("").getAbsolutePath();
-					LOGGER.info(snapshot + " not found locally in " + cwd + ", attempting to download from S3.");
+					LOGGER.info("{} not found locally in {}, attempting to download from S3.", snapshot, cwd);
 					getArchiveDataLoader().download(snapshot);
 				} catch (TermServerScriptException e) {
-					LOGGER.info("Could not find " + snapshot.getName() + " in S3.");
+					LOGGER.info("Could not find {} in S3.", snapshot.getName());
 				}
 			}
 			
@@ -294,9 +294,9 @@ public class ArchiveManager implements ScriptConstants {
 				branch = loadBranch(ts.getProject());
 				isStale = checkIsStale(ts, branch, snapshot);
 				if (isStale) {
-					LOGGER.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
+					LOGGER.warn("{} snapshot held locally is stale.  Requesting delta to rebuild...", ts.getProject());
 				} else {
-					LOGGER.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
+					LOGGER.debug("{} snapshot held locally is sufficiently recent", ts.getProject());
 				}
 			}
 
@@ -360,10 +360,10 @@ public class ArchiveManager implements ScriptConstants {
 										throw new TermServerScriptException (snapshot + " is neither file nor directory.");
 									}
 								} catch (Exception e2) {
-									LOGGER.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+									LOGGER.error("Failed to delete snapshot {} due to ", snapshot, e2);
 								}
 							} else {
-								LOGGER.info ("Not deleting " + snapshot + " as it's a release.");
+								LOGGER.info ("Not deleting {} as it's a release.", snapshot);
 							}
 							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
 							//Next time round the snapshot on disk won't be detected and we'll take a different code path
@@ -446,7 +446,7 @@ public class ArchiveManager implements ScriptConstants {
 					}
 					integrityFailureMessage.append(c + " failed to populate depth");
 					String ancestorStr = c.getAncestors(NOT_SET).stream().map(a -> a.toString()).collect(Collectors.joining(","));
-					LOGGER.warn(c + " ancestors are :" + ancestorStr );
+					LOGGER.warn("{} ancestors are : {}", c, ancestorStr);
 				}
 			}
 			if (integrityFailureMessage.length() > 0) {
@@ -483,7 +483,7 @@ public class ArchiveManager implements ScriptConstants {
 			//inactive referenceset member, then we're just going to report that as a "final word" rather than
 			//bomb out the entire report
 			if (loadOtherReferenceSets && msg.contains("*RM")) {
-				LOGGER.warn("Recording final words rather than throwing exception: " + msg);
+				LOGGER.warn("Recording final words rather than throwing exception: {}", msg);
 				ts.addFinalWords(msg);
 				//And we're going to remove this concept so that we don't trip over it again
 				ts.getGraphLoader().removeConcept(c);
@@ -498,7 +498,7 @@ public class ArchiveManager implements ScriptConstants {
 	private String determineSourceofPhantomConcept(Concept c) {
 		//What all components referenced this concept?
 		Collection<Component> components = SnomedUtils.getAllComponents(c);
-		if (components.size() == 0) {
+		if (components.isEmpty()) {
 			return "Integrity concern: concept " + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
 		}
 		//Reduce count by 1 because the concept itself gets counted, and that's a phantom.
@@ -508,7 +508,7 @@ public class ArchiveManager implements ScriptConstants {
 		if (refCount == 0) {
 			//Find Inferred Relationship References
 			List<Relationship> inferredReferences = getInferredReferences(c);
-			if (inferredReferences.size() > 0) {
+			if (!inferredReferences.isEmpty()) {
 				return "Integrity concern: concept " + c.getId() + " does not appear in concept file.  It is, however, referenced by " + inferredReferences.size() + " inferred relationship(s), eg: " + inferredReferences.iterator().next().toLongString();
 			}
 		}
@@ -548,7 +548,7 @@ public class ArchiveManager implements ScriptConstants {
 		ZonedDateTime snapshotCreationLocal = ZonedDateTime.of(snapshotCreation, localZone.toZoneId());
 		ZonedDateTime snapshotCreationUTC = snapshotCreationLocal.withZoneSameInstant(utcZoneID);
 		ZonedDateTime branchHeadUTC = ZonedDateTime.ofInstant(branchHeadTime.toInstant(), utcZoneID);
-		LOGGER.debug("Comparing branch time: " + branchHeadUTC + " to local " + snapshot.getName() + " snapshot time: " + snapshotCreationUTC);
+		LOGGER.debug("Comparing branch time: {} to local {} snapshot time: {}", branchHeadUTC,  snapshot.getName(), snapshotCreationUTC);
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
@@ -589,7 +589,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
-		LOGGER.debug("In getArchiveLoader method, scriptName = " + ts.getScriptName());
+		LOGGER.debug("In getArchiveLoader method, scriptName = {}", ts.getScriptName());
 		if (ts.getScriptName().equals("PackageComparisonReport")) {
 			return getBuildArchiveDataLoader();
 		}
@@ -691,7 +691,7 @@ public class ArchiveManager implements ScriptConstants {
 			if (archive.isDirectory()) {
 				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
-				LOGGER.debug("Loading archive file: " + archive);
+				LOGGER.debug("Loading archive file: {}", archive);
 				loadArchiveZip(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
@@ -780,7 +780,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 	
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException {
+	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
 			.forEach( path ->  {
@@ -808,70 +808,68 @@ public class ArchiveManager implements ScriptConstants {
 	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, Boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
-			
+			//Skip zip file artifacts
 			if (fileName.contains("._")) {
-				//LOGGER.info("Skipping " + fileName);
 				return;
 			}
 			
 			if (fileName.contains(fileType)) {
 				boolean loadTheReferenceSet = false;
 				if (fileName.contains("sct2_Concept_" )) {
-					LOGGER.info("Loading Concept " + fileType + " file: " + fileName);
+					LOGGER.info("Loading Concept {} file: {}", fileType, fileName);
 					gl.loadConceptFile(is, isReleased);
-				} if (fileName.contains("Identifier" )) {
-					LOGGER.info("Loading Alternate Identifier " + fileType + " file: " + fileName);
+				} else if (fileName.contains("Identifier" )) {
+					LOGGER.info("Loading Alternate Identifier {} file: {}", fileType, fileName);
 					gl.loadAlternateIdentifierFile(is, isReleased);
 				} else if (fileName.contains("sct2_Relationship_" )) {
-					LOGGER.info("Loading Relationship " + fileType + " file.");
+					LOGGER.info("Loading Relationship {} file: {}", fileType, fileName);
 					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
 					if (populateHierarchyDepth) {
 						LOGGER.info("Calculating concept depth...");
 						gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 					}
 				} else if (fileName.contains("sct2_StatedRelationship_" )) {
-					LOGGER.info("Skipping StatedRelationship " + fileType + " file.");
-					//gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
+					LOGGER.info("Skipping StatedRelationship {} file: {}", fileType, fileName);
 				} else if (fileName.contains("sct2_RelationshipConcrete" )) {
-					LOGGER.info("Loading Concrete Relationship " + fileType + " file.");
+					LOGGER.info("Loading Concrete Relationship {} file: {}", fileType, fileName);
 					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
 				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
-					LOGGER.info("Loading Axiom " + fileType + " refset file.");
+					LOGGER.info("Loading Axiom {} file: {}", fileType, fileName);
 					gl.loadAxioms(is, isDelta, isReleased);
 				} else if (fileName.contains("sct2_Description_" )) {
-					LOGGER.info("Loading Description " + fileType + " file.");
+					LOGGER.info("Loading Description {} file: {}", fileType, fileName);
 					int count = gl.loadDescriptionFile(is, fsnOnly, isReleased);
 					LOGGER.info("Loaded " + count + " descriptions.");
 				} else if (fileName.contains("sct2_TextDefinition_" )) {
-					LOGGER.info("Loading Text Definition " + fileType + " file.");
+					LOGGER.info("Loading Text Definition {} file: {}", fileType, fileName);
 					gl.loadDescriptionFile(is, fsnOnly, isReleased);
 				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-					LOGGER.info("Loading Concept Inactivation Indicator " + fileType + " file.");
+					LOGGER.info("Loading Concept Inactivation Indicator {} file: {}", fileType, fileName);
 					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-					LOGGER.info("Loading Description Inactivation Indicator " + fileType + " file.");
+					LOGGER.info("Loading Description Inactivation Indicator {} file: {}", fileType, fileName);
 					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					LOGGER.info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
+					LOGGER.info("Loading Concept/Description Inactivation Indicators {} file: {}", fileType, fileName);
 					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
-					LOGGER.info("Loading Historical Association File: " + fileName);
+					LOGGER.info("Loading Historical Association File: {} file: {}", fileType, fileName);
 					gl.loadHistoricalAssociationFile(is, isReleased);
 				} else if (fileName.contains("MRCMModuleScope")) {
-					LOGGER.info("Loading MRCM Module Scope File: " + fileName);
+					LOGGER.info("Loading MRCM Module Scope File: {} file: {}", fileType, fileName);
 					gl.loadMRCMModuleScopeFile(is, isReleased);
 				} else if (fileName.contains("MRCMDomain")) {
-					LOGGER.info("Loading MRCM Domain File: " + fileName);
+					LOGGER.info("Loading MRCM Domain File: {} file: {}", fileType, fileName);
 					gl.loadMRCMDomainFile(is, isReleased);
 				} else if (fileName.contains("MRCMAttributeRange")) {
-					LOGGER.info("Loading MRCM AttributeRange File: " + fileName);
+					LOGGER.info("Loading MRCM AttributeRange File: {} file: {}", fileType, fileName);
 					gl.loadMRCMAttributeRangeFile(is, isReleased);
 				} else if (fileName.contains("MRCMAttributeDomain")) {
-					LOGGER.info("Loading MRCM AttributeDomain File: " + fileName);
+					LOGGER.info("Loading MRCM AttributeDomain File: {} file: {}", fileType, fileName);
 					gl.loadMRCMAttributeDomainFile(is, isReleased);
 				} else if (fileName.contains("ComponentAnnotationStringValue")) {
-					LOGGER.info("Loading ComponentAnnotationStringValue File: " + fileName);
+					LOGGER.info("Loading ComponentAnnotationStringValue File: {} file: {}", fileType, fileName);
 					gl.loadComponentAnnotationFile(is, isReleased);
 				}
 				else if (loadOtherReferenceSets && fileName.contains("Refset")) {
