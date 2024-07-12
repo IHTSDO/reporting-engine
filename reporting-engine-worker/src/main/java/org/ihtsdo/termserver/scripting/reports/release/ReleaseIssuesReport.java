@@ -86,6 +86,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String LEFT_QUOTE = "\u201C";
 	private static final String GRAVE_ACCENT = "\u0060";
 	private static final String ACUTE_ACCENT = "\u00B4";
+
+	private static final String URL_REGEX = "https?://\\S+\\b";
 	
 	//See https://regex101.com/r/CAlQjx/1/
 	public static final String SCTID_FSN_REGEX = "(\\d{7,})(\\s+)?\\|(.+?)\\|";
@@ -1451,18 +1453,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			Concept c = gl.getConcept(textDefn.getConceptId());
 			String legacy = getLegacyIndicator(c);
 			for (DialectPair dialectPair : dialectPairs) {
-				if (term.contains(dialectPair.usTerm)) {
-					report(c, issueStr, legacy, isActive(c,null), dialectPair.usTerm, textDefn);
-					continue nextDescription;
-				}
-				if (term.contains(dialectPair.gbTerm)) {
-					report(c, issue2Str, legacy, isActive(c,null), dialectPair.gbTerm, textDefn);
+				if (checkDialectPair(c, dialectPair.usTerm, term, textDefn, issueStr, legacy) ||
+					checkDialectPair(c, dialectPair.gbTerm, term, textDefn, issue2Str, legacy)) {
 					continue nextDescription;
 				}
 			}
 		}
 	}
-	
+
+	private boolean checkDialectPair(Concept c, String dialectSpecificTerm, String term, Description textDefn, String issueStr, String legacy) throws TermServerScriptException {
+		boolean reported = false;
+		if (term.contains(dialectSpecificTerm)) {
+			//If we think we've detected one, check again with URL filtered out
+			String termFiltered = " " + textDefn.getTerm().toLowerCase()
+					.replaceAll(URL_REGEX, "")
+					.replaceAll("[^A-Za-z0-9]", " ");
+			if (termFiltered.contains(dialectSpecificTerm)) {
+				report(c, issueStr, legacy, isActive(c, null), dialectSpecificTerm, textDefn);
+				reported = true;
+			}
+		}
+		return reported;
+	}
 
 	private void nestedBracketCheck() throws TermServerScriptException {
 		String issueStr = "Active description on inactive concept contains nested brackets";
