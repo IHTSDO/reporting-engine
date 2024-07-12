@@ -12,11 +12,9 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1379,28 +1377,6 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		concepts.removeAll(redundant);
 	}
 
-	/**
-	 * @return TRUE if the concept or any descriptions, relationships have a null effective Time
-	 */
-	public static boolean hasNewChanges(Concept c) {
-		if (StringUtils.isEmpty(c.getEffectiveTime())) {
-			return true;
-		}
-		
-		for (Description d : c.getDescriptions()) {
-			if (StringUtils.isEmpty(d.getEffectiveTime())) {
-				return true;
-			}
-		}
-		
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
-			if (StringUtils.isEmpty(r.getEffectiveTime())) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	public static ComponentType getComponentType(String sctId) throws TermServerScriptException {
 		//Check out the 2nd to last character - indicates type of component
 		String penultimate = sctId.substring(sctId.length() - 2, sctId.length() - 1);
@@ -2431,43 +2407,55 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 
 	public static Set<Concept> getRecentlyTouchedConcepts(Collection<Concept> concepts) {
-		HashSet<Concept> recentlyTouched = new HashSet<>();
-		nextConcept:
-		for (Concept c : concepts) {
-			if (StringUtils.isEmpty(c.getEffectiveTime())) {
-				recentlyTouched.add(c);
-				continue nextConcept;
-			}
-			for (Description d: c.getDescriptions()) {
-				if (StringUtils.isEmpty(d.getEffectiveTime())) {
-					recentlyTouched.add(c);
-					continue nextConcept;
-				}
-			}
-			//We won't check inferred modelling since that can change without an author
-			//touching the concept
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
-				if (StringUtils.isEmpty(r.getEffectiveTime())) {
-					recentlyTouched.add(c);
-					continue nextConcept;
-				}
-			}
-			
-			for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE)) {
-				if (StringUtils.isEmpty(a.getEffectiveTime())) {
-					recentlyTouched.add(c);
-					continue nextConcept;
-				}
-			}
-			
-			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-				if (StringUtils.isEmpty(i.getEffectiveTime())) {
-					recentlyTouched.add(c);
-					continue nextConcept;
-				}
+		return concepts.stream()
+				.filter(c -> hasNewChanges(c))
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * @return TRUE if the concept or any descriptions, relationships have a null effective Time
+	 */
+	public static boolean hasNewChanges(Concept c) {
+		if (StringUtils.isEmpty(c.getEffectiveTime())) {
+			return true;
+		}
+		for (Description d: c.getDescriptions()) {
+			if (hasNewChanges(d)) {
+				return true;
 			}
 		}
-		return recentlyTouched;
+		//We won't check inferred modelling since that can change without an author
+		//touching the concept
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			if (StringUtils.isEmpty(r.getEffectiveTime())) {
+				return true;
+			}
+		}
+
+		for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE)) {
+			if (StringUtils.isEmpty(a.getEffectiveTime())) {
+				return true;
+			}
+		}
+
+		for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+			if (StringUtils.isEmpty(i.getEffectiveTime())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean hasNewChanges(Description d) {
+		if (StringUtils.isEmpty(d.getEffectiveTime())) {
+			return true;
+		}
+		for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+			if (StringUtils.isEmpty(l.getEffectiveTime())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**Initial very basic implementation will not consider grouping 
@@ -2632,7 +2620,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 
 	public static Set<Concept> getHistoricalAssocationTargets(Concept c, GraphLoader gl) throws TermServerScriptException {
 		Set<Concept> targets = new HashSet<>();
-		for (AssociationEntry h : c.getAssociationEntries()) {
+		for (AssociationEntry h : c.getAssociationEntries(ActiveState.ACTIVE)) {
 			targets.add(gl.getConcept(h.getTargetComponentId()));
 		}
 		return targets;

@@ -169,6 +169,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						case SCTID_INACT_CLASS_DERIVED_COMPONENT :
+
 							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
 							associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_PART_EQUIV_REFSETID, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
@@ -270,24 +271,22 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
 							countIssue(c);
 						}
-					} else if (!d.isActive() && !c.isActive()) {
-						if (!isLegacy(d) || includeLegacyIssues) {
-							//Expect inactivation indicator here, but not Concept-non-current
-							if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
-								//FRI-272 Agreed with Maria that we're not going to put time into these when they're legacy
-								if (!isLegacy(d)) {
-									report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
-									incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
-									countIssue(c);
-								}
-							} else {
-								InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
-								if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-									String issue = "Inactive description of an active concept should not have ga 'Concept non-current' indicator";
-									incrementSummaryInformation(issue);
-									report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, i);
-									countIssue(c);
-								}
+					} else if ((!d.isActive() && !c.isActive()) && (includeLegacyIssues || !isLegacy(d))) {
+						//Expect inactivation indicator here, but not Concept-non-current
+						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
+							//FRI-272 Agreed with Maria that we're not going to put time into these when they're legacy
+							if (!isLegacy(d)) {
+								report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
+								incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
+								countIssue(c);
+							}
+						} else {
+							InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next();
+							if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+								String issue = "Inactive description of an active concept should not have ga 'Concept non-current' indicator";
+								incrementSummaryInformation(issue);
+								report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, i);
+								countIssue(c);
 							}
 						}
 					}
@@ -297,7 +296,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 	
 	private void validate(Concept c, InactivationIndicatorEntry i, List<AssociationCardinality> associationsWithCardinality, Boolean legacy) throws TermServerScriptException {
-		String data = c.getAssociationEntries(ActiveState.ACTIVE).stream()
+		String data = c.getAssociationEntries(ActiveState.ACTIVE, true).stream()
 				.map(h->h.toString())
 				.collect(Collectors.joining(",\n"));
 		
@@ -310,7 +309,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			data = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()) + "\n" + data;
 		}
 		
-		String targets = c.getAssociationEntries(ActiveState.ACTIVE).stream()
+		String targets = c.getAssociationEntries(ActiveState.ACTIVE, true).stream()
 				.map(h-> SnomedUtils.translateAssociation(h.getRefsetId()).toString() + " " + gl.getConceptSafely(h.getTargetComponentId()).toString())
 				.collect(Collectors.joining(",\n"));
 		
@@ -349,19 +348,21 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		
 		//Special case, we're getting limited inactivations with both SameAs and Was A attributes.  Record stats, but skip
 		if (i.getInactivationReasonId().equals(SCTID_INACT_LIMITED) || i.getInactivationReasonId().equals(SCTID_INACT_MOVED_ELSEWHERE)) {
-			String typesOfAssoc = c.getAssociationEntries(ActiveState.ACTIVE).stream()
+			String typesOfAssoc = c.getAssociationEntries(ActiveState.ACTIVE, true).stream()
 					.map(h->SnomedUtils.translateAssociation(h.getRefsetId()).toString())
 					.collect(Collectors.joining(", "));
 			typesOfAssoc = typesOfAssoc.isEmpty()? "No associations" : typesOfAssoc;
-			//incrementSummaryInformation(inactStr +" inactivation with " + typesOfAssoc);
 			return "";
 		}
 		
 		//First check cardinality
-		int assocCount = c.getAssociationEntries(ActiveState.ACTIVE, assocId).size();
+		int assocCount = c.getAssociationEntries(ActiveState.ACTIVE, assocId, true).size();
 		int allAssocCount = c.getAssociationEntries(ActiveState.ACTIVE, true).size();
 		
 		if (assocCount > 0 && assocCount != allAssocCount && mutuallyExclusive) {
+			if (assocId == null) {
+				return inactStr + " inactivation does not allow for any historical association to be specified";
+			}
 			return inactStr + " inactivation's " + reqAssocStr + " association is mutually exclusive with other associations types.";
 		}
 		
@@ -399,69 +400,11 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 		return "";
 	}
-	
-/*	private void validateTargetAppropriate(Concept c, String assocStr, Concept target, AssociationEntry h) throws TermServerScriptException {
-		//What did this concept used to be?
-		Concept wasA = SnomedUtils.getHistoricalParent(c);
-		if (wasA != null) {
-			Concept topLevelSource = SnomedUtils.getHighestAncestorBefore(wasA, ROOT_CONCEPT);
-			Concept topLevelTarget = SnomedUtils.getHighestAncestorBefore(target, ROOT_CONCEPT);
-			
-			if (topLevelSource != null && topLevelTarget != null 
-					&& !topLevelSource.equals(SPECIAL_CONCEPT)
-					&& !topLevelTarget.equals(SPECIAL_CONCEPT)
-					&& !topLevelSource.equals(topLevelTarget)) {
-				String msg = assocStr + " pointing to target in other top level hierarchy: " + target;
-				report (c, c.getEffectiveTime(), msg);
-				countIssue(c);
-			}
-		} else {
-			if (c.getRelationships().size() > 0) {
-				LOGGER.warn ("Unable to determine historical parent of " + c);
-			}
-		}
-	}*/
-	
-	private boolean isLegacy(Component c) throws TermServerScriptException {
+
+	private boolean isLegacy(Component c) {
 		//If any relationship, description or historical association
 		//has been modified, then this is not a legacy issue
-		if (StringUtils.isEmpty(c.getEffectiveTime())) {
-			return false;
-		}
-		
-		if (c instanceof Concept) {
-			Concept concept = (Concept)c;
-		
-			for (Description d : concept.getDescriptions()) {
-				if (StringUtils.isEmpty(d.getEffectiveTime())) {
-					return false;
-				}
-			}
-			
-			for (Relationship r : concept.getRelationships()) {
-				if (StringUtils.isEmpty(r.getEffectiveTime())) {
-					return false;
-				}
-			}
-			
-			for (AssociationEntry a : concept.getAssociationEntries()) {
-				if (StringUtils.isEmpty(a.getEffectiveTime())) {
-					return false;
-				}
-				//Also look up the target of the association because it might have changed
-				Concept target = gl.getConcept(a.getTargetComponentId(), false, false);
-				if (target != null && StringUtils.isEmpty(target.getEffectiveTime())) {
-					return false;
-				}
-			}
-			
-			for (InactivationIndicatorEntry i : concept.getInactivationIndicatorEntries()) {
-				if (StringUtils.isEmpty(i.getEffectiveTime())) {
-					return false;
-				}
-			}
-		}
-		return true;
+		return !StringUtils.isEmpty(c.getEffectiveTime());
 	}
 	
 	class AssociationCardinality {

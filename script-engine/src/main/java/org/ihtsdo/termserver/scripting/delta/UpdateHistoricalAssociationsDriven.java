@@ -376,7 +376,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 
 		//Do we have one association target or more?
-		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
+		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID, true).stream()
 				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
 				.collect(Collectors.toSet());
 
@@ -409,7 +409,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			return "Not included for processing - inactivation indicator is not Ambiguous";
 		}
 		//Do we have one association target or more?
-		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID).stream()
+		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID, true).stream()
 				.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
 				.collect(Collectors.toSet());
 
