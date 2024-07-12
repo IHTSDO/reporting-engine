@@ -61,6 +61,7 @@ import com.google.common.io.Files;
  INFRA-6817 Check MRCM for term discrepancies
  RP-553 Add check for zero sized space
  RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
+ RP-878 Check Interprets/Has Interpretation attributes not grouped with any other attribute
  */
 
 import org.slf4j.Logger;
@@ -334,6 +335,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		LOGGER.info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
 		validateAttributeTypeValueModellingRules();
+		validateInterpretsHasInterpretation();
 		neverGroupTogether();
 		domainMustNotUseType();
 		
@@ -1549,7 +1551,58 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
+	private void validateInterpretsHasInterpretation() throws TermServerScriptException {
+		for (Concept c : allActiveConceptsSorted) {
+			if (c.isActiveSafely() && inScope(c) && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
+				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+					boolean conceptReported = validateRelationshipGroupForInterpretsHasInterpreation(c, g);
+					if (conceptReported) {
+						break;  //Move on to the next concept, only report the first infraction per concept
+					}
+				}
+			}
+		}
+	}
+
+	private boolean validateRelationshipGroupForInterpretsHasInterpreation(Concept c, RelationshipGroup g) throws TermServerScriptException {
+		String issueStr = "Interprets/HasInterpretation cannot be grouped with other attributes";
+		String issueStr2 = "Interprets/HasInterpretation can only exist once in a group";
+		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+
+		//If we have an interprets or hasInterpretation, we can't have any other attributes in the group
+		boolean hasInterprets = false;
+		boolean hasHasInterpretation = false;
+		boolean hasOtherAttribute = false;
+		boolean breaksCardinalityRules = false;
+		boolean reported = false;
+		for (Relationship r : g.getRelationships()) {
+			if (r.getType().equals(INTERPRETS)) {
+				if (hasInterprets) {
+					breaksCardinalityRules = true;
+				}
+				hasInterprets = true;
+			} else if ( r.getType().equals(HAS_INTERPRETATION)) {
+				if (hasHasInterpretation) {
+					breaksCardinalityRules = true;
+				}
+				hasHasInterpretation = true;
+			} else {
+				hasOtherAttribute = true;
+			}
+		}
+		if ((hasInterprets || hasHasInterpretation) && hasOtherAttribute) {
+			report(c, issueStr, getLegacyIndicator(c), isActive(c, null), g);
+			reported = true;
+		}
+		if (breaksCardinalityRules) {
+			report(c, issueStr2, getLegacyIndicator(c), isActive(c, null), g);
+			reported = true;
+		}
+		return reported;
+	}
+
 	private void checkDeprecatedHierarchies() throws TermServerScriptException {
 		String issueStr = "New concept created in deprecated hierarchy";
 		initialiseSummary(issueStr);
@@ -1711,7 +1764,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
 			initialiseSummary(issueStr);
 			for (Concept c : domainType[0].getDescendants(NOT_SET)) {
-				if (c.isActive() && inScope(c)) {
+				if (c.isActiveSafely() && inScope(c)) {
 					if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, domainType[1])) {
 						//RP-574 But is this concept also a type of a domain that would allow this attribute?
 						Set<Concept> ancestors = c.getAncestors(NOT_SET);
