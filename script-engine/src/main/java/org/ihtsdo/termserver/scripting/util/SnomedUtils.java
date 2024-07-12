@@ -2659,7 +2659,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 					if (leftComponent.matchesMutableFields(rightComponent)) {
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).matches());
 						continue nextLeftComponent;
-					} else if (leftComponent instanceof AxiomEntry || leftComponent instanceof Concept) {
+					} else if (hasSingleType(leftComponent)) {
 						//A modified OWL axiom will not match on mutable fields, but we'll consider them 'the same object' on the assumption that there will be only one
 						//Similarly a concept may change from primitive to defined, but we'll consider them the same object
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).differs());
@@ -2676,7 +2676,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		for (Component rightComponent : rightComponents) {
 			for (Component leftComponent : leftComponents) {
 				if (rightComponent.getClass().equals(leftComponent.getClass())) {
-					if (rightComponent.matchesMutableFields(leftComponent)) {
+					if (rightComponent.matchesMutableFields(leftComponent) || hasSingleType(rightComponent)) {
 						//We don't need to store this, since we'll already have a left -> right 
 						//comparison that matched.
 						continue nextRightComponent;
@@ -2688,6 +2688,10 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			changeSet.add(new ComponentComparisonResult(null, rightComponent));
 		}
 		return changeSet;
+	}
+
+	private static boolean hasSingleType(Component c) {
+		return c instanceof AxiomEntry || c instanceof Concept || c instanceof AlternateIdentifier;
 	}
 
 	public static String translateActiveState(Component c) {

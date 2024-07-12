@@ -11,12 +11,8 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Rf2ConceptCreator extends DeltaGenerator {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(Rf2ConceptCreator.class);
 
 	public static Rf2ConceptCreator build(TermServerScript clone, File conIdFile, File descIdFile, File relIdFile, String namespace) throws TermServerScriptException {
 		Rf2ConceptCreator conceptCreator = new Rf2ConceptCreator();
@@ -50,9 +46,6 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 	}
 	
 	public void outputRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
-		/*if (concept.getId().equals("510491010000108")) {
-			LOGGER.debug("Here");
-		}*/
 		//Populate expression now because rels turn to axioms when we output
 		String expression = concept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		if (super.outputRF2(concept)) {
@@ -83,12 +76,13 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 				break;
 			case INFERRED_RELATIONSHIP :
 				setRelationshipId(c);
+				break;
 			case STATED_RELATIONSHIP :
 				//No need to do anything here because we'll convert
 				//stated to an axiom and we're not expecting any inferred
 				break;
 			case ALTERNATE_IDENTIFIER :
-				break;  //Has its own ID.  RefCompId will be set via Concept
+				break;  //Has its own ID.  RefCompId will be set once concept id is known.
 			default: c.setId(UUID.randomUUID().toString());
 		}
 	}
@@ -142,20 +136,7 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		}
 	}
 
-	/*private void convertAcceptabilitiesToRf2(Concept concept) throws TermServerScriptException {
-		for (Description d : concept.getDescriptions()) {
-			for (Map.Entry<String, Acceptability> entry : d.getAcceptabilityMap().entrySet()) {
-				LangRefsetEntry l = new LangRefsetEntry();
-				l.setRefsetId(entry.getKey());
-				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(entry.getValue()));
-				l.setActive(true);
-				l.setModuleId(d.getModuleId());
-				l.setDirty();
-				d.addLangRefsetEntry(l);
-			}
-		}
-	}*/
-
+	@Override
 	public void finish() {
 		closeIdGenerators();
 	}

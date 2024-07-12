@@ -71,7 +71,7 @@ AlternateIdentifier extends Component implements ScriptConstants {
 
 	@Override
 	public ComponentType getComponentType() {
-		return ComponentType.HISTORICAL_ASSOCIATION;
+		return ComponentType.ALTERNATE_IDENTIFIER;
 	}
 
 	@Override

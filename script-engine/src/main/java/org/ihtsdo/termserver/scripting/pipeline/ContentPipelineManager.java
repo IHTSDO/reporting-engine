@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ContentPipelineManager extends TermServerScript implements ContentPipeLineConstants {
 
-	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API};
+	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
 	
@@ -128,7 +128,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Concept concept = tc.getConcept();
 			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
 
-			if (tc.getExternalIdentifier().equals("12891-8")) {
+			if (tc.getExternalIdentifier().equals("100124-7")) {
 				LOGGER.info("Debug here");
 			}
 
@@ -182,7 +182,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				});
 
 				//We need to populate the concept SCTID before we can create axiom entries
-				concept.setId(existingConcept.getId());
+				concept.setId(existingConceptSCTID);
+				//And we can apply that to the alternate identifiers early on so they don't show up as a change
+				concept.getAlternateIdentifiers().stream()
+					.forEach(a -> a.setReferencedComponentId(existingConceptSCTID));
+				//Copy the axiom entry from the existing concept so relationship changes can be applied there
+				concept.setAxiomEntries(existingConcept.getAxiomEntries(ActiveState.ACTIVE, false));
 				convertStatedRelationshipsToAxioms(concept, true, true);
 				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
 
@@ -214,9 +219,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 						//Any component specific actions?
 						switch (existingComponent.getComponentType()) {
 							case CONCEPT:
-								//And we'll have the axiom id too
-								String axiomId = existingConcept.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next().getId();
-								concept.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next().setId(axiomId);
 								concept.getAlternateIdentifiers().stream()
 									.forEach(a -> a.setReferencedComponentId(existingConceptSCTID));
 								break;
