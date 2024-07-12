@@ -9,7 +9,6 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
-import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMModuleScope;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -35,14 +34,12 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 		String[] columnHeadings = new String[] {
 				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId,domainConstraint,parentDomain,proximalPrimitiveConstraint,proximalPrimitiveRefinement,domainTemplateForPrecoordination,domainTemplateForPostcoordination,guideURL",
 				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId",
-				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId,domainId,grouped,attributeCardinality,attributeInGroupCardinality,ruleStrengthId,contentTypeId",
-				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId,mrcmRuleRefsetId"
+				"UUID, EffectiveTime, RefsetId, Active, ReferencedComponentId,domainId,grouped,attributeCardinality,attributeInGroupCardinality,ruleStrengthId,contentTypeId"
 		};
 		String[] tabNames = new String[] {
 				"MRCM Domain",
 				"MRCM Attribute Range",
-				"MRCM Attribute Domain",
-				"MRCM Module Scope"};
+				"MRCM Attribute Domain"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -72,8 +69,6 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 		reportAttributeRefsetUpdates(TERTIARY_REPORT, gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPostCoord());
 		reportAttributeRefsetUpdates(TERTIARY_REPORT, gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapAll());
 		reportAttributeRefsetUpdates(TERTIARY_REPORT, gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapNewPreCoord());
-
-		reportModuleRefsetUpdates(QUATERNARY_REPORT, gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap());
 	}
 
 	private void reportRefsetUpdates(int tabIdx, Map<Concept,? extends RefsetMember> mrcmMap) throws TermServerScriptException {
@@ -96,15 +91,4 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 		}
 	}
 
-	private void reportModuleRefsetUpdates(int tabIdx, Map<Concept, Set<MRCMModuleScope>> mrcmModuleScopeMap) throws TermServerScriptException {
-		for (Concept module : mrcmModuleScopeMap.keySet()) {
-			for (RefsetMember rm : mrcmModuleScopeMap.get(module)) {
-				if (StringUtils.isEmpty(rm.getEffectiveTime())) {
-					countIssue((Concept) null);
-					report(tabIdx, rm.getId(), rm.getEffectiveTime(), rm.getRefsetId(), SnomedUtils.translateActiveState(rm), rm.getReferencedComponentId(), rm.getAdditionalFieldsArray());
-				}
-			}
-		}
-	}
-	
 }
