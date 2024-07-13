@@ -99,7 +99,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
 		// Output format from Snap2SNOMED is expected to be:
-		// Source code[0]   Source display  Status  PartTypeName    Target code[4]  Target display  Relationship type code  Relationship type display   No map flag Status[9]
+		// Source code[0]   Source display  Status  PartTypeName    Target code[4]  Target display  Relationship type code  Relationship type display   No map flag[8] Status[9]
 		loincPartToAttributeMap = new HashMap<>();
 		populateKnownMappings();
 		int lineNum = 0;
@@ -114,16 +114,17 @@ public class AttributePartMapManager implements LoincScriptConstants {
 					lineNum++;
 					if (!line.isEmpty() && lineNum > 1) {
 						String[] items = line.split("\t");
+						String partNum = items[0];
 						//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
 						if (items[9].equals("UNMAPPED") ||
 								(items[9].equals("DRAFT") && items[4].isEmpty())) {
-							continue;
-						}
-						String partNum = items[0];
-						//Have we seen this part before?  Map should now be unique
-						if (partsSeen.contains(partNum)) {
+							//Skip this one
+						} else if (items[8].equals("true")) {
+							//And we can have items that report being mapped, but with 'no map' - warn about those.
+							mappingNotes.add("Map indicates part mapped to 'No Map'");
+						} else if (partsSeen.contains(partNum)) {
+							//Have we seen this part before?  Map should now be unique
 							mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
-							//throw new TermServerScriptException("Part / Attribute BaseFile contains duplicate entry for " + partNum);
 						} else {
 							partsSeen.add(partNum);
 							Concept attributeValue = gl.getConcept(items[4], false, true);
