@@ -75,21 +75,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		namespace = "1010000";
 	}
 
-	/*private void runReport() throws TermServerScriptException, InterruptedException {
-		//determineExistingConcepts(getTab(TAB_TOP_100));
-		importIntoTask(successfullyModelled);
-		generateAlternateIdentifierFile(successfullyModelled);
-	}*/
-
-
 	@Override
 	protected void importExternalContent() throws TermServerScriptException {
-		//ExecutorService executor = Executors.newCachedThreadPool();
-		AttributePartMapManager.validatePartAttributeMap(gl, getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
-		//populateLoincNumMap();
-		loadLoincParts();
-		//We can look at the full LOINC file in parallel as it's not needed for modelling
-		//executor.execute(() -> loadFullLoincFile());
 		loadFullLoincFile(NOT_SET);
 		loadLoincDetail();
 	}
@@ -98,124 +85,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	protected void importPartMap() throws TermServerScriptException {
 		attributePartMapManager = new AttributePartMapManager(this, loincParts, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
-
-		//reportOnDetailMappingWithUsage();
-
-		//loadLastIterationLoincNums();
 		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
 	}
-
-/*	private void loadLastIterationLoincNums() {
-		LOGGER.info ("Loading LoincNums from previous iteration: " + getInputFile(FILE_IDX_PREVIOUS_ITERATION));
-		BufferedReader in = null;
-		try {
-			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_PREVIOUS_ITERATION)));
-			String line = in.readLine();
-			while (line != null) {
-				previousIterationLoincNums.add(line.trim());
-				line = in.readLine();
-			}
-			LOGGER.info("Loaded " + previousIterationLoincNums.size() + " previous iterations loincNums");
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_PREVIOUS_ITERATION), e);
-		} finally {
-			if (in != null) {
-				try {
-					in.close();
-				} catch (IOException e) {}
-			}
-		}
-	}*/
-
-	/*private void reportOnDetailMappingWithUsage() throws TermServerScriptException {
-		Map<String, LoincUsage> loincPartNumUsages = new HashMap<>();
-		Map<String, Set<String>> LDTColumnNamesForPart = new HashMap<>();
-		List<String> partNumTypesOfInterest = Arrays.asList("COMPONENT", "CHALLENGE", "DIVISORS", "METHOD", "PROPERTY", "SCALE", "SYSTEM", "TIME");
-		// Work through the loincDetailMap for each loincNum to generate usage
-		// (and calculate a priority index) for each loincPart
-		for (String loincNum: loincDetailMap.keySet()) {
-			populateLoincPartNumUsage(loincNum, partNumTypesOfInterest, loincPartNumUsages, LDTColumnNamesForPart);
-		}
-
-		int partDetailItemsMapped = 0;
-		int partDetailItemsNotMapped = 0;
-		int partDetailWithUnlistedPart = 0;
-		int partDetailItemsWithNotes = 0;
-		//Now output each of those parts, indicating if there is a mapping available
-		for (Map.Entry<String, LoincUsage> entry : loincPartNumUsages.entrySet()) {
-			String loincPartNum = entry.getKey();
-			LoincUsage usage = entry.getValue();
-			LoincPart loincPart = loincParts.get(loincPartNum);
-			if (loincPart == null) {
-				partDetailWithUnlistedPart++;
-			}
-			String partName = loincPart == null ? "Unlisted" : loincPart.getPartName();
-			String partTypeName = loincPart == null ? "Unlisted" : loincPart.getPartTypeName();
-			String partStatus = loincPart == null ? "Unlisted" : loincPart.getStatus().name();
-			RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(NOT_SET, null, loincPartNum, null);
-			String targetSctId = rt == null? "" : rt.getTarget().getId();
-			String targetFSN = rt == null? "" : rt.getTarget().getFsn();
-			if (rt == null) {
-				partDetailItemsNotMapped++;
-			} else {
-				partDetailItemsMapped++;
-			}
-
-			String notes = getPartMapNotes(loincPartNum);
-			if (!StringUtils.isEmpty(notes)) {
-				partDetailItemsWithNotes++;
-			}
-
-			report(getTab(TAB_LOINC_DETAIL_MAP_NOTES),
-					loincPartNum, partName,
-					partTypeName,
-					LDTColumnNamesForPart.get(loincPartNum).stream().collect(Collectors.joining(", \n")),
-					partStatus,
-					targetSctId, targetFSN,
-					usage.getPriority(),
-					usage.getCount(),
-					usage.getTopRankedLoincTermsStr(),
-					notes);
-		}
-
-		int summaryTabIdx = getTab(TAB_SUMMARY);
-		report(summaryTabIdx, "");
-		report(summaryTabIdx, "Part Detail Items Mapped",partDetailItemsMapped);
-		report(summaryTabIdx, "Part Detail Items Not Mapped",partDetailItemsNotMapped);
-		report(summaryTabIdx, "Part Detail Items With Notes",partDetailItemsWithNotes);
-		report(summaryTabIdx, "Part Detail Items With Unlisted Part",partDetailWithUnlistedPart);
-
-		//Are there any mapped parts that we've provided that are not used?
-		for (String mappedLoincPartNum : attributePartMapManager.getAllMappedLoincPartNums()) {
-			if (!loincPartNumUsages.containsKey(mappedLoincPartNum)) {
-				report(summaryTabIdx, mappedLoincPartNum, " is mapped but no longer used in detail file");
-			}
-		}
-	}*/
-
-	/*private void populateLoincPartNumUsage(String loincNum, List<String> partNumTypesOfInterest, Map<String, LoincUsage> loincPartNumUsages, Map<String, Set<String>> LDTColumnNamesForPart) {
-		for (LoincDetail loincDetail : loincDetailMap.get(loincNum).values()) {
-			// Is this a part we're interested in?
-			if (!partNumTypesOfInterest.contains(loincDetail.getPartTypeName())) {
-				continue;
-			}
-			String loincPartNum = loincDetail.getPartNumber();
-			LoincUsage usage = loincPartNumUsages.get(loincPartNum);
-			if (usage == null) {
-				usage = new LoincUsage();
-				loincPartNumUsages.put(loincPartNum, usage);
-			}
-			usage.add(loincNumToLoincTermMap.get(loincNum));
-
-			// Have we seen this part before?  Record the LDTColumnNames.
-			Set<String> LDTColumnNames = LDTColumnNamesForPart.get(loincPartNum);
-			if (LDTColumnNames == null) {
-				LDTColumnNames = new HashSet<>();
-				LDTColumnNamesForPart.put(loincPartNum, LDTColumnNames);
-			}
-			LDTColumnNames.add(loincDetail.getLDTColumnName());
-		}
-	}*/
 
 	@Override
 	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
