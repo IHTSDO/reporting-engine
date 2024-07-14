@@ -11,11 +11,16 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/*
+See Processing instruction document https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
+ */
 public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
 
-	private static List<String> suffixExceptions = List.of("LP438877-5", "LP438878-3", "LP134392-2");
+	private static final List<String> suffixExceptions = List.of("LP438877-5", "LP438878-3", "LP134392-2");
+
+	private static final String PROPERTY_ID_EXCEPTION = "LP6850-4"; //See instructions 2.f.ii.6.a.i.2
 
 	private LoincTemplatedConceptWithInheres(String loincNum) {
 		super(loincNum);
@@ -104,6 +109,14 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 	}
 
 	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
+		//Rule 2.f.ii.6.a.i.2
+		if (loincPartNum.equals(PROPERTY_ID_EXCEPTION)) {
+			//Is our COMPNUM LP19429-7	Specimen source?
+			LoincDetail compNum = getLoincDetail(externalIdentifier, LoincDetail.COMPNUM_PN);
+			if (compNum.getPartNumber().equals("LP19429-7")) {
+				rt.setTarget(gl.getConcept("734842000 |Source (property) (qualifier value)|"));
+			}
+		}
 		return super.applyTemplateSpecificRules(loincPartNum, rt);
 	}
 }

@@ -166,8 +166,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("65756-9")) {
-			LOGGER.debug("Check biophage exception 65756-9");
+		if (loincNum.equals("47938-6")) {
+			LOGGER.debug("Check specimen exception");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
@@ -191,15 +191,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//Start with the template PT and swap out as many parts as we come across
 		String ptTemplateStr = preferredTermTemplate;
 		
-		/*Set<String> partTypeSeen = new HashSet<>();
-		for (LoincDetail detail : details.values()) {
-			//We have multiple details for the component, so no need to try populate multiple times
-			if (!partTypeSeen.contains(detail.getPartTypeName())) {
-				ptTemplateStr = populateTermTemplateFromAttribute(ptTemplateStr, detail);
-				partTypeSeen.add(detail.getPartTypeName());
-			}
-		}*/
-		//TODO Don't really need to do both of these things - consolidate
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
 		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
@@ -239,43 +230,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		}
 	}
-
-	/*private String populateTermTemplateFromAttribute(String ptTemplateStr, LoincDetail detail) throws TermServerScriptException {
-		if (skipPartTypes.contains(detail.getPartTypeName())) {
-			return ptTemplateStr;
-		}
-		String templateItem = "\\[" + detail.getPartTypeName() + "\\]";
-		RelationshipTemplate rt = null;
-		
-		//Do we have this slot name defined for us?
-		if (slotTermMap.containsKey(detail.getPartTypeName())) {
-			//ptTemplateStr = populateTermTemplate(slotTermMap.get(loincPart.getPartTypeName()), templateItem, ptTemplateStr);
-			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(detail.getPartTypeName()));
-			ptTemplateStr = ptTemplateStr.replaceAll(templateItem, itemStr);
-		} else {
-			Concept attributeType = typeMap.get(detail.getPartTypeName());
-			if (attributeType == null) {
-				TermServerScript.info("Failed to find attribute type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName());
-			} else {
-				try {
-					Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-					if (rels.size() == 1) {
-						Relationship r = rels.iterator().next();
-						rt = new RelationshipTemplate(r);
-					}
-				} catch (Exception e) {
-					TermServerScript.info("Failed to find attribute via type for " + loincNum + ": " + detail.getPartTypeName() + " in template " + this.getClass().getSimpleName() + " due to " + e.getMessage());
-				}
-			}
-			
-			if (rt != null) {
-				ptTemplateStr = populateTermTemplate(rt, templateItem, ptTemplateStr, detail.getPartTypeName());
-			} else {
-				//TermServerScript.debug("No attribute during FSN gen for " + detail);
-			}
-		}
-		return ptTemplateStr;
-	}*/
 
 	private String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
 		//Do we have any slots left to fill?  Find their attribute types via the slot map
@@ -552,6 +506,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				//Rule 2.c  If we don't have a part mapping, use what we do get in the FSN
 				slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
 			}
+		} else {
+			rt = applyTemplateSpecificRules(loincDetail.getPartNumber(), rt);
 		}
 		return rt;
 	}
@@ -644,8 +600,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			throw new TermServerScriptException("Unable to find appropriate attribute mapping for " + loincNum + " / " + loincPartNum + " (" + ldtColumnName + ") - " + loincDetail.getPartName());
 		}
 
-		rt = applyTemplateSpecificRules(loincPartNum, rt);
 		rt.setType(attributeType);
+		rt = applyTemplateSpecificRules(loincPartNum, rt);
 		return rt;
 	}
 
@@ -668,64 +624,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 		return attributeAdded;
 	}
-	
-	/*protected void addFailedMapping(String loincNum, String partNum) throws TermServerScriptException {
-		//What is the property for this loincNum?
-		LoincDetail propertyDetail = loincDetailMap.get(loincNum).get(LoincDetail.PROPERTY);
-		String property = propertyDetail.getPartName();
-		
-		/*Have we seen this partNum for any _other_ properties before?
-		for (String thisProperty : failedMappingsByProperty.keySet()) {
-			if (thisProperty.equals(property)) {
-				continue;
-			} else if (failedMappingsByProperty.get(thisProperty).contains(partNum)) {
-				TermServerScript.warn(partNum + " seen for multiple properties: " + property + " + " + thisProperty);
-				failedMappingAlreadySeenForOtherProperty++;
-				return;
-			}
-		}*/
-		
-		/*Have we seen any partNums for this property before
-		Set<String> partNums = failedMappingsByProperty.get(property);
-		if (partNums == null) {
-			partNums = new HashSet<>();
-			failedMappingsByProperty.put(property, partNums);
-		}
-		partNums.add(partNum);
-	}*/
-	
-	/*public static void reportFailedMappingsByProperty(int tabIdx) throws TermServerScriptException {
-		ts.report(tabIdx, "");
-		ts.report(tabIdx, "Failed Mapping Summary Counts per Property");
-		for (String property : failedMappingsByProperty.keySet()) {
-			ts.report(tabIdx, property, failedMappingsByProperty.get(property).size());
-		}
-		ts.report(tabIdx, "Failed Mapping Already Seen For Other Property", failedMappingAlreadySeenForOtherProperty);
-	}*/
-
-	/*public static void reportMissingMappings(int tabIdx) {
-		//This list needs to be sorted based on a rank + usage metric
-		unmappedPartUsageMap.entrySet().stream()
-			.sorted((k1, k2) -> k1.getValue().compareTo(k2.getValue()))
-			.forEach(e -> reportMissingMap(tabIdx, e));
-		
-	}
-
-	private static void reportMissingMap(int tabIdx, Entry<String, LoincUsage> entry) {
-		try {
-			String loincPartNum = entry.getKey();
-			if (!loincParts.containsKey(loincPartNum)) {
-				cpm.report(tabIdx, loincPartNum, "Unknown", "", "Part num not known to list of parts.  Check origin.");
-			} else {
-				String loincPartName = loincParts.get(loincPartNum).getPartName();
-				String loincPartType = loincParts.get(loincPartNum).getPartTypeName();
-				LoincUsage usage = entry.getValue();
-				cpm.report(tabIdx, loincPartNum, loincPartName, loincPartType, usage.getPriority(), usage.getCount(), usage.getTopRankedLoincTermsStr());
-			}
-		} catch (TermServerScriptException e) {
-			throw new RuntimeException(e);
-		}
-	}*/
 	
 	public String toString() {
 		return this.getClass().getSimpleName() + " for loincNum " + externalIdentifier;
