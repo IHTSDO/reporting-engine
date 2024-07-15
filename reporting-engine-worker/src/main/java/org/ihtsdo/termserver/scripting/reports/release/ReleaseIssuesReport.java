@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,7 +26,6 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
@@ -71,6 +71,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
 
+	private static final String CANNOT_READ = "Cannot read ";
+	private static final String FAILURE_WHILE_READING = "Failure while reading: ";
+	private static final String LOADING = "Loading {} ...";
+
 	private static final String FULL_STOP = ".";
 	Set<String> stopWords = new HashSet<>();
 	List<String> wordsOftenTypedInReverse = new ArrayList<>();
@@ -102,6 +106,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private Set<Concept> recentlyTouched;
 	private List<String> prepositions;
 	private List<String> prepositionExceptions;
+	private List<String> repeatedWordExceptions;
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
@@ -140,8 +145,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 		inputFiles.add(0, new File("resources/prepositions.txt"));
 		inputFiles.add(1, new File("resources/preposition-exceptions.txt"));
+		inputFiles.add(2, new File("resources/repeated-word-exceptions.txt"));
 		loadPrepositionsAndExceptions();
-
+		loadRepeatedWordExceptions();
 		//ignoreWhiteList = true;
 		
 		stopWords.add("of");
@@ -190,7 +196,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	public void loadPrepositionsAndExceptions() throws TermServerScriptException {
-		LOGGER.info("Loading {}...", getInputFile());
+		LOGGER.info(LOADING, getInputFile());
 		if (!getInputFile().canRead()) {
 			//Now it might be that the server is still starting up.  Let's give it 10 seconds and try again
 			try {
@@ -199,26 +205,37 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			} catch (InterruptedException e) {}
 
 			if (!getInputFile().canRead()) {
-				throw new TermServerScriptException("Cannot read: " + getInputFile());
+				throw new TermServerScriptException(CANNOT_READ + getInputFile());
 			}
 		}
 		try {
-			prepositions = Files.readLines(getInputFile(), Charsets.UTF_8);
+			prepositions = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
+			throw new TermServerScriptException(FAILURE_WHILE_READING + getInputFile(), e);
 		}
 
-		LOGGER.info("Loading {}...", getInputFile(1));
+		LOGGER.info(LOADING, getInputFile(1));
 		if (!getInputFile(1).canRead()) {
-			throw new TermServerScriptException("Cannot read: " + getInputFile());
+			throw new TermServerScriptException(CANNOT_READ + getInputFile(1));
 		}
 		try {
-			prepositionExceptions = Files.readLines(getInputFile(1), Charsets.UTF_8);
+			prepositionExceptions = Files.readLines(getInputFile(1), StandardCharsets.UTF_8);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + getInputFile(1), e);
+			throw new TermServerScriptException(FAILURE_WHILE_READING + getInputFile(1), e);
+		}
+	}
+
+	private void loadRepeatedWordExceptions() throws TermServerScriptException {
+		LOGGER.info(LOADING, getInputFile(2));
+		if (!getInputFile(1).canRead()) {
+			throw new TermServerScriptException(CANNOT_READ + getInputFile(2));
+		}
+		try {
+			repeatedWordExceptions = Files.readLines(getInputFile(2), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new TermServerScriptException(FAILURE_WHILE_READING + getInputFile(2), e);
 		}
 		LOGGER.info ("Complete");
-
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -702,11 +719,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void repeatedWordGroups() throws TermServerScriptException {
-		String wordGroupIssueStr = "Description uses repeating word group";
-		String wordIssueStr = "Description uses repeating words";
-		initialiseSummary(wordGroupIssueStr);
-		initialiseSummary(wordIssueStr);
-
 		final Collection<Concept> concepts = includeLegacyIssues ? allConceptsSorted : allActiveConceptsSorted;
 		nextConcept:
 		for (Concept c : concepts) {
@@ -719,68 +731,93 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					continue nextConcept;
 				}
 
-				boolean compoundCounted = false;
+
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					boolean descriptionNotChecked = true;
 					boolean includeLegacyIssuesOrNonReleasedIssues = includeLegacyIssues ? true : !d.isReleased();
-					if (includeLegacyIssuesOrNonReleasedIssues) {
-						int concern = 0;
-						//If this is a text definition, that's less concerning
-						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
-							//Turning down the sensitivity here, lots of words makes for more repetition.
-							concern -= 2;
-						}
-
-						String[] words = d.getTerm().split(" ");
-						for (int x = 0; x < words.length; x++) {
-							if (stopWords.contains(words[x]) || words[x].length() <= 2) {
-								continue;
-							}
-
-							for (int y = 0; y < words.length; y++) {
-								//Check for duplicate words that are side-by-side.
-								if (y + 1 < words.length) {
-									String currentWord = words[y];
-									String nextWord = words[y + 1];
-									boolean wordsEqual = currentWord.equalsIgnoreCase(nextWord);
-									boolean wordOftenTypedTwice = wordsOftenTypedTwice.contains(currentWord);
-									if (descriptionNotChecked && wordsEqual && wordOftenTypedTwice) {
-										descriptionNotChecked = false;
-										report(c, wordIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + currentWord, d);
-									}
-								}
-
-								//Check for duplicated word groups.
-								if (x != y && words[x].equalsIgnoreCase(words[y])) {
-									concern++;
-									//If we have an 'and' or 'width' to the left that we haven't counted, that's 
-									//less of a concern
-									if (compoundToTheLeftOf(words, x)) {
-										if (!compoundCounted) {
-											concern--;
-										} else {
-											compoundCounted = true;
-										}
-									}
-
-									//We'll also check a word left or right 
-									//of X to be the same as a word to the left or right of Y
-									if (!alsoHasSameWordToLeftOrRight(words, x, y)) {
-										concern--;
-									}
-
-									if (concern > 2) {
-										report(c, wordGroupIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + words[x], d);
-										continue nextConcept;
-									}
-								}
-							}
-						}
+					if (includeLegacyIssuesOrNonReleasedIssues && repeatedWordGroups(c, d, new ConcernLevel())) {
+						//No need to report more than once per concept
+						break;
 					}
 				}
 			}
 		}
 	}
+
+	private boolean repeatedWordGroups(Concept c, Description d, ConcernLevel concern) throws TermServerScriptException {
+		//If this is a text definition, that's less concerning
+		if (d.getType().equals(DescriptionType.TEXT_DEFINITION) || !d.isActiveSafely() || !c.isActiveSafely()) {
+			//Turning down the sensitivity here, lots of words makes for more repetition.
+			concern.decrease(2);
+		}
+
+		String[] words = d.getTerm().split(" ");
+		for (int x = 0; x < words.length; x++) {
+			if (stopWords.contains(words[x]) ||
+					repeatedWordExceptions.contains(words[x]) ||
+					words[x].length() <= 2 ) {
+				continue;
+			}
+
+			if (checkForSideBySideRepeats(x, c, d, words)) {
+				return true;
+			}
+
+			//Second loop to check every word (x) against every other word (y)
+			//Word 1 will already have been tested against eg word 5, so no need to test word 5 against word 1.
+			//Therefore, start y wherever x is.  Plus we don't need to test the same word against itself, so plus 1.
+			for (int y = x + 1; y < words.length; y++) {
+				 if (checkForDuplicatedWordGroups(x, y, c, d, words, concern)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean checkForSideBySideRepeats(int x, Concept c, Description d, String[] words) throws TermServerScriptException {
+		String wordIssueStr = "Description uses repeating words";
+		initialiseSummary(wordIssueStr);
+		//Check for duplicate words that are side-by-side.
+		if (x + 1 < words.length) {
+			String currentWord = words[x];
+			String nextWord = words[x + 1];
+			boolean wordsEqual = currentWord.equalsIgnoreCase(nextWord);
+			boolean wordOftenTypedTwice = wordsOftenTypedTwice.contains(currentWord);
+			if (wordsEqual && wordOftenTypedTwice) {
+				report(c, wordIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + currentWord, d);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean checkForDuplicatedWordGroups(int x, int y, Concept c, Description d, String[] words, ConcernLevel concern) throws TermServerScriptException {
+		String wordGroupIssueStr = "Description uses repeating word group";
+		initialiseSummary(wordGroupIssueStr);
+
+		//Check for duplicated word groups.
+		if (x != y && words[x].equalsIgnoreCase(words[y])) {
+			concern.increment();
+			//If we have an 'and' or 'width' to the left that we haven't counted, that's
+			//less of a concern
+			if (compoundToTheLeftOf(words, x)) {
+				concern.decrement();
+			}
+
+			//We'll also check a word left or right
+			//of X to be the same as a word to the left or right of Y
+			if (!alsoHasSameWordToLeftOrRight(words, x, y)) {
+				concern.decrement();
+			}
+
+			if (concern.isConcerning(2)) {
+				report(c, wordGroupIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + words[x], d);
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 	private void reviewContractions() throws TermServerScriptException {
 		String issueStr = "Contraction(s) to be reviewed for Concept";
@@ -1437,7 +1474,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		List<String> lines;
 		LOGGER.debug ("Loading us/gb terms");
 		try {
-			lines = Files.readLines(new File("resources/us-to-gb-terms-map.txt"), Charsets.UTF_8);
+			lines = Files.readLines(new File("resources/us-to-gb-terms-map.txt"), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to read resources/us-to-gb-terms-map.txt", e);
 		}
@@ -1817,6 +1854,35 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Wrap in spaces to ensure whole word matching
 			usTerm = " " + pair[0] + " ";
 			gbTerm = " " + pair[1] + " ";
+		}
+	}
+
+	class ConcernLevel {
+		//Need an object to wrap an integer so we can pass it into a function multiple times
+		private int concern = 0;
+
+		ConcernLevel() {
+		}
+
+
+		public void increment() {
+			concern++;
+		}
+
+		public void decrement() {
+			concern--;
+		}
+
+		public void increaseConcern(int increment) {
+			concern += increment;
+		}
+
+		public void decrease(int decrement) {
+			concern -= decrement;
+		}
+
+		public boolean isConcerning(int threshold) {
+			return concern >= threshold;
 		}
 	}
 

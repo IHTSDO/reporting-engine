@@ -34,7 +34,8 @@ public class ResourceDataLoader {
 																"HighVolumeSCTIDs.txt",
 																"legacy_int_release_summary.json",
 																"prepositions.txt",
-																"preposition-exceptions.txt"};
+																"preposition-exceptions.txt",
+																"repeated-word-exceptions.txt"};
 	
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;
