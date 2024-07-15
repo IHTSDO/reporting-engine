@@ -117,6 +117,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
 		Set<TemplatedConcept> changeSet = new HashSet<>();
 		Set<Concept> dirtyConcepts = new HashSet<>();
+		//We can't use the same set for existing concepts that have inactivations because they use the same ids.
+		Set<Concept> conceptWithInactivations = new HashSet<>();
 
 		//Sort so that subsequent spreadsheets are somewhat comparable
 		List<TemplatedConcept> sortedModelled = successfullyModelled.stream()
@@ -128,7 +130,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Concept concept = tc.getConcept();
 			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
 
-			if (tc.getExternalIdentifier().equals("100124-7")) {
+			if (tc.getExternalIdentifier().equals("31364-3")) {
 				LOGGER.info("Debug here");
 			}
 
@@ -238,7 +240,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 						//then inactivate it
 						existingComponent.setActive(false);
 						existingComponent.setDirty();
-						dirtyConcepts.add(existingConcept);
+						conceptWithInactivations.add(existingConcept);
 					} else {
 						//If we only have a newly modelled component, give it an id 
 						//and prepare to output
@@ -291,6 +293,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (Concept dirtyConcept : dirtyConcepts) {
 			conceptCreator.outputRF2(getTab(TAB_IMPORT_STATUS), dirtyConcept, "");
 		}
+
+		for (Concept conceptWithInactivation : conceptWithInactivations) {
+			conceptCreator.outputRF2Inactivation(conceptWithInactivation);
+		}
+
 		return changeSet;
 	}
 

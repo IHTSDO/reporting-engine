@@ -57,6 +57,13 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		}
 	}
 
+	public void outputRF2Inactivation(Concept concept) throws TermServerScriptException {
+		//We'll do inactivations quietly
+		super.outputRF2(concept);
+		SnomedUtils.getAllComponents(concept).stream().forEach(c -> c.setClean());
+	}
+
+
 	public void populateIds(Concept concept) throws TermServerScriptException {
 		for (Component c : SnomedUtils.getAllComponents(concept, true)) {
 			populateComponentId(concept, c, targetModuleId);

@@ -308,7 +308,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return populateTermTemplate(itemStr, templateItem, ptStr, partTypeName);
 	}
 
-	private String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) throws TermServerScriptException {
+	private String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) {
 		//Do we need to append any values to this term
 		if (slotTermAppendMap.containsKey(partTypeName)) {
 			itemStr += " " + slotTermAppendMap.get(partTypeName);
