@@ -832,7 +832,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					int wordsLength = words.length;
 					for (int x = 0; x < wordsLength; x++) {
 						String currentWord = words[x];
-						if ("cannot".equalsIgnoreCase(currentWord) || (x + 1 < wordsLength && "can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(words[x + 1]))) {
+						if ((unpromotedChangesOnly && unpromotedChangesHelper.hasUnpromotedChange(c) && "cannot".equalsIgnoreCase(currentWord)) ||
+								"can't".equalsIgnoreCase(currentWord) ||
+								(x + 1 < wordsLength && "can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(words[x + 1]))) {
 							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 							continue nextConcept;
 						}
