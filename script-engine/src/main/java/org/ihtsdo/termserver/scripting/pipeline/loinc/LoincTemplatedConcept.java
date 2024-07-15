@@ -55,7 +55,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
 	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
-	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified"));
+	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
 	protected static Map<String, LoincPart> loincParts;
 	protected static Set<String> allowSpecimenTermForLoincParts = new HashSet<>(Arrays.asList("LP7593-9", "LP7735-6", "LP189538-4"));
@@ -81,8 +81,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		LoincTemplatedConcept.attributePartMapManager = attributePartMapManager;
 		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
 		LoincTemplatedConcept.loincParts = loincParts;
+
 		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
+		termTweakingMap.put("734842000", "source"); //734842000 |Source (property) (qualifier value)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
 		List<String> removals = Arrays.asList("submitted as specimen", "specimen", "structure", "of", "at", "from");
