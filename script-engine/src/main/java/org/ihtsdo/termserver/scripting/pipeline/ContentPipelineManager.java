@@ -44,12 +44,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			loadProjectSnapshot(false);
 			postInit();
 			getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
-			//getReportManager().disableTab(getTab(TAB_MAP_ME));
+			getReportManager().disableTab(getTab(TAB_MAP_ME));
 			getReportManager().disableTab(getTab(TAB_IOI));
 			getReportManager().disableTab(getTab(TAB_STATS));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
-			importExternalContent();
+			loadSupportingInformation();
 			importPartMap();
 			Set<TemplatedConcept> successfullyModelled = doModeling();
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
@@ -273,12 +273,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			if (existingConcept != null) {
 				List<String> differencesList = inactivateConcept(existingConcept);
 				differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
+				inactivateConcept(existingConcept);
+				dirtyConcepts.add(existingConcept);
 			}
 			doProposedModelComparison(inactivatingCode, null, existingConcept, "Removed", differencesListStr);
 			summaryCounts.merge("Removed", 1, Integer::sum);
-			inactivateConcept(existingConcept);
-			dirtyConcepts.add(existingConcept);
-		
+
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 			//So - temporarily again - we'll normalize the scheme id
 			//Temporarily correct all Alternate Identifiers
@@ -335,7 +335,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected abstract void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept, String statusStr, String differencesListStr) throws TermServerScriptException;
 
-	protected abstract void importExternalContent() throws TermServerScriptException;
+	protected abstract void loadSupportingInformation() throws TermServerScriptException;
 
 	protected abstract void importPartMap() throws TermServerScriptException;
 

@@ -44,7 +44,6 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		//Just temporarily, we need to create some concepts that aren't visible yet
 		gl.registerConcept("10021010000100 |Platelet poor plasma or whole blood specimen (specimen)|"); 
 		gl.registerConcept("10051010000107 |Plasma specimen or whole blood specimen (specimen)|");
-		gl.registerConcept("10031010000102 |Bromocresol purple dye binding technique (qualifier value)|");
 		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 		
@@ -52,8 +51,8 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 
 	@Override
-	protected void importExternalContent() throws TermServerScriptException {
-		loadLoincDetail();
+	protected void loadSupportingInformation() throws TermServerScriptException {
+		loadFullLoincFile(NOT_SET);
 		loadLoincParts();
 	}
 	
@@ -114,61 +113,11 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_PARTS), e);
 		}
 	}
-	
-/*	protected void determineExistingConcepts(int tabIdx) throws TermServerScriptException {
-		int total  = 0;
-		int existingConceptCount = 0;
-		try {
-			LOGGER.info ("Loading " + getInputFile(FILE_IDX_LOINC_100));
-			boolean isFirstLine = true;
-			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_100)))) {
-				String line;
-				while ((line = br.readLine()) != null) {
-					if (!isFirstLine) {
-						String[] items = line.split("\t");
-						LoincTerm loincTerm = LoincTerm.parse(items);
-						loincNumToLoincTermMap.put(loincTerm.getLoincNum(), loincTerm);
-						boolean exists = checkForExistingModelling(loincTerm, tabIdx);
-						if (exists) existingConceptCount++;
-					} else isFirstLine = false;
-				}
-			}
-			report(tabIdx,"");
-			report(tabIdx,"Summary:");
-			report(tabIdx,"Already exists", existingConceptCount);
-			report(tabIdx,"Total", total);
-		} catch (Exception e) {
-			throw new TermServerScriptException(e);
-		}
-	}*/
-	
-/*	private boolean checkForExistingModelling(LoincTerm loincTerm, int tabIdx) throws TermServerScriptException {
-		//Do we have this loincNum
-		Concept loincConcept = loincNumToSnomedConceptMap.get(loincTerm.getLoincNum());
-		if (loincConcept != null) {
-			report(tabIdx,
-					loincTerm.getLoincNum(),
-					loincTerm.getLongCommonName(),
-					loincConcept, 
-					LoincUtils.getCorrelation(loincConcept),
-					loincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP),
-					loincTerm.getCommonColumns());
-			return true;
-		} else {
-			report(tabIdx,
-					loincTerm.getLoincNum(),
-					loincTerm.getLongCommonName(),
-					"Not Modelled",
-					"",
-					"",
-					loincTerm.getCommonColumns());
-			return false;
-		}
-	}*/
 
 	protected void loadFullLoincFile(int tabIdx) {
 		loadFullLoincFile(tabIdx, getInputFile(FILE_IDX_LOINC_FULL));
 	}
+
 	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) {
 		additionalThreadCount++;
 		LOGGER.info ("Loading Full Loinc: " + fullLoincFile);

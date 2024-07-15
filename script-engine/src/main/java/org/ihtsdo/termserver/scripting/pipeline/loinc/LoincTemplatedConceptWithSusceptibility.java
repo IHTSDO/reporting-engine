@@ -3,15 +3,11 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConcept {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithSusceptibility.class);
 
 	private LoincTemplatedConceptWithSusceptibility(String loincNum) {
 		super(loincNum);
@@ -57,21 +53,21 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 		} else {
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+					addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 				}
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPSUBPART2_PN, issues, precondition);
 			}
 
 			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 			}
 
 			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 			}
 		}
 
@@ -87,14 +83,14 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		
 		//If we didn't find the component, return a null so that we record that failed mapping usage
 		//And in fact, don't map this term at all
-		if (attributes.size() == 0) {
+		if (attributes.isEmpty()) {
 			attributes.add(null);
 			processingFlags.add(ProcessingFlag.DROP_OUT);
 		}
 		return attributes;
 	}
 
-	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
-		return super.applyTemplateSpecificRules(loincPartNum, rt);
+	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
 	}
 }

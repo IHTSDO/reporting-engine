@@ -18,9 +18,10 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
 
-	private static final List<String> suffixExceptions = List.of("LP438877-5", "LP438878-3", "LP134392-2");
+	private static final List<String> BioPhageSuffixExceptions = List.of("LP438877-5", "LP438878-3", "LP134392-2");
 
 	private static final String PROPERTY_ID_EXCEPTION = "LP6850-4"; //See instructions 2.f.ii.6.a.i.2
+	private static final String TYPE_ID_EXCEPTION = "LP6886-8"; //See instructions 2.f.ii.6.a.i.1.a.i
 
 	private LoincTemplatedConceptWithInheres(String loincNum) {
 		super(loincNum);
@@ -28,14 +29,14 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
 		LoincTemplatedConceptWithInheres templatedConcept = new LoincTemplatedConceptWithInheres(loincNum);
-		templatedConcept.typeMap.put("PROPERTY", gl.getConcept("370130000 |Property (attribute)|"));
-		templatedConcept.typeMap.put("SCALE", gl.getConcept("370132008 |Scale type (attribute)|"));
-		templatedConcept.typeMap.put("TIME", gl.getConcept("370134009 |Time aspect (attribute)|"));
-		templatedConcept.typeMap.put("SYSTEM", gl.getConcept("704327008 |Direct site (attribute)|"));
-		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
-		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("704319004 |Inheres in (attribute)|"));
-		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
-		templatedConcept.typeMap.put("CHALLENGE", precondition);
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_PROPERTY, gl.getConcept("370130000 |Property (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_METHOD, gl.getConcept("246501002 |Technique (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("704319004 |Inheres in (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_DEVICE, gl.getConcept("424226004 |Using device (attribute)|"));
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_CHALLENGE, precondition);
 		
 		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
@@ -60,27 +61,27 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 		} else {
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+					addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 				}
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPSUBPART2_PN, issues, precondition);
 			}
 
 			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 			}
 
 			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 			}
 		}
 
 		if (detailPresent(loincNum, LoincDetail.COMPNUMSUFFIX_PN)) {
 			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPNUMSUFFIX_PN);
-			if (suffixExceptions.contains(componentDetail.getPartNumber())) {
+			if (BioPhageSuffixExceptions.contains(componentDetail.getPartNumber())) {
 				//use the COMPNUM_PN LP name to include in FSN and PT in the Inheres in slot for terming.
 				String compNumPartName = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName();
 				slotTermMap.put("COMPONENT", compNumPartName);
@@ -108,15 +109,30 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		return attributes;
 	}
 
-	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rule 2.f.ii.6.a.i.2
-		if (loincPartNum.equals(PROPERTY_ID_EXCEPTION)) {
+		if (loincDetail.getPartNumber().equals(PROPERTY_ID_EXCEPTION)) {
 			//Is our COMPNUM LP19429-7	Specimen source?
 			LoincDetail compNum = getLoincDetail(externalIdentifier, LoincDetail.COMPNUM_PN);
 			if (compNum.getPartNumber().equals("LP19429-7")) {
 				rt.setTarget(gl.getConcept("734842000 |Source (property) (qualifier value)|"));
 			}
 		}
-		return super.applyTemplateSpecificRules(loincPartNum, rt);
+
+		//Rule 2.f.ii.6.a.i.1.a.i
+		//When the property is 'type' and the suffix indicates a biophage, then the technique
+		//will come from the suffix, rather than the method
+		if (loincDetail.getPartTypeName().equals(LOINC_PART_TYPE_PROPERTY) &&
+				getLoincDetailForPartType(LOINC_PART_TYPE_PROPERTY).getPartNumber().equals(TYPE_ID_EXCEPTION) &&
+				hasDetail(LoincDetail.COMPNUMSUFFIX_PN) &&
+				BioPhageSuffixExceptions.contains(getLoincDetail(loincDetail.getLoincNum(), LoincDetail.COMPNUMSUFFIX_PN).getPartNumber())) {
+			String partNum = getLoincDetail(loincDetail.getLoincNum(), LoincDetail.COMPNUMSUFFIX_PN).getPartNumber();
+			RelationshipTemplate additionalAttribute = attributePartMapManager.getPartMappedAttributeForType(NOT_SET, externalIdentifier, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
+			attributes.add(additionalAttribute);
+			processingFlags.add(ProcessingFlag.SUPPRESS_METHOD_TERM);
+		}
+
+		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
 	}
+
 }

@@ -7,13 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithComponent.class);
 
 	private LoincTemplatedConceptWithComponent(String loincNum) {
 		super(loincNum);
@@ -53,21 +47,21 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 		} else {
 			if (detailPresent(loincNum, LoincDetail.COMPNUM_PN)) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 				if (detailPresent(loincNum, LoincDetail.COMPDENOM_PN)) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
+					addAttributeFromDetailWithType(attributes, LoincDetail.COMPDENOM_PN, issues, relativeTo);
 				}
 			}
 
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+					addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
 				}
 				if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+					addAttributeFromDetailWithType(attributes, LoincDetail.COMPSUBPART2_PN, issues, precondition);
 				}
 			}
 
@@ -83,14 +77,15 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		}
 
 		//If we didn't find the component, return a null so that we record that failed mapping usage
-		if (attributes.size() == 0) {
+		if (attributes.isEmpty()) {
 			attributes.add(null);
 		}
 		return attributes;
 	}
 
-	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
-		return super.applyTemplateSpecificRules(loincPartNum, rt);
+	@Override
+	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
 	}
 
 }

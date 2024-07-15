@@ -138,7 +138,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 
 	@Override
-	protected void importExternalContent() throws TermServerScriptException {
+	protected void loadSupportingInformation() throws TermServerScriptException {
 
 	}
 

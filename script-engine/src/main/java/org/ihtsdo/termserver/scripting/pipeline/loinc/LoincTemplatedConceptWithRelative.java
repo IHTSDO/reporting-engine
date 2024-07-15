@@ -45,12 +45,12 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		Concept challengeAttrib = typeMap.get("CHALLENGE");
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes,loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
+			addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttrib);
 		} else {
 			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
 			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPDENOM_PN, issues, relativeTo);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttrib);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPDENOM_PN, issues, relativeTo);
 				//Check for percentage
 				if (denom.getPartName().contains("100")) {
 					attributes.add(percentAttribute);
@@ -60,9 +60,9 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 
 			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPNUM_PN, issues, componentAttrib);
+					addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttrib);
 				}
-				addAttributeFromDetailWithType(attributes, loincNum, LoincDetail.COMPSUBPART2_PN, issues, challengeAttrib);
+				addAttributeFromDetailWithType(attributes, LoincDetail.COMPSUBPART2_PN, issues, challengeAttrib);
 			}
 		}
 
@@ -73,7 +73,8 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		return attributes;
 	}
 
-	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
-		return super.applyTemplateSpecificRules(loincPartNum, rt);
+	@Override
+	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+		super.applyTemplateSpecificRules(attributes,loincDetail, rt);
 	}
 }

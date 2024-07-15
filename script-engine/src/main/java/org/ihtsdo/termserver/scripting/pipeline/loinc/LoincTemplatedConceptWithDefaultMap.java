@@ -29,8 +29,9 @@ public class LoincTemplatedConceptWithDefaultMap extends LoincTemplatedConcept {
 		throw new TermServerScriptException("Not expecting to use default map.  LoincNum: " + loincNum);
 	}
 
-	protected RelationshipTemplate applyTemplateSpecificRules(String loincPartNum, RelationshipTemplate rt) throws TermServerScriptException {
-		return super.applyTemplateSpecificRules(loincPartNum, rt);
+	@Override
+	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
 	}
 
 }

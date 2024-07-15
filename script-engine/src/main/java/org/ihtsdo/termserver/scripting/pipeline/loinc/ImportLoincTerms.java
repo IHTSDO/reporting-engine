@@ -76,8 +76,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	@Override
-	protected void importExternalContent() throws TermServerScriptException {
-		loadFullLoincFile(NOT_SET);
+	protected void loadSupportingInformation() throws TermServerScriptException {
+		super.loadSupportingInformation();
 		loadLoincDetail();
 	}
 
@@ -191,22 +191,5 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				loincTerm.getCommonColumns());
 	}
 
-	/*private void populateLoincNumMap() throws TermServerScriptException {
-		for (Concept c : LoincUtils.getActiveLOINCconcepts(gl)) {
-			loincNumToSnomedConceptMap.put(LoincUtils.getLoincNumFromDescription(c), c);
-		}
-		LOGGER.info("Populated map of " + loincNumToSnomedConceptMap.size() + " LOINC concepts");
-	}*/
-	
-	/*private void importIntoTask(Set<LoincTemplatedConcept> successfullyModelled) throws TermServerScriptException {
-		//TODO Move this class to be a BatchFix so we don't need a plug in class
-		CreateConceptsPreModelled batchProcess = new CreateConceptsPreModelled(getReportManager(), getTab(TAB_IMPORT_STATUS), successfullyModelled);
-		batchProcess.setProject(new Project("LE","MAIN/SNOMEDCT-LOINCEXT/LE"));
-		BatchFix.headlessEnvironment = NOT_SET;  //Avoid asking any more questions to the user
-		batchProcess.setServerUrl(getServerUrl());
-		String[] args = new String[] { "-a", "pwilliams", "-n", "500", "-p", "LE", "-d", "N", "-c", authenticatedCookie };
-		batchProcess.inflightInit(args);
-		batchProcess.runJob();
-	}*/
 	
 }

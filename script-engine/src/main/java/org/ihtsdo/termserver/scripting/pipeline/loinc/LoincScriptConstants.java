@@ -4,11 +4,29 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 
 public interface LoincScriptConstants extends ContentPipeLineConstants {
 	
-	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT }
+	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT, SUPPRESS_METHOD_TERM }
+
+	public static final String LOINC_PART_TYPE_ADJUSTMENT = "ADJUSTMENT";
+	public static final String LOINC_PART_TYPE_CHALLENGE = "CHALLENGE";
+	public static final String LOINC_PART_TYPE_CLASS = "CLASS";
+	public static final String LOINC_PART_TYPE_COMPONENT = "COMPONENT";
+	public static final String LOINC_PART_TYPE_COUNT = "COUNT";
+	public static final String LOINC_PART_TYPE_DEVICE = "DEVICE";
+	public static final String LOINC_PART_TYPE_DIVISORS = "DIVISORS";
+	public static final String LOINC_PART_TYPE_METHOD = "METHOD";
+	public static final String LOINC_PART_TYPE_PROPERTY = "PROPERTY";
+	public static final String LOINC_PART_TYPE_SCALE = "SCALE";
+	public static final String LOINC_PART_TYPE_SUFFIX = "SUFFIX";
+	public static final String LOINC_PART_TYPE_SUPER_SYSTEM = "SUPER SYSTEM";
+	public static final String LOINC_PART_TYPE_SYSTEM = "SYSTEM";
+	public static final String LOINC_PART_TYPE_TIME = "TIME";
+	public static final String LOINC_PART_TYPE_TIME_MODIFIER = "TIME MODIFIER";
+
+
 
 	public int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
 	public int FILE_IDX_LOINC_100 = 0;
-	public int FILE_IDX_LOINC_100_Primary = 2;
+	public int FILE_IDX_LOINC_100_PRIMARY = 2;
 	public int FILE_IDX_LOINC_PARTS = 3;
 	public int FILE_IDX_LOINC_FULL = 4;
 	public int FILE_IDX_LOINC_DETAIL = 5;
