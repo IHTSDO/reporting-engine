@@ -85,6 +85,21 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 
 	@Override
 	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+		//Temporary rule.  If our target is Influenza, replace that with Influenza A, B & C
+		Concept influenzaAb = gl.getConcept("259856001 |Influenza antibody (substance)|");
+		if (rt.getTarget().equals(influenzaAb)) {
+			attributes.clear();
+			List<Concept> newAntibodies = List.of(
+					gl.getConcept("120753009 |Antibody to Influenza A virus (substance)|"),
+					gl.getConcept("120843002 |Antibody to Influenza B virus (substance)"),
+					gl.getConcept("120844008 |Antibody to Influenza C virus (substance)|"));
+			newAntibodies.forEach(a -> {
+				RelationshipTemplate newRt = rt.clone();
+				newRt.setTarget(a);
+				attributes.add(newRt);
+			});
+		}
+
 		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
 	}
 

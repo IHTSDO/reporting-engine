@@ -89,8 +89,4 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		}
 		return attributes;
 	}
-
-	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
-		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
-	}
 }

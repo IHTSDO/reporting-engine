@@ -47,7 +47,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
-		Concept componentAttribType = typeMap.get("COMPONENT");
+		Concept componentAttribType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		
 		//We can't yet deal with "given"
 		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
@@ -84,19 +84,19 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			if (BioPhageSuffixExceptions.contains(componentDetail.getPartNumber())) {
 				//use the COMPNUM_PN LP name to include in FSN and PT in the Inheres in slot for terming.
 				String compNumPartName = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName();
-				slotTermMap.put("COMPONENT", compNumPartName);
+				slotTermMap.put(LOINC_PART_TYPE_COMPONENT, compNumPartName);
 			}
 		}
 		
 		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
 			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART3_PN);
-			slotTermMap.put("COMPONENT", componentDetail.getPartName());
+			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
 			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 		
 		if (detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
 			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART4_PN);
-			slotTermMap.put("COMPONENT", componentDetail.getPartName());
+			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
 			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 		
@@ -109,6 +109,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		return attributes;
 	}
 
+	@Override
 	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rule 2.f.ii.6.a.i.2
 		if (loincDetail.getPartNumber().equals(PROPERTY_ID_EXCEPTION)) {

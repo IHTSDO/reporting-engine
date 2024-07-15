@@ -72,9 +72,4 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		}
 		return attributes;
 	}
-
-	@Override
-	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
-		super.applyTemplateSpecificRules(attributes,loincDetail, rt);
-	}
 }

@@ -277,10 +277,16 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					continue;
 				}
 				if (rels.size() > 1) {
-					throw new TermServerScriptException(rels.size() + " relationships for " + attributeType + " in " + getExternalIdentifier());
+					//Special case for influenza virus antigen
+					if (rels.iterator().next().getTarget().getFsn().contains("Influenza")) {
+						populateTermTemplate("influenza antibody", regex, ptTemplateStr, templateItem);
+					} else {
+						throw new TermServerScriptException(rels.size() + " relationships for " + attributeType + " in " + getExternalIdentifier());
+					}
+				} else {
+					RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
+					ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
 				}
-				RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
-				ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
 			}
 		}
 		return ptTemplateStr;
@@ -288,21 +294,26 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 
 	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr, String partTypeName) throws TermServerScriptException {
-		//TODO Detect GB Spelling and break out another term
+		//TO DO Detect GB Spelling and break out another term
 		Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
 		String itemStr = targetPt.getTerm();
-		
 		itemStr = applyTermTweaking(rt, itemStr);
-		
+
+		//Can we make this lower case?
+		if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) ||
+				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+			itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+		}
+
+		return populateTermTemplate(itemStr, templateItem, ptStr, partTypeName);
+	}
+
+	private String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) throws TermServerScriptException {
 		//Do we need to append any values to this term
 		if (slotTermAppendMap.containsKey(partTypeName)) {
 			itemStr += " " + slotTermAppendMap.get(partTypeName);
 		}
-		//Can we make this lower case?
-		if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) || 
-				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
-			itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
-		}
+
 		ptStr = ptStr.replaceAll(templateItem, itemStr);
 		return ptStr;
 	}
