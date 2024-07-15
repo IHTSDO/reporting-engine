@@ -43,8 +43,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
-			getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
-			getReportManager().disableTab(getTab(TAB_MAP_ME));
+			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
+			//getReportManager().disableTab(getTab(TAB_MAP_ME));
 			getReportManager().disableTab(getTab(TAB_IOI));
 			getReportManager().disableTab(getTab(TAB_STATS));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());

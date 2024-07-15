@@ -23,6 +23,17 @@ public interface LoincScriptConstants extends ContentPipeLineConstants {
 	public static final String LOINC_PART_TYPE_TIME_MODIFIER = "TIME MODIFIER";
 
 
+	public static final String COMPONENT_PN = "COMPONENT_PN";
+	public static final String COMPONENTCORE_PN = "COMPONENTCORE_PN";
+	public static final String COMPSUBPART1_PN = "COMPSUBPART1_PN";
+	public static final String COMPSUBPART2_PN = "COMPSUBPART2_PN";
+	public static final String COMPSUBPART3_PN = "COMPSUBPART3_PN";
+	public static final String COMPSUBPART4_PN = "COMPSUBPART4_PN";
+	public static final String COMPNUM_PN = "COMPNUM_PN";
+	public static final String COMPDENOM_PN = "COMPDENOM_PN";
+	public static final String PROPERTY = "PROPERTYMIXEDCASE_PN";
+	public static final String COMPNUMSUFFIX_PN = "COMPNUMSUFFIX_PN";
+	public static final String SYSTEM_PN = "SYSTEM_PN";
 
 	public int FILE_IDX_LOINC_PARTS_MAP_BASE_FILE = 1;
 	public int FILE_IDX_LOINC_100 = 0;

@@ -131,7 +131,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//If the value concept in LP map file is to a concept < 49062001 |Device (physical object)|
 		// in which case “LOINC Method -> SNOMED 424226004 |Using device (attribute)|.
 		if (gl.getDescendantsCache().getDescendants(DEVICE).contains(rt.getTarget())) {
-			rt.setType(USING_SUBST);
+			rt.setType(USING_DEVICE);
 		}
 	}
 	
@@ -178,9 +178,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			case "Type" :
 			case "Vol" : return LoincTemplatedConceptWithInheres.create(loincNum);
 			case "Susc" : return LoincTemplatedConceptWithSusceptibility.create(loincNum);
+			case "MRat" :
+			case "SRat" :
+			case "VRat" :
+			case "CRat" : return LoincTemplatedConceptWithProcess.create(loincNum);
 		}
 		return null;
 	}
+
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		

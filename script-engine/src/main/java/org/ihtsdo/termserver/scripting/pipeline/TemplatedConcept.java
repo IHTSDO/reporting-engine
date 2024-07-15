@@ -21,6 +21,8 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	protected String externalIdentifier;
 
+	protected List<String> issues;
+
 	public static void reportStats(int tabIdx) throws TermServerScriptException {
 		cpm.report(tabIdx, "");
 		cpm.report(tabIdx, "Parts mapped", mapped);
@@ -41,4 +43,18 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	abstract public boolean isHighUsage();
 
 	abstract public boolean isHighestUsage();
+
+	public void addIssue(String issue) {
+		if (issues == null) {
+			issues = new ArrayList<>();
+		}
+		issues.add(issue);
+	}
+
+	public String getIssues() {
+		if (issues == null) {
+			return "";
+		}
+		return String.join("\n", issues);
+	}
 }

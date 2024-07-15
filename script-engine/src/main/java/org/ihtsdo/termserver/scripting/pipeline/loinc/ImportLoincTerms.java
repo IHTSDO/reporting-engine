@@ -153,7 +153,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				//doProposedModelComparison(loincNum, templatedConcept);
 			}
 			
-			if (templatedConcept.getConcept().hasIssues()) {
+			if (templatedConcept.getConcept().hasIssues() ) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
