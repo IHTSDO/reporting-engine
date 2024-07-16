@@ -22,9 +22,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected static final RunMode runMode = RunMode.INCREMENTAL_DELTA;
 	
-	protected static int FILE_IDX_CONCEPT_IDS = 6;
-	protected static int FILE_IDX_DESC_IDS = 7;
-	protected static int FILE_IDX_REL_IDS = 8;
+	protected static int FILE_IDX_CONCEPT_IDS = 7;
+	protected static int FILE_IDX_DESC_IDS = 8;
+	protected static int FILE_IDX_REL_IDS = 9;
 	
 	protected Concept scheme;
 	protected String namespace;

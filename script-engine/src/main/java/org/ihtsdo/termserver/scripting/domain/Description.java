@@ -888,4 +888,9 @@ public class Description extends Component implements ScriptConstants {
 		return this.getType().equals(otherDesc.getType())
 				&& this.getTerm().equals(otherDesc.getTerm());
 	}
+
+	public Description withCaseSignificance(CaseSignificance caseSignificance) {
+		setCaseSignificance(caseSignificance);
+		return this;
+	}
 }

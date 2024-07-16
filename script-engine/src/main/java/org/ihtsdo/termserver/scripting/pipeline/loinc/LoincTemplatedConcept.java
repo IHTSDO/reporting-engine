@@ -19,7 +19,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 	private static final int GROUP_1 = 1;
-	private static final String semTag = " (observable entity)";
+	protected static final String semTag = " (observable entity)";
 
 	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
 
@@ -593,12 +593,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 	
 	protected static boolean detailsIndicatePrimitiveConcept(String loincNum) throws TermServerScriptException {
-		if (detailPresent(loincNum, COMPSUBPART3_PN) ||
-			detailPresent(loincNum, COMPSUBPART4_PN)) {
-			return true;
-		}
-		
-		return false;
+		return (detailPresent(loincNum, COMPSUBPART3_PN) || detailPresent(loincNum, COMPSUBPART4_PN));
 	}
 	
 	protected static boolean detailPresent(String loincNum, String ldtColumnName) throws TermServerScriptException {

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -33,6 +35,10 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_2.75_Active_Lab_NonVet.tsv"
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
+
+	// Regular expression to find tokens within square brackets
+	private static final String allCapsSlotRegex = "\\[([A-Z]+)\\]";
+	private static final Pattern allCapsSlotPattern = Pattern.compile(allCapsSlotRegex);
 	
 	//private List<String> previousIterationLoincNums = new ArrayList<>();
 	int existedPreviousIteration = 0;
@@ -79,6 +85,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	protected void loadSupportingInformation() throws TermServerScriptException {
 		super.loadSupportingInformation();
 		loadLoincDetail();
+		loadPanels();
 	}
 
 	@Override
@@ -100,18 +107,21 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			}
 		}
 
+		for (String panelLoincNum : panelLoincNums) {
+			LoincTemplatedConcept templatedConcept = doPanelModeling(panelLoincNum);
+			if (templatedConcept != null
+					&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
+					&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
+				successfullyModelledConcepts.add(templatedConcept);
+			}
+		}
+
 		return successfullyModelledConcepts;
 	}
 	
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		//Do we have consistency between the detail map and the main loincTermMap?
-		if (!loincNumToLoincTermMap.containsKey(loincNum)) {
-			report(getTab(TAB_MODELING_ISSUES),
-					loincNum,
-					"N/A",
-					"Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");
+		if (!confirmLoincNumExists(loincNum) || loincNumContainsObjectionableWord(loincNum)) {
 			return null;
-			//throw new TermServerScriptException("Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");
 		}
 
 		if (!loincDetailMap.containsKey(COMPONENT_PN) ||
@@ -123,6 +133,56 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			return null;
 		}
 
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(this, loincNum, loincDetailMap);
+		validateTemplatedConcept(loincNum, templatedConcept);
+		return templatedConcept;
+	}
+
+	private void validateTemplatedConcept(String loincNum, LoincTemplatedConcept templatedConcept) throws TermServerScriptException {
+		if (templatedConcept == null) {
+			report(getTab(TAB_MODELING_ISSUES),
+					loincNum,
+					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+					"Does not meet criteria for template match");
+		} else {
+			String fsn = templatedConcept.getConcept().getFsn();
+			boolean insufficientTermPopulation = fsn.contains("[");
+			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
+			if (insufficientTermPopulation && isAllCapsSlot(fsn)) {
+				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
+			} else if (!templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
+				//We'll move this call to later when we work out the change set
+				//doProposedModelComparison(loincNum, templatedConcept);
+			}
+
+			if (templatedConcept.getConcept().hasIssues() ) {
+				report(getTab(TAB_MODELING_ISSUES),
+						loincNum,
+						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+						templatedConcept.getConcept().getIssues());
+			}
+		}
+		flushFilesSoft();
+	}
+
+	/**
+	 * Checks if a string contains tokens enclosed in square brackets that are all in capital letters.
+	 *
+	 * @param fsn The string to check.
+	 * @return true if there is at least one token in all caps within square brackets; false otherwise.
+	 */
+	private boolean isAllCapsSlot(String fsn) {
+		Matcher matcher = allCapsSlotPattern.matcher(fsn);
+
+		while (matcher.find()) {
+			// If a match is found, return true
+			return true;
+		}
+		// If no all-caps tokens are found within square brackets, return false
+		return false;
+	}
+
+	private boolean loincNumContainsObjectionableWord(String loincNum) throws TermServerScriptException {
 		//Does this LoincNum feature an objectionable word?  Skip if so.
 		for (String objectionableWord : objectionableWords) {
 			if (loincNumToLoincTermMap.get(loincNum).getDisplayName() == null) {
@@ -133,34 +193,31 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 						loincNum,
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 						"Contains objectionable word - " + objectionableWord);
-				return null;
+				return true;
 			}
 		}
-		
-		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(this, loincNum, loincDetailMap);
-		if (templatedConcept == null) {
+		return false;
+	}
+
+	private boolean confirmLoincNumExists(String loincNum) throws TermServerScriptException {
+		//Do we have consistency between the detail map and the main loincTermMap?
+		if (!loincNumToLoincTermMap.containsKey(loincNum)) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
-					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
-					"Does not meet criteria for template match");
-		} else {
-			String fsn = templatedConcept.getConcept().getFsn();
-			boolean insufficientTermPopulation = fsn.contains("[");
-			if (insufficientTermPopulation) {
-				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
-			} else if (!templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
-				//We'll move this call to later when we work out the change set
-				//doProposedModelComparison(loincNum, templatedConcept);
-			}
-			
-			if (templatedConcept.getConcept().hasIssues() ) {
-				report(getTab(TAB_MODELING_ISSUES),
-						loincNum,
-						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
-						templatedConcept.getConcept().getIssues());
-			}
+					"N/A",
+					"Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");
+			return false;
 		}
-		flushFilesSoft();
+		return true;
+	}
+
+	private LoincTemplatedConcept doPanelModeling(String panelLoincNum) throws TermServerScriptException {
+		if (!confirmLoincNumExists(panelLoincNum) || loincNumContainsObjectionableWord(panelLoincNum)) {
+			return null;
+		}
+
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConceptPanel.create(panelLoincNum);
+		validateTemplatedConcept(panelLoincNum, templatedConcept);
 		return templatedConcept;
 	}
 

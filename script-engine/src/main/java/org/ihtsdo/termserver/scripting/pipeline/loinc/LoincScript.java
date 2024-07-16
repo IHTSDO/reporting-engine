@@ -24,6 +24,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	protected static AttributePartMapManager attributePartMapManager;
 	protected Map<String, LoincPart> loincParts = new HashMap<>();
 	protected Map<String, String> partMapNotes = new HashMap<>();
+	protected Set<String> panelLoincNums = new HashSet<>();
 	
 	protected Map<LoincPart, Set<LoincTerm>> missingPartMappings = new HashMap<>();
 	
@@ -56,7 +57,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		loadLoincParts();
 	}
 	
-	protected void loadLoincDetail() {
+	protected void loadLoincDetail() throws TermServerScriptException {
 		LOGGER.info ("Loading Loinc Detail: " + getInputFile(FILE_IDX_LOINC_DETAIL));
 		BufferedReader in = null;
 		try {
@@ -81,15 +82,33 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				count++;
 				line = in.readLine();
 			}
-			LOGGER.info("Loaded " + count + " details for " + loincDetailMap.size() + " loincNums");
+			LOGGER.info("Loaded {} details for {} loincNums", count, loincDetailMap.size());
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to load " + getInputFile(FILE_IDX_LOINC_DETAIL), e);
+			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_DETAIL), e);
 		} finally {
 			if (in != null) {
 				try {
 					in.close();
 				} catch (IOException e) {}
 			}
+		}
+	}
+
+	protected void loadPanels() throws TermServerScriptException {
+		LOGGER.info ("Loading Loinc Panels: {}", getInputFile(FILE_IDX_PANELS));
+		int lineCount = 0;
+		try (BufferedReader in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_PANELS)))){
+			String line = in.readLine();
+			while (line != null) {
+				if (lineCount > 0) {
+					panelLoincNums.add(line.split(TAB)[4]);
+				}
+				lineCount++;
+				line = in.readLine();
+			}
+			LOGGER.info("Loaded {} LOINC panels", panelLoincNums.size());
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_PANELS) + " at line " + lineCount, e);
 		}
 	}
 	
@@ -114,11 +133,11 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		}
 	}
 
-	protected void loadFullLoincFile(int tabIdx) {
+	protected void loadFullLoincFile(int tabIdx) throws TermServerScriptException {
 		loadFullLoincFile(tabIdx, getInputFile(FILE_IDX_LOINC_FULL));
 	}
 
-	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) {
+	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) throws TermServerScriptException {
 		additionalThreadCount++;
 		LOGGER.info ("Loading Full Loinc: " + fullLoincFile);
 		loincNumToLoincTermMap = new HashMap<>();
@@ -154,7 +173,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				report(tabIdx,"Has Targeted Property not in Top 20K", hasTargettedPropertyNotIn20K);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to load " + fullLoincFile, e);
+			throw new TermServerScriptException("Failed to load " + fullLoincFile, e);
 		} finally {
 			additionalThreadCount--;
 		}
