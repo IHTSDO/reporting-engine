@@ -55,32 +55,8 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 		} else {
-			if (detailPresent(loincNum, COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-				}
-				addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
-			}
-
-			if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			}
-
-			if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			}
+			processSubComponents(loincNum, attributes, issues, componentAttribType);
 		}
-
-		if (detailPresent(loincNum, COMPSUBPART3_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
-			slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
-		}
-		
-		if (detailPresent(loincNum, COMPSUBPART4_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
-			slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
-		}
-		
 		//If we didn't find the component, return a null so that we record that failed mapping usage
 		//And in fact, don't map this term at all
 		if (attributes.isEmpty()) {

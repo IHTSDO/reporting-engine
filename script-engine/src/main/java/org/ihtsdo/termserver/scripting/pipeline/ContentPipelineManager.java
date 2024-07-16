@@ -32,6 +32,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 
+	protected  Map<String, Integer> summaryCounts = new HashMap<>();
+
 	protected List<String> activeIndicators = List.of("New", "Unchanged", "Updated", "Resurrected");
 
 	protected void ingestExternalContent(String[] args) throws TermServerScriptException {
@@ -62,7 +64,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					break;
 				case INCREMENTAL_API:
 				case INCREMENTAL_DELTA:
-					determineChangeSet(successfullyModelled, summaryCounts);
+					determineChangeSet(successfullyModelled);
 					conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 					break;
 				default:
@@ -108,7 +110,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 	
 
-	private Set<TemplatedConcept> determineChangeSet(Set<TemplatedConcept> successfullyModelled, Map<String, Integer> summaryCounts) throws TermServerScriptException {
+	private Set<TemplatedConcept> determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		LOGGER.info("Determining change set for " + successfullyModelled.size() + " successfully modelled concepts");
 		Set<ComponentType> skipForComparison = Set.of(
 				ComponentType.INFERRED_RELATIONSHIP,

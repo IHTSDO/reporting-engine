@@ -85,6 +85,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		termTweakingMap.put("734842000", "source"); //734842000 |Source (property) (qualifier value)|
+		termTweakingMap.put("718500008", "excretion"); //718500008 |Excretory process (qualifier value)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
 		List<String> removals = Arrays.asList("submitted as specimen", "specimen", "structure", "of", "at", "from");
@@ -647,4 +648,35 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return this.getClass().getSimpleName() + " for loincNum " + externalIdentifier;
 	}
 
+	protected void processSubComponents(String loincNum, List<RelationshipTemplate> attributes, List<String> issues, Concept componentAttribType) throws TermServerScriptException {
+		if (detailPresent(loincNum, COMPSUBPART2_PN)) {
+			if(attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			}
+			addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
+		}
+
+		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART3_PN)) {
+			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
+			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
+		}
+
+		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
+			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
+			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
+		}
+	}
+
+	protected void populateTypeMapCommonItems() throws TermServerScriptException {
+		typeMap.put(LOINC_PART_TYPE_CHALLENGE, precondition);
+		typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("246093002 |Component (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_DEVICE, gl.getConcept("424226004 |Using device (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_METHOD, gl.getConcept("246501002 |Technique (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_PROPERTY, gl.getConcept("370130000 |Property (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
+	}
 }

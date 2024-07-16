@@ -29,15 +29,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
 		LoincTemplatedConceptWithInheres templatedConcept = new LoincTemplatedConceptWithInheres(loincNum);
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_PROPERTY, gl.getConcept("370130000 |Property (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_METHOD, gl.getConcept("246501002 |Technique (attribute)|"));
+		templatedConcept.populateTypeMapCommonItems();
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("704319004 |Inheres in (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_DEVICE, gl.getConcept("424226004 |Using device (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_CHALLENGE, precondition);
-		
 		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
 	}
@@ -63,20 +56,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 		} else {
-			if (detailPresent(loincNum, COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-				}
-				addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
-			}
-
-			if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			}
-
-			if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			}
+			processSubComponents(loincNum, attributes, issues, componentAttribType);
 		}
 
 		if (detailPresent(loincNum, COMPNUMSUFFIX_PN)) {

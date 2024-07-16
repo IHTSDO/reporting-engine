@@ -113,6 +113,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 					&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
 					&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
 				successfullyModelledConcepts.add(templatedConcept);
+				summaryCounts.merge("Panel successfully added", 1, Integer::sum);
+			} else {
+				summaryCounts.merge("Panel unsuccessfully added", 1, Integer::sum);
 			}
 		}
 

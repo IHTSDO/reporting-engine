@@ -15,15 +15,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 	
 	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
 		LoincTemplatedConceptWithComponent templatedConcept = new LoincTemplatedConceptWithComponent(loincNum);
-		templatedConcept.typeMap.put("PROPERTY", gl.getConcept("370130000 |Property (attribute)|"));
-		templatedConcept.typeMap.put("SCALE", gl.getConcept("370132008 |Scale type (attribute)|"));
-		templatedConcept.typeMap.put("TIME", gl.getConcept("370134009 |Time aspect (attribute)|"));
-		templatedConcept.typeMap.put("SYSTEM", gl.getConcept("704327008 |Direct site (attribute)|"));
-		templatedConcept.typeMap.put("METHOD", gl.getConcept("246501002 |Technique (attribute)|"));
-		templatedConcept.typeMap.put("COMPONENT", gl.getConcept("246093002 |Component (attribute)|"));
-		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
-		templatedConcept.typeMap.put("CHALLENGE", precondition);
-		
+		templatedConcept.populateTypeMapCommonItems();
 		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
 	}
@@ -55,25 +47,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 					addAttributeFromDetailWithType(attributes, COMPDENOM_PN, issues, relativeTo);
 				}
 			}
-
-			if (detailPresent(loincNum, COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-				}
-				if (detailPresent(loincNum, COMPSUBPART2_PN)) {
-					addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
-				}
-			}
-
-			if (detailPresent(loincNum, COMPSUBPART3_PN)) {
-				LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
-				slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
-			}
-
-			if (detailPresent(loincNum, COMPSUBPART4_PN)) {
-				LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
-				slotTermAppendMap.put("COMPONENT", componentDetail.getPartName());
-			}
+			processSubComponents(loincNum, attributes, issues, componentAttribType);
 		}
 
 		//If we didn't find the component, return a null so that we record that failed mapping usage
@@ -98,6 +72,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 				newRt.setTarget(a);
 				attributes.add(newRt);
 			});
+			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "influenza antibody");
 		}
 
 		super.applyTemplateSpecificRules(attributes, loincDetail, rt);

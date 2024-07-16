@@ -15,16 +15,12 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
 	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
 		LoincTemplatedConceptWithProcess templatedConcept = new LoincTemplatedConceptWithProcess(loincNum);
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_PROPERTY, gl.getConcept("370130000 |Property (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("704323007 |Process duration (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_METHOD, gl.getConcept("246501002 |Technique (attribute)|"));
+		templatedConcept.populateTypeMapCommonItems();
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("704320005 |Towards (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_DEVICE, gl.getConcept("424226004 |Using device (attribute)|"));
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_CHALLENGE, precondition);
-		
-		templatedConcept.preferredTermTemplate = "[PROPERTY] to [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+
+		//See https://confluence.ihtsdotools.org/display/SCTEMPLATES/Process+Observable+for+LOINC+%28observable+entity%29+-+v1.0
+		//[property] of [characterizes] of [process output] in [process duration] in [direct site] by [technique] using [using device] [precondition] (observable entity)
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of excretion of [COMPONENT] in [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
 	}
 
@@ -60,28 +56,6 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 			processingFlags.add(ProcessingFlag.DROP_OUT);
 		}
 		return attributes;
-	}
-
-	private void processSubComponents(String loincNum, List<RelationshipTemplate> attributes, List<String> issues, Concept componentAttribType) throws TermServerScriptException {
-		if (detailPresent(loincNum, COMPSUBPART2_PN)) {
-			if(attributes.isEmpty()) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			}
-			addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
-		}
-
-		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART3_PN)) {
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
-			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-
-		}
-
-		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
-			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-		}
 	}
 
 	@Override
