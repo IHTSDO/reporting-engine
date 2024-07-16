@@ -114,8 +114,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			//throw new TermServerScriptException("Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");
 		}
 
-		if (!loincDetailMap.containsKey(LoincDetail.COMPONENT_PN) ||
-				!loincDetailMap.containsKey(LoincDetail.COMPNUM_PN)) {
+		if (!loincDetailMap.containsKey(COMPONENT_PN) ||
+				!loincDetailMap.containsKey(COMPNUM_PN)) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),

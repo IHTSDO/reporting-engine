@@ -142,46 +142,17 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
 		switch (loincDetail.getPartName()) {
-			case "NFr" :
-			case "MFr" :
-			case "CFr" :
-			case "AFr" :
-			case "VFr" :
-			case "SFr" : return LoincTemplatedConceptWithRelative.create(loincNum);
-			case "ACnc" :
-			case "Angle" :
-			case "CCnc" :
-			case "CCnt" :
-			case "Diam" :
-			case "LaCnc" :
-			case "LnCnc" :
-			case "LsCnc" :
-			case "MCnc" :
-			case "MCnt" :
-			case "MoM" :
-			case "NCnc" :
-			case "Naric" :
-			case "PPres" :
-			case "PrThr" :
-			case "SCnc" :
-			case "SCnt" :
-			case "Titr" :
-			case "Visc" : return LoincTemplatedConceptWithComponent.create(loincNum);
-			//case "EntMass" :
-			case "Anat" :
-			case "Aper" :
-			case "EntVol" :
-			case "ID" :
-			case "Morph" :
-			case "Prid" :
-			case "Temp" :
-			case "Type" :
-			case "Vol" : return LoincTemplatedConceptWithInheres.create(loincNum);
-			case "Susc" : return LoincTemplatedConceptWithSusceptibility.create(loincNum);
-			case "MRat" :
-			case "SRat" :
-			case "VRat" :
-			case "CRat" : return LoincTemplatedConceptWithProcess.create(loincNum);
+			case "NFr","MFr","CFr","AFr","VFr","SFr" :
+				return LoincTemplatedConceptWithRelative.create(loincNum);
+			case "ACnc","Angle","CCnc","CCnt","Diam","LaCnc","LnCnc","LsCnc","MCnc",
+			     "MCnt","MoM","NCnc","Naric","PPres","PrThr","SCnc","SCnt","Titr","Visc" :
+				return LoincTemplatedConceptWithComponent.create(loincNum);
+			case "Anat","Aper","EntVol","ID","Morph","Prid","Temp","Type","Vol" :
+				return LoincTemplatedConceptWithInheres.create(loincNum);
+			case "Susc" :
+				return LoincTemplatedConceptWithSusceptibility.create(loincNum);
+			case "MRat","SRat","VRat","CRat" :
+				return LoincTemplatedConceptWithProcess.create(loincNum);
 		}
 		return null;
 	}
@@ -411,7 +382,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 			if (isComponent) {
 				//We're only going to process the COMPNUM as that the mapping we're really interested in.
-				if (!loincDetail.getLDTColumnName().equals(LoincDetail.COMPNUM_PN)) {
+				if (!loincDetail.getLDTColumnName().equals(COMPNUM_PN)) {
 					continue;
 				}
 				ArrayList<String> issues = new ArrayList<>();
@@ -586,8 +557,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	 * @throws TermServerScriptException 
 	 */
 	protected boolean CompNumPnIsSafe(String loincNum) throws TermServerScriptException {
-		LoincDetail ldComponentPn = getLoincDetail(loincNum, LoincDetail.COMPONENT_PN);
-		LoincDetail ldCompNum = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN);
+		LoincDetail ldComponentPn = getLoincDetail(loincNum, COMPONENT_PN);
+		LoincDetail ldCompNum = getLoincDetail(loincNum, COMPNUM_PN);
 
 		if (ldComponentPn == null || ldCompNum == null) {
 			throw new TermServerScriptException(loincNum + " detail did not feature COMPONENT_PN or COMPNUM_PN");
@@ -622,8 +593,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 	
 	protected static boolean detailsIndicatePrimitiveConcept(String loincNum) throws TermServerScriptException {
-		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN) ||
-			detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
+		if (detailPresent(loincNum, COMPSUBPART3_PN) ||
+			detailPresent(loincNum, COMPSUBPART4_PN)) {
 			return true;
 		}
 		

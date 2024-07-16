@@ -45,12 +45,12 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		Concept challengeAttrib = typeMap.get("CHALLENGE");
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttrib);
+			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
 		} else {
-			LoincDetail denom = getLoincDetailIfPresent(loincNum, LoincDetail.COMPDENOM_PN);
+			LoincDetail denom = getLoincDetailIfPresent(loincNum, COMPDENOM_PN);
 			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttrib);
-				addAttributeFromDetailWithType(attributes, LoincDetail.COMPDENOM_PN, issues, relativeTo);
+				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
+				addAttributeFromDetailWithType(attributes, COMPDENOM_PN, issues, relativeTo);
 				//Check for percentage
 				if (denom.getPartName().contains("100")) {
 					attributes.add(percentAttribute);
@@ -58,11 +58,11 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 				}
 			}
 
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+			if (detailPresent(loincNum, COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttrib);
+					addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
 				}
-				addAttributeFromDetailWithType(attributes, LoincDetail.COMPSUBPART2_PN, issues, challengeAttrib);
+				addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, challengeAttrib);
 			}
 		}
 

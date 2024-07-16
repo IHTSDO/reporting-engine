@@ -50,8 +50,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		Concept componentAttribType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		
 		//We can't yet deal with "given"
-		if (detailPresent(loincNum, LoincDetail.COMPNUM_PN) &&
-			getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName().endsWith(" given")) {
+		if (detailPresent(loincNum, COMPNUM_PN) &&
+			getLoincDetail(loincNum, COMPNUM_PN).getPartName().endsWith(" given")) {
 			String issue = "Skipping concept using 'given'";
 			cpm.report(getTab(TAB_IOI), issue, loincNum);
 			issues.add(issue);
@@ -61,41 +61,41 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
 		if (CompNumPnIsSafe(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 		} else {
-			if (detailPresent(loincNum, LoincDetail.COMPSUBPART2_PN)) {
+			if (detailPresent(loincNum, COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+					addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 				}
-				addAttributeFromDetailWithType(attributes, LoincDetail.COMPSUBPART2_PN, issues, precondition);
+				addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
 			}
 
-			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART3_PN)) {
+				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 			}
 
-			if (attributes.isEmpty() && detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-				addAttributeFromDetailWithType(attributes, LoincDetail.COMPNUM_PN, issues, componentAttribType);
+			if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
+				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 			}
 		}
 
-		if (detailPresent(loincNum, LoincDetail.COMPNUMSUFFIX_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPNUMSUFFIX_PN);
+		if (detailPresent(loincNum, COMPNUMSUFFIX_PN)) {
+			LoincDetail componentDetail = getLoincDetail(loincNum, COMPNUMSUFFIX_PN);
 			if (BioPhageSuffixExceptions.contains(componentDetail.getPartNumber())) {
 				//use the COMPNUM_PN LP name to include in FSN and PT in the Inheres in slot for terming.
-				String compNumPartName = getLoincDetail(loincNum, LoincDetail.COMPNUM_PN).getPartName();
+				String compNumPartName = getLoincDetail(loincNum, COMPNUM_PN).getPartName();
 				slotTermMap.put(LOINC_PART_TYPE_COMPONENT, compNumPartName);
 			}
 		}
 		
-		if (detailPresent(loincNum, LoincDetail.COMPSUBPART3_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART3_PN);
+		if (detailPresent(loincNum, COMPSUBPART3_PN)) {
+			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
 			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
 			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 		
-		if (detailPresent(loincNum, LoincDetail.COMPSUBPART4_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, LoincDetail.COMPSUBPART4_PN);
+		if (detailPresent(loincNum, COMPSUBPART4_PN)) {
+			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
 			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
 			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
@@ -114,7 +114,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//Rule 2.f.ii.6.a.i.2
 		if (loincDetail.getPartNumber().equals(PROPERTY_ID_EXCEPTION)) {
 			//Is our COMPNUM LP19429-7	Specimen source?
-			LoincDetail compNum = getLoincDetail(externalIdentifier, LoincDetail.COMPNUM_PN);
+			LoincDetail compNum = getLoincDetail(externalIdentifier, COMPNUM_PN);
 			if (compNum.getPartNumber().equals("LP19429-7")) {
 				rt.setTarget(gl.getConcept("734842000 |Source (property) (qualifier value)|"));
 			}
@@ -125,9 +125,9 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//will come from the suffix, rather than the method
 		if (loincDetail.getPartTypeName().equals(LOINC_PART_TYPE_PROPERTY) &&
 				getLoincDetailForPartType(LOINC_PART_TYPE_PROPERTY).getPartNumber().equals(TYPE_ID_EXCEPTION) &&
-				hasDetail(LoincDetail.COMPNUMSUFFIX_PN) &&
-				BioPhageSuffixExceptions.contains(getLoincDetail(loincDetail.getLoincNum(), LoincDetail.COMPNUMSUFFIX_PN).getPartNumber())) {
-			String partNum = getLoincDetail(loincDetail.getLoincNum(), LoincDetail.COMPNUMSUFFIX_PN).getPartNumber();
+				hasDetail(COMPNUMSUFFIX_PN) &&
+				BioPhageSuffixExceptions.contains(getLoincDetail(loincDetail.getLoincNum(), COMPNUMSUFFIX_PN).getPartNumber())) {
+			String partNum = getLoincDetail(loincDetail.getLoincNum(), COMPNUMSUFFIX_PN).getPartNumber();
 			RelationshipTemplate additionalAttribute = attributePartMapManager.getPartMappedAttributeForType(NOT_SET, externalIdentifier, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
 			attributes.add(additionalAttribute);
 			processingFlags.add(ProcessingFlag.SUPPRESS_METHOD_TERM);
