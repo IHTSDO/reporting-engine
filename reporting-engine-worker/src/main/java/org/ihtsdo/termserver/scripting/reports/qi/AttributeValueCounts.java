@@ -92,7 +92,10 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Attribute Value Counts")
-				.withDescription("This report counts of attribute values used with a particular attribute type, in concepts matching the specified ECL, with optionally some specified concepts filtered out.  Additionally, an indicator is given of how much activity there has been against the concepts using this attribtue value, and what other attribute value(s) it is most often seen in combination with.")
+				.withDescription("This report shows the number of times different attribute values are used with a " + 
+					"specific attribute type in concepts that match the specified ECL. You can also filter out certain " +
+					"concepts if needed. Additionally, the report indicates the level of activity related to these " +
+					"concepts and highlights the other attribute values that are most frequently used together with them.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
