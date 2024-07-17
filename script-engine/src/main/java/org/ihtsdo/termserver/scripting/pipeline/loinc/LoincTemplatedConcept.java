@@ -114,7 +114,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	protected LoincTemplatedConcept (String loincNum) {
-		this.externalIdentifier = loincNum;
+		super(loincNum);
 	}
 
 	@Override
@@ -161,8 +161,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("19470-4")) {
-			LOGGER.debug("Check removal");
+		if (loincNum.equals("49518-4")) {
+			LOGGER.debug("Check Influenza");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
@@ -415,7 +415,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		}
 		
-		//Ensure attributes are unique (duplicates caused by multiple information sources)
+		//Ensure attributes are unique (considering both type and value)
 		checkAndRemoveDuplicateAttributes();
 		
 		if (concept.hasIssues()) {

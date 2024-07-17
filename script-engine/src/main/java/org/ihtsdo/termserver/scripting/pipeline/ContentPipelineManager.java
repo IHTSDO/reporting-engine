@@ -34,7 +34,14 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected  Map<String, Integer> summaryCounts = new HashMap<>();
 
-	protected List<String> activeIndicators = List.of("New", "Unchanged", "Updated", "Resurrected");
+	protected Set<ComponentType> skipForComparison = Set.of(
+			ComponentType.INFERRED_RELATIONSHIP,
+			ComponentType.LANGREFSET);
+
+	protected List<TemplatedConcept.IterationIndicator> activeIndicators = List.of(TemplatedConcept.IterationIndicator.NEW,
+			TemplatedConcept.IterationIndicator.UNCHANGED,
+			TemplatedConcept.IterationIndicator.MODIFIED,
+			TemplatedConcept.IterationIndicator.RESURRECTED);
 
 	protected void ingestExternalContent(String[] args) throws TermServerScriptException {
 		try {
@@ -58,9 +65,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			reportMissingMappings(getTab(TAB_MAP_ME));
 			reportExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
 			flushFiles(false);
-			Map<String, Integer> summaryCounts = new HashMap<>();
 			switch (runMode) {
-				case NEW: outputAllConceptsToDelta(successfullyModelled, summaryCounts);
+				case NEW: outputAllConceptsToDelta(successfullyModelled);
 					break;
 				case INCREMENTAL_API:
 				case INCREMENTAL_DELTA:
@@ -97,7 +103,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected abstract void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException;
 
-	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled, Map<String, Integer> summaryCounts) throws TermServerScriptException {
+	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {
@@ -110,17 +116,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 	
 
-	private Set<TemplatedConcept> determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	private void determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		LOGGER.info("Determining change set for " + successfullyModelled.size() + " successfully modelled concepts");
-		Set<ComponentType> skipForComparison = Set.of(
-				ComponentType.INFERRED_RELATIONSHIP,
-				ComponentType.LANGREFSET);
-		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
+
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
-		Set<TemplatedConcept> changeSet = new HashSet<>();
-		Set<Concept> dirtyConcepts = new HashSet<>();
-		//We can't use the same set for existing concepts that have inactivations because they use the same ids.
-		Set<Concept> conceptWithInactivations = new HashSet<>();
 
 		//Sort so that subsequent spreadsheets are somewhat comparable
 		List<TemplatedConcept> sortedModelled = successfullyModelled.stream()
@@ -128,159 +127,26 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				.collect(Collectors.toList());
 		
 		for (TemplatedConcept tc : sortedModelled) {
-			//Set this concept to be clean.  We'll mark dirty where differences exist
-			Concept concept = tc.getConcept();
-			externalIdentifiersProcessed.add(tc.getExternalIdentifier());
-
-			if (tc.getExternalIdentifier().equals("31364-3")) {
-				LOGGER.info("Debug here");
-			}
-
-			//Do we already have this concept?
-			Concept existingConcept = null;
-			String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
-			String previousIterationIndicator = null;
-			Set<String> differencesList = new HashSet<>();
-			if (existingConceptSCTID != null) {
-				existingConcept = gl.getConcept(existingConceptSCTID, false, false);
-				if (existingConcept == null) {
-					String msg = "Alternate identifier " + tc.getExternalIdentifier() + " --> " + existingConceptSCTID + " but existing concept not found.  Did it get deleted?  Reusing ID.";
-					//throw new TermServerScriptException(");
-					addFinalWords(msg);
-					concept.setId(existingConceptSCTID);
-					previousIterationIndicator = "Resurrected";
-					differencesList.add("Resurrected");
-				} else {
-					//Temporarily correct all Alternate Identifiers
-					existingConcept.setAlternateIdentifiers(new HashSet<>());
-					existingConcept.addAlternateIdentifier(tc.getExternalIdentifier(), scheme.getId());
-				}
-			}
-
-			//We need to make any adjustments to inferred relationships before we lose the stated ones in the transformation to axioms
-			if (adjustInferredRelationships(concept, existingConcept)) {
-				dirtyConcepts.add(concept);
-			}
-			
-			if (existingConcept == null) {
-				//This concept is entirely new, prepare to output all
-				if (runMode.equals(RunMode.INCREMENTAL_DELTA)) {
-					conceptCreator.populateIds(concept);
-				}
-				changeSet.add(tc);
-				dirtyConcepts.add(concept);
-				if (previousIterationIndicator == null) {
-					previousIterationIndicator = "New";
-					differencesList.add("All New");
-				}
-				convertStatedRelationshipsToAxioms(concept, true, true);
-				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
-			} else {
-				if (existingConceptSCTID.equals("89711010000103")) {
-					LOGGER.debug("Here");
-				}
-				SnomedUtils.getAllComponents(concept).forEach(c -> { 
-					c.setClean();
-					//Normalise module
-					c.setModuleId(conceptCreator.getTargetModuleId());
-				});
-
-				//We need to populate the concept SCTID before we can create axiom entries
-				concept.setId(existingConceptSCTID);
-				//And we can apply that to the alternate identifiers early on so they don't show up as a change
-				concept.getAlternateIdentifiers().stream()
-					.forEach(a -> a.setReferencedComponentId(existingConceptSCTID));
-				//Copy the axiom entry from the existing concept so relationship changes can be applied there
-				concept.setAxiomEntries(existingConcept.getAxiomEntries(ActiveState.ACTIVE, false));
-				convertStatedRelationshipsToAxioms(concept, true, true);
-				concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
-
-				List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(existingConcept, tc.getConcept(), skipForComparison);
-				if (ComponentComparisonResult.hasChanges(componentComparisonResults)) {
-					previousIterationIndicator = "Updated";
-				} else {
-					previousIterationIndicator = "Unchanged";
-					differencesList.add("All Unchanged");
-				}
-				
-				for (ComponentComparisonResult componentComparisonResult : componentComparisonResults) {
-					Component existingComponent = componentComparisonResult.getLeft();
-					Component newlyModelledComponent = componentComparisonResult.getRight();
-
-					if (!componentComparisonResult.isMatch() && existingConcept != null) {
-						differencesList.add(componentComparisonResult.getComponentTypeStr());
-					}
-					
-					//If we have both, then just output the change
-					if (existingComponent != null && newlyModelledComponent != null) {
-						newlyModelledComponent.setId(existingComponent.getId());
-						if (componentComparisonResult.isMatch()) {
-							newlyModelledComponent.setClean();
-						} else {
-							newlyModelledComponent.setDirty();
-							dirtyConcepts.add(concept);}
-						
-						//Any component specific actions?
-						switch (existingComponent.getComponentType()) {
-							case CONCEPT:
-								concept.getAlternateIdentifiers().stream()
-									.forEach(a -> a.setReferencedComponentId(existingConceptSCTID));
-								break;
-							case DESCRIPTION:
-								Description desc = (Description)existingComponent;
-								Description newDesc = (Description)newlyModelledComponent;
-								newDesc.setConceptId(existingConcept.getId());
-								//Copy over the langRefset entries from the existing description
-								//I'm assuming we're never going to change the acceptability
-								newDesc.setLangRefsetEntries(desc.getLangRefsetEntries());
-								break;
-							default:
-								break;
-						}
-					} else if (existingComponent != null && newlyModelledComponent == null) {
-						//If we have an existing component and it has no newly Modelled counterpart, 
-						//then inactivate it
-						existingComponent.setActive(false);
-						existingComponent.setDirty();
-						conceptWithInactivations.add(existingConcept);
-					} else {
-						//If we only have a newly modelled component, give it an id 
-						//and prepare to output
-						conceptCreator.populateComponentId(existingConcept, newlyModelledComponent, externalContentModule);
-						newlyModelledComponent.setDirty();
-						dirtyConcepts.add(concept);
-					}
-				}
-			}
-
-			//Update the summary count based on the comparison to the previous iteration
-			summaryCounts.merge(previousIterationIndicator, 1, Integer::sum);
-			//Is this a high usage concept?
-			if (activeIndicators.contains(previousIterationIndicator) && tc.isHighUsage()) {
-				summaryCounts.merge("Active with high usage", 1, Integer::sum);
-			}
-			if (activeIndicators.contains(previousIterationIndicator) && tc.isHighestUsage()) {
-				summaryCounts.merge("Active with highest usage", 1, Integer::sum);
-			}
-			String differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
-			doProposedModelComparison(tc.getExternalIdentifier(), tc, existingConcept, previousIterationIndicator, differencesListStr);
+			determineChanges(tc, externalIdentifiersProcessed);
 		}
 
+		determineInactivations(sortedModelled);
+	}
+
+	private void determineInactivations(List<TemplatedConcept> sortedModelled) throws TermServerScriptException {
 		//What external codes do we currently have that we _aren't_ going forward with.
 		//Those need to be inactivated
+		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
 		Set<String> inactivatingCodes =  new HashSet<>(altIdentifierMap.keySet());
-		inactivatingCodes.removeAll(successfullyModelled.stream().map(m -> m.getExternalIdentifier()).collect(Collectors.toSet()));
+		inactivatingCodes.removeAll(sortedModelled.stream().map(m -> m.getExternalIdentifier()).collect(Collectors.toSet()));
 		for (String inactivatingCode : inactivatingCodes) {
 			String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
 			Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
-			String differencesListStr = "Concept already removed";
 			if (existingConcept != null) {
-				List<String> differencesList = inactivateConcept(existingConcept);
-				differencesListStr = differencesList.stream().collect(Collectors.joining(",\n"));
 				inactivateConcept(existingConcept);
-				dirtyConcepts.add(existingConcept);
+				conceptCreator.outputRF2Inactivation(existingConcept);
 			}
-			doProposedModelComparison(inactivatingCode, null, existingConcept, "Removed", differencesListStr);
+			doProposedModelComparison(TemplatedConceptNull.create(inactivatingCode));
 			summaryCounts.merge("Removed", 1, Integer::sum);
 
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
@@ -291,16 +157,162 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
 			}
 		}
+	}
 
-		for (Concept dirtyConcept : dirtyConcepts) {
-			conceptCreator.outputRF2(getTab(TAB_IMPORT_STATUS), dirtyConcept, "");
+	private void determineChanges(TemplatedConcept tc, Set<String> externalIdentifiersProcessed) throws TermServerScriptException {
+		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
+		Concept concept = tc.getConcept();
+		externalIdentifiersProcessed.add(tc.getExternalIdentifier());
+
+		//Do we already have this concept?
+		String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
+		Set<String> differencesList = new HashSet<>();
+		Concept existingConcept = getExistingConceptIfExists(existingConceptSCTID, tc);
+		tc.setExistingConcept(existingConcept);
+
+		//We need to make any adjustments to inferred relationships before we lose the stated ones in the transformation to axioms
+		adjustInferredRelationships(concept, existingConcept);
+
+		if (existingConcept == null) {
+			//This concept is entirely new, prepare to output all
+			if (runMode.equals(RunMode.INCREMENTAL_DELTA)) {
+				conceptCreator.populateIds(concept);
+			}
+
+			if (tc.getIterationIndicator() == null) {
+				tc.setIterationIndicator(TemplatedConcept.IterationIndicator.NEW);
+				differencesList.add("All New");
+			}
+			convertStatedRelationshipsToAxioms(concept, true, true);
+			concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
+		} else {
+			determineChangesWithExistingConcept(tc);
 		}
 
-		for (Concept conceptWithInactivation : conceptWithInactivations) {
-			conceptCreator.outputRF2Inactivation(conceptWithInactivation);
+		//Update the summary count based on the comparison to the previous iteration
+		summaryCounts.merge(tc.getIterationIndicator().toString(), 1, Integer::sum);
+		//Is this a high usage concept?
+		if (activeIndicators.contains(tc.getIterationIndicator()) && tc.isHighUsage()) {
+			summaryCounts.merge("Active with high usage", 1, Integer::sum);
+		}
+		if (activeIndicators.contains(tc.getIterationIndicator()) && tc.isHighestUsage()) {
+			summaryCounts.merge("Active with highest usage", 1, Integer::sum);
+		}
+		doProposedModelComparison(tc);
+
+		if (!tc.getIterationIndicator().equals(TemplatedConcept.IterationIndicator.UNCHANGED)) {
+			conceptCreator.outputRF2(getTab(TAB_IMPORT_STATUS), tc.getConcept(), "");
 		}
 
-		return changeSet;
+		if (tc.existingConceptHasInactivations()) {
+			conceptCreator.outputRF2Inactivation(tc.getExistingConcept());
+		}
+	}
+
+	/**
+	 * @return true if changes are detected
+	 * @throws TermServerScriptException
+	 */
+	private boolean determineChangesWithExistingConcept(TemplatedConcept tc) throws TermServerScriptException {
+		if (tc.getExistingConcept().getId().equals("89711010000103")) {
+			LOGGER.debug("Here");
+		}
+		boolean changesDetected = false;
+		SnomedUtils.getAllComponents(tc.getConcept()).forEach(c -> {
+			c.setClean();
+			//Normalise module
+			c.setModuleId(conceptCreator.getTargetModuleId());
+		});
+
+		//We need to populate the concept SCTID before we can create axiom entries
+		tc.getConcept().setId(tc.getExistingConcept().getId());
+		//And we can apply that to the alternate identifiers early on so they don't show up as a change
+		tc.getConcept().getAlternateIdentifiers().stream()
+				.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
+		//Copy the axiom entry from the existing concept so relationship changes can be applied there
+		tc.getConcept().setAxiomEntries(tc.getExistingConcept().getAxiomEntries(ActiveState.ACTIVE, false));
+		convertStatedRelationshipsToAxioms(tc.getConcept(), true, true);
+		tc.getConcept().setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(tc.getConcept()));
+
+		List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(tc.getExistingConcept(), tc.getConcept(), skipForComparison);
+		if (ComponentComparisonResult.hasChanges(componentComparisonResults)) {
+			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MODIFIED);
+			changesDetected = true;
+		} else {
+			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.UNCHANGED);
+			tc.addDifferenceFromExistingConcept("All Unchanged");
+		}
+
+		for (ComponentComparisonResult componentComparisonResult : componentComparisonResults) {
+			processComponentComparison(tc, componentComparisonResult);
+		}
+		return changesDetected;
+	}
+
+	private void processComponentComparison(TemplatedConcept tc, ComponentComparisonResult componentComparisonResult) throws TermServerScriptException {
+		Component existingComponent = componentComparisonResult.getLeft();
+		Component newlyModelledComponent = componentComparisonResult.getRight();
+
+		if (!componentComparisonResult.isMatch()) {
+			tc.addDifferenceFromExistingConcept(componentComparisonResult.getComponentTypeStr());
+		}
+
+		//If we have both, then just output the change
+		if (existingComponent != null && newlyModelledComponent != null) {
+			newlyModelledComponent.setId(existingComponent.getId());
+			if (componentComparisonResult.isMatch()) {
+				newlyModelledComponent.setClean();
+			} else {
+				newlyModelledComponent.setDirty();
+			}
+
+			//Any component specific actions?
+			switch (existingComponent.getComponentType()) {
+				case CONCEPT:
+					tc.getConcept().getAlternateIdentifiers().stream()
+							.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
+					break;
+				case DESCRIPTION:
+					Description desc = (Description)existingComponent;
+					Description newDesc = (Description)newlyModelledComponent;
+					newDesc.setConceptId(tc.getExistingConcept().getId());
+					//Copy over the langRefset entries from the existing description
+					//I'm assuming we're never going to change the acceptability
+					newDesc.setLangRefsetEntries(desc.getLangRefsetEntries());
+					break;
+				default:
+					break;
+			}
+		} else if (existingComponent != null && newlyModelledComponent == null) {
+			//If we have an existing component and it has no newly Modelled counterpart, then inactivate it
+			existingComponent.setActive(false);
+			existingComponent.setDirty();
+			tc.setExistingConceptHasInactivations(true);
+		} else {
+			//If we only have a newly modelled component, give it an id
+			//and prepare to output
+			conceptCreator.populateComponentId(tc.getExistingConcept(), newlyModelledComponent, externalContentModule);
+			newlyModelledComponent.setDirty();
+		}
+	}
+
+	private Concept getExistingConceptIfExists(String existingConceptSCTID, TemplatedConcept tc) throws TermServerScriptException {
+		Concept existingConcept = null;
+		if (existingConceptSCTID != null) {
+			existingConcept = gl.getConcept(existingConceptSCTID, false, false);
+			if (existingConcept == null) {
+				String msg = "Alternate identifier " + tc.getExternalIdentifier() + " --> " + existingConceptSCTID + " but existing concept not found.  Did it get deleted?  Reusing ID.";
+				//throw new TermServerScriptException(");
+				addFinalWords(msg);
+				tc.getConcept().setId(existingConceptSCTID);
+				tc.setIterationIndicator(TemplatedConcept.IterationIndicator.RESURRECTED);
+			} else {
+				//Temporarily correct all Alternate Identifiers
+				existingConcept.setAlternateIdentifiers(new HashSet<>());
+				existingConcept.addAlternateIdentifier(tc.getExternalIdentifier(), scheme.getId());
+			}
+		}
+		return existingConcept;
 	}
 
 	private boolean adjustInferredRelationships(Concept concept, Concept existingConcept) {
@@ -342,7 +354,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return differencesList;
 	}
 
-	protected abstract void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept, String statusStr, String differencesListStr) throws TermServerScriptException;
+	protected abstract void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException;
 
 	protected abstract void loadSupportingInformation() throws TermServerScriptException;
 

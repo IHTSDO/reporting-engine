@@ -158,8 +158,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 
 	@Override
-	protected void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept,
-			String statusStr, String differencesListStr) throws TermServerScriptException {
+	protected void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException {
 		throw new NotImplementedException();
 	}
 }

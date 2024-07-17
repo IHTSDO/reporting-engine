@@ -37,8 +37,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	public static final String FSN_FAILURE = "FSN indicates failure";
 
 	// Regular expression to find tokens within square brackets
-	private static final String allCapsSlotRegex = "\\[([A-Z]+)\\]";
-	private static final Pattern allCapsSlotPattern = Pattern.compile(allCapsSlotRegex);
+	private static final String ALL_CAPS_SLOT_REGEX = "\\[([A-Z]+)\\]";
+	private static final Pattern allCapsSlotPattern = Pattern.compile(ALL_CAPS_SLOT_REGEX);
 	
 	//private List<String> previousIterationLoincNums = new ArrayList<>();
 	int existedPreviousIteration = 0;
@@ -151,7 +151,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			String fsn = templatedConcept.getConcept().getFsn();
 			boolean insufficientTermPopulation = fsn.contains("[");
 			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
-			if (insufficientTermPopulation && isAllCapsSlot(fsn)) {
+			if (insufficientTermPopulation && hasAllCapsSlot(fsn)) {
 				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
 			} else if (!templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
 				//We'll move this call to later when we work out the change set
@@ -174,15 +174,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	 * @param fsn The string to check.
 	 * @return true if there is at least one token in all caps within square brackets; false otherwise.
 	 */
-	private boolean isAllCapsSlot(String fsn) {
+	private boolean hasAllCapsSlot(String fsn) {
 		Matcher matcher = allCapsSlotPattern.matcher(fsn);
-
-		while (matcher.find()) {
-			// If a match is found, return true
-			return true;
-		}
-		// If no all-caps tokens are found within square brackets, return false
-		return false;
+		return matcher.find();
 	}
 
 	private boolean loincNumContainsObjectionableWord(String loincNum) throws TermServerScriptException {
@@ -215,7 +209,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	private LoincTemplatedConcept doPanelModeling(String panelLoincNum) throws TermServerScriptException {
-		if (!confirmLoincNumExists(panelLoincNum) || loincNumContainsObjectionableWord(panelLoincNum)) {
+		//Don't do objectionable word check on panels - 'panel' is our only current objectionable word!
+		if (!confirmLoincNumExists(panelLoincNum)) {
 			return null;
 		}
 
@@ -224,12 +219,11 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		return templatedConcept;
 	}
 
-	protected void doProposedModelComparison(String loincNum, TemplatedConcept loincTemplatedConcept, Concept existingConcept, String previousIterationIndicator, String differencesStr) throws TermServerScriptException {
+	protected void doProposedModelComparison(TemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
 		//Do we have this loincNum
-		Concept proposedLoincConcept = null;
-		if (loincTemplatedConcept != null) {
-			proposedLoincConcept = loincTemplatedConcept.getConcept();
-		}
+		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
+		Concept existingConcept = loincTemplatedConcept.getExistingConcept();
+		String loincNum = loincTemplatedConcept.getExternalIdentifier();
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 		
 		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
@@ -241,9 +235,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
 				loincNum, 
 				proposedLoincConcept != null ? proposedLoincConcept.getId() : existingConceptId,
-				previousIterationIndicator,
-				loincTemplatedConcept == null ? "N/A" : loincTemplatedConcept.getClass().getSimpleName(),
-				differencesStr,
+				loincTemplatedConcept.getIterationIndicator(),
+				loincTemplatedConcept.getClass().getSimpleName(),
+				loincTemplatedConcept.getDifferencesFromExistingConcept(),
 				proposedDescriptionsStr,
 				previousDescriptionsStr,
 				proposedSCG, 

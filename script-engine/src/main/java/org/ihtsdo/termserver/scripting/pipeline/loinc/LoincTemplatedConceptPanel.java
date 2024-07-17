@@ -14,18 +14,27 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 		super(loincNum);
 	}
 
-	public static LoincTemplatedConcept create(String panelLoincNum) {
+	private Concept panelParent;
+
+	public static LoincTemplatedConcept create(String panelLoincNum) throws TermServerScriptException {
 		LoincTemplatedConceptPanel templatedConcept = new LoincTemplatedConceptPanel(panelLoincNum);
 		templatedConcept.createConcept();
 		templatedConcept.generateDescriptions();
 		return templatedConcept;
 	}
 
-	private void createConcept() {
+	private void createConcept() throws TermServerScriptException {
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
-		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
+		concept.addRelationship(IS_A, getPanelParent());
 		concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+	}
+
+	private Concept getPanelParent() throws TermServerScriptException {
+		if (panelParent == null) {
+			panelParent = gl.getConcept("540081010000107 |Panel (observable entity)|)", true, false);
+		}
+		return panelParent;
 	}
 
 	private void generateDescriptions() {
@@ -48,7 +57,7 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 

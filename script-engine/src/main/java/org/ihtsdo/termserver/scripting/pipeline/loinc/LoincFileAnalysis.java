@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +20,6 @@ public class LoincFileAnalysis extends LoincScript {
 
 	private static final int FILE_IDX_LOINC_FULL = 0;
 	private static final int FILE_IDX_ALT_ID = 1;
-	//private static final int FILE_IDX_20K = 2;
 	private static final int FILE_IDX_BE_2K = 2;
 
 	Set<String> loincNumsInPreview = new HashSet<>();
@@ -143,8 +141,7 @@ public class LoincFileAnalysis extends LoincScript {
 	}
 
 	@Override
-	protected void doProposedModelComparison(String externalIdentifier, TemplatedConcept tc, Concept existingConcept,
-			String statusStr, String differencesListStr) throws TermServerScriptException {
+	protected void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException {
 		throw new NotImplementedException();
 	}
 }
