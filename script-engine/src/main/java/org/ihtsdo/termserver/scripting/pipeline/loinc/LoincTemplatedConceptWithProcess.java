@@ -20,7 +20,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
 		//See https://confluence.ihtsdotools.org/display/SCTEMPLATES/Process+Observable+for+LOINC+%28observable+entity%29+-+v1.0
 		//[property] of [characterizes] of [process output] in [process duration] in [direct site] by [technique] using [using device] [precondition] (observable entity)
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of excretion of [COMPONENT] in [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.preferredTermTemplate = "[PROPERTY] of excretion of [COMPONENT] in [TIME] in [SYSTEM] by [METHOD] using [DEVICE] [CHALLENGE]";
 		return templatedConcept;
 	}
 

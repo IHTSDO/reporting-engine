@@ -153,9 +153,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
 			if (insufficientTermPopulation && hasAllCapsSlot(fsn)) {
 				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
-			} else if (!templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
-				//We'll move this call to later when we work out the change set
-				//doProposedModelComparison(loincNum, templatedConcept);
 			}
 
 			if (templatedConcept.getConcept().hasIssues() ) {

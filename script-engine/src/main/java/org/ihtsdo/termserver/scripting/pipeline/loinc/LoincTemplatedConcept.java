@@ -86,6 +86,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
 		termTweakingMap.put("734842000", "source"); //734842000 |Source (property) (qualifier value)|
 		termTweakingMap.put("718500008", "excretion"); //718500008 |Excretory process (qualifier value)|
+		termTweakingMap.put("4421005", "cell"); //4421005 |Cell structure (cell structure)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
 		List<String> removals = Arrays.asList("submitted as specimen", "specimen", "structure", "of", "at", "from");
@@ -161,8 +162,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("49518-4")) {
-			LOGGER.debug("Check Influenza");
+		if (loincNum.equals("104597-0")) {
+			LOGGER.debug("Check Glucometer");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
