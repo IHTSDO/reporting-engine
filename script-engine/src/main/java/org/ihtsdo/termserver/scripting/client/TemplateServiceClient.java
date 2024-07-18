@@ -6,8 +6,6 @@ import java.util.List;
 
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.authoringtemplate.domain.*;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.snomed.authoringtemplate.service.LogicalTemplateParserService;
@@ -20,15 +18,13 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.*;
-import org.springframework.web.util.UriUtils;
 
 /**
  * Client can either load a template from the template service, or from a local resource
  */
 public class TemplateServiceClient {
-	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateServiceClient.class);
 
-	private static String TEMPLATES = "/templates/";
+	private static final String TEMPLATES = "/templates?templateName=";
 	
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
@@ -58,13 +54,13 @@ public class TemplateServiceClient {
 	}
 	
 	public ConceptTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
-		ResponseEntity<ConceptTemplate> response = restTemplate.exchange(
-				//TEMPLATES +  UriUtils.encodePath(templateName, "UTF-8"), - this gives us double URL encoding
-				TEMPLATES +  templateName,
+		ResponseEntity<List<ConceptTemplate>> response = restTemplate.exchange(
+				TEMPLATES + templateName,
 				HttpMethod.GET,
 				null,
-				ConceptTemplate.class);
-		return response.getBody();
+				new ParameterizedTypeReference<List<ConceptTemplate>>(){});
+		List<ConceptTemplate> templates = response.getBody();
+		return (templates == null || templates.isEmpty()) ? null : templates.get(0);
 	}
 	
 	public LogicalTemplate parseLogicalTemplate (String logicalTemplateStr) throws JsonParseException, JsonMappingException, IOException {
@@ -83,7 +79,7 @@ public class TemplateServiceClient {
 				serverUrl = serverUrl.substring(0,cutPoint);
 			}
 		}
-		
+
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(serverUrl)
 				.additionalMessageConverters(new GsonHttpMessageConverter())
