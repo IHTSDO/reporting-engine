@@ -147,13 +147,20 @@ public abstract class DeltaGenerator extends TermServerScript {
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		super.checkSettingsWithUser(jobRun);
-		
-		print ("Targetting which namespace? [" + nameSpace + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			nameSpace = response;
+
+		determineMostLikelySourceModuleFromProject();
+		if (sourceModuleIds.isEmpty()) {
+			sourceModuleIds = Set.of(SCTID_CORE_MODULE, SCTID_MODEL_MODULE);
 		}
 
+		checkSourceAndTargetModulesWithUser();
+		checkDependencySettingsWithUser();
+		if (newIdsRequired && descIdGenerator == null && relIdGenerator == null && conIdGenerator == null) {
+			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option, or specify newIdsRequired=false");
+		}
+	}
+
+	private void determineMostLikelySourceModuleFromProject() {
 		//If we're working in an extension and the source modules haven't been set, suggest
 		//the default module for that project
 		if (!projectName.endsWith(".zip") && sourceModuleIds.isEmpty()){
@@ -176,46 +183,55 @@ public abstract class DeltaGenerator extends TermServerScript {
 				LOGGER.error("Failed to retrieve project metadata for " + projectName, e);
 			}
 		}
+	}
 
-		if (sourceModuleIds.isEmpty()) {
-			sourceModuleIds = Set.of(SCTID_CORE_MODULE, SCTID_MODEL_MODULE);
+	private void checkSourceAndTargetModulesWithUser() throws TermServerScriptException {
+		print ("Targetting which namespace? [" + nameSpace + "]: ");
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			nameSpace = response;
 		}
-		print ("Considering which moduleId(s)? [" + StringUtils.join(sourceModuleIds, ",") + "]: ");
+
+		print ("Considering which source moduleId(s)? [" + StringUtils.join(sourceModuleIds, ",") + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			sourceModuleIds = Set.of(response.split(COMMA));
 		}
-		
+
+		//Are we targeting a namespace that indicates we're doing an extract without shifting the source module?
+		String firstSourceModule = sourceModuleIds.iterator().next();
+		if (nameSpace.length() > 4 && firstSourceModule.contains(nameSpace)) {
+			println("Target namespace indicates that we're keeping the source module the same.");
+			targetModuleId = firstSourceModule;
+		}
+
 		print ("Targetting which language code? [" + languageCode + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			languageCode = response;
 		}
-		
-		String langRefsetIdStr = StringUtils.join(targetLangRefsetIds, ",");  
+
+		String langRefsetIdStr = StringUtils.join(targetLangRefsetIds, ",");
 		print ("Targetting which language refset(s)? [" + langRefsetIdStr + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			targetLangRefsetIds = response.split(COMMA);
 		}
-		
+
 		print ("What's the Edition? [" + edition + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			edition = response;
 		}
-		
+
 		if (sourceModuleIds.isEmpty() || targetLangRefsetIds  == null) {
 			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
 			throw new TermServerScriptException(msg);
 		}
-		
-		if (newIdsRequired && descIdGenerator == null && relIdGenerator == null && conIdGenerator == null) {
-			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option, or specify newIdsRequired=false");
-		}
-		
+	}
+
+	private void checkDependencySettingsWithUser() {
 		boolean dependencySpecified = (getDependencyArchive() != null);
-		
 		if (projectName != null && projectName.endsWith(".zip")) {
 			String choice = dependencySpecified? "Y":"N";
 			if (!dependencySpecified) {
@@ -225,7 +241,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			}
 			if (choice.toUpperCase().equals("Y")) {
 				print ("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
-				response = STDIN.nextLine().trim();
+				String response = STDIN.nextLine().trim();
 				if (!response.isEmpty()) {
 					setDependencyArchive(response);
 				}
@@ -233,7 +249,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 			getArchiveManager(true).setLoadDependencyPlusExtensionArchive(getDependencyArchive() != null);
 		}
 	}
-	
+
+
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		super.postInit(tabNames, columnHeadings, false);
 		initialiseFileHeaders();

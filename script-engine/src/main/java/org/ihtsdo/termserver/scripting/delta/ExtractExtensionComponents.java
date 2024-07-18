@@ -55,6 +55,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	protected boolean copyInferredRelationshipsToStatedWhereMissing = true;
 
+	protected String[] componentIdsToProcess = null; //If it's just a couple, no need for a file, just specify here.
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		// ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
@@ -69,14 +71,14 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.sourceModuleIds = "11000181102"; //Estonia
 			//delta.sourceModuleIds = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.sourceModuleIds = "51000202101"; //Norway Module
-			delta.sourceModuleIds = Set.of("57091000202101");  //Norway module for medicines
+			//delta.sourceModuleIds = Set.of("57091000202101");  //Norway module for medicines
 			//delta.sourceModuleIds = "999000011000000103"; // UK Clinical Extension
 			//delta.sourceModuleIds = "83821000000107"; //UK Composition Module
 			//delta.sourceModuleIds = "731000124108";  //US Module
 			//delta.sourceModuleIds = "332351000009108"; //Vet Extension
 
 			delta.newIdsRequired = true;
-			delta.getArchiveManager().setRunIntegrityChecks(false);
+			delta.getArchiveManager().setRunIntegrityChecks(true);
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
 			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
@@ -129,7 +131,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 	
 	private void preProcessFile() throws TermServerScriptException {
-		preProcessConcepts(super.processFile(), false);
+		//Are we working with hard coded list, or pulling from a file?
+		if (componentIdsToProcess != null && componentIdsToProcess.length > 0) {
+			List<Component> conceptsToProcess = Arrays.stream(componentIdsToProcess)
+					.map(s -> (Component)gl.getConceptSafely(s))
+					.collect(Collectors.toList());  //Not 'toList' here because we need a mutable collection
+			preProcessConcepts(conceptsToProcess, false);
+		} else {
+			preProcessConcepts(super.processFile(), false);
+		}
 	}
 
 	private void preProcessConcepts(List<Component> componentsOfInterest, boolean viaReview) throws TermServerScriptException {
@@ -201,106 +211,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		for (Component component : componentsOfInterest) {
 			Concept c = (Concept)component;
-			boolean alsoImportingAncestors = false;
-			boolean alsoImportingDescendants = false;
-			
-			Set<Concept> ancestorsToImport = gl.getAncestorsCache().getAncestors(c, true);  //Need a mutable set
-			//If no ancestors in common with what we're loading, then concept is free
-			ancestorsToImport.retainAll(componentsOfInterest);
-			if (ancestorsToImport.size() > 0) {
-				alsoImportingAncestors = true;
-				//We'll stop here and allow that ancestor to pick up its descendants when its turn comes
-				continue;
-			} 
-			
-			//Does concept have descendants that we want to group with it?
-			//We need the parents to be imported before any children, so rework any set as one that maintains the order input
-			Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendants(c, true);
-			descendantsToImport.retainAll(componentsOfInterest);
-			if (descendantsToImport.size() > 0) {
-				alsoImportingDescendants = true;
-				LOGGER.info(c + " has " + descendantsToImport.size() + " descendants to import");
-				if (descendantsToImport.size() >= conceptsPerArchive) {
-					//We'll need to load this concept in it's own import and promote to the project 
-					//so it's available as a parent for subsequent loads
-					//requiresFirstPassLoad.add(c);
-					//continue;
-					LOGGER.warn("Exceeding batch size by " + (descendantsToImport.size() - conceptsPerArchive) + " for " + c + " (" + descendantsToImport.size() + " descendants).  Consider pre-importing and promoting first.");
-				}
-				//Don't want to import a concept twice, but if we do, we have a problem
-				int origSize = descendantsToImport.size();
-				descendantsToImport.removeAll(allocatedConcepts);
-				if (origSize != descendantsToImport.size()) {
-					throw new TermServerScriptException(c + " has descendants already being imported by another concept - investigate");
-				}
-				
-				allocatedConcepts.addAll(descendantsToImport);
-				parentChildMap.put(c, descendantsToImport);
-			}
-			
-			if (!alsoImportingAncestors && !alsoImportingDescendants) {
-				footlooseConcepts.add(c);
-			}
+			assignConceptToBatch(c, componentsOfInterest, parentChildMap, allocatedConcepts, footlooseConcepts);
 		}
 		
 		//Now work through the list and see if we can fit any together
 		Set<Concept> batchesAvailableToMerge = new HashSet<>(parentChildMap.keySet());
-		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
-			//Have we already merged this batch?
-			if (!batchesAvailableToMerge.contains(batchParent)) {
-				continue;
-			}
-			batchesAvailableToMerge.remove(batchParent);
-			
-			Concept bestMerge = null;
-			do {
-				//How many concepts are in this batch, +1 for the parent itself
-				Set<Concept> batchContents = parentChildMap.get(batchParent);
-				int thisBatchSize = batchContents.size() + 1;
-				int topUpSize = conceptsPerArchive - thisBatchSize;
-				bestMerge = findBestMerge(parentChildMap, batchesAvailableToMerge, topUpSize);
-				if (bestMerge != null) {
-					batchesAvailableToMerge.remove(bestMerge);
-					Set<Concept> thisBatch = parentChildMap.get(batchParent);
-					thisBatch.add(bestMerge);
-					thisBatch.addAll(parentChildMap.get(bestMerge));
-					LOGGER.info ("Adding " + bestMerge + "(" + (parentChildMap.get(bestMerge).size() + 1) + ") to batch with parent " + batchParent);
-					parentChildMap.remove(bestMerge);
-				}
-			} while (bestMerge != null);
-		}
+		mergeBatches(parentChildMap, batchesAvailableToMerge);
 		
 		//Now allocate the footloose concepts to fill up existing or new batches
-		LOGGER.info("Allocating " + footlooseConcepts.size() + " loose concepts to " + parentChildMap.size() + " existing batches");
-		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
-			int thisBatchSize = parentChildMap.get(batchParent).size() + 1;
-			if (thisBatchSize >= conceptsPerArchive) {
-				continue;
-			}
-			do {
-				Concept topUp = footlooseConcepts.remove();
-				parentChildMap.get(batchParent).add(topUp);
-				thisBatchSize = parentChildMap.get(batchParent).size() + 1;
-			} while (thisBatchSize < conceptsPerArchive && !footlooseConcepts.isEmpty());
-		}
-		
-		//The number of concepts in the map plus the footloose concepts should add up to our total
-		long mapCount = parentChildMap.values().stream()
-				.flatMap(l -> l.stream())
-				.count();
-		mapCount += parentChildMap.size();  //Also add 1 for each parent 
-		if (((int)mapCount + footlooseConcepts.size()) != componentsOfInterest.size()) {
-			//Which concepts have gone missing?
-			Set<Concept> allocated = parentChildMap.values().stream()
-					.flatMap(l -> l.stream())
-					.collect(Collectors.toSet());
-			allocated.addAll(parentChildMap.keySet());
-			allocated.addAll(footlooseConcepts);
-			componentsOfInterest.removeAll(allocated);
-			componentsOfInterest.stream()
-					.forEach(c -> LOGGER.error("Gone missing: " + c));
-			throw new TermServerScriptException("Batched count " + mapCount + " + " +  footlooseConcepts.size() + " does not equal expected " + componentsOfInterest.size() + " concepts.");
-		}
+		allocateFootLooseConcepts(parentChildMap, componentsOfInterest, footlooseConcepts);
 		
 		//Add these batches into our queue, as we log the size of each one
 		LOGGER.info("Batches Formed:");
@@ -338,6 +257,109 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			throw new TermServerScriptException("Expected to allocated " + componentsOfInterest.size() + " concepts.");
 		}
 		
+	}
+
+	private void allocateFootLooseConcepts(Map<Concept, Set<Concept>> parentChildMap, List<Component> componentsOfInterest, Queue<Concept> footlooseConcepts) throws TermServerScriptException {
+		LOGGER.info("Allocating " + footlooseConcepts.size() + " loose concepts to " + parentChildMap.size() + " existing batches");
+		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
+			int thisBatchSize = parentChildMap.get(batchParent).size() + 1;
+			if (thisBatchSize >= conceptsPerArchive) {
+				continue;
+			}
+			do {
+				Concept topUp = footlooseConcepts.remove();
+				parentChildMap.get(batchParent).add(topUp);
+				thisBatchSize = parentChildMap.get(batchParent).size() + 1;
+			} while (thisBatchSize < conceptsPerArchive && !footlooseConcepts.isEmpty());
+		}
+
+		//The number of concepts in the map plus the footloose concepts should add up to our total
+		long mapCount = parentChildMap.values().stream()
+				.flatMap(l -> l.stream())
+				.count();
+		mapCount += parentChildMap.size();  //Also add 1 for each parent
+		if (((int)mapCount + footlooseConcepts.size()) != componentsOfInterest.size()) {
+			//Which concepts have gone missing?
+			Set<Concept> allocated = parentChildMap.values().stream()
+					.flatMap(l -> l.stream())
+					.collect(Collectors.toSet());
+			allocated.addAll(parentChildMap.keySet());
+			allocated.addAll(footlooseConcepts);
+			componentsOfInterest.removeAll(allocated);
+			componentsOfInterest.stream()
+					.forEach(c -> LOGGER.error("Gone missing: " + c));
+			throw new TermServerScriptException("Batched count " + mapCount + " + " +  footlooseConcepts.size() + " does not equal expected " + componentsOfInterest.size() + " concepts.");
+		}
+	}
+
+	private void assignConceptToBatch(Concept c, List<Component> componentsOfInterest, Map<Concept, Set<Concept>> parentChildMap, Set<Concept> allocatedConcepts, Queue<Concept> footlooseConcepts) throws TermServerScriptException {
+		boolean alsoImportingAncestors = false;
+		boolean alsoImportingDescendants = false;
+
+		Set<Concept> ancestorsToImport = gl.getAncestorsCache().getAncestors(c, true);  //Need a mutable set
+		//If no ancestors in common with what we're loading, then concept is free
+		ancestorsToImport.retainAll(componentsOfInterest);
+		if (ancestorsToImport.size() > 0) {
+			alsoImportingAncestors = true;
+			//We'll stop here and allow that ancestor to pick up its descendants when its turn comes
+			return;
+		}
+
+		//Does concept have descendants that we want to group with it?
+		//We need the parents to be imported before any children, so rework any set as one that maintains the order input
+		Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendants(c, true);
+		descendantsToImport.retainAll(componentsOfInterest);
+		if (descendantsToImport.size() > 0) {
+			alsoImportingDescendants = true;
+			LOGGER.info(c + " has " + descendantsToImport.size() + " descendants to import");
+			if (descendantsToImport.size() >= conceptsPerArchive) {
+				//We'll need to load this concept in its own import and promote to the project
+				//so it's available as a parent for subsequent loads
+				//requiresFirstPassLoad.add(c);
+				//continue;
+				LOGGER.warn("Exceeding batch size by " + (descendantsToImport.size() - conceptsPerArchive) + " for " + c + " (" + descendantsToImport.size() + " descendants).  Consider pre-importing and promoting first.");
+			}
+			//Don't want to import a concept twice, but if we do, we have a problem
+			int origSize = descendantsToImport.size();
+			descendantsToImport.removeAll(allocatedConcepts);
+			if (origSize != descendantsToImport.size()) {
+				throw new TermServerScriptException(c + " has descendants already being imported by another concept - investigate");
+			}
+
+			allocatedConcepts.addAll(descendantsToImport);
+			parentChildMap.put(c, descendantsToImport);
+		}
+
+		if (!alsoImportingAncestors && !alsoImportingDescendants) {
+			footlooseConcepts.add(c);
+		}
+	}
+
+	private void mergeBatches(Map<Concept, Set<Concept>> parentChildMap, Set<Concept> batchesAvailableToMerge) {
+		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
+			//Have we already merged this batch?
+			if (!batchesAvailableToMerge.contains(batchParent)) {
+				continue;
+			}
+			batchesAvailableToMerge.remove(batchParent);
+
+			Concept bestMerge = null;
+			do {
+				//How many concepts are in this batch, +1 for the parent itself
+				Set<Concept> batchContents = parentChildMap.get(batchParent);
+				int thisBatchSize = batchContents.size() + 1;
+				int topUpSize = conceptsPerArchive - thisBatchSize;
+				bestMerge = findBestMerge(parentChildMap, batchesAvailableToMerge, topUpSize);
+				if (bestMerge != null) {
+					batchesAvailableToMerge.remove(bestMerge);
+					Set<Concept> thisBatch = parentChildMap.get(batchParent);
+					thisBatch.add(bestMerge);
+					thisBatch.addAll(parentChildMap.get(bestMerge));
+					LOGGER.info("Adding " + bestMerge + "(" + (parentChildMap.get(bestMerge).size() + 1) + ") to batch with parent " + batchParent);
+					parentChildMap.remove(bestMerge);
+				}
+			} while (bestMerge != null);
+		}
 	}
 
 	private Concept findBestMerge(Map<Concept, Set<Concept>> parentChildMap, Set<Concept> batchesAvailableToMerge,
@@ -457,56 +479,30 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//As long as the current module is not equal to the target module, we'll switch it
 		//And even then we might do it, if it's missing from the target server (eg NEBCSR)
 		if (conceptOnTS.equals(NULL_CONCEPT)) {
-			//NEBCSR is a bit loose with its modules.  Allow CORE to be used without complaining
-			if (!sourceModuleIds.contains(c.getModuleId()) && !c.getModuleId().equals(SCTID_CORE_MODULE)) {
-				report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
-			}
-			//Was this concept originally specified, or picked up as a dependency?
-			String parents = parentsToString(c);
-			
-			if (!conceptOnTS.equals(NULL_CONCEPT)) {
-				conceptAlreadyTransferred = true;
-				report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept has already been moved to " + targetModuleId + " (possibly as a dependency).   Checking descriptions and relationships", c.getDefinitionStatus().toString(), parents);
-			} else {
-				if (componentsToProcess.contains(c)) {
-					report(c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, "Specified concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
-				} else {
-					report(c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
-				}
-				c.setModuleId(targetModuleId);
-				//mark it as dirty explicitly, just incase it already had this module!
-				c.setDirty();
-				incrementSummaryInformation("Concepts moved");
-			}
-			allModifiedConcepts.add(c);
-			
-			//If we have no stated modelling (either stated relationships, or those extracted from an axiom, 
-			//create an Axiom Entry from the inferred rels.
-			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
-				convertInferredRelsToAxiomEntry(c);
-			}
+			switchModuleOfConceptNotOnTS(c, componentsToProcess);
 		} else {
 			conceptAlreadyTransferred = true;
-			//Changing the moduleId won't mark concept dirty unless it really does change
-			//Don't move any concepts already in the model module
-			if (componentsToProcess.contains(c)) {
-				if (!c.getModuleId().equals(SCTID_MODEL_MODULE)) {
-					c.setModuleId(targetModuleId);
-					if (c.getModuleId().equals(targetModuleId)) {
-						report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
-					} else {
-						String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
-						LOGGER.warn(msg);
-						report(c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
-					}
-				}
-			} else {
-				//If this _isn't_ a concept that was originally listed for transfer and it does exist on the target server, then
-				//we won't look any closer at it.
+			if (switchModuleOfConceptAlreadyOnTS(c, componentsToProcess, conceptOnTS)) {
 				return false;
 			}
 		}
 		
+		boolean subComponentsMoved = switchModuleOfSubComponents(c, componentsToProcess, conceptOnTS);
+		
+		if (conceptAlreadyTransferred && !subComponentsMoved) {
+			return false;
+		}
+		
+		allModifiedConcepts.add(c);
+		
+		if (conceptAlreadyTransferred) {
+			incrementSummaryInformation("Existing concept, additional components moved.");
+		}
+		
+		return true;
+	}
+
+	private boolean switchModuleOfSubComponents(Concept c, List<Component> componentsToProcess, Concept conceptOnTS) throws TermServerScriptException {
 		boolean subComponentsMoved = false;
 		if (containsReplacementFSNs) {
 			replaceFsnInTransit(c);
@@ -515,34 +511,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			subComponentsMoved = moveDescriptions(c, conceptOnTS, componentsToProcess);
 		}
 
-		boolean relationshipMoved = false;
-		boolean relationshipAlreadyMoved = false;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			//If this is an axiom based relationship, then we'll catch that below with an axiom move
-			//Actually, if any of them are axiom based, then we don't need to check the others.
-			if (r.fromAxiom()) {
-				break;
-			}
-			
-			//Rel may already be in the target module, but be missing from the target server
-			if (conceptOnTS.getRelationships(r).size() > 0) {
-				relationshipAlreadyMoved = true;
-			} else {
-				if (r.isActive() && !r.fromAxiom()) {
-					LOGGER.info ("Unexpected active stated relationship not from axiom: "+ r);
-				}
-				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
-					subComponentsMoved = true;
-					relationshipMoved = true;
-				} 
-			}
-		}
-		
-		//Did we move some of the modeling but not all of it?  Warn about that if so
-		if (relationshipMoved && relationshipAlreadyMoved) {
-			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Partial move on the modeling.  Exported axiom may be incomplete.");
-		}
-		
+		subComponentsMoved |= switchModuleOfRelationships(c, conceptOnTS, componentsToProcess);
+
 		//Policy is not to moved inferred modelling
 		//Unless we also want the inferred parents
 		if (includeInferredParents) {
@@ -553,7 +523,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				}
 			}
 		}
-		
+
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			//We have an issue with concepts in the examined space already
 			//having the target module but needing to move anyway.  So
@@ -562,18 +532,92 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				subComponentsMoved = true;
 			}
 		}
-		
-		if (conceptAlreadyTransferred && !subComponentsMoved) {
-			return false;
+		return subComponentsMoved;
+	}
+
+	private boolean switchModuleOfRelationships(Concept c, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
+		boolean subComponentsMoved = false;
+		boolean relationshipMoved = false;
+		boolean relationshipAlreadyMoved = false;
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			//If this is an axiom based relationship, then we'll catch that below with an axiom move
+			//Actually, if any of them are axiom based, then we don't need to check the others.
+			if (r.fromAxiom()) {
+				break;
+			}
+
+			//Rel may already be in the target module, but be missing from the target server
+			if (conceptOnTS.getRelationships(r).size() > 0) {
+				relationshipAlreadyMoved = true;
+			} else {
+				if (r.isActive() && !r.fromAxiom()) {
+					LOGGER.info ("Unexpected active stated relationship not from axiom: "+ r);
+				}
+				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
+					subComponentsMoved = true;
+					relationshipMoved = true;
+				}
+			}
 		}
-		
+
+		//Did we move some of the modeling but not all of it?  Warn about that if so
+		if (relationshipMoved && relationshipAlreadyMoved) {
+			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Partial move on the modeling.  Exported axiom may be incomplete.");
+		}
+		return subComponentsMoved;
+	}
+
+	/**
+	 * @return true if we've been asked to switch a concept that IS aleady on the target server, but wasn't in our original list of concepts to transfer
+	 * @throws TermServerScriptException
+	 */
+	private boolean switchModuleOfConceptAlreadyOnTS(Concept c, List<Component> componentsToProcess, Concept conceptOnTS) throws TermServerScriptException {
+		//Changing the moduleId won't mark concept dirty unless it really does change
+		//Don't move any concepts already in the model module
+		if (componentsToProcess.contains(c)) {
+			if (!c.getModuleId().equals(SCTID_MODEL_MODULE)) {
+				c.setModuleId(targetModuleId);
+				if (c.getModuleId().equals(targetModuleId)) {
+					report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
+				} else {
+					String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
+					LOGGER.warn(msg);
+					report(c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
+				}
+			}
+		} else {
+			//If this _isn't_ a concept that was originally listed for transfer and it does exist on the target server, then
+			//we won't look any closer at it.
+			return true;
+		}
+		return false;
+	}
+
+	private void switchModuleOfConceptNotOnTS(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
+		//NEBCSR is a bit loose with its modules.  Allow CORE to be used without complaining
+		if (!sourceModuleIds.contains(c.getModuleId()) && !c.getModuleId().equals(SCTID_CORE_MODULE)) {
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
+		}
+		//Was this concept originally specified, or picked up as a dependency?
+		String parents = parentsToString(c);
+
+		if (componentsToProcess.contains(c)) {
+			report(c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, "Specified concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
+		} else {
+			report(c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
+		}
+		c.setModuleId(targetModuleId);
+		//mark it as dirty explicitly, just incase it already had this module!
+		c.setDirty();
+		incrementSummaryInformation("Concepts moved");
+
 		allModifiedConcepts.add(c);
-		
-		if (conceptAlreadyTransferred && subComponentsMoved) {
-			incrementSummaryInformation("Existing concept, additional components moved.");
+
+		//If we have no stated modelling (either stated relationships, or those extracted from an axiom,
+		//create an Axiom Entry from the inferred rels.
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
+			convertInferredRelsToAxiomEntry(c);
 		}
-		
-		return true;
 	}
 
 	private void replaceFsnInTransit(Concept c) {
