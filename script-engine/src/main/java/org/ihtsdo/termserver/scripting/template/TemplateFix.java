@@ -14,12 +14,10 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +39,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
-	TemplateServiceClient tsc = new TemplateServiceClient(null, null);
+	TemplateServiceClient tsc = null; //Don't try and initalise this before we know the server and cookie details
 	
 	Map<Concept, Template> conceptToTemplateMap = new HashMap<>();
 
@@ -212,7 +210,7 @@ abstract public class TemplateFix extends BatchFix {
 
 	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
-			TermServerScript.info("Loading local template " + id + ": " + fileName );
+			LOGGER.info("Loading local template {}: {}", id, fileName );
 			ConceptTemplate ct = tsc.loadLocalConceptTemplate(fileName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, fileName);
@@ -226,7 +224,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
-			TermServerScript.info("Loading remote template " + id + ": '" + templateName + "' from " + tsc.getServerUrl() );
+			LOGGER.info("Loading remote template {}: '{}' from {}", id, templateName, tsc.getServerUrl() );
 			ConceptTemplate ct = tsc.loadLogicalTemplate(templateName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, templateName);
