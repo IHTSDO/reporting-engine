@@ -9,7 +9,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
@@ -19,15 +18,12 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants{
 	
 	String[] conceptsToProcess = new String[] {
-			"104685000","12843005","2406000",
-			"241671007","401295002","412857008",
-			"423911002","42423000","442039000",
-			"44340006","444225007","445881001",
-			"446323000","446889005","446913004",
-			"447317003","45681003","710213002",
-			"710214008","710215009","710216005",
-			"710217001","710219003","711359007",
-			"71387007","76145000","773298008"
+			"193685008","163322009","140532005","141521001",
+			"164334006","141527002","141523003","162167000",
+			"163437007","267865000","197830007","163922002",
+			"163923007","164271006","139250008","192978001",
+			"141314000","139250008","140006008","141710007",
+			"164329007","141522008"
 	};
 	
 	protected CreateTasksWithConcepts(BatchFix clone) {
@@ -42,7 +38,7 @@ public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants
 			fix.populateTaskDescription = true;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
-			fix.taskPrefix = "";  //TODO Set this for each batch
+			fix.taskPrefix = "INFRA-12931 Manual ";  //TODO Set this for each batch
 			fix.expectNullConcepts = true; 
 			fix.validateConceptOnUpdate = false;
 			fix.init(args);
