@@ -4,10 +4,12 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -148,6 +150,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		}
 		checkAttributeUsage();
 		checkHistoricalAssociations();
+		checkMRCM();
 	}
 
 	private void checkChildInactivation() throws TermServerScriptException {
@@ -232,7 +235,49 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
 	}
+
+	private void checkMRCM() throws TermServerScriptException {
+		checkRefsetFields("MRCM Domain", gl.getMRCMDomainManager().getMrcmDomainMap().values());
+
+		checkRefsetFields("MRCM Attribute Domain - PreCoord", flattenMap(gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPreCoord()));
+		checkRefsetFields("MRCM Attribute Domain - PostCoord", flattenMap(gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapPostCoord()));
+		checkRefsetFields("MRCM Attribute Domain - All", flattenMap(gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapAll()));
+		checkRefsetFields("MRCM Attribute Domain - New PreCoord", flattenMap(gl.getMRCMAttributeDomainManager().getMrcmAttributeDomainMapNewPreCoord()));
+
+		checkRefsetFields("MRCM Attribute Range - PreCoord", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPreCoord().values());
+		checkRefsetFields("MRCM Attribute Range - PostCoord", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapPostCoord().values());
+		checkRefsetFields("MRCM Attribute Range - All", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapAll().values());
+		checkRefsetFields("MRCM Attribute Range - New PreCoord", gl.getMRCMAttributeRangeManager().getMrcmAttributeRangeMapNewPreCoord().values());
+	}
 	
+	private Collection<? extends RefsetMember> flattenMap(
+			Map<Concept, Map<Concept, MRCMAttributeDomain>> mrcmAttributeDomainMapPreCoord) {
+		return mrcmAttributeDomainMapPreCoord.values().stream()
+				.flatMap(m -> m.values().stream())
+				.toList();
+	}
+
+	private void checkRefsetFields(String recordType, Collection<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
+		for(RefsetMember rm : refsetMembers) {
+			//Does this field contain any SCTIDs?  Check they exist and are active if so.
+			validateRefsetMemberField(recordType, "Referenced Component ID", rm.getReferencedComponentId(), rm);
+			for (String fieldName : rm.getAdditionalFieldNames()) {
+				validateRefsetMemberField(recordType, fieldName, rm.getField(fieldName), rm);
+			}
+		}
+	}
+
+	private void validateRefsetMemberField(String recordType, String fieldName, String fieldValue, RefsetMember rm) throws TermServerScriptException {
+		for (String sctId : SnomedUtils.extractSCTIDs(fieldValue)) {
+			Concept c = gl.getConcept(sctId, false, false);
+			if (c == null) {
+				report(PRIMARY_REPORT, sctId, "Unknown in specified release/project", recordType + "/" + fieldName, rm);
+			} else if (!c.isActiveSafely()) {
+				report(c, "Inactive in specified release/project", recordType + "/" + fieldName, rm);
+			}
+		}
+	}
+
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		countIssue(c);
 		return super.report (PRIMARY_REPORT, c, details);
