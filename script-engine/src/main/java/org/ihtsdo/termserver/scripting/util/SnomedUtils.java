@@ -46,6 +46,12 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	private static final String BWD_SLASH = "\\\\";
 	private static final String FWD_SLASH = "/";
 	
+	// Regular expression to match numbers with at least 8 digits
+	private static final String regex = "\\b\\d{8,}\\b";
+	
+	// Create a Pattern object
+	private static final Pattern sctIdPattern = Pattern.compile(regex);
+	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		
@@ -2688,5 +2694,21 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 			activeStr = "1";
 		}
 		return activeStr;
+	}
+
+	public static List<String> extractSCTIDs(String input) {
+		// List to store the extracted numbers
+		List<String> sctIds = new ArrayList<>();
+		
+		// Create a Matcher object
+		Matcher matcher = sctIdPattern.matcher(input);
+		
+		// Find and add all matches to the list
+		while (matcher.find()) {
+			sctIds.add(matcher.group());
+		}
+		
+		// Return the list of extracted numbers
+		return sctIds;
 	}
 }
