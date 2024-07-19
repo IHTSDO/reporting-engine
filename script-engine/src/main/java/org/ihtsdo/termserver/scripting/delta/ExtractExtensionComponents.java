@@ -620,7 +620,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 	}
 
-	private void replaceFsnInTransit(Concept c) {
+	private void replaceFsnInTransit(Concept c) throws TermServerScriptException {
 		List<Description> replacementTerms = new ArrayList<>();
 		String fsnTern = replacementFSNs.get(c.getId());
 		Description fsn = Description.withDefaults(fsnTern, DescriptionType.FSN, Acceptability.PREFERRED);

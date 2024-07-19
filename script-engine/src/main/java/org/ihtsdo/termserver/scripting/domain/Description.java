@@ -110,13 +110,19 @@ public class Description extends Component implements ScriptConstants {
 		this.descriptionId = descriptionId;
 	}
 	
-	public static Description withDefaults (String term, DescriptionType type, Acceptability acceptability) {
+	public static Description withDefaults (String term, DescriptionType type, Acceptability acceptability) throws TermServerScriptException {
 		Description d = withDefaults(term, type, (Map<String,Acceptability>)null);
 		if (acceptability != null) {
 			if (acceptability.equals(Acceptability.PREFERRED)) {
 				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 			} else {
 				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+			}
+
+			//And create langrefset entries for both English dialects
+			for (String refsetId : ENGLISH_DIALECTS) {
+				LangRefsetEntry l = LangRefsetEntry.withDefaults(d, refsetId, SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+				d.getLangRefsetEntries().add(l);
 			}
 		}
 		return d;

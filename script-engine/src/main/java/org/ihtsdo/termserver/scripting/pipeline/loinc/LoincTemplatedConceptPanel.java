@@ -37,7 +37,7 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 		return panelParent;
 	}
 
-	private void generateDescriptions() {
+	private void generateDescriptions() throws TermServerScriptException {
 		LoincTerm loincTerm = loincNumToLoincTermMap.get(externalIdentifier);
 		String ptStr = loincTerm.getLongCommonName();
 

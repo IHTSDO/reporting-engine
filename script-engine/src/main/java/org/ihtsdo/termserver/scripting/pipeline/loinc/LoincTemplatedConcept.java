@@ -162,8 +162,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("104597-0")) {
-			LOGGER.debug("Check Glucometer");
+		if (loincNum.equals("17948-1")) {
+			LOGGER.debug("Check population of Inheres term");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
@@ -239,7 +239,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if (templateItem.equals(LOINC_PART_TYPE_METHOD) && hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
 						.replace(" by ", "");
-			} else if (slotTermMap.containsKey(templateItem)) {
+			} else if (slotTermMap.containsKey(templateItem) && !skippingSlotTermPopulationFromMap(templateItem)) {
 				String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
 				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
@@ -272,6 +272,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return ptTemplateStr;
 	}
 
+	private boolean skippingSlotTermPopulationFromMap(String templateItem) {
+		return (templateItem.equals(LOINC_PART_TYPE_COMPONENT) && hasProcessingFlag(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM));
+	}
 
 	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr, String partTypeName) throws TermServerScriptException {
 		//TO DO Detect GB Spelling and break out another term
@@ -283,6 +286,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) ||
 				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 			itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+		}
+
+		//Have we been told to append the component subtype?
+		if (hasProcessingFlag(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM) && partTypeName.equals(LOINC_PART_TYPE_COMPONENT)) {
+			itemStr += " " + slotTermMap.get(LOINC_PART_TYPE_COMPONENT);
 		}
 
 		return populateTermTemplate(itemStr, templateItem, ptStr, partTypeName);
@@ -661,12 +669,16 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
+			processingFlags.add(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM);
+			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 
 		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
 			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
+			processingFlags.add(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM);
+			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 	}
 

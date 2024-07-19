@@ -1488,7 +1488,7 @@ public class GraphLoader implements ScriptConstants {
 		concepts.put(concept.getConceptId(), concept);
 	}
 	
-	public Concept registerConcept(String sctIdFSN) {
+	public Concept registerConcept(String sctIdFSN) throws TermServerScriptException {
 		Concept concept = Concept.withDefaultsFromSctIdFsn(sctIdFSN);
 		concepts.put(concept.getConceptId(), concept);
 		return concept;

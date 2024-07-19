@@ -943,7 +943,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return GraphLoader.getGraphLoader().getConcept(sctId).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
 	}
 
-	public static Concept createConcept(String term, String semTag, Concept parent) {
+	public static Concept createConcept(String term, String semTag, Concept parent) throws TermServerScriptException {
 		Concept newConcept = Concept.withDefaults(null);
 		addDefaultTerms(newConcept, term, semTag);
 		if (parent != null) {
@@ -953,7 +953,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 		return newConcept;
 	}
 
-	public static Concept createConcept(String sctId, String fsn) {
+	public static Concept createConcept(String sctId, String fsn) throws TermServerScriptException {
 		Concept newConcept = Concept.withDefaults(sctId);
 		String[] parts = deconstructFSN(fsn);
 		addDefaultTerms(newConcept, parts[0], parts[1]);
@@ -961,7 +961,7 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	}
 	
 	
-	private static void addDefaultTerms(Concept c, String term, String semTag) {
+	private static void addDefaultTerms(Concept c, String term, String semTag) throws TermServerScriptException {
 		Description fsn = Description.withDefaults(term == null? null : term + " " + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
 		c.addDescription(fsn);
 		

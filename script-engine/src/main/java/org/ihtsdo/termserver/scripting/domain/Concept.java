@@ -165,7 +165,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return c;
 	}
 	
-	public static Concept withDefaultsFromSctIdFsn (String sctIdFSN) {
+	public static Concept withDefaultsFromSctIdFsn (String sctIdFSN) throws TermServerScriptException {
 		String[] parts = SnomedUtils.deconstructSCTIDFsn(sctIdFSN);
 		Concept c = new Concept(parts[0]);
 		c.setModuleId(SCTID_CORE_MODULE);

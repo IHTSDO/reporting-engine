@@ -67,22 +67,10 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				slotTermMap.put(LOINC_PART_TYPE_COMPONENT, compNumPartName);
 			}
 		}
-		
-		if (detailPresent(loincNum, COMPSUBPART3_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
-			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
-		}
-		
-		if (detailPresent(loincNum, COMPSUBPART4_PN)) {
-			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
-			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
-		}
-		
+
 		//If we didn't find the component, return a null so that we record that failed mapping usage
 		//And in fact, don't map this term at all
-		if (attributes.size() == 0) {
+		if (attributes.isEmpty()) {
 			attributes.add(null);
 			processingFlags.add(ProcessingFlag.DROP_OUT);
 		}
