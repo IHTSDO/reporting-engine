@@ -44,7 +44,7 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED)
 				.withCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 
-		Description fsn = Description.withDefaults(ptStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED)
+		Description fsn = Description.withDefaults(ptStr + SEM_TAG, DescriptionType.FSN, Acceptability.PREFERRED)
 				.withCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 
 		//Add in the traditional colon form that we've previously used as the FSN

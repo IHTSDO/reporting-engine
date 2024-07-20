@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.job;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.ihtsdo.termserver.job.mq.ActiveMQConnectionFactoryForAutoscaling;
@@ -20,9 +19,6 @@ import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
 
 import java.util.TimeZone;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")

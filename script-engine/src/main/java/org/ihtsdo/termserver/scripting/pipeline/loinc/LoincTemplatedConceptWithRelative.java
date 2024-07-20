@@ -35,7 +35,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttrib = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
-		if (CompNumPnIsSafe(loincNum)) {
+		if (hasNoSubParts(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
 		} else {

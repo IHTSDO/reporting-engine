@@ -42,7 +42,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 			return attributes;
 		}
 
-		if (CompNumPnIsSafe(loincNum)) {
+		if (hasNoSubParts(loincNum)) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
 		} else {

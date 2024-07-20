@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import java.util.*;
-import java.util.Map.Entry;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -19,11 +18,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 	private static final int GROUP_1 = 1;
-	protected static final String semTag = " (observable entity)";
+	protected static final String SEM_TAG = " (observable entity)";
 
-	private static Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
+	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
 
-	private static Map<String, String> mapTypeToPrimaryColumn = new HashMap<>();
+	private static final Map<String, String> mapTypeToPrimaryColumn = new HashMap<>();
 	static {
 		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_ADJUSTMENT, "COMPSUBPART3_PN");
 		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_CHALLENGE, "COMPSUBPART2_PN");
@@ -76,8 +75,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 								  Map<String, LoincTerm> loincNumToLoincTermMap,
 								  Map<String, Map<String, LoincDetail>> loincDetailMap,
 								  Map<String, LoincPart> loincParts) throws TermServerScriptException {
-		LoincTemplatedConcept.cpm = cpm;
-		LoincTemplatedConcept.gl = gl;
+		TemplatedConcept.cpm = cpm;
+		TemplatedConcept.gl = gl;
 		LoincTemplatedConcept.attributePartMapManager = attributePartMapManager;
 		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
 		LoincTemplatedConcept.loincParts = loincParts;
@@ -143,33 +142,30 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
-		switch (loincDetail.getPartName()) {
-			case "NFr","MFr","CFr","AFr","VFr","SFr" :
-				return LoincTemplatedConceptWithRelative.create(loincNum);
-			case "ACnc","Angle","CCnc","CCnt","Diam","LaCnc","LnCnc","LsCnc","MCnc",
-			     "MCnt","MoM","NCnc","Naric","PPres","PrThr","SCnc","SCnt","Titr","Visc" :
-				return LoincTemplatedConceptWithComponent.create(loincNum);
-			case "Anat","Aper","EntVol","ID","Morph","Prid","Temp","Type","Vol" :
-				return LoincTemplatedConceptWithInheres.create(loincNum);
-			case "Susc" :
-				return LoincTemplatedConceptWithSusceptibility.create(loincNum);
-			case "MRat","SRat","VRat","CRat" :
-				return LoincTemplatedConceptWithProcess.create(loincNum);
-		}
-		return null;
+		return switch (loincDetail.getPartName()) {
+			case "NFr", "MFr", "CFr", "AFr", "VFr", "SFr" -> LoincTemplatedConceptWithRelative.create(loincNum);
+			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "LaCnc", "LnCnc", "LsCnc", "MCnc", "MCnt", "MoM", "NCnc",
+			     "Naric", "PPres", "PrThr", "SCnc", "SCnt", "Titr", "Visc" ->
+					LoincTemplatedConceptWithComponent.create(loincNum);
+			case "Anat", "Aper", "EntVol", "ID", "Morph", "Prid", "Temp", "Type", "Vol" ->
+					LoincTemplatedConceptWithInheres.create(loincNum);
+			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(loincNum);
+			case "MRat", "SRat", "VRat", "CRat" -> LoincTemplatedConceptWithProcess.create(loincNum);
+			default -> null;
+		};
 	}
 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("17948-1")) {
-			LOGGER.debug("Check population of Inheres term");
+		if (loincNum.equals("19255-9")) {
+			LOGGER.debug("Check suffix 3 population");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
 			templatedConcept.populateParts(ls, details);
-			templatedConcept.populateTerms(loincNum, details);
+			templatedConcept.populateTerms();
 			if (detailsIndicatePrimitiveConcept(loincNum) || 
 					templatedConcept.hasProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE)) {
 				templatedConcept.getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
@@ -183,24 +179,24 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return processingFlags.contains(flag);
 	}
 
-	private void populateTerms(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
+	private void populateTerms() throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
 		String ptTemplateStr = preferredTermTemplate;
 		
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
-		ptTemplateStr = tidyUpTerm(loincNum, ptTemplateStr);
+		ptTemplateStr = tidyUpTerm(ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
 		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
-		Description fsn = Description.withDefaults(ptTemplateStr + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
+		Description fsn = Description.withDefaults(ptTemplateStr + SEM_TAG, DescriptionType.FSN, Acceptability.PREFERRED);
 		
 		//Also add the Long Common Name as a Synonym
-		String lcnStr = loincNumToLoincTermMap.get(loincNum).getLongCommonName();
+		String lcnStr = loincNumToLoincTermMap.get(externalIdentifier).getLongCommonName();
 		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 		//Override the case significance for these
 		lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		
 		//Add in the traditional colon form that we've previously used as the FSN
-		String colonStr = loincNumToLoincTermMap.get(loincNum).getColonizedTerm();
+		String colonStr = loincNumToLoincTermMap.get(externalIdentifier).getColonizedTerm();
 		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 
@@ -208,23 +204,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		concept.addDescription(fsn);
 		concept.addDescription(lcn);
 		concept.addDescription(colonDesc);
-
-		convertAcceptabilityMapToLangRefsetEntries(concept);
-	}
-
-	private void convertAcceptabilityMapToLangRefsetEntries(Concept c) throws TermServerScriptException {
-		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			for (Entry<String, Acceptability> entry : d.getAcceptabilityMap().entrySet()) {
-				LangRefsetEntry l = new LangRefsetEntry();
-				//ReferencedComponentId will be set when we allocate an SCTID to the Description
-				l.setRefsetId(entry.getKey());
-				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(entry.getValue()));
-				l.setActive(true);
-				l.setModuleId(d.getModuleId());
-				l.setDirty();
-				d.getLangRefsetEntries().add(l);
-			}
-		}
 	}
 
 	private String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
@@ -239,7 +218,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if (templateItem.equals(LOINC_PART_TYPE_METHOD) && hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
 						.replace(" by ", "");
-			} else if (slotTermMap.containsKey(templateItem) && !skippingSlotTermPopulationFromMap(templateItem)) {
+			} else if (slotTermMap.containsKey(templateItem)) {
 				String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
 				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
@@ -253,7 +232,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					return ptTemplateStr;
 				}
 				Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-				if (rels.size() == 0) {
+				if (rels.isEmpty()) {
 					continue;
 				}
 				if (rels.size() > 1) {
@@ -272,10 +251,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return ptTemplateStr;
 	}
 
-	private boolean skippingSlotTermPopulationFromMap(String templateItem) {
-		return (templateItem.equals(LOINC_PART_TYPE_COMPONENT) && hasProcessingFlag(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM));
-	}
-
 	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr, String partTypeName) throws TermServerScriptException {
 		//TO DO Detect GB Spelling and break out another term
 		Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
@@ -287,12 +262,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 			itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 		}
-
-		//Have we been told to append the component subtype?
-		if (hasProcessingFlag(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM) && partTypeName.equals(LOINC_PART_TYPE_COMPONENT)) {
-			itemStr += " " + slotTermMap.get(LOINC_PART_TYPE_COMPONENT);
-		}
-
 		return populateTermTemplate(itemStr, templateItem, ptStr, partTypeName);
 	}
 
@@ -349,19 +318,18 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return term;
 	}
 
-	protected String tidyUpTerm(String loincNum, String term) {
-		term = replaceAndWarn(loincNum, term, " at [TIME]");
-		term = replaceAndWarn(loincNum, term, " by [METHOD]");
-		term = replaceAndWarn(loincNum, term, " in [SYSTEM]");
-		term = replaceAndWarn(loincNum, term, " using [DEVICE]");
-		term = replaceAndWarn(loincNum, term, " [CHALLENGE]");
-		term = term.replaceAll("  ", " ");
+	protected String tidyUpTerm(String term) {
+		term = replaceAndWarn(term, " at [TIME]");
+		term = replaceAndWarn(term, " by [METHOD]");
+		term = replaceAndWarn(term, " in [SYSTEM]");
+		term = replaceAndWarn(term, " using [DEVICE]");
+		term = replaceAndWarn(term, " [CHALLENGE]");
+		term = term.replaceAll(" {2}", " ");
 		return term;
 	}
 
-	private String replaceAndWarn(String loincNum, String term, String str) {
+	private String replaceAndWarn(String term, String str) {
 		if (term.contains(str)) {
-			//TermServerScript.warn(loincNum + " did not provide '" + str + "'");
 			//Need to make string regex safe
 			str = str.replaceAll("\\[","\\\\\\[").replaceAll("\\]","\\\\\\]");
 			term = term.replaceAll(str, "");
@@ -449,9 +417,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			partNumsUnmapped.add(loincDetail.getPartNumber());
 			ls.addMissingMapping(loincDetail.getPartNumber(), loincDetail.getLoincNum());
 
-			//Record the fact that we failed to find a map on a per property basis
-			//addFailedMapping(loincNum, loincDetail.getPartNumber());
-
 			//Record the fact that we failed to find a map on a per part basis
 			partNumsMapped.add(loincDetail.getPartNumber());
 			LoincUsage usage = unmappedPartUsageMap.get(loincDetail.getPartNumber());
@@ -487,7 +452,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		
 		for (Relationship r : relsToRemove) {
 			concept.getRelationships().remove(r);
-			LOGGER.warn("Removed a redundant " + r + " from " + this);
+			LOGGER.warn("Removed a redundant {} from {}",r, this);
 		}
 	}
 
@@ -566,14 +531,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	 * If the “PartNumber” and “Part” fields (column B and D) are the same for COMPONENT_PN and COMPNUM
 	 * @throws TermServerScriptException 
 	 */
-	protected boolean CompNumPnIsSafe(String loincNum) throws TermServerScriptException {
+	protected boolean hasNoSubParts(String loincNum) throws TermServerScriptException {
 		LoincDetail ldComponentPn = getLoincDetail(loincNum, COMPONENT_PN);
 		LoincDetail ldCompNum = getLoincDetail(loincNum, COMPNUM_PN);
 
-		if (ldComponentPn == null || ldCompNum == null) {
-			throw new TermServerScriptException(loincNum + " detail did not feature COMPONENT_PN or COMPNUM_PN");
-		}
-		
 		return ldComponentPn.getPartNumber().equals(ldCompNum.getPartNumber()) &&
 				ldComponentPn.getPartName().equals(ldCompNum.getPartName());
 	}
@@ -665,19 +626,21 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, precondition);
 		}
 
-		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART3_PN)) {
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+		if (detailPresent(loincNum, COMPSUBPART3_PN)) {
+			if (attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			}
 			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART3_PN);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			processingFlags.add(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM);
 			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 
-		if (attributes.isEmpty() && detailPresent(loincNum, COMPSUBPART4_PN)) {
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+		if (detailPresent(loincNum, COMPSUBPART4_PN)) {
+			if (attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			}
 			LoincDetail componentDetail = getLoincDetail(loincNum, COMPSUBPART4_PN);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			processingFlags.add(ProcessingFlag.APPEND_COMPONENT_SLOT_TERM);
 			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 	}

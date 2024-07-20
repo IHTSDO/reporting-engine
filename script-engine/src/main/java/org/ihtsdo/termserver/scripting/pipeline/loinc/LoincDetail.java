@@ -83,7 +83,7 @@ public class LoincDetail implements LoincScriptConstants {
 	}
 	
 	public String toString() {
-		return getLoincNum() + "|" + getPartNumber() + "|" + getPartName() + "|" + getPartTypeName();
+		return getLoincNum() + "|" + getPartNumber() + "|" + getPartName() + "|" + getPartTypeName() + " (" + getLDTColumnName() + ")";
 	}
 	
 	@Override
