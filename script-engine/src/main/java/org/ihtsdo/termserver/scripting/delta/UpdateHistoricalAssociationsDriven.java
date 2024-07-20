@@ -64,7 +64,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, ",
 				/*"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc, Mentioned in Tab 3",
 				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc",*/
-				"SCTID, FSN, SemTag, ConceptGroup, Still Active, Updated, Final State"
+				"SCTID, FSN, SemTag, ConceptGroup, Still Active, Updated, Final State, Cathy Notes"
 		};
 
 		String[] tabNames = new String[]{
@@ -119,15 +119,15 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void processConcept(Concept c) throws TermServerScriptException {
-		if (c.getId().equals("164488002")) {
-			LOGGER.info("Debug here");
-		}
-
 		//Change the Inactivation Indicator
 		List<InactivationIndicatorEntry> indicators = c.getInactivationIndicatorEntries(ActiveState.ACTIVE);
 		if (indicators.size() != 1) {
 			report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept has " + indicators.size() + " active inactivation indicators");
 			return;
+		}
+
+		if (c.getId().equals("163539007")) {
+			LOGGER.info("Debug here");
 		}
 
 		InactivationIndicatorEntry i = indicators.get(0);
@@ -336,8 +336,13 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	private void checkForRecentInactivations() throws TermServerScriptException {
+		LOGGER.info("Checking for recent inactivations...");
+		int conceptsChecked = 0;
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			if (c.getFSNDescription() == null) {
+			if (++conceptsChecked % 10000 == 0) {
+				LOGGER.info("Checked {} concepts for recent inactivation", conceptsChecked);
+			}
+            if (c.getFSNDescription() == null) {
 				LOGGER.warn("Unpopulated " + c.getId());
 				continue;
 			}
@@ -346,25 +351,30 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			}
 			if (!inScope(c) ||
 					manageManually.contains(c.getId()) ||
-					replacementMap.containsKey(c) ||
 					reportedAsAdditional.contains(c)) {
-				/*if (c.getInactivationIndicator() == null) {
-					report(QUINARY_REPORT, c, c.getEffectiveTime(), SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
-				} else if (c.getInactivationIndicator().equals(InactivationIndicator.MOVED_ELSEWHERE)) {
-					//We're also going to report concepts that are not OE/CO but are marked as "Moved To"
-					report(QUATERNARY_REPORT, c, c.getEffectiveTime(), SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
-				}*/
 				continue;
 			}
-			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true);
+
 			List<String> notes = new ArrayList<>();
-			checkForProcessInclusion("Self", c, notes);
+			boolean alreadyIncludedForProcessed = replacementMap.containsKey(c) || reportedAsAdditional.contains(c);
+			boolean addedForProcessing = false;
+			String assocStr = SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true);
+
+			boolean selfOriginallyNotIncluded = false;
+			if (!alreadyIncludedForProcessed) {
+				addedForProcessing |= checkForProcessInclusion("Self", c, notes, null, null);
+				selfOriginallyNotIncluded = !addedForProcessing;
+			}
+
+			//Does the original concept have an action that we could consider for the sibling/cousin?
+			UpdateAction action = replacementMap.get(c);
+			Concept familyMember = c;
 
 			//Can we find a sibling for this concept - same text with different prefix?
 			Concept sibling = findSibling(c);
 			String[] siblingData = new String[] {"", "", "", ""};
 			if (sibling != null) {
-				checkForProcessInclusion("Sibling", sibling, notes);
+				addedForProcessing |= checkForProcessInclusion("Sibling", sibling, notes, action, c);
 				reportedAsAdditional.add(sibling);
 				siblingData[0] = sibling.toString();
 				siblingData[1] = sibling.isActive()?"Y":"N";
@@ -375,28 +385,51 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			Concept cousin = findCousin(c, true);
 			String[] cousinData = new String[] {"", "", ""};
 			if (cousin != null) {
-				checkForProcessInclusion("Cousin", cousin, notes);
+				addedForProcessing |= checkForProcessInclusion("Cousin", cousin, notes, action, familyMember);
 				cousinData[0] = cousin.toString();
 				cousinData[1] = cousin.isActive()?"Y":"N";
 				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl, true);
 			}
-			String mismatchFlag = hasMismatchedAssociations(c, sibling, cousin)?"Y":"N";
-			String notesStr = notes.stream().collect(Collectors.joining(",\n"));
-			report(TERTIARY_REPORT, c, notesStr, mismatchFlag, assocStr, siblingData, cousinData);
+
+			//Did we skip picking up the original concept, but then did find an action for the sibling or cousin?
+			//Check it again if so.
+			if (selfOriginallyNotIncluded && addedForProcessing) {
+				action = null;
+				if (replacementMap.containsKey(sibling)) {
+					action = replacementMap.get(sibling);
+					familyMember = sibling;
+				} else if (replacementMap.containsKey(cousin)) {
+					action = replacementMap.get(cousin);
+					familyMember = cousin;
+				}
+				checkForProcessInclusion("Self", c, notes, action, familyMember);
+			}
+
+			//Did one of these concepts get added for processing
+			if (!alreadyIncludedForProcessed || addedForProcessing) {
+				String mismatchFlag = hasMismatchedAssociations(c, sibling, cousin) ? "Y" : "N";
+				String notesStr = notes.stream().collect(Collectors.joining(",\n"));
+				report(TERTIARY_REPORT, c, notesStr, mismatchFlag, assocStr, siblingData, cousinData);
+			}
 		}
 	}
 
-	private void checkForProcessInclusion(String familyRelationship, Concept c, List<String> notes) {
+	private boolean checkForProcessInclusion(String familyRelationship, Concept c, List<String> notes, UpdateAction action, Concept familyMember) {
+		boolean addedForProcessing = false;
 		//For 'NOS' concepts, we may pull them into our main processing set
 		if (c.getFsn().contains("NOS")) {
-			checkForProcessInclusionNOS(familyRelationship, c, notes);
+			addedForProcessing |= checkForProcessInclusionNOS(familyRelationship, c, notes);
 		} else if (c.FSN.contains("context-dependent")) {
-			checkForProcessInclusionCDC(familyRelationship, c, notes, true);
+			addedForProcessing |= checkForProcessInclusionCDC(familyRelationship, c, notes, true);
 		} else if (c.FSN.contains("[")) {
-			checkForProcessInclusionCDC(familyRelationship, c, notes,false);
+			addedForProcessing |= checkForProcessInclusionCDC(familyRelationship, c, notes,false);
 		} else {
-			checkForProcessInclusionAmbiguous(familyRelationship, c, notes);
+			addedForProcessing |= checkForProcessInclusionMovedTo(familyRelationship, c, notes, action, familyMember);
+			if (!addedForProcessing) {
+				addedForProcessing |= checkForProcessInclusionAmbiguous(familyRelationship, c, notes);
+			}
 		}
+		return addedForProcessing;
 	}
 
 	private boolean hasMismatchedAssociations(Concept... concepts) throws TermServerScriptException {
@@ -418,9 +451,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		return false;
 	}
 
-	private void checkForProcessInclusionNOS(String familyRelationship, Concept c, List<String> notes) {
+	private boolean checkForProcessInclusionNOS(String familyRelationship, Concept c, List<String> notes) {
 		if (hasCommonReasonNotToInclude(familyRelationship, c, notes)) {
-			return;
+			return false;
 		}
 
 		//Do we have one association target or more?
@@ -441,21 +474,22 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					.withReplacements(assocTargets);
 		} else {
 			notes.add(familyRelationship + " not included for NOS processing due to lack of existing associations");
-			return;
+			return false;
 		}
 		replacementMap.put(c, action);
 		notes.add(familyRelationship + " included for processing - CDC");
+		return true;
 	}
 
-	private void checkForProcessInclusionCDC(String familyRelationship, Concept c, List<String> notes, boolean allowMultipleTargets) {
+	private boolean checkForProcessInclusionCDC(String familyRelationship, Concept c, List<String> notes, boolean allowMultipleTargets) {
 		//The CDC here stands for Context Dependent Category
 		if (hasCommonReasonNotToInclude(familyRelationship, c, notes)) {
-			return;
+			return false;
 		}
 
 		if (!c.getInactivationIndicator().equals(InactivationIndicator.AMBIGUOUS)) {
 			notes.add(familyRelationship + " not included for processing - inactivation indicator is not Ambiguous");
-			return;
+			return false;
 		}
 		//Do we have one association target or more?
 		Set<Concept> assocTargets = c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_POSS_EQUIV_REFSETID, true).stream()
@@ -476,24 +510,26 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 						.withReplacements(assocTargets);
 			} else {
 				notes.add(familyRelationship + " not included for processing due to multiple existing associations");
-				return;
+				return false;
 			}
 		} else {
 			notes.add(familyRelationship + " not included for processing due to lack of existing associations");
+			return false;
 		}
 		replacementMap.put(c, action);
 		notes.add(familyRelationship + " included for processing - NCEP");
+		return true;
 	}
 	
-	private void checkForProcessInclusionAmbiguous(String familyRelationship, Concept c, List<String> notes) {
+	private boolean checkForProcessInclusionAmbiguous(String familyRelationship, Concept c, List<String> notes) {
 		if (hasCommonReasonNotToInclude(familyRelationship, c, notes)) {
-			return;
+			return false;
 		}
 
 		if (c.getInactivationIndicator() ==  null) {
 			notes.add(familyRelationship + " check original state. No inactivation indicator specified?");
 		} else if (!c.getInactivationIndicator().equals(InactivationIndicator.AMBIGUOUS)) {
-			return;
+			return false;
 		}
 
 		//Do we have exactly one historical association?  We can change this to 
@@ -528,12 +564,51 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			replacementMap.put(c, action);
 		} else {
 			notes.add(familyRelationship + " not included for processing due to multiple associations");
+			return false;
 		}
+		return true;
 	}
+
+
+	private boolean checkForProcessInclusionMovedTo(String familyRelationship, Concept c, List<String> notes, UpdateAction otherFamilyMemberAction, Concept familyMember) {
+		if (c.getInactivationIndicator() != null &&
+				c.getInactivationIndicator().equals(InactivationIndicator.MOVED_ELSEWHERE)) {
+			//Did we have another family member that was given an action?  We can process if so
+			if (otherFamilyMemberAction == null) {
+				notes.add(familyRelationship + " not included for processing - moved elsewhere, but no sibling/cousin action specified");
+				return false;
+			} else if (otherFamilyMemberAction.associationTargetsUnchanged &&
+						!c.getAssociationEntries(ActiveState.ACTIVE, RF2Constants.SCTID_ASSOC_MOVED_TO_REFSETID, true).isEmpty()) {
+				Set<Concept> assocTargets = familyMember.getAssociationEntries(ActiveState.ACTIVE, true).stream()
+						.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
+						.collect(Collectors.toSet());
+				UpdateAction reworkedAction = new UpdateAction(otherFamilyMemberAction);
+				reworkedAction.replacements = assocTargets;
+				reworkedAction.associationTypeUnchanged = false;
+				reworkedAction.associationTargetsUnchanged = false;
+				reworkedAction.replacements = assocTargets;
+				reworkedAction.type = Association.REPLACED_BY;
+				replacementMap.put(c, reworkedAction);
+				notes.add(familyRelationship + " included for processing - moved elsewhere reworked with sibling/cousin's association targets");
+				return true;
+			} else {
+				replacementMap.put(c, otherFamilyMemberAction);
+				notes.add(familyRelationship + " included for processing - moved elsewhere with sibling/cousin action");
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 	private boolean hasCommonReasonNotToInclude(String familyRelationship, Concept c, List<String> notes) {
 		if (c.isActiveSafely()) {
 			notes.add(familyRelationship + " not included for processing - active");
+			return true;
+		}
+
+		if (skipConcepts.contains(c)) {
+			notes.add(familyRelationship + " not included for processing - in skip list");
 			return true;
 		}
 
@@ -641,12 +716,15 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		return action;
 	}
 
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected String getCathyNotes(Concept c) {
 		if (cathyNotes.containsKey(c)) {
-			return report(PRIMARY_REPORT, c, details, cathyNotes.get(c));
-		} else {
-			return report(PRIMARY_REPORT, c, details);
+			return cathyNotes.get(c);
 		}
+		return "";
+	}
+
+	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+		return report(PRIMARY_REPORT, c, details, getCathyNotes(c));
 	}
 
 	private void doFinalStateTab() throws TermServerScriptException {
@@ -669,7 +747,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 		String updated = updatedConcepts.contains(c) ? "Y" : "N";
 		String active = SnomedUtils.translateActiveState(c);
-		report(QUATERNARY_REPORT, c, conceptGroup, active, updated, SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true));
+		report(QUATERNARY_REPORT, c, conceptGroup, active, updated, SnomedUtils.prettyPrintHistoricalAssociations(c, gl, true), getCathyNotes(c));
 		finalStateConceptsReported.add(c);
 	}
 
@@ -679,6 +757,21 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		Association type;
 		InactivationIndicator inactivationIndicator;
 		Set<Concept> replacements;
+
+		public UpdateAction () {
+		}
+
+		public UpdateAction (UpdateAction cloneMe) {
+			this.associationTargetsUnchanged = cloneMe.associationTargetsUnchanged;
+			this.associationTypeUnchanged = cloneMe.associationTypeUnchanged;
+			this.type = cloneMe.type;
+			this.inactivationIndicator = cloneMe.inactivationIndicator;
+			if (this.replacements == null) {
+				this.replacements = null;
+			} else {
+				this.replacements = new HashSet<>(cloneMe.replacements);
+			}
+		}
 
 		public String toString() {
 			String replacementsStr = "UNCHANGED";
