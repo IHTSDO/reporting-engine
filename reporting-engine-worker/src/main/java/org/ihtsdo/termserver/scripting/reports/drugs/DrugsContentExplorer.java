@@ -72,7 +72,7 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Drugs Content Explorer")
 				.withDescription("This report lists combinations of dose forms and units along with usage counts and examples.  Also BoSS/PAI/MDF combinations.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(new JobParameters())
 				.withTag(INT)
 				.build();
