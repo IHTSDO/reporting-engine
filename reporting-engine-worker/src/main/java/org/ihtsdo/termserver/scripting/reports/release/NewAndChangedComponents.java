@@ -81,7 +81,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		//params.put(MODULES, "45991000052106");
 		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
 		//params.put(CHANGES_SINCE, "20210801");
-		params.put(UNPROMOTED_CHANGES_ONLY, "true");
+		params.put(INCLUDE_DETAIL, "true");
+		params.put(UNPROMOTED_CHANGES_ONLY, "false");
 		TermServerReport.run(NewAndChangedComponents.class, args, params);
 	}
 	
@@ -175,11 +176,11 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships",
 				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
 				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
 				"Id, FSN, SemTag, EffectiveTime, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
 				"Id, FSN, SemTag, EffectiveTime, Active, isTargetOfNewInferredRelationship, wasTargetOfLostInferredRelationship",
-				"Id, FSN, SemTag, EffectiveTime, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
+				"Id, FSN, SemTag, EffectiveTime, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability, Description Type",
 				"Id, FSN, SemTag, EffectiveTime, Description, LangRefset, isNew, isChanged, wasInactivated",
-				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
@@ -187,16 +188,16 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				"Inferred Rels",
 				"Axioms",
 				"Descriptions",
+				"TextDefns",
 				"Associations",
 				"Incoming Rels",
 				"Description Details",
-				"Language Refset Details",
-				"TextDefns"
+				"Language Refset Details"
 		};
 		
 		if (!includeDescriptionDetail) {
-			tabNames[7] = "N/A 1";
-			tabNames[8] = "N/A 2";
+			tabNames[8] = "N/A 1";
+			tabNames[9] = "N/A 2";
 		}
 		if (loadHistoricallyGeneratedData) {
 			changesFromET = previousEffectiveTime;
@@ -420,14 +421,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 							}
 
 							if (includeDescriptionDetail && (langRefSetIsNew || langRefSetIsLost || langRefSetIsChanged)) {
-								report(NONARY_REPORT, c, d, l, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
+								report(DENARY_REPORT, c, c.getEffectiveTime(), d, l, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
 							}
 						}
 					}
 				}
 				
 				if (includeDescriptionDetail && (isNew || isChanged || wasInactivated || changedAcceptability)) {
-					report (OCTONARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability, d.getType());
+					report(NONARY_REPORT, c, c.getEffectiveTime(), d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability, d.getType());
 				}
 			}
 			
@@ -601,6 +602,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		LOGGER.debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			populateTraceabilityAndReport(SECONDARY_REPORT, c,
+				c.getEffectiveTime(),
 				c.isActive()?"Y":"N",
 				newConcepts.contains(c)?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N",
@@ -614,6 +616,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			report(TERTIARY_REPORT, c,
+				c.getEffectiveTime(),
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewInferredRelationships.contains(c)?"Y":"N",
@@ -628,6 +631,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			populateTraceabilityAndReport(QUATERNARY_REPORT, c,
+				c.getEffectiveTime(),
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewAxioms.contains(c)?"Y":"N",
@@ -653,6 +657,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			String newWithNewConcept = (hasNewDescriptions.contains(c) && newConcepts.contains(c)) ? "Y":"N";
 			if (includeTraceability) {
 				populateTraceabilityAndReport(QUINARY_REPORT, c,
+					c.getEffectiveTime(),
 					c.isActive()?"Y":"N",
 					newWithNewConcept,
 					hasNewDescriptions.contains(c)?"Y":"N",
@@ -661,6 +666,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
 			} else {
 				report(QUINARY_REPORT, c,
+					c.getEffectiveTime(),
 					c.isActive()?"Y":"N",
 					newWithNewConcept,
 					hasNewDescriptions.contains(c)?"Y":"N",
@@ -673,12 +679,35 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		getSummaryCount("Concepts with Descriptions").isChanged = hasChangedDescriptions.size();
 		getSummaryCount("Concepts with Descriptions").isInactivated = hasLostDescriptions.size();
 		superSet.clear();
+
+		superSet.addAll(hasNewTextDefn);
+		superSet.addAll(hasChangedTextDefn);
+		superSet.addAll(hasLostTextDefn);
+		superSet.addAll(hasChangedAcceptabilityTextDefn);
+
+		LOGGER.debug ("Creating text defn report for " + superSet.size() + " concepts");
+		for (Concept c : SnomedUtils.sort(superSet)) {
+			String newWithNewConcept = (hasNewTextDefn.contains(c) && newConcepts.contains(c)) ? "Y":"N";
+			populateTraceabilityAndReport(SENARY_REPORT, c,
+					c.getEffectiveTime(),
+					c.isActive()?"Y":"N",
+					newWithNewConcept,
+					hasNewTextDefn.contains(c)?"Y":"N",
+					hasChangedTextDefn.contains(c)?"Y":"N",
+					hasLostTextDefn.contains(c)?"Y":"N",
+					hasChangedAcceptabilityTextDefn.contains(c)?"Y":"N");
+		}
+		getSummaryCount("Concepts with TextDefn").isNew = hasNewTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
+		superSet.clear();
 		
 		superSet.addAll(hasChangedAssociations);
 		superSet.addAll(hasChangedInactivationIndicators);
 		LOGGER.debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport(SENARY_REPORT, c,
+			populateTraceabilityAndReport(SEPTENARY_REPORT, c,
+				c.getEffectiveTime(),
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
 				hasChangedInactivationIndicators.contains(c)?"Y":"N");
@@ -689,29 +718,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		LOGGER.debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			report (SEPTENARY_REPORT, c,
+			report(OCTONARY_REPORT, c,
+				c.getEffectiveTime(),
 				c.isActive()?"Y":"N",
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
 		}
-		superSet.clear();
-		
-		superSet.addAll(hasNewTextDefn);
-		superSet.addAll(hasChangedTextDefn);
-		superSet.addAll(hasLostTextDefn);
-		superSet.addAll(hasChangedAcceptabilityTextDefn);
-		LOGGER.debug ("Creating text defn report for " + superSet.size() + " concepts");
-		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport(DENARY_REPORT, c,
-				c.isActive()?"Y":"N",
-				hasNewTextDefn.contains(c)?"Y":"N",
-				hasChangedTextDefn.contains(c)?"Y":"N",
-				hasLostTextDefn.contains(c)?"Y":"N",
-				hasChangedAcceptabilityTextDefn.contains(c)?"Y":"N");
-		}
-		getSummaryCount("Concepts with TextDefn").isNew = hasNewTextDefn.size();
-		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
-		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
 		superSet.clear();
 		
 		//Populate the summary numbers for each type of component
@@ -723,7 +735,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			if (!componentName.endsWith("s") && !componentName.contains(" - ")) {
 				componentName += "s";
 			}
-			report (PRIMARY_REPORT, componentName, sc.isNew, sc.isChanged, sc.isInactivated);
+			report(PRIMARY_REPORT, componentName, sc.isNew, sc.isChanged, sc.isInactivated);
 		}
 	}
 	

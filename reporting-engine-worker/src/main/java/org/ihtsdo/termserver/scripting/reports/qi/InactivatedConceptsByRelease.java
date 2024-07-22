@@ -113,6 +113,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 					throw new TermServerScriptException("Unable to parse date '" + fromDate + "'");
 				}
 				traceabilityService.populateTraceabilityAndReport(fromDate, toDate, tab, c,
+						c.getEffectiveTime(),
 						c.getInactivationIndicator(),
 						SnomedUtils.prettyPrintHistoricalAssociations(c, gl));
 			}

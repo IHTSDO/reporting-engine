@@ -347,7 +347,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 			if (row.details == null) {
 				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.traceabilityInfo);
 			} else {
-				ts.report(row.reportTabIdx, row.c, row.c.getEffectiveTime(), row.details, row.traceabilityInfo);
+				ts.report(row.reportTabIdx, row.c, row.details, row.traceabilityInfo);
 			}
 		}
 
