@@ -74,11 +74,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.sourceModuleIds = Set.of("57091000202101");  //Norway module for medicines
 			//delta.sourceModuleIds = "999000011000000103"; // UK Clinical Extension
 			//delta.sourceModuleIds = "83821000000107"; //UK Composition Module
+			//delta.sourceModuleIds = Set.of("999000011000001104"); //UK Drug Extension
 			//delta.sourceModuleIds = "731000124108";  //US Module
 			//delta.sourceModuleIds = "332351000009108"; //Vet Extension
 
 			delta.newIdsRequired = true;
-			delta.getArchiveManager().setRunIntegrityChecks(true);
+			delta.getArchiveManager().setRunIntegrityChecks(true);  //Ensure this is checked in as 'true'.
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
 			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
