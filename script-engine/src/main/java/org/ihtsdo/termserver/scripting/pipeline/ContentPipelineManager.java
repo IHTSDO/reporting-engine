@@ -38,7 +38,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			ComponentType.INFERRED_RELATIONSHIP,
 			ComponentType.LANGREFSET);
 
-	protected List<TemplatedConcept.IterationIndicator> activeIndicators = List.of(TemplatedConcept.IterationIndicator.NEW,
+	protected List<TemplatedConcept.IterationIndicator> activeIndicators = List.of(
+			TemplatedConcept.IterationIndicator.NEW,
 			TemplatedConcept.IterationIndicator.UNCHANGED,
 			TemplatedConcept.IterationIndicator.MODIFIED,
 			TemplatedConcept.IterationIndicator.RESURRECTED);
@@ -340,7 +341,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		//To inactivate a concept we need to inactivate the concept itself and the OWL axiom.
 		//The descriptions remain active, and we'll let classification sort out the inferred relationships
 		if (c.isActive()) {
-			c.setActive(false);
+			c.setActive(false);  //This will inactivate the concept and all relationships
 			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c, SCTID_INACT_OUTDATED);
 			ii.setModuleId(externalContentModule);
 			c.addInactivationIndicator(ii);

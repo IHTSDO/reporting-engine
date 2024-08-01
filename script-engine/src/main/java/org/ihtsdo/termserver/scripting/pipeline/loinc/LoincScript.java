@@ -101,7 +101,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			String line = in.readLine();
 			while (line != null) {
 				if (lineCount > 0) {
-					panelLoincNums.add(line.split(TAB)[4]);
+					panelLoincNums.add(line.split(TAB)[5]);
 				}
 				lineCount++;
 				line = in.readLine();
