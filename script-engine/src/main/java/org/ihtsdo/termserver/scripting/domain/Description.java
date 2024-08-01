@@ -585,9 +585,14 @@ public class Description extends Component implements ScriptConstants {
 	}
 	
 	public void addLangRefsetEntry(LangRefsetEntry lang, boolean ensureReuse, boolean isReplacement) throws TermServerScriptException {
+		//Keep the JSON view of acceptability in sync.  Don't call setAcceptability, as it is similarly duplicating the data by creating a langrefset entry
+		//Ideally we'd consolidate these two functions, probably using this one as we don't know what the lang refsetentry here might contain
 		if (lang.isActive()) {
 			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
-			setAcceptability(lang.getRefsetId(), acceptability, isReplacement);
+			if (acceptabilityMap == null) {
+				acceptabilityMap = new HashMap<String, Acceptability> ();
+			}
+			acceptabilityMap.put(lang.getRefsetId(), acceptability);
 		} else {
 			removeAcceptability(lang.getRefsetId());
 		}
