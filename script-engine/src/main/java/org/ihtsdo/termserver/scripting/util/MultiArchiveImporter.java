@@ -32,7 +32,7 @@ public class MultiArchiveImporter extends BatchFix {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
 	private final static String taskPrefix = "";
-	private final static MODE mode = MODE.ALL_ARCHIVES_IN_ONE_TASK;
+	private final static MODE mode = MODE.TASK_PER_ARCHIVE;
 
 	protected MultiArchiveImporter(BatchFix clone) {
 		super(clone);
