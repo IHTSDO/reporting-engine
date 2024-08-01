@@ -158,8 +158,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		
-		if (loincNum.equals("19255-9")) {
-			LOGGER.debug("Check suffix 3 population");
+		if (loincNum.equals("1882-0")) {
+			LOGGER.debug("Check inactivation");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);

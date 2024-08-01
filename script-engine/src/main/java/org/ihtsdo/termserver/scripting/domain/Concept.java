@@ -185,7 +185,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public void setActive(boolean newActiveState) {
-		this.active = newActiveState;
+		super.setActive(newActiveState);
 		if (newActiveState == false) {
 			//If the concept has been made active, then set DefnStatus
 			setDefinitionStatus(DefinitionStatus.PRIMITIVE);
