@@ -91,7 +91,6 @@ public class NuvaScript extends TermServerScript {
 			report.summaryTabIdx = PRIMARY_REPORT;
 			report.runStandAlone = false;
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
-			report.getArchiveManager().setRunIntegrityChecks(false);
 			report.init(args);
 			report.loadProjectSnapshot();
 			report.postInit();
@@ -149,45 +148,56 @@ public class NuvaScript extends TermServerScript {
 		ResIterator subIterator = model.listSubjects();
 		while (subIterator.hasNext()) {
 			Resource subject = subIterator.next();
-			//Get the class property and we'll report the Vaccines on their own tab
-			Statement classStmt = subject.getProperty(model.getProperty(NuvaUri.SUBCLASSOF.value));
-			if (classStmt != null && isObject(classStmt, NuvaClass.VACCINE)) {
-				reportVaccine(subject);
-				continue;
-			} else if (classStmt != null && isObject(classStmt, NuvaClass.VALENCE)) {
-				reportValence(subject);
-				continue;
-			} else if (classStmt != null && isObject(classStmt, NuvaClass.DISEASE)) {
-				reportDisease(subject);
-				continue;
-			}
-
-			StmtIterator stmtIterator = subject.listProperties();
-			String objClass = "Unknown";
-			String type = "Unknown";
-			int translationCount = 0;
-			while (stmtIterator.hasNext()) {
-				Statement stmt = stmtIterator.next();
-				if (isPredicate(stmt, NuvaUri.ID) || isPredicate(stmt, NuvaUri.CODE)) {
-					//We can skip this, subject already listed
-				} else if (isPredicate(stmt, NuvaUri.SUBCLASSOF)) {
-					objClass = getObject(stmt);
-				} else if (isPredicate(stmt, NuvaUri.TYPE)) {
-					type = getObject(stmt);
-					incrementSummaryInformation(prefix + "type - " + type);
-				} else if (isPredicate(stmt, NuvaUri.COMMENT)) {
-					//TODO Check for @<lang>
-					translationCount++;
-				}
-			}
-			String additionalProperties = Streams.stream(subject.listProperties())
-					.filter(p -> !hasKnownPredicate(p))
-					.map(p -> toString(p))
-					.collect(Collectors.joining(",\n"));
-			incrementSummaryInformation(prefix + "Subjects");
-			report(getTab(tabName), subject.toString().replace(NUVA_NS, ""), type, objClass, translationCount, additionalProperties);
+			outputSubjectToAppropriateTab(model, subject, tabName, prefix);
 		}
+	}
 
+	private void outputSubjectToAppropriateTab(Model model, Resource subject, String tabName, String prefix) throws TermServerScriptException {
+		//Get the subclass property and we'll report the Vaccines on their own tab
+		//Note Valences can be both a subclass of Valence and also of some specific Valence eg VAL114
+		//So iterate through the subclasses.
+		StmtIterator subclassIter = subject.listProperties(model.getProperty(NuvaUri.SUBCLASSOF.value));
+		while (subclassIter.hasNext()) {
+			Statement subclassStmt = subclassIter.next();
+			if (isObject(subclassStmt, NuvaClass.VACCINE)) {
+				reportVaccine(subject);
+				return;
+			} else if (isObject(subclassStmt, NuvaClass.VALENCE)) {
+				reportValence(subject);
+				return;
+			} else if (isObject(subclassStmt, NuvaClass.DISEASE)) {
+				reportDisease(subject);
+				return;
+			}
+		}
+		outputUnknownObject(subject, tabName, prefix);
+	}
+
+	private void outputUnknownObject(Resource subject, String tabName, String prefix) throws TermServerScriptException {
+		StmtIterator stmtIterator = subject.listProperties();
+		String objClass = "Unknown";
+		String type = "Unknown";
+		int translationCount = 0;
+		while (stmtIterator.hasNext()) {
+			Statement stmt = stmtIterator.next();
+			if (isPredicate(stmt, NuvaUri.ID) || isPredicate(stmt, NuvaUri.CODE)) {
+				//We can skip this, subject already listed
+			} else if (isPredicate(stmt, NuvaUri.SUBCLASSOF)) {
+				objClass = getObject(stmt);
+			} else if (isPredicate(stmt, NuvaUri.TYPE)) {
+				type = getObject(stmt);
+				incrementSummaryInformation(prefix + "type - " + type);
+			} else if (isPredicate(stmt, NuvaUri.COMMENT)) {
+				//TODO Check for @<lang>
+				translationCount++;
+			}
+		}
+		String additionalProperties = Streams.stream(subject.listProperties())
+				.filter(p -> !hasKnownPredicate(p))
+				.map(p -> toString(p))
+				.collect(Collectors.joining(",\n"));
+		incrementSummaryInformation(prefix + "Subjects");
+		report(getTab(tabName), subject.toString().replace(NUVA_NS, ""), type, objClass, translationCount, additionalProperties);
 	}
 
 	private void reportVaccine(Resource subject) throws TermServerScriptException {
