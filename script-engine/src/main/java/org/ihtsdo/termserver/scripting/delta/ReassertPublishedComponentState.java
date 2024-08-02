@@ -7,7 +7,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -23,7 +22,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedComponentState.class);
 
 	String[] componentsToProcess = new String[] {
-			"60dc7be3-717c-5259-fb3a-37c244962595"};
+			"663114025","663113020","734078021","776663023"};
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ReassertPublishedComponentState delta = new ReassertPublishedComponentState();
