@@ -31,7 +31,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(COMPONENT_IDS,
-				"792739025");
+				"663114025,663113020,734078021,776663023");
 		TermServerReport.run(ComponentTraceability.class, args, params);
 	}
 	
