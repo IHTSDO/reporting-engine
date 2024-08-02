@@ -13,11 +13,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Description extends Component implements ScriptConstants {
-	private static final Logger LOGGER = LoggerFactory.getLogger(Description.class);
 
 	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
 
@@ -581,16 +578,16 @@ public class Description extends Component implements ScriptConstants {
 	//is a text based json representation.   This method allows the former to 
 	//be converted to the latter.
 	public void addLangRefsetEntry(LangRefsetEntry lang) throws TermServerScriptException {
-		addLangRefsetEntry(lang, true, false);
+		addLangRefsetEntry(lang, true);
 	}
 	
-	public void addLangRefsetEntry(LangRefsetEntry lang, boolean ensureReuse, boolean isReplacement) throws TermServerScriptException {
+	public void addLangRefsetEntry(LangRefsetEntry lang, boolean ensureReuse) throws TermServerScriptException {
 		//Keep the JSON view of acceptability in sync.  Don't call setAcceptability, as it is similarly duplicating the data by creating a langrefset entry
 		//Ideally we'd consolidate these two functions, probably using this one as we don't know what the lang refsetentry here might contain
 		if (lang.isActive()) {
 			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
 			if (acceptabilityMap == null) {
-				acceptabilityMap = new HashMap<String, Acceptability> ();
+				acceptabilityMap = new HashMap<>();
 			}
 			acceptabilityMap.put(lang.getRefsetId(), acceptability);
 		} else {
