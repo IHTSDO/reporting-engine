@@ -16,9 +16,12 @@ import org.snomed.otf.traceability.domain.ComponentChange;
 import org.snomed.otf.traceability.domain.ConceptChange;
 
 public class MultiDetailTraceabilityService implements TraceabilityService {
-	TraceabilityServiceClient client;
-	TermServerScript ts;
-	String onBranch = null;
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultiDetailTraceabilityService.class);
+
+	private TraceabilityServiceClient client;
+	private TermServerScript ts;
+	private String onBranch = null;
 	
 	public MultiDetailTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
@@ -57,6 +60,7 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 			}
 		} catch (Exception e) {
 			ts.report(tabIdx, c.getId(), c.getComponentType(), e);
+			LOGGER.error("Error reported", e);
 		}
 		return rowsReported;
 	}
