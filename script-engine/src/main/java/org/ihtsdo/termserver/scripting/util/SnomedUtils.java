@@ -47,10 +47,10 @@ public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements Scr
 	private static final String FWD_SLASH = "/";
 	
 	// Regular expression to match numbers with at least 8 digits
-	private static final String regex = "\\b\\d{8,}\\b";
+	private static final String SCTID_REGEX = "\\b\\d{8,}\\b";
 	
 	// Create a Pattern object
-	private static final Pattern sctIdPattern = Pattern.compile(regex);
+	private static final Pattern sctIdPattern = Pattern.compile(SCTID_REGEX);
 	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
