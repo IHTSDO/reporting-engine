@@ -29,6 +29,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final int TIMEOUT_MINUTES = 30;
 	private static final int FILE_COMPARISON_TAB = MAX_REPORT_TABS;
 
+	private static final String ASSOCIATION_FILENAME = "der2_cRefset_Association";
+
 	public static final String SCTID_SE_REFSETID = "734138000";
 	public static final String SCTID_SP_REFSETID = "734139008";
 
@@ -385,30 +387,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			String filename = entry.getKey();
 			Map<TotalsIndex, Integer> fileTotalsEntry = entry.getValue();
 
-			// Output descriptions totals
-			if (isDescription && !filename.contains("sct2_Description_")) {
-				report("Total Descriptions:", descriptionTotals, totals[TAB_DESCS]);
-				isDescription = false;
-			}
-
-			// Output text definitions totals
-			if (isTextDefinition && !filename.contains("sct2_TextDefinition_")) {
-				report("Total Text Definitions:", textDefinitionTotals, totals[TAB_TEXT_DEFN]);
-				isTextDefinition = false;
-			}
-
-			// Output language refsets totals
-			if (isLanguageRefset && !filename.contains("der2_cRefset_Language")) {
-				report("Total Language Refsets:", languageRefsetTotals, totals[TAB_LANG]);
-				isLanguageRefset = false;
-			}
-
-			// Output associations totals
-			if (isAssociation && !filename.contains("der2_cRefset_Association")) {
-				report(sumOfTabs(TAB_HIST, TAB_DESC_HIST));
-				isAssociation = false;
-			}
-
 			if (filename.contains("sct2_Description_")) {
 				isDescription = true;
 				report(filename, fileTotalsEntry, null);
@@ -437,11 +415,35 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				report(filename, fileTotalsEntry, totals[TAB_AXIOMS]);
 			} else if (filename.contains("der2_cRefset_AttributeValue")) {
 				report(filename, fileTotalsEntry, sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
-			} else if (filename.contains("der2_cRefset_Association")) {
+			} else if (filename.contains(ASSOCIATION_FILENAME)) {
 				isAssociation = true;
 				report(filename, fileTotalsEntry, null);
 			} else {
 				fileTotalsWithoutComparison.put(filename, fileTotalsEntry);
+			}
+
+			// Output descriptions totals
+			if (isDescription && !filename.contains("sct2_Description_")) {
+				report("Total Descriptions:", descriptionTotals, totals[TAB_DESCS]);
+				isDescription = false;
+			}
+
+			// Output text definitions totals
+			if (isTextDefinition && !filename.contains("sct2_TextDefinition_")) {
+				report("Total Text Definitions:", textDefinitionTotals, totals[TAB_TEXT_DEFN]);
+				isTextDefinition = false;
+			}
+
+			// Output language refsets totals
+			if (isLanguageRefset && !filename.contains("der2_cRefset_Language")) {
+				report("Total Language Refsets:", languageRefsetTotals, totals[TAB_LANG]);
+				isLanguageRefset = false;
+			}
+
+			// Output associations totals
+			if (isAssociation && !filename.contains(ASSOCIATION_FILENAME)) {
+				report(sumOfTabs(TAB_HIST, TAB_DESC_HIST));
+				isAssociation = false;
 			}
 		}
 
@@ -591,7 +593,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private void process(Path path, String filename) {
-		if (filename.contains("der2_cRefset_Association")) {
+		if (filename.contains(ASSOCIATION_FILENAME)) {
 			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
 		} else if (filename.contains("sct2_Concept_")) {
