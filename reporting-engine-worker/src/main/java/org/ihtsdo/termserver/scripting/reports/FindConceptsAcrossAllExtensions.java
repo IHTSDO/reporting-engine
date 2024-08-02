@@ -4,24 +4,18 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
-import org.ihtsdo.termserver.scripting.domain.CodeSystem;
-import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Module;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.*;
 
 public class FindConceptsAcrossAllExtensions extends TermServerReport implements ReportClass {
 
-	private static final SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	private static final String browserURL = "https://browser.ihtsdotools.org/snowstorm/snomed-ct";
-	private static final Logger LOGGER = LoggerFactory.getLogger(FindConceptsAcrossAllExtensions.class);
 
 	private List<CodeSystem> codeSystems;
 	private List<String> internationalModules;

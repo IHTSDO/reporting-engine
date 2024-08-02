@@ -508,7 +508,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			}
 			
 			conceptsExamined++;
-			double perc = ((double)conceptsExamined / (double)conceptsOfInterest.size()) * 100;
+			double perc = (conceptsExamined / (double)conceptsOfInterest.size()) * 100;
 			if (perc >= lastPercentageReported + 10) {
 				LOGGER.info ("Examined " + String.format("%.2f", perc) + "%");
 				lastPercentageReported = perc;
@@ -569,13 +569,13 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 		
 		return conceptsOfInterest.stream()
-				.filter(c -> hasLexicalMatch(c, wordMatches))
+				.filter(c -> hasLexicalMatch(c))
 				.filter(c -> SnomedUtils.hasChangesSinceIncludingSubComponents(c, changesFromET, false))
 				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
 				.collect(Collectors.toList());
 	}
 
-	private boolean hasLexicalMatch(Concept c, List<String> wordMatches) {
+	private boolean hasLexicalMatch(Concept c) {
 		if (wordMatches == null || wordMatches.size() == 0) {
 			return true;
 		}
