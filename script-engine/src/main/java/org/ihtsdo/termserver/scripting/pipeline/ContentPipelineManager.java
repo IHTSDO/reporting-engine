@@ -32,7 +32,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 
-	protected  Map<String, Integer> summaryCounts = new HashMap<>();
+	private  Map<String, Integer> summaryCounts = new HashMap<>();
 
 	protected Set<ComponentType> skipForComparison = Set.of(
 			ComponentType.INFERRED_RELATIONSHIP,
@@ -129,6 +129,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		
 		for (TemplatedConcept tc : sortedModelled) {
 			determineChanges(tc, externalIdentifiersProcessed);
+			summaryCounts.merge(tc.getClass().getSimpleName(), 1, Integer::sum);
 		}
 
 		determineInactivations(sortedModelled);
@@ -148,7 +149,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				conceptCreator.outputRF2Inactivation(existingConcept);
 			}
 			doProposedModelComparison(TemplatedConceptNull.create(inactivatingCode));
-			summaryCounts.merge("Removed", 1, Integer::sum);
+			summaryCounts.merge(TemplatedConcept.IterationIndicator.REMOVED.toString(), 1, Integer::sum);
 
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 			//So - temporarily again - we'll normalize the scheme id
@@ -377,5 +378,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected String getNamespace() {
 		return namespace;
+	}
+
+	public void incrementSummaryCount(String summaryItem) {
+		summaryCounts.merge(summaryItem, 1, Integer::sum);
 	}
 }
