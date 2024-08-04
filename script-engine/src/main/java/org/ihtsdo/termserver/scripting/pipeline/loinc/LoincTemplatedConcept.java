@@ -164,6 +164,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
+			//This loinc term is in scope.
+			if (templatedConcept.isHighestUsage()) {
+				cpm.incrementSummaryCount("* Highest Usage In Scope");
+			}
 			templatedConcept.populateParts(ls, details);
 			templatedConcept.populateTerms();
 			if (detailsIndicatePrimitiveConcept(loincNum) || 
@@ -171,6 +175,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				templatedConcept.getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			}
 			templatedConcept.getConcept().addAlternateIdentifier(loincNum, SCTID_LOINC_CODE_SYSTEM);
+		} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage()) {
+			//This is a highest usage term which is out of scope
+			cpm.incrementSummaryCount("* Highest Usage Out of Scope");
 		}
 		return templatedConcept;
 	}
