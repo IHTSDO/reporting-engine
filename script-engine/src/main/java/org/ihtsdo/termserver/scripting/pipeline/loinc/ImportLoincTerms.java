@@ -69,7 +69,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, LoincName, Issues, ",
 				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
-				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count, Top Priority Usage, Higest Rank",
+				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , ",
 				"Property, Included, Excluded, Excluded in Top 20K"
@@ -99,29 +99,35 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
 		Set<TemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
-			LoincTemplatedConcept templatedConcept = doModeling(entry.getKey(), entry.getValue());
-			if (templatedConcept != null
-				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
-				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
-				successfullyModelledConcepts.add(templatedConcept);
-			}
+			String loincNum = entry.getKey();
+			LoincTemplatedConcept templatedConcept = doModeling(loincNum, entry.getValue());
+			checkConceptSufficientlyModeled("Observable", loincNum, templatedConcept, successfullyModelledConcepts);
 		}
 
 		for (String panelLoincNum : panelLoincNums) {
 			LoincTemplatedConcept templatedConcept = doPanelModeling(panelLoincNum);
-			if (templatedConcept != null
-					&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
-					&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
-				successfullyModelledConcepts.add(templatedConcept);
-				summaryCounts.merge("Panel successfully added", 1, Integer::sum);
-			} else {
-				summaryCounts.merge("Panel unsuccessfully added", 1, Integer::sum);
-			}
+			checkConceptSufficientlyModeled("Panel", panelLoincNum, templatedConcept, successfullyModelledConcepts);
 		}
 
 		return successfullyModelledConcepts;
 	}
-	
+
+	private void checkConceptSufficientlyModeled(String contentType, String loincNum, LoincTemplatedConcept templatedConcept, Set<TemplatedConcept> successfullyModelledConcepts) {
+		if (templatedConcept != null
+				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
+				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
+			successfullyModelledConcepts.add(templatedConcept);
+			incrementSummaryCount("Content added - " + contentType);
+		} else {
+			incrementSummaryCount("Content not added - " + contentType);
+			if (!loincNumToLoincTermMap.containsKey(loincNum)) {
+				incrementSummaryCount("** LoincNum in Detail file not in LOINC.csv - " + loincNum);
+			} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage()) {
+				incrementSummaryCount("* Highest Usage Mapping Failure");
+			}
+		}
+	}
+
 	private LoincTemplatedConcept doModeling(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		if (!confirmLoincNumExists(loincNum) || loincNumContainsObjectionableWord(loincNum)) {
 			return null;
