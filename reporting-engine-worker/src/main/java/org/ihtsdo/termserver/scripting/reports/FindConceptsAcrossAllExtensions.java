@@ -3,13 +3,13 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Module;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.*;
 
@@ -20,12 +20,13 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	private List<CodeSystem> codeSystems;
 	private List<String> internationalModules;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "< 195967001 |Asthma (disorder)|");
-		TermServerReport.run(FindConceptsAcrossAllExtensions.class, args, params);
+		TermServerScript.run(FindConceptsAcrossAllExtensions.class, args, params);
 	}
 	
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
 		super.init(run);
@@ -33,13 +34,15 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 		codeSystems = tsClient.getCodeSystems();
 		internationalModules = codeSystems.stream()
 				.filter(cs -> cs.getShortName().equals("SNOMEDCT"))
-				.findFirst().get()
+				.findFirst()
+				.orElseThrow(() -> new TermServerScriptException("No International Modules Detected"))
 				.getModules()
 				.stream()
 				.map(Module::getConceptId)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
+	@Override
 	public void loadProjectSnapshot(boolean includeFSNs) throws TermServerScriptException {
 		//Nothing needed here.  The ECL return will have everything we need.
 		//In fact, we're going to wipe the graph loader so that we don't
@@ -47,6 +50,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 		gl.reset();
 	}
 	
+	@Override
 	public void postInit() throws TermServerScriptException {
 		List<String> tabList = codeSystems.stream()
 				.map(CodeSystem::getShortName)
@@ -84,6 +88,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 		return "FindConceptsAcrossAllExtensions_" + subsetECL.replace(" ", "_");
 	}
 	
+	@Override
 	public void runJob() throws TermServerScriptException {
 		int tabIdx = 0;
 		for (CodeSystem cs : codeSystems) {
