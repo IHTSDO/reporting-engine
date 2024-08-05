@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportConfiguration;
@@ -68,7 +68,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		TOTAL
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
 		// International
@@ -146,7 +146,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
 		params.put(MODULES, "2011000195101");*/
 
-		TermServerReport.run(PackageComparisonReport.class, args, params);
+		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
 
 	@Override

@@ -42,7 +42,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	private Map<Concept, List<String>> normalisedDescriptionMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		UpdateHistoricalAssociationsDriven delta = new UpdateHistoricalAssociationsDriven();
 		try {
 			ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
@@ -419,9 +419,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		//For 'NOS' concepts, we may pull them into our main processing set
 		if (c.getFsn().contains("NOS")) {
 			addedForProcessing |= checkForProcessInclusionNOS(familyRelationship, c, notes);
-		} else if (c.FSN.contains("context-dependent")) {
+		} else if (c.getFsn().contains("context-dependent")) {
 			addedForProcessing |= checkForProcessInclusionCDC(familyRelationship, c, notes, true);
-		} else if (c.FSN.contains("[")) {
+		} else if (c.getFsn().contains("[")) {
 			addedForProcessing |= checkForProcessInclusionCDC(familyRelationship, c, notes,false);
 		} else {
 			addedForProcessing |= checkForProcessInclusionMovedTo(familyRelationship, c, notes, action, familyMember);
@@ -757,7 +757,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		Association type;
 		InactivationIndicator inactivationIndicator;
 		Set<Concept> replacements;
-
+		
 		public UpdateAction () {
 		}
 
