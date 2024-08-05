@@ -38,7 +38,7 @@ public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants
 			fix.populateTaskDescription = true;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
-			fix.taskPrefix = "INFRA-12931 Manual ";  //TODO Set this for each batch
+			fix.taskPrefix = "";  //TODO Set this for each batch
 			fix.expectNullConcepts = true; 
 			fix.validateConceptOnUpdate = false;
 			fix.init(args);

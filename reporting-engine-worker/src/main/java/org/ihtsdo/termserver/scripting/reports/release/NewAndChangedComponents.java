@@ -569,9 +569,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 		
 		return conceptsOfInterest.stream()
-				.filter(c -> hasLexicalMatch(c))
+				.filter(this::hasLexicalMatch)
 				.filter(c -> SnomedUtils.hasChangesSinceIncludingSubComponents(c, changesFromET, false))
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.sorted(SnomedUtils::compareSemTagFSN)
 				.collect(Collectors.toList());
 	}
 
