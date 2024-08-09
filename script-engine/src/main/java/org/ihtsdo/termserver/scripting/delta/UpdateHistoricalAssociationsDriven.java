@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
@@ -672,7 +671,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	//A cousin is the same basic FSN, but without any prefix
-	private Concept findCousin(Concept c, boolean includeActive) throws TermServerScriptException {
+	private Concept findCousin(Concept c, boolean includeActive) {
 		String targetFsn = "Unknown";
 		for (String targetPrefix : targetPrefixes) {
 			if (c.getFsn().startsWith(targetPrefix)) {
