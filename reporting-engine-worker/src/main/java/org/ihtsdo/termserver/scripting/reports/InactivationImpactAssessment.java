@@ -173,7 +173,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 			if (c.isActiveSafely() && !inactivatingConcepts.contains(c)) {
 				Set<Relationship> rels = includeInferred ? c.getRelationships() : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 				for (Relationship r : rels) {
-					if (r.isNotConcrete() && r.isActive() && !r.getType().equals(IS_A) && inactivatingConcepts.contains(r.getTarget())) {
+					if (r.isNotConcrete() && Boolean.TRUE.equals(r.isActive()) && !r.getType().equals(IS_A) && inactivatingConcepts.contains(r.getTarget())) {
 						report(r.getTarget(), "used as attribute target value", c, r);
 					}
 				}
@@ -214,7 +214,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	}
 	
 	private void checkRefsetUsageECL() throws TermServerScriptException {
-		LOGGER.debug ("Checking " + inactivatingConceptIds.size() + " inactivating concepts against " + referenceSets.size() + " refsets");
+		LOGGER.debug("Checking {} inactivating concepts against {} refsets", inactivatingConceptIds.size(), referenceSets.size());
 		for (Concept refset : referenceSets) {
 			String ecl = "^" + refset.getId() + " AND ( " + selectionCriteria + " )"; 
 			for (Concept c : findConcepts(ecl)) {

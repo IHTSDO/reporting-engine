@@ -38,11 +38,9 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(UNPROMOTED_CHANGES_ONLY, "Y");
-		//params.put(COUNT_NEW_AS_GAINED, "N");
-		params.put(UNPROMOTED_CHANGES_ONLY, "N");
-		params.put(COUNT_NEW_AS_GAINED, "Y");
-		//params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
+		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
+		params.put(COUNT_NEW_AS_GAINED, "N");
+		params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
 		TermServerReport.run(LostAndFoundDescendantsReport.class, args, params);
 	}
 	
@@ -51,16 +49,16 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		ArchiveManager mgr = getArchiveManager();
-		LOGGER.info("Start Init: populatePreviousTransativeClosure is " + mgr.isPopulatePreviousTransativeClosure());
+		LOGGER.info("Start Init: populatePreviousTransativeClosure is {}", mgr.isPopulatePreviousTransativeClosure());
 		mgr.setPopulateReleasedFlag(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
 			mgr.setPopulatePreviousTransativeClosure(true);
 		}
-		LOGGER.info("End Init: populatePreviousTransativeClosure is " + mgr.isPopulatePreviousTransativeClosure());
+		LOGGER.info("End Init: populatePreviousTransativeClosure is {}", mgr.isPopulatePreviousTransativeClosure());
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		LOGGER.info("Start PostInit: populatePreviousTransativeClosure is " + getArchiveManager().isPopulatePreviousTransativeClosure());
+		LOGGER.info("Start PostInit: populatePreviousTransativeClosure is {}", getArchiveManager().isPopulatePreviousTransativeClosure());
 		countNewAsGained = getJobRun().getParamBoolean(COUNT_NEW_AS_GAINED);
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Active, Previous Count, Current Count " + (countNewAsGained?"(includes new)":"(does not include new)") + ", Hierarchy Movement Count (does not include inactivated)",
 				"SCTID, FSN, Semtag, Active, Movement, Concept"};
@@ -71,7 +69,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		tc = gl.getTransitiveClosure();
 		
 		super.postInit(tabNames, columnHeadings, false);
-		LOGGER.info("End PostInit: populatePreviousTransativeClosure is " + getArchiveManager().isPopulatePreviousTransativeClosure());
+		LOGGER.info("End PostInit: populatePreviousTransativeClosure is {}", getArchiveManager().isPopulatePreviousTransativeClosure());
 	}
 
 	@Override
@@ -92,7 +90,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	}
 
 	public void runJob() throws TermServerScriptException {
-		LOGGER.info("Start RunJob: populatePreviousTransativeClosure is " + getArchiveManager().isPopulatePreviousTransativeClosure());
+		LOGGER.info("Start RunJob: populatePreviousTransativeClosure is {}", getArchiveManager().isPopulatePreviousTransativeClosure());
 		if (ptc == null) {
 			throw new TermServerScriptException("Previous Transitive Closure not available.  Cannot continue.");
 		}
