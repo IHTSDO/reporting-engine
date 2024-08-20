@@ -82,6 +82,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.withParameters(params)
+				.withExpectedDuration(150)
 				.build();
 	}
 
@@ -115,7 +116,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
  			}
  			
  			int percCompleted = (int)((++conceptsProcessed/(double)conceptsOfInterest.size())*100);
- 			if (percCompleted >= lastPercReported + 5) {
+ 			if (percCompleted >= lastPercReported + 1) {
  				LOGGER.info (percCompleted + "% complete.");
  				lastPercReported = percCompleted;
  			}
