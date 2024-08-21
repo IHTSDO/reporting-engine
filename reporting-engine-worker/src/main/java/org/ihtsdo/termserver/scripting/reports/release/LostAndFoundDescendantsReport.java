@@ -40,7 +40,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		Map<String, String> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		params.put(COUNT_NEW_AS_GAINED, "N");
-		//params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
+		params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
 		TermServerReport.run(LostAndFoundDescendantsReport.class, args, params);
 	}
 	
