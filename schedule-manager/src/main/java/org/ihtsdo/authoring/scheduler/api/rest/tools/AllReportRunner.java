@@ -72,7 +72,7 @@ public class AllReportRunner {
 		checkAndUpdateEclParameterIfBlank(jobName, reRunJob, userName);
 		reRunJob.setAuthToken(authToken);
 
-		if (StringUtils.isNotBlank(projectName)) {
+		if (StringUtils.isNotEmpty(projectName)) {
 			reRunJob.setProject(projectName);
 		}
 
