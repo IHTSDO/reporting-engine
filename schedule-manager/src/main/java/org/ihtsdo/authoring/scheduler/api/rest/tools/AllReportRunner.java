@@ -33,7 +33,7 @@ public class AllReportRunner {
 	private ScheduleService scheduleService;
 
 	public JobRunBatch runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName, String authToken) {
-		List<Job> listOfJobs = jobRepository.findAll();
+		List<Job> listOfJobs = jobRepository.findAllNotHidden();
 		LOGGER.info("{} {} reports for user '{}' [INT={}, MS={}, Project={}]",
 				dryRun ? "Dry run of" : "Scheduling",
 				listOfJobs.size(),
