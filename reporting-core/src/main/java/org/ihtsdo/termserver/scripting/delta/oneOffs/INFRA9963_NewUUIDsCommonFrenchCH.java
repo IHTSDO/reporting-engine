@@ -117,7 +117,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 					ch.setActive(true);
 					ch.setRefsetId(SCTID_CH_LRS);
 					ch.setModuleId(SCTID_CH_MOD);
-					d.addLangRefsetEntry(ch, false);
+					d.addLangRefsetEntry(ch, true);
 					alreadyReported = ch.getId();
 					report(c, Severity.LOW, ReportActionType.LANG_REFSET_CLONED, d, ch.toStringWithModule(), info + "was: " + lrsToClone.toStringWithModule());
 				}
@@ -134,7 +134,7 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 					l.setActive(false);
 					c.setModified();
 					report(c, Severity.LOW, ReportActionType.LANG_REFSET_INACTIVATED, d, l.toStringWithModule());
-					d.addLangRefsetEntry(cloneLRS, false);  //Is replacement, so don't modify existing refsets
+					d.addLangRefsetEntry(cloneLRS, true);  //Is replacement, so don't modify existing refsets
 					report(c, Severity.LOW, ReportActionType.LANG_REFSET_CREATED, d, cloneLRS.toStringWithModule());
 					if (!cloneLRS.getModuleId().equals(SCTID_CH_MOD)) {
 						report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, d, "CF LRS not in Swiss Module");
