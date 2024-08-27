@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -72,7 +73,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , ",
-				"Property, Included, Excluded, Excluded in Top 20K"
+				"Property, In Scope, Included, Included in Top 2K, Excluded, Excluded in Top 2K"
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
@@ -112,18 +113,20 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		return successfullyModelledConcepts;
 	}
 
-	private void checkConceptSufficientlyModeled(String contentType, String loincNum, LoincTemplatedConcept templatedConcept, Set<TemplatedConcept> successfullyModelledConcepts) {
+	private void checkConceptSufficientlyModeled(String contentType, String loincNum, LoincTemplatedConcept templatedConcept, Set<TemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
 		if (templatedConcept != null
 				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
 				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
 			successfullyModelledConcepts.add(templatedConcept);
-			incrementSummaryCount("Content added - " + contentType);
+			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content added - " + contentType);
 		} else {
-			incrementSummaryCount("Content not added - " + contentType);
+			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
 			if (!loincNumToLoincTermMap.containsKey(loincNum)) {
-				incrementSummaryCount("** LoincNum in Detail file not in LOINC.csv - " + loincNum);
-			} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage()) {
-				incrementSummaryCount("* Highest Usage Mapping Failure");
+				incrementSummaryCount("Missing LoincNums","LoincNum in Detail file not in LOINC.csv - " + loincNum);
+			} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage() && templatedConcept != null) {
+				//Templates that come back as null will already have been counted as out of scope
+				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
+				report(getTab(TAB_IOI), "Highest Usage Mapping Failure", loincNum);
 			}
 		}
 	}

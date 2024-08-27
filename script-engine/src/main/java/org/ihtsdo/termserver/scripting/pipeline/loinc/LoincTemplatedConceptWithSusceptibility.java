@@ -40,14 +40,8 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		Concept organism = gl.getConcept("410607006 |Organism (organism)|");
 		//All Susceptibility concepts will have a Inheres in of Organism
 		attributes.add(new RelationshipTemplate(inheresIn, organism));
-		
-		//We can't yet deal with "given"
-		if (detailPresent(loincNum, COMPNUM_PN) &&
-			getLoincDetail(loincNum, COMPNUM_PN).getPartName().endsWith(" given")) {
-			String issue = "Skipping concept using 'given'";
-			cpm.report(getTab(TAB_IOI), issue, loincNum);
-			issues.add(issue);
-			attributes.add(null);
+
+		if (!compNumPartNameAcceptable(attributes, issues)) {
 			return attributes;
 		}
 

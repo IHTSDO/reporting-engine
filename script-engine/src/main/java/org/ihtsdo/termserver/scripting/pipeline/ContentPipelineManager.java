@@ -16,15 +16,19 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ContentPipelineManager extends TermServerScript implements ContentPipeLineConstants {
 
+	public static final String CHANGES_SINCE_LAST_ITERATION = "Changes since last iteration";
+	public static final String HIGHEST_USAGE_COUNTS = "Highest usage counts";
+	public static final String CONTENT_COUNT = "Content counts";
+
 	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
 	
 	protected static final RunMode runMode = RunMode.INCREMENTAL_DELTA;
 	
-	protected static int FILE_IDX_CONCEPT_IDS = 7;
-	protected static int FILE_IDX_DESC_IDS = 8;
-	protected static int FILE_IDX_REL_IDS = 9;
+	protected static final int FILE_IDX_CONCEPT_IDS = 7;
+	protected static final int FILE_IDX_DESC_IDS = 8;
+	protected static final int FILE_IDX_REL_IDS = 9;
 	
 	protected Concept scheme;
 	protected String namespace;
@@ -32,7 +36,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 
-	private  Map<String, Integer> summaryCounts = new HashMap<>();
+	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
 
 	protected Set<ComponentType> skipForComparison = Set.of(
 			ComponentType.INFERRED_RELATIONSHIP,
@@ -55,8 +59,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			postInit();
 			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
 			//getReportManager().disableTab(getTab(TAB_MAP_ME));
-			getReportManager().disableTab(getTab(TAB_IOI));
-			getReportManager().disableTab(getTab(TAB_STATS));
+			//getReportManager().disableTab(getTab(TAB_IOI));
+			//getReportManager().disableTab(getTab(TAB_STATS));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
 			loadSupportingInformation();
@@ -64,7 +68,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			Set<TemplatedConcept> successfullyModelled = doModeling();
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
 			reportMissingMappings(getTab(TAB_MAP_ME));
-			reportExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
+			reportIncludedExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
 			flushFiles(false);
 			switch (runMode) {
 				case NEW: outputAllConceptsToDelta(successfullyModelled);
@@ -77,7 +81,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
-			reportSummaryCounts(summaryCounts);
+			reportSummaryCounts();
 		} finally {
 			while (additionalThreadCount > 0) {
 				try {
@@ -93,16 +97,24 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 	}
 
-	private void reportSummaryCounts(Map<String, Integer> summaryCounts) throws TermServerScriptException {
-		report(getTab(TAB_SUMMARY), "");
-		for (String key : summaryCounts.keySet()) {
-			report(getTab(TAB_SUMMARY), key, summaryCounts.get(key));
-		}
+	private void reportSummaryCounts() throws TermServerScriptException {
+		int summaryTabIdx = getTab(TAB_SUMMARY);
+		report(summaryTabIdx, "");
+		//Work through each catagory (sorted) and then output each summary Count for that category
+		summaryCountsByCategory.keySet().stream()
+				.sorted()
+				.forEach(cat -> {
+					reportSafely(summaryTabIdx, cat);
+					Map<String, Integer> summaryCounts = summaryCountsByCategory.get(cat);
+					summaryCounts.keySet().stream()
+							.sorted()
+							.forEach(summaryItem -> reportSafely(summaryTabIdx, "", summaryItem, summaryCounts.get(summaryItem)));
+				});
 	}
 
 	protected abstract void reportMissingMappings(int tabIdx) throws TermServerScriptException;
 
-	protected abstract void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException;
+	protected abstract void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException;
 
 	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
@@ -129,7 +141,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		
 		for (TemplatedConcept tc : sortedModelled) {
 			determineChanges(tc, externalIdentifiersProcessed);
-			summaryCounts.merge(tc.getClass().getSimpleName(), 1, Integer::sum);
+			incrementSummaryCount("Counts per template", tc.getClass().getSimpleName());
 		}
 
 		determineInactivations(sortedModelled);
@@ -149,7 +161,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				conceptCreator.outputRF2Inactivation(existingConcept);
 			}
 			doProposedModelComparison(TemplatedConceptNull.create(inactivatingCode));
-			summaryCounts.merge(TemplatedConcept.IterationIndicator.REMOVED.toString(), 1, Integer::sum);
+			incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, TemplatedConcept.IterationIndicator.REMOVED.toString());
 
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 			//So - temporarily again - we'll normalize the scheme id
@@ -192,13 +204,14 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 
 		//Update the summary count based on the comparison to the previous iteration
-		summaryCounts.merge(tc.getIterationIndicator().toString(), 1, Integer::sum);
+		incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, tc.getIterationIndicator().toString());
+
 		//Is this a high usage concept?
 		if (activeIndicators.contains(tc.getIterationIndicator()) && tc.isHighUsage()) {
-			summaryCounts.merge("Active with high usage", 1, Integer::sum);
+			incrementSummaryCount(HIGHEST_USAGE_COUNTS, "Active with high usage");
 		}
 		if (activeIndicators.contains(tc.getIterationIndicator()) && tc.isHighestUsage()) {
-			summaryCounts.merge("Active with highest usage", 1, Integer::sum);
+			incrementSummaryCount(HIGHEST_USAGE_COUNTS,"Active with highest usage");
 		}
 		doProposedModelComparison(tc);
 
@@ -380,7 +393,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return namespace;
 	}
 
-	public void incrementSummaryCount(String summaryItem) {
+	public void incrementSummaryCount(String category, String summaryItem) {
+		//Increment the count for this summary item, in the appropriate category
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
 		summaryCounts.merge(summaryItem, 1, Integer::sum);
 	}
 }
