@@ -255,31 +255,39 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		return highUsageIndicators;
 	}
 
-	protected void reportExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	protected void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		Set<String> successfullyModelledLoincNums = successfullyModelled.stream()
 				.map(tc -> tc.getExternalIdentifier())
 				.collect(Collectors.toSet());
 
+		//Collect both included and excluded terms by property
 		Map<String, List<LoincTerm>> included = loincNumToLoincTermMap.values().stream()
 				.filter(lt -> successfullyModelledLoincNums.contains(lt.getLoincNum()))
 				.collect(Collectors.groupingBy(LoincTerm::getProperty));
 
-		//Sort remaining Loinc Terms by Property
 		Map<String, List<LoincTerm>> excluded = loincNumToLoincTermMap.values().stream()
 				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getLoincNum()))
 				.collect(Collectors.groupingBy(LoincTerm::getProperty));
 
-		Map<String, List<LoincTerm>> excludedInTop20K = loincNumToLoincTermMap.values().stream()
-				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getLoincNum()))
-				.filter(lt -> lt.getCommonTestRank() != null && !lt.getCommonTestRank().equals("0"))
-				.collect(Collectors.groupingBy(LoincTerm::getProperty));
+		Set<String> properties = new LinkedHashSet<>(included.keySet());
+		properties.addAll(excluded.keySet());
 
-		for (Map.Entry<String, List<LoincTerm>> entry : excluded.entrySet()) {
-			int includedCount = included.getOrDefault(entry.getKey(), new ArrayList<>()).size();
-			int excludedCount = entry.getValue().size();
-			int excludedInTop20KCount = excludedInTop20K.getOrDefault(entry.getKey(), new ArrayList<>()).size();
-			report(tabIdx, entry.getKey(), includedCount, excludedCount, excludedInTop20KCount);
+		for (String property : properties) {
+			int includedCount = included.getOrDefault(property, new ArrayList<>()).size();
+			int includedInTop2KCount = included.getOrDefault(property, new ArrayList<>()).stream()
+					.filter(LoincTerm::isHighestUsage)
+					.toList().size();
+			int excludedCount = excluded.getOrDefault(property, new ArrayList<>()).size();
+			int excludedInTop2KCount = excluded.getOrDefault(property, new ArrayList<>()).stream()
+					.filter(LoincTerm::isHighestUsage)
+					.toList().size();
+			report(tabIdx, property, inScope(property), includedCount, includedInTop2KCount, excludedCount, excludedInTop2KCount);
 		}
+	}
+
+	private String inScope(String property) throws TermServerScriptException {
+		//Construct a dummy LoincNum with this property and see if it's in scope or not
+		return LoincTemplatedConcept.getAppropriateTemplate("Dummy", property) == null ? "N" : "Y";
 	}
 
 	public void addMissingMapping(String loincPartNum, String loincNum) {

@@ -42,13 +42,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttribType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		
-		//We can't yet deal with "given"
-		if (detailPresent(loincNum, COMPNUM_PN) &&
-			getLoincDetail(loincNum, COMPNUM_PN).getPartName().endsWith(" given")) {
-			String issue = "Skipping concept using 'given'";
-			cpm.report(getTab(TAB_IOI), issue, loincNum);
-			issues.add(issue);
-			attributes.add(null);
+		if (!compNumPartNameAcceptable(attributes, issues)) {
 			return attributes;
 		}
 

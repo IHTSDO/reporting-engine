@@ -142,7 +142,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	
 	private static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
 		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
-		return switch (loincDetail.getPartName()) {
+		return getAppropriateTemplate(loincNum, loincDetail.getPartName());
+	}
+
+	public static LoincTemplatedConcept getAppropriateTemplate(String loincNum, String property) throws TermServerScriptException {
+		return switch (property) {
 			case "NFr", "MFr", "CFr", "AFr", "VFr", "SFr" -> LoincTemplatedConceptWithRelative.create(loincNum);
 			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "LaCnc", "LnCnc", "LsCnc", "MCnc", "MCnt", "MoM", "NCnc",
 			     "Naric", "PPres", "PrThr", "SCnc", "SCnt", "Titr", "Visc" ->
@@ -157,7 +161,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 
 	public static LoincTemplatedConcept populateTemplate(LoincScript ls, String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
-		
+
 		if (loincNum.equals("1882-0")) {
 			LOGGER.debug("Check inactivation");
 		}
@@ -166,7 +170,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		if (templatedConcept != null) {
 			//This loinc term is in scope.
 			if (templatedConcept.isHighestUsage()) {
-				cpm.incrementSummaryCount("* Highest Usage In Scope");
+				cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage In Scope");
 			}
 			templatedConcept.populateParts(ls, details);
 			templatedConcept.populateTerms();
@@ -177,7 +181,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			templatedConcept.getConcept().addAlternateIdentifier(loincNum, SCTID_LOINC_CODE_SYSTEM);
 		} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage()) {
 			//This is a highest usage term which is out of scope
-			cpm.incrementSummaryCount("* Highest Usage Out of Scope");
+			cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
 		}
 		return templatedConcept;
 	}
@@ -481,7 +485,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 		
 		if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber())) {
-			cpm.report(getTab(TAB_IOI), "Allow use of 'specimen'", externalIdentifier);
 			processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
 		}
 		RelationshipTemplate rt = attributePartMapManager.getPartMappedAttributeForType(idxTab, externalIdentifier, loincDetail.getPartNumber(), attributeType);
@@ -661,5 +664,17 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
 		typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
 		typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
+	}
+
+	protected boolean compNumPartNameAcceptable(List<RelationshipTemplate> attributes, List<String> issues) throws TermServerScriptException {
+		//We can't yet deal with "given"
+		if (detailPresent(externalIdentifier, COMPNUM_PN) &&
+				getLoincDetail(externalIdentifier, COMPNUM_PN).getPartName().endsWith(" given")) {
+			String issue = "Skipping concept using 'given'";
+			issues.add(issue);
+			attributes.add(null);
+			return false;
+		}
+		return true;
 	}
 }
