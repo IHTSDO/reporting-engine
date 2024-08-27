@@ -69,9 +69,9 @@ public class QI1209_ReplaceMeasurementAttributeAndReterm extends BatchFix {
 		replaceTemplate = new RelationshipTemplate(HAS_INTERPT, 
 				gl.getConcept("260373001 |Detected (qualifier value)|"));*/
 		
-		matchTemplate = new RelationshipTemplate(HAS_INTERPT, 
+		matchTemplate = new RelationshipTemplate(HAS_INTERPRETATION,
 				gl.getConcept("260385009 |Negative (qualifier value)|"));
-		replaceTemplate = new RelationshipTemplate(HAS_INTERPT, 
+		replaceTemplate = new RelationshipTemplate(HAS_INTERPRETATION,
 				gl.getConcept("260415000 |Not detected (qualifier value)|"));
 	}
 
