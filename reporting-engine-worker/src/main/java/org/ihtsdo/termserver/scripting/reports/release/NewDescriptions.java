@@ -63,8 +63,10 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("New Descriptions")
-				.withDescription("This report lists all descriptions and annotations (optionally filtered by ECL) created in the current authoring cycle. " +
-				"Ticking the 'Unpromoted Changes' box will cause only those new descriptions and annotations that have been created since the last time the project was promoted, to be listed.")
+				.withDescription("This report provides a list of all descriptions and annotations " +
+						"created during the current authoring cycle, with an optional filter by ECL. " +
+						"Checking 'Unpromoted Changes' shows only new descriptions and annotations " +
+						"that were created since the project was last promoted.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
