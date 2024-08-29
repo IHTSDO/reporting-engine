@@ -19,6 +19,7 @@ import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.DialectChecker;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
@@ -1472,26 +1473,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issue2Str = "Text Definition preferred in both dialects contains GB specific spelling";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
-		
-		List<String> lines;
-		LOGGER.debug ("Loading us/gb terms");
-		try {
-			lines = Files.readLines(new File("resources/us-to-gb-terms-map.txt"), StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read resources/us-to-gb-terms-map.txt", e);
-		}
-		List<DialectPair> dialectPairs = lines.stream()
-				.map(l -> new DialectPair(l))
-				.collect(Collectors.toList());
-		
-		LOGGER.debug ("Checking " + bothDialectTextDefns.size() + " both-dialect text definitions against " + dialectPairs.size() + " dialect pairs");
+		DialectChecker dialectChecker = DialectChecker.create();
+		LOGGER.debug ("Checking " + bothDialectTextDefns.size() + " both-dialect text definitions against " + dialectChecker.size() + " dialect pairs");
 		
 		nextDescription:
 		for (Description textDefn : bothDialectTextDefns) {
 			String term = " " + textDefn.getTerm().toLowerCase().replaceAll("[^A-Za-z0-9]", " ");
 			Concept c = gl.getConcept(textDefn.getConceptId());
 			String legacy = getLegacyIndicator(c);
-			for (DialectPair dialectPair : dialectPairs) {
+			for (DialectChecker.DialectPair dialectPair : dialectChecker.getDialectPairs()) {
 				if (checkDialectPair(c, dialectPair.usTerm, term, textDefn, issueStr, legacy) ||
 					checkDialectPair(c, dialectPair.gbTerm, term, textDefn, issue2Str, legacy)) {
 					continue nextDescription;
@@ -1848,16 +1838,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		return false;
 	}
 
-	class DialectPair {
-		String usTerm;
-		String gbTerm;
-		DialectPair (String line) {
-			String[] pair = line.split(TAB);
-			//Wrap in spaces to ensure whole word matching
-			usTerm = " " + pair[0] + " ";
-			gbTerm = " " + pair[1] + " ";
-		}
-	}
+
 
 	class ConcernLevel {
 		//Need an object to wrap an integer so we can pass it into a function multiple times
