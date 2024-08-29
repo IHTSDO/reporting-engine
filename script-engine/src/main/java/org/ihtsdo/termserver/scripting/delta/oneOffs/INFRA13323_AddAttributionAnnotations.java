@@ -1,0 +1,241 @@
+package org.ihtsdo.termserver.scripting.delta.oneOffs;
+
+import com.google.common.io.Files;
+import org.ihtsdo.otf.RF2Constants;
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.util.DialectChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.ReportSheetManager;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator implements ScriptConstants{
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA13323_AddAttributionAnnotations.class);
+	private static final int BATCH_SIZE = 50;
+	private static final String ATTRIBUTION_ADDED = "Orphanet attribution added";
+
+	private Concept annotationType = null;
+	private String annotationStr = "Inserm Orphanet";
+	private Set<Concept> conceptsAnnotated = new HashSet<>();
+	private Map<Concept, String> conceptDefinitions = new HashMap<>();
+
+	public static void main(String[] args) throws TermServerScriptException {
+		INFRA13323_AddAttributionAnnotations delta = new INFRA13323_AddAttributionAnnotations();
+		try {
+			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			delta.init(args);
+			delta.inputFileHasHeaderRow = true;
+			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
+			delta.postInit();
+			delta.loadDefinitionsFile();
+			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
+			int lastBatchSize = delta.process();
+			delta.createOutputArchive(false, lastBatchSize);
+		} finally {
+			delta.finish();
+		}
+	}
+
+	@Override
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[]{
+				"SCTID, FSN, SemTag, Severity, Action, Info, detail, , ",
+				"SCTID, FSN, SemTag, Reason, detail, detail,"
+		};
+
+		String[] tabNames = new String[]{
+				"Map Records Processed",
+				"Map Records Skipped"
+		};
+		super.postInit(tabNames, columnHeadings, false);
+	}
+
+	private void loadDefinitionsFile() throws TermServerScriptException {
+		int lineNum = 0;
+		try {
+			List<String> lines = Files.readLines(getInputFileOrThrow(2), StandardCharsets.UTF_8);
+			for (String line : lines) {
+				lineNum++;
+				String[] columns = line.split(TAB);
+				if (columns.length < 4 || columns[IDX_ID].equals("ORPHAcode") || columns[IDX_ID].isEmpty()) {
+					LOGGER.warn("Skipping line {} : {}", lineNum, line);
+					continue;
+				}
+
+				String sctId = columns[2];
+				String definition = columns[3];
+				if (definition.charAt(0) == '"') {
+					//Remove the quotes from the beginning and end of the definition
+					definition = definition.substring(1, definition.length() - 1);
+				}
+				Concept c = gl.getConcept(sctId);
+				conceptDefinitions.put(c, definition);
+			}
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to read input file at line " + lineNum, e);
+		}
+		LOGGER.info("Loaded definitions for {} concepts", conceptDefinitions.size());
+	}
+
+	private int process() throws TermServerScriptException {
+		//Work through all inactive concepts and check the inactivation indicator on all
+		//active descriptions
+		int conceptsInThisBatch = 0;
+		for (Component c : processFile()) {
+			conceptsInThisBatch += addAnnotation((Concept)c);
+			if (conceptsInThisBatch >= BATCH_SIZE) {
+				if (!dryRun) {
+					createOutputArchive(false, conceptsInThisBatch);
+					outputDirName = "output"; //Reset so we don't end up with _1_1_1
+					initialiseOutputDirectory();
+					initialiseFileHeaders();
+				}
+				gl.setAllComponentsClean();
+				conceptsInThisBatch = 0;
+			}
+		}
+		return conceptsInThisBatch;
+	}
+
+	private int addAnnotation(Concept c) throws TermServerScriptException {
+		int changesMade = replaceTextDefinitions(c);
+
+		String processingDetail = null;
+		ReportActionType action = ReportActionType.NO_CHANGE;
+		String rmStr = "";
+		if (c.hasIssues()) {
+			processingDetail = c.getIssues();
+		} else if (!c.isActiveSafely()) {
+			processingDetail = "Concept now inactive";
+		} else if (!c.getComponentAnnotationEntries().isEmpty()) {
+			processingDetail = "Already has annotation";
+		} else {
+			ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(c, annotationType, annotationStr);
+			c.addComponentAnnotationEntry(cae);
+			rmStr = cae.toString();
+			outputRF2(c);
+			action = ReportActionType.REFSET_MEMBER_ADDED;
+			changesMade++;
+			countIssue(c);
+			conceptsAnnotated.add(c);
+			processingDetail = ATTRIBUTION_ADDED;
+		}
+
+		if (processingDetail.equals(ATTRIBUTION_ADDED)) {
+			report(c, Severity.LOW, action, processingDetail, rmStr);
+		} else {
+			report(SECONDARY_REPORT, c, Severity.HIGH, action, processingDetail, rmStr);
+		}
+
+		//If we've made any changes, count this concept as part of our batch.  Otherwise, not.
+		return changesMade == 0 ? 0 : 1;
+	}
+
+	private int replaceTextDefinitions(Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		if (c.getId().equals("10406007")) {
+			LOGGER.debug("Debug here");
+		}
+		//Do we have a text definition from Orphanet?
+		if (!conceptDefinitions.containsKey(c)) {
+			c.setIssue("No Orphanet definition supplied");
+			return NO_CHANGES_MADE;
+		}
+		boolean textDefinitionNeeded = true;
+		boolean usgbVarianceDetected = false;
+		//Do we already have the expected text definition?
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+				//Do we have us/gb variance?
+				if (d.isPreferred(RF2Constants.US_ENG_LANG_REFSET) && !d.isPreferred(RF2Constants.GB_ENG_LANG_REFSET)) {
+					usgbVarianceDetected = true;
+				}
+
+				if (d.getTerm().equals(conceptDefinitions.get(c))) {
+					report(c, Severity.LOW, ReportActionType.NO_CHANGE, "Text definition already present", d);
+					textDefinitionNeeded = false;
+				} else {
+					d.setActive(false, true);
+					d.addInactivationIndicator(InactivationIndicatorEntry.withDefaults(d, SCTID_INACT_OUTDATED));
+					report(c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "Outdated", d);
+					changesMade += 2;
+				}
+			}
+		}
+
+		if (usgbVarianceDetected) {
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB variance detected");
+		}
+
+		if (textDefinitionNeeded) {
+			addNewTextDefinition(c, usgbVarianceDetected);
+			changesMade++;
+		}
+
+
+		return changesMade;
+	}
+
+	private void addNewTextDefinition(Concept c, boolean usgbVarianceDetected) throws TermServerScriptException {
+		//Add the Orphnet supplied text definition to the concept
+		String definition = conceptDefinitions.get(c);
+		//Remove all instances of the text "(see this term)" from the definition
+		definition = definition.replace(" (see this term)", "");
+		definition = definition.replace(" (see these terms))", "");
+		if (!definition.equals(conceptDefinitions.get(c))) {
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", conceptDefinitions.get(c));
+		}
+
+		Description d = Description.withDefaults(definition, DescriptionType.TEXT_DEFINITION, Acceptability.PREFERRED);
+		d.setConceptId(c.getId());
+		d.setId(descIdGenerator.getSCTID());
+		c.addDescription(d);
+		report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "Text definition added", d);
+
+		//If we have NOT already reported US/GB variance, check for it in the replacement
+		if (!usgbVarianceDetected) {
+			DialectChecker dc = DialectChecker.create(); //Will only load the us/gb file the first time this singleton is requested
+			String usgbTerm = dc.findFirstUSGBSpecificTerm(d);
+			if (usgbTerm != null) {
+				report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB variance '" + usgbTerm + "' detected in new text definition", definition);
+			}
+		}
+	}
+
+	private void report(Concept c, Severity severity, ReportActionType action, String processingDetail, String rmStr) throws TermServerScriptException {
+		List<Description> textDefinitions = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
+		String textDefn = textDefinitions.stream()
+				.map(d -> d.getTerm())
+				.collect(Collectors.joining(",\n"));
+		String textDefnET = textDefinitions.stream()
+				.findFirst()
+				.map(d -> d.getEffectiveTime())
+				.orElse("");
+		report(c, severity, action, processingDetail, rmStr, textDefn, textDefnET);
+	}
+
+	@Override
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
+		Concept c = gl.getConcept(lineItems[REF_IDX_REFCOMPID]);
+		boolean rmActive = lineItems[REF_IDX_ACTIVE].equals("1");
+		String effectiveTime = lineItems[REF_IDX_EFFECTIVETIME];
+		if (!rmActive) {
+			c.setIssue("Orphanet map inactive");
+		} else if (effectiveTime.compareTo("20160131") < 0) {
+			c.setIssue("Orphanet map predates 20160131");
+		}
+		return Collections.singletonList(c);
+	}
+
+}
