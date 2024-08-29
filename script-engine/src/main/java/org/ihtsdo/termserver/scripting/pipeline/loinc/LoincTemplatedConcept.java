@@ -107,7 +107,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
 		
 		percentAttribute = new RelationshipTemplate(gl.getConcept("246514001 |Units|"),
-				gl.getConcept(" 415067009 |Percentage unit|"));
+				gl.getConcept("415067009 |Percentage unit|"));
 		conceptModelObjectAttrib = gl.getConcept("762705008 |Concept model object attribute|");
 		precondition = gl.getConcept("704326004 |Precondition (attribute)|");
 		relativeTo = gl.getConcept("704325000 |Relative to (attribute)|");
@@ -135,6 +135,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			rt.setType(USING_DEVICE);
 		}
 	}
+
+	protected void applyTemplateSpecificRules(Description d) {
+		//Do we need to apply any specific rules to the description?
+		//Override this function if so
+	}
 	
 	protected int getTab(String tabName) throws TermServerScriptException {
 		return cpm.getTab(tabName);
@@ -154,7 +159,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			case "Anat", "Aper", "EntVol", "ID", "Morph", "Prid", "Temp", "Type", "Vol" ->
 					LoincTemplatedConceptWithInheres.create(loincNum);
 			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(loincNum);
-			case "MRat", "SRat", "VRat", "CRat" -> LoincTemplatedConceptWithProcess.create(loincNum);
+			case "MRat", "SRat", "VRat", "Vel", "CRat", "ArVRat" -> LoincTemplatedConceptWithProcess.create(loincNum);
+			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(loincNum);
 			default -> null;
 		};
 	}
@@ -197,9 +203,13 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
 		ptTemplateStr = tidyUpTerm(ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
+
 		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
+		applyTemplateSpecificRules(pt);
+
 		Description fsn = Description.withDefaults(ptTemplateStr + SEM_TAG, DescriptionType.FSN, Acceptability.PREFERRED);
-		
+		applyTemplateSpecificRules(fsn);
+
 		//Also add the Long Common Name as a Synonym
 		String lcnStr = loincNumToLoincTermMap.get(externalIdentifier).getLongCommonName();
 		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
@@ -351,7 +361,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	private void populateParts(LoincScript ls, Map<String, LoincDetail> details) throws TermServerScriptException {
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
-		concept.addRelationship(IS_A, OBSERVABLE_ENTITY);
+		concept.addRelationship(IS_A, getParentConceptForTemplate());
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 		Set<String> partTypeSeen = new HashSet<>();
 		for (LoincDetail loincDetail : details.values()) {
@@ -409,6 +419,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		if (concept.hasIssues()) {
 			concept.addIssue("Template used: " + this.getClass().getSimpleName(), ",\n");
 		}
+	}
+
+	protected Concept getParentConceptForTemplate() throws TermServerScriptException {
+		//Only Ratio template need to override this, for now
+		return OBSERVABLE_ENTITY;
 	}
 
 	private void addAttributesToConcept(LoincScript ls, RelationshipTemplate rt, LoincDetail loincDetail, boolean expectNullMap) throws TermServerScriptException {
