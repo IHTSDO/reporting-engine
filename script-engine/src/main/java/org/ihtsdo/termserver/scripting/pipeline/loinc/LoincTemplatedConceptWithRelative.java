@@ -29,20 +29,20 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttrib = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
-		if (hasNoSubParts(loincNum)) {
+		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
+			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttrib);
 		} else {
-			LoincDetail denom = getLoincDetailIfPresent(loincNum, COMPDENOM_PN);
+			LoincDetail denom = getLoincDetail(COMPDENOM_PN);
 			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
-				addAttributeFromDetailWithType(attributes, COMPDENOM_PN, issues, relativeTo);
+				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttrib);
+				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPDENOM_PN), relativeTo);
 				//Check for percentage
 				if (denom.getPartName().contains("100")) {
 					attributes.add(percentAttribute);
@@ -50,11 +50,11 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 				}
 			}
 
-			if (detailPresent(loincNum, COMPSUBPART2_PN)) {
+			if (detailPresent(COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttrib);
+					addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttrib);
 				}
-				addAttributeFromDetailWithType(attributes, COMPSUBPART2_PN, issues, challengeAttrib);
+				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPSUBPART2_PN), challengeAttrib);
 			}
 		}
 

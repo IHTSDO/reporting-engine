@@ -145,7 +145,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			return null;
 		}
 
-		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(this, loincNum, loincDetailMap);
+		LoincTemplatedConcept templatedConcept = LoincTemplatedConcept.populateTemplate(loincNum, loincDetailMap);
 		validateTemplatedConcept(loincNum, templatedConcept);
 		return templatedConcept;
 	}
