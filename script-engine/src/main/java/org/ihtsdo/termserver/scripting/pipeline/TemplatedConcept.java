@@ -5,6 +5,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
+import javax.swing.text.AbstractDocument;
 import java.util.*;
 import java.util.stream.Collectors;
 

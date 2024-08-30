@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript;
 
 public class TemplatedConceptNull extends TemplatedConcept {
 

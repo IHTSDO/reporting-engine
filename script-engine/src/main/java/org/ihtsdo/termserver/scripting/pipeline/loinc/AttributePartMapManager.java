@@ -25,6 +25,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 	private GraphLoader gl;
 	private Map<String, LoincPart> loincParts;
 	private Map<String, RelationshipTemplate> loincPartToAttributeMap;
+	private Map<String, List<Concept>> hardCodedMappings = new HashMap<>();
 	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
 	private final Map<String, String> partMapNotes;
@@ -42,11 +43,38 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		this.partMapNotes = partMapNotes;
 	}
 
-	public RelationshipTemplate getPartMappedAttributeForType(int idxTab, String loincNum, String loincPartNum, Concept attributeType) throws TermServerScriptException {
-		RelationshipTemplate rt = null;
-		if (containsMappingForLoincPartNum(loincPartNum)) {
-			rt = loincPartToAttributeMap.get(loincPartNum).clone();
+	private void populateKnownMappings() throws TermServerScriptException {
+		knownReplacementMap.put(gl.getConcept("720309005 |Immunoglobulin G antibody to Streptococcus pneumoniae 43 (substance)|"), gl.getConcept("767402003 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 43 (substance)|"));
+		knownReplacementMap.put(gl.getConcept("720308002 |Immunoglobulin G antibody to Streptococcus pneumoniae 34 (substance)|"), gl.getConcept("767408004 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 34 (substance)|"));
+		knownReplacementMap.put(gl.getConcept("54708003 |Extended zinc insulin (substance)|"), gl.getConcept("10329000 |Zinc insulin (substance)|"));
+		knownReplacementMap.put(gl.getConcept("409258004 |Hydroxocobalamin (substance)|"), gl.getConcept("1217427007 |Aquacobalamin (substance)|"));
+		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
+		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
+		knownReplacementMap.put(gl.getConcept("27192005 |Aminosalicylic acid (substance)|"), gl.getConcept("255666002 |Para-aminosalicylic acid (substance)|"));
+		knownReplacementMap.put(gl.getConcept("250428009 |Substance with antimicrobial mechanism of action (substance)|"), gl.getConcept("419241000 |Substance with antibacterial mechanism of action (substance)|"));
+		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
+
+		hardCodedTypeReplacementMap.put(gl.getConcept("410670007 |Time|"), gl.getConcept("370134009 |Time aspect|"));
+
+		hardCodedMappings.put("LP182450-9", List.of(
+				gl.getConcept("259337002 |Calcifediol (substance)|"),
+				gl.getConcept("67517005 |25-hydroxyergocalciferol (substance)|")));
+		hardCodedMappings.put("LP36683-8 ", List.of(
+				gl.getConcept("106202009 |Antigen in ABO blood group system (substance)|"),
+				gl.getConcept("16951006 |Antigen in Rh blood group system (substance)|")));
+	}
+
+	public List<RelationshipTemplate> getPartMappedAttributeForType(int idxTab, String loincNum, String loincPartNum, Concept attributeType) throws TermServerScriptException {
+		if (hardCodedMappings.containsKey(loincPartNum)) {
+			List<RelationshipTemplate> mappings = new ArrayList<>();
+			for (Concept attributeValue : hardCodedMappings.get(loincPartNum)) {
+				mappings.add(new RelationshipTemplate(attributeType, attributeValue));
+			}
+			return mappings;
+		} else if (containsMappingForLoincPartNum(loincPartNum)) {
+			RelationshipTemplate rt = loincPartToAttributeMap.get(loincPartNum).clone();
 			rt.setType(attributeType);
+			return List.of(rt);
 		} else if (idxTab != NOT_SET ) {
 			ls.report(idxTab,
 					loincNum,
@@ -54,7 +82,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 					"No attribute mapping available");
 			ls.addMissingMapping(loincPartNum, loincNum);
 		}
-		return rt;
+		return new ArrayList<>();
 	}
 	
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
@@ -169,20 +197,6 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			}
 		}
 		return attributeType;
-	}
-
-	private void populateKnownMappings() throws TermServerScriptException {
-		knownReplacementMap.put(gl.getConcept("720309005 |Immunoglobulin G antibody to Streptococcus pneumoniae 43 (substance)|"), gl.getConcept("767402003 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 43 (substance)|"));
-		knownReplacementMap.put(gl.getConcept("720308002 |Immunoglobulin G antibody to Streptococcus pneumoniae 34 (substance)|"), gl.getConcept("767408004 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 34 (substance)|"));
-		knownReplacementMap.put(gl.getConcept("54708003 |Extended zinc insulin (substance)|"), gl.getConcept("10329000 |Zinc insulin (substance)|"));
-		knownReplacementMap.put(gl.getConcept("409258004 |Hydroxocobalamin (substance)|"), gl.getConcept("1217427007 |Aquacobalamin (substance)|"));
-		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
-		knownReplacementMap.put(gl.getConcept("301892007 |Biopterin analyte (substance)|"), gl.getConcept("1231481007 |Substance with biopterin structure (substance)|"));
-		knownReplacementMap.put(gl.getConcept("27192005 |Aminosalicylic acid (substance)|"), gl.getConcept("255666002 |Para-aminosalicylic acid (substance)|"));
-		knownReplacementMap.put(gl.getConcept("250428009 |Substance with antimicrobial mechanism of action (substance)|"), gl.getConcept("419241000 |Substance with antibacterial mechanism of action (substance)|"));
-		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
-	
-		hardCodedTypeReplacementMap.put(gl.getConcept("410670007 |Time|"), gl.getConcept("370134009 |Time aspect|"));
 	}
 
 	public boolean containsMappingForLoincPartNum(String loincPartNum) {

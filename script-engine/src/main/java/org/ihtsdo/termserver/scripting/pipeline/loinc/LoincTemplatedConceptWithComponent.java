@@ -21,7 +21,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 	}
 	
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
@@ -31,17 +31,17 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 			return attributes;
 		}
 		
-		if (hasNoSubParts(loincNum)) {
+		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttribType);
 		} else {
-			if (detailPresent(loincNum, COMPNUM_PN)) {
-				addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
-				if (detailPresent(loincNum, COMPDENOM_PN)) {
-					addAttributeFromDetailWithType(attributes, COMPDENOM_PN, issues, relativeTo);
+			if (detailPresent(COMPNUM_PN)) {
+				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttribType);
+				if (detailPresent(COMPDENOM_PN)) {
+					addAttributeFromDetailWithType(attributes, getLoincDetail(COMPDENOM_PN), relativeTo);
 				}
 			}
-			processSubComponents(loincNum, attributes, issues, componentAttribType);
+			processSubComponents(attributes, componentAttribType);
 		}
 
 		//If we didn't find the component, return a null so that we record that failed mapping usage

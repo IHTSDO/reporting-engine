@@ -25,7 +25,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes(String loincNum, List<String> issues) throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 
@@ -35,12 +35,11 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 		if (!compNumPartNameAcceptable(attributes, issues)) {
 			return attributes;
 		}
-
-		if (hasNoSubParts(loincNum)) {
+		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, COMPNUM_PN, issues, componentAttribType);
+			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttribType);
 		} else {
-			processSubComponents(loincNum, attributes, issues, componentAttribType);
+			processSubComponents(attributes, componentAttribType);
 		}
 
 		//If we didn't find the component, return a null so that we record that failed mapping usage
