@@ -688,7 +688,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			concept.setPreferredSynonym(loadedConcept.getPreferredSynonym());
 		}
 		//In any event, copy any issues over from the cached concept to the loaded one
-		loadedConcept.setIssue(concept.getIssues());
+		loadedConcept.setIssues(concept.getIssueList());
 		return loadedConcept;
 	}
 	

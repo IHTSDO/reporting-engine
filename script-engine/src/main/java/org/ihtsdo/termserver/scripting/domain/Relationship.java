@@ -320,7 +320,7 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		clone.source = this.source;
 		clone.characteristicType = this.characteristicType;
 		clone.isDirty = true;
-		clone.setIssue(this.getIssues());
+		clone.setIssues(this.getIssueList());
 		return clone;
 	}
 

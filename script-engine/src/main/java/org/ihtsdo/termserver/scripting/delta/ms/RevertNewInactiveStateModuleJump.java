@@ -87,9 +87,9 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 			//Work through all the components for this concept
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
 				if (!c.isActive() && sourceModuleIds.contains(c.getModuleId())
-						&& c.getIssues().contains(targetModuleId)) {
+						&& c.getIssues(" ").contains(targetModuleId)) {
 					//Only need to worry if it was also previously inactive
-					String[] previousState = c.getIssues().split(",");
+					String[] previousState = c.getIssuesArray();
 					if (previousState[0].equals("0")) {
 						c.setModuleId(targetModuleId);
 						c.setDirty();

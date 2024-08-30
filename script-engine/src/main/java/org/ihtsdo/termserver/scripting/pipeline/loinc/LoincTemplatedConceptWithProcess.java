@@ -32,12 +32,12 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttribType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 
-		if (!compNumPartNameAcceptable(attributes, issues)) {
+		if (!compNumPartNameAcceptable(attributes)) {
 			return attributes;
 		}
 		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttribType);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 		} else {
 			processSubComponents(attributes, componentAttribType);
 		}
@@ -66,7 +66,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 				Concept excrtProc = gl.getConcept("718500008 |Excretory process (qualifier value)| ");
 				attributes.add(new RelationshipTemplate(characterizes, excrtProc));
 			} else {
-				addIssue("System not recognised as Urine in Process Observable: " + loincDetail.getPartName());
+				concept.addIssue("System not recognised as Urine in Process Observable: " + loincDetail.getPartName());
 				processingFlags.add(ProcessingFlag.DROP_OUT);
 			}
 		}

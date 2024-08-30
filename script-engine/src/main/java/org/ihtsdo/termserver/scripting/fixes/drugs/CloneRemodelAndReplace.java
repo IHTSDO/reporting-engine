@@ -175,9 +175,9 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 		for (Concept c : allAffected) {
 			//Group 1 must contain a BoSS, or so help me...
 			Concept boss = SnomedUtils.getTarget(c, new Concept[] {HAS_BOSS}, 1, CharacteristicType.STATED_RELATIONSHIP);
-			c.setIssue(boss.getPreferredSynonym());
+			c.addIssue(boss.getPreferredSynonym());
 		}
-		allAffected.sort(Comparator.comparing(Concept::getIssues));
+		allAffected.sort(Comparator.comparing(c -> c.getIssues(",")));
 		return new ArrayList<Component>(allAffected);
 	}
 

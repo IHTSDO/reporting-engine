@@ -183,7 +183,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	private int remodel(Task t, Concept c, Ingredient modelIngredient, boolean isMultiIngredient) throws TermServerScriptException {
 		int changesMade = 0;
 		int targetGroupId = SnomedUtils.getFirstFreeGroup(c);
-		report (t, c, Severity.NONE, ReportActionType.INFO, "BoSSes: " + c.getIssues());
+		report (t, c, Severity.NONE, ReportActionType.INFO, "BoSSes: " + c.getIssues(" + "));
 		//Find this ingredient.  If it's in group 0, we need to move it to a new group
 		Relationship substanceRel = getSubstanceRel(t, c, modelIngredient.substance, modelIngredient.boss);
 
@@ -378,7 +378,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 			ingredients.add(ingredient);
 			
 			//Set the issue on the concept to ensure they're kept together by BoSS
-			c.setIssue(getBossStr(c));
+			c.addIssue(getBossStr(c));
 		} catch (Exception e) {
 			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
 			blackListedConcepts.add(c);

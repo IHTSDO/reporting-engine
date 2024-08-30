@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.List;
 
+import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
@@ -28,7 +29,7 @@ public class BatchEndMarker extends Component {
 	}
 
 	@Override
-	public String[] toRF2() throws Exception {
+	public String[] toRF2() throws ScriptException {
 		return null;
 	}
 
