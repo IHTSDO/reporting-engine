@@ -135,12 +135,12 @@ public class SubstanceDispositions extends DrugBatchFix implements ScriptConstan
 		Concept disposition = gl.getConcept(lineItems[1]);
 		topLevelSubstances.put(topLevelSubstance, disposition);
 		priorityComponents.add(topLevelSubstance);
-		topLevelSubstance.setIssue("top level disposition");
+		topLevelSubstance.addIssue("top level disposition");
 		Set<Concept> subsumedConcepts = topLevelSubstance.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
 		for (Concept descendant : subsumedConcepts) {
 			//We'll group our batches by disposition 
-			if (descendant.getIssues().isEmpty()) {
-				descendant.setIssue(disposition.toString());
+			if (!descendant.hasIssues()) {
+				descendant.addIssue(disposition.toString());
 			} 
 			//we might have multiple dispositions for a concept
 			List<Concept> dispositions = conceptDispositionMap.get(descendant);

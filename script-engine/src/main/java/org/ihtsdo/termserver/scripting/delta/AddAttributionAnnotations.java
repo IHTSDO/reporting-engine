@@ -95,7 +95,7 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 		ReportActionType action = ReportActionType.NO_CHANGE;
 		String rmStr = "";
 		if (c.hasIssues()) {
-			processingDetail = c.getIssues();
+			processingDetail = c.getIssues(",\n");
 		} else if (!hasTextDef) {
 			processingDetail = "No text definition";
 		} else if (!c.isActive()) {
@@ -149,7 +149,7 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 				String sctid = columns[REF_IDX_REFCOMPID];
 				Concept c = gl.getConcept(sctid);
 				if (!rmActive) {
-					c.setIssue("Orphanet map inactive");
+					c.addIssue("Orphanet map inactive");
 				}
 				candidateConcepts.add(gl.getConcept(sctid));
 			}

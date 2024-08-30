@@ -161,14 +161,14 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			boolean insufficientTermPopulation = fsn.contains("[");
 			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
 			if (insufficientTermPopulation && hasAllCapsSlot(fsn)) {
-				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn, ",\n");
+				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn);
 			}
 
 			if (templatedConcept.getConcept().hasIssues() ) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
-						templatedConcept.getConcept().getIssues());
+						templatedConcept.getConcept().getIssues(",\n"));
 			}
 		}
 		flushFilesSoft();

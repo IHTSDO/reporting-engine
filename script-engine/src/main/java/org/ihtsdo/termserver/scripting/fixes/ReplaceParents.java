@@ -140,9 +140,9 @@ public class ReplaceParents extends BatchFix implements ScriptConstants{
 				//If we have a causative agent, add that as an issue so we can keep them together in tasks
 				Set<Concept> causeAgents = SnomedUtils.getTargets(c, types, CharacteristicType.INFERRED_RELATIONSHIP);
 				if (causeAgents.size() > 0) {
-					c.setIssue(causeAgents.iterator().next().getFsn());
+					c.addIssue(causeAgents.iterator().next().getFsn());
 				} else {
-					c.setIssue(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).iterator().next().getFsn());
+					c.addIssue(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).iterator().next().getFsn());
 				}
 				toProcess.add(c);
 			}

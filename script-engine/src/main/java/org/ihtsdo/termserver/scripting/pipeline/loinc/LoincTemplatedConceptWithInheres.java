@@ -42,21 +42,21 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttribType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		
-		if (!compNumPartNameAcceptable(attributes, issues)) {
+		if (!compNumPartNameAcceptable(attributes)) {
 			return attributes;
 		}
 		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttribType);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 		} else {
 			processSubComponents(attributes, componentAttribType);
 		}
 
 		if (detailPresent(COMPNUMSUFFIX_PN)) {
-			LoincDetail componentDetail = getLoincDetail(COMPNUMSUFFIX_PN);
+			LoincDetail componentDetail = getLoincDetailOrThrow(COMPNUMSUFFIX_PN);
 			if (BioPhageSuffixExceptions.contains(componentDetail.getPartNumber())) {
 				//use the COMPNUM_PN LP name to include in FSN and PT in the Inheres in slot for terming.
-				String compNumPartName = getLoincDetail(COMPNUM_PN).getPartName();
+				String compNumPartName = getLoincDetailOrThrow(COMPNUM_PN).getPartName();
 				slotTermMap.put(LOINC_PART_TYPE_COMPONENT, compNumPartName);
 			}
 		}
@@ -75,7 +75,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//Rule 2.f.ii.6.a.i.2
 		if (loincDetail.getPartNumber().equals(PROPERTY_ID_EXCEPTION)) {
 			//Is our COMPNUM LP19429-7	Specimen source?
-			LoincDetail compNum = getLoincDetail(COMPNUM_PN);
+			LoincDetail compNum = getLoincDetailOrThrow(COMPNUM_PN);
 			if (compNum.getPartNumber().equals("LP19429-7")) {
 				rt.setTarget(gl.getConcept("734842000 |Source (property) (qualifier value)|"));
 			}
@@ -87,8 +87,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		if (loincDetail.getPartTypeName().equals(LOINC_PART_TYPE_PROPERTY) &&
 				getLoincDetailForPartType(LOINC_PART_TYPE_PROPERTY).getPartNumber().equals(TYPE_ID_EXCEPTION) &&
 				hasDetail(COMPNUMSUFFIX_PN) &&
-				BioPhageSuffixExceptions.contains(getLoincDetail(COMPNUMSUFFIX_PN).getPartNumber())) {
-			String partNum = getLoincDetail(COMPNUMSUFFIX_PN).getPartNumber();
+				BioPhageSuffixExceptions.contains(getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber())) {
+			String partNum = getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber();
 			List<RelationshipTemplate> additionalAttributes = attributePartMapManager.getPartMappedAttributeForType(NOT_SET, externalIdentifier, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
 			attributes.addAll(additionalAttributes);
 			processingFlags.add(ProcessingFlag.SUPPRESS_METHOD_TERM);

@@ -1579,7 +1579,7 @@ public class GraphLoader implements ScriptConstants {
 
 	public void makeReady() {
 		for (Concept c : concepts.values()) {
-			c.setIssue(null);
+			c.clearIssues();
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				g.setIssues(null);
 				g.resetIndicators();

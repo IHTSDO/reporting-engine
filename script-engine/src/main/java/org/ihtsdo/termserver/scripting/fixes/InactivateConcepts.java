@@ -381,8 +381,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		inactivationIndicators.put(c, InactivationIndicator.OUTDATED);
 		replacement = gl.getConcept("399097000 |Administration of anesthesia (procedure)|");
 
-		//Give C an issue of one of it's parents to try to batch sibling concepts together
-		c.setIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
+		//Give C an issue of one of its parents to try to batch sibling concepts together
+		c.addIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
 		
 		if (replacement != null) {
 			replacements.put(c, replacement);

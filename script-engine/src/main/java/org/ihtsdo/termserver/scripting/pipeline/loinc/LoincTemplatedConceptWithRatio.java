@@ -39,12 +39,12 @@ public class LoincTemplatedConceptWithRatio extends LoincTemplatedConcept {
 		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
 		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttrib);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 		} else {
-			LoincDetail denom = getLoincDetail(COMPDENOM_PN);
+			LoincDetail denom = getLoincDetailIfPresent(COMPDENOM_PN);
 			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttrib);
-				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPDENOM_PN), relativeTo);
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
 				//Check for percentage
 				if (denom.getPartName().contains("100")) {
 					attributes.add(percentAttribute);
@@ -54,9 +54,9 @@ public class LoincTemplatedConceptWithRatio extends LoincTemplatedConcept {
 
 			if (detailPresent(COMPSUBPART2_PN)) {
 				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttrib);
+					addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 				}
-				addAttributeFromDetailWithType(attributes, getLoincDetail(COMPSUBPART2_PN), challengeAttrib);
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib);
 			}
 		}
 

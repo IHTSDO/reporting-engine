@@ -118,12 +118,12 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		if (!c.isActive()) {
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is inactive, no action being taken");
 			return NO_CHANGES_MADE;
-		} else if (c.getIssues().equals(MOVE)) {
+		} else if (c.getIssueList().contains(MOVE)) {
 			return moveConcept(t, c);
-		} else if (c.getIssues().equals(INACTIVATE)) {
+		} else if (c.getIssueList().contains(INACTIVATE)) {
 			return inactivateConcept(t,c);
 		} else {
-			throw new TermServerScriptException("Unexpected action for concept:  " + c.getIssues());
+			throw new TermServerScriptException("Unexpected action for concept:  " + c.getIssues(", "));
 		}
 	}
 
@@ -209,7 +209,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 			for (String line : FileUtils.readLines(new File(replaceConceptsFileName), "UTF-8")) {
 				String[] items = line.split(TAB);
 				Concept c = gl.getConcept(items[0]);
-				c.setIssue("MOVE");  //This ensures we get a new batch for moves vs inactivations
+				c.addIssue(MOVE);  //This ensures we get a new batch for moves vs inactivations
 				priorityComponents.add(c);
 			}
 			
@@ -231,7 +231,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 			}
 			inactivateMe.stream()
 				.sorted((c1, c2) -> c1.getFsn().compareTo(c2.getFsn()))
-				.forEach(c -> c.setIssue("INACTIVATE"));
+				.forEach(c -> c.addIssue(INACTIVATE));
 			processMe.addAll(inactivateMe);
 			return asComponents(processMe);
 		} catch (IOException e) {

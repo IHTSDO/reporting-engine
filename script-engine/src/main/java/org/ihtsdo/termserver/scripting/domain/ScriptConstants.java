@@ -106,6 +106,7 @@ public interface ScriptConstants extends RF2Constants {
 	static Concept INTERPRETS = new Concept("363714003", "Interprets (attribute)");
 	static Concept HAS_INTERPRETATION = new Concept("363713009","Has interpretation (attribute)");
 	static Concept COMPONENT = new Concept("246093002", "Component (attribute)");
+	static Concept PROPERTY_ATTRIB = new Concept ("370130000", "Property (attribute)");
 
 	static Concept LEFT = new Concept("7771000", "Left (qualifier value)");
 	static Concept RIGHT = new Concept("24028007", "Right (qualifier value)|");

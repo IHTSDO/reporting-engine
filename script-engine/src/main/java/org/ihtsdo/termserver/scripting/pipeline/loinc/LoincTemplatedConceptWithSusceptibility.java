@@ -41,13 +41,13 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		//All Susceptibility concepts will have a Inheres in of Organism
 		attributes.add(new RelationshipTemplate(inheresIn, organism));
 
-		if (!compNumPartNameAcceptable(attributes, issues)) {
+		if (!compNumPartNameAcceptable(attributes)) {
 			return attributes;
 		}
 
 		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, getLoincDetail(COMPNUM_PN), componentAttribType);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 		} else {
 			processSubComponents(attributes, componentAttribType);
 		}
