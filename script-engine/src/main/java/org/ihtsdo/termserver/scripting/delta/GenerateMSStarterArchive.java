@@ -2,42 +2,26 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtils;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-/**
- *Created for Belgium.  Namespace 1000172
- */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public class GenerateMSStarterArchive extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateMSStarterArchive.class);
-
-	KnownExtensions thisExtension = KnownExtensions.BELGIUM;
-	enum KnownExtensions { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
-	String langRefset;
-	
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		GenerateMSStarterArchive delta = new GenerateMSStarterArchive();
 		try {
-			delta.config(KnownExtensions.BELGIUM);
+			delta.config();
 			delta.init(args);
-			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
-			delta.startTimer();
+			delta.postInit();
 			List<Concept> newConcepts = delta.generateStarter();
 			delta.outputRF2(newConcepts);
 			delta.flushFiles(false); //Need to flush files before zipping
@@ -47,42 +31,33 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 		}
 	}
 
-	private void config(KnownExtensions country) {
-		inputFileHasHeaderRow = true;
-		inputFileDelimiter = TSV_FIELD_DELIMITER;
+	private void config() {
 		isExtension = true; //Ensures the correct partition identifier is used.
-		switch (country) {
-			case SWEDEN:
-				nameSpace = "1000052";
-				languageCode="sv";
-				edition="SE1000052";
-				langToRefsetMap.put(languageCode, "46011000052107");
-				targetModuleId = "45991000052106";
-				break;
-			case BELGIUM:
-				nameSpace = "1000172";
-				languageCode="en";  //We'll be creating FSNs and PTs using only US-English
-				edition="BE1000172";
-				langToRefsetMap.put("en", "900000000000509007");
-				langToRefsetMap.put("fr", "21000172104");
-				langToRefsetMap.put("nl", "31000172101");
-				targetModuleId = "11000172109";
-				break;
-		}
+		nameSpace = "1002000";
+		languageCode="en";
+		edition="NUVA1002000";
+		langToRefsetMap.put(languageCode, US_ENG_LANG_REFSET);
+		langToRefsetMap.put("fr", "21000241105"); //| Common French language reference set (foundation metadata concept) |
 	}
 
 	protected List<Concept> generateStarter() throws TermServerScriptException {
-		List<Concept> newConcepts = new ArrayList<Concept>();
+		List<Concept> newConcepts = new ArrayList<>();
 		
 		//Module Concept
-		Concept moduleConcept = new Concept("11000172109");
-		
-		//TODO We also need to have a description appear in each new language refset so the TS can become aware of it.
-		
+		Concept moduleConcept = Concept.withDefaults(conIdGenerator.getSCTID());
+		moduleConcept.setModuleId(moduleConcept.getId());
+		targetModuleId = moduleConcept.getId();
+		addFsnAndPt(moduleConcept, "NUVA Extension Module (core metadata concept)");
+		newConcepts.add(moduleConcept);
+
+		Concept parent = gl.getConcept("1201891009 |SNOMED CT Community content module (core metadata concept)|");
+		Relationship parentRel = new Relationship(moduleConcept, IS_A, parent, UNGROUPED);
+		parentRel.setModuleId(targetModuleId);
+		moduleConcept.addRelationship(parentRel);
 
 		return newConcepts;
 	}
-	
+
 	private void outputRF2(List<Concept> newConcepts) throws TermServerScriptException {
 		for (Concept thisConcept : newConcepts) {
 			try {
@@ -92,41 +67,34 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 			}
 		}
 	}
+
+	private void addFsnAndPt(Concept c, String term) throws TermServerScriptException {
+		addDescription(c, term, DescriptionType.FSN, languageCode);
+
+		String ptTerm = SnomedUtils.deconstructFSN(term)[0];
+		addDescription(c, ptTerm, DescriptionType.SYNONYM, languageCode);
+	}
 	
-	private Description createDescription(String conceptId, String term, String lang, CaseSignificance caseSignificance, String acceptabilityId) throws TermServerScriptException {
-		Description d = new Description();
-		d.setDescriptionId(descIdGenerator.getSCTID());
-		d.setConceptId(conceptId);
-		d.setActive(true);
-		d.setEffectiveTime(null);
+	private Description addDescription(Concept c, String term, DescriptionType type, String lang) throws TermServerScriptException {
+		Description d = Description.withDefaults(term, type, Acceptability.PREFERRED);
+		c.addDescription(d);
 		d.setLang(lang);
-		d.setTerm(term);
-		d.setType(DescriptionType.SYNONYM);
-		d.setCaseSignificance(caseSignificance);
+		d.setDescriptionId(descIdGenerator.getSCTID());
+		d.setConceptId(c.getConceptId());
 		d.setModuleId(targetModuleId);
-		d.setDirty();
-		addLangRefsetEntry(d, acceptabilityId);
+		//Sort out the default langrefsets
+		List<LangRefsetEntry> langRefsetEntries = new ArrayList<>(d.getLangRefsetEntries());
+		for (LangRefsetEntry l : langRefsetEntries) {
+			if (l.getRefsetId().equals(GB_ENG_LANG_REFSET)) {
+				d.removeLangRefsetEntry(l);
+			} else {
+				l.setModuleId(targetModuleId);
+				l.setReferencedComponentId(d.getId());
+			}
+		}
 		return d;
 	}
 
-	private void addLangRefsetEntry(Description d, String acceptabilitySCTID) {
-		LangRefsetEntry l = new LangRefsetEntry();
-		l.setId(UUID.randomUUID().toString());
-		l.setRefsetId(langToRefsetMap.get(d.getLang()));
-		l.setActive(true);
-		l.setEffectiveTime(null);
-		l.setModuleId(targetModuleId);
-		l.setAcceptabilityId(acceptabilitySCTID);
-		l.setReferencedComponentId(d.getDescriptionId());
-		l.setDirty();
-		d.getLangRefsetEntries().add(l);
-	}
 
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 }

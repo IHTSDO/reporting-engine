@@ -138,6 +138,7 @@ public class Description extends Component implements ScriptConstants {
 		d.setTerm(term);
 		d.setType(type);
 		d.setReleased(false);
+		d.setDirty();
 		d.setAcceptabilityMap(acceptabilityMap);
 		return d;
 	}
@@ -900,5 +901,9 @@ public class Description extends Component implements ScriptConstants {
 	public Description withCaseSignificance(CaseSignificance caseSignificance) {
 		setCaseSignificance(caseSignificance);
 		return this;
+	}
+
+	public void removeLangRefsetEntry(LangRefsetEntry l) {
+		langRefsetEntries.remove(l);
 	}
 }
