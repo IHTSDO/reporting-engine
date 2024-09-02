@@ -1474,7 +1474,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		DialectChecker dialectChecker = DialectChecker.create();
-		LOGGER.debug ("Checking " + bothDialectTextDefns.size() + " both-dialect text definitions against " + dialectChecker.size() + " dialect pairs");
+		LOGGER.debug ("Checking {} both-dialect text definitions against dialect pairs", bothDialectTextDefns.size(), dialectChecker.size());
 		
 		nextDescription:
 		for (Description textDefn : bothDialectTextDefns) {
