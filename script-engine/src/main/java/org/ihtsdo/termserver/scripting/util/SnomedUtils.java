@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
@@ -30,7 +31,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
-public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements ScriptConstants {
+public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
 

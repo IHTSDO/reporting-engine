@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -110,7 +111,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 			return true;
 		}
 		
-		String semTag = SnomedUtils.deconstructFSN(c.getFsn(), true)[1];
+		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), true)[1];
 		return semTag != null && semTag.contains(semtagFilter);
 	}
 

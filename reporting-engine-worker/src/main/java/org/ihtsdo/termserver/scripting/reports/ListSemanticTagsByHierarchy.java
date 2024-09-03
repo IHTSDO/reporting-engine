@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -77,7 +78,7 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 							tags = HashMultiset.create();
 							languageMap.put(d.getLang(), tags);
 						}
-						tags.add(SnomedUtils.deconstructFSN(d.getTerm())[1]);
+						tags.add(SnomedUtilsBase.deconstructFSN(d.getTerm())[1]);
 					}
 				}
 			}

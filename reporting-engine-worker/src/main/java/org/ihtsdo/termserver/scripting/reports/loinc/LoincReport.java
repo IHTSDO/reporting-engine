@@ -6,12 +6,12 @@ import java.util.*;
 
 import org.apache.commons.lang3.time.DateUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -92,7 +92,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 
 	private boolean isExcluded(Concept c) {
-		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (String semTagExclusion : semTagExclusions) {
 			if (semTag.equals(semTagExclusion)) {
 				return true;

@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
@@ -645,7 +646,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			String term = d.getTerm();
 			
 			if (d.getType().equals(DescriptionType.FSN)) {
-				term = SnomedUtils.deconstructFSN(term)[0];
+				term = SnomedUtilsBase.deconstructFSN(term)[0];
 			} else if (term.startsWith("Product")) {
 				report(concept, issueStr2, d);
 			}
@@ -1052,7 +1053,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 
 	private void validateParentTagCombo(Concept c, Concept targetParent, 
 			String targetSemtag, String issueStr) throws TermServerScriptException {
-		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
 				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
@@ -1062,7 +1063,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 
 	private void validateParentSemTags(Concept c, String requiredTag, String issueStr) throws TermServerScriptException {
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			String semTag = SnomedUtils.deconstructFSN(parent.getFsn())[1];
+			String semTag = SnomedUtilsBase.deconstructFSN(parent.getFsn())[1];
 			
 			//RP-587 There is a case where a CD grouper exists eg for infusion and/or injection
 			//Look for and/or in the parent's dose form
@@ -1340,7 +1341,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 	}
 
 	private int getTagLevel(Concept c) throws TermServerScriptException {
-		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (int i=0; i < semTagHiearchy.length; i++) {
 			if (semTagHiearchy[i].equals(semTag)) {
 				return i;

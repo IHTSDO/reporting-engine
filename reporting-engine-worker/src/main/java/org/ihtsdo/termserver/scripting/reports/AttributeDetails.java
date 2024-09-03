@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -145,7 +146,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 		if (r.isConcrete()) {
 			report(c, defStatus, typePT, characteristicStr, "-", "-", "-", r.getConcreteValue());
 		} else {
-			report(c, defStatus, typePT, characteristicStr, r.getTarget().getConceptId(), r.getTarget().getFsn(), SnomedUtils.deconstructFSN(r.getTarget().getFsn())[1], "-");
+			report(c, defStatus, typePT, characteristicStr, r.getTarget().getConceptId(), r.getTarget().getFsn(), SnomedUtilsBase.deconstructFSN(r.getTarget().getFsn())[1], "-");
 		}
 		countIssue(c);
 	}

@@ -5,12 +5,13 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.SnomedUtils;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class GenerateMSStarterArchive extends DeltaGenerator {
 
@@ -71,7 +72,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 	private void addFsnAndPt(Concept c, String term) throws TermServerScriptException {
 		addDescription(c, term, DescriptionType.FSN, languageCode);
 
-		String ptTerm = SnomedUtils.deconstructFSN(term)[0];
+		String ptTerm = SnomedUtilsBase.deconstructFSN(term)[0];
 		addDescription(c, ptTerm, DescriptionType.SYNONYM, languageCode);
 	}
 	
