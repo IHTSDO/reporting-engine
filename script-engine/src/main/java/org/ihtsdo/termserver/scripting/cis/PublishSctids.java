@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.cis;
 
 import com.google.common.collect.Lists;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.SnomedUtils;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.client.CisClient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -226,7 +226,7 @@ public class PublishSctids extends TermServerReport {
 							}
 						}
 						if (namespace == null) {
-							namespace = SnomedUtils.getNamespace(sctid);
+							namespace = SnomedUtilsBase.getNamespace(sctid);
 						}
 						if (!sctidsByNamespace.containsKey(namespace)) {
 							sctidsByNamespace.put(namespace, new HashSet<>());

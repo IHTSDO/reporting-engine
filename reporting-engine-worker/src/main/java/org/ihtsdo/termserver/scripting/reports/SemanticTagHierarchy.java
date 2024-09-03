@@ -5,9 +5,9 @@ import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobCategory;
 import org.snomed.otf.scheduler.domain.JobParameter;
@@ -16,7 +16,6 @@ import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.scheduler.domain.JobType;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +71,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 				LOGGER.warn(c + " encountered without a semantic tag");
 				continue;
 			}
-			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 			Map<String, Concept> childTags = semanticTagHierarchy.get(semTag);
 			if (childTags == null) {
 				childTags = new HashMap<>();
@@ -89,7 +88,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 					LOGGER.warn ("Encountered concept without FSN during traversal: " + c);
 					continue;
 				}
-				String childSemTag = SnomedUtils.deconstructFSN(child.getFsn())[1];
+				String childSemTag = SnomedUtilsBase.deconstructFSN(child.getFsn())[1];
 				if (!childSemTag.equals(semTag) && !childTags.containsKey(childSemTag)) {
 					childTags.put(childSemTag, child);
 				}
@@ -99,7 +98,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		LOGGER.info ("Encountered: " + semanticTagHierarchy.size() + " child tags across " + concepts.size() + " concepts");
 		
 		//Start with the top level hierarchy and go from there
-		outputHierarchialStructure(SnomedUtils.deconstructFSN(subHierarchy.getFsn())[1], 0);
+		outputHierarchialStructure(SnomedUtilsBase.deconstructFSN(subHierarchy.getFsn())[1], 0);
 	}
 
 	private void outputHierarchialStructure(String semTag, int level) throws TermServerScriptException {

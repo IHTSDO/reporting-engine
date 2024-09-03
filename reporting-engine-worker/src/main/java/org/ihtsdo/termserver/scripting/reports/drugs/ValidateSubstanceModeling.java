@@ -6,12 +6,11 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -161,7 +160,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
 			String term = d.getTerm();
 			if (d.getType().equals(DescriptionType.FSN)) {
-				term = SnomedUtils.deconstructFSN(term)[0];
+				term = SnomedUtilsBase.deconstructFSN(term)[0];
 			}
 			for (String badWord : badWords ) {
 				String issueStr = "Term contains bad word: " + badWord;

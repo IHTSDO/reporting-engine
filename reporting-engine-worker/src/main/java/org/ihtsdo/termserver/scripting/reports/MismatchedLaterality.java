@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -151,7 +151,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		//lateralized - but we're only expecting that in a body structure
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if ((r.isNotConcrete()) && (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT))) {
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
 					report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
@@ -175,14 +175,14 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				continue;
 			}
 			if (r.getTarget().equals(LEFT)) {
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
 					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
 				}
 				leftPresent = true;
 			} if (r.getTarget().equals(RIGHT)) {
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
 					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);

@@ -9,7 +9,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.SnomedUtils;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
@@ -170,7 +170,7 @@ public class CisReconciliation extends TermServerReport {
 		wrongIdsForStatus.add(cr.getSctid());
 		incrementSummaryInformation("Status: " + cr.getStatus());
 		incrementSummaryInformation("EffectiveTime: " + et);
-		incrementSummaryInformation("NameSpace: " + SnomedUtils.getNamespace(Long.toString(cr.getSctid())));
+		incrementSummaryInformation("NameSpace: " + SnomedUtilsBase.getNamespace(Long.toString(cr.getSctid())));
 		countIssue(null);
 	}
 	

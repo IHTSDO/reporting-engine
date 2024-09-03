@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -173,7 +174,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		if (r.isNotConcrete()) {
 			Concept target = r.getTarget();
 			String fsn = target.getFsn();
-			report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtils.deconstructFSN(fsn)[1]);
+			report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtilsBase.deconstructFSN(fsn)[1]);
 			countIssue(c);
 		} else {
 			report(c, defStatus, r.getType().getPreferredSynonym(), "N/A", characteristicStr, r.getConcreteValue().valueAsRF2(), "", "");

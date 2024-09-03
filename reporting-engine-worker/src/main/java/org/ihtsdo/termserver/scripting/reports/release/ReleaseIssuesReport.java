@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -693,10 +694,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issueStr = "Concept (recently touched) with invalid FSN";
 		initialiseSummary(issueStr);
 		for (Concept c : allConceptsSorted) {
-			if (inScope(c) && recentlyTouched.contains(c) && c.getFsn() != null) {
-				if (SnomedUtils.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
-					report(c, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
-				}
+			if (inScope(c)
+				&& recentlyTouched.contains(c)
+				&& c.getFsn() != null
+				&& SnomedUtilsBase.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
+				report(c, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
 			}
 		}
 	}
@@ -707,7 +709,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : allActiveConceptsSorted) {
 			if (inScope(c) && !semTagHierarchyMap.containsValue(c)) {
 				for (Map.Entry<String, Concept> entry : semTagHierarchyMap.entrySet()) {
-					String semTag = SnomedUtils.deconstructFSN(c.getFsn(), true)[1];
+					String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), true)[1];
 					if (semTag != null && semTag.equals(entry.getKey())) {
 						//Are we in the appropriate Hierarchy?
 						if (!c.getAncestors(NOT_SET).contains(entry.getValue())) {
@@ -1039,7 +1041,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (d.getTerm().contains("due") || d.getTerm().contains("Due")) {
 					String term = " " + d.getTerm().toLowerCase() + " ";
 					if (d.getType().equals(DescriptionType.FSN)) {
-						term = " " + SnomedUtils.deconstructFSN(d.getTerm())[0].toLowerCase() + " ";
+						term = " " + SnomedUtilsBase.deconstructFSN(d.getTerm())[0].toLowerCase() + " ";
 					}
 					//Might have more than one Due to find
 					int idx = term.indexOf(" due ");
@@ -1134,7 +1136,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (!inScope(c)) {
 					continue;
 				}
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (StringUtils.isEmpty(semTag)) {
 					String legacy = getLegacyIndicator(c.getFSNDescription());
 					report(c, issueStr, legacy, isActive(c,c.getFSNDescription()), c.getFsn());
@@ -1166,7 +1168,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String legacy = getLegacyIndicator(c.getFSNDescription());
 			
 			//Don't log lack of semantic tag for inactive concepts
-			String termWithoutTag = SnomedUtils.deconstructFSN(c.getFsn(), !c.isActive())[0];
+			String termWithoutTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), !c.isActive())[0];
 			
 			//We can short cut this if we don't have any brackets here.  
 			if (!termWithoutTag.contains("(")) {
@@ -1221,7 +1223,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Only exceptions just now are for double dashes
 		if (unwantedChars.equals("--")) {
 			//See RP-202 for specification of exceptions
-			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 			if (semTag.equals("(organism)")) {
 				//All double dashes in organism are allowed
 				return true;
@@ -1405,7 +1407,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (!inScope(c) || c.equals(DISEASE)) {
 				continue;
 			}
-			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 			if (semTag.equals("(finding)")) {
 				checkForAncestorSemTag(c, "(disorder)", issueStr);
 			} else if (semTag.equals("(disorder)") && !diseases.contains(c)) {
@@ -1418,7 +1420,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void checkForAncestorSemTag(Concept c, String string, String issueStr) throws TermServerScriptException {
 		Set<Concept> ancestors = c.getAncestors(NOT_SET);
 		for (Concept ancestor : ancestors) {
-			String semTag = SnomedUtils.deconstructFSN(ancestor.getFsn())[1];
+			String semTag = SnomedUtilsBase.deconstructFSN(ancestor.getFsn())[1];
 			if (semTag.equals("(disorder)")) {
 				String legacy = getLegacyIndicator(c);
 				report(c, issueStr, legacy, isActive(c,null), ancestor);
@@ -1474,7 +1476,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		DialectChecker dialectChecker = DialectChecker.create();
-		LOGGER.debug ("Checking {} both-dialect text definitions against dialect pairs", bothDialectTextDefns.size(), dialectChecker.size());
+		LOGGER.debug ("Checking {} both-dialect text definitions against {} dialect pairs", bothDialectTextDefns.size(), dialectChecker.size());
 		
 		nextDescription:
 		for (Description textDefn : bothDialectTextDefns) {
