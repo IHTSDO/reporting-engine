@@ -1710,24 +1710,20 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 		for (Concept concept : allConceptsSorted) {
 			if (inScope(concept)) {
-				List<Description> descriptions = new ArrayList<>();
-
 				if (Boolean.FALSE.equals(concept.isActive())) {
-					descriptions = concept.getDescriptions(ActiveState.INACTIVE);
+					checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(ActiveState.INACTIVE), issueStr);
 				} else {
-					descriptions = concept.getDescriptions();
+					checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(), issueStr2);
 				}
+			}
+		}
+	}
 
-				for (Description description : descriptions) {
-					for (InactivationIndicatorEntry entry : description.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-						if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-							if (Boolean.FALSE.equals(concept.isActive())) {
-								report(concept, issueStr, getLegacyIndicator(concept), isActive(concept, null), description);
-							} else {
-								report(concept, issueStr2, getLegacyIndicator(concept), isActive(concept, null), description);
-							}
-						}
-					}
+	private void checkDescriptionsForConceptNonCurrentIndicators(Concept concept, List<Description> descriptions, String issueStr) throws TermServerScriptException {
+		for (Description description : descriptions) {
+			for (InactivationIndicatorEntry entry : description.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+				if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+					report(concept, issueStr, getLegacyIndicator(concept), isActive(concept, null), description);
 				}
 			}
 		}
