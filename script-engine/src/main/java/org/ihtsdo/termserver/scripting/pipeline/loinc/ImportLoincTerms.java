@@ -136,6 +136,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			return null;
 		}
 
+		//Is this a loincnum that's being maintained manually?  Return what is already there if so.
+		if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
+			LoincTemplatedConcept tc = LoincTemplatedConceptWithDefaultMap.create(loincNum);
+			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(loincNum)));
+			return tc;
+		}
+
 		if (!loincDetailMap.containsKey(COMPONENT_PN) ||
 				!loincDetailMap.containsKey(COMPNUM_PN)) {
 			report(getTab(TAB_MODELING_ISSUES),

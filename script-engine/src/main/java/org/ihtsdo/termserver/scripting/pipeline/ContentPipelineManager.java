@@ -412,6 +412,15 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					"26485-3","53797-7","664-3","2695-5","2708-6","32623-1","28542-9","2890-2","8251-1",
 					"2965-2","5811-5","50562-8","53326-5","66746-9","3097-3","44734-2");
 
+	public static final Map<String, String> MANUALLY_MAINTAINED_ITEMS = Map.of(
+			"925-8", "580271010000105 |Blood product disposition [Type] (observable entity)|",
+			"8251-1", "580221010000109 |Service comment (observable entity)|",
+			"49024-3", "580231010000107 |Differential cell count method - Blood (observable entity)|",
+			"49541-6", "580241010000104 |Fasting status - Reported (observable entity)|",
+			"14155-6", "580261010000100 |Cholesterol in LDL [Percentile] (observable entity)|",
+			"9322-9", "580251010000102 |Cholesterol.total/Cholesterol in HDL [Percentile] (observable entity)| "
+	);
+
 	public static String getSpecialInterestIndicator(String externameIdentifer) {
 		return ITEMS_OF_INTEREST.contains(externameIdentifer) ? "Y" : "";
 	}
@@ -419,6 +428,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private void checkSpecificConcepts(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (String loincNum : ITEMS_OF_INTEREST) {
 			boolean found = false;
+			if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
+				report(getTab(TAB_IOI), loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
+				continue;
+			}
+
 			for (TemplatedConcept tc : successfullyModelled) {
 				if (tc.getExternalIdentifier().equals(loincNum)) {
 					report(getTab(TAB_IOI), tc.getExternalIdentifier(), "Modelled",tc.getConcept());
@@ -426,6 +440,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					break;
 				}
 			}
+
 			if (!found) {
 				report(getTab(TAB_IOI), loincNum, "Not Modelled");
 			}
