@@ -303,4 +303,8 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		}
 		loincTerms.add(loincNumToLoincTermMap.get(loincNum));
 	}
+
+	public LoincTerm getLoincNum(String loincNum) {
+		return loincNumToLoincTermMap.get(loincNum);
+	}
 }
