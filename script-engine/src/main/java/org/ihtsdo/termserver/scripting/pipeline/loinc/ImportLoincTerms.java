@@ -68,7 +68,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				/*"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ", */
 				"Item, Info, Details, ,",
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
-				"LoincNum, LoincName, Issues, ",
+				"LoincNum, Item of Special Interest, LoincName, Issues, details",
 				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
 				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
@@ -140,6 +140,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				!loincDetailMap.containsKey(COMPNUM_PN)) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
+					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
 					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 					"Does not feature one of COMPONENT_PN or COMPNUM_PN");
 			return null;
@@ -152,10 +153,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	private void validateTemplatedConcept(String loincNum, LoincTemplatedConcept templatedConcept) throws TermServerScriptException {
 		if (templatedConcept == null) {
+			LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
-					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
-					"Does not meet criteria for template match");
+					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
+					loincTerm.getDisplayName(),
+					"Does not meet criteria for template match",
+					"Property: " + loincTerm.getProperty());
 		} else {
 			String fsn = templatedConcept.getConcept().getFsn();
 			boolean insufficientTermPopulation = fsn.contains("[");
@@ -167,6 +171,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			if (templatedConcept.getConcept().hasIssues() ) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
+						ContentPipelineManager.getSpecialInterestIndicator(loincNum),
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 						templatedConcept.getConcept().getIssues(",\n"));
 			}
@@ -194,6 +199,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			if (loincNumToLoincTermMap.get(loincNum).getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
+						ContentPipelineManager.getSpecialInterestIndicator(loincNum),
 						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
 						"Contains objectionable word - " + objectionableWord);
 				return true;
@@ -207,6 +213,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		if (!loincNumToLoincTermMap.containsKey(loincNum)) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
+					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
 					"N/A",
 					"Failed integrity. Loinc Term " + loincNum + " from detail file, not known in LOINC.csv");
 			return false;

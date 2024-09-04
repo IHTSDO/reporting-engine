@@ -460,11 +460,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		} else if (!expectNullMap){
 			unmapped++;
 			String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
-			cpm.report(getTab(TAB_MODELING_ISSUES),
-					externalIdentifier,
-					loincDetail.getPartNumber(),
-					issue,
-					loincDetail.getPartName());
 			concept.addIssue(issue);
 			concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			partNumsUnmapped.add(loincDetail.getPartNumber());
@@ -594,6 +589,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		if (attributeType == null) {
 			cpm.report(getTab(TAB_MODELING_ISSUES),
 					externalIdentifier,
+					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
 					loincDetail.getPartNumber(),
 					"Type in context not identified - " + loincDetail.getPartTypeName() + " | " + this.getClass().getSimpleName(),
 					loincDetail.getPartName());

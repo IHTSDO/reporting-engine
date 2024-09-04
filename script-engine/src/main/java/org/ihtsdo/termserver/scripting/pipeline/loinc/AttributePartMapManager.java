@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
 
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,10 +72,13 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			rt.setType(attributeType);
 			return List.of(rt);
 		} else if (idxTab != NOT_SET ) {
+			String loincPartStr = loincParts.get(loincPartNum) == null ? "Loinc Part Not Known - " + loincPartNum : loincParts.get(loincPartNum).toString();
 			ls.report(idxTab,
 					loincNum,
-					loincPartNum,
-					"No attribute mapping available");
+					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
+					ls.getLoincNum(loincNum).getLongCommonName(),
+					"No attribute mapping available",
+					loincPartStr);
 			ls.addMissingMapping(loincPartNum, loincNum);
 		}
 		return new ArrayList<>();
