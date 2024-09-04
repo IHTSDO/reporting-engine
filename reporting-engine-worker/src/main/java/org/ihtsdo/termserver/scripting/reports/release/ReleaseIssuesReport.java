@@ -1484,8 +1484,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			Concept c = gl.getConcept(textDefn.getConceptId());
 			String legacy = getLegacyIndicator(c);
 			for (DialectChecker.DialectPair dialectPair : dialectChecker.getDialectPairs()) {
-				if (checkDialectPair(c, dialectPair.usTerm, term, textDefn, issueStr, legacy) ||
-					checkDialectPair(c, dialectPair.gbTerm, term, textDefn, issue2Str, legacy)) {
+				if (checkDialectPair(c, dialectPair.usTermPadded, term, textDefn, issueStr, legacy) ||
+					checkDialectPair(c, dialectPair.gbTermPadded, term, textDefn, issue2Str, legacy)) {
 					continue nextDescription;
 				}
 			}
