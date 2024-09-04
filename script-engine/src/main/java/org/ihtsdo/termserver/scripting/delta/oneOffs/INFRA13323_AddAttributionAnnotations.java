@@ -144,12 +144,12 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 
 	private int replaceTextDefinitions(Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		if (c.getId().equals("10406007")) {
+		if (c.getId().equals("111029001")) {
 			LOGGER.debug("Debug here");
 		}
 		//Do we have a text definition from Orphanet?
 		if (!conceptDefinitions.containsKey(c)) {
-			c.setIssue("No Orphanet definition supplied");
+			c.addIssue("No Orphanet definition supplied");
 			return NO_CHANGES_MADE;
 		}
 		boolean textDefinitionNeeded = true;
@@ -174,15 +174,10 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 			}
 		}
 
-		if (usgbVarianceDetected) {
-			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB variance detected");
-		}
-
 		if (textDefinitionNeeded) {
 			addNewTextDefinition(c, usgbVarianceDetected);
 			changesMade++;
 		}
-
 
 		return changesMade;
 	}
@@ -193,24 +188,57 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		//Remove all instances of the text "(see this term)" from the definition
 		definition = definition.replace(" (see this term)", "");
 		definition = definition.replace(" (see these terms))", "");
+
 		if (!definition.equals(conceptDefinitions.get(c))) {
 			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", conceptDefinitions.get(c));
 		}
 
-		Description d = Description.withDefaults(definition, DescriptionType.TEXT_DEFINITION, Acceptability.PREFERRED);
+		if (!definition.endsWith(".")) {
+			definition += ".";
+		}
+
+		//Check for US/GB Variance
+		DialectChecker dc = DialectChecker.create(); //Will only load the us/gb file the first time this singleton is requested
+		String usgbTerm = dc.findFirstUSGBSpecificTerm(definition);
+		boolean replacementContainsVariance = false;
+		String acceptabilityStr = "US + GB";
+		if (usgbTerm != null) {
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB variance '" + usgbTerm + "' detected in new text definition", definition);
+			replacementContainsVariance = true;
+		} else 	if (usgbVarianceDetected) {
+			//We previously had a US/GB variance, but it doesn't appear in the replacement
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB variance does not feature in replacement definition", definition);
+		}
+
+		String definitionInDialect = definition;
+		if (replacementContainsVariance) {
+			//We need to replace the US/GB variance with the appropriate term
+			definitionInDialect = dc.makeUSSpecific(definition);
+
+			Description d = Description.withDefaults(definitionInDialect, DescriptionType.TEXT_DEFINITION, Acceptability.PREFERRED);
+			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			//Remove the GB acceptability
+			d.removeAcceptability(RF2Constants.GB_ENG_LANG_REFSET);
+			d.setConceptId(c.getId());
+			d.setId(descIdGenerator.getSCTID());
+			c.addDescription(d);
+			report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "Text definition added for US", d);
+
+			//Now create the GB version
+			definitionInDialect = dc.makeGBSpecific(definition);
+			acceptabilityStr = "GB";
+		}
+
+		//Now create either just the one definition, or a 2nd one that's uniquely GB
+		Description d = Description.withDefaults(definitionInDialect, DescriptionType.TEXT_DEFINITION, Acceptability.PREFERRED);
+		d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		if (replacementContainsVariance) {
+			d.removeAcceptability(RF2Constants.US_ENG_LANG_REFSET);
+		}
 		d.setConceptId(c.getId());
 		d.setId(descIdGenerator.getSCTID());
 		c.addDescription(d);
-		report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "Text definition added", d);
-
-		//If we have NOT already reported US/GB variance, check for it in the replacement
-		if (!usgbVarianceDetected) {
-			DialectChecker dc = DialectChecker.create(); //Will only load the us/gb file the first time this singleton is requested
-			String usgbTerm = dc.findFirstUSGBSpecificTerm(d);
-			if (usgbTerm != null) {
-				report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB variance '" + usgbTerm + "' detected in new text definition", definition);
-			}
-		}
+		report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "Text definition added for " + acceptabilityStr, d);
 	}
 
 	private void report(Concept c, Severity severity, ReportActionType action, String processingDetail, String rmStr) throws TermServerScriptException {
@@ -231,9 +259,9 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		boolean rmActive = lineItems[REF_IDX_ACTIVE].equals("1");
 		String effectiveTime = lineItems[REF_IDX_EFFECTIVETIME];
 		if (!rmActive) {
-			c.setIssue("Orphanet map inactive");
+			c.addIssue("Orphanet map inactive");
 		} else if (effectiveTime.compareTo("20160131") < 0) {
-			c.setIssue("Orphanet map predates 20160131");
+			c.addIssue("Orphanet map predates 20160131");
 		}
 		return Collections.singletonList(c);
 	}
