@@ -369,6 +369,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		checkMRCMAttributeDomains();
 		checkMRCMModuleScope();
 
+		LOGGER.info("...Concept Non-Current inactivation indicator check");
+		checkConceptNonCurrentIndicators();
+
 		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -1693,6 +1696,38 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				Concept c = gl.getConcept(rm.getReferencedComponentId());
 				for (String additionalField : rm.getAdditionalFieldNames()) {
 					validateTermsInField(partName, c, rm, additionalField);
+				}
+			}
+		}
+	}
+
+	private void checkConceptNonCurrentIndicators() throws TermServerScriptException{
+		String issueStr = "Inactive description of an inactive concept has an active Concept Non-Current inactivation indicator.";
+		String issueStr2 = "Description of an active concept has an active Concept Non-Current inactivation indicator.";
+
+		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+
+		for (Concept concept : allConceptsSorted) {
+			if (inScope(concept)) {
+				List<Description> descriptions = new ArrayList<>();
+
+				if (Boolean.FALSE.equals(concept.isActive())) {
+					descriptions = concept.getDescriptions(ActiveState.INACTIVE);
+				} else {
+					descriptions = concept.getDescriptions();
+				}
+
+				for (Description description : descriptions) {
+					for (InactivationIndicatorEntry entry : description.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+						if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+							if (Boolean.FALSE.equals(concept.isActive())) {
+								report(concept, issueStr, getLegacyIndicator(concept), isActive(concept, null), description);
+							} else {
+								report(concept, issueStr2, getLegacyIndicator(concept), isActive(concept, null), description);
+							}
+						}
+					}
 				}
 			}
 		}
