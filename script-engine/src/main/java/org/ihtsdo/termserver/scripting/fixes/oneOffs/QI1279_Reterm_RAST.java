@@ -277,7 +277,7 @@ public class QI1279_Reterm_RAST extends BatchFix {
 			if (targetWordFound) {
 				process.add(c);
 				if (problematicConcepts.contains(c.getId())) {
-					c.setIssue("Problematic concept");
+					c.addIssue("Problematic concept");
 				}
 				continue nextConcept;
 			}
