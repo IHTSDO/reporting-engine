@@ -426,24 +426,25 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return ITEMS_OF_INTEREST.contains(externameIdentifer) ? "Y" : "";
 	}
 
+	private static final String TOP_88 = "Top 88";
 	private void checkSpecificConcepts(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (String loincNum : ITEMS_OF_INTEREST) {
 			boolean found = false;
 			if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
-				report(getTab(TAB_IOI), loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
+				report(getTab(TAB_IOI),TOP_88, loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
 				continue;
 			}
 
 			for (TemplatedConcept tc : successfullyModelled) {
 				if (tc.getExternalIdentifier().equals(loincNum)) {
-					report(getTab(TAB_IOI), tc.getExternalIdentifier(), "Modelled",tc.getConcept());
+					report(getTab(TAB_IOI), TOP_88, tc.getExternalIdentifier(), "Modelled",tc.getConcept());
 					found = true;
 					break;
 				}
 			}
 
 			if (!found) {
-				report(getTab(TAB_IOI), loincNum, "Not Modelled");
+				report(getTab(TAB_IOI),TOP_88, loincNum, "Not Modelled");
 			}
 		}
 	}

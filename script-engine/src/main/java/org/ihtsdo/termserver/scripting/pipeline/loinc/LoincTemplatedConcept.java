@@ -186,8 +186,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
-		if (loincNum.equals("1882-0")) {
-			LOGGER.debug("Check inactivation");
+		if (loincNum.equals("21000-5")) {
+			LOGGER.debug("Neither modelled nor reported");
 		}
 		
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
