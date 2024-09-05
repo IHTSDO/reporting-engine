@@ -1709,21 +1709,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr2);
 
 		for (Concept concept : allConceptsSorted) {
-			if (inScope(concept)) {
-				if (Boolean.FALSE.equals(concept.isActive())) {
-					checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(ActiveState.INACTIVE), issueStr);
-				} else {
-					checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(), issueStr2);
-				}
+			if (Boolean.FALSE.equals(concept.isActive())) {
+				checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(ActiveState.INACTIVE), issueStr);
+			} else {
+				checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(), issueStr2);
 			}
 		}
 	}
 
 	private void checkDescriptionsForConceptNonCurrentIndicators(Concept concept, List<Description> descriptions, String issueStr) throws TermServerScriptException {
 		for (Description description : descriptions) {
-			for (InactivationIndicatorEntry entry : description.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-				if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-					report(concept, issueStr, getLegacyIndicator(concept), isActive(concept, null), description);
+			if (inScope(description)) {
+				for (InactivationIndicatorEntry entry : description.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+					boolean isLegacy = isLegacySimple(entry);
+					if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT) &&
+							(includeLegacyIssues || !isLegacy)) {
+						report(concept, issueStr, getLegacyIndicator(entry), isActive(concept, description), description);
+					}
 				}
 			}
 		}
@@ -1814,6 +1816,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
+
 	protected boolean report(Concept c, Object... details) throws TermServerScriptException {
 		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
