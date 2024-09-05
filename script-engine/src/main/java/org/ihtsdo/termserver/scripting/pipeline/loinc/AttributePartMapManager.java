@@ -71,7 +71,8 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			RelationshipTemplate rt = loincPartToAttributeMap.get(loincPartNum).clone();
 			rt.setType(attributeType);
 			return List.of(rt);
-		} else if (idxTab != NOT_SET ) {
+		} else if (idxTab != NOT_SET && !LoincScript.getMappingsAllowedAbsent().contains(loincPartNum)) {
+			//Some special rules exist for certain LOINC parts, so we don't need to report if we have one of those.
 			String loincPartStr = loincParts.get(loincPartNum) == null ? "Loinc Part Not Known - " + loincPartNum : loincParts.get(loincPartNum).toString();
 			ls.report(idxTab,
 					loincNum,

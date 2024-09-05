@@ -4,7 +4,7 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 
 public interface LoincScriptConstants extends ContentPipeLineConstants {
 	
-	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT, SPLIT_TO_GROUP_PER_COMPONENT, SUPPRESS_METHOD_TERM }
+	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT, SPLIT_TO_GROUP_PER_COMPONENT, ALLOW_BLANK_COMPONENT, SUPPRESS_METHOD_TERM }
 
 	public static final String LOINC_PART_TYPE_ADJUSTMENT = "ADJUSTMENT";
 	public static final String LOINC_PART_TYPE_CHALLENGE = "CHALLENGE";
