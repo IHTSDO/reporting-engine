@@ -26,6 +26,9 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	
 	public static final String TEMPLATE_SERVICE = "Template Service";
 	public static final String QI = "QI Project";
+	public static final String WOUND_OF_BODYSITE = "templates/wound/wound of bodysite.json";
+	public static final String FINDING_OF_RANGE_OF_JOINT_MOVEMENT = "templates/Finding of range of joint movement.json";
+
 	
 	protected void commonInit(JobRun run, boolean singleTemplateMode) {
 		this.singleTemplateMode = singleTemplateMode;
@@ -40,506 +43,282 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	public void init (JobRun run) throws TermServerScriptException {
 		commonInit(run, singleTemplateMode);
 		if (!singleTemplateMode) {
-			String subsetECL = "";
-			String[] templateNames = new String[] {};
+			populateTemplates("<< 125605004 |Fracture of bone (disorder)|",	"templates/fracture/Fracture of Bone Structure.json",
+					"templates/fracture/Fracture Dislocation of Bone Structure.json"); // QI-5
 
-			subsetECL = "<< 125605004";  // QI-5 |Fracture of bone (disorder)|
-			templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
-											"templates/fracture/Fracture Dislocation of Bone Structure.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
-			templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"}; 
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 126537000";  //QI-14 |Neoplasm of bone (disorder)|
-			templateNames = new String[] {	"templates/neoplasm/Neoplasm of Bone.json",
-											"templates/fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 34014006"; //QI-15 |Viral disease (disorder)|
-			templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
-											"templates/infection/Infection of bodysite caused by virus.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-			templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json",
-											"templates/infection/Infection of bodysite caused by bacteria.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 95896000";  //QI-19  |Protozoan infection (disorder)|
-			templateNames = new String[] {"templates/infection/Infection caused by Protozoa with optional bodysite.json"};
-			populateTemplates(subsetECL, templateNames);
-				
-			subsetECL = "<< 125666000";  //QI-33  |Burn (disorder)|
-			templateNames = new String[] {
-					"templates/burn/Burn of body structure.json",
+			populateTemplates("<< 128294001 |Chronic inflammatory disorder (disorder)|",	"templates/Chronic Inflammatory Disorder.json"); // QI-9
+
+			populateTemplates("<< 126537000 |Neoplasm of bone (disorder)|",	"templates/neoplasm/Neoplasm of Bone.json",
+					"templates/fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"); //QI-14
+
+			populateTemplates("<< 34014006","templates/infection/Infection caused by Virus.json",
+					"templates/infection/Infection of bodysite caused by virus.json"); //QI-15 |Viral disease (disorder)|
+
+			populateTemplates("<< 87628006","templates/infection/Infection caused by bacteria.json",
+					"templates/infection/Infection of bodysite caused by bacteria.json"); //QI-16 |Bacterial infectious disease (disorder)|
+
+			populateTemplates("<< 95896000","templates/infection/Infection caused by Protozoa with optional bodysite.json"); //QI-19  |Protozoan infection (disorder)|
+
+			populateTemplates("<< 125666000 |Burn (disorder)|",	"templates/burn/Burn of body structure.json",
 					"templates/burn/Epidermal burn of body structure.json",
 					"templates/burn/Partial thickness burn of body structure.json",
 					"templates/burn/Full thickness burn of body structure.json",
 					"templates/burn/Deep partial thickness burn of body structure.json",
-					"templates/burn/Superficial partial thickness burn of body structure.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 74627003";  //QI-48 |Diabetic Complication|
-			templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
-			templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 283682007"; // QI-39 |Bite - wound (disorder)|
-			templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
-											"templates/bite/bite of bodysite caused by bite event with infection.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 3218000"; //QI-67 |Mycosis (disorder)|
-			templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 17322007"; //QI-68 |Parasite (disorder)|
-			templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 416886008"; //QI-106 |Closed wound| 
-			templateNames = new String[] {	"templates/wound/wound of bodysite.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 125643001"; //QI-107 |Open wound| 
-			templateNames = new String[] {	"templates/wound/wound of bodysite.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 432119003 |Aneurysm (disorder)|"; //QI-143 
-			templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< <<40733004|Infectious disease|"; //QI-153
-			templateNames = new String[] {	"templates/infection/Infection NOS.json" };
-			
-			subsetECL = "<< 399963005 |Abrasion|"; //QI-147
-			templateNames = new String[] {	"templates/wound/abrasion.json" ,
-											"templates/Disorder due to birth trauma.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 300935003"; //QI-147
-			templateNames = new String[] {	"templates/Disorder due to birth trauma.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 52515009 |Hernia of abdominal cavity|"; //QI-172
-			templateNames = new String[] {"templates/hernia/Hernia of Body Structure.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 312608009 |Laceration - injury|"; //QI-177
-			templateNames = new String[] {	"templates/wound/laceration.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 3723001 |Arthritis (disorder)|"; //QI-123
-			templateNames = new String[] {	"templates/Arthritis.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 428794004 |Fistula (disorder)|"; //QI-186
-			templateNames = new String[] {	"templates/Fistula.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 441457006 |Cyst|"; //QI-181
-			templateNames = new String[] {	"templates/Cyst.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 128477000 |Abscess (disorder)|"; //QI-213
-			templateNames = new String[] {	"templates/Abscess.json",
-											"templates/Abscess with Cellulitis.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 416462003 |Wound (disorder)|"; //QI-209
-			templateNames = new String[] {	"templates/wound/wound of bodysite.json",
-											"templates/wound/wound of bodysite due to event.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 125670008 |Foreign body (disorder)|"; //QI-156
-			templateNames = new String[] {	"templates/Foreign body.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 193570009 |Cataract (disorder)|"; //MQI-7
-			templateNames = new String[] {	"templates/Cataract.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 429040005 |Ulcer (disorder)|"; //QI-248
-			templateNames = new String[] {	"templates/Ulcer.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 109355002 |Carcinoma in situ (disorder)|"; //QI-231
-			templateNames = new String[] {	"templates/neoplasm/Carcinoma in Situ.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 247441003 |Erythema|"; //QI-240
-			templateNames = new String[] {	"templates/Erythema of body structure.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 445505000 |Contracture of joint of spine (disorder)|";
-			templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 7890003 |Contracture of joint (disorder)|"; //QI-261
-			templateNames = new String[] {	"templates/Contracture of joint minus.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 125667009 |Contusion (disorder)|"; //QI-244 
-			templateNames = new String[] {	"templates/wound/contusion.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 85828009 |Autoimmune disease (disorder)|"; //QI-297
-			templateNames = new String[] {	"templates/Autoimune.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|";
-			templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 417893002|Deformity|"; //QI-278
-			templateNames = new String[] {	"templates/Deformity - disorder.json",
-					"templates/Deformity - finding.json"};
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 118616009 |Neoplastic disease of uncertain behavior (disorder)|"; //QI-253 |Neoplastic disease of uncertain behavior| 
-			templateNames = new String[] {	"templates/neoplasm/Neoplastic Disease.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 20376005 |Benign neoplastic disease|"; //QI-272
-			templateNames = new String[] {	"templates/neoplasm/Benign Neoplastic Disease.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 233776003 |Tracheobronchial disorder|"; //QI-268
-			templateNames = new String[] {	"templates/Tracheobronchial.json" };
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|"; //QI-284
-			templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 400006008 |Hamartoma (disorder)|"; //QI-296
-			templateNames = new String[] {	"templates/Harmartoma.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			//QI-331, QI-353, QI-352, QI-329
-			subsetECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 32693004 |Demyelination (morphologic abnormality)|";
-			templateNames = new String[] {	"templates/Degenerative disorder.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 417893002|Deformity|"; //QI-279
-			templateNames = new String[] {	"templates/Deformity - finding.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 417893002|Deformity|"; //QI-279
-			templateNames = new String[] {	"templates/Deformity - disorder.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			//QI-373, QI-376, QI-400, QI-324, QI-337
-			subsetECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ";
-			templateNames = new String[] {	"templates/Degenerative disorder.json"};
-			populateTemplates(subsetECL, templateNames);
+					"templates/burn/Superficial partial thickness burn of body structure.json"); //QI-33
 
-			subsetECL = "<< 131148009|Bleeding|"; //QI-319
-			templateNames = new String[] { "templates/Bleeding - disorder.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 131148009|Bleeding|"; //QI-319
-			templateNames = new String[] { "templates/Bleeding - finding.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 74627003 | Diabetic complication (disorder) |"; //QI-426
-			templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			templateNames = new String[] {	"templates/Adverse Reaction.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 128462008 |Secondary malignant neoplastic disease (disorder)|"; //QI-382
-			templateNames = new String[] {	"templates/Secondary malignant neoplasm.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 125671007 |Rupture (morphologic abnormality)|"; //QI-498
-			templateNames = new String[] {	"templates/Traumatic rupture of joint.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  708528005 |Narrowing (morphologic abnormality)|"; //QI-507
-			templateNames = new String[] {	"templates/morphologies/Narrowing.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  79644001 |Pigment alteration (morphologic abnormality)|"; //QI-518
-			templateNames = new String[] {	"templates/Pigmentation.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  68790008 |Amyloid deposition (morphologic abnormality)|"; //QI-225
-			templateNames = new String[] {	"templates/Amyloid.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  6574001 |Necrosis (morphologic abnormality)|"; //QI-530
-			templateNames = new String[] {	"templates/Necrosis.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 372087000 |Primary malignant neoplasm (disorder)|"; //QI-383
-			templateNames = new String[] {	"templates/neoplasm/primary malignant neoplasm.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)| = << 107666005 |Fluid disturbance (morphologic abnormality)|"; //QI-525
-			templateNames = new String[] {	"templates/morphologies/Fluid disturbance.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 419199007 |Allergy to substance (disorder)|";  //QI-609
-			templateNames = new String[] {	"templates/Allergy to Substance.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 449735000 |Structural change due to ischemia (morphologic abnormality)|"; //QI-544
-			templateNames = new String[] {	"templates/morphologies/Structural change due to ischemia.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 112639008 |Protrusion (morphologic abnormality)|"; //QI-556
-			templateNames = new String[] {	"templates/morphologies/Protrusion.json"};
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "< 128139000 |Inflammatory disorder (disorder)| "; //QI-619
-			templateNames = new String[] {	"templates/inflammatory/General inflammatory disorder.json" };
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 363346000 |Malignant neoplastic disease (disorder)|  MINUS (<< 372087000 |Primary malignant neoplasm (disorder)|  OR <<  128462008 |Secondary malignant neoplastic disease (disorder)| ) "; //QI-387
-			templateNames = new String[] {	"templates/neoplasm/Malignant Neoplasm.json" };
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64229006 |Traumatic lesion during delivery (disorder)| "; //QI-631
-			templateNames = new String[] {	"templates/Traumatic lesion.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 41010001 |Maturation defect (morphologic abnormality)|"; //QI-565
-			templateNames = new String[] { "templates/morphologies/Maturation defect.json" };
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 25723000 |Dysplasia (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Dysplasia.json" };
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "(<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = ( << 4147007 |Mass (morphologic abnormality)| MINUS <<416939005 |Proliferative mass (morphologic abnormality)| ) )";
-			templateNames = new String[] { "templates/morphologies/Mass.json" };
-			populateTemplates(subsetECL, templateNames);
-	
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)|  = <<  30217000 |Proliferation (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Proliferation.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76197007 |Hyperplasia (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Hyperplasia.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 56246009 |Hypertrophy (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Hypertrophy.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 55342001 |Neoplastic disease (disorder)|";
-			templateNames = new String[] { "templates/neoplasm/Neoplastic Disease.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 308492005 |Contusion - lesion (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Contusion.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 40275004 |Contact dermatitis (disorder)|";
-			templateNames = new String[] { "templates/Contact Dermatitis.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "< 238575004 |Allergic contact dermatitis (disorder)|";
-			templateNames = new String[] { "templates/Allergic Contact Dermatitis.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 31883006 |Fused structure (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Fused.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 66091009 |Congenital disease (disorder)|| : 116676008 |Associated morphology (attribute)| = << 399984000 |Abnormal shape (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Abnormal Shape.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 1806006 |Eruption (morphologic abnormality)|) MINUS (<< 64572001 |Disease (disorder)|)";
-			templateNames = new String[] { "templates/morphologies/Eruption - finding.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 1806006 |Eruption (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Eruption - disorder.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 36191001 |Perforation (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Perforation.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality | ) MINUS ( << 64572001 |Disease (disorder)| )";
-			templateNames = new String[] { "templates/morphologies/Fibrosis - finding.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality |  ";
-			templateNames = new String[] { "templates/morphologies/Fibrosis - disorder.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 371136004 |Disorder of tooth development (disorder)| ";
-			templateNames = new String[] { "templates/pathological process/Developmental.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "(<< 371521007 |Disorder of bone development (disorder)|) MINUS ( << 19579005 |Juvenile osteochondritis (disorder)| )";
-			templateNames = new String[] { "templates/pathological process/Developmental.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<<  609520005 |Disorder of fetal structure (disorder)|";
-			templateNames = new String[] { "templates/Disorder of fetal structure.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<<  40445007 |Heart valve regurgitation (disorder)|";
-			templateNames = new String[] { "templates/Heart valve insufficiency.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76093008 |Anterior displacement (morphologic abnormality)|";
-			templateNames = new String[] { "templates/morphologies/Anterior displacement.json" };
-			populateTemplates(subsetECL, templateNames);
-			
-			subsetECL = null;
-			templateNames = new String[] { "templates/Traumatic injury.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Posterior displacement.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Separation.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Retention.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/MRI.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Calculus.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Lateral displacement.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Medial displacement.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Poisoning caused by substance or product.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Compression.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Enlargement.json" };	
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] {	"templates/drugs/MP only.json",
-											"templates/drugs/MP containing.json",
-											"templates/drugs/MPF containing.json",
-											"templates/drugs/MPF only.json",
-											"templates/drugs/CD precise discrete.json",
-											"templates/drugs/CD precise continuous.json"};
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/CT Guided.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Misalignment.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Generic Morphologies.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Recession CF.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Recession.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Poisoning.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Stoma.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/CT of Body Structure with contrast.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/CT of Body Structure.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/CT Guided.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Muscular dystrophy.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Craniofacial cleft.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Measurement.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Anthrotomy.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Angiography.json" };
-			populateTemplates(null, templateNames);
-	
-			templateNames = new String[] { "templates/Allergic Disease.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Needle Biopsy.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Imaging Guided Biopsy.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Excision of cyst.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Substance abuse.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Malposition.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Drug dependence.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/morphologies/Dislocation.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/InsertionOfStent.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/Toxic due to plant.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Intubation.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/finding/Measurement Finding.json" };
-			populateTemplates(null, templateNames);
-			
-			templateNames = new String[] { "templates/procedures/Endoscopy.json" };
-			populateTemplates(null, templateNames);
+			populateTemplates("<< 74627003 |Diabetic Complication|",	"templates/Complication due to Diabetes Melitus.json"); //QI-48
 
-			templateNames = new String[] { "templates/procedures/Intubation.json" };
-			populateTemplates(null, templateNames);
+			populateTemplates("<< 8098009 |Sexually transmitted infectious disease (disorder)|",		"templates/Sexually transmitted Infection with optional bodysite.json"); // QI-45
 
-			templateNames = new String[] { "templates/procedures/Periodontal.json" };
-			populateTemplates(null, templateNames);
 
-			templateNames = new String[] { "templates/procedures/Construction of stoma.json" };
-			populateTemplates(null, templateNames);
+			populateTemplates("<< 283682007 |Bite - wound (disorder)|",	"templates/bite/bite of bodysite caused by bite event.json",
+					"templates/bite/bite of bodysite caused by bite event with infection.json"); // QI-39
 
-			templateNames = new String[] { "templates/procedures/InsertionOfStent.json" };
-			populateTemplates(null, templateNames);
+			populateTemplates("<< 3218000 |Mycosis (disorder)|", "templates/infection/Infection caused by Fungus.json");  //QI-67
+
+			populateTemplates("<< 17322007 |Parasite (disorder)|", "templates/infection/Infection caused by Parasite.json");  //QI-68
+
+			populateTemplates("<< 416886008 |Closed wound|", WOUND_OF_BODYSITE );  //QI-106
+
+			populateTemplates("<< 125643001 |Open wound| ", WOUND_OF_BODYSITE ); //QI-107
+
+			populateTemplates("<< 432119003 |Aneurysm (disorder)|" , "templates/Aneurysm of Cardiovascular system.json" ); //QI-143
+
+			populateTemplates("<< 40733004 |Infectious disease|", "templates/infection/Infection NOS.json"); //QI-153
+
+			populateTemplates("<< 399963005 |Abrasion|", "templates/wound/abrasion.json" ,
+					"templates/Disorder due to birth trauma.json"); //QI-147
+
+			populateTemplates("<< 300935003", "templates/Disorder due to birth trauma.json" );  //QI-147
+
+			populateTemplates("<< 52515009 |Hernia of abdominal cavity|" , "templates/hernia/Hernia of Body Structure.json" ); //QI-172
+
+			populateTemplates("<< 312608009 |Laceration - injury|" , "templates/wound/laceration.json" ); //QI-177
+
+			populateTemplates("<< 3723001 |Arthritis (disorder)|" , "templates/Arthritis.json" ); //QI-123
+
+			populateTemplates("<< 428794004 |Fistula (disorder)|" , "templates/Fistula.json" ); //QI-186
+
+			populateTemplates("<< 441457006 |Cyst|" , "templates/Cyst.json" ); //QI-181
+
+			populateTemplates("<< 128477000 |Abscess (disorder)|", "templates/Abscess.json",
+					"templates/Abscess with Cellulitis.json"); //QI-213
+
+			populateTemplates("<< 416462003 |Wound (disorder)|", WOUND_OF_BODYSITE,
+					"templates/wound/wound of bodysite due to event.json"); //QI-209
+
+			populateTemplates("<< 125670008 |Foreign body (disorder)|" , 	"templates/Foreign body.json" ); //QI-156
+
+			populateTemplates("<< 193570009 |Cataract (disorder)" , 	"templates/Cataract.json"); //MQI-7
+
+			populateTemplates("<< 429040005 |Ulcer (disorder)|" , 	"templates/Ulcer.json" ); //QI-248
+
+			populateTemplates("<< 109355002 |Carcinoma in situ (disorder)|" , 	"templates/neoplasm/Carcinoma in Situ.json" ); //QI-231
+
+			populateTemplates("<< 247441003 |Erythema|" , 	"templates/Erythema of body structure.json" ); //QI-240
+
+			populateTemplates("<< 445505000 |Contracture of joint of spine (disorder)|", FINDING_OF_RANGE_OF_JOINT_MOVEMENT ); //QI-???
+
+			populateTemplates("<< 7890003 |Contracture of joint (disorder)|", 	"templates/Contracture of joint minus.json" ); //QI-261
+
+			populateTemplates("<< 125667009 |Contusion (disorder)|", "templates/wound/contusion.json"); //QI-244
+
+			populateTemplates("<< 85828009 |Autoimmune disease (disorder)|", 	"templates/Autoimune.json" ); //QI-297
+
+			populateTemplates("<< 298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|", FINDING_OF_RANGE_OF_JOINT_MOVEMENT ); //QI-???
+
+			populateTemplates("<< 417893002|Deformity|", "templates/Deformity - disorder.json",
+					"templates/Deformity - finding.json"); //QI-278
+
+			populateTemplates("<< 118616009 |Neoplastic disease of uncertain behavior (disorder)|", "templates/neoplasm/Neoplastic Disease.json"); //QI-253
+
+			populateTemplates("<< 20376005 |Benign neoplastic disease|", 	"templates/neoplasm/Benign Neoplastic Disease.json"); //QI-272
+
+			populateTemplates("<< 233776003 |Tracheobronchial disorder|", 	"templates/Tracheobronchial.json" ); //QI-268
+
+			populateTemplates("<< 298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|", FINDING_OF_RANGE_OF_JOINT_MOVEMENT ); //QI-284
+
+			populateTemplates("<< 400006008 |Hamartoma (disorder)|", 	"templates/Harmartoma.json" ); //QI-296
+
+			populateTemplates("<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 32693004 |Demyelination (morphologic abnormality)|", "templates/Degenerative disorder.json"); //QI-331
+
+			populateTemplates("<< 362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ", "templates/Degenerative disorder.json"); //QI-373, QI-376, QI-400, QI-324, QI-337
+
+			populateTemplates("<< 131148009|Bleeding|",  "templates/Bleeding - disorder.json"); //QI-319
+
+			populateTemplates("<< 131148009|Bleeding|",  "templates/Bleeding - finding.json"); //QI-319
+
+			populateTemplates("<< 74627003 | Diabetic complication (disorder) |", "templates/Complication due to Diabetes Melitus.json"); //QI-426
+
+			populateTemplates(null, "templates/Adverse Reaction.json");
+
+			populateTemplates("<< 128462008 |Secondary malignant neoplastic disease (disorder)|", 	"templates/Secondary malignant neoplasm.json"); //QI-382
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 125671007 |Rupture (morphologic abnormality)|", 	"templates/Traumatic rupture of joint.json"); //QI-498
+
+			populateTemplates("<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  708528005 |Narrowing (morphologic abnormality)|", 	"templates/morphologies/Narrowing.json"); //QI-507
+
+			populateTemplates("<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  79644001 |Pigment alteration (morphologic abnormality)|", 	"templates/Pigmentation.json"); //QI-518
+
+			populateTemplates("<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  68790008 |Amyloid deposition (morphologic abnormality)|", 	"templates/Amyloid.json"); //QI-225
+
+			populateTemplates("<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  6574001 |Necrosis (morphologic abnormality)|", 	"templates/Necrosis.json"); //QI-530
+
+			populateTemplates("<< 372087000 |Primary malignant neoplasm (disorder)|", 	"templates/neoplasm/primary malignant neoplasm.json"); //QI-383
+
+			populateTemplates("<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)| = << 107666005 |Fluid disturbance (morphologic abnormality)|", 	"templates/morphologies/Fluid disturbance.json"); //QI-525
+
+			populateTemplates("<< 419199007 |Allergy to substance (disorder)|", "templates/Allergy to Substance.json"); //QI-609
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 449735000 |Structural change due to ischemia (morphologic abnormality)|", 	"templates/morphologies/Structural change due to ischemia.json"); //QI-544
+
+			populateTemplates("<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 112639008 |Protrusion (morphologic abnormality)|", 	"templates/morphologies/Protrusion.json"); //QI-556
+
+			populateTemplates("< 128139000 |Inflammatory disorder (disorder)| ", "templates/inflammatory/General inflammatory disorder.json" ); //QI-619
+
+			populateTemplates("<< 363346000 |Malignant neoplastic disease (disorder)|  MINUS (<< 372087000 |Primary malignant neoplasm (disorder)|  OR <<  128462008 |Secondary malignant neoplastic disease (disorder)| ) ", 	"templates/neoplasm/Malignant Neoplasm.json");
+
+			populateTemplates("<< 64229006 |Traumatic lesion during delivery (disorder)| ", "templates/Traumatic lesion.json" ); //QI-631
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 41010001 |Maturation defect (morphologic abnormality)|",  "templates/morphologies/Maturation defect.json" ); //QI-565
+
+			populateTemplates("<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 25723000 |Dysplasia (morphologic abnormality)|",  "templates/morphologies/Dysplasia.json" ); //QI-???
+
+			populateTemplates("(<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = ( << 4147007 |Mass (morphologic abnormality)| MINUS <<416939005 |Proliferative mass (morphologic abnormality)| ) )",  "templates/morphologies/Mass.json");
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)|  = <<  30217000 |Proliferation (morphologic abnormality)|",  "templates/morphologies/Proliferation.json" ); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76197007 |Hyperplasia (morphologic abnormality)|",  "templates/morphologies/Hyperplasia.json" ); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 56246009 |Hypertrophy (morphologic abnormality)|",  "templates/morphologies/Hypertrophy.json" ); //QI-???
+
+			populateTemplates("<< 55342001 |Neoplastic disease (disorder)|",  "templates/neoplasm/Neoplastic Disease.json" ); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 308492005 |Contusion - lesion (morphologic abnormality)|",  "templates/morphologies/Contusion.json" ); //QI-???
+
+			populateTemplates("<< 40275004 |Contact dermatitis (disorder)|",  "templates/Contact Dermatitis.json" ); //QI-???
+
+			populateTemplates("< 238575004 |Allergic contact dermatitis (disorder)|",  "templates/Allergic Contact Dermatitis.json" ); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 31883006 |Fused structure (morphologic abnormality)|",  "templates/morphologies/Fused.json" ); //QI-???
+
+			populateTemplates("<< 66091009 |Congenital disease (disorder)|| : 116676008 |Associated morphology (attribute)| = << 399984000 |Abnormal shape (morphologic abnormality)|",  "templates/morphologies/Abnormal Shape.json" ); //QI-???
+
+			populateTemplates("(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 1806006 |Eruption (morphologic abnormality)|) MINUS (<< 64572001 |Disease (disorder)|)",  "templates/morphologies/Eruption - finding.json"); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 1806006 |Eruption (morphologic abnormality)|",  "templates/morphologies/Eruption - disorder.json" ); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 36191001 |Perforation (morphologic abnormality)|",  "templates/morphologies/Perforation.json" ); //QI-???
+
+			populateTemplates("(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality | ) MINUS ( << 64572001 |Disease (disorder)| )", "templates/morphologies/Fibrosis - finding.json"); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality |  ",  "templates/morphologies/Fibrosis - disorder.json" ); //QI-???
+
+			populateTemplates("<< 371136004 |Disorder of tooth development (disorder)| ",  "templates/pathological process/Developmental.json" ); //QI-???
+
+			populateTemplates("(<< 371521007 |Disorder of bone development (disorder)|) MINUS ( << 19579005 |Juvenile osteochondritis (disorder)| )",  "templates/pathological process/Developmental.json" ); //QI-???
+
+			populateTemplates("<<  609520005 |Disorder of fetal structure (disorder)|",  "templates/Disorder of fetal structure.json" ); //QI-???
+
+			populateTemplates("<<  40445007 |Heart valve regurgitation (disorder)|",  "templates/Heart valve insufficiency.json" ); //QI-???
+
+			populateTemplates("<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76093008 |Anterior displacement (morphologic abnormality)|", "templates/morphologies/Anterior displacement.json");
+
+			populateTemplates(null, "templates/Traumatic injury.json");
+
+			populateTemplates(null, "templates/morphologies/Posterior displacement.json");
+
+			populateTemplates(null, "templates/morphologies/Separation.json");
+
+			populateTemplates(null, "templates/morphologies/Retention.json");
+
+			populateTemplates(null, "templates/procedures/MRI.json");
+
+			populateTemplates(null, "templates/morphologies/Calculus.json");
+
+			populateTemplates(null, "templates/morphologies/Lateral displacement.json");
+
+			populateTemplates(null, "templates/morphologies/Medial displacement.json");
+
+			populateTemplates(null, "templates/Poisoning caused by substance or product.json");
+
+			populateTemplates(null, "templates/morphologies/Compression.json");
+
+			populateTemplates(null, "templates/morphologies/Enlargement.json" );
+
+			populateTemplates(null, "templates/drugs/MP only.json",
+					"templates/drugs/MP containing.json",
+					"templates/drugs/MPF containing.json",
+					"templates/drugs/MPF only.json",
+					"templates/drugs/CD precise discrete.json",
+					"templates/drugs/CD precise continuous.json");
+
+			populateTemplates(null, "templates/procedures/CT Guided.json");
+
+			populateTemplates(null, "templates/morphologies/Misalignment.json");
+
+			populateTemplates(null, "templates/morphologies/Generic Morphologies.json");
+
+			populateTemplates(null, "templates/morphologies/Recession CF.json");
+
+			populateTemplates(null, "templates/morphologies/Recession.json");
+
+			populateTemplates(null, "templates/Poisoning.json");
+
+			populateTemplates(null, "templates/procedures/Stoma.json");
+
+			populateTemplates(null, "templates/procedures/CT of Body Structure with contrast.json");
+
+			populateTemplates(null, "templates/procedures/CT of Body Structure.json");
+
+			populateTemplates(null, "templates/procedures/CT Guided.json");
+
+			populateTemplates(null, "templates/Muscular dystrophy.json");
+
+			populateTemplates(null, "templates/Craniofacial cleft.json");
+
+			populateTemplates(null, "templates/Measurement.json");
+
+			populateTemplates(null, "templates/procedures/Anthrotomy.json");
+
+			populateTemplates(null, "templates/procedures/Angiography.json");
+
+			populateTemplates(null, "templates/Allergic Disease.json");
+
+			populateTemplates(null, "templates/procedures/Needle Biopsy.json");
+
+			populateTemplates(null, "templates/procedures/Imaging Guided Biopsy.json");
+
+			populateTemplates(null, "templates/procedures/Excision of cyst.json");
+
+			populateTemplates(null, "templates/Substance abuse.json");
+
+			populateTemplates(null, "templates/morphologies/Malposition.json");
+
+			populateTemplates(null, "templates/Drug dependence.json");
+
+			populateTemplates(null, "templates/morphologies/Dislocation.json");
+
+			populateTemplates(null, "templates/procedures/InsertionOfStent.json");
+
+			populateTemplates(null, "templates/Toxic due to plant.json");
+
+			populateTemplates(null, "templates/procedures/Intubation.json");
+
+			populateTemplates(null, "templates/finding/Measurement Finding.json");
+
+			populateTemplates(null, "templates/procedures/Endoscopy.json");
+
+			populateTemplates(null, "templates/procedures/Intubation.json");
+
+			populateTemplates(null, "templates/procedures/Periodontal.json");
+
+			populateTemplates(null, "templates/procedures/Construction of stoma.json");
+
+			populateTemplates(null, "templates/procedures/InsertionOfStent.json");
 			
 			//Do this one last to pick up whatever is left under Disease
-			subsetECL = "<< 64572001 |Disease (disorder)|"; 
-			templateNames = new String[] { "templates/Disease.json" };
-			populateTemplates(subsetECL, templateNames);
+			populateTemplates("<< 64572001 |Disease (disorder)|", "templates/Disease.json");
 			
 			populateTemplatesFromTS();
 		}
@@ -589,7 +368,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		}
 	}
 
-	private void populateTemplates(String ecl, String[] templateNames) throws TermServerScriptException {
+	private void populateTemplates(String ecl, String... templateNames) throws TermServerScriptException {
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
 				LOGGER.info ("Loading template: " + templateNames[x]);
