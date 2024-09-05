@@ -126,14 +126,19 @@ public class DialectChecker implements ScriptConstants {
 		boolean replacementMade = false;
 		for (int i = 0; i < words.length; i++) {
 			for (DialectPair pair : dialectPairs) {
-				String wordLower = words[i].toLowerCase();
+				//The word might end with some punctuation, so split that off before comparing, and
+				//add back on afterwards
+				String[] wordPunctuation = words[i].split("(?<=\\w)(?=\\W)");
+				String wordLower = wordPunctuation[0].toLowerCase();
+				String punctuation = wordPunctuation.length == 2 ? wordPunctuation[1] : "";
+
 				if (pair.getTerm(from).equals(wordLower)) {
 					String replacement = pair.getTerm(to);
 					//Are we adjusting for case?
-					if (!words[i].equals(wordLower)) {
+					if (!wordPunctuation[0].equals(wordLower)) {
 						replacement = StringUtils.capitalizeFirstLetter(replacement);
 					}
-					words[i] = replacement;
+					words[i] = replacement + punctuation;
 					replacementMade = true;
 					break;
 				}
