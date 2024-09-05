@@ -1,12 +1,6 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,40 +22,4 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		return templatedConcept;
 	}
 
-	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
-		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
-		//With respect to the values read from Loinc_Detail_Type_1 file
-		List<RelationshipTemplate> attributes = new ArrayList<>();
-		Concept componentAttrib = typeMap.get(LOINC_PART_TYPE_COMPONENT);
-		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
-		if (hasNoSubParts()) {
-			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
-		} else {
-			LoincDetail denom = getLoincDetailIfPresent(COMPDENOM_PN);
-			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
-				//Check for percentage
-				if (denom.getPartName().contains("100")) {
-					attributes.add(percentAttribute);
-					slotTermMap.put("PROPERTY", "percentage");
-				}
-			}
-
-			if (detailPresent(COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
-				}
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib);
-			}
-		}
-
-		//If we didn't find the component, return a null so that we record that failed mapping usage
-		if (attributes.isEmpty()) {
-			attributes.add(null);
-		}
-		return attributes;
-	}
 }

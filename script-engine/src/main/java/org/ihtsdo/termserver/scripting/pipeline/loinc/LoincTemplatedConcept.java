@@ -21,7 +21,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	private static final int GROUP_1 = 1;
 	protected static final String SEM_TAG = " (observable entity)";
 
-	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList("PROPERTY", "COMPONENT", "DIVISORS"));
+	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList(
+			LOINC_PART_TYPE_PROPERTY,
+			LOINC_PART_TYPE_COMPONENT,
+			LOINC_PART_TYPE_DIVISORS));
 
 	private static final Map<String, String> mapTypeToPrimaryColumn = new HashMap<>();
 	static {
@@ -166,11 +169,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept getAppropriateTemplate(String loincNum, String property) throws TermServerScriptException {
 		return switch (property) {
-			case "ArVRat", "CRat", "MRat", "RelTime", "SRat", "Time", "VRat", "Vel" -> LoincTemplatedConceptWithProcess.create(loincNum);
-			case "NFr", "MFr", "CFr", "AFr", "VFr", "SFr" -> LoincTemplatedConceptWithRelative.create(loincNum);
-			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "LaCnc", "LnCnc", "LsCnc", "MCnc",
-			     "MCnt", "MoM", "NCnc", "Naric", "Osmol", "PPres", "PrThr", "SCnc", "SCnt",
-			     "Titr", "Visc" -> 	LoincTemplatedConceptWithComponent.create(loincNum);
+			case "ArVRat", "CRat", "MRat", "RelTime", "SRat", "Time", "Vel", "VRat" -> LoincTemplatedConceptWithProcess.create(loincNum);
+			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(loincNum);
+			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
+			     "EntVol", "LaCnc", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
+			     "Osmol", "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr", "Visc" ->
+					LoincTemplatedConceptWithComponent.create(loincNum);
 			case "Aper", "Color", "Rden", "Source","SpGrav","Temp" ->
 					LoincTemplatedConceptWithDirectSite.create(loincNum);
 			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(loincNum);
@@ -467,7 +471,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		if (rt != null) {
 			mapped++;
 			concept.addRelationship(rt, GROUP_1);
-		} else if (!expectNullMap){
+		} else if (!expectNullMap
+				&& !LoincScript.getMappingsAllowedAbsent().contains(loincDetail.getPartNumber())){
 			unmapped++;
 			String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
 			concept.addIssue(issue);
@@ -514,7 +519,42 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 	}
 
-	protected abstract List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException;
+	//Relative and Ratio both use this default implementation.  The other templates override
+	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
+		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
+		//With respect to the values read from Loinc_Detail_Type_1 file
+		List<RelationshipTemplate> attributes = new ArrayList<>();
+		Concept componentAttrib = typeMap.get(LOINC_PART_TYPE_COMPONENT);
+		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
+		if (hasNoSubParts()) {
+			//Use COMPNUM_PN LOINC Part map to model SCT Component
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+		} else {
+			LoincDetail denom = getLoincDetailIfPresent(COMPDENOM_PN);
+			if (denom != null) {
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
+				//Check for percentage
+				if (denom.getPartName().contains("100")) {
+					attributes.add(percentAttribute);
+					slotTermMap.put("PROPERTY", "percentage");
+				}
+			}
+
+			if (detailPresent(COMPSUBPART2_PN)) {
+				if(attributes.isEmpty()) {
+					addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+				}
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib);
+			}
+		}
+
+		//If we didn't find the component, return a null so that we record that failed mapping usage
+		if (attributes.isEmpty()) {
+			attributes.add(null);
+		}
+		return attributes;
+	}
 
 	//TO DO This function is a problem because we can have more than one detail with the same partType
 	//Method below is better because it first looks up the primary column name for that part type
