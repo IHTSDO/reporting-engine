@@ -418,7 +418,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			"49024-3", "580231010000107 |Differential cell count method - Blood (observable entity)|",
 			"49541-6", "580241010000104 |Fasting status - Reported (observable entity)|",
 			"14155-6", "580261010000100 |Cholesterol in LDL [Percentile] (observable entity)|",
-			"9322-9", "580251010000102 |Cholesterol.total/Cholesterol in HDL [Percentile] (observable entity)| "
+			"9322-9", "580251010000102 |Cholesterol.total/Cholesterol in HDL [Percentile] (observable entity)| ",
+			"56888-1", "570211010000106 |Presence of Human immunodeficiency virus 1 antibody and/or Human immunodeficiency virus 2 antibody and/or Human immunodeficiency virus 1 protein 24 antigen in serum or plasma at point in time by immunoassay (observable entity)| "
 	);
 
 	public static String getSpecialInterestIndicator(String externameIdentifer) {

@@ -166,19 +166,20 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	public static LoincTemplatedConcept getAppropriateTemplate(String loincNum, String property) throws TermServerScriptException {
 		return switch (property) {
+			case "ArVRat", "CRat", "MRat", "RelTime", "SRat", "Time", "VRat", "Vel" -> LoincTemplatedConceptWithProcess.create(loincNum);
 			case "NFr", "MFr", "CFr", "AFr", "VFr", "SFr" -> LoincTemplatedConceptWithRelative.create(loincNum);
-			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "LaCnc", "LnCnc", "LsCnc", "MCnc", "MCnt", "MoM", "NCnc",
-			     "Naric", "PPres", "PrThr", "SCnc", "SCnt", "Titr", "Visc" ->
-					LoincTemplatedConceptWithComponent.create(loincNum);
-			case "Anat", "Aper", "EntVol", "ID", "Morph", "Prid", "Temp", "Type", "Vol" ->
-					LoincTemplatedConceptWithInheres.create(loincNum);
-			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(loincNum);
-			case "MRat", "SRat", "VRat", "Vel", "CRat", "ArVRat" -> LoincTemplatedConceptWithProcess.create(loincNum);
+			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "LaCnc", "LnCnc", "LsCnc", "MCnc",
+			     "MCnt", "MoM", "NCnc", "Naric", "Osmol", "PPres", "PrThr", "SCnc", "SCnt",
+			     "Titr", "Visc" -> 	LoincTemplatedConceptWithComponent.create(loincNum);
+			case "Aper", "Color", "Rden", "Source","SpGrav","Temp" ->
+					LoincTemplatedConceptWithDirectSite.create(loincNum);
 			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(loincNum);
+			case "Anat", "DistWidth", "EntMCnc", "EntMeanVol", "ID", "Morph",
+			     "Prid", "Type", "Vol" -> LoincTemplatedConceptWithInheres.create(loincNum);
+			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(loincNum);
 			default -> null;
 		};
 	}
-
 
 	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
 		if (loincNum.equals("1882-0")) {
@@ -257,9 +258,18 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		
 		for (String templateItem : templateItems) {
 			String regex = "\\[" + templateItem + "\\]";
-			if (templateItem.equals(LOINC_PART_TYPE_METHOD) && hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
+			if (templateItem.equals(LOINC_PART_TYPE_METHOD)
+					&& hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
 						.replace(" by ", "");
+			} else if (templateItem.equals(LOINC_PART_TYPE_COMPONENT)
+					&& hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
+				//We're not expecting a component, so set a debug point if do have one
+				if (!concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeMap.get(templateItem), ActiveState.ACTIVE).isEmpty()) {
+					LOGGER.debug("Check here - wasn't expecting to have a component");
+				}
+				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
+						.replace(" in ", "");
 			} else if (slotTermMap.containsKey(templateItem)) {
 				String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
@@ -453,7 +463,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return OBSERVABLE_ENTITY;
 	}
 
-	private void addAttributesToConcept(RelationshipTemplate rt, LoincDetail loincDetail, boolean expectNullMap) throws TermServerScriptException {
+	private void addAttributesToConcept(RelationshipTemplate rt, LoincDetail loincDetail, boolean expectNullMap) {
 		if (rt != null) {
 			mapped++;
 			concept.addRelationship(rt, GROUP_1);
@@ -612,6 +622,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if (additionalAttributes.isEmpty()) {
 				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
 					//Rule xi if we have a time, then we don't need to populate that field
+					slotTermMap.put(loincDetail.getPartTypeName(), "");
+				} else if (loincDetail.getPartNumber().equals(LoincScript.LOINC_OBSERVATION_PART)) {
+					//Rule 2d We're going to allow the COMPONENT to be blank
+					processingFlags.add(ProcessingFlag.ALLOW_BLANK_COMPONENT);
 					slotTermMap.put(loincDetail.getPartTypeName(), "");
 				} else if (!skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
 					//Rule 2.c  If we don't have a part mapping, use what we do get in the FSN

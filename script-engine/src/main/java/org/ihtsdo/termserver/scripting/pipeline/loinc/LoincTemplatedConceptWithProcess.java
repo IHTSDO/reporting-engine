@@ -54,21 +54,17 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	@Override
 	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rule v.3.4.a & b
-		if (loincDetail.getLDTColumnName().equals(SYSTEM_PN)) {
-			//All process observables will have an agent and characterizes.
-			//But only if we're working with Urine
-			if (loincDetail.getPartName().contains("Urine")) {
-				Concept agent = gl.getConcept("704322002 |Process agent (attribute)|");
-				Concept kidneyStruct = gl.getConcept("64033007 |Kidney structure (body structure)|");
-				attributes.add(new RelationshipTemplate(agent, kidneyStruct));
+		//All process observables will have an agent and characterizes.
+		//But only if we're working with Urine
+		if (loincDetail.getLDTColumnName().equals(SYSTEM_PN)
+			&& loincDetail.getPartName().contains("Urine")) {
+			Concept agent = gl.getConcept("704322002 |Process agent (attribute)|");
+			Concept kidneyStruct = gl.getConcept("64033007 |Kidney structure (body structure)|");
+			attributes.add(new RelationshipTemplate(agent, kidneyStruct));
 
-				Concept characterizes = gl.getConcept("704321009 |Characterizes (attribute)|");
-				Concept excrtProc = gl.getConcept("718500008 |Excretory process (qualifier value)| ");
-				attributes.add(new RelationshipTemplate(characterizes, excrtProc));
-			} else {
-				concept.addIssue("System not recognised as Urine in Process Observable: " + loincDetail.getPartName());
-				processingFlags.add(ProcessingFlag.DROP_OUT);
-			}
+			Concept characterizes = gl.getConcept("704321009 |Characterizes (attribute)|");
+			Concept excrtProc = gl.getConcept("718500008 |Excretory process (qualifier value)| ");
+			attributes.add(new RelationshipTemplate(characterizes, excrtProc));
 		}
 
 		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
