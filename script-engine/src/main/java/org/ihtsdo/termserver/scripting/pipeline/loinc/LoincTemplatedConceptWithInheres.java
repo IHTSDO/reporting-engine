@@ -65,7 +65,9 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//And in fact, don't map this term at all
 		if (attributes.isEmpty()) {
 			attributes.add(null);
-			processingFlags.add(ProcessingFlag.DROP_OUT);
+			if (!hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
+				processingFlags.add(ProcessingFlag.DROP_OUT);
+			}
 		}
 		return attributes;
 	}
