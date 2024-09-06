@@ -184,18 +184,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 
 	private void addNewTextDefinition(Concept c, boolean usgbVarianceDetected) throws TermServerScriptException {
 		//Add the Orphnet supplied text definition to the concept
-		String definition = conceptDefinitions.get(c);
-		//Remove all instances of the text "(see this term)" from the definition
-		definition = definition.replace(" (see this term)", "");
-		definition = definition.replace(" (see these terms))", "");
-
-		if (!definition.equals(conceptDefinitions.get(c))) {
-			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", conceptDefinitions.get(c));
-		}
-
-		if (!definition.endsWith(".")) {
-			definition += ".";
-		}
+		String definition = normalizeSuppliedTextDefinition(c);
 
 		//Check for US/GB Variance
 		DialectChecker dc = DialectChecker.create(); //Will only load the us/gb file the first time this singleton is requested
@@ -239,6 +228,29 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		d.setId(descIdGenerator.getSCTID());
 		c.addDescription(d);
 		report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "Text definition added for " + acceptabilityStr, d);
+	}
+
+	private String normalizeSuppliedTextDefinition(Concept c) throws TermServerScriptException {
+		String definition = conceptDefinitions.get(c);
+		//Remove all instances of the text "(see this term)" from the definition
+		definition = definition.replace(" (see this term)", "");
+		definition = definition.replace(" (see these terms))", "");
+
+		if (!definition.equals(conceptDefinitions.get(c))) {
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", conceptDefinitions.get(c));
+		}
+
+		String markupRemoved = definition.replaceAll("<[^>]+>", "");
+		if (!definition.equals(markupRemoved)) {
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed <i> markup", definition);
+		}
+		definition = markupRemoved;
+
+		if (!definition.endsWith(".")) {
+			definition += ".";
+		}
+
+		return definition;
 	}
 
 	private void report(Concept c, Severity severity, ReportActionType action, String processingDetail, String rmStr) throws TermServerScriptException {
