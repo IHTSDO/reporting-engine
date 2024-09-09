@@ -173,6 +173,10 @@ public class Description extends Component implements ScriptConstants, Serializa
 	@Override
 	public void setId(String descriptionId) {
 		this.descriptionId = descriptionId;
+
+		for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+			thisDialect.setReferencedComponentId(descriptionId);
+		}
 	}
 
 	public void setDescriptionId(String descriptionId) {

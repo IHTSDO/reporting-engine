@@ -34,6 +34,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		INFRA13323_AddAttributionAnnotations delta = new INFRA13323_AddAttributionAnnotations();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			delta.getArchiveManager().setPopulateReleasedFlag(true);
 			delta.init(args);
 			delta.inputFileHasHeaderRow = true;
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
@@ -144,9 +145,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 
 	private int replaceTextDefinitions(Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		if (c.getId().equals("111029001")) {
-			LOGGER.debug("Debug here");
-		}
+
 		//Do we have a text definition from Orphanet?
 		if (!conceptDefinitions.containsKey(c)) {
 			c.addIssue("No Orphanet definition supplied");
@@ -162,8 +161,9 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 					usgbVarianceDetected = true;
 				}
 
-				if (d.getTerm().equals(conceptDefinitions.get(c))) {
-					report(c, Severity.LOW, ReportActionType.NO_CHANGE, "Text definition already present", d);
+				//Because of dialect variance, we need to check ALL descriptions for the new text definition
+				if (conceptFeaturesNewTextDefinition(c)) {
+					report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Text definition already present", d);
 					textDefinitionNeeded = false;
 				} else {
 					d.setActive(false, true);
@@ -180,6 +180,16 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		}
 
 		return changesMade;
+	}
+
+	private boolean conceptFeaturesNewTextDefinition(Concept c) {
+		String targetText = conceptDefinitions.get(c);
+		for (Description d : c.getDescriptions()) {
+			if (d.getTerm().equals(targetText)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void addNewTextDefinition(Concept c, boolean usgbVarianceDetected) throws TermServerScriptException {
@@ -207,7 +217,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 			Description d = Description.withDefaults(definitionInDialect, DescriptionType.TEXT_DEFINITION, Acceptability.PREFERRED);
 			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 			//Remove the GB acceptability
-			d.removeAcceptability(RF2Constants.GB_ENG_LANG_REFSET);
+			d.removeAcceptability(RF2Constants.GB_ENG_LANG_REFSET, true);
 			d.setConceptId(c.getId());
 			d.setId(descIdGenerator.getSCTID());
 			c.addDescription(d);
@@ -222,7 +232,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		Description d = Description.withDefaults(definitionInDialect, DescriptionType.TEXT_DEFINITION, Acceptability.PREFERRED);
 		d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		if (replacementContainsVariance) {
-			d.removeAcceptability(RF2Constants.US_ENG_LANG_REFSET);
+			d.removeAcceptability(RF2Constants.US_ENG_LANG_REFSET, true);
 		}
 		d.setConceptId(c.getId());
 		d.setId(descIdGenerator.getSCTID());
