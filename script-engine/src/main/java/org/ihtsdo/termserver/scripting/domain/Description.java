@@ -405,10 +405,22 @@ public class Description extends Component implements ScriptConstants {
 		}
 	}
 	
-	public void removeAcceptability(String refsetId) {
+	public void removeAcceptability(String refsetId, boolean includeLangRefsetEntries) {
 		//If we've no acceptability yet, then nothing to do here
 		if (acceptabilityMap != null) {
 			acceptabilityMap.remove(refsetId);
+		}
+
+		if (includeLangRefsetEntries) {
+			//And also work through the refset entries, inactivating if released and deleting if not
+			List<LangRefsetEntry> lrs = new ArrayList<>(getLangRefsetEntries(ActiveState.BOTH, refsetId));
+			for (LangRefsetEntry l : lrs) {
+				if (l.isReleasedSafely()) {
+					l.setActive(false);
+				} else {
+					this.langRefsetEntries.remove(l);
+				}
+			}
 		}
 	}
 
@@ -592,7 +604,7 @@ public class Description extends Component implements ScriptConstants {
 			}
 			acceptabilityMap.put(lang.getRefsetId(), acceptability);
 		} else {
-			removeAcceptability(lang.getRefsetId());
+			removeAcceptability(lang.getRefsetId(), false);
 		}
 		//We only need one refset entry per description for a given refsetId
 		//Remove any entries with the same id first
