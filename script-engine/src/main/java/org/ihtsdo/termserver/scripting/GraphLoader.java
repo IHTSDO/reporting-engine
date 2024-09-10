@@ -1007,7 +1007,7 @@ public class GraphLoader implements ScriptConstants {
 						Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 						d.setAcceptability(lineItems[LANG_IDX_REFSETID], a);
 					} else {
-						d.removeAcceptability(lineItems[LANG_IDX_REFSETID]);
+						d.removeAcceptability(lineItems[LANG_IDX_REFSETID], false);
 					}
 				}
 			} else {
