@@ -20,8 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LoincRf2MapExpansion extends LoincScript {
-
+	
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
+
 
 	public static final String TAB_RF2_MAP = "RF2 Map";
 	
@@ -30,7 +31,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	private static int REF_IDX_MAP_TARGET = 6;
 	private static int REF_IDX_ATTRIB = 7;
 	
-	AttributePartMapManager attributePartManager;
+	LoincAttributePartMapManager attributePartManager;
 	
 	Map<String, Set<String>> partToLoincTermMap;
 	
@@ -58,14 +59,14 @@ public class LoincRf2MapExpansion extends LoincScript {
 
 	private void runReport() throws TermServerScriptException, InterruptedException, IOException {
 		loadLoincParts();
-		attributePartManager = new AttributePartMapManager(this, loincParts, null);
+		attributePartManager = new LoincAttributePartMapManager(this, partMap, null);
 		loadLoincDetail();
 		expandRf2Map(PRIMARY_REPORT, getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
 	}
 
 	private void expandRf2Map(int tabIdx, File attributeMapFile) throws IOException, TermServerScriptException {
 		int lineNum = 0;
-		TermServerScript.info("Loading Part Attribute Map: " + attributeMapFile);
+		LOGGER.info("Loading Part Attribute Map: {}", attributeMapFile);
 		try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -81,7 +82,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	private void expandRf2Line(int tabIdx, String[] items) throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		Concept value = gl.getConcept(items[REF_IDX_REFCOMPID], false, false);
-		LoincPart part = loincParts.get(items[REF_IDX_MAP_TARGET]);
+		LoincPart part = getLoincPart(items[REF_IDX_MAP_TARGET]);
 		Concept type = gl.getConcept(items[REF_IDX_ATTRIB], false, false);
 		report(tabIdx,
 				items[IDX_ID],
