@@ -9,7 +9,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import org.slf4j.Logger;
@@ -17,15 +17,9 @@ import org.slf4j.LoggerFactory;
 
 public abstract class LoincScript extends ContentPipelineManager implements LoincScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincScript.class);
 
-	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
-	protected static AttributePartMapManager attributePartMapManager;
-	protected Map<String, LoincPart> loincParts = new HashMap<>();
-	protected Map<String, String> partMapNotes = new HashMap<>();
 	protected Set<String> panelLoincNums = new HashSet<>();
-	
-	protected Map<LoincPart, Set<LoincTerm>> missingPartMappings = new HashMap<>();
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
@@ -38,7 +32,6 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	protected String[] getTabNames() {
 		throw new IllegalStateException("Please override getTabNames() in your script");
 	}
-
 
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC Folder
@@ -86,7 +79,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			}
 			LOGGER.info("Loaded {} details for {} loincNums", count, loincDetailMap.size());
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_DETAIL), e);
+			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_LOINC_DETAIL), e);
 		} finally {
 			if (in != null) {
 				try {
@@ -110,7 +103,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			}
 			LOGGER.info("Loaded {} LOINC panels", panelLoincNums.size());
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_PANELS) + " at line " + lineCount, e);
+			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_PANELS) + " at line " + lineCount, e);
 		}
 	}
 	
@@ -124,14 +117,14 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			while (iterator.hasNext()) {
 				CSVRecord thisLine = iterator.next();
 				LoincPart loincPart = LoincPart.parse(thisLine);
-				if (loincParts.containsKey(loincPart.getPartNumber())) {
+				if (partMap.containsKey(loincPart.getPartNumber())) {
 					throw new TermServerScriptException("Duplicate Part Number Loaded: " + loincPart.getPartNumber());
 				}
-				loincParts.put(loincPart.getPartNumber(), loincPart);
+				partMap.put(loincPart.getPartNumber(), loincPart);
 			}
-			LOGGER.info("Loaded " + loincParts.size() + " loinc parts.");
+			LOGGER.info("Loaded " + partMap.size() + " loinc parts.");
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to load " + getInputFile(FILE_IDX_LOINC_PARTS), e);
+			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_LOINC_PARTS), e);
 		}
 	}
 
@@ -154,7 +147,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			while (iterator.hasNext()) {
 				CSVRecord thisLine = iterator.next();
 				LoincTerm loincTerm = LoincTerm.parse(thisLine);
-				loincNumToLoincTermMap.put(loincTerm.getLoincNum(), loincTerm);
+				externalConceptMap.put(loincTerm.getLoincNum(), loincTerm);
 				//Is this term one of the top 20K?
 				String testRank = loincTerm.getCommonTestRank();
 				if (StringUtils.isEmpty(testRank) || testRank.equals("0")) {
@@ -175,7 +168,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				report(tabIdx,"Has Targeted Property not in Top 20K", hasTargettedPropertyNotIn20K);
 			}
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to load " + fullLoincFile, e);
+			throw new TermServerScriptException(FAILED_TO_LOAD + fullLoincFile, e);
 		} finally {
 			additionalThreadCount--;
 		}
@@ -199,36 +192,35 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		return partMapNotes.containsKey(partNum) ? partMapNotes.get(partNum) : "";
 	}
 	
-	@Override
-	protected void reportMissingMappings(int tabIdx) throws TermServerScriptException {
-		for (LoincPart loincPart : missingPartMappings.keySet()) {
-			Set<LoincTerm> loincTerms = missingPartMappings.get(loincPart);
-			//Calculate a total priority based on the sum of the LOINC Term priorities
-			int totalPriority = loincTerms.stream()
-					.mapToInt(lt -> LoincUtils.getLoincTermPriority(lt))
-					.sum();
-			String[] highUsageIndicators = getHighUsageIndicators(loincTerms);
-			report(tabIdx, 
-					loincPart.getPartNumber(),
-					loincPart.getPartName(),
-					loincPart.getPartTypeName(),
-					highUsageIndicators[0],
-					highUsageIndicators[1],
-					totalPriority,
-					loincTerms.size(),
-					highUsageIndicators[2],
-					highUsageIndicators[3],
-					highUsageIndicators[4]);
-		}
+	protected String inScope(String property) throws TermServerScriptException {
+		//Construct a dummy LoincNum with this property and see if it's in scope or not
+		return LoincTemplatedConcept.getAppropriateTemplate("Dummy", property) == null ? "N" : "Y";
 	}
 
-	private String[] getHighUsageIndicators(Set<LoincTerm> loincTerms) {
+	public LoincTerm getLoincTerm(String loincNum) {
+		return (LoincTerm)externalConceptMap.get(loincNum);
+	}
+	
+	public LoincPart getLoincPart(String loincPartNum) {
+		return (LoincPart)partMap.get(loincPartNum);
+	}
+
+	public List<String> getMappingsAllowedAbsent() {
+		return LoincScript.ALLOW_ABSENT_MAPPING;
+	}
+	
+	@Override
+	protected String[] getHighUsageIndicators(Set<ExternalConcept> externalConcepts) {
 		//Return an array containing:
 		//High Usage (Y/N) if any of these terms are high usage (top 20K)
 		//Highest Usage (Y/N) if any of these terms are highest usage (top 2K)
 		//Top Priority Usage
 		//Highest Rank
 		//Highest Usage Count - how many of these items are in the highest usage
+		Set<LoincTerm> loincTerms = externalConcepts.stream()
+				.map(e -> (LoincTerm)e)
+				.collect(Collectors.toSet());
+		
 		String[] highUsageIndicators = new String[]{"N", "N", "", "", ""};
 		int highestUsageCount = 0;
 		for (LoincTerm loincTerm : loincTerms) {
@@ -243,7 +235,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 		highUsageIndicators[2] = loincTerms.stream()
 				.sorted()
-				.map(lt -> { return "(" + lt.getCommonTestRank() + ") " + lt.getLoincNum() + ": " + lt.getDisplayName(); } )
+				.map(lt -> "(" + lt.getCommonTestRank() + ") " + lt.getLoincNum() + ": " + lt.getDisplayName() )
 				.limit(5)
 				.collect(Collectors.joining(",\n"));
 
@@ -255,62 +247,5 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		highUsageIndicators[4] = Integer.toString(highestUsageCount);
 
 		return highUsageIndicators;
-	}
-
-	protected void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
-		Set<String> successfullyModelledLoincNums = successfullyModelled.stream()
-				.map(tc -> tc.getExternalIdentifier())
-				.collect(Collectors.toSet());
-
-		//Collect both included and excluded terms by property
-		Map<String, List<LoincTerm>> included = loincNumToLoincTermMap.values().stream()
-				.filter(lt -> successfullyModelledLoincNums.contains(lt.getLoincNum()))
-				.collect(Collectors.groupingBy(LoincTerm::getProperty));
-
-		Map<String, List<LoincTerm>> excluded = loincNumToLoincTermMap.values().stream()
-				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getLoincNum()))
-				.collect(Collectors.groupingBy(LoincTerm::getProperty));
-
-		Set<String> properties = new LinkedHashSet<>(included.keySet());
-		properties.addAll(excluded.keySet());
-
-		for (String property : properties) {
-			int includedCount = included.getOrDefault(property, new ArrayList<>()).size();
-			int includedInTop2KCount = included.getOrDefault(property, new ArrayList<>()).stream()
-					.filter(LoincTerm::isHighestUsage)
-					.toList().size();
-			int excludedCount = excluded.getOrDefault(property, new ArrayList<>()).size();
-			int excludedInTop2KCount = excluded.getOrDefault(property, new ArrayList<>()).stream()
-					.filter(LoincTerm::isHighestUsage)
-					.toList().size();
-			report(tabIdx, property, inScope(property), includedCount, includedInTop2KCount, excludedCount, excludedInTop2KCount);
-		}
-	}
-
-	private String inScope(String property) throws TermServerScriptException {
-		//Construct a dummy LoincNum with this property and see if it's in scope or not
-		return LoincTemplatedConcept.getAppropriateTemplate("Dummy", property) == null ? "N" : "Y";
-	}
-
-	public void addMissingMapping(String loincPartNum, String loincNum) {
-		LoincPart loincPart = loincParts.get(loincPartNum);
-		if (loincPart == null) {
-			loincPart = new LoincPart(loincNum, "Unknown Type", "Unknown to Part.csv");
-		}
-		Set<LoincTerm> loincTerms = missingPartMappings.get(loincPart);
-		//Have we seen this one before?
-		if (loincTerms == null) {
-			loincTerms = new HashSet<>();
-			missingPartMappings.put(loincPart, loincTerms);
-		}
-		loincTerms.add(loincNumToLoincTermMap.get(loincNum));
-	}
-
-	public LoincTerm getLoincNum(String loincNum) {
-		return loincNumToLoincTermMap.get(loincNum);
-	}
-
-	public static List<String> getMappingsAllowedAbsent() {
-		return ALLOW_ABSENT_MAPPING;
 	}
 }

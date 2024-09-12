@@ -19,7 +19,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String CHANGES_SINCE_LAST_ITERATION = "Changes since last iteration";
 	public static final String HIGHEST_USAGE_COUNTS = "Highest usage counts";
 	public static final String CONTENT_COUNT = "Content counts";
-
+	public static final String FAILED_TO_LOAD = "Failed to load ";
+	
 	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
@@ -29,6 +30,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected static final int FILE_IDX_CONCEPT_IDS = 7;
 	protected static final int FILE_IDX_DESC_IDS = 8;
 	protected static final int FILE_IDX_REL_IDS = 9;
+	
+	protected Map<String, ExternalConcept> externalConceptMap = new HashMap<>();
+	protected AttributePartMapManager attributePartMapManager;
+	protected Map<String, Part> partMap = new HashMap<>();
+	protected Map<String, String> partMapNotes = new HashMap<>();
+	protected Map<Part, Set<ExternalConcept>> missingPartMappings = new HashMap<>();
 	
 	protected Concept scheme;
 	protected String namespace;
@@ -74,8 +81,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			switch (runMode) {
 				case NEW: outputAllConceptsToDelta(successfullyModelled);
 					break;
-				case INCREMENTAL_API:
-				case INCREMENTAL_DELTA:
+				case INCREMENTAL_API, INCREMENTAL_DELTA:
 					determineChangeSet(successfullyModelled);
 					conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 					break;
@@ -113,10 +119,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				});
 	}
 
-	protected abstract void reportMissingMappings(int tabIdx) throws TermServerScriptException;
-
-	protected abstract void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException;
-
 	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
@@ -131,7 +133,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 
 	private void determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
-		LOGGER.info("Determining change set for " + successfullyModelled.size() + " successfully modelled concepts");
+		LOGGER.info("Determining change set for {} successfully modelled concepts", successfullyModelled.size());
 
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
 
@@ -369,6 +371,38 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 		return differencesList;
 	}
+	
+	protected void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+		Set<String> successfullyModelledLoincNums = successfullyModelled.stream()
+				.map(tc -> tc.getExternalIdentifier())
+				.collect(Collectors.toSet());
+
+		//Collect both included and excluded terms by property
+		Map<String, List<ExternalConcept>> included = externalConceptMap.values().stream()
+				.filter(lt -> successfullyModelledLoincNums.contains(lt.getExternalIdentifier()))
+				.collect(Collectors.groupingBy(ExternalConcept::getProperty));
+
+		Map<String, List<ExternalConcept>> excluded = externalConceptMap.values().stream()
+				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getExternalIdentifier()))
+				.collect(Collectors.groupingBy(ExternalConcept::getProperty));
+
+		Set<String> properties = new LinkedHashSet<>(included.keySet());
+		properties.addAll(excluded.keySet());
+
+		for (String property : properties) {
+			int includedCount = included.getOrDefault(property, new ArrayList<>()).size();
+			int includedInTop2KCount = included.getOrDefault(property, new ArrayList<>()).stream()
+					.filter(ExternalConcept::isHighestUsage)
+					.toList().size();
+			int excludedCount = excluded.getOrDefault(property, new ArrayList<>()).size();
+			int excludedInTop2KCount = excluded.getOrDefault(property, new ArrayList<>()).stream()
+					.filter(ExternalConcept::isHighestUsage)
+					.toList().size();
+			report(tabIdx, property, inScope(property), includedCount, includedInTop2KCount, excludedCount, excludedInTop2KCount);
+		}
+	}
+	
+	protected abstract String inScope(String property) throws TermServerScriptException;
 
 	protected abstract void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException;
 
@@ -447,6 +481,49 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				report(getTab(TAB_IOI),TOP_88, loincNum, "Not Modelled");
 			}
 		}
+	}
+
+	public abstract List<String> getMappingsAllowedAbsent();
+	
+	protected void reportMissingMappings(int tabIdx) throws TermServerScriptException {
+		for (Part part : missingPartMappings.keySet()) {
+			Set<ExternalConcept> externalConcepts = missingPartMappings.get(part);
+			String[] highUsageIndicators = getHighUsageIndicators(externalConcepts);
+			report(tabIdx, 
+					part.getPartNumber(),
+					part.getPartName(),
+					part.getPartTypeName(),
+					highUsageIndicators[0],
+					highUsageIndicators[1],
+					"N/A",
+					externalConcepts.size(),
+					highUsageIndicators[2],
+					highUsageIndicators[3],
+					highUsageIndicators[4]);
+		}
+	}
+
+	protected abstract String[] getHighUsageIndicators(Set<ExternalConcept> externalConcepts);
+
+	public ExternalConcept getExternalConcept(String externalIdentifier) {
+		return externalConceptMap.get(externalIdentifier);
+	}
+	
+	public void addMissingMapping(String partNum, String externalIdentifier) {
+		Part part = partMap.get(partNum);
+		if (part == null) {
+			part = new Part(partNum, "Unknown Type", "Unknown to part input file.");
+		}
+		missingPartMappings.computeIfAbsent(part, key -> new HashSet<>())
+							.add(getExternalConcept(externalIdentifier));
+	}
+
+	public Map<String, ExternalConcept> getExternalConceptMap() {
+		return externalConceptMap;
+	}
+	
+	public AttributePartMapManager getAttributePartManager() {
+		return attributePartMapManager;
 	}
 
 }
