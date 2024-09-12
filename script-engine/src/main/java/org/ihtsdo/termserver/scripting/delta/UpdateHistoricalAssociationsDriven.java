@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -109,7 +110,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				String thisTerm = d.getTerm();
 				if (d.getType().equals(DescriptionType.FSN)) {
-					thisTerm = SnomedUtils.deconstructFSN(thisTerm, true)[0];
+					thisTerm = SnomedUtilsBase.deconstructFSN(thisTerm, true)[0];
 				}
 				thisTerm = thisTerm.replace("-", "").replaceAll("  ", " ");
 				thisConceptTerms.add(thisTerm);
@@ -727,7 +728,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		return "";
 	}
 
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	@Override
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details, getCathyNotes(c));
 	}
 
