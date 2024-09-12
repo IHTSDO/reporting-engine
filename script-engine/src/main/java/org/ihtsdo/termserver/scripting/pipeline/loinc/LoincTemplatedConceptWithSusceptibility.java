@@ -3,18 +3,19 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptWithSusceptibility(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptWithSusceptibility(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 
-	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
-		LoincTemplatedConceptWithSusceptibility templatedConcept = new LoincTemplatedConceptWithSusceptibility(loincNum);
+	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptWithSusceptibility templatedConcept = new LoincTemplatedConceptWithSusceptibility(externalConcept);
 		templatedConcept.typeMap.put("PROPERTY", gl.getConcept("370130000 |Property (attribute)|"));
 		templatedConcept.typeMap.put("SCALE", gl.getConcept("370132008 |Scale type (attribute)|"));
 		templatedConcept.typeMap.put("TIME", gl.getConcept("370134009 |Time aspect (attribute)|"));
@@ -24,7 +25,7 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		templatedConcept.typeMap.put("DEVICE", gl.getConcept("424226004 |Using device (attribute)|"));
 		templatedConcept.typeMap.put("CHALLENGE", precondition);
 		
-		templatedConcept.preferredTermTemplate = "[PROPERTY] to [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] to [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
 
@@ -56,7 +57,7 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		if (attributes.isEmpty()) {
 			attributes.add(null);
 			if (!hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
-				processingFlags.add(ProcessingFlag.DROP_OUT);
+				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
 		}
 		return attributes;

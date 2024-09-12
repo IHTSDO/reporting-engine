@@ -3,13 +3,14 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 public class LoincTemplatedConceptWithRatio extends LoincTemplatedConcept {
 
 	private static final String SEPARATOR = "#SEPARATOR#";
 
-	private LoincTemplatedConceptWithRatio(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptWithRatio(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 
 	@Override
@@ -17,12 +18,12 @@ public class LoincTemplatedConceptWithRatio extends LoincTemplatedConcept {
 		return gl.getConcept("540131010000107 |Ratio observable (observable entity)|");
 	}
 
-	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
-		LoincTemplatedConceptWithRatio templatedConcept = new LoincTemplatedConceptWithRatio(loincNum);
+	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptWithRatio templatedConcept = new LoincTemplatedConceptWithRatio(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
 		templatedConcept.typeMap.put("DIVISORS", gl.getConcept("704325000 |Relative to (attribute)|"));
 		//The 'to' changes to a slash in the PT
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT]" + SEPARATOR + "[DIVISORS] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT]" + SEPARATOR + "[DIVISORS] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
 

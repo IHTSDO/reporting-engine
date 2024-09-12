@@ -3,20 +3,21 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoincTemplatedConceptWithDirectSite extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptWithDirectSite(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptWithDirectSite(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 	
-	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
-		LoincTemplatedConceptWithDirectSite templatedConcept = new LoincTemplatedConceptWithDirectSite(loincNum);
+	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptWithDirectSite templatedConcept = new LoincTemplatedConceptWithDirectSite(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
 	

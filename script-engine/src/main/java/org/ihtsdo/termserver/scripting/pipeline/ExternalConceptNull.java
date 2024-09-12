@@ -1,0 +1,34 @@
+package org.ihtsdo.termserver.scripting.pipeline;
+
+public class ExternalConceptNull extends ExternalConcept {
+	
+	public ExternalConceptNull(String externalIdentifier) {
+		this.externalIdentifier = externalIdentifier;
+	}
+	
+	public ExternalConceptNull(String externalIdentifier, String property) {
+		this.externalIdentifier = externalIdentifier;
+		this.property = property;
+	}
+
+	@Override
+	public boolean isHighUsage() {
+		return false;
+	}
+
+	@Override
+	public boolean isHighestUsage() {
+		return false;
+	}
+
+	@Override
+	public String getDisplayName() {
+		return "Dummy Concept";
+	}
+
+	@Override
+	protected String[] getCommonColumns() {
+		return new String[0];
+	}
+
+}

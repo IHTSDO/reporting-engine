@@ -6,17 +6,18 @@ import java.util.List;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptWithComponent(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptWithComponent(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 	
-	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
-		LoincTemplatedConceptWithComponent templatedConcept = new LoincTemplatedConceptWithComponent(loincNum);
+	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptWithComponent templatedConcept = new LoincTemplatedConceptWithComponent(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
 	

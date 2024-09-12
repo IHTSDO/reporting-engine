@@ -3,24 +3,25 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptWithProcess(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptWithProcess(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 
-	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
-		LoincTemplatedConceptWithProcess templatedConcept = new LoincTemplatedConceptWithProcess(loincNum);
+	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptWithProcess templatedConcept = new LoincTemplatedConceptWithProcess(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("704320005 |Towards (attribute)|"));
 
 		//See https://confluence.ihtsdotools.org/display/SCTEMPLATES/Process+Observable+for+LOINC+%28observable+entity%29+-+v1.0
 		//[property] of [characterizes] of [process output] in [process duration] in [direct site] by [technique] using [using device] [precondition] (observable entity)
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of excretion of [COMPONENT] in [TIME] in [SYSTEM] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] of excretion of [COMPONENT] in [TIME] in [SYSTEM] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
 
@@ -47,7 +48,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 		if (attributes.isEmpty()) {
 			attributes.add(null);
 			if (!hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
-				processingFlags.add(ProcessingFlag.DROP_OUT);
+				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
 		}
 		return attributes;

@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.pipeline;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -20,6 +22,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String HIGHEST_USAGE_COUNTS = "Highest usage counts";
 	public static final String CONTENT_COUNT = "Content counts";
 	public static final String FAILED_TO_LOAD = "Failed to load ";
+	
+	public static final String FSN_FAILURE = "FSN indicates failure";
+
+	// Regular expression to find tokens within square brackets
+	private static final String ALL_CAPS_SLOT_REGEX = "\\[([A-Z]+)\\]";
+	private static final Pattern allCapsSlotPattern = Pattern.compile(ALL_CAPS_SLOT_REGEX);
 	
 	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
 	
@@ -103,6 +111,16 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 		}
 	}
+	
+	protected abstract void loadSupportingInformation() throws TermServerScriptException;
+
+	protected abstract void importPartMap() throws TermServerScriptException;
+
+	protected abstract Set<TemplatedConcept> doModeling() throws TermServerScriptException;
+
+	protected abstract String[] getTabNames();
+
+	protected abstract Set<String> getObjectionableWords();
 
 	private void reportSummaryCounts() throws TermServerScriptException {
 		int summaryTabIdx = getTab(TAB_SUMMARY);
@@ -163,7 +181,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				inactivateConcept(existingConcept);
 				conceptCreator.outputRF2Inactivation(existingConcept);
 			}
-			doProposedModelComparison(TemplatedConceptNull.create(inactivatingCode));
+			doProposedModelComparison(TemplatedConceptNull.createNull(inactivatingCode, null));
 			incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, TemplatedConcept.IterationIndicator.REMOVED.toString());
 
 			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
@@ -401,18 +419,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			report(tabIdx, property, inScope(property), includedCount, includedInTop2KCount, excludedCount, excludedInTop2KCount);
 		}
 	}
-	
-	protected abstract String inScope(String property) throws TermServerScriptException;
-
-	protected abstract void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException;
-
-	protected abstract void loadSupportingInformation() throws TermServerScriptException;
-
-	protected abstract void importPartMap() throws TermServerScriptException;
-
-	protected abstract Set<TemplatedConcept> doModeling() throws TermServerScriptException;
-
-	protected abstract String[] getTabNames() ;
 
 	public int getTab(String tabName) throws TermServerScriptException {
 		String[] tabNames = getTabNames();
@@ -524,6 +530,130 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	public AttributePartMapManager getAttributePartManager() {
 		return attributePartMapManager;
+	}
+	
+	protected void doProposedModelComparison(TemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
+		//Do we have this loincNum
+		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
+		Concept existingConcept = loincTemplatedConcept.getExistingConcept();
+		String loincNum = loincTemplatedConcept.getExternalIdentifier();
+		ExternalConcept externalConcept = getExternalConcept(loincNum);
+		
+		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String proposedSCG = proposedLoincConcept == null ? "N/A" : proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedLoincConcept);
+		
+		//We might have inactivated descriptions in the existing concept if they've been changed, so
+		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(existingConcept, true);
+		String existingConceptId = existingConcept == null ? "N/A" : existingConcept.getId();
+		report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
+				loincNum, 
+				proposedLoincConcept != null ? proposedLoincConcept.getId() : existingConceptId,
+				loincTemplatedConcept.getIterationIndicator(),
+				loincTemplatedConcept.getClass().getSimpleName(),
+				loincTemplatedConcept.getDifferencesFromExistingConcept(),
+				proposedDescriptionsStr,
+				previousDescriptionsStr,
+				proposedSCG, 
+				previousSCG,
+				externalConcept.getCommonColumns());
+	}
+
+	public abstract TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept)
+			throws TermServerScriptException ;
+	
+	protected void checkConceptSufficientlyModeled(String contentType, String externalIdentifier, TemplatedConcept templatedConcept, Set<TemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
+		if (templatedConcept != null
+				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
+				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
+			successfullyModelledConcepts.add(templatedConcept);
+			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content added - " + contentType);
+		} else {
+			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
+			if (!externalConceptMap.containsKey(externalIdentifier)) {
+				incrementSummaryCount("Missing LoincNums","LoincNum in Detail file not in LOINC.csv - " + externalIdentifier);
+			} else if (externalConceptMap.get(externalIdentifier).isHighestUsage() && templatedConcept != null) {
+				//Templates that come back as null will already have been counted as out of scope
+				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
+				report(getTab(TAB_IOI), "Highest Usage Mapping Failure", externalIdentifier);
+			}
+		}
+	}
+
+	protected void validateTemplatedConcept(TemplatedConcept templatedConcept) throws TermServerScriptException {
+		ExternalConcept externalConcept = templatedConcept.getExternalConcept();
+		if (templatedConcept instanceof TemplatedConceptNull) {
+			report(getTab(TAB_MODELING_ISSUES),
+					externalConcept.getExternalIdentifier(),
+					ContentPipelineManager.getSpecialInterestIndicator(externalConcept.getExternalIdentifier()),
+					externalConcept.getDisplayName(),
+					"Does not meet criteria for template match",
+					"Property: " + externalConcept.getProperty());
+		} else {
+			String fsn = templatedConcept.getConcept().getFsn();
+			boolean insufficientTermPopulation = fsn.contains("[");
+			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
+			if (insufficientTermPopulation && hasAllCapsSlot(fsn)) {
+				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn);
+			}
+
+			if (templatedConcept.getConcept().hasIssues() ) {
+				report(getTab(TAB_MODELING_ISSUES),
+						externalConcept.getExternalIdentifier(),
+						ContentPipelineManager.getSpecialInterestIndicator(externalConcept.getExternalIdentifier()),
+						externalConcept.getDisplayName(),
+						templatedConcept.getConcept().getIssues(",\n"));
+			}
+		}
+		flushFilesSoft();
+	}
+	
+	/**
+	 * Checks if a string contains tokens enclosed in square brackets that are all in capital letters.
+	 *
+	 * @param fsn The string to check.
+	 * @return true if there is at least one token in all caps within square brackets; false otherwise.
+	 */
+	private boolean hasAllCapsSlot(String fsn) {
+		Matcher matcher = allCapsSlotPattern.matcher(fsn);
+		return matcher.find();
+	}
+	
+	protected boolean containsObjectionableWord(ExternalConcept externalConcept) throws TermServerScriptException {
+		//Does this LoincNum feature an objectionable word?  Skip if so.
+		for (String objectionableWord : getObjectionableWords()) {
+			if (externalConcept.getDisplayName() == null) {
+				LOGGER.debug("Unable to obtain display name for {}", externalConcept.getExternalIdentifier());
+			} else if (externalConcept.getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
+				report(getTab(TAB_MODELING_ISSUES),
+						externalConcept.getExternalIdentifier(),
+						ContentPipelineManager.getSpecialInterestIndicator( externalConcept.getExternalIdentifier()),
+						externalConcept.getDisplayName(),
+						"Contains objectionable word - " + objectionableWord);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected boolean confirmExternalIdentifierExists(String externalIdentifier) throws TermServerScriptException {
+		//Do we have consistency between the detail map and the main loincTermMap?
+		if (!externalConceptMap.containsKey(externalIdentifier)) {
+			report(getTab(TAB_MODELING_ISSUES),
+					externalIdentifier,
+					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
+					"N/A",
+					"Failed integrity. Identifier " + externalIdentifier + " from detail file, not known in main external concept file.");
+			return false;
+		}
+		return true;
+	}
+	
+	
+	protected String inScope(String property) throws TermServerScriptException {
+		//Construct a dummy LoincNum with this property and see if it's in scope or not
+		ExternalConceptNull dummy = new ExternalConceptNull("Dummy", property);
+		return getAppropriateTemplate(dummy) == null ? "N" : "Y";
 	}
 
 }

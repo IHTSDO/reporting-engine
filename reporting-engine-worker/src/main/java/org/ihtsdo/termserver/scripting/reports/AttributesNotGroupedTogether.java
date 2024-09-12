@@ -119,7 +119,7 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 		}
 	}
 	
-	protected boolean report(Concept c, Object... details) throws TermServerScriptException {
+	public boolean report(Concept c, Object... details) throws TermServerScriptException {
 		countIssue(c);
 		String defn = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 		return super.report(c, defn, c.getEffectiveTime(), details);

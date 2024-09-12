@@ -15,7 +15,7 @@ public abstract class AttributePartMapManager {
 	protected ContentPipelineManager cpm;
 	protected GraphLoader gl;
 	protected Map<String, Part> parts;
-	protected Map<String, RelationshipTemplate> partToAttributeMap;
+	protected Map<String, RelationshipTemplate> partToAttributeMap = new HashMap<>();
 	protected Map<String, List<Concept>> hardCodedMappings = new HashMap<>();
 	protected Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	protected Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
@@ -53,7 +53,7 @@ public abstract class AttributePartMapManager {
 			cpm.report(idxTab,
 					externalIdentifier,
 					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
-					cpm.getExternalConcept(externalIdentifier).getLongCommonName(),
+					cpm.getExternalConcept(externalIdentifier).getDisplayName(),
 					"No attribute mapping available",
 					loincPartStr);
 			cpm.addMissingMapping(partNum, externalIdentifier);

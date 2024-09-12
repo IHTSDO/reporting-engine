@@ -26,5 +26,7 @@ public abstract class ExternalConcept {
 
 	public abstract boolean isHighestUsage();
 	
-	public abstract String getLongCommonName();
+	protected abstract String[] getCommonColumns();
+
+	protected abstract String getDisplayName();
 }
