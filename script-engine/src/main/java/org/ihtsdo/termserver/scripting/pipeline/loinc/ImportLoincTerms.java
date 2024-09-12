@@ -40,7 +40,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	private static final String ALL_CAPS_SLOT_REGEX = "\\[([A-Z]+)\\]";
 	private static final Pattern allCapsSlotPattern = Pattern.compile(ALL_CAPS_SLOT_REGEX);
 	
-	//private List<String> previousIterationLoincNums = new ArrayList<>();
 	int existedPreviousIteration = 0;
 
 	protected String[] tabNames = new String[] {
@@ -90,9 +89,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	@Override
 	protected void importPartMap() throws TermServerScriptException {
-		attributePartMapManager = new AttributePartMapManager(this, loincParts, partMapNotes);
+		attributePartMapManager = new LoincAttributePartMapManager(this, partMap, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_LOINC_PARTS_MAP_BASE_FILE));
-		LoincTemplatedConcept.initialise(this, gl, attributePartMapManager, loincNumToLoincTermMap, loincDetailMap, loincParts);
+		LoincTemplatedConcept.initialise(this, loincDetailMap);
 	}
 
 	@Override
@@ -120,9 +119,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content added - " + contentType);
 		} else {
 			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
-			if (!loincNumToLoincTermMap.containsKey(loincNum)) {
+			if (!externalConceptMap.containsKey(loincNum)) {
 				incrementSummaryCount("Missing LoincNums","LoincNum in Detail file not in LOINC.csv - " + loincNum);
-			} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage() && templatedConcept != null) {
+			} else if (externalConceptMap.get(loincNum).isHighestUsage() && templatedConcept != null) {
 				//Templates that come back as null will already have been counted as out of scope
 				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
 				report(getTab(TAB_IOI), "Highest Usage Mapping Failure", loincNum);
@@ -147,7 +146,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
-					loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+					getLoincTerm(loincNum).getDisplayName(),
 					"Does not feature one of COMPONENT_PN or COMPNUM_PN");
 			return null;
 		}
@@ -159,7 +158,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	private void validateTemplatedConcept(String loincNum, LoincTemplatedConcept templatedConcept) throws TermServerScriptException {
 		if (templatedConcept == null) {
-			LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
+			LoincTerm loincTerm = getLoincTerm(loincNum);
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
@@ -178,7 +177,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
 						ContentPipelineManager.getSpecialInterestIndicator(loincNum),
-						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+						getLoincTerm(loincNum).getDisplayName(),
 						templatedConcept.getConcept().getIssues(",\n"));
 			}
 		}
@@ -199,14 +198,14 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	private boolean loincNumContainsObjectionableWord(String loincNum) throws TermServerScriptException {
 		//Does this LoincNum feature an objectionable word?  Skip if so.
 		for (String objectionableWord : objectionableWords) {
-			if (loincNumToLoincTermMap.get(loincNum).getDisplayName() == null) {
-				LOGGER.debug("Unable to obtain display name for " + loincNum);
-			}
-			if (loincNumToLoincTermMap.get(loincNum).getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
+			LoincTerm loincTerm = getLoincTerm(loincNum);
+			if (loincTerm.getDisplayName() == null) {
+				LOGGER.debug("Unable to obtain display name for {}", loincNum);
+			} else if (loincTerm.getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
 				report(getTab(TAB_MODELING_ISSUES),
 						loincNum,
 						ContentPipelineManager.getSpecialInterestIndicator(loincNum),
-						loincNumToLoincTermMap.get(loincNum).getDisplayName(),
+						loincTerm.getDisplayName(),
 						"Contains objectionable word - " + objectionableWord);
 				return true;
 			}
@@ -216,7 +215,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	private boolean confirmLoincNumExists(String loincNum) throws TermServerScriptException {
 		//Do we have consistency between the detail map and the main loincTermMap?
-		if (!loincNumToLoincTermMap.containsKey(loincNum)) {
+		if (!externalConceptMap.containsKey(loincNum)) {
 			report(getTab(TAB_MODELING_ISSUES),
 					loincNum,
 					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
@@ -243,7 +242,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
 		Concept existingConcept = loincTemplatedConcept.getExistingConcept();
 		String loincNum = loincTemplatedConcept.getExternalIdentifier();
-		LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
+		LoincTerm loincTerm = getLoincTerm(loincNum);
 		
 		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String proposedSCG = proposedLoincConcept == null ? "N/A" : proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
