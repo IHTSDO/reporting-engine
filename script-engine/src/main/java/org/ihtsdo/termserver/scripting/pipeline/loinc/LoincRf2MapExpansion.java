@@ -11,10 +11,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-
-
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +20,6 @@ import org.slf4j.LoggerFactory;
 public class LoincRf2MapExpansion extends LoincScript {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
-
 
 	public static final String TAB_RF2_MAP = "RF2 Map";
 	
@@ -110,7 +107,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 
 	private void populatePartToLoincTermMap() {
 		partToLoincTermMap = new HashMap<>();
-		for (Map.Entry<String, Map<String, LoincDetail>> entry : loincDetailMap.entrySet()) {
+		for (Map.Entry<String, Map<String, LoincDetail>> entry : loincDetailMapOfMaps.entrySet()) {
 			for (LoincDetail detail : entry.getValue().values()) {
 				//Have we seen this partNum before
 				Set<String> loincTerms = partToLoincTermMap.get(detail.getPartNumber());
@@ -161,5 +158,10 @@ public class LoincRf2MapExpansion extends LoincScript {
 	@Override
 	protected void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException {
 		throw new NotImplementedException();
+	}
+
+	@Override
+	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
+		throw new IllegalStateException("This class is not expected to do any modelling");
 	}
 }
