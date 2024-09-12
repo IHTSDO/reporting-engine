@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.pipeline;
 
 public interface ContentPipeLineConstants {
+	
+	enum ProcessingFlag { ALLOW_SPECIMEN, MARK_AS_PRIMITIVE, DROP_OUT, SPLIT_TO_GROUP_PER_COMPONENT, ALLOW_BLANK_COMPONENT, SUPPRESS_METHOD_TERM }
 
 	public final String TAB_SUMMARY = "Summary";
 	public final String TAB_LOINC_DETAIL_MAP_NOTES = "LOINC Detail Map Notes";

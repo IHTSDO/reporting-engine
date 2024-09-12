@@ -4,20 +4,21 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptPanel(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptPanel(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 
 	private Concept panelParent;
 
-	public static LoincTemplatedConcept create(String panelLoincNum) throws TermServerScriptException {
-		LoincTemplatedConceptPanel templatedConcept = new LoincTemplatedConceptPanel(panelLoincNum);
+	public static LoincTemplatedConceptPanel create(ExternalConcept externalConcep) throws TermServerScriptException {
+		LoincTemplatedConceptPanel templatedConcept = new LoincTemplatedConceptPanel(externalConcep);
 		templatedConcept.createConcept();
 		templatedConcept.generateDescriptions();
 		return templatedConcept;
@@ -38,7 +39,7 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 	}
 
 	private void generateDescriptions() throws TermServerScriptException {
-		LoincTerm loincTerm = getLoincTerm(externalIdentifier);
+		LoincTerm loincTerm = getLoincTerm();
 		String ptStr = loincTerm.getLongCommonName();
 
 		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED)
@@ -64,4 +65,5 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 		//Panels have no attributes
 		return new ArrayList<>();
 	}
+
 }
