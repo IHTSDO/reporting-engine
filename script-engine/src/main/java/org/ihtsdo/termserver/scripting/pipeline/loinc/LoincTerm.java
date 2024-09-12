@@ -1,17 +1,11 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import org.apache.commons.csv.CSVRecord;
-
-
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class LoincTerm implements Comparable<LoincTerm> {
+public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTerm.class);
-
-	private String loincNum;
 	private String component;
 	private String property;
 	private String timeAspct;
@@ -58,7 +52,7 @@ public class LoincTerm implements Comparable<LoincTerm> {
 	
 	@Override
 	public int hashCode() {
-		return loincNum.hashCode();
+		return externalIdentifier.hashCode();
 	}
 	
 	@Override
@@ -70,10 +64,10 @@ public class LoincTerm implements Comparable<LoincTerm> {
 	}
 	
 	public String getLoincNum() {
-		return loincNum;
+		return externalIdentifier;
 	}
 	public void setLoincNum(String loincNum) {
-		this.loincNum = loincNum;
+		this.externalIdentifier = loincNum;
 	}
 	public String getComponent() {
 		return component;
