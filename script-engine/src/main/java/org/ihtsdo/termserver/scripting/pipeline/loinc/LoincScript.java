@@ -21,8 +21,10 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	protected Set<String> panelLoincNums = new HashSet<>();
 	
+	protected static Set<String> objectionableWords = new HashSet<>(Arrays.asList("panel"));
+
 	//Map of LoincNums to ldtColumnNames to details
-	protected static Map<String, Map<String, LoincDetail>> loincDetailMap = new HashMap<>();
+	protected static Map<String, Map<String, LoincDetail>> loincDetailMapOfMaps = new HashMap<>();
 
 	public static final String LOINC_TIME_PART = "LP6969-2";
 	public static final String LOINC_OBSERVATION_PART = "LP442509-8";
@@ -63,10 +65,10 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				if (count > 0) {
 					LoincDetail loincDetail = LoincDetail.parse(line.split(TAB));
 					//Have we seen anything details for this LoincNum?
-					Map<String, LoincDetail> partDetailMap = loincDetailMap.get(loincDetail.getLoincNum());
+					Map<String, LoincDetail> partDetailMap = loincDetailMapOfMaps.get(loincDetail.getLoincNum());
 					if (partDetailMap == null) {
 						partDetailMap = new HashMap<>();
-						loincDetailMap.put(loincDetail.getLoincNum(), partDetailMap);
+						loincDetailMapOfMaps.put(loincDetail.getLoincNum(), partDetailMap);
 					}
 					//Now have we seen anything for this loincPart before?
 					if (partDetailMap.containsKey(loincDetail.getLDTColumnName())) {
@@ -77,7 +79,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				count++;
 				line = in.readLine();
 			}
-			LOGGER.info("Loaded {} details for {} loincNums", count, loincDetailMap.size());
+			LOGGER.info("Loaded {} details for {} loincNums", count, loincDetailMapOfMaps.size());
 		} catch (Exception e) {
 			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_LOINC_DETAIL), e);
 		} finally {
@@ -191,11 +193,6 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	protected String getPartMapNotes(String partNum) {
 		return partMapNotes.containsKey(partNum) ? partMapNotes.get(partNum) : "";
 	}
-	
-	protected String inScope(String property) throws TermServerScriptException {
-		//Construct a dummy LoincNum with this property and see if it's in scope or not
-		return LoincTemplatedConcept.getAppropriateTemplate("Dummy", property) == null ? "N" : "Y";
-	}
 
 	public LoincTerm getLoincTerm(String loincNum) {
 		return (LoincTerm)externalConceptMap.get(loincNum);
@@ -247,5 +244,10 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		highUsageIndicators[4] = Integer.toString(highestUsageCount);
 
 		return highUsageIndicators;
+	}
+	
+	@Override
+	protected Set<String> getObjectionableWords() {
+		return objectionableWords;
 	}
 }
