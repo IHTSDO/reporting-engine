@@ -6,44 +6,25 @@ import java.io.FileReader;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-
-
-import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.ihtsdo.termserver.scripting.pipeline.AttributePartMapManager;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AttributePartMapManager implements LoincScriptConstants {
+public class LoincAttributePartMapManager extends AttributePartMapManager implements LoincScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
-
-	private static int NOT_SET = -1;
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincAttributePartMapManager.class);
 
 	private LoincScript ls;
-	private GraphLoader gl;
-	private Map<String, LoincPart> loincParts;
-	private Map<String, RelationshipTemplate> loincPartToAttributeMap;
-	private Map<String, List<Concept>> hardCodedMappings = new HashMap<>();
-	private Map<Concept, Concept> knownReplacementMap = new HashMap<>();
-	private Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
-	private final Map<String, String> partMapNotes;
-
-	private int unsuccessfullTypeReplacement = 0;
-	private int successfullTypeReplacement = 0;
-	private int successfullValueReplacement = 0;
-	private int unsuccessfullValueReplacement = 0;
-	private int lexicallyMatchingMapReuse = 0;
 	
-	public AttributePartMapManager (LoincScript ls, Map<String, LoincPart> loincParts, Map<String, String> partMapNotes) {
+	public LoincAttributePartMapManager (LoincScript ls, Map<String, Part> partMap, Map<String, String> partMapNotes) {
+		super(ls, partMap, partMapNotes);
 		this.ls = ls;
-		this.gl = ls.getGraphLoader();
-		this.loincParts = loincParts;
-		this.partMapNotes = partMapNotes;
 	}
 
-	private void populateKnownMappings() throws TermServerScriptException {
+	protected void populateKnownMappings() throws TermServerScriptException {
 		knownReplacementMap.put(gl.getConcept("720309005 |Immunoglobulin G antibody to Streptococcus pneumoniae 43 (substance)|"), gl.getConcept("767402003 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 43 (substance)|"));
 		knownReplacementMap.put(gl.getConcept("720308002 |Immunoglobulin G antibody to Streptococcus pneumoniae 34 (substance)|"), gl.getConcept("767408004 |Immunoglobulin G antibody to Streptococcus pneumoniae Danish serotype 34 (substance)|"));
 		knownReplacementMap.put(gl.getConcept("54708003 |Extended zinc insulin (substance)|"), gl.getConcept("10329000 |Zinc insulin (substance)|"));
@@ -59,84 +40,31 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		populateHardCodedMappings();
 	}
 
-	public List<RelationshipTemplate> getPartMappedAttributeForType(int idxTab, String loincNum, String loincPartNum, Concept attributeType) throws TermServerScriptException {
-		if (hardCodedMappings.containsKey(loincPartNum)) {
-			List<RelationshipTemplate> mappings = new ArrayList<>();
-			for (Concept attributeValue : hardCodedMappings.get(loincPartNum)) {
-				mappings.add(new RelationshipTemplate(attributeType, attributeValue));
-			}
-			return mappings;
-		} else if (containsMappingForLoincPartNum(loincPartNum)) {
-			RelationshipTemplate rt = loincPartToAttributeMap.get(loincPartNum).clone();
-			rt.setType(attributeType);
-			return List.of(rt);
-		} else if (idxTab != NOT_SET && !LoincScript.getMappingsAllowedAbsent().contains(loincPartNum)) {
-			//Some special rules exist for certain LOINC parts, so we don't need to report if we have one of those.
-			String loincPartStr = loincParts.get(loincPartNum) == null ? "Loinc Part Not Known - " + loincPartNum : loincParts.get(loincPartNum).toString();
-			ls.report(idxTab,
-					loincNum,
-					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
-					ls.getLoincNum(loincNum).getLongCommonName(),
-					"No attribute mapping available",
-					loincPartStr);
-			ls.addMissingMapping(loincPartNum, loincNum);
-		}
-		return new ArrayList<>();
+	private LoincPart getLoincPart(String loincPartNum) {
+		return (LoincPart) parts.get(loincPartNum);
 	}
-	
+
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
 		// Output format from Snap2SNOMED is expected to be:
 		// Source code[0]   Source display  Status  PartTypeName    Target code[4]  Target display  Relationship type code  Relationship type display   No map flag[8] Status[9]
-		loincPartToAttributeMap = new HashMap<>();
 		populateKnownMappings();
 		int lineNum = 0;
 		Set<String> partsSeen = new HashSet<>();
 		List<String> mappingNotes = new ArrayList<>();
 
 		try {
-			LOGGER.info("Loading Part / Attribute Map Base File: " + attributeMapFile);
+			LOGGER.info("Loading Part / Attribute Map Base File: {}", attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					lineNum++;
 					if (!line.isEmpty() && lineNum > 1) {
-						String[] items = line.split("\t");
-						String partNum = items[0];
-						//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
-						if (items[9].equals("UNMAPPED") ||
-								(items[9].equals("DRAFT") && items[4].isEmpty())) {
-							//Skip this one
-						} else if (items[8].equals("true")) {
-							//And we can have items that report being mapped, but with 'no map' - warn about those.
-							mappingNotes.add("Map indicates part mapped to 'No Map'");
-						} else if (items[9].equals("REJECTED")) {
-							//And we can have items that report being mapped, but with 'no map' - warn about those.
-							mappingNotes.add("Map indicates non-viable map - " + items[9]);
-						} else if (partsSeen.contains(partNum)) {
-							//Have we seen this part before?  Map should now be unique
-							mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
-						} else {
-							partsSeen.add(partNum);
-							Concept attributeValue = gl.getConcept(items[4], false, true);
-							LoincPart part = loincParts.get(partNum);
-							String partName = part == null ? "Unlisted" : part.getPartName();
-							String partStatus = part == null ? "Unlisted" : part.getStatus().name();
-							attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
-							if (attributeValue != null && attributeValue.isActive()) {
-								mappingNotes.add("Inactive concept");
-							}
-							loincPartToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
-						}
-
-						if (!mappingNotes.isEmpty()) {
-							partMapNotes.put(partNum, String.join("\n", mappingNotes));
-							mappingNotes.clear();
-						}
+						processPartFileLine(line, partsSeen, mappingNotes);
 					}
 				}
 			}
 			
-			LOGGER.info("Populated map of " + loincPartToAttributeMap.size() + " LOINC parts to attributes");
+			LOGGER.info("Populated map of {} LOINC parts to attributes", partToAttributeMap.size());
 			int tabIdx = ls.getTab(TAB_SUMMARY);
 			ls.report(tabIdx, "");
 			ls.report(tabIdx, "successfullTypeReplacement",successfullTypeReplacement);
@@ -149,11 +77,47 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		}
 	}
 
+	private void processPartFileLine(String line, Set<String> partsSeen, List<String> mappingNotes) throws TermServerScriptException {
+		String[] items = line.split("\t");
+		String partNum = items[0];
+		//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
+		if (items[9].equals("UNMAPPED") ||
+				(items[9].equals("DRAFT") && items[4].isEmpty())) {
+			//Skip this one
+		} else if (items[8].equals("true")) {
+			//And we can have items that report being mapped, but with 'no map' - warn about those.
+			mappingNotes.add("Map indicates part mapped to 'No Map'");
+		} else if (items[9].equals("REJECTED")) {
+			//And we can have items that report being mapped, but with 'no map' - warn about those.
+			mappingNotes.add("Map indicates non-viable map - " + items[9]);
+		} else if (partsSeen.contains(partNum)) {
+			//Have we seen this part before?  Map should now be unique
+			mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
+		} else {
+			partsSeen.add(partNum);
+			Concept attributeValue = gl.getConcept(items[4], false, true);
+			LoincPart part = getLoincPart(partNum);
+			String partName = part == null ? "Unlisted" : part.getPartName();
+			String partStatus = part == null ? "Unlisted" : part.getPartStatus().name();
+			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
+			if (attributeValue != null && attributeValue.isActive()) {
+				mappingNotes.add("Inactive concept");
+			}
+			partToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
+		}
+
+		if (!mappingNotes.isEmpty()) {
+			partMapNotes.put(partNum, String.join("\n", mappingNotes));
+			mappingNotes.clear();
+		}
+		
+	}
+
 	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum,
 										  String partName, String partStatus) throws TermServerScriptException {
 		
 		
-		if (!attributeValue.isActive()) {
+		if (!attributeValue.isActiveSafely()) {
 			String hardCodedIndicator = " hardcoded";
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
 			if (replacementValue == null) {
@@ -179,7 +143,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			attributeType = hardCodedTypeReplacementMap.get(attributeType);
 		}
 		
-		if (!attributeType.isActive()) {
+		if (!attributeType.isActiveSafely()) {
 			String hardCodedIndicator = " hardcoded";
 			Concept replacementType = knownReplacementMap.get(attributeType);
 			if (replacementType == null) {
@@ -198,15 +162,17 @@ public class AttributePartMapManager implements LoincScriptConstants {
 		return attributeType;
 	}
 
+	@Override
 	public boolean containsMappingForLoincPartNum(String loincPartNum) {
-		return loincPartToAttributeMap.containsKey(loincPartNum);
+		return partToAttributeMap.containsKey(loincPartNum);
 	}
 
+	@Override
 	public Set<String> getAllMappedLoincPartNums() {
-		return loincPartToAttributeMap.keySet();
+		return partToAttributeMap.keySet();
 	}
 
-	private void populateHardCodedMappings() throws TermServerScriptException {
+	protected void populateHardCodedMappings() throws TermServerScriptException {
 		hardCodedMappings.put("LP29646-4", List.of(
 				gl.getConcept("580171010000100 |Estimated average glucose calculation (calculation)|")));
 		hardCodedMappings.put("LP443407-4", List.of(
