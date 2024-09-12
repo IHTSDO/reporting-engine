@@ -3,8 +3,7 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 /**
- * 
- * @author peter
+ * @author pwi@snomed.org
  * Until I find a better place for it, here's out mapping of LOINC Part Types to Attribute Types
  * COMPONENT  --> 246093002 |Component (attribute)|
  * ADJUSTMENT --> 246501002 |Technique (attribute)|
@@ -20,89 +19,27 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
  * DIVISORS   --> 704325000 |Relative to (attribute)|
  * SYSTEM     --> 704327008 |Direct site (attribute)|
  * SYSTEM     --> 718497002 |Inherent location (attribute)|
- * 
  */
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class LoincPart extends Part {
 
-public class LoincPart {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincPart.class);
-
-	public enum LoincStatus {ACTIVE, DEPRECATED};
-
-	private String partNumber;	
-	private String partTypeName;
-	private String partName;
-	//private String PartDisplayName;
-	private LoincStatus status;
-	
-	private LoincPart() {
-	}
-	
 	public LoincPart(String partNumber, String partTypeName, String partName) {
-		this.partNumber = partNumber;
-		this.partTypeName = partTypeName;
-		this.partName = partName;
+		super(partNumber, partTypeName, partName);
+	}
+
+	public static LoincPart parse(CSVRecord csv) throws TermServerScriptException {
+		LoincPart loincPart = new LoincPart(csv.get(0), csv.get(1), csv.get(2));
+		loincPart.setPartStatus(getLoincStatus(csv.get(4)));
+		return loincPart;
 	}
 	
-	public String getPartNumber() {
-		return partNumber;
-	}
-	public void setPartNumber(String partNumber) {
-		this.partNumber = partNumber;
-	}
-	public String getPartTypeName() {
-		return partTypeName;
-	}
-	public void setPartTypeName(String partTypeName) {
-		this.partTypeName = partTypeName;
-	}
-	public String getPartName() {
-		return partName;
-	}
-	public void setPartName(String partName) {
-		this.partName = partName;
-	}
-	public LoincStatus getStatus() {
-		return status;
-	}
-	public void setStatus(LoincStatus status) {
-		this.status = status;
-	}
-	
-	public static LoincStatus getLoincStatus(String loincStatusStr) throws TermServerScriptException {
+	public static PartStatus getLoincStatus(String loincStatusStr) throws TermServerScriptException {
 		switch(loincStatusStr) {
-			case "ACTIVE" : return LoincStatus.ACTIVE;
-			case "DEPRECATED" : return LoincStatus.DEPRECATED;
+			case "ACTIVE" : return PartStatus.ACTIVE;
+			case "DEPRECATED" : return PartStatus.DEPRECATED;
 			default: throw new TermServerScriptException("Status '" + loincStatusStr + "' not recognized");
 		}
 	}
 	
-	public static LoincPart parse(CSVRecord csv) throws TermServerScriptException {
-		LoincPart loincPart = new LoincPart();
-		loincPart.setPartNumber(csv.get(0));
-		loincPart.setPartTypeName(csv.get(1));
-		loincPart.setPartName(csv.get(2));
-		loincPart.setStatus(getLoincStatus(csv.get(4)));
-		return loincPart;
-	}
-	
-	public String toString() {
-		return getPartNumber() + "|" + getPartTypeName() + "|" + getPartName();
-	}
-	
-	@Override
-	public int hashCode() {
-		return getPartNumber().hashCode();
-	}
-	
-	@Override
-	public boolean equals(Object other) {
-		if (other instanceof LoincPart) {
-			return getPartNumber().equals(((LoincPart)other).getPartNumber());
-		}
-		return false;
-	}
 }
