@@ -741,7 +741,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	@Override
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object... details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details, getCathyNotes(c));
 	}
 
