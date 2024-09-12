@@ -53,7 +53,7 @@ public class LoincFileAnalysis extends LoincScript {
 					if (!isFirstLine) {
 						String[] lineItems = line.split(TAB);
 						String loincNum = lineItems[0];
-						LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
+						LoincTerm loincTerm = getLoincTerm(loincNum);
 						if (loincTerm == null) {
 							unknownLoincNums++;
 							continue;
@@ -82,8 +82,8 @@ public class LoincFileAnalysis extends LoincScript {
 		loadFullLoincFile(NOT_SET, getInputFile(FILE_IDX_LOINC_FULL));
 		loadAltIdFile(getInputFile(FILE_IDX_ALT_ID));
 		try {
-			for (String loincNum : loincNumToLoincTermMap.keySet()) {
-				LoincTerm loincTerm = loincNumToLoincTermMap.get(loincNum);
+			for (String loincNum : externalConceptMap.keySet()) {
+				LoincTerm loincTerm = getLoincTerm(loincNum);
 				if (loincTerm.getCommonTestRank().equals("0")) {
 					//Skip any LOINC terms that aren't in their top 20K
 					continue;

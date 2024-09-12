@@ -44,8 +44,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_TIME, "TIMECORE_PN");
 	}
 	
-	protected static AttributePartMapManager attributePartMapManager;
-	protected static Map<String, LoincTerm> loincNumToLoincTermMap = new HashMap<>();
 	protected static RelationshipTemplate percentAttribute;
 	
 	protected static Map<String, String> termTweakingMap = new HashMap<>();
@@ -74,16 +72,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected Map<String, String> slotTermMap = new HashMap<>();
 	protected Map<String, String> slotTermAppendMap = new HashMap<>();
 	
-	public static void initialise(ContentPipelineManager cpm, GraphLoader gl,
-								  AttributePartMapManager attributePartMapManager,
-								  Map<String, LoincTerm> loincNumToLoincTermMap,
-								  Map<String, Map<String, LoincDetail>> loincDetailMap,
-								  Map<String, LoincPart> loincParts) throws TermServerScriptException {
+	public static void initialise(ContentPipelineManager cpm, 
+								  Map<String, Map<String, LoincDetail>> loincDetailMap) throws TermServerScriptException {
 		TemplatedConcept.cpm = cpm;
-		TemplatedConcept.gl = gl;
-		LoincTemplatedConcept.attributePartMapManager = attributePartMapManager;
-		LoincTemplatedConcept.loincNumToLoincTermMap = loincNumToLoincTermMap;
-		LoincTemplatedConcept.loincParts = loincParts;
 
 		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
@@ -130,11 +121,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	@Override
 	public boolean isHighUsage() {
-		return loincNumToLoincTermMap.get(externalIdentifier).isHighUsage();
+		return cpm.getExternalConceptMap().get(externalIdentifier).isHighUsage();
 	}
 
 	public boolean isHighestUsage() {
-		return loincNumToLoincTermMap.get(externalIdentifier).isHighestUsage();
+		return cpm.getExternalConceptMap().get(externalIdentifier).isHighestUsage();
 	}
 
 	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
@@ -193,7 +184,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
 		if (templatedConcept != null) {
 			templatedConcept.populateTemplate(details);
-		} else if (loincNumToLoincTermMap.get(loincNum).isHighestUsage()) {
+		} else if (getLoincTerm(loincNum).isHighestUsage()) {
 			//This is a highest usage term which is out of scope
 			cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
 		}
@@ -237,13 +228,13 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		applyTemplateSpecificRules(fsn);
 
 		//Also add the Long Common Name as a Synonym
-		String lcnStr = loincNumToLoincTermMap.get(externalIdentifier).getLongCommonName();
+		String lcnStr = cpm.getExternalConceptMap().get(externalIdentifier).getLongCommonName();
 		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 		//Override the case significance for these
 		lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		
 		//Add in the traditional colon form that we've previously used as the FSN
-		String colonStr = loincNumToLoincTermMap.get(externalIdentifier).getColonizedTerm();
+		String colonStr = getLoincTerm(externalIdentifier).getColonizedTerm();
 		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 
@@ -251,6 +242,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		concept.addDescription(fsn);
 		concept.addDescription(lcn);
 		concept.addDescription(colonDesc);
+	}
+
+	protected static LoincTerm getLoincTerm(String loincNum) {
+		return ((LoincScript)cpm).getLoincTerm(loincNum);
 	}
 
 	private String populateTermTemplateFromSlots(String ptTemplateStr) {
@@ -261,51 +256,61 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 		
 		for (String templateItem : templateItems) {
-			String regex = "\\[" + templateItem + "\\]";
-			if (templateItem.equals(LOINC_PART_TYPE_METHOD)
-					&& hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
-				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
-						.replace(" by ", "");
-			} else if (templateItem.equals(LOINC_PART_TYPE_COMPONENT)
-					&& hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
-				//We're not expecting a component, so set a debug point if do have one
-				if (!concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeMap.get(templateItem), ActiveState.ACTIVE).isEmpty()) {
-					LOGGER.debug("Check here - wasn't expecting to have a component");
-				}
-				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
-						.replace(" in ", "");
-			} else if (slotTermMap.containsKey(templateItem)) {
-				String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
-				ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
-				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
-				if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
-					ptTemplateStr = ptTemplateStr.replace(" at ", "");
-				}
-			} else {
-				Concept attributeType = typeMap.get(templateItem);
-				if (attributeType == null) {
-					concept.addIssue("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
-					return ptTemplateStr;
-				}
-				Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-				if (rels.isEmpty()) {
-					continue;
-				}
-				if (rels.size() > 1) {
-					//Special case for influenza virus antigen
-					if (rels.iterator().next().getTarget().getFsn().contains("Influenza")) {
-						ptTemplateStr = populateTermTemplate("influenza antibody", regex, ptTemplateStr, templateItem);
-					} else {
- 						String itemStr = rels.stream()
-								.map(this::getCaseAdjustedTweakedTerm)
-								.collect(Collectors.joining(" and "));
-						ptTemplateStr = populateTermTemplate(itemStr, regex, ptTemplateStr, templateItem);
-					}
-				} else {
-					RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
-					ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
-				}
+			ptTemplateStr = populateTemplateItem(templateItem, ptTemplateStr);
+		}
+		return ptTemplateStr;
+	}
+
+	private String populateTemplateItem(String templateItem, String ptTemplateStr) {
+		String regex = "\\[" + templateItem + "\\]";
+		if (templateItem.equals(LOINC_PART_TYPE_METHOD)
+				&& hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
+			ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
+					.replace(" by ", "");
+		} else if (templateItem.equals(LOINC_PART_TYPE_COMPONENT)
+				&& hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
+			//We're not expecting a component, so set a debug point if do have one
+			if (!concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeMap.get(templateItem), ActiveState.ACTIVE).isEmpty()) {
+				LOGGER.debug("Check here - wasn't expecting to have a component");
 			}
+			ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
+					.replace(" in ", "");
+		} else if (slotTermMap.containsKey(templateItem)) {
+			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
+			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
+			//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
+			if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
+				ptTemplateStr = ptTemplateStr.replace(" at ", "");
+			}
+		} else {
+			ptTemplateStr = populateTermTemplateFromAttribute(regex, templateItem, ptTemplateStr);
+		}
+		return ptTemplateStr;
+	}
+
+	private String populateTermTemplateFromAttribute(String regex, String templateItem, String ptTemplateStr) {
+		Concept attributeType = typeMap.get(templateItem);
+		if (attributeType == null) {
+			concept.addIssue("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
+			return ptTemplateStr;
+		}
+		Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		if (rels.isEmpty()) {
+			return ptTemplateStr;
+		}
+		if (rels.size() > 1) {
+			//Special case for influenza virus antigen
+			if (rels.iterator().next().getTarget().getFsn().contains("Influenza")) {
+				ptTemplateStr = populateTermTemplate("influenza antibody", regex, ptTemplateStr, templateItem);
+			} else {
+					String itemStr = rels.stream()
+						.map(this::getCaseAdjustedTweakedTerm)
+						.collect(Collectors.joining(" and "));
+				ptTemplateStr = populateTermTemplate(itemStr, regex, ptTemplateStr, templateItem);
+			}
+		} else {
+			RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
+			ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
 		}
 		return ptTemplateStr;
 	}
@@ -472,7 +477,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			mapped++;
 			concept.addRelationship(rt, GROUP_1);
 		} else if (!expectNullMap
-				&& !LoincScript.getMappingsAllowedAbsent().contains(loincDetail.getPartNumber())){
+				&& !cpm.getMappingsAllowedAbsent().contains(loincDetail.getPartNumber())){
 			unmapped++;
 			String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
 			concept.addIssue(issue);
@@ -487,7 +492,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				usage = new LoincUsage();
 				unmappedPartUsageMap.put(loincDetail.getPartNumber(), usage);
 			}
-			usage.add(loincNumToLoincTermMap.get(loincDetail.getLoincNum()));
+			usage.add(getLoincTerm(loincDetail.getLoincNum()));
 		}
 	}
 
@@ -657,7 +662,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
 			}
 
-			List<RelationshipTemplate> additionalAttributes = attributePartMapManager.getPartMappedAttributeForType(getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
+			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
 
 			if (additionalAttributes.isEmpty()) {
 				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {

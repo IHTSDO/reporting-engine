@@ -16,8 +16,6 @@ See Processing instruction document https://docs.google.com/document/d/1rz2s3ga2
  */
 public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConceptWithInheres.class);
-
 	private static final List<String> BioPhageSuffixExceptions = List.of("LP438877-5", "LP438878-3", "LP134392-2");
 
 	private static final String PROPERTY_ID_EXCEPTION = "LP6850-4"; //See instructions 2.f.ii.6.a.i.2
@@ -91,7 +89,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				hasDetail(COMPNUMSUFFIX_PN) &&
 				BioPhageSuffixExceptions.contains(getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber())) {
 			String partNum = getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber();
-			List<RelationshipTemplate> additionalAttributes = attributePartMapManager.getPartMappedAttributeForType(NOT_SET, externalIdentifier, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
+			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, externalIdentifier, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
 			attributes.addAll(additionalAttributes);
 			processingFlags.add(ProcessingFlag.SUPPRESS_METHOD_TERM);
 		}
