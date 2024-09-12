@@ -5,9 +5,9 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -19,7 +19,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 	private static final int GROUP_1 = 1;
-	protected static final String SEM_TAG = " (observable entity)";
 
 	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList(
 			LOINC_PART_TYPE_PROPERTY,
@@ -63,18 +62,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	
 	//Map of LoincNums to ldtColumnNames to details
 	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
-	protected Set<ProcessingFlag> processingFlags = new HashSet<>();
-	
-	protected Map<String, Concept> typeMap = new HashMap<>();
-	protected String preferredTermTemplate;
-	protected Concept concept;
-	
-	protected Map<String, String> slotTermMap = new HashMap<>();
-	protected Map<String, String> slotTermAppendMap = new HashMap<>();
 	
 	public static void initialise(ContentPipelineManager cpm, 
 								  Map<String, Map<String, LoincDetail>> loincDetailMap) throws TermServerScriptException {
 		TemplatedConcept.cpm = cpm;
+		TemplatedConcept.gl = cpm.getGraphLoader();
 
 		termTweakingMap.put("702873001", "calculation"); // 702873001 |Calculation technique (qualifier value)|
 		termTweakingMap.put("123029007", "point in time"); // 123029007 |Single point in time (qualifier value)|
@@ -115,24 +107,15 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		relativeTo = gl.getConcept("704325000 |Relative to (attribute)|");
 	}
 
-	protected LoincTemplatedConcept(String loincNum) {
-		super(loincNum);
-	}
-
-	@Override
-	public boolean isHighUsage() {
-		return cpm.getExternalConceptMap().get(externalIdentifier).isHighUsage();
-	}
-
-	public boolean isHighestUsage() {
-		return cpm.getExternalConceptMap().get(externalIdentifier).isHighestUsage();
+	protected LoincTemplatedConcept(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 
 	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rules that apply to all templates:
 		if (loincDetail.getLoincNum().equals("LP36683-8")) {
 			//One off rule for ABO & Rh group
-			processingFlags.add(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT);
+			addProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT);
 		}
 
 		//If the value concept in LP map file is to a concept < 49062001 |Device (physical object)|
@@ -146,109 +129,31 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//Do we need to apply any specific rules to the description?
 		//Override this function if so
 	}
-	
-	protected int getTab(String tabName) throws TermServerScriptException {
-		return cpm.getTab(tabName);
-	}
 
-	public static LoincTemplatedConcept getAppropriateTemplate(String loincNum, Map<String, LoincDetail> loincDetailMap) throws TermServerScriptException {
-		//Keep this method separate, so LoincScript can directly call the one below with a dummy object
-		LoincDetail loincDetail = getPartDetail(loincNum, loincDetailMap, "PROPERTY");
-		String property = loincDetail.getPartName();
-		return getAppropriateTemplate(loincNum, property);
-	}
-
-	public static LoincTemplatedConcept getAppropriateTemplate(String loincNum, String property) throws TermServerScriptException {
-		return switch (property) {
-			case "ArVRat", "CRat", "MRat", "RelTime", "SRat", "Time", "Vel", "VRat" -> LoincTemplatedConceptWithProcess.create(loincNum);
-			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(loincNum);
-			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
-			     "EntVol", "LaCnc", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
-			     "Osmol", "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr", "Visc" ->
-					LoincTemplatedConceptWithComponent.create(loincNum);
-			case "Aper", "Color", "Rden", "Source","SpGrav","Temp" ->
-					LoincTemplatedConceptWithDirectSite.create(loincNum);
-			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(loincNum);
-			case "Anat", "DistWidth", "EntMCnc", "EntMeanVol", "ID", "Morph",
-			     "Prid", "Type", "Vol" -> LoincTemplatedConceptWithInheres.create(loincNum);
-			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(loincNum);
-			default -> null;
-		};
-	}
-
-	public static LoincTemplatedConcept populateTemplate(String loincNum, Map<String, LoincDetail> details) throws TermServerScriptException {
-		if (loincNum.equals("21000-5")) {
-			LOGGER.debug("Neither modelled nor reported");
-		}
-		
-		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(loincNum, details);
-		if (templatedConcept != null) {
-			templatedConcept.populateTemplate(details);
-		} else if (getLoincTerm(loincNum).isHighestUsage()) {
-			//This is a highest usage term which is out of scope
-			cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
-		}
-		return templatedConcept;
-	}
-
-	private  void populateTemplate( Map<String, LoincDetail> details) throws TermServerScriptException {
-		//This loinc term is in scope.
-		if (isHighestUsage()) {
-			cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage In Scope");
-		}
-		populateParts(details);
-		populateTerms();
-		if (detailsIndicatePrimitiveConcept() ||
-				hasProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE)) {
-			getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-		}
-
-		if (hasProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT)) {
-			splitComponentsIntoDistinctGroups();
-		}
-		getConcept().addAlternateIdentifier(externalIdentifier, SCTID_LOINC_CODE_SYSTEM);
-	}
-
-	public boolean hasProcessingFlag(ProcessingFlag flag) {
-		return processingFlags.contains(flag);
-	}
-
-	private void populateTerms() throws TermServerScriptException {
-		//Start with the template PT and swap out as many parts as we come across
-		String ptTemplateStr = preferredTermTemplate;
-		
-		ptTemplateStr = populateTermTemplateFromSlots(ptTemplateStr);
-		ptTemplateStr = tidyUpTerm(ptTemplateStr);
-		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
-
-		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
-		applyTemplateSpecificRules(pt);
-
-		Description fsn = Description.withDefaults(ptTemplateStr + SEM_TAG, DescriptionType.FSN, Acceptability.PREFERRED);
-		applyTemplateSpecificRules(fsn);
-
-		//Also add the Long Common Name as a Synonym
-		String lcnStr = cpm.getExternalConceptMap().get(externalIdentifier).getLongCommonName();
-		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-		//Override the case significance for these
-		lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-		
-		//Add in the traditional colon form that we've previously used as the FSN
-		String colonStr = getLoincTerm(externalIdentifier).getColonizedTerm();
-		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-
-		concept.addDescription(pt);
-		concept.addDescription(fsn);
-		concept.addDescription(lcn);
-		concept.addDescription(colonDesc);
+	protected Map<String, LoincDetail> getLoincDetails() {
+		String loincNum = getLoincTerm().getLoincNum();
+		return loincDetailMap.get(loincNum);
 	}
 
 	protected static LoincTerm getLoincTerm(String loincNum) {
 		return ((LoincScript)cpm).getLoincTerm(loincNum);
 	}
+	
+	@Override
+	protected void populateTerms() throws TermServerScriptException {
 
-	private String populateTermTemplateFromSlots(String ptTemplateStr) {
+		super.populateTerms();
+		
+		//Add in the traditional colon form that we've previously used as the FSN
+		String colonStr = getLoincTerm(getExternalIdentifier()).getColonizedTerm();
+		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+
+		concept.addDescription(colonDesc);
+	}
+	
+	@Override
+	protected String populateTermTemplateFromSlots(String ptTemplateStr) {
 		//Do we have any slots left to fill?  Find their attribute types via the slot map
 		String [] templateItems = org.apache.commons.lang3.StringUtils.substringsBetween(ptTemplateStr,"[", "]");
 		if (templateItems == null) {
@@ -386,32 +291,13 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return term;
 	}
 
-	protected String tidyUpTerm(String term) {
-		term = replaceAndWarn(term, " at [TIME]");
-		term = replaceAndWarn(term, " by [METHOD]");
-		term = replaceAndWarn(term, " in [SYSTEM]");
-		term = replaceAndWarn(term, " using [DEVICE]");
-		term = replaceAndWarn(term, " [CHALLENGE]");
-		term = term.replaceAll(" {2}", " ");
-		return term;
-	}
-
-	private String replaceAndWarn(String term, String str) {
-		if (term.contains(str)) {
-			//Need to make string regex safe
-			str = str.replaceAll("\\[","\\\\\\[").replaceAll("\\]","\\\\\\]");
-			term = term.replaceAll(str, "");
-		}
-		return term;
-	}
-
-	private void populateParts(Map<String, LoincDetail> details) throws TermServerScriptException {
+	protected void populateParts() throws TermServerScriptException {
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(SCTID_LOINC_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, getParentConceptForTemplate());
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 		Set<String> partTypeSeen = new HashSet<>();
-		for (LoincDetail loincDetail : details.values()) {
+		for (LoincDetail loincDetail : getLoincDetails().values()) {
 			populatePart(loincDetail, partTypeSeen);
 		}
 		
@@ -449,7 +335,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					expectNullMap = true;
 				} else {
 					slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
-					processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+					addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 				}
 			}
 		}
@@ -457,7 +343,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//"Unknown" type parts should use the loinc description rather than the concept
 		if (containsUnknownPhrase(loincDetail.getPartName())) {
 			slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
-			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 
 		partTypeSeen.add(partTypeName);
@@ -492,7 +378,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				usage = new LoincUsage();
 				unmappedPartUsageMap.put(loincDetail.getPartNumber(), usage);
 			}
-			usage.add(getLoincTerm(loincDetail.getLoincNum()));
+			usage.add(getLoincTerm());
 		}
 	}
 
@@ -563,8 +449,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	//TO DO This function is a problem because we can have more than one detail with the same partType
 	//Method below is better because it first looks up the primary column name for that part type
-	private static LoincDetail getPartDetail(String loincNum, Map<String, LoincDetail> loincDetailMap, String partTypeName) throws TermServerScriptException {
-		for (LoincDetail detail : loincDetailMap.values()) {
+	private static LoincDetail getPartDetail(String loincNum, String partTypeName) throws TermServerScriptException {
+		for (LoincDetail detail : loincDetailMap.get(loincNum).values()) {
 			if (detail.getPartTypeName().equals(partTypeName)) {
 				return detail;
 			}
@@ -581,17 +467,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	public void setConcept(Concept c) {
 		this.concept = c;
 	}
-
-	public Concept getConcept() {
-		return concept;
-	}
 	
-	public String getExternalIdentifier() {
-		return externalIdentifier;
-	}
-	
-	public String getWrappedId() {
-		return externalIdentifier;
+	protected LoincTerm getLoincTerm() {
+		return (LoincTerm) getExternalConcept();
 	}
 
 	/**
@@ -608,15 +486,15 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	protected boolean hasDetail(String ldtColumnName) {
 		//Does this LoincNum feature this particular detail
-		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(externalIdentifier);
+		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(getExternalIdentifier());
 		return partDetailMap.containsKey(ldtColumnName);
 	}
 
 	protected LoincDetail getLoincDetailIfPresent(String ldtColumnName) throws TermServerScriptException {
 		//What LoincDetails do we have for this loincNum?
-		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(externalIdentifier);
+		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(getExternalIdentifier());
 		if (partDetailMap == null) {
-			throw new TermServerScriptException("No LOINC part details found for loincNum: " + externalIdentifier);
+			throw new TermServerScriptException("No LOINC part details found for loincNum: " + getExternalIdentifier());
 		}
 		return partDetailMap.get(ldtColumnName);
 	}
@@ -624,7 +502,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected LoincDetail getLoincDetailOrThrow(String ldtColumnName) throws TermServerScriptException {
 		LoincDetail loincDetail = getLoincDetailIfPresent(ldtColumnName);
 		if (loincDetail == null) {
-			throw new TermServerScriptException("Could not find detail with ldtColumnName " + ldtColumnName + " for loincNum " + externalIdentifier);
+			throw new TermServerScriptException("Could not find detail with ldtColumnName " + ldtColumnName + " for loincNum " + getExternalIdentifier());
 		}
 		return loincDetail;
 	}
@@ -642,9 +520,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//type would we use?
 		Concept attributeType = typeMap.get(loincDetail.getPartTypeName());
 		if (attributeType == null) {
-			cpm.report(getTab(TAB_MODELING_ISSUES),
-					externalIdentifier,
-					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
+			cpm.report(cpm.getTab(TAB_MODELING_ISSUES),
+					getExternalIdentifier(),
+					ContentPipelineManager.getSpecialInterestIndicator(getExternalIdentifier()),
 					loincDetail.getPartNumber(),
 					"Type in context not identified - " + loincDetail.getPartTypeName() + " | " + this.getClass().getSimpleName(),
 					loincDetail.getPartName());
@@ -655,14 +533,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, LoincDetail loincDetail, Concept attributeType) throws TermServerScriptException {
 		try {
-			String loincNum = externalIdentifier;
+			String loincNum = getExternalIdentifier();
 			String loincPartNum = loincDetail.getPartNumber();
 
 			if (loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber())) {
-				processingFlags.add(ProcessingFlag.ALLOW_SPECIMEN);
+				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
 			}
 
-			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
+			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
 
 			if (additionalAttributes.isEmpty()) {
 				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
@@ -670,7 +548,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					slotTermMap.put(loincDetail.getPartTypeName(), "");
 				} else if (loincDetail.getPartNumber().equals(LoincScript.LOINC_OBSERVATION_PART)) {
 					//Rule 2d We're going to allow the COMPONENT to be blank
-					processingFlags.add(ProcessingFlag.ALLOW_BLANK_COMPONENT);
+					addProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT);
 					slotTermMap.put(loincDetail.getPartTypeName(), "");
 				} else if (!skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
 					//Rule 2.c  If we don't have a part mapping, use what we do get in the FSN
@@ -689,7 +567,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//If we've not found the COMPNUM_PN then we're not going to go ahead with this Loinc Term
 			if (loincDetail.getLDTColumnName().equals("COMPNUM_PN")) {
 				concept.addIssue(e.getMessage());
-				processingFlags.add(ProcessingFlag.DROP_OUT);
+				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			} else {
 				concept.addIssue(e.getMessage() + " definition status set to Primitive");
 				this.concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
@@ -699,7 +577,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	public String toString() {
-		return this.getClass().getSimpleName() + " for loincNum " + externalIdentifier;
+		return this.getClass().getSimpleName() + " for loincNum " + getExternalIdentifier();
 	}
 
 	protected void processSubComponents(List<RelationshipTemplate> attributes, Concept componentAttribType) throws TermServerScriptException {
@@ -716,7 +594,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 			LoincDetail componentDetail = getLoincDetailOrThrow(COMPSUBPART3_PN);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 
 		if (detailPresent(COMPSUBPART4_PN)) {
@@ -725,7 +603,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 			LoincDetail componentDetail = getLoincDetailOrThrow(COMPSUBPART4_PN);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			processingFlags.add(ProcessingFlag.MARK_AS_PRIMITIVE);
+			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 	}
 
@@ -752,39 +630,4 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return true;
 	}
 
-	private void splitComponentsIntoDistinctGroups() {
-		//Split out the components from the other attributes, then copy all the non-component values
-		//into their own groups
-		List<Relationship> componentAttributes = new ArrayList<>();
-		List<Relationship> otherAttributes = new ArrayList<>();
-		Set<Relationship> initialRelationships = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-		for (Relationship r : initialRelationships) {
-			if (r.getType().equals(COMPONENT)) {
-				componentAttributes.add(r);
-				//And remove, we'll add back in later
-				concept.removeRelationship(r);
-			} else {
-				otherAttributes.add(r);
-			}
-		}
-
-		int groupNum = 0;
-		for (Relationship componentAttribute : componentAttributes) {
-			groupNum++;
-			RelationshipGroup g = concept.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupNum);
-			if (g == null) {
-				g = new RelationshipGroup(groupNum);
-			}
-			//Add the component attribute if required
-			if (!g.containsTypeValue(componentAttribute)) {
-				concept.addRelationship(componentAttribute.getType(), componentAttribute.getTarget(), groupNum);
-			}
-			//Add all the other attributes
-			for (Relationship otherAttribute : otherAttributes) {
-				if (!g.containsTypeValue(otherAttribute)) {
-					concept.addRelationship(otherAttribute.getType(), otherAttribute.getTarget(), groupNum);
-				}
-			}
-		}
-	}
 }
