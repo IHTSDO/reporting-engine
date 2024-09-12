@@ -6,8 +6,7 @@ import java.util.List;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-
-
+import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,15 +20,15 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 	private static final String PROPERTY_ID_EXCEPTION = "LP6850-4"; //See instructions 2.f.ii.6.a.i.2
 	private static final String TYPE_ID_EXCEPTION = "LP6886-8"; //See instructions 2.f.ii.6.a.i.1.a.i
 
-	private LoincTemplatedConceptWithInheres(String loincNum) {
-		super(loincNum);
+	private LoincTemplatedConceptWithInheres(ExternalConcept externalConcept) {
+		super(externalConcept);
 	}
 
-	public static LoincTemplatedConcept create(String loincNum) throws TermServerScriptException {
-		LoincTemplatedConceptWithInheres templatedConcept = new LoincTemplatedConceptWithInheres(loincNum);
+	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptWithInheres templatedConcept = new LoincTemplatedConceptWithInheres(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("704319004 |Inheres in (attribute)|"));
-		templatedConcept.preferredTermTemplate = "[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]";
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
 
@@ -64,7 +63,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		if (attributes.isEmpty()) {
 			attributes.add(null);
 			if (!hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
-				processingFlags.add(ProcessingFlag.DROP_OUT);
+				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
 		}
 		return attributes;
@@ -89,9 +88,9 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				hasDetail(COMPNUMSUFFIX_PN) &&
 				BioPhageSuffixExceptions.contains(getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber())) {
 			String partNum = getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber();
-			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, externalIdentifier, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
+			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, getExternalIdentifier(), partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
 			attributes.addAll(additionalAttributes);
-			processingFlags.add(ProcessingFlag.SUPPRESS_METHOD_TERM);
+			addProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM);
 		}
 
 		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
