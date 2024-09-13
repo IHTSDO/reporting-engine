@@ -219,79 +219,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		for (Task task : batch.getTasks()) {
 			try {
 				currentTaskNum++;
-				onNewTask(task);
-
-				//If we don't have any concepts in this task eg this is 100% ME file, then skip
-				if (task.size() == 0) {
-					LOGGER.info("Skipping Task " + task.getSummary() + " - no concepts to process");
-					continue;
-				} else if (selfDetermining && restartPosition > 1 && currentTaskNum < restartPosition) {
-					//For self determining projects we'll restart based on a task count, rather than the line number in the input file
-					LOGGER.info("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
-					continue;
-				} else if (restartFromTask != NOT_SET && currentTaskNum < restartFromTask) {
-					//For file driven batches, we'll use the r2 restartFromTask setting
-					LOGGER.info("Skipping Task " + task.getSummary() + " - restarting from task " + restartFromTask);
-					continue;
-				} else if (task.size() > (taskSize + wiggleRoom)) {
-					LOGGER.warn(task + " contains " + task.size() + " concepts");
-				}
-
-				String xOfY = (currentTaskNum) + " of " + batch.getTasks().size();
-				//Did user specify that we're working in a particular task?  If so, we can only 
-				//work within a single task
-				if (this.taskKey != null) {
-					if (batch.getTasks().size() > 1) {
-						throw new TermServerScriptException("Task key specified.  Cannot work with " + batch.getTasks().size() + " tasks.  Check number of concepts per task");
-					}
-					task.setBranchPath(this.getProject().getBranchPath());
-					task.setPreExistingTask(true);
-					LOGGER.info((dryRun ? "Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
-
-				} else {
-					//Create a task for this batch of concepts
-					createTask(task);
-					LOGGER.info((dryRun ? "Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
-					incrementSummaryInformation("Tasks created", 1);
-				}
-
-				//Process each component
-				int conceptInTask = 0;
-
-				//The components in the task might change during processing, so we'll drive this loop with a copy of the initial list
-				List<Component> components = new ArrayList<>(task.getComponents());
-				for (Component component : components) {
-					conceptInTask++;
-					processComponent(task, component, conceptInTask, xOfY);
-					//Update file after each component processed - if data limits allow
-					flushFilesSoft();  //Soft flush is optional
-				}
-
-				//Don't update Editpanel or assign task if we're using a pre-existing one
-				if (!dryRun && !task.isPreExistingTask()) {
-					populateEditPanel(task);
-					updateTask(task, getReportName(), getReportManager().getUrl());
-
-					Classification classification = null;
-					if (classifyTasks) {
-						LOGGER.info("Classifying " + task);
-						classification = scaClient.classify(task.getKey());
-						LOGGER.debug(classification.toString());
-					}
-					if (validateTasks) {
-						LOGGER.info("Validating " + task);
-						Status status = scaClient.validate(task.getKey());
-						LOGGER.debug(status.toString());
-					}
-
-					if (classification != null) {
-						try {
-							tsClient.waitForCompletion(task.getBranchPath(), classification);
-						} catch (Exception e) {
-							LOGGER.error("Failed to wait for classification " + classification, e);
-						}
-					}
-				}
+				batchProcessTask(batch, task, currentTaskNum);
 				flushFiles(false);
 			} catch (Exception e) {
 				throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
@@ -302,6 +230,93 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				break;
 			}
 		}
+	}
+
+	private void batchProcessTask(Batch batch, Task task, int currentTaskNum) throws Exception {
+		onNewTask(task);
+
+		if (taskShouldBeSkipped(task, currentTaskNum)) {
+			return;
+		}
+
+		String xOfY = (currentTaskNum) + " of " + batch.getTasks().size();
+		createTaskIfRequired(batch, task, xOfY);
+
+		//Process each component
+		int conceptInTask = 0;
+
+		//The components in the task might change during processing, so we'll drive this loop with a copy of the initial list
+		List<Component> components = new ArrayList<>(task.getComponents());
+		for (Component component : components) {
+			conceptInTask++;
+			processComponent(task, component, conceptInTask, xOfY);
+			//Update file after each component processed - if data limits allow
+			flushFilesSoft();  //Soft flush is optional
+		}
+
+		//Don't update Editpanel or assign task if we're using a pre-existing one
+		if (!dryRun && !task.isPreExistingTask()) {
+			populateEditPanel(task);
+			updateTask(task, getReportName(), getReportManager().getUrl());
+
+			Classification classification = null;
+			if (classifyTasks) {
+				LOGGER.info("Classifying " + task);
+				classification = scaClient.classify(task.getKey());
+				LOGGER.debug(classification.toString());
+			}
+			if (validateTasks) {
+				LOGGER.info("Validating " + task);
+				Status status = scaClient.validate(task.getKey());
+				LOGGER.debug(status.toString());
+			}
+
+			if (classification != null) {
+				try {
+					tsClient.waitForCompletion(task.getBranchPath(), classification);
+				} catch (Exception e) {
+					LOGGER.error("Failed to wait for classification " + classification, e);
+				}
+			}
+		}
+	}
+
+	private void createTaskIfRequired(Batch batch, Task task, String xOfY) throws TermServerScriptException, InterruptedException {
+		//Did user specify that we're working in a particular task?  If so, we can only
+		//work within a single task
+		if (this.taskKey != null) {
+			if (batch.getTasks().size() > 1) {
+				throw new TermServerScriptException("Task key specified.  Cannot work with " + batch.getTasks().size() + " tasks.  Check number of concepts per task");
+			}
+			task.setBranchPath(this.getProject().getBranchPath());
+			task.setPreExistingTask(true);
+			LOGGER.info((dryRun ? "Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
+		} else {
+			//Create a task for this batch of concepts
+			createTask(task);
+			String msg = (dryRun ? "Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath();
+			LOGGER.info(msg);
+			incrementSummaryInformation("Tasks created", 1);
+		}
+	}
+
+	private boolean taskShouldBeSkipped(Task task, int currentTaskNum) {
+		//If we don't have any concepts in this task eg this is 100% ME file, then skip
+		if (task.size() == 0) {
+			LOGGER.info("Skipping Task " + task.getSummary() + " - no concepts to process");
+			return true;
+		} else if (selfDetermining && restartPosition > 1 && currentTaskNum < restartPosition) {
+			//For self determining projects we'll restart based on a task count, rather than the line number in the input file
+			LOGGER.info("Skipping Task {} - restarting from task {}", task.getSummary(), restartPosition);
+			return true;
+		} else if (restartFromTask != NOT_SET && currentTaskNum < restartFromTask) {
+			//For file driven batches, we'll use the r2 restartFromTask setting
+			LOGGER.info("Skipping Task {} - restarting from task {}", task.getSummary(), restartFromTask);
+			return true;
+		} else if (task.size() > (taskSize + wiggleRoom)) {
+			LOGGER.warn("{} contains {} concepts", task, task.size());
+		}
+		return false;
 	}
 
 	protected void onNewTask(Task task) {
