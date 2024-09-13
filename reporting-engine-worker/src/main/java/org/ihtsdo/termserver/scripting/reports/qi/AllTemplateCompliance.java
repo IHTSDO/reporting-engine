@@ -145,7 +145,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	private long calculateInScopeConcepts() throws TermServerScriptException {
 		LOGGER.info ("Obtaining count of concepts that are 'in scope'");
 		int inScopeCount = 0;
-		Concept[] inScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
+		Concept[] inScope = new Concept[] { CLINICAL_FINDING,
 											PHARM_BIO_PRODUCT, PROCEDURE,
 											SITN_WITH_EXP_CONTXT, SPECIMEN,
 											OBSERVABLE_ENTITY, EVENT, 
