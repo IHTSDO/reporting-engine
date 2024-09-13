@@ -176,7 +176,7 @@ public class DrugTermGenerator extends TermGenerator {
 
 		//Validation, check that we have some acceptability for both US and GB
 		if (replacement.getAcceptability(US_ENG_LANG_REFSET) == null || replacement.getAcceptability(GB_ENG_LANG_REFSET) == null) {
-			TermServerScript.warn(d + " has unacceptable acceptability");
+			LOGGER.warn("{} has unacceptable acceptability", d);
 		}
 
 		return changesMade;
@@ -668,7 +668,7 @@ public class DrugTermGenerator extends TermGenerator {
 		} else {
 			desc = c.getPreferredSynonym(langRefset);
 			if (desc == null) {
-				TermServerScript.warn("No preferred description found for " + c + " in " + langRefset);
+				LOGGER.warn("No preferred description found for {} in {}", c, langRefset);
 			}
 			term = desc.getTerm();
 		}

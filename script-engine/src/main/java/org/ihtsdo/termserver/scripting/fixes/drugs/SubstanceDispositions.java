@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
@@ -152,7 +151,7 @@ public class SubstanceDispositions extends DrugBatchFix implements ScriptConstan
 			if (dispositions.size() > 1) {
 				String dispositionStr = dispositions.stream().map(Concept::getFsn)
 										.collect(Collectors.joining(", "));
-				TermServerScript.warn(descendant + " has multiple dispositions: " + dispositionStr); 
+				LOGGER.warn("{} has multiple dispositions: {}", descendant, dispositionStr);
 			}
 		}
 		return new ArrayList<>(subsumedConcepts);

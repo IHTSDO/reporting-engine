@@ -54,7 +54,7 @@ public class TermVerifier implements ScriptConstants {
 		if (inputFile == null) {
 			throw new TermServerScriptException ("No file specified as input to verify terms");
 		}
-		TermServerScript.info ("Loading term file " + inputFile.getAbsolutePath());
+		LOGGER.info("Loading term file {}", inputFile.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 			lines = StringUtils.removeBlankLines(lines);
