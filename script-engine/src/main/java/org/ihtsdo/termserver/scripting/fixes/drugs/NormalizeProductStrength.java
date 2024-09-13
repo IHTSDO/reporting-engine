@@ -6,7 +6,6 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -130,7 +129,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements ScriptCons
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
-				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+				LOGGER.warn("{} has multiple {} in group {}", c, type, groupId);
 			} else if (rels.size() == 1) {
 				//This might not be the full concept, so recover it fully from our loaded cache
 				return rels.iterator().next();

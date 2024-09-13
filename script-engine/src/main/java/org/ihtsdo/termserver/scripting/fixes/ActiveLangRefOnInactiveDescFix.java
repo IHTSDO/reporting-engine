@@ -6,6 +6,8 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -13,6 +15,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  *
  */
 public class ActiveLangRefOnInactiveDescFix extends BatchFix {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ActiveLangRefOnInactiveDescFix.class);
 	
 	protected ActiveLangRefOnInactiveDescFix(BatchFix clone) {
 		super(clone);
@@ -58,7 +62,7 @@ public class ActiveLangRefOnInactiveDescFix extends BatchFix {
 	
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process...");
 		List<Component> componentsToProcess = new ArrayList<>();
 		//Looking for inactive descriptions in the MS 
 		nextConcept:

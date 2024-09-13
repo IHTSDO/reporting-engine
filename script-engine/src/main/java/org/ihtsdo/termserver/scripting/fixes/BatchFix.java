@@ -1489,7 +1489,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				//Do we need to retire any existing relationships?
 				for (Relationship potentialRemoval : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, group.getGroupId()).getRelationships()) {
 					if (!group.getRelationships().contains(potentialRemoval)) {
-						TermServerScript.warn("Removing " + potentialRemoval + " from " + c);
+						LOGGER.warn("Removing {} from {}", potentialRemoval, c);
 						availableForReuse.add(potentialRemoval);
 						removeRelationship(t, c, potentialRemoval);
 						changesMade++;
@@ -1499,7 +1499,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				//If we've used the same relationship twice, the 2nd instance should have a new SCTID
 				for (Relationship r : group.getRelationships()) {
 					if (idsUsed.contains(r.getId())) {
-						TermServerScript.warn("Mutliple use of: " + r);
+						LOGGER.warn("Multiple use of: {}", r);
 						r.setRelationshipId(null);
 					} else if (r.getId() != null && !r.getId().isEmpty()) {
 						idsUsed.add(r.getId());

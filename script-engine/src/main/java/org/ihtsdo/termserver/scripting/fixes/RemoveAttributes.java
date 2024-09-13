@@ -10,6 +10,8 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -17,7 +19,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * INFRA-115951 Bulk Change: Remove therapeutic intent from Therapy (regime/therapy)
  */
 public class RemoveAttributes extends BatchFix {
-	
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveAttributes.class);
+
 	Set<RelationshipTemplate> removeAttributes;
 	String subsetECL = "<<276239002 |Therapy (regime/therapy)|";
 
@@ -76,7 +80,7 @@ public class RemoveAttributes extends BatchFix {
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> allAffected = new ArrayList<>();
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process...");
 		
 		nextConcept:
 		//for (Concept c : gl.getAllConcepts()) {
@@ -88,7 +92,7 @@ public class RemoveAttributes extends BatchFix {
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified {} concepts to process", allAffected.size());
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
 	}

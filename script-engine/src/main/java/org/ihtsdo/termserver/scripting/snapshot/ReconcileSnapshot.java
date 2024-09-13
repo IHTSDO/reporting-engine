@@ -17,7 +17,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -277,7 +276,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		String typeId = lineItems[REL_IDX_TYPEID];
 		
 		if (sourceId.length() < 4 || destId.length() < 4 || typeId.length() < 4 ) {
-			TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " d" + destId + " t" + typeId);
+			LOGGER.warn("*** Invalid SCTID encountered in relationship {}: s{} d{} t{}", lineItems[REL_IDX_ID], sourceId, destId, typeId);
 		}
 		Concept type = gl.getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = gl.getConcept(lineItems[REL_IDX_DESTINATIONID]);

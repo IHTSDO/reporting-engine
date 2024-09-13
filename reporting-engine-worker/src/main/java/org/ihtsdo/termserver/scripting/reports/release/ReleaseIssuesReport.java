@@ -1817,7 +1817,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 
-	protected boolean report(Concept c, Object... details) throws TermServerScriptException {
+	public boolean report(Concept c, Object... details) throws TermServerScriptException {
 		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
 			return false;
