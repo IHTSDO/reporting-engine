@@ -90,8 +90,6 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	}
 
 	private int process() throws TermServerScriptException {
-		//Work through all inactive concepts and check the inactivation indicator on all
-		//active descriptions
 		int conceptsInThisBatch = 0;
 		for (Component c : processFile()) {
 			conceptsInThisBatch += addAnnotation((Concept)c);
