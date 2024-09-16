@@ -96,7 +96,9 @@ public class SchedulerController {
 	})
 	@RequestMapping(value="/jobs/{typeName}", method= RequestMethod.GET)
 	public List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
-		return scheduleService.listJobTypeCategories(typeName);
+		return scheduleService.listJobTypeCategories(typeName).stream()
+				.filter(jc -> !jc.getJobs().isEmpty())
+				.toList();
 	}
 
 	@Operation(summary="Get job details")
