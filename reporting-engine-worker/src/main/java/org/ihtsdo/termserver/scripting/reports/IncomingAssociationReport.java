@@ -1,10 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -12,7 +14,6 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
@@ -25,18 +26,20 @@ import org.slf4j.LoggerFactory;
 
 public class IncomingAssociationReport extends TermServerReport implements ReportClass {
 
+	static {
+		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
+	}
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(IncomingAssociationReport.class);
 
-	public static String TEXT_MATCH = "Text Match";
+	public static final String TEXT_MATCH = "Text Match";
 	List<String> textMatches;
 	Set<Concept> exclusions = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<<" + CLINICAL_FINDING + " OR <<" + SITN_WITH_EXP_CONTXT );
 		params.put(ECL, "<< 23406007 |Fracture of upper limb|");
-		//params.put(TEXT_MATCH,"on examination,o/e,complaining of,c/o");
-		TermServerReport.run(IncomingAssociationReport.class, args, params);
+		TermServerScript.run(IncomingAssociationReport.class, args, params);
 	}
 
 	@Override
@@ -47,7 +50,7 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 				.build();
 		
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Incoming Historical Associations")
 				.withDescription("List concepts matching both ECL and lexically, which have an incoming historical assertion. Multiple terms can be specified, separated with a comma.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
@@ -55,16 +58,17 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
 		textMatches = Arrays.asList(run.getParamValue(TEXT_MATCH, "").toLowerCase().split(COMMA));
 		textMatches.replaceAll(String::trim);
 		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
 		additionalReportColumns = "FSN (Inactive Concept), SemTag, EffectiveTime, Assoc Type, Target (Active Concept), Details";
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		if (hasInputFile()) {
 			loadExclusions();
@@ -72,6 +76,7 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 		super.postInit();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		LOGGER.info ("Scanning concepts...");
 		for (Concept c : findConcepts(subsetECL)) {
@@ -106,7 +111,7 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
 		try {
-			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			List<String> lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 			for (String line : lines) {
 				exclusions.add(gl.getConcept(line.trim(), false, true));
 			}

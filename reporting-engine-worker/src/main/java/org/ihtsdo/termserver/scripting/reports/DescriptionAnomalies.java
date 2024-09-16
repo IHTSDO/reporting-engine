@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -8,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -17,26 +17,26 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Lists all active descriptions that have no acceptability
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class DescriptionAnomalies extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DescriptionAnomalies.class);
-
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(DescriptionAnomalies.class, args, params);
+	static {
+		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN-1GA"; //QI
 	}
+
+	private Map<String, Integer> descriptionIssueSummaryMap = new HashMap<>();
 	
+	public static void main(String[] args) throws TermServerScriptException {
+		Map<String, String> params = new HashMap<>();
+		TermServerScript.run(DescriptionAnomalies.class, args, params);
+	}
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
 		runStandAlone = false; //We need a proper path lookup for MS projects
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { 
 				"Issue, Count",
@@ -55,7 +55,7 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Description Anomalies")
 				.withDescription("This report checks for a number of known possible issues such as: active descriptions with no acceptability and acceptable synonyms that are identical to the preferred term of an ancestor concept.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
@@ -63,11 +63,12 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> concepts = StringUtils.isEmpty(subsetECL) ? gl.getAllConcepts() : findConcepts(subsetECL);
 		for (Concept c : concepts) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				checkUnacceptableDescriptions(c);
 				checkAcceptableSynInAncestors(c);
 			}
@@ -79,22 +80,24 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 		String issueStr = "Acceptable synonym used as PT in ancestor";
 		initialiseSummary(issueStr);
 		Set<Concept> ancestors = c.getAncestors(NOT_SET);
-		nextDescription:
 		for (Description d : c.getDescriptions()) {
-			if (d.isActive() && !d.isPreferred()) {
-				String termLower = d.getTerm().toLowerCase();
-				for (Concept ancestor : ancestors) {
-					for (Description ad : ancestor.getDescriptions()) {
-						if (ad.isActive() && ad.isPreferred() && 
-								termLower.equals(ad.getTerm().toLowerCase())) {
-							report(c, issueStr, d, ad);
-							continue nextDescription;
-						}
-					}
+			if (d.isActiveSafely() && !d.isPreferred()) {
+				checkAncestorSynonyms(c, d, ancestors, issueStr);
+			}
+		}
+	}
+
+	private void checkAncestorSynonyms(Concept c, Description d, Set<Concept> ancestors, String issueStr) throws TermServerScriptException {
+		String termLower = d.getTerm().toLowerCase();
+		for (Concept ancestor : ancestors) {
+			for (Description ad : ancestor.getDescriptions()) {
+				if (ad.isActiveSafely() && ad.isPreferred() &&
+						termLower.equals(ad.getTerm().toLowerCase())) {
+					report(c, issueStr, d, ad);
+					return;
 				}
 			}
 		}
-		
 	}
 
 	private void checkUnacceptableDescriptions(Concept c) throws TermServerScriptException {
@@ -107,24 +110,26 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 		}
 	}
 	
-	private void populateSummaryTab() throws TermServerScriptException {
-		issueSummaryMap.entrySet().stream()
+	private void populateSummaryTab() {
+		descriptionIssueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely (PRIMARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
+		int total = descriptionIssueSummaryMap.entrySet().stream()
+				.map(Map.Entry::getValue)
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (PRIMARY_REPORT, (Component)null, "TOTAL", total);
 	}
-	
+
+	@Override
 	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
+		descriptionIssueSummaryMap.merge(issue, 0, Integer::sum);
 	}
-	
+
+	@Override
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		descriptionIssueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
 		return super.report (SECONDARY_REPORT, c, details);
 	}

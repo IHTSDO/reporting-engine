@@ -3,32 +3,23 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * INFRA-
- */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LexicalModellingMismatch extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LexicalModellingMismatch.class);
+	static {
+		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
+	}
 
 	public static final String WORDS = "Words";
 	public static final String NOT_WORDS = "Not Words";
@@ -41,33 +32,28 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 	private boolean fsnOnly = false;
 	private RelationshipTemplate targetAttribute = new RelationshipTemplate(CharacteristicType.INFERRED_RELATIONSHIP);
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		/*
-		params.put(ATTRIBUTE_VALUE, "424124008 |Sudden onset AND/OR short duration (qualifier value)|");
-		params.put(WORDS, "acute,transient,transitory");
-		params.put(NOT_WORDS, "subacute,subtransient");
-		params.put(ECL, "<< 138875005 |SNOMED CT Concept (SNOMED RT+CTV3)| MINUS ( <<410607006 |Organism (organism)|)"); */
-		
+
 		params.put(ECL, "<<  404684003 |Clinical finding (finding)|");
 		params.put(WORDS, "chronic");
 		params.put(NOT_WORDS, "subchronic");
 		params.put(ATTRIBUTE_TYPE, "263502005 |Clinical course (attribute)|");
 		params.put(ATTRIBUTE_VALUE, "90734009 |Chronic (qualifier value)|");
 		params.put(FSN_ONLY, "true");
-		TermServerReport.run(LexicalModellingMismatch.class, args, params);
+		TermServerScript.run(LexicalModellingMismatch.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
 		super.init(run);
 		
 		String targetWordsStr = run.getMandatoryParamValue(WORDS).toLowerCase().trim();
-		targetWords = Arrays.asList(targetWordsStr.split(COMMA)).stream().map(word -> word.trim()).collect(Collectors.toList());
+		targetWords = Arrays.asList(targetWordsStr.split(COMMA)).stream().map(String::trim).toList();
 		
 		if (run.getParamValue(NOT_WORDS) != null) {
 			String notWordsStr = run.getParamValue(NOT_WORDS).toLowerCase().trim();
-			notWords = Arrays.asList(notWordsStr.split(COMMA)).stream().map(word -> word.trim()).collect(Collectors.toList());
+			notWords = Arrays.asList(notWordsStr.split(COMMA)).stream().map(String::trim).toList();
 		}
 		
 		fsnOnly = run.getParameters().getMandatoryBoolean(FSN_ONLY);
@@ -88,8 +74,8 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 			}
 		}
 	}
-	
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions, Model",
 				"SCTID, FSN, SemTag, Model",};
@@ -109,7 +95,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 				.build();
 		
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Lexical Modelling Mismatch")
 				.withDescription("This report lists all concepts which either a) feature the target word in the FSN but not the specified attribute or b) feature the specified attribute, but not the word.  Note that target attributes more specific than the one specified will be included in the selection.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
@@ -117,37 +103,41 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		DescendantsCache cache = gl.getDescendantsCache();
 		for (Concept c : findConcepts(subsetECL)) {
-			boolean containsWord = false;
-			boolean containsAttribute = false;
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				//Skip over any that contain the not-words
 				if ((fsnOnly && c.fsnContainsAny(notWords)) ||
-					(!fsnOnly && c.findDescriptionsContaining(notWords, true).size() > 0)) {
+					(!fsnOnly && !c.findDescriptionsContaining(notWords, true).isEmpty())) {
 					continue;
 				}
-				
-				if ((fsnOnly && c.fsnContainsAny(targetWords)) ||
-					(!fsnOnly && c.findDescriptionsContaining(targetWords).size() > 0)) {
-					containsWord = true;
-				}
-
-				
-				containsAttribute = SnomedUtils.containsAttributeOrMoreSpecific(c, targetAttribute, cache);
-				if (containsWord && !containsAttribute) {
-					String descriptions = c.findDescriptionsContaining(targetWords).stream()
-							.map(d -> d.getTerm().toString())
-							.collect(Collectors.joining(",\n"));
-					report (PRIMARY_REPORT, c, descriptions, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					countIssue(c);
-				} else if (!containsWord && containsAttribute) {
-					report (SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					countIssue(c);
-				}
+				checkWordAndAttribute(c, cache);
 			}
+		}
+	}
+
+	private void checkWordAndAttribute(Concept c, DescendantsCache cache) throws TermServerScriptException {
+		boolean containsWord = false;
+
+		if ((fsnOnly && c.fsnContainsAny(targetWords)) ||
+				(!fsnOnly && !c.findDescriptionsContaining(targetWords).isEmpty())) {
+			containsWord = true;
+		}
+
+		boolean containsAttribute = SnomedUtils.containsAttributeOrMoreSpecific(c, targetAttribute, cache);
+
+		if (containsWord && !containsAttribute) {
+			String descriptions = c.findDescriptionsContaining(targetWords).stream()
+					.map(d -> d.getTerm())
+					.collect(Collectors.joining(",\n"));
+			report(PRIMARY_REPORT, c, descriptions, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+			countIssue(c);
+		} else if (!containsWord && containsAttribute) {
+			report(SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+			countIssue(c);
 		}
 	}
 
