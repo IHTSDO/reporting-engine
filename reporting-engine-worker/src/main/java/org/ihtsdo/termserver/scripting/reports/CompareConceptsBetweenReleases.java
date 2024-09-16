@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 public class CompareConceptsBetweenReleases extends TermServerReport implements ReportClass {
 
 	static {
-		ReportSheetManager.targetFolderId = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
+		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CompareConceptsBetweenReleases.class);
@@ -51,7 +51,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withMandatory()
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Compare Concepts Between Releases")
 				.withDescription("This report compares properties of specified concepts between two releases.  The issue count shows the number of differences in those concepts between the two specified releases")
 				.withProductionStatus(ProductionStatus.PROD_READY)

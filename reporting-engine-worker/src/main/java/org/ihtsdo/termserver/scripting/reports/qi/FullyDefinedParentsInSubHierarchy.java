@@ -1,11 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -24,14 +24,18 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	static {
+		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
+
+	}
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<< 105590001"); // Substance
-		TermServerReport.run(FullyDefinedParentsInSubHierarchy.class, args, params);
+		TermServerScript.run(FullyDefinedParentsInSubHierarchy.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		additionalReportColumns = "FSN, SemTag, Stated Parents, Stated Parents' Module, Calculated PPPs";
 		super.init(run);
 	}
@@ -42,7 +46,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Check for Fully Defined Parents")
 				.withDescription("This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents.  The issues count displays the number of concepts found.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
@@ -50,7 +54,8 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 				.withTag(INT).withTag(MS)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Set<Concept> conceptsOfInterest = findConcepts(subsetECL)
 				.stream()
@@ -58,28 +63,31 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 				.sorted(SnomedUtils::compareSemTagFSN)
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 		
-		nextConcept:
 		for (Concept c : conceptsOfInterest) {
 			for (Concept parent : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (parent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-					String parentStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
-							.stream()
-							.map(p -> defStatus(p) + p.toString())
-							.collect(Collectors.joining(", \n"));
-					String parentModStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
-							.stream()
-							.map(p -> p.getModuleId())
-							.collect(Collectors.joining(", \n"));
-					List<Concept> PPPs = determineProximalPrimitiveParents(c);
-					String PPPStr = PPPs.stream()
-							.map(p -> p.toString())
-							.collect(Collectors.joining(", \n"));
-					report (c, parentStr, parentModStr, PPPStr);
-					countIssue(c);
-					continue nextConcept;
+					reportFullyDefinedParents(c);
+					break;
 				}
 			}
 		}
+	}
+
+	private void reportFullyDefinedParents(Concept c) throws TermServerScriptException {
+		String parentStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
+				.stream()
+				.map(p -> defStatus(p) + p.toString())
+				.collect(Collectors.joining(", \n"));
+		String parentModStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
+				.stream()
+				.map(p -> p.getModuleId())
+				.collect(Collectors.joining(", \n"));
+		List<Concept> proximalPrimitiveParents = determineProximalPrimitiveParents(c);
+		String proxPrimParentsStr = proximalPrimitiveParents.stream()
+				.map(Concept::toString)
+				.collect(Collectors.joining(", \n"));
+		report (c, parentStr, parentModStr, proxPrimParentsStr);
+		countIssue(c);
 	}
 
 	private String defStatus(Concept c) {
