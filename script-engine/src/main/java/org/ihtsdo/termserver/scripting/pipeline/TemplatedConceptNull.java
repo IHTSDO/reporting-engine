@@ -43,7 +43,7 @@ public class TemplatedConceptNull extends TemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificRules(Description pt) {
+	protected void applyTemplateSpecificTermingRules(Description pt) {
 		throw new IllegalArgumentException("Unexpected use of Null Templated Concept");
 	}
 

@@ -3,11 +3,13 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
-public class LoincTemplatedConceptWithRatio extends LoincTemplatedConcept {
+import java.util.List;
+import java.util.Set;
 
-	private static final String SEPARATOR = "#SEPARATOR#";
+public class LoincTemplatedConceptWithRatio extends LoincTemplatedConceptWithRelative {
 
 	private LoincTemplatedConceptWithRatio(ExternalConcept externalConcept) {
 		super(externalConcept);
@@ -27,14 +29,4 @@ public class LoincTemplatedConceptWithRatio extends LoincTemplatedConcept {
 		return templatedConcept;
 	}
 
-	@Override
-	protected void applyTemplateSpecificRules(Description d) {
-		//If this is the FSN we separate with 'to'.
-		//For the PT, speparate with '/'
-		if (d.getType().equals(DescriptionType.FSN)) {
-			d.setTerm(d.getTerm().replace(SEPARATOR, " to "));
-		} else {
-			d.setTerm(d.getTerm().replace(SEPARATOR, "/"));
-		}
-	}
 }

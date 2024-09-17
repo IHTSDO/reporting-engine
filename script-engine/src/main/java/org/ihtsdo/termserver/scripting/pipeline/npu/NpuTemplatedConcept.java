@@ -26,7 +26,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Co
 		return (NpuConcept)externalConcept;
 	}
 
-	protected void applyTemplateSpecificRules(Description d) {
+	protected void applyTemplateSpecificTermingRules(Description d) {
 		//Do we need to apply any specific rules to the description?
 		//Override this function if so
 	}

@@ -53,7 +53,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Temporary rule.  If our target is Influenza, replace that with Influenza A, B & C
 		Concept influenzaAb = gl.getConcept("259856001 |Influenza antibody (substance)|");
 		if (rt.getTarget().equals(influenzaAb)) {
@@ -70,7 +70,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "influenza antibody");
 		}
 
-		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
+		super.applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 	}
 
 }
