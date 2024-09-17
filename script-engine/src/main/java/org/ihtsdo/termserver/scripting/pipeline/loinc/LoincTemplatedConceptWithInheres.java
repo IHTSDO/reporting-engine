@@ -7,8 +7,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /*
 See Processing instruction document https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
@@ -70,7 +68,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rule 2.f.ii.6.a.i.2
 		if (loincDetail.getPartNumber().equals(PROPERTY_ID_EXCEPTION)) {
 			//Is our COMPNUM LP19429-7	Specimen source?
@@ -85,7 +83,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//will come from the suffix, rather than the method
 		if (loincDetail.getPartTypeName().equals(LOINC_PART_TYPE_PROPERTY) &&
 				getLoincDetailForPartType(LOINC_PART_TYPE_PROPERTY).getPartNumber().equals(TYPE_ID_EXCEPTION) &&
-				hasDetail(COMPNUMSUFFIX_PN) &&
+				hasDetailForColName(COMPNUMSUFFIX_PN) &&
 				BioPhageSuffixExceptions.contains(getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber())) {
 			String partNum = getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber();
 			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, getExternalIdentifier(), partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
@@ -93,7 +91,14 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			addProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM);
 		}
 
-		super.applyTemplateSpecificRules(attributes, loincDetail, rt);
+		//Rule 9 Include “observation” in the Inheres in value slot of the descriptions when PROPERTY is Prid and
+		// LOINC Component is LP442509-8 Observation.
+		if (loincDetail.getLDTColumnName().equals(COMPNUM_PN)
+				&& loincDetail.getPartNumber().equals("LP442509-8")) {
+			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, " observation");
+		}
+
+		super.applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 	}
 
 }

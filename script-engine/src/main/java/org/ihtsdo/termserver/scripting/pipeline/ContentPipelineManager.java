@@ -492,8 +492,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public abstract List<String> getMappingsAllowedAbsent();
 	
 	protected void reportMissingMappings(int tabIdx) throws TermServerScriptException {
-		for (Part part : missingPartMappings.keySet()) {
-			Set<ExternalConcept> externalConcepts = missingPartMappings.get(part);
+		for (Map.Entry<Part, Set<ExternalConcept>> entry : missingPartMappings.entrySet()) {
+			Part part = entry.getKey();
+			Set<ExternalConcept> externalConcepts = entry.getValue();
 			String[] highUsageIndicators = getHighUsageIndicators(externalConcepts);
 			report(tabIdx, 
 					part.getPartNumber(),
@@ -564,6 +565,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected void checkConceptSufficientlyModeled(String contentType, String externalIdentifier, TemplatedConcept templatedConcept, Set<TemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
 		if (templatedConcept != null
+				&& !(templatedConcept instanceof TemplatedConceptNull)
 				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
 				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
 			successfullyModelledConcepts.add(templatedConcept);
@@ -582,6 +584,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected void validateTemplatedConcept(TemplatedConcept templatedConcept) throws TermServerScriptException {
 		ExternalConcept externalConcept = templatedConcept.getExternalConcept();
+		Concept concept = templatedConcept.getConcept();
 		if (templatedConcept instanceof TemplatedConceptNull) {
 			report(getTab(TAB_MODELING_ISSUES),
 					externalConcept.getExternalIdentifier(),
@@ -590,14 +593,15 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					"Does not meet criteria for template match",
 					"Property: " + externalConcept.getProperty());
 		} else {
-			String fsn = templatedConcept.getConcept().getFsn();
+			String fsn = concept.getFsn();
 			boolean insufficientTermPopulation = fsn.contains("[");
 			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
 			if (insufficientTermPopulation && hasAllCapsSlot(fsn)) {
-				templatedConcept.getConcept().addIssue(FSN_FAILURE + " to populate required slot: " + fsn);
+				concept.addIssue(FSN_FAILURE + " to populate required slot: " + fsn);
 			}
 
-			if (templatedConcept.getConcept().hasIssues() ) {
+			if (concept.hasIssues() ) {
+				concept.addIssue("Template used: " + this.getClass().getSimpleName());
 				report(getTab(TAB_MODELING_ISSUES),
 						externalConcept.getExternalIdentifier(),
 						ContentPipelineManager.getSpecialInterestIndicator(externalConcept.getExternalIdentifier()),

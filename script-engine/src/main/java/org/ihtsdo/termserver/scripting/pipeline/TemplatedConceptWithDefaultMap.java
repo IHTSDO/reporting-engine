@@ -16,7 +16,7 @@ public class TemplatedConceptWithDefaultMap extends TemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificRules(Description pt) {
+	protected void applyTemplateSpecificTermingRules(Description pt) {
 		throw new IllegalStateException(getExceptionText());
 	}
 

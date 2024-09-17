@@ -5,8 +5,12 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
 
 	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
@@ -88,7 +92,19 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	private TemplatedConcept doModeling(String loincNum) throws TermServerScriptException {
-		if (!confirmExternalIdentifierExists(loincNum) || 
+		if (loincNum.equals("881-3")) {
+			LOGGER.debug("Check split of components");
+		}
+
+		if (loincNum.equals("57800-5")) {
+			LOGGER.debug("Check Divisors");
+		}
+
+		if (loincNum.equals("72888-1")) {
+			LOGGER.debug(".total should make this one primitive");
+		}
+
+		if (!confirmExternalIdentifierExists(loincNum) ||
 				containsObjectionableWord(getExternalConcept(loincNum))) {
 			return null;
 		}
@@ -111,16 +127,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			return null;
 		}
 
-		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(getExternalConcept(loincNum));
-		if (templatedConcept == null) {
-			return null;
+		TemplatedConcept tc = getAppropriateTemplate(getExternalConcept(loincNum));
+		if (!(tc instanceof TemplatedConceptNull)) {
+			tc.populateTemplate();
 		}
-		templatedConcept.populateTemplate();
-		validateTemplatedConcept(templatedConcept);
-		return templatedConcept;
+		validateTemplatedConcept(tc);
+		return tc;
 	}
-
-
 
 	private LoincTemplatedConcept doPanelModeling(String panelLoincNum) throws TermServerScriptException {
 		//Don't do objectionable word check on panels - 'panel' is our only current objectionable word!
@@ -135,7 +148,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 	
 	@Override
-	public LoincTemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
+	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
 		return switch (externalConcept.getProperty()) {
 			case "ArVRat", "CRat", "MRat", "RelTime", "SRat", "Time", "Vel", "VRat" -> LoincTemplatedConceptWithProcess.create(externalConcept);
 			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
@@ -149,12 +162,12 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			case "Anat", "DistWidth", "EntMCnc", "EntMeanVol", "ID", "Morph",
 			     "Prid", "Type", "Vol" -> LoincTemplatedConceptWithInheres.create(externalConcept);
 			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(externalConcept);
-			default -> null;
+			default -> TemplatedConceptNull.create(externalConcept);
 		};
 	}
 
-	public LoincTemplatedConcept populateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
-		LoincTemplatedConcept templatedConcept = getAppropriateTemplate(externalConcept);
+	public TemplatedConcept populateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
+		TemplatedConcept templatedConcept = getAppropriateTemplate(externalConcept);
 		if (templatedConcept != null) {
 			templatedConcept.populateTemplate();
 		} else if (externalConcept.isHighestUsage()) {

@@ -52,17 +52,21 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Concept conceptModelObjectAttrib;
 	protected static Concept precondition;
 	protected static Concept relativeTo;
-	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "DIVISORS", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
+	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
 	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
-	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal"));
+	protected static Set<String> columnsToCheckForUnknownIndicators = new HashSet<>(Arrays.asList(COMPDENOM_PN, COMPDENOM_PN, SYSTEM_PN));
+	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal", "total"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
-	protected static Map<String, LoincPart> loincParts;
+	//protected static Map<String, LoincPart> loincParts;
 	protected static Set<String> allowSpecimenTermForLoincParts = new HashSet<>(Arrays.asList("LP7593-9", "LP7735-6", "LP189538-4"));
 	
 	//Map of LoincNums to ldtColumnNames to details
-	protected static Map<String, Map<String, LoincDetail>> loincDetailMap;
+	protected static Map<String, Map<String, LoincDetail>> loincDetailMapAllTerms;
 	
+	//Map of Loinc Details for this conept
+	protected Map<String, LoincDetail> loincDetailMap;
+	 
 	public static void initialise(ContentPipelineManager cpm, 
 								  Map<String, Map<String, LoincDetail>> loincDetailMap) throws TermServerScriptException {
 		TemplatedConcept.cpm = cpm;
@@ -98,7 +102,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		removals = Arrays.asList("population of all", "in portion of fluid");
 		valueSemTagTermRemovalMap.put("(body structure)", removals);
 		
-		LoincTemplatedConcept.loincDetailMap = loincDetailMap;
+		LoincTemplatedConcept.loincDetailMapAllTerms = loincDetailMap;
 		
 		percentAttribute = new RelationshipTemplate(gl.getConcept("246514001 |Units|"),
 				gl.getConcept("415067009 |Percentage unit|"));
@@ -109,11 +113,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	protected LoincTemplatedConcept(ExternalConcept externalConcept) {
 		super(externalConcept);
+		loincDetailMap = loincDetailMapAllTerms.get(externalConcept.getExternalIdentifier());
 	}
 
-	protected void applyTemplateSpecificRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rules that apply to all templates:
-		if (loincDetail.getLoincNum().equals("LP36683-8")) {
+		if (loincDetail.getPartNumber().equals("LP36683-8")) {
 			//One off rule for ABO & Rh group
 			addProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT);
 		}
@@ -125,14 +130,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 	}
 
-	protected void applyTemplateSpecificRules(Description d) {
+	protected void applyTemplateSpecificTermingRules(Description d) {
 		//Do we need to apply any specific rules to the description?
 		//Override this function if so
-	}
-
-	protected Map<String, LoincDetail> getLoincDetails() {
-		String loincNum = getLoincTerm().getLoincNum();
-		return loincDetailMap.get(loincNum);
 	}
 
 	protected static LoincTerm getLoincTerm(String loincNum) {
@@ -172,6 +172,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				&& hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
 					.replace(" by ", "");
+		} else if (templateItem.equals(LOINC_PART_TYPE_DIVISORS)
+				&& hasProcessingFlag(ProcessingFlag.SUPPRESS_DIVISOR_TERM)) {
+			ptTemplateStr = ptTemplateStr.replaceAll(regex, "");
+			//Patch up the to in "to [DIVISORS]" since we removed the slot
+			ptTemplateStr = ptTemplateStr.replace(" to  in", " in");
 		} else if (templateItem.equals(LOINC_PART_TYPE_COMPONENT)
 				&& hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
 			//We're not expecting a component, so set a debug point if do have one
@@ -297,16 +302,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		concept.addRelationship(IS_A, getParentConceptForTemplate());
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 		Set<String> partTypeSeen = new HashSet<>();
-		for (LoincDetail loincDetail : getLoincDetails().values()) {
+		for (LoincDetail loincDetail : loincDetailMap.values()) {
 			populatePart(loincDetail, partTypeSeen);
 		}
 		
 		//Ensure attributes are unique (considering both type and value)
 		checkAndRemoveDuplicateAttributes();
-		
-		if (concept.hasIssues()) {
-			concept.addIssue("Template used: " + this.getClass().getSimpleName());
-		}
 	}
 
 	private void populatePart(LoincDetail loincDetail, Set<String> partTypeSeen) throws TermServerScriptException {
@@ -341,7 +342,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 
 		//"Unknown" type parts should use the loinc description rather than the concept
-		if (containsUnknownPhrase(loincDetail.getPartName())) {
+		if (columnsToCheckForUnknownIndicators.contains(loincDetail.getLDTColumnName())
+				&& containsUnknownPhrase(loincDetail.getPartName())) {
 			slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
 			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
@@ -421,12 +423,13 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 		} else {
-			LoincDetail denom = getLoincDetailIfPresent(COMPDENOM_PN);
+			LoincDetail denom = getLoincDetailForColNameIfPresent(COMPDENOM_PN);
 			if (denom != null) {
 				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
-				//Check for percentage
-				if (denom.getPartName().contains("100")) {
+
+				//Check for percentage, unless this is a ratio
+				if (denom.getPartName().contains("100") && !(this instanceof LoincTemplatedConceptWithRatio)) {
 					attributes.add(percentAttribute);
 					slotTermMap.put("PROPERTY", "percentage");
 				}
@@ -445,23 +448,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			attributes.add(null);
 		}
 		return attributes;
-	}
-
-	//TO DO This function is a problem because we can have more than one detail with the same partType
-	//Method below is better because it first looks up the primary column name for that part type
-	private static LoincDetail getPartDetail(String loincNum, String partTypeName) throws TermServerScriptException {
-		for (LoincDetail detail : loincDetailMap.get(loincNum).values()) {
-			if (detail.getPartTypeName().equals(partTypeName)) {
-				return detail;
-			}
-		}
-		throw new TermServerScriptException("Unable to find part " + partTypeName + " in " + loincNum);
-	}
-
-
-	protected LoincDetail getLoincDetailForPartType(String typeName) throws TermServerScriptException {
-		String primaryColumnName = mapTypeToPrimaryColumn.get(typeName);
-		return getLoincDetailOrThrow(primaryColumnName);
 	}
 	
 	public void setConcept(Concept c) {
@@ -483,24 +469,29 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return ldComponentPn.getPartNumber().equals(ldCompNum.getPartNumber()) &&
 				ldComponentPn.getPartName().equals(ldCompNum.getPartName());
 	}
-
-	protected boolean hasDetail(String ldtColumnName) {
-		//Does this LoincNum feature this particular detail
-		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(getExternalIdentifier());
-		return partDetailMap.containsKey(ldtColumnName);
+	
+	protected boolean hasDetailForPartType(String typeName) {
+		String primaryColumnName = mapTypeToPrimaryColumn.get(typeName);
+		return loincDetailMap.containsKey(primaryColumnName);
 	}
 
-	protected LoincDetail getLoincDetailIfPresent(String ldtColumnName) throws TermServerScriptException {
+	protected LoincDetail getLoincDetailForPartType(String typeName) throws TermServerScriptException {
+		String primaryColumnName = mapTypeToPrimaryColumn.get(typeName);
+		return getLoincDetailOrThrow(primaryColumnName);
+	}
+
+	protected boolean hasDetailForColName(String ldtColumnName) {
+		//Does this LoincNum feature this particular detail
+		return loincDetailMap.containsKey(ldtColumnName);
+	}
+
+	protected LoincDetail getLoincDetailForColNameIfPresent(String ldtColumnName) {
 		//What LoincDetails do we have for this loincNum?
-		Map<String, LoincDetail> partDetailMap = loincDetailMap.get(getExternalIdentifier());
-		if (partDetailMap == null) {
-			throw new TermServerScriptException("No LOINC part details found for loincNum: " + getExternalIdentifier());
-		}
-		return partDetailMap.get(ldtColumnName);
+		return loincDetailMap.get(ldtColumnName);
 	}
 
 	protected LoincDetail getLoincDetailOrThrow(String ldtColumnName) throws TermServerScriptException {
-		LoincDetail loincDetail = getLoincDetailIfPresent(ldtColumnName);
+		LoincDetail loincDetail = getLoincDetailForColNameIfPresent(ldtColumnName);
 		if (loincDetail == null) {
 			throw new TermServerScriptException("Could not find detail with ldtColumnName " + ldtColumnName + " for loincNum " + getExternalIdentifier());
 		}
@@ -512,7 +503,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 	
 	protected boolean detailPresent(String ldtColumnName) throws TermServerScriptException {
-		return getLoincDetailIfPresent(ldtColumnName) != null;
+		return getLoincDetailForColNameIfPresent(ldtColumnName) != null;
 	}
 
 	protected boolean addAttributeFromDetail(List<RelationshipTemplate> attributes, LoincDetail loincDetail) throws TermServerScriptException {
@@ -560,7 +551,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 			attributes.addAll(additionalAttributes);
 			for (RelationshipTemplate rt : additionalAttributes) {
-				applyTemplateSpecificRules(attributes, loincDetail, rt);
+				applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 			}
 			return !additionalAttributes.isEmpty();
 		} catch (TermServerScriptException e) {

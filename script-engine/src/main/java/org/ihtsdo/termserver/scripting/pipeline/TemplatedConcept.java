@@ -159,10 +159,10 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
 
 		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
-		applyTemplateSpecificRules(pt);
+		applyTemplateSpecificTermingRules(pt);
 
 		Description fsn = Description.withDefaults(ptTemplateStr + getSemTag(), DescriptionType.FSN, Acceptability.PREFERRED);
-		applyTemplateSpecificRules(fsn);
+		applyTemplateSpecificTermingRules(fsn);
 
 		//Also add the Long Common Name as a Synonym
 		String lcnStr = getExternalConcept().getDisplayName();
@@ -175,7 +175,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		concept.addDescription(lcn);
 	}
 	
-	protected abstract void applyTemplateSpecificRules(Description pt);
+	protected abstract void applyTemplateSpecificTermingRules(Description pt);
 
 	protected abstract String populateTermTemplateFromSlots(String ptTemplateStr);
 
@@ -190,7 +190,8 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		List<Relationship> otherAttributes = new ArrayList<>();
 		Set<Relationship> initialRelationships = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		for (Relationship r : initialRelationships) {
-			if (r.getType().equals(COMPONENT)) {
+			if (r.getType().equals(COMPONENT)
+					|| r.getType().equals(INHERES_IN)) {
 				componentAttributes.add(r);
 				//And remove, we'll add back in later
 				concept.removeRelationship(r);
@@ -229,16 +230,16 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	
 
 	protected String tidyUpTerm(String term) {
-		term = replaceAndWarn(term, " at [TIME]");
-		term = replaceAndWarn(term, " by [METHOD]");
-		term = replaceAndWarn(term, " in [SYSTEM]");
-		term = replaceAndWarn(term, " using [DEVICE]");
-		term = replaceAndWarn(term, " [CHALLENGE]");
+		term = removeUnpopulatedTermSlot(term, " at [TIME]");
+		term = removeUnpopulatedTermSlot(term, " by [METHOD]");
+		term = removeUnpopulatedTermSlot(term, " in [SYSTEM]");
+		term = removeUnpopulatedTermSlot(term, " using [DEVICE]");
+		term = removeUnpopulatedTermSlot(term, " [CHALLENGE]");
 		term = term.replaceAll(" {2}", " ");
 		return term;
 	}
 
-	private String replaceAndWarn(String term, String str) {
+	private String removeUnpopulatedTermSlot(String term, String str) {
 		if (term.contains(str)) {
 			//Need to make string regex safe
 			str = str.replaceAll("\\[","\\\\\\[").replaceAll("\\]","\\\\\\]");
