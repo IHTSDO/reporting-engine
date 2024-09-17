@@ -54,7 +54,7 @@ normaliseDates () {
 
 	cd "${targetDir}"
 	for thisFile in * ; do
-		noDateName=`echo ${thisFile} | sed "s/_\([0-9]\{8\}\)//"`
+		noDateName=`echo ${thisFile} | sed "s/_\([0-9]\{8\}[.]\)/./"`
 		mv -v "${thisFile}" "${noDateName}"
 	done
 
