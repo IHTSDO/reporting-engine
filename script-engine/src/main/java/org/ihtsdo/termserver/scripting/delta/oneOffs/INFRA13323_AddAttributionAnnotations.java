@@ -24,6 +24,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA13323_AddAttributionAnnotations.class);
 	private static final int BATCH_SIZE = 50;
 	private static final String ATTRIBUTION_ADDED = "Orphanet attribution added";
+	private static final String BRACKETED_TEXT_REGEX = "\\([^\\)]*\\bsee (this|these) terms?\\)";
 
 	private Concept annotationType = null;
 	private String annotationStr = "Inserm Orphanet";
@@ -149,6 +150,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 			c.addIssue("No Orphanet definition supplied");
 			return NO_CHANGES_MADE;
 		}
+		String definition = normalizeSuppliedTextDefinition(c);
 		boolean textDefinitionNeeded = true;
 		boolean usgbVarianceDetected = false;
 		//Do we already have the expected text definition?
@@ -160,7 +162,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 				}
 
 				//Because of dialect variance, we need to check ALL descriptions for the new text definition
-				if (conceptFeaturesNewTextDefinition(c)) {
+				if (conceptFeaturesNewTextDefinition(c, definition)) {
 					report(c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Text definition already present", d);
 					textDefinitionNeeded = false;
 				} else {
@@ -173,15 +175,14 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		}
 
 		if (textDefinitionNeeded) {
-			addNewTextDefinition(c, usgbVarianceDetected);
+			addNewTextDefinition(c, usgbVarianceDetected, definition);
 			changesMade++;
 		}
 
 		return changesMade;
 	}
 
-	private boolean conceptFeaturesNewTextDefinition(Concept c) {
-		String targetText = conceptDefinitions.get(c);
+	private boolean conceptFeaturesNewTextDefinition(Concept c, String targetText) {
 		for (Description d : c.getDescriptions()) {
 			if (d.getTerm().equals(targetText)) {
 				return true;
@@ -190,10 +191,8 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		return false;
 	}
 
-	private void addNewTextDefinition(Concept c, boolean usgbVarianceDetected) throws TermServerScriptException {
+	private void addNewTextDefinition(Concept c, boolean usgbVarianceDetected, String definition) throws TermServerScriptException {
 		//Add the Orphnet supplied text definition to the concept
-		String definition = normalizeSuppliedTextDefinition(c);
-
 		//Check for US/GB Variance
 		DialectChecker dc = DialectChecker.create(); //Will only load the us/gb file the first time this singleton is requested
 		String usgbTerm = dc.findFirstUSGBSpecificTerm(definition);
@@ -240,12 +239,14 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 
 	private String normalizeSuppliedTextDefinition(Concept c) throws TermServerScriptException {
 		String definition = conceptDefinitions.get(c);
-		//Remove all instances of the text "(see this term)" from the definition
-		definition = definition.replace(" (see this term)", "");
-		definition = definition.replace(" (see these terms))", "");
-
-		if (!definition.equals(conceptDefinitions.get(c))) {
-			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", conceptDefinitions.get(c));
+		//Remove all instances of the text "(something; see this term)" from the definition
+		definition = definition.replaceAll(BRACKETED_TEXT_REGEX, "");
+		definition = definition.replaceAll("  ", " ")
+				.replaceAll(" \\.", "\\.")
+				.replaceAll(" ,", ",").trim();
+ 		if (!definition.equals(conceptDefinitions.get(c))) {
+			String beforeAfter = "BEFORE: " + conceptDefinitions.get(c) + "\nAFTER: " + definition;
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", beforeAfter);
 		}
 
 		String markupRemoved = definition.replaceAll("<[^>]+>", "");
