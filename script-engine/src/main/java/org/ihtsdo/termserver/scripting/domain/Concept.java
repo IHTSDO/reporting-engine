@@ -1339,6 +1339,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				SnomedUtils.addHistoricalAssociationInTsForm(clone, entry);
 			}
 		}
+
+		//If we're not keeping ids, then mark everything as dirty
+		if (!keepIds) {
+			SnomedUtils.getAllComponents(clone).forEach(c -> c.setDirty());
+		}
 		
 		return clone;
 	}
