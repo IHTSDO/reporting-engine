@@ -1265,7 +1265,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents, boolean populateUUIDs) {
-		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
+		String newSCTID = keepIds?conceptId:sctid;
+		Concept clone = new Concept(newSCTID, getFsn());
 		if (populateUUIDs && clone.getId() == null) {
 			clone.setId(UUID.randomUUID().toString());
 		}
@@ -1284,7 +1285,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		for (Description d : getDescriptions(activeState)) {
 			//We need to null out the conceptId since the clone is a new concept
 			Description dClone = d.clone(keepIds?d.getDescriptionId():null, keepIds);
-			dClone.setConceptId(keepIds?conceptId:null);
+			dClone.setConceptId(newSCTID);
 			dClone.setEffectiveTime(keepIds?d.getEffectiveTime():null);
 			clone.addDescription(dClone);
 			//If we're keeping IDs, copy any inactivation indicators also.
