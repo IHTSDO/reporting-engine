@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.delta.oneOffs;
+package org.ihtsdo.termserver.scripting.delta.one_offs;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -9,7 +9,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
