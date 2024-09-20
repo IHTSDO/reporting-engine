@@ -36,7 +36,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
 	private boolean includeDependencies = true;
-	private boolean includeInferredParents = true;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
+	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
@@ -56,6 +56,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	protected boolean copyInferredRelationshipsToStatedWhereMissing = true;
 
 	protected String[] componentIdsToProcess = null; //If it's just a couple, no need for a file, just specify here.
+	protected String componentsToProcessEcl = null; // (<<64572001 |Disease|:116676008 |Associated morphology|=46360000 |Abnormal curvature|) {{ C moduleId = 890108001 }}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
@@ -132,15 +133,20 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 	
 	private void preProcessFile() throws TermServerScriptException {
-		//Are we working with hard coded list, or pulling from a file?
-		if (componentIdsToProcess != null && componentIdsToProcess.length > 0) {
-			List<Component> conceptsToProcess = Arrays.stream(componentIdsToProcess)
+		//Are we working with ecl, a hard coded list, or pulling from a file?
+		List<Component> conceptsToProcess;
+		if (componentsToProcessEcl != null) {
+			conceptsToProcess = findConcepts(componentsToProcessEcl).stream()
+					.map(c -> (Component)c)
+					.collect(Collectors.toList()); //Not 'toList' here because we need a mutable collection
+		} else if (componentIdsToProcess != null && componentIdsToProcess.length > 0) {
+			conceptsToProcess = Arrays.stream(componentIdsToProcess)
 					.map(s -> (Component)gl.getConceptSafely(s))
 					.collect(Collectors.toList());  //Not 'toList' here because we need a mutable collection
-			preProcessConcepts(conceptsToProcess, false);
 		} else {
-			preProcessConcepts(super.processFile(), false);
+			conceptsToProcess = super.processFile();
 		}
+		preProcessConcepts(conceptsToProcess, false);
 	}
 
 	private void preProcessConcepts(List<Component> componentsOfInterest, boolean viaReview) throws TermServerScriptException {
