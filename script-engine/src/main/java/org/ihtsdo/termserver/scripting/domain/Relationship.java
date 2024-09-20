@@ -420,9 +420,11 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return ComponentType.STATED_RELATIONSHIP;
 			case INFERRED_RELATIONSHIP : return ComponentType.INFERRED_RELATIONSHIP;
+			case ADDITIONAL_RELATIONSHIP: return ComponentType.ADDITIONAL_RELATIONSHIP;
 		default:
 			throw new NotImplementedException();
 		}
+
 	}
 
 	@Override
