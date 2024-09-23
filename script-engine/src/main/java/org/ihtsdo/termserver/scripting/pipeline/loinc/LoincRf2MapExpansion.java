@@ -130,7 +130,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 		return replacementValue.equals(value) ? "" : replacementValue.toStringPref();
 	}
 	
-	private String reportIfTypeReplaced(Concept value) throws TermServerScriptException {
+	private String reportIfTypeReplaced(Concept value) {
 		Concept replacementType = attributePartManager.replaceTypeIfRequired(null, value, null);
 		return replacementType.equals(value) ? "" : replacementType.toStringPref();
 	}
@@ -146,17 +146,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 
 	@Override
-	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
-		return null;
-	}
-
-	@Override
 	protected void reportMissingMappings(int tab) {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	protected void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException {
 		throw new NotImplementedException();
 	}
 
