@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.*;
 import org.slf4j.Logger;
@@ -76,63 +77,20 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	@Override
-	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
-		Set<TemplatedConcept> successfullyModelledConcepts = new HashSet<>();
+	protected void doModeling() throws TermServerScriptException {
 		for (String loincNum : loincDetailMapOfMaps.keySet()) {
-			TemplatedConcept templatedConcept = doModeling(loincNum);
-			checkConceptSufficientlyModeled("Observable", loincNum, templatedConcept, successfullyModelledConcepts);
+			TemplatedConcept templatedConcept = modelExternalConcept(loincNum);
+			if (conceptSufficientlyModeled("Observable", loincNum, templatedConcept)) {
+				successfullyModelled.add(templatedConcept);
+			}
 		}
 
 		for (String panelLoincNum : panelLoincNums) {
 			LoincTemplatedConcept templatedConcept = doPanelModeling(panelLoincNum);
-			checkConceptSufficientlyModeled("Panel", panelLoincNum, templatedConcept, successfullyModelledConcepts);
+			if (conceptSufficientlyModeled("Panel", panelLoincNum, templatedConcept)) {
+				successfullyModelled.add(templatedConcept);
+			}
 		}
-
-		return successfullyModelledConcepts;
-	}
-
-	private TemplatedConcept doModeling(String loincNum) throws TermServerScriptException {
-		if (loincNum.equals("881-3")) {
-			LOGGER.debug("Check split of components");
-		}
-
-		if (loincNum.equals("57800-5")) {
-			LOGGER.debug("Check Divisors");
-		}
-
-		if (loincNum.equals("72888-1")) {
-			LOGGER.debug(".total should make this one primitive");
-		}
-
-		if (!confirmExternalIdentifierExists(loincNum) ||
-				containsObjectionableWord(getExternalConcept(loincNum))) {
-			return null;
-		}
-
-		//Is this a loincnum that's being maintained manually?  Return what is already there if so.
-		if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
-			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(getLoincTerm(loincNum));
-			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(loincNum)));
-			return tc;
-		}
-
-		Map<String, LoincDetail> loincDetailMap = loincDetailMapOfMaps.get(loincNum);
-		if (!loincDetailMap.containsKey(COMPONENT_PN) ||
-				!loincDetailMap.containsKey(COMPNUM_PN)) {
-			report(getTab(TAB_MODELING_ISSUES),
-					loincNum,
-					ContentPipelineManager.getSpecialInterestIndicator(loincNum),
-					getLoincTerm(loincNum).getDisplayName(),
-					"Does not feature one of COMPONENT_PN or COMPNUM_PN");
-			return null;
-		}
-
-		TemplatedConcept tc = getAppropriateTemplate(getExternalConcept(loincNum));
-		if (!(tc instanceof TemplatedConceptNull)) {
-			tc.populateTemplate();
-		}
-		validateTemplatedConcept(tc);
-		return tc;
 	}
 
 	private LoincTemplatedConcept doPanelModeling(String panelLoincNum) throws TermServerScriptException {

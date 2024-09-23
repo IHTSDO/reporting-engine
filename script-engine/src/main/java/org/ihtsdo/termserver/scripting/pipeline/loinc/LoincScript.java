@@ -53,6 +53,12 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		loadFullLoincFile(NOT_SET);
 		loadLoincParts();
 	}
+
+	@Override
+	protected String getContentType() {
+		return "Observable";
+	}
+
 	
 	protected void loadLoincDetail() throws TermServerScriptException {
 		LOGGER.info("Loading Loinc Detail: {}", getInputFile(FILE_IDX_LOINC_DETAIL));

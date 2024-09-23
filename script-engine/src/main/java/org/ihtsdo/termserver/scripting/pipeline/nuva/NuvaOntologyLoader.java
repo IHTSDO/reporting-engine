@@ -15,24 +15,27 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NuvaScript extends TermServerScript {
+import static org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConcept.*;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaScript.class);
+public class NuvaOntologyLoader extends TermServerScript implements NuvaConstants {
 
-	protected static int FILE_IDX_NUVA_DATA_RDF = 0;
-	protected static int FILE_IDX_NUVA_METADATA_RDF = 1;
-	protected static final String NUVA_NS= "http://data.esante.gouv.fr/NUVA#";
-	protected static final String SNOMED_LABEL = "SNOMED-CT-";
+	static {
+		ReportSheetManager.targetFolderId = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO";  //NUVA
+	}
 
-	public final String TAB_SUMMARY = "Summary";
-	public final String TAB_VACCINES = "Vaccines";
-	public final String TAB_VALENCES = "Valences";
-	public final String TAB_DISEASES = "Diseases";
-	public final String TAB_NUVA_DATA = "NUVA Data";
-	public final String TAB_NUVA_METADATA = "NUVA MetaData";
+	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaOntologyLoader.class);
+
+	protected static final int FILE_IDX_NUVA_DATA_RDF = 0;
+	protected static final int FILE_IDX_NUVA_METADATA_RDF = 1;
+
+	public static final String TAB_SUMMARY = "Summary";
+	public static final String TAB_VACCINES = "Vaccines";
+	public static final String TAB_VALENCES = "Valences";
+	public static final String TAB_DISEASES = "Diseases";
+	public static final String TAB_NUVA_DATA = "NUVA Data";
+	public static final String TAB_NUVA_METADATA = "NUVA MetaData";
 
 	private Model dataModel;
-	private Model metaModel;
 
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
@@ -41,6 +44,8 @@ public class NuvaScript extends TermServerScript {
 			TAB_DISEASES,
 			TAB_NUVA_DATA,
 			TAB_NUVA_METADATA};
+
+	private Property subClassProperty;
 
 	public enum NuvaUri {
 		ABSTRACT("http://data.esante.gouv.fr/NUVA/nuvs#isAbstract"),
@@ -52,10 +57,12 @@ public class NuvaScript extends TermServerScript {
 		CREATED("http://purl.org/dc/terms/created"),
 		DISEASE("http://data.esante.gouv.fr/NUVA#Disease"),
 		LABEL("http://www.w3.org/2000/01/rdf-schema#label"),
+		ALT_LABEL("http://www.w3.org/2004/02/skos/core#altLabel"),
 		HIDDEN_LABEL("http://www.w3.org/2004/02/skos/core#hiddenLabel"),
 		MODIFIED("http://purl.org/dc/terms/modified"),
 		MATCH("http://www.w3.org/2004/02/skos/core#exactMatch"),
 		VALENCE("http://data.esante.gouv.fr/NUVA/nuvs#containsValence"),
+		CONTAINED_IN_VACCINE("http://data.esante.gouv.fr/NUVA/nuvs#containedInVaccine"),
 		PREVENTS("http://data.esante.gouv.fr/NUVA/nuvs#prevents");
 		public final String value;
 
@@ -104,9 +111,8 @@ public class NuvaScript extends TermServerScript {
 	}
 
 	public int getTab(String tabName) throws TermServerScriptException {
-		String[] tabNames = getTabNames();
-		for (int i = 0; i < tabNames.length; i++) {
-			if (tabNames[i].equals(tabName)) {
+		for (int i = 0; i <  getTabNames().length; i++) {
+			if (getTabNames()[i].equals(tabName)) {
 				return i;
 			}
 		}
@@ -168,9 +174,11 @@ public class NuvaScript extends TermServerScript {
 			} else if (isObject(subclassStmt, NuvaClass.DISEASE)) {
 				reportDisease(subject);
 				return;
+			} else {
+				outputUnknownObject(subject, tabName, prefix);
 			}
 		}
-		outputUnknownObject(subject, tabName, prefix);
+
 	}
 
 	private void outputUnknownObject(Resource subject, String tabName, String prefix) throws TermServerScriptException {
@@ -188,95 +196,34 @@ public class NuvaScript extends TermServerScript {
 				type = getObject(stmt);
 				incrementSummaryInformation(prefix + "type - " + type);
 			} else if (isPredicate(stmt, NuvaUri.COMMENT)) {
-				//TODO Check for @<lang>
+				//TO DO Check for @<lang>
 				translationCount++;
 			}
 		}
 		String additionalProperties = Streams.stream(subject.listProperties())
 				.filter(p -> !hasKnownPredicate(p))
-				.map(p -> toString(p))
+				.map(this::toString)
 				.collect(Collectors.joining(",\n"));
 		incrementSummaryInformation(prefix + "Subjects");
 		report(getTab(tabName), subject.toString().replace(NUVA_NS, ""), type, objClass, translationCount, additionalProperties);
 	}
 
 	private void reportVaccine(Resource subject) throws TermServerScriptException {
-		StmtIterator stmtIterator = subject.listProperties();
-		int translationCount = 0;
-		String created = "";
-		String isAbstract = "";
-		List<String> valences = new ArrayList<>();
-		List<String> matches = new ArrayList<>();
-		List<String> snomedCodes = new ArrayList<>();
-		List<String> hiddenLabels = new ArrayList<>();
-		String enLabel = "";
-		while (stmtIterator.hasNext()) {
-			Statement stmt = stmtIterator.next();
-			if (isPredicate(stmt, NuvaUri.COMMENT)) {
-				String translation = getObject(stmt);
-				if (translation.contains("@en")) {
-					enLabel = translation;
-				}
-				translationCount++;
-			} else if (isPredicate(stmt ,NuvaUri.VALENCE)) {
-				valences.add(getObject(stmt));
-			} else if (isPredicate(stmt ,NuvaUri.MATCH)) {
-				String match = getObject(stmt);
-				if (match.startsWith(SNOMED_LABEL)) {
-					snomedCodes.add(match.substring(SNOMED_LABEL.length()));
-				} else {
-					matches.add(match);
-				}
-			} else if (isPredicate(stmt ,NuvaUri.HIDDEN_LABEL)) {
-				hiddenLabels.add(getObject(stmt));
-			} else if (isPredicate(stmt ,NuvaUri.CREATED)) {
-				created = getObject(stmt);
-			} else if (isPredicate(stmt ,NuvaUri.ABSTRACT)) {
-				isAbstract = getObject(stmt).equals("true")?"Y":"N";
-			}
-		}
-		report(getTab(TAB_VACCINES), subject.toString().replace(NUVA_NS, ""), isAbstract, translationCount + "\n" + enLabel, strList(valences), strSctList(snomedCodes), strList(hiddenLabels), created, strList(matches));
+		String nuvaId = subject.toString().replace(NUVA_NS, "");
+		NuvaVaccine vaccine = NuvaVaccine.fromResource(nuvaId, subject.listProperties());
+		report(getTab(TAB_VACCINES), vaccine.getExternalIdentifier(), vaccine.getAbstractStr(), vaccine.getTranslationCount() + "\n" + vaccine.getEnLabel(), strList(vaccine.getValenceRefs()), strSctList(vaccine.getSnomedCodes()), strList(vaccine.getHiddenLabels()), vaccine.getCreated(), strList(vaccine.getMatches()));
 	}
 	
 	private void reportValence(Resource subject) throws TermServerScriptException {
-		StmtIterator stmtIterator = subject.listProperties();
-		String label = "";
-		List<String> prevents = new ArrayList<>();
-		String created = "";
-		while (stmtIterator.hasNext()) {
-			Statement stmt = stmtIterator.next();
-			if (isPredicate(stmt ,NuvaUri.LABEL)) {
-				String translation = getObject(stmt);
-				if (hasLanguage(stmt, "en")) {
-					label = translation;
-				}
-			} else if (isPredicate(stmt ,NuvaUri.PREVENTS)) {
-				prevents.add(getObject(stmt));
-			} else if (isPredicate(stmt ,NuvaUri.CREATED)) {
-				created = getObject(stmt);
-			} 
-		}
-		report(getTab(TAB_VALENCES), subject.toString().replace(NUVA_NS, ""), label, strList(prevents), created);
+		String nuvaId = subject.toString().replace(NUVA_NS, "");
+		NuvaValence valence = NuvaValence.fromResource(nuvaId, subject.listProperties());
+		report(getTab(TAB_VALENCES), valence.getExternalIdentifier(), valence.getEnLabel(), strList(valence.getPrevents()), valence.getCreated());
 	}
 
 	private void reportDisease(Resource subject) throws TermServerScriptException {
-		StmtIterator stmtIterator = subject.listProperties();
-		int translationCount = 0;
-		String enLabel = "";
-		String created = "";
-		while (stmtIterator.hasNext()) {
-			Statement stmt = stmtIterator.next();
-			if (isPredicate(stmt, NuvaUri.LABEL)) {
-				String translation = getObject(stmt);
-				if (hasLanguage(stmt, "en")) {
-					enLabel = translation;
-				}
-				translationCount++;
-			} else if (isPredicate(stmt ,NuvaUri.CREATED)) {
-				created = getObject(stmt);
-			}
-		}
-		report(getTab(TAB_DISEASES), subject.toString().replace(NUVA_NS, ""), translationCount + "\n" + enLabel, created);
+		String nuvaId = subject.toString().replace(NUVA_NS, "");
+		NuvaDisease disease = NuvaDisease.fromResource(nuvaId, subject.listProperties());
+		report(getTab(TAB_DISEASES), disease.getExternalIdentifier(), disease.getTranslationCount() + "\n" + disease.getEnLabel(), disease.getCreated());
 	}
 
 	private String strList(List<String> list) {
@@ -286,7 +233,7 @@ public class NuvaScript extends TermServerScript {
 
 	private String strSctList(List<String> list) {
 		return list.stream()
-				.map(s -> getSctItem(s))
+				.map(this::getSctItem)
 				.collect(Collectors.joining("\n"));
 	}
 
@@ -312,36 +259,6 @@ public class NuvaScript extends TermServerScript {
 		return getPredicate(stmt) + " --> " + getObject(stmt);
 	}
 
-	private boolean hasLanguage(Statement stmt, String lang) {
-		if (stmt.getObject().isLiteral()) {
-			try {
-				//String langStr = stmt.getObject().asLiteral().getLanguage();
-				return stmt.getObject().asLiteral().getLanguage().equals(lang);
-			} catch (Exception e) {
-				LOGGER.warn(e.getMessage() + ": " + stmt);
-				return false;
-			}
-		}
-		return false;
-	}
-
-	private String getObject(Statement stmt) {
-		if (stmt.getObject().isLiteral()) {
-			try {
-				return stmt.getObject().asLiteral().getValue().toString();
-			} catch (Exception e) {
-				LOGGER.warn(e.getMessage() + ": " + stmt);
-				String str = stmt.getObject().toString();
-				int cut = str.indexOf("^^");
-				return str.substring(0,cut);
-			}
-		} else {
-			String str = stmt.getObject().toString();
-			int cut = str.indexOf("#") + 1;
-			return str.substring(cut);
-		}
-	}
-	
 	private String getPredicate(Statement stmt) {
 		String str = stmt.getPredicate().toString();
 		int cut = str.indexOf("#") + 1;
@@ -362,14 +279,86 @@ public class NuvaScript extends TermServerScript {
 
 		// use the RDFDataMgr to find the input file
 		InputStream in = RDFDataMgr.open(inputFile.getAbsolutePath());
-		if (in == null) {
-			throw new IllegalArgumentException("File: " + inputFile + " not found");
-		}
 
 		// read the RDF/XML file
 		model.read(in, null);
 		return model;
 	}
+
+	public List<NuvaVaccine> asVaccines(File file) {
+		dataModel = loadNuva(file);
+		Map<String, NuvaVaccine> vaccineMap = new HashMap<>();
+		Map<String, NuvaValence> valenceMap = new HashMap<>();
+		Map<String, NuvaDisease> diseaseMap = new HashMap<>();
+		subClassProperty = dataModel.getProperty(NuvaUri.SUBCLASSOF.value);
+		ResIterator subIterator = dataModel.listSubjects();
+		while (subIterator.hasNext()) {
+			Resource subject = subIterator.next();
+			convertToNuvaObjects(subject, vaccineMap, valenceMap, diseaseMap);
+		}
+		formHierarchy(vaccineMap, valenceMap, diseaseMap);
+		return new ArrayList<>(vaccineMap.values());
+	}
+
+	private void convertToNuvaObjects(Resource subject, Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap, Map<String, NuvaDisease> diseaseMap) {
+		String nuvaId = subject.toString().replace(NUVA_NS, "");
+		StmtIterator subclassIter = subject.listProperties(subClassProperty);
+		while (subclassIter.hasNext()) {
+			Statement subclassStmt = subclassIter.next();
+			if (isObject(subclassStmt, NuvaClass.VACCINE)) {
+				NuvaVaccine vaccine = NuvaVaccine.fromResource(nuvaId, subject.listProperties());
+				vaccineMap.put(vaccine.getExternalIdentifier(), vaccine);
+				return;
+			} else if (isObject(subclassStmt, NuvaClass.VALENCE)) {
+				NuvaValence valence = NuvaValence.fromResource(nuvaId, subject.listProperties());
+				valenceMap.put(valence.getExternalIdentifier(), valence);
+				return;
+			} else if (isObject(subclassStmt, NuvaClass.DISEASE)) {
+				NuvaDisease disease = NuvaDisease.fromResource(nuvaId, subject.listProperties());
+				diseaseMap.put(disease.getExternalIdentifier(), disease);
+				return;
+			}
+		}
+	}
+
+
+	private void formHierarchy(Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap, Map<String, NuvaDisease> diseaseMap) {
+		formVaccineHerarchy(vaccineMap, valenceMap);
+		formValenceHierarchy(valenceMap, diseaseMap);
+	}
+
+	private void formValenceHierarchy(Map<String, NuvaValence> valenceMap, Map<String, NuvaDisease> diseaseMap) {
+		//Now loop through the valences to see what disease they prevent, and link that object
+		//Also  if the valences have parent valences, link them up
+		for (NuvaValence valence : valenceMap.values()) {
+			for (String parentValenceId : valence.getParentValenceIds()) {
+				NuvaValence parentValence = valenceMap.get(parentValenceId);
+				if (parentValence != null) {
+					valence.addParentValence(parentValence);
+				}
+			}
+
+			for (String diseaseId : valence.getPrevents()) {
+				NuvaDisease disease = diseaseMap.get(diseaseId);
+				if (disease != null) {
+					valence.setDisease(disease);
+				}
+			}
+		}
+	}
+
+	private void formVaccineHerarchy(Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap) {
+		//Work through all the vaccines and populate them with the valences that they currently have string references to
+		for (NuvaVaccine vaccine : vaccineMap.values()) {
+			for (String valenceId : vaccine.getValenceRefs()) {
+				NuvaValence valence = valenceMap.get(valenceId);
+				if (valence != null) {
+					vaccine.addValence(valence);
+				}
+			}
+		}
+	}
+
 }
 
 

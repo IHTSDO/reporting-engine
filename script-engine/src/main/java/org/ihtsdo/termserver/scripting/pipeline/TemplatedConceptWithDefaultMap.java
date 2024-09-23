@@ -5,14 +5,28 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 
 public class TemplatedConceptWithDefaultMap extends TemplatedConcept {
 
+	private String codeSystemSctId = "default";
+	private String semTag = "(default)";
 	private TemplatedConceptWithDefaultMap(ExternalConcept externalConcept) {
 		super(externalConcept);
 	}
-	
-	public static TemplatedConceptWithDefaultMap create(ExternalConcept externalConcept) {
+
+	@Override
+	protected String getCodeSystemSctId() {
+		return codeSystemSctId;
+	}
+
+	public static TemplatedConceptWithDefaultMap create(ExternalConcept externalConcept, String codeSystemSctId, String semTag) {
 		TemplatedConceptWithDefaultMap templatedConcept = new TemplatedConceptWithDefaultMap(externalConcept);
+		templatedConcept.codeSystemSctId = codeSystemSctId;
+		templatedConcept.semTag = semTag;
 		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] to [DIVISOR] in [SYSTEM] at [TIME] by [METHOD] using [using device] [CHALLENGE]");
 		return templatedConcept;
+	}
+
+	@Override
+	public String getSemTag() {
+		return semTag;
 	}
 
 	@Override

@@ -132,22 +132,8 @@ public class LoincFileAnalysis extends LoincScript {
 	}
 
 	@Override
-	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
-		throw new IllegalStateException("This class is not expected to do any modelling");
-	}
-	
-	@Override
-	protected void reportMissingMappings(int tab) {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	protected void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
-
-	@Override
 	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
-		throw new IllegalStateException("This class is not expected to do any modelling");
+		return null;
 	}
+
 }

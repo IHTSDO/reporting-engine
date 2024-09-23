@@ -14,8 +14,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	protected TemplatedConcept(ExternalConcept externalConcept) {
 		this.externalConcept = externalConcept;
 	}
-	
-	protected static final String SEM_TAG = " (observable entity)";
 
 	public enum IterationIndicator { NEW, REMOVED, RESURRECTED, MODIFIED, UNCHANGED }
 
@@ -77,9 +75,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		return iterationIndicator;
 	}
 	
-	protected String getSemTag() {
-		return SEM_TAG;
-	}
+	protected abstract String getSemTag();
 
 	public void setIterationIndicator(IterationIndicator iterationIndicator) {
 		this.iterationIndicator = iterationIndicator;
@@ -108,7 +104,10 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	public void setExistingConceptHasInactivations(boolean existingConceptHasInactivations) {
 		this.existingConceptHasInactivations = existingConceptHasInactivations;
 	}
-	
+
+	protected String bracket(String str) {
+		return "[" + str + "]";
+	}
 
 	@Override
 	public String getWrappedId() {
@@ -147,8 +146,10 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		if (hasProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT)) {
 			splitComponentsIntoDistinctGroups();
 		}
-		getConcept().addAlternateIdentifier(getExternalIdentifier(), SCTID_LOINC_CODE_SYSTEM);
+		getConcept().addAlternateIdentifier(getExternalIdentifier(), getCodeSystemSctId());
 	}
+
+	protected abstract String getCodeSystemSctId();
 
 	protected void populateTerms() throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
@@ -177,7 +178,27 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	
 	protected abstract void applyTemplateSpecificTermingRules(Description pt);
 
-	protected abstract String populateTermTemplateFromSlots(String ptTemplateStr);
+	protected String populateTermTemplateFromSlots(String ptTemplateStr) {
+		//Do we have any slots left to fill?  Find their attribute types via the slot map
+		String [] templateItems = org.apache.commons.lang3.StringUtils.substringsBetween(ptTemplateStr,"[", "]");
+		if (templateItems == null) {
+			return ptTemplateStr;
+		}
+
+		for (String templateItem : templateItems) {
+			ptTemplateStr = populateTemplateItem(templateItem, ptTemplateStr);
+		}
+		return ptTemplateStr;
+	}
+
+	protected String populateTemplateItem(String templateItem, String ptTemplateStr) {
+		String regex = "\\[" + templateItem + "\\]";
+		if (slotTermMap.containsKey(templateItem)) {
+			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
+			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
+		}
+		return ptTemplateStr;
+	}
 
 	protected abstract void populateParts() throws TermServerScriptException;
 
@@ -227,7 +248,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	public void setPreferredTermTemplate(String preferredTermTemplate) {
 		this.preferredTermTemplate = preferredTermTemplate;
 	}
-	
 
 	protected String tidyUpTerm(String term) {
 		term = removeUnpopulatedTermSlot(term, " at [TIME]");
