@@ -58,6 +58,11 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	}
 
 	@Override
+	protected String getContentType() {
+		return "Observable";
+	}
+
+	@Override
 	protected void loadSupportingInformation() throws TermServerScriptException {
 		importNpuConcepts();
 		loadPanels();
@@ -73,10 +78,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 				.collect(Collectors
 						.toMap(NpuConcept::getExternalIdentifier, 
 								c -> c,
-								(first, second) -> {
-									//One of them will not have an end time
-									return ((NpuConcept)second).getEffectiveTo() == null ? second : first;
-								}));
+								(first, second) -> ((NpuConcept)second).getEffectiveTo() == null ? second : first));
 		} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
@@ -94,41 +96,22 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	}
 
 	@Override
-	protected Set<TemplatedConcept> doModeling() throws TermServerScriptException {
+	protected void doModeling() throws TermServerScriptException {
 		Set<TemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (String npuNum : getExternalConceptMap().keySet()) {
-			TemplatedConcept templatedConcept = doModeling(npuNum);
-			checkConceptSufficientlyModeled("Observable", npuNum, templatedConcept, successfullyModelledConcepts);
+			TemplatedConcept templatedConcept = modelExternalConcept(npuNum);
+			if (conceptSufficientlyModeled("Observable", npuNum, templatedConcept)) {
+				successfullyModelledConcepts.add(templatedConcept);
+			}
 		}
 
 		for (String panelNpuNum : panelNpuNums) {
 			NpuTemplatedConcept templatedConcept = doPanelModeling(panelNpuNum);
-			checkConceptSufficientlyModeled("Panel", panelNpuNum, templatedConcept, successfullyModelledConcepts);
+			if (conceptSufficientlyModeled("Panel", panelNpuNum, templatedConcept)) {
+				successfullyModelledConcepts.add(templatedConcept);
+			}
 		}
-
-		return successfullyModelledConcepts;
 	}
-
-	private TemplatedConcept doModeling(String npuNum) throws TermServerScriptException {
-		if (!confirmExternalIdentifierExists(npuNum) || 
-				containsObjectionableWord(getExternalConcept(npuNum))) {
-			return null;
-		}
-
-		//Is this a npunum that's being maintained manually?  Return what is already there if so.
-		if (MANUALLY_MAINTAINED_ITEMS.containsKey(npuNum)) {
-			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(getNpuConcept(npuNum));
-			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(npuNum)));
-			return tc;
-		}
-
-		NpuTemplatedConcept templatedConcept = getAppropriateTemplate(getExternalConcept(npuNum));
-		templatedConcept.populateTemplate();
-		validateTemplatedConcept(templatedConcept);
-		return templatedConcept;
-	}
-	
-
 
 	private NpuTemplatedConcept doPanelModeling(String panelNpuNum) throws TermServerScriptException {
 		//Don't do objectionable word check on panels - 'panel' is our only current objectionable word!

@@ -6,6 +6,13 @@ public abstract class ExternalConcept {
 	
 	protected String property;
 
+	public ExternalConcept() {
+	}
+
+	public ExternalConcept(String externalIdentifier) {
+		this.externalIdentifier = externalIdentifier;
+	}
+
 	public String getExternalIdentifier() {
 		return externalIdentifier;
 	}
