@@ -5,9 +5,12 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.termserver.scripting.EclCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
+import org.ihtsdo.termserver.scripting.domain.CodeSystem;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
@@ -17,7 +20,9 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,11 +53,12 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	
 	private Collection<Concept> inactivatingConcepts = new ArrayList<>();
 	private List<String> inactivatingConceptIds = new ArrayList<>();
+
+	private Map<String, DerivativeLocation> derivativeLocationMap;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(CONCEPT_INACTIVATIONS, "467606002,468111004,109145005,469430002,469300009,469431003,470480002,469205002,468962002,470305006,701208004,462649005,463089007,462724002,701542009,705664002,700754003,464608009,733716003,465199002,109148007,465972000,463598003,466469009,109152007,706073002,466745006,467054009,700954006,337485002,711624001,702262002,109154008,704702003,467239009,701271009,468088001,467682003,716751009,718269005,466422004,109156005,700973005,468175001,467509003,467472006,467689007,712479001,705663008,468122000,467235003,467211008,706537000,701302000,764181009,718620003,718268002,706088007,467541009,716689009,701259003,109159003,109164004,468050003,356328002,706063004,706087002,468065002,467759009,467669006,738554003,702013007,702014001,109166002,701721005,467461001,467800006,467470003,467354001,467642005,701008006,701009003,700710009,109168001,467595004,717711001,467549006,700860007,468754002,723699006,468505007,714056006,468218000,469132003,706387008,734941008,468338002,468364008,468620007,706388003,468470001,468533007,468422007,468444002,705665001,468434004,468188003,788130003,707725007,468576009,736296007,706086006,702257003,468430008,705292003,700758000,468707001,468352000,719849002,468391005,726650002,706569009,468209002,468795004,468681008,468186004,468742002,468809005,468260001,714732001,714733006,702198002,705470004,702047005,701268001,468797007,701693005,468802001,713961003,701304004,717110005,701270005,75750007,702311002,470146007,469404001,469977000,469752007,701573008,701907003,701426004,701427008,700759008,706064005,470577000,470184001,701723008,717117008,701030007,700928003,701044001,736112003,705660006,700760003,470402008,701036001,109177008,701066008,462252007,733689006,701929004,109178003,462264004,713780006,704815000,723702004,462337002,462195002,701333003,711630001,356337002,733699001,733701001,733700000,356296007,109179006,469983002,469611007,470450007,470544004,470384007,720867001,462773006,469672008,469859009,711620005,723378002,469873000,702044003,724405006,714064000,701853009,701847009,470066001,469424002,701235008,704816004,469583008,469563007,469523006,469199009,713960002,469202004,701727009,705661005,700761004,470279003,701294005,701198000,700651001,462444007,462398005,463024000,462776003,463054005,462847009,470078002,75187009,718400005,469309005,469991006,469508001,469729008,718267007,469449003,734260005,736870001,706772000,109180009,463725006,701520008,701521007,109181008,701911009,9817005,464453004,701697006,701991005,723700007,464870000,464366003,702149006,705497006,700762006,701747001,701048003,701061003,713969001,705548004,700763001,705667009,109182001,705287000,463739006,463734001,736875006,463570001,463869005,705907009,700799006,700800005,713840009,705919001,705666000,701149009,109183006,704805006,704749004,734984009,704751000,704757001,464737003,464276003,464771007,464559003,464530003,462287007,69670004,719930000,764177009,462399002,462615002,462177000,702213002,701987000,706155003,702187003,711629006,462693005,712472005,462254008,717358007,43001000,718263006,711619004,701424001,701425000,463667009,701694004,463731009,463533005,463462009,109184000,701224003,702093008,704944004,462687002,718266003,465904000,465246004,465605002,109185004,467063006,466332005,466430003,701619008,701043007,718262001,466171001,465693000,466058001,465674002,700648008,738558000,465412002,109186003,465835007,465215003,701961000,465214004,465221004,717109000,713932004,704825005,705220000,706229007,700919004,73276008,109187007,701642001,109188002,466142002,717307005,767709008,738669007,465403004,705659001,465415000,717151007,466011009,465596002,700769002,700735003,466115003,465950002,701956002,108882005,466678008,385387009,464929003,701488000,464945001,465767000,701668008,109189005,465528009,465357007,465288008,706066007,465942006,466379005,702046001,711327000,705528006,712473000,109176004,464804008,704779006,705537006,464387008,464820003,464883004,711478006,713962005,701635001,705662003,465825001,716690000,465222006,466463005,734945004,466906009,109190001,467090002,700932009,466270007,466787008,734925007,734926008,717294009,467943002,733732000,717304003,470596001,465075000,465332002,701715006,722307003,704785004,43734006,700945008,701463008,706070004,466844004,467141004,466637006,466898000,467132009,466930006,466827003,466890007,466411003,466335007,466956004,468076003,467838005,700598001,700976002,701600003,467620009,468033000,701886008,701885007,467768006,468013004,467458002,467594000,341036005,468089009,467560002,467745002,467529002,467922003,467660005,468752003,707726008,468339005,736297003,736296007,468961009,700645006,713806009,767698003,718282002,468765007,702188008,736139006,723431004,469743003,763545007,469450003,469748007,470377004,701764003,701963002,469394008,736179002,736885007,700983009,700599009,462316005,463092006,704921002,462616001,736880002,470545003,342706005,700658007,462884006,724396001,706120000,462642001,767697008,763555006,702052000,700586006,734273009,469654002,470124004,705994005,470051004,88208003,725020002,469534009,469628005,470283003,736886008,462752006,718283007,736181000,469856002,736180004,701892002,700750007,717713003,463527001,701428003,464287006,464891008,462577009,700682002,700600007,722300001,700601006,464018000,336596001,336590007,700679007,464527005,462730002,462933006,462937007,701552008,700748004,463202009,723728001,463874002,701299000,700691003,462641008,462296007,462742007,464525002,465757005,718768001,465379002,735039000,700878002,465421001,726719007,466922005,466450004,464400008,706628008,465906003,706841009,466400006,467044005,464480006,337341003,465006000,344575009,467110000,466750000,466861001");
-		params.put(CONCEPT_INACTIVATIONS, "<< 269736006 |Poisoning of undetermined intent (disorder)|");
+		params.put(CONCEPT_INACTIVATIONS, "<< 48694002 |Anxiety|");  //Found in the Nursing Issues Reset
 		params.put(INCLUDE_INFERRED, "false");
 		TermServerScript.run(InactivationImpactAssessment.class, args, params);
 	}
@@ -60,6 +66,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setPopulateReleasedFlag(true);
+		importDerivativeLocations();
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc reports
 		super.init(run);
 	}
@@ -67,7 +74,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	@Override
 	public void postInit() throws TermServerScriptException {
 		referenceSets = findConcepts(REFSET_ECL);
-		removeEmptyAndNoScopeRefsets();
+		removeEmptyNoScopeAndDerivativeRefsets();
 		LOGGER.info ("Recovered {} simple reference sets and maps", referenceSets.size());
 
 		String[] columnHeadings = new String[] {
@@ -104,9 +111,11 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
-	private void removeEmptyAndNoScopeRefsets() throws TermServerScriptException {
+	private void removeEmptyNoScopeAndDerivativeRefsets() throws TermServerScriptException {
+		LOGGER.info("Checking local refsets for emptiness, out of scope and derivative refsets");
 		emptyReferenceSets = new ArrayList<>();
 		outOfScopeReferenceSets = new ArrayList<>();
+		List<Concept> derivativeRefsets = new ArrayList<>();
 		for (Concept refset : referenceSets) {
 			if (!inScope(refset)) {
 				outOfScopeReferenceSets.add(refset);
@@ -114,12 +123,15 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 			}
 			if (getConceptsCount("^" + refset) == 0) {
 				emptyReferenceSets.add(refset);
+			} else if (derivativeLocationMap.containsKey(refset.getId())) {
+				derivativeRefsets.add(refset);
 			} else {
 				refsetSummary.put(refset, 0);
 			}
 			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
 		}
 		referenceSets.removeAll(emptyReferenceSets);
+		referenceSets.removeAll(derivativeRefsets);
 	}
 	
 	@Override
@@ -150,8 +162,9 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		if (isECL) {
 			checkRefsetUsageECL();
 		} else {
-			checkRefsetUsage();
+			checkRefsetUsageEnumerated();
 		}
+		checkDerivativeUsage();
 		checkAttributeUsage();
 		checkHistoricalAssociations();
 		checkMRCM();
@@ -189,38 +202,100 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		}
 	}
 
-	private void checkRefsetUsage() throws TermServerScriptException {
+	private void checkRefsetUsageEnumerated() throws TermServerScriptException {
 		LOGGER.debug ("Checking {} inactivating concepts against {} refsets", inactivatingConceptIds.size(),referenceSets.size());
 		for (Concept refset : referenceSets) {
-			int conceptsProcessed = 0;
-			do {
-				String subsetList = "";
-				for (int i = 0; i < CHUNK_SIZE && conceptsProcessed < inactivatingConceptIds.size(); i++) {
-					if (i > 0) {
-						subsetList += " OR ";
-					}
-					subsetList += inactivatingConceptIds.get(conceptsProcessed);
-					conceptsProcessed++;
-				}
-				String ecl = "^" + refset.getId() + " AND ( " + subsetList + " )"; 
-				for (Concept c : findConcepts(ecl)) {
-					report (c, "active in refset", refset.getPreferredSynonym());
-				}
-				try {
-					Thread.sleep(1 * 200);
-				} catch (Exception e) {}
-			} while (conceptsProcessed < inactivatingConceptIds.size());
+			EclCache eclCache = getDefaultEclCache();
+			reportRefsetInactivationsAgainstEnumeratedList(refset, eclCache);
 		}
 	}
-	
+
 	private void checkRefsetUsageECL() throws TermServerScriptException {
 		LOGGER.debug("Checking {} inactivating concepts against {} refsets", inactivatingConceptIds.size(), referenceSets.size());
+		EclCache eclCache = getDefaultEclCache();
 		for (Concept refset : referenceSets) {
-			String ecl = "^" + refset.getId() + " AND ( " + selectionCriteria + " )"; 
-			for (Concept c : findConcepts(ecl)) {
-				report (c, "active in refset", refset.getPreferredSynonym());
+			try {
+				reportRefsetInactivationsAgainstEcl(refset, eclCache);
+			} catch (TermServerScriptException e) {
+				report(PRIMARY_REPORT, e.getMessage());
 			}
 		}
+	}
+
+	private void reportRefsetInactivationsAgainstEcl(Concept refset, EclCache eclCache) throws TermServerScriptException {
+		String ecl = "^" + refset.getId() + " AND ( " + selectionCriteria + " )";
+		String detail = "As per branch " + eclCache.getBranch() + " on " + eclCache.getServer();
+		for (Concept c : eclCache.findConcepts(ecl)) {
+			report (c, "active in refset", refset.getPreferredSynonym(), detail);
+		}
+	}
+
+	private void reportRefsetInactivationsAgainstEnumeratedList(Concept refset, EclCache eclCache) throws TermServerScriptException {
+		int conceptsProcessed = 0;
+		do {
+			String subsetList = "";
+			for (int i = 0; i < CHUNK_SIZE && conceptsProcessed < inactivatingConceptIds.size(); i++) {
+				if (i > 0) {
+					subsetList += " OR ";
+				}
+				subsetList += inactivatingConceptIds.get(conceptsProcessed);
+				conceptsProcessed++;
+			}
+			String ecl = "^" + refset.getId() + " AND ( " + subsetList + " )";
+			for (Concept c : eclCache.findConcepts(ecl)) {
+				report(c, "active in refset", refset.getPreferredSynonym());
+			}
+			try {
+				Thread.sleep(1 * 200);
+			} catch (Exception e) {}
+		} while (conceptsProcessed < inactivatingConceptIds.size());
+	}
+
+	private void checkDerivativeUsage() throws TermServerScriptException {
+		Map<String, Map<String, TermServerClient>> serverCodeSystemTsClientMap = new HashMap<>();
+		Map<String, String> branchForCodeSystemMap = new HashMap<>();
+		for (DerivativeLocation location : derivativeLocationMap.values()) {
+			try {
+				checkInactivationsForDerivative(location, serverCodeSystemTsClientMap, branchForCodeSystemMap);
+			} catch (IllegalStateException | TermServerScriptException e) {
+				report(PRIMARY_REPORT, e.getMessage());
+			}
+		}
+	}
+
+	private void checkInactivationsForDerivative(DerivativeLocation location, Map<String, Map<String, TermServerClient>> serverCodeSystemTsClientMap, Map<String, String> branchForCodeSystemMap) throws TermServerScriptException {
+		//Keep a map of server specific clients for each codeSystem / server combination.
+		//For SNOMEDCT-DERIVATIVES on the browser, for example, we should only need to do this once.
+		Map<String, TermServerClient> codeSystemTsClientMap = serverCodeSystemTsClientMap.computeIfAbsent(location.server, k -> new HashMap<>());
+		TermServerClient tsClient = codeSystemTsClientMap.computeIfAbsent(location.codeSystem, k -> new TermServerClient(location.server, location.codeSystem));
+
+		//Now get an Ecl Cache which is specific to this server (via the tsClient) and the branch
+		//Watch that the same branch on another server will not be considered distinct so that's a danger point.
+		String branch = branchForCodeSystemMap.computeIfAbsent(location.codeSystem, k -> getBranchForCodeSystem(tsClient, location));
+		EclCache eclCache = EclCache.getCache(branch, tsClient, gl, false);
+		//Refset might not be known to the current project, so create a temporary concept
+		Concept refset = new Concept(location.sctId);
+		refset.setPreferredSynonym(location.pt);
+		if (isECL) {
+			reportRefsetInactivationsAgainstEcl(refset, eclCache);
+		} else {
+			reportRefsetInactivationsAgainstEnumeratedList(refset, eclCache);
+		}
+	}
+
+	private String getBranchForCodeSystem(TermServerClient tsClient, DerivativeLocation location) {
+		String reason = "";
+		try {
+			//What is the current branch for this CodeSystem?
+			CodeSystem cs = tsClient.getCodeSystem(location.codeSystem);
+			if (cs != null && cs.getLatestVersion() != null) {
+				return cs.getLatestVersion().getBranchPath();
+			}
+		} catch (TermServerScriptException e) {
+			reason = " due to " + e.getMessage();
+		}
+
+		throw new IllegalStateException("Unable to recover CodeSystem " + location.codeSystem + " from " + location.server + reason);
 	}
 
 	private void checkHighVolumeUsage() throws TermServerScriptException {
@@ -263,6 +338,11 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 
 	private void checkRefsetFields(String recordType, Collection<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		for(RefsetMember rm : refsetMembers) {
+			//No need to check inactive refset members
+			if (!rm.isActiveSafely()) {
+				continue;
+			}
+
 			//Does this field contain any SCTIDs?  Check they exist and are active if so.
 			validateRefsetMemberField(recordType, "Referenced Component ID", rm.getReferencedComponentId(), rm);
 			for (String fieldName : rm.getAdditionalFieldNames()) {
@@ -286,6 +366,44 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		countIssue(c);
 		return super.report (PRIMARY_REPORT, c, details);
+	}
+
+	private void importDerivativeLocations() throws TermServerScriptException {
+		derivativeLocationMap = new HashMap<>();
+		String fileName = "resources/derivative-locations.tsv";
+		LOGGER.debug ("Loading {}", fileName );
+
+		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] columns = line.split("\t", -1);
+				//Is this the header row?
+				if (columns[0].equals("SCTID")) {
+					continue;
+				}
+
+				if (columns.length >= 5) {
+					DerivativeLocation location = new DerivativeLocation();
+					location.sctId = columns[0];
+					location.pt = columns[1];
+					location.server = columns[2];
+					location.codeSystem = columns[3];
+					location.project = columns[4];
+					derivativeLocationMap.put(location.sctId, location);
+				}
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to read " + fileName, e);
+		}
+		LOGGER.info("Configured the location of {} derivatives", derivativeLocationMap.size());
+	}
+
+	private class DerivativeLocation {
+		String sctId;
+		String pt;
+		String server;
+		String codeSystem;
+		String project;
 	}
 
 }

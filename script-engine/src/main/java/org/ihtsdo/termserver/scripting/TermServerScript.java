@@ -1105,6 +1105,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		return CHANGE_MADE;
 	}
+
+	public EclCache getDefaultEclCache() {
+		String branch = overrideEclBranch == null ? project.getBranchPath() : overrideEclBranch;
+		return EclCache.getCache(branch, tsClient, gl, quiet, CharacteristicType.INFERRED_RELATIONSHIP);
+	}
 	
 	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
 		String branch = overrideEclBranch == null ? project.getBranchPath() : overrideEclBranch;
@@ -1180,9 +1185,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			branch = historicECLBranch;
 		}
 		
-		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet, charType);
+		EclCache cache = EclCache.getCache(branch, tsClient, gl, quiet, charType);
 		boolean wasCached = cache.isCached(ecl);
-		Collection<Concept> concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 
+		Collection<Concept> concepts = cache.findConcepts(ecl, useLocalStoreIfSimple);
 
 		//If this is the first time we've seen these results, check for duplicates
 		if (!wasCached) {

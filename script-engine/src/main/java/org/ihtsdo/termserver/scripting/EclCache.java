@@ -12,34 +12,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.lang.StringUtils;
 
-import com.google.gson.Gson;
-
 import static org.springframework.util.StringUtils.countOccurrencesOf;
 
 public class EclCache implements ScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(EclCache.class);
-	private static Map <String, EclCache> branchCaches;
-	private static int PAGING_LIMIT = 1000;
-	private TermServerClient tsClient;
+	private static final Map <String, EclCache> branchCaches = new HashMap<>();
+	private static final  int PAGING_LIMIT = 1000;
+
+	private final TermServerClient tsClient;
 	private GraphLoader gl;
-	boolean quiet = false;
-	CharacteristicType charType;
+	private boolean quiet = false;
+	private CharacteristicType charType;
+	private final String branch;
 	
-	Map <String, Collection<Concept>> expansionCache = new HashMap<>();
-	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet) {
-		return getCache(branch, tsClient, gson, gl, quiet, CharacteristicType.INFERRED_RELATIONSHIP);
+	private final Map <String, Collection<Concept>> expansionCache = new HashMap<>();
+
+	public static EclCache getCache(String branch, TermServerClient tsClient, GraphLoader gl, boolean quiet) {
+		return getCache(branch, tsClient, gl, quiet, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 	
-	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet, CharacteristicType charType) {
-		if (branchCaches == null) {
-			branchCaches  = new HashMap<>();
-		}
-		
+	static EclCache getCache(String branch, TermServerClient tsClient, GraphLoader gl, boolean quiet, CharacteristicType charType) {
 		String cacheKey = branch + "_" + charType;
 		
 		EclCache branchCache = branchCaches.get(cacheKey);
 		if (branchCache == null) {
-			branchCache = new EclCache(tsClient, gson);
+			branchCache = new EclCache(tsClient, branch);
 			branchCaches.put(cacheKey, branchCache);
 		}
 		branchCache.gl = gl;
@@ -48,28 +45,29 @@ public class EclCache implements ScriptConstants {
 		return branchCache;
 	}
 	
-	EclCache (TermServerClient tsClient,Gson gson) {
+	EclCache (TermServerClient tsClient, String branch) {
 		this.tsClient = tsClient;
+		this.branch = branch;
 	}
 	
 	public static void reset() {
 		LOGGER.info("Resetting ECL Cache - all branches wipe");
-		branchCaches = new HashMap<>();
+		branchCaches.clear();
 	}
 	
-	protected Collection<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
-		return findConcepts(branch, ecl, true);
+	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
+		return findConcepts(ecl, true);
 	}
 	
 	protected boolean isCached(String ecl) {
 		return expansionCache.containsKey(ecl);
 	}
 	
-	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
-		return findConcepts(branch, ecl, useLocalStoreIfSimple, charType);
+	protected Collection<Concept> findConcepts(String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		return findConcepts(ecl, useLocalStoreIfSimple, charType);
 	}
 	
-	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
+	protected Collection<Concept> findConcepts(String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
 			LOGGER.warn("EclCache asked to find concepts but no ecl specified.  Returning empty set");
 			return new ArrayList<>();
@@ -85,7 +83,7 @@ public class EclCache implements ScriptConstants {
 		DescendantsCache descendantsCache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getDescendantsCache() : gl.getStatedDescendantsCache();
 		
 		//Have we been passed some partial ecl that begins and ends with a bracket?
-		//However if we contain OR or MINUS then this is not safe to do
+		//However, if we contain 'OR 'or 'MINUS' then this is not safe to do
 		if ( (ecl.startsWith("(") && ecl.endsWith(")")) && 
 				!(ecl.contains("AND") || ecl.contains("OR") || ecl.contains("MINUS") )) {
 			ecl = ecl.substring(1, ecl.length() -1).trim();
@@ -95,15 +93,14 @@ public class EclCache implements ScriptConstants {
 		if (expansionCache.containsKey(ecl)) {
 			Collection<Concept> cached = expansionCache.get(ecl);
 			//Have we reset the GL? Recover full local cached objects if so
-			if (cached.size() > 0 && StringUtils.isEmpty(cached.iterator().next().getFsn())) {
-				Set<Concept> localCopies = cached.stream()
+			if (!cached.isEmpty() && StringUtils.isEmpty(cached.iterator().next().getFsn())) {
+				cached = cached.stream()
 						.map(c -> gl.getConceptSafely(c.getId()))
 						.collect(Collectors.toSet());
-				cached = localCopies;
 				expansionCache.put(ecl, cached);
 			}
 			if (!quiet) {
-				LOGGER.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
+				LOGGER.debug ("Recovering cached {} concepts matching '{}'", cached.size(), ecl);
 			}
 			return cached;
 		} else if (machineEcl.contains(" OR ") && !machineEcl.contains("(")) {
@@ -111,8 +108,8 @@ public class EclCache implements ScriptConstants {
 			//iterate through them without copying the objects
 			Collection<Concept> combinedSet = new HashSet<>();
 			for (String eclFragment : machineEcl.split(" OR ")) {
-				LOGGER.debug("Combining request for: " + eclFragment);
-				combinedSet.addAll(findConcepts(branch, eclFragment, useLocalStoreIfSimple));
+				LOGGER.debug("Combining request for: {}", eclFragment);
+				combinedSet.addAll(findConcepts(eclFragment, useLocalStoreIfSimple));
 			}
 			allConcepts = combinedSet;
 			expansionCache.put(ecl, combinedSet);
@@ -123,15 +120,15 @@ public class EclCache implements ScriptConstants {
 			} else if (useLocalStoreIfSimple && localStorePopulated && isSimple(ecl)){
 				//We might want to modify these sets, so request mutable copies
 				if (ecl.startsWith("<<")) {
-					Concept subhierarchy = gl.getConcept(ecl.substring(2).trim());
-					if (subhierarchy.equals(ROOT_CONCEPT)) {
+					Concept subHierarchy = gl.getConcept(ecl.substring(2).trim());
+					if (subHierarchy.equals(ROOT_CONCEPT)) {
 						allConcepts = gl.getAllConcepts();
 					} else {
-						allConcepts = descendantsCache.getDescendantsOrSelf(subhierarchy, true);
+						allConcepts = descendantsCache.getDescendantsOrSelf(subHierarchy, true);
 					}
 				} else if (ecl.startsWith("<")) {
-					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
-					allConcepts = descendantsCache.getDescendants(subhierarchy, true);
+					Concept subHierarchy = gl.getConcept(ecl.substring(1).trim());
+					allConcepts = descendantsCache.getDescendants(subHierarchy, true);
 				} else {
 					//Could this be a single concept?
 					try {
@@ -142,18 +139,18 @@ public class EclCache implements ScriptConstants {
 						throw new IllegalStateException("ECL is not simple: " + ecl);
 					}
 				}
-				LOGGER.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
+				LOGGER.debug("Recovered {} concepts for simple ecl from local memory: {}", allConcepts.size(), ecl);
 			} else {
-				allConcepts = recoverConceptsFromTS(branch, ecl, charType);
+				allConcepts = recoverConceptsFromTS(ecl, charType);
 			}
 		}
 		
-		if (allConcepts.size() == 0) {
-			LOGGER.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
+		if (allConcepts.isEmpty()) {
+			LOGGER.warn("ECL {} recovered 0 concepts.  Check?", ecl);
 			expansionCache.remove(ecl);
 		} else {
 			//Seeing a transient issue where we're getting 0 concepts back on the first call, and the concepts back on a 
-			//subsequent call.  So for now, don't cache a null response and we'll sleep / retry
+			//subsequent call.  So for now, don't cache a null response, and we'll sleep / retry
 			//Cache this result
 			expansionCache.put(ecl, allConcepts);
 		}
@@ -181,7 +178,7 @@ public class EclCache implements ScriptConstants {
 		return isSimple;
 	}
 
-	private Set<Concept> recoverConceptsFromTS(String branch, String ecl, CharacteristicType charType) throws TermServerScriptException {
+	private Set<Concept> recoverConceptsFromTS(String ecl, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> allConcepts = new HashSet<>();
 		boolean allRecovered = false;
 		String searchAfter = null;
@@ -193,7 +190,7 @@ public class EclCache implements ScriptConstants {
 					totalRecovered += collection.getItems().size();
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
-						LOGGER.debug("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
+						LOGGER.debug("Recovering {} concepts matching '{}'", collection.getTotal(), ecl);
 					}
 					if (localStorePopulated) {
 						//Recover our locally held copy of these concepts so that we have the full hierarchy populated
@@ -228,5 +225,13 @@ public class EclCache implements ScriptConstants {
 			}
 		}
 		return allConcepts;
+	}
+
+	public String getBranch() {
+		return branch;
+	}
+
+	public String getServer() {
+		return tsClient.getUrl();
 	}
 }

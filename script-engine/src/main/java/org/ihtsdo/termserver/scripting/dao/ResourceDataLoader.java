@@ -28,6 +28,8 @@ import java.io.OutputStream;
 
 @Service
 public class ResourceDataLoader {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceDataLoader.class);
+
 	private static final String[] fileNames = new String[] {	"cs_words.tsv",
 																"acceptable_dose_forms.tsv",
 																"us-to-gb-terms-map.txt",
@@ -35,7 +37,8 @@ public class ResourceDataLoader {
 																"legacy_int_release_summary.json",
 																"prepositions.txt",
 																"preposition-exceptions.txt",
-																"repeated-word-exceptions.txt"};
+																"repeated-word-exceptions.txt",
+																"derivative-locations.tsv"};
 	
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;
@@ -52,8 +55,6 @@ public class ResourceDataLoader {
 	@Value("${resources.useCloud}")
 	private String useCloudStr;
 	
-	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceDataLoader.class);
-
 	@EventListener(ApplicationReadyEvent.class)
 	private void init() throws TermServerScriptException {
 		boolean useCloud = false;
@@ -69,20 +70,20 @@ public class ResourceDataLoader {
 					s3Client = S3Client.builder()
 							.region(DefaultAwsRegionProviderChain.builder().build().getRegion())
 							.build();
-					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials for resources");
+					LOGGER.info("Connecting to S3 with EC2 environment configured credentials for resources");
 				} else {
 					s3Client = S3Client.builder()
 							.region(Region.of(region))
 							.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsKey, awsSecretKey)))
 							.build();
-					TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
+					LOGGER.info("Connecting to S3 with locally specified account: {}", awsKey);
 				}
 
 				ResourceManager resourceManager = new ResourceManager(resourceConfig, new SimpleStorageResourceLoader(s3Client));
 
 				for (String fileName : fileNames) {
 					File localFile = new File ("resources/" + fileName);
-					TermServerScript.info ("Downloading " + fileName + " from S3");
+					LOGGER.info("Downloading {} from S3", fileName);
 					try (InputStream input = resourceManager.readResourceStreamOrNullIfNotExists(fileName);
 							OutputStream out = new FileOutputStream(localFile);) {
 						if (input != null) {
@@ -97,7 +98,7 @@ public class ResourceDataLoader {
 				final String errorMsg = "Error when trying to download the us-to-gb-terms-map.txt file from S3 via :" +  resourceConfig;
 				LOGGER.error(errorMsg, t);
 			}
-			TermServerScript.info ("Resources download complete");
+			LOGGER.info("Resources download complete");
 		} else {
 			LOGGER.info("AWS S3 marked as local due to 'resources.useCloud=false' setting.");
 		}
