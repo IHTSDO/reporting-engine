@@ -66,4 +66,9 @@ public class TemplatedConceptNull extends TemplatedConcept {
 	protected boolean detailsIndicatePrimitiveConcept() throws TermServerScriptException {
 		throw new IllegalArgumentException("Unexpected use of Null Templated Concept");
 	}
+
+	@Override
+	protected String getCodeSystemSctId() {
+		return null;
+	}
 }
