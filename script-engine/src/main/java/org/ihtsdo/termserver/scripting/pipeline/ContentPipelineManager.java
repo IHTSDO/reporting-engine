@@ -28,7 +28,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	// Regular expression to find tokens within square brackets
 	private static final String ALL_CAPS_SLOT_REGEX = "\\[([A-Z]+)\\]";
 	private static final Pattern allCapsSlotPattern = Pattern.compile(ALL_CAPS_SLOT_REGEX);
-	
+
+	public void recordSuccesfulModelling(TemplatedConcept tc) {
+		successfullyModelled.add(tc);
+	}
+
 	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
@@ -50,6 +54,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected String externalContentModule;
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
+	protected Set<TemplatedConcept> successfullyModelled = new HashSet<>();
 
 	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
 
@@ -80,10 +85,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
 			loadSupportingInformation();
 			importPartMap();
-			Set<TemplatedConcept> successfullyModelled = doModeling();
+			doModeling();
 			checkSpecificConcepts(successfullyModelled);
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
-			reportMissingMappings(getTab(TAB_MAP_ME));
+			if (tabExists(TAB_MAP_ME)) {
+				reportMissingMappings(getTab(TAB_MAP_ME));
+			}
 			reportIncludedExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
 			flushFiles(false);
 			switch (runMode) {
@@ -111,12 +118,68 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 		}
 	}
-	
+
+	private boolean tabExists(String tabName) {
+		try {
+			getTab(tabName);
+			return true;
+		} catch (TermServerScriptException e) {
+			return false;
+		}
+	}
+
+	protected abstract String getContentType();
+
 	protected abstract void loadSupportingInformation() throws TermServerScriptException;
 
 	protected abstract void importPartMap() throws TermServerScriptException;
 
-	protected abstract Set<TemplatedConcept> doModeling() throws TermServerScriptException;
+	protected void doModeling() throws TermServerScriptException {
+		for (String externalIdentifier : getExternalConceptMap().keySet()) {
+			TemplatedConcept templatedConcept = modelExternalConcept(externalIdentifier);
+			if (conceptSufficientlyModeled(getContentType(), externalIdentifier, templatedConcept)) {
+				recordSuccesfulModelling(templatedConcept);
+			}
+		}
+
+	}
+
+	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
+		if (externalIdentifier.equals("881-3")) {
+			LOGGER.debug("Check split of components");
+		}
+
+		if (externalIdentifier.equals("57800-5")) {
+			LOGGER.debug("Check Divisors");
+		}
+
+		if (externalIdentifier.equals("72888-1")) {
+			LOGGER.debug(".total should make this one primitive");
+		}
+
+		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
+		if (!confirmExternalIdentifierExists(externalIdentifier) ||
+				containsObjectionableWord(externalConcept)) {
+			return null;
+		}
+
+		//Is this a npunum that's being maintained manually?  Return what is already there if so.
+		if (MANUALLY_MAINTAINED_ITEMS.containsKey(externalIdentifier)) {
+			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(externalConcept, SCTID_NPU_SCHEMA, "(observable entity)");
+			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(externalIdentifier)));
+			return tc;
+		}
+
+		TemplatedConcept tc = getAppropriateTemplate(externalConcept);
+
+		if (!(tc instanceof TemplatedConceptNull)) {
+			tc.populateTemplate();
+		} else if (externalConcept.isHighestUsage()) {
+			//This is a highest usage term which is out of scope
+			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
+		}
+		return tc;
+	}
 
 	protected abstract String[] getTabNames();
 
@@ -391,17 +454,17 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 	
 	protected void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
-		Set<String> successfullyModelledLoincNums = successfullyModelled.stream()
+		Set<String> successfullyModelledExternalIds = successfullyModelled.stream()
 				.map(tc -> tc.getExternalIdentifier())
 				.collect(Collectors.toSet());
 
 		//Collect both included and excluded terms by property
 		Map<String, List<ExternalConcept>> included = externalConceptMap.values().stream()
-				.filter(lt -> successfullyModelledLoincNums.contains(lt.getExternalIdentifier()))
+				.filter(lt -> successfullyModelledExternalIds.contains(lt.getExternalIdentifier()))
 				.collect(Collectors.groupingBy(ExternalConcept::getProperty));
 
 		Map<String, List<ExternalConcept>> excluded = externalConceptMap.values().stream()
-				.filter(lt -> !successfullyModelledLoincNums.contains(lt.getExternalIdentifier()))
+				.filter(lt -> !successfullyModelledExternalIds.contains(lt.getExternalIdentifier()))
 				.collect(Collectors.groupingBy(ExternalConcept::getProperty));
 
 		Set<String> properties = new LinkedHashSet<>(included.keySet());
@@ -533,26 +596,24 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return attributePartMapManager;
 	}
 	
-	protected void doProposedModelComparison(TemplatedConcept loincTemplatedConcept) throws TermServerScriptException {
-		//Do we have this loincNum
-		Concept proposedLoincConcept = loincTemplatedConcept.getConcept();
-		Concept existingConcept = loincTemplatedConcept.getExistingConcept();
-		String loincNum = loincTemplatedConcept.getExternalIdentifier();
-		ExternalConcept externalConcept = getExternalConcept(loincNum);
+	protected void doProposedModelComparison(TemplatedConcept tc) throws TermServerScriptException {
+		Concept proposedConcept = tc.getConcept();
+		Concept existingConcept = tc.getExistingConcept();
+		ExternalConcept externalConcept = tc.getExternalConcept();
 		
 		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		String proposedSCG = proposedLoincConcept == null ? "N/A" : proposedLoincConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-		String proposedDescriptionsStr = proposedLoincConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedLoincConcept);
+		String proposedSCG = proposedConcept == null ? "N/A" : proposedConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String proposedDescriptionsStr = proposedConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedConcept);
 		
 		//We might have inactivated descriptions in the existing concept if they've been changed, so
 		String previousDescriptionsStr = existingConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(existingConcept, true);
 		String existingConceptId = existingConcept == null ? "N/A" : existingConcept.getId();
 		report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
-				loincNum, 
-				proposedLoincConcept != null ? proposedLoincConcept.getId() : existingConceptId,
-				loincTemplatedConcept.getIterationIndicator(),
-				loincTemplatedConcept.getClass().getSimpleName(),
-				loincTemplatedConcept.getDifferencesFromExistingConcept(),
+				tc.getExternalIdentifier(),
+				proposedConcept != null ? proposedConcept.getId() : existingConceptId,
+				tc.getIterationIndicator(),
+				tc.getClass().getSimpleName(),
+				tc.getDifferencesFromExistingConcept(),
 				proposedDescriptionsStr,
 				previousDescriptionsStr,
 				proposedSCG, 
@@ -563,23 +624,24 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public abstract TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept)
 			throws TermServerScriptException ;
 	
-	protected void checkConceptSufficientlyModeled(String contentType, String externalIdentifier, TemplatedConcept templatedConcept, Set<TemplatedConcept> successfullyModelledConcepts) throws TermServerScriptException {
+	protected boolean conceptSufficientlyModeled(String contentType, String externalIdentifier, TemplatedConcept templatedConcept) throws TermServerScriptException {
 		if (templatedConcept != null
 				&& !(templatedConcept instanceof TemplatedConceptNull)
 				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
 				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
-			successfullyModelledConcepts.add(templatedConcept);
 			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content added - " + contentType);
-		} else {
-			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
-			if (!externalConceptMap.containsKey(externalIdentifier)) {
-				incrementSummaryCount("Missing LoincNums","LoincNum in Detail file not in LOINC.csv - " + externalIdentifier);
-			} else if (externalConceptMap.get(externalIdentifier).isHighestUsage() && templatedConcept != null) {
-				//Templates that come back as null will already have been counted as out of scope
-				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
-				report(getTab(TAB_IOI), "Highest Usage Mapping Failure", externalIdentifier);
-			}
+			return true;
 		}
+
+		incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
+		if (!externalConceptMap.containsKey(externalIdentifier)) {
+			incrementSummaryCount("Missing Extenternal Identifier","Identifier not found in source file - " + externalIdentifier);
+		} else if (externalConceptMap.get(externalIdentifier).isHighestUsage() && templatedConcept != null) {
+			//Templates that come back as null will already have been counted as out of scope
+			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
+			report(getTab(TAB_IOI), "Highest Usage Mapping Failure", externalIdentifier);
+		}
+		return false;
 	}
 
 	protected void validateTemplatedConcept(TemplatedConcept templatedConcept) throws TermServerScriptException {
