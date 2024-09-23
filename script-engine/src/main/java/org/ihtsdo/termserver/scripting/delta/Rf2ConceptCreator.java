@@ -83,14 +83,31 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 				break;
 			case INFERRED_RELATIONSHIP :
 				setRelationshipId(c);
+				ensureRelationshipPartsHaveIds(concept, (Relationship)c, enforceModule);
 				break;
 			case STATED_RELATIONSHIP :
-				//No need to do anything here because we'll convert
-				//stated to an axiom and we're not expecting any inferred
+				ensureRelationshipPartsHaveIds(concept, (Relationship)c, enforceModule);
 				break;
 			case ALTERNATE_IDENTIFIER :
 				break;  //Has its own ID.  RefCompId will be set once concept id is known.
 			default: c.setId(UUID.randomUUID().toString());
+		}
+	}
+
+	private void ensureRelationshipPartsHaveIds(Concept c, Relationship r, String enforceModule) throws TermServerScriptException {
+		r.setSource(c);
+		if (c.getId() == null) {
+			populateComponentId(c, c, enforceModule);
+		}
+
+		Concept type = r.getType();
+		if (type.getId() == null) {
+			populateComponentId(c, type, enforceModule);
+		}
+
+		Concept target = r.getTarget();
+		if (target.getId() == null) {
+			populateComponentId(c, target, enforceModule);
 		}
 	}
 

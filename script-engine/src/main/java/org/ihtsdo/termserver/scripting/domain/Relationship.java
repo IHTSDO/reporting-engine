@@ -348,7 +348,8 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	@Override
 	//Sort on source id, type id, target id, group id
 	public int compareTo(Relationship other) {
- 		if (!this.sourceId.equals(other.getSourceId())) {
+		//We might not have a source id yet if we're creating this concept, compare other fields if so.
+ 		if (this.sourceId != null && other.getSourceId() != null && !this.sourceId.equals(other.getSourceId())) {
 			return sourceId.compareTo(other.getSourceId());
 		} else {
 			if (!this.getType().getConceptId().equals(other.getType().getConceptId())) {

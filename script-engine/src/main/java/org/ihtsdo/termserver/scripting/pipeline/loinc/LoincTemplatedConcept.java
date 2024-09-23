@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 public abstract class LoincTemplatedConcept extends TemplatedConcept implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
-	private static final int GROUP_1 = 1;
 
 	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList(
 			LOINC_PART_TYPE_PROPERTY,
@@ -58,7 +57,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Set<String> columnsToCheckForUnknownIndicators = new HashSet<>(Arrays.asList(COMPDENOM_PN, COMPDENOM_PN, SYSTEM_PN));
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal", "total"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
-	//protected static Map<String, LoincPart> loincParts;
 	protected static Set<String> allowSpecimenTermForLoincParts = new HashSet<>(Arrays.asList("LP7593-9", "LP7735-6", "LP189538-4"));
 	
 	//Map of LoincNums to ldtColumnNames to details
@@ -66,7 +64,17 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	
 	//Map of Loinc Details for this conept
 	protected Map<String, LoincDetail> loincDetailMap;
-	 
+
+	@Override
+	protected String getCodeSystemSctId() {
+		return SCTID_LOINC_CODE_SYSTEM;
+	}
+
+	@Override
+	protected String getSemTag() {
+		return "(observable entity)";
+	}
+
 	public static void initialise(ContentPipelineManager cpm, 
 								  Map<String, Map<String, LoincDetail>> loincDetailMap) throws TermServerScriptException {
 		TemplatedConcept.cpm = cpm;
@@ -151,22 +159,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 		concept.addDescription(colonDesc);
 	}
-	
-	@Override
-	protected String populateTermTemplateFromSlots(String ptTemplateStr) {
-		//Do we have any slots left to fill?  Find their attribute types via the slot map
-		String [] templateItems = org.apache.commons.lang3.StringUtils.substringsBetween(ptTemplateStr,"[", "]");
-		if (templateItems == null) {
-			return ptTemplateStr;
-		}
-		
-		for (String templateItem : templateItems) {
-			ptTemplateStr = populateTemplateItem(templateItem, ptTemplateStr);
-		}
-		return ptTemplateStr;
-	}
 
-	private String populateTemplateItem(String templateItem, String ptTemplateStr) {
+	@Override
+	protected String populateTemplateItem(String templateItem, String ptTemplateStr) {
 		String regex = "\\[" + templateItem + "\\]";
 		if (templateItem.equals(LOINC_PART_TYPE_METHOD)
 				&& hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
@@ -449,11 +444,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 		return attributes;
 	}
-	
-	public void setConcept(Concept c) {
-		this.concept = c;
-	}
-	
+
 	protected LoincTerm getLoincTerm() {
 		return (LoincTerm) getExternalConcept();
 	}
@@ -502,7 +493,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return (detailPresent(COMPSUBPART3_PN) || detailPresent(COMPSUBPART4_PN));
 	}
 	
-	protected boolean detailPresent(String ldtColumnName) throws TermServerScriptException {
+	protected boolean detailPresent(String ldtColumnName) {
 		return getLoincDetailForColNameIfPresent(ldtColumnName) != null;
 	}
 
