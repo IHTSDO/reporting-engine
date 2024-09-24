@@ -4,14 +4,13 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Streams;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.RDFDataMgr;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import com.github.jsonldjava.shaded.com.google.common.collect.Streams;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

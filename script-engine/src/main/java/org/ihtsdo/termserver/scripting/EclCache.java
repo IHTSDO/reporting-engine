@@ -79,72 +79,16 @@ public class EclCache implements ScriptConstants {
 		
 		ecl = ecl.trim();
 		String machineEcl = SnomedUtils.makeMachineReadable(ecl);
-		Collection<Concept> allConcepts;
-		DescendantsCache descendantsCache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getDescendantsCache() : gl.getStatedDescendantsCache();
-		
+
 		//Have we been passed some partial ecl that begins and ends with a bracket?
 		//However, if we contain 'OR 'or 'MINUS' then this is not safe to do
 		if ( (ecl.startsWith("(") && ecl.endsWith(")")) && 
 				!(ecl.contains("AND") || ecl.contains("OR") || ecl.contains("MINUS") )) {
 			ecl = ecl.substring(1, ecl.length() -1).trim();
 		}
-		
-		//Have we already recovered this ECL?
-		if (expansionCache.containsKey(ecl)) {
-			Collection<Concept> cached = expansionCache.get(ecl);
-			//Have we reset the GL? Recover full local cached objects if so
-			if (!cached.isEmpty() && StringUtils.isEmpty(cached.iterator().next().getFsn())) {
-				cached = cached.stream()
-						.map(c -> gl.getConceptSafely(c.getId()))
-						.collect(Collectors.toSet());
-				expansionCache.put(ecl, cached);
-			}
-			if (!quiet) {
-				LOGGER.debug ("Recovering cached {} concepts matching '{}'", cached.size(), ecl);
-			}
-			return cached;
-		} else if (machineEcl.contains(" OR ") && !machineEcl.contains("(")) {
-			//TODO Create class that holds these collections and can 
-			//iterate through them without copying the objects
-			Collection<Concept> combinedSet = new HashSet<>();
-			for (String eclFragment : machineEcl.split(" OR ")) {
-				LOGGER.debug("Combining request for: {}", eclFragment);
-				combinedSet.addAll(findConcepts(eclFragment, useLocalStoreIfSimple));
-			}
-			allConcepts = combinedSet;
-			expansionCache.put(ecl, combinedSet);
-		} else {
-			boolean localStorePopulated = gl.getAllConcepts().size() > 100;
-			if (useLocalStoreIfSimple && localStorePopulated && ecl.equals("*")) {
-				allConcepts = gl.getAllConcepts();
-			} else if (useLocalStoreIfSimple && localStorePopulated && isSimple(ecl)){
-				//We might want to modify these sets, so request mutable copies
-				if (ecl.startsWith("<<")) {
-					Concept subHierarchy = gl.getConcept(ecl.substring(2).trim());
-					if (subHierarchy.equals(ROOT_CONCEPT)) {
-						allConcepts = gl.getAllConcepts();
-					} else {
-						allConcepts = descendantsCache.getDescendantsOrSelf(subHierarchy, true);
-					}
-				} else if (ecl.startsWith("<")) {
-					Concept subHierarchy = gl.getConcept(ecl.substring(1).trim());
-					allConcepts = descendantsCache.getDescendants(subHierarchy, true);
-				} else {
-					//Could this be a single concept?
-					try {
-						//Try to recover from Graph.  Do not create, validate it exists
-						allConcepts = Collections.singleton(gl.getConcept(ecl, false, true));
-						LOGGER.warn("Possible single concept used where set expected in template slot? {}", gl.getConcept(ecl));
-					}catch (Exception e) {
-						throw new IllegalStateException("ECL is not simple: " + ecl);
-					}
-				}
-				LOGGER.debug("Recovered {} concepts for simple ecl from local memory: {}", allConcepts.size(), ecl);
-			} else {
-				allConcepts = recoverConceptsFromTS(ecl, charType);
-			}
-		}
-		
+
+		Collection<Concept> allConcepts = findConcepts(ecl, machineEcl, useLocalStoreIfSimple);
+
 		if (allConcepts.isEmpty()) {
 			LOGGER.warn("ECL {} recovered 0 concepts.  Check?", ecl);
 			expansionCache.remove(ecl);
@@ -156,7 +100,80 @@ public class EclCache implements ScriptConstants {
 		}
 		return allConcepts;
 	}
-	
+
+	private Collection<Concept> findConcepts(String ecl, String machineEcl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		//Have we already recovered this ECL?
+		if (expansionCache.containsKey(ecl)) {
+			return getCachedConcepts(ecl);
+		} else if (machineEcl.contains(" OR ") && !machineEcl.contains("(")) {
+			//TODO Create class that holds these collections and can
+			//iterate through them without copying the objects
+			Collection<Concept> combinedSet = new HashSet<>();
+			for (String eclFragment : machineEcl.split(" OR ")) {
+				LOGGER.debug("Combining request for: {}", eclFragment);
+				combinedSet.addAll(findConcepts(eclFragment, useLocalStoreIfSimple));
+			}
+			expansionCache.put(ecl, combinedSet);
+			return combinedSet;
+		} else {
+			return recoverConceptsLocallyOrFromTS(ecl, useLocalStoreIfSimple);
+		}
+	}
+
+	private Collection<Concept> recoverConceptsLocallyOrFromTS(String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		boolean localStorePopulated = gl.getAllConcepts().size() > 100;
+		if (useLocalStoreIfSimple && localStorePopulated && ecl.equals("*")) {
+			return gl.getAllConcepts();
+		} else if (useLocalStoreIfSimple && localStorePopulated && isSimple(ecl)){
+			return recoverConceptsLocally(ecl);
+		} else {
+			return recoverConceptsFromTS(ecl, charType);
+		}
+	}
+
+	private Collection<Concept> recoverConceptsLocally(String ecl) throws TermServerScriptException {
+		DescendantsCache descendantsCache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getDescendantsCache() : gl.getStatedDescendantsCache();
+		//We might want to modify these sets, so request mutable copies
+		Collection<Concept> allConcepts;
+		if (ecl.startsWith("<<")) {
+			Concept subHierarchy = gl.getConcept(ecl.substring(2).trim());
+			if (subHierarchy.equals(ROOT_CONCEPT)) {
+				allConcepts = gl.getAllConcepts();
+			} else {
+				allConcepts = descendantsCache.getDescendantsOrSelf(subHierarchy, true);
+			}
+		} else if (ecl.startsWith("<")) {
+			Concept subHierarchy = gl.getConcept(ecl.substring(1).trim());
+			allConcepts = descendantsCache.getDescendants(subHierarchy, true);
+		} else {
+			//Could this be a single concept?
+			try {
+				//Try to recover from Graph.  Do not create, validate it exists
+				allConcepts = Collections.singleton(gl.getConcept(ecl, false, true));
+				LOGGER.warn("Possible single concept used where set expected in template slot? {}", gl.getConcept(ecl));
+			}catch (Exception e) {
+				throw new IllegalStateException("ECL is not simple: " + ecl);
+			}
+		}
+		LOGGER.debug("Recovered {} concepts for simple ecl from local memory: {}", allConcepts.size(), ecl);
+		return allConcepts;
+	}
+
+	private Collection<Concept> getCachedConcepts(String ecl) {
+		Collection<Concept> cached = expansionCache.get(ecl);
+		//Have we reset the GL? Recover full local cached objects if so
+		if (!cached.isEmpty() && StringUtils.isEmpty(cached.iterator().next().getFsn())) {
+			cached = cached.stream()
+					.map(c -> gl.getConceptSafely(c.getId()))
+					.collect(Collectors.toSet());
+			expansionCache.put(ecl, cached);
+		}
+		if (!quiet) {
+			LOGGER.debug ("Recovering cached {} concepts matching '{}'", cached.size(), ecl);
+		}
+		return cached;
+	}
+
 	public static boolean isSimple(String ecl) {
 		//Any braces, commas, more than two pipes, hats, colons mark this ecl as not being simple
 		boolean isSimple = true;
@@ -192,18 +209,9 @@ public class EclCache implements ScriptConstants {
 						//First time round, report how many we're receiving.
 						LOGGER.debug("Recovering {} concepts matching '{}'", collection.getTotal(), ecl);
 					}
-					if (localStorePopulated) {
-						//Recover our locally held copy of these concepts so that we have the full hierarchy populated
-						List<Concept> localCopies = collection.getItems().stream()
-								.map(c -> gl.getConceptSafely(c.getId()))
-								.toList();
-						allConcepts.addAll(localCopies);
-					} else {
-						List<Concept> localCopies = collection.getItems().stream()
-								.map(c -> new Concept(c.getId(), c.getFsn()))
-								.toList();
-						allConcepts.addAll(localCopies);
-					}
+					//Populate our local collection with either our locally loaded concepts if available, or
+				    //newly created Concept objects if not.
+					collectRecoveredConcepts(collection, allConcepts, localStorePopulated);
 					
 					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
 					//add to the set
@@ -225,6 +233,21 @@ public class EclCache implements ScriptConstants {
 			}
 		}
 		return allConcepts;
+	}
+
+	private void collectRecoveredConcepts(ConceptCollection collection, Set<Concept> allConcepts, boolean localStorePopulated) {
+		if (localStorePopulated) {
+			//Recover our locally held copy of these concepts so that we have the full hierarchy populated
+			List<Concept> localCopies = collection.getItems().stream()
+					.map(c -> gl.getConceptSafely(c.getId()))
+					.toList();
+			allConcepts.addAll(localCopies);
+		} else {
+			List<Concept> localCopies = collection.getItems().stream()
+					.map(c -> new Concept(c.getId(), c.getFsn()))
+					.toList();
+			allConcepts.addAll(localCopies);
+		}
 	}
 
 	public String getBranch() {
