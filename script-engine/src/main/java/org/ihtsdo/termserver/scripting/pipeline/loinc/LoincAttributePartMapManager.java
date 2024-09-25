@@ -204,7 +204,6 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedMappings.put("LP70259-4", List.of(
 				gl.getConcept("570101010000100 |Automated technique (qualifier value)")));
 		hardCodedMappings.put("LP443406-6", List.of(gl.getConcept("580111010000107 |Distribution width (property) (qualifier value)")));
-		hardCodedMappings.put("LP36715-8", List.of(gl.getConcept("702668005 |Modification of diet in renal disease formula (qualifier value)")));
 		hardCodedMappings.put("LP105134-3", List.of(gl.getConcept("703462006 |Cockcroft-Gault formula (qualifier value)|")));
 		hardCodedMappings.put("LP71296-5", List.of(gl.getConcept("570111010000102 |Immature neutrophil (cell)|")));
 		hardCodedMappings.put("LP69203-5", List.of(gl.getConcept("580101010000109 |Glomerular filtration rate (calculation)|")));
@@ -222,6 +221,8 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedMappings.put("LP443466-0", List.of(gl.getConcept("734842000 |Source (property) (qualifier value)|")));
 		hardCodedMappings.put("LP443467-8", List.of(gl.getConcept("123038009 |Specimen (specimen)|")));
 		hardCodedMappings.put("LP281728-8", List.of(gl.getConcept("410652009 |Blood product (product)|")));
+		hardCodedMappings.put("LP63085-2", List.of(gl.getConcept("580201010000101 |Creatinine renal clearance calculation (calculation)|")));
+		hardCodedMappings.put("LP16409-2", List.of(gl.getConcept("580161010000105 |Sedimentation process (qualifier value)|")));
 	}
 
 }

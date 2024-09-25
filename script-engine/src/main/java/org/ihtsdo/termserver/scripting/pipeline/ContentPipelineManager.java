@@ -146,16 +146,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("881-3")) {
-			LOGGER.debug("Check split of components");
-		}
-
-		if (externalIdentifier.equals("57800-5")) {
-			LOGGER.debug("Check Divisors");
-		}
-
-		if (externalIdentifier.equals("72888-1")) {
-			LOGGER.debug(".total should make this one primitive");
+		if (externalIdentifier.equals("18290-7")) {
+			LOGGER.debug("Check removal of (Property)");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
