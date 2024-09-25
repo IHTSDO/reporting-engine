@@ -165,15 +165,17 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		Description fsn = Description.withDefaults(ptTemplateStr + getSemTag(), DescriptionType.FSN, Acceptability.PREFERRED);
 		applyTemplateSpecificTermingRules(fsn);
 
-		//Also add the Long Common Name as a Synonym
-		String lcnStr = getExternalConcept().getDisplayName();
-		Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-		//Override the case significance for these
-		lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-
 		concept.addDescription(pt);
 		concept.addDescription(fsn);
-		concept.addDescription(lcn);
+
+		if (cpm.includeLongNameDescription) {
+			//Also add the Long Common Name as a Synonym
+			String lcnStr = getExternalConcept().getDisplayName();
+			Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			//Override the case significance for these
+			lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			concept.addDescription(lcn);
+		}
 	}
 	
 	protected abstract void applyTemplateSpecificTermingRules(Description pt);
