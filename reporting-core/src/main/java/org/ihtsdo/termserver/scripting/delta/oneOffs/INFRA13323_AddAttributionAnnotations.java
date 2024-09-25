@@ -5,6 +5,7 @@ import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -30,6 +31,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	private String annotationStr = "Inserm Orphanet";
 	private Set<Concept> conceptsAnnotated = new HashSet<>();
 	private Map<Concept, String> conceptDefinitions = new HashMap<>();
+	private DialectChecker dialectChecker;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		INFRA13323_AddAttributionAnnotations delta = new INFRA13323_AddAttributionAnnotations();
@@ -53,13 +55,14 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Info, detail, , ",
-				"SCTID, FSN, SemTag, Reason, detail, detail,"
+				"SCTID, FSN, SemTag, Severity, Reason, detail, details,"
 		};
 
 		String[] tabNames = new String[]{
 				"Map Records Processed",
 				"Map Records Skipped"
 		};
+		dialectChecker = DialectChecker.create(); //Will only load the us/gb file the first time this singleton is requested
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -110,27 +113,31 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	}
 
 	private int addAnnotation(Concept c) throws TermServerScriptException {
-		int changesMade = replaceTextDefinitions(c);
-
+		int changesMade = 0;
 		String processingDetail = null;
 		ReportActionType action = ReportActionType.NO_CHANGE;
 		String rmStr = "";
-		if (c.hasIssues()) {
-			processingDetail = c.getIssues();
-		} else if (!c.isActiveSafely()) {
+		if (!c.isActiveSafely()) {
 			processingDetail = "Concept now inactive";
 		} else if (!c.getComponentAnnotationEntries().isEmpty()) {
 			processingDetail = "Already has annotation";
+		} else if (c.getEffectiveTime().compareTo("20160131") < 0) {
+			processingDetail = "Concept effective time = " + c.getEffectiveTime();
 		} else {
-			ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(c, annotationType, annotationStr);
-			c.addComponentAnnotationEntry(cae);
-			rmStr = cae.toString();
-			outputRF2(c);
-			action = ReportActionType.REFSET_MEMBER_ADDED;
-			changesMade++;
-			countIssue(c);
-			conceptsAnnotated.add(c);
-			processingDetail = ATTRIBUTION_ADDED;
+			changesMade = replaceTextDefinitions(c);
+			if (c.hasIssues()) {
+				processingDetail = c.getIssues();
+			} else {
+				ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(c, annotationType, annotationStr);
+				c.addComponentAnnotationEntry(cae);
+				rmStr = cae.toString();
+				outputRF2(c);
+				action = ReportActionType.REFSET_MEMBER_ADDED;
+				changesMade++;
+				countIssue(c);
+				conceptsAnnotated.add(c);
+				processingDetail = ATTRIBUTION_ADDED;
+			}
 		}
 
 		if (processingDetail.equals(ATTRIBUTION_ADDED)) {
@@ -151,7 +158,16 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 			c.addIssue("No Orphanet definition supplied");
 			return NO_CHANGES_MADE;
 		}
+
 		String definition = normalizeSuppliedTextDefinition(c);
+
+		//If we have any GB specific terms, we can end up with a mix which doesn't match any existing term
+		//At this point in the code, but does once we standardize the dialect.  So tweak those early.
+		if (dialectChecker.containsGBSpecificTerm(definition)) {
+			report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "GB specific term detected otherwise US definition", definition);
+			definition = dialectChecker.makeUSSpecific(definition);
+		}
+
 		boolean textDefinitionNeeded = true;
 		boolean usgbVarianceDetected = false;
 		//Do we already have the expected text definition?
@@ -239,27 +255,27 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	}
 
 	private String normalizeSuppliedTextDefinition(Concept c) throws TermServerScriptException {
-		String definition = conceptDefinitions.get(c);
-		//Remove all instances of the text "(something; see this term)" from the definition
-		definition = definition.replaceAll(BRACKETED_TEXT_REGEX, "");
-		definition = definition.replaceAll("  ", " ")
-				.replaceAll(" \\.", "\\.")
-				.replaceAll(" ,", ",").trim();
- 		if (!definition.equals(conceptDefinitions.get(c))) {
-			String beforeAfter = "BEFORE: " + conceptDefinitions.get(c) + "\nAFTER: " + definition;
-			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed 'see this/these term(s)'", beforeAfter);
-		}
+		String definition = StringUtils.convertEncodedAsciiToEditoriallyAcceptableForm(conceptDefinitions.get(c));
 
-		String markupRemoved = definition.replaceAll("<[^>]+>", "");
-		if (!definition.equals(markupRemoved)) {
-			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Removed <i> markup", definition);
-		}
-		definition = markupRemoved;
+		//Remove all instances of the text "(something; see this term)" from the definition
+		//And <i> markup
+		//And patch up any double space or space before punctuation left hanging
+		//Take out (see this term) first, to avoid having to deal with nested brackets
+		definition = definition.replace("(see this term)", "")
+				.replaceAll(BRACKETED_TEXT_REGEX, "")
+				.replaceAll("<[^>]+>", "")
+				.replaceAll(" {2}", " ")
+				.replace(" .", ".")
+				.replace(" ,", ",").trim();
 
 		if (!definition.endsWith(".")) {
 			definition += ".";
 		}
 
+		if (!definition.equals(conceptDefinitions.get(c))) {
+			String beforeAfter = "BEFORE: " + conceptDefinitions.get(c) + "\nAFTER: " + definition;
+			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Normalized text", beforeAfter);
+		}
 		return definition;
 	}
 
