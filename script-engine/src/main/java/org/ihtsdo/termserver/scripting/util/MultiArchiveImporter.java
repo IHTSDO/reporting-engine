@@ -31,7 +31,7 @@ public class MultiArchiveImporter extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
-	private final static String taskPrefix = "";
+	private final static String taskPrefix = "INFRA-13580 ";
 	private final static MODE mode = MODE.TASK_PER_ARCHIVE;
 
 	protected MultiArchiveImporter(BatchFix clone) {
