@@ -15,15 +15,19 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Batch implements IBatch, RF2Constants {
-	String batchName;
-	GraphLoader gl;
-	List<Task> tasks = new ArrayList<Task>();
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Batch.class);
+
+	private final String batchName;
+	private GraphLoader gl;
+	private List<Task> tasks = new ArrayList<>();
 	
 	public Batch(String fileName) {
 		batchName = fileName;
-		tasks = new ArrayList<Task>();
 	}
 	
 	public Batch(String fileName, GraphLoader gl) {
@@ -66,8 +70,8 @@ public class Batch implements IBatch, RF2Constants {
 				thisLargeTask.setTaskInfo(thisSmallTask.getTaskInfo());
 			} else {
 				//split on comma and form a unique set
-				Set<String> smallInfoItems = new HashSet<String>(Arrays.asList(thisSmallTask.getTaskInfo().split(", ")));
-				Set<String> largeInfoItems =  new HashSet<String>(Arrays.asList(thisLargeTask.getTaskInfo().split(", ")));
+				Set<String> smallInfoItems = new HashSet<>(Arrays.asList(thisSmallTask.getTaskInfo().split(", ")));
+				Set<String> largeInfoItems =  new HashSet<>(Arrays.asList(thisLargeTask.getTaskInfo().split(", ")));
 				largeInfoItems.addAll(smallInfoItems);
 				thisLargeTask.setTaskInfo(StringUtils.join(largeInfoItems, ", "));
 			}
@@ -88,7 +92,7 @@ public class Batch implements IBatch, RF2Constants {
 			if (thisSmallTask.size() < taskSize) {
 				for (Task thisLargeTask : orderTasks(false)) {
 					if (thisLargeTask.size() + thisSmallTask.size() <= taskSize + wiggleRoom && !thisLargeTask.equals(thisSmallTask)) {
-						System.out.println("Merging task " + thisLargeTask + " (" + thisLargeTask.size() + ") with " + thisSmallTask + " (" + thisSmallTask.size() + ")");
+						LOGGER.info("Merging task {} ({}}) with {} ({})", thisLargeTask, thisLargeTask.size(), thisSmallTask, thisSmallTask.size());
 						merge(thisLargeTask, thisSmallTask);
 						continue nextSmallTask;
 					}
@@ -99,12 +103,12 @@ public class Batch implements IBatch, RF2Constants {
 	}
 	
 	List<Task> orderTasks(boolean ascending) {
-		List<Task> orderedList = new ArrayList<Task>(getTasks());
-		Collections.sort(orderedList, new Comparator<Task>() 
+		List<Task> orderedList = new ArrayList<>(getTasks());
+		Collections.sort(orderedList, new Comparator<>()
 		{
 			public int compare(Task t1, Task t2) 
 			{
-				return ((Integer)(t1.size())).compareTo((Integer)(t2.size()));
+				return ((Integer)(t1.size())).compareTo(t2.size());
 			}
 		});
 		if (!ascending) {
@@ -113,39 +117,42 @@ public class Batch implements IBatch, RF2Constants {
 		return orderedList;
 	}
 
-	public void consolidateSimilarTasks(int taskSize, int wiggleRoom) throws TermServerScriptException {
+	public void consolidateSimilarTasks(int taskSize, int wiggleRoom) {
 		//Loop through small tasks and find other tasks that have the same taskInfo ie grouped the same
 		List<Task> smallToLarge = orderTasks(true);
-		nextTask:
 		for (Task smallTask : smallToLarge) {
-			nextCandidate:
-			for (Task candidateForMerge : tasks) {
-				if (candidateForMerge.equals(smallTask) || 
-					candidateForMerge.getComponents().size() + smallTask.getComponents().size() > taskSize + wiggleRoom) {
-					continue nextCandidate;
-				}
-				if (smallTask.getTaskInfo().equals(candidateForMerge.getTaskInfo())) {
-					merge (candidateForMerge, smallTask);
-					continue nextTask;
-				}
+			if (mergeSameInfoTask(smallTask, taskSize, wiggleRoom)) {
+				break;
 			}
-		
-			//If we haven't found a task that has exactly the same task info, lets see if we can find one of which we are a subset
-			nextCandidate:
-			for (Task candidateForMerge : tasks) {
-				if (candidateForMerge.equals(smallTask) || 
-					candidateForMerge.getComponents().size() + smallTask.getComponents().size() > taskSize + wiggleRoom) {
-					continue nextCandidate;
-				}
-				if (candidateForMerge.getTaskInfo().contains(smallTask.getTaskInfo()) || 
-					smallTask.getTaskInfo().contains(candidateForMerge.getTaskInfo())) {
-					merge (candidateForMerge, smallTask);
-					continue nextTask;
-				}
+			mergeSimilarInfoTask(smallTask, taskSize, wiggleRoom);
+		}
+	}
+
+	private boolean mergeSameInfoTask(Task smallTask, int taskSize, int wiggleRoom) {
+		for (Task candidateForMerge : tasks) {
+			if (!candidateForMerge.equals(smallTask)
+				&& candidateForMerge.getComponents().size() + smallTask.getComponents().size() <= taskSize + wiggleRoom
+				&& smallTask.getTaskInfo().equals(candidateForMerge.getTaskInfo())) {
+				merge(candidateForMerge, smallTask);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void mergeSimilarInfoTask(Task smallTask, int taskSize, int wiggleRoom) {
+		//If we haven't found a task that has exactly the same task info, lets see if we can find one of which we are a subset
+		for (Task candidateForMerge : tasks) {
+			if (!candidateForMerge.equals(smallTask)
+					&& candidateForMerge.getComponents().size() + smallTask.getComponents().size() <= taskSize + wiggleRoom
+					&& (candidateForMerge.getTaskInfo().contains(smallTask.getTaskInfo()) ||
+					smallTask.getTaskInfo().contains(candidateForMerge.getTaskInfo()))) {
+				merge(candidateForMerge, smallTask);
+				return;
 			}
 		}
 	}
-	
+
 	public void consolidateSiblingTasks(int taskSize, int wiggleRoom) throws TermServerScriptException {
 		//Loop through small tasks and find other tasks that contain siblings of the concepts in this task
 		List<Task> smallToLarge = orderTasks(true);
@@ -157,28 +164,33 @@ public class Batch implements IBatch, RF2Constants {
 			//If one of the siblings of all of the concepts in this task appear in another task
 			//then merge this task into that one.
 			List<List<Concept>> allConceptSiblings = getTaskConceptSiblings(smallTask, CharacteristicType.INFERRED_RELATIONSHIP);
-			candidate:
 			for (Task candidateForMerge : tasks) {
-				if (candidateForMerge.equals(smallTask)) {
-					continue candidate;
+				if (mergeCandidate(smallTask, allConceptSiblings, candidateForMerge, taskSize, wiggleRoom)) {
+					break;
 				}
-				//If our siblings have nothing in common with the task ie is disjoint, then reject it.
-				for (List<Concept> thisConceptSiblings : allConceptSiblings) {
-					if (Collections.disjoint(candidateForMerge.getComponents(), thisConceptSiblings)) {
-						continue candidate;
-					}
-				}
-				if (candidateForMerge.getComponents().size() > taskSize + wiggleRoom) {
-					continue candidate;
-				}
-				merge (candidateForMerge, smallTask);
-				break;
 			}
 		}
 	}
 
+	private boolean mergeCandidate(Task smallTask, List<List<Concept>> allConceptSiblings, Task candidateForMerge, int taskSize, int wiggleRoom) {
+		if (candidateForMerge.equals(smallTask)) {
+			return false;  //Try next task
+		}
+		//If our siblings have nothing in common with the task ie is disjoint, then reject it.
+		for (List<Concept> thisConceptSiblings : allConceptSiblings) {
+			if (Collections.disjoint(candidateForMerge.getComponents(), thisConceptSiblings)) {
+				return false;  //Try next task
+			}
+		}
+		if (candidateForMerge.getComponents().size() > taskSize + wiggleRoom) {
+			return false;
+		}
+		merge (candidateForMerge, smallTask);
+		return true;
+	}
+
 	private List<List<Concept>> getTaskConceptSiblings(Task task, CharacteristicType cType) throws TermServerScriptException {
-		List<List<Concept>> conceptSiblings = new ArrayList<List<Concept>>();
+		List<List<Concept>> conceptSiblings = new ArrayList<>();
 		for (Component thisTaskConcept : task.getComponents()) {
 			//Get the locally loaded concept which has all relationships, rather than the
 			//concept held in the task, which might just be a ChangeTask 
