@@ -2,7 +2,6 @@ package org.ihtsdo.authoring.scheduler.api.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.authoring.scheduler.api.configuration.WebSecurityConfig;
 import org.ihtsdo.authoring.scheduler.api.rest.tools.AllReportRunner;
@@ -18,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -82,19 +82,15 @@ public class SchedulerController {
 	}
 
 	@Operation(summary="List Job Types")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs", method= RequestMethod.GET)
-	public List<JobType> listJobTypes() throws BusinessServiceException {
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs")
+	public List<JobType> listJobTypes() {
 		return scheduleService.listJobTypes();
 	}
 
 	@Operation(summary="List job type categories")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/{typeName}")
 	public List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
 		return scheduleService.listJobTypeCategories(typeName).stream()
 				.filter(jc -> !jc.getJobs().isEmpty())
@@ -102,20 +98,16 @@ public class SchedulerController {
 	}
 
 	@Operation(summary="Get job details")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/{typeName}/{jobName}")
 	public Job getJobDetails(@PathVariable final String typeName,
-			@PathVariable final String jobName) throws BusinessServiceException {
+			@PathVariable final String jobName) {
 		return scheduleService.getJob(jobName);
 	}
 
 	@Operation(summary="List jobs run")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/{typeName}/{jobName}/runs")
 	public Page<JobRun> listJobsRun(HttpServletRequest request,
 			@PathVariable final String typeName,
 			@PathVariable final String jobName,
@@ -128,16 +120,13 @@ public class SchedulerController {
 	}
 	
 	@Operation(summary="List all jobs run")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/runs", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/runs")
 	public Page<JobRun> listAllJobsRun(HttpServletRequest request,
 			@RequestParam(required=false) final Set<JobStatus> statusFilter,
 			@RequestParam(required=false) final Integer sinceMins,
 			@RequestParam(required=false, defaultValue="0") final Integer page,
-			@RequestParam(required=false, defaultValue="50") final Integer size)
-		throws BusinessServiceException {
+			@RequestParam(required=false, defaultValue="50") final Integer size) {
 		
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
 		Page<JobRun> jobRunPage = scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable);
@@ -146,23 +135,22 @@ public class SchedulerController {
 	}
 
 	@Operation(summary="List batches")
-	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
+	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs/listbatches")
 	public Iterable<JobRunBatch> listLastBatch(@RequestParam(required=false, defaultValue = "0") final Long number) {
 		return batchTools.getLastNBatches(number);
 	}
 
 	@Operation(summary="Get batch")
-	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
+	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs/batch/{id}")
 	public List<JobRun> getBatch(@PathVariable final Long id) {
 		return batchTools.getBatch(id);
 	}
 
 	@Operation(summary="Run all jobs")
-	@ApiResponses({@ApiResponse(responseCode = "200", description = "OK")})
-	@RequestMapping(value="/jobs/runall", method= RequestMethod.POST)
-	@ResponseBody
+	@ApiResponse(responseCode = "200", description = "OK")
+	@PostMapping(value="/jobs/runall")
 	public JobRunBatch runAll(
 			HttpServletRequest request,
 			@RequestParam(name= "dryRun", required=false, defaultValue="true") final Boolean dryRun,
@@ -180,10 +168,8 @@ public class SchedulerController {
 	}
 
 	@Operation(summary="Run job")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.POST)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@PostMapping(value="/jobs/{typeName}/{jobName}/runs")
 	public JobRun runJob(@PathVariable final String typeName, 
 			@PathVariable final String jobName,
 			@RequestBody JobRun jobRun) throws BusinessServiceException {
@@ -191,10 +177,8 @@ public class SchedulerController {
 	}
 	
 	@Operation(summary="Bulk delete job-runs")
-	@ApiResponses({
-			@ApiResponse(responseCode = "204", description = "Deleted")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/delete", method= RequestMethod.POST)
+	@ApiResponse(responseCode = "204", description = "Deleted")
+	@PostMapping(value="/jobs/{typeName}/{jobName}/runs/delete")
 	public Page<JobRun> deleteJobRuns(
 			HttpServletRequest request,
 			@PathVariable final String typeName, 
@@ -208,100 +192,101 @@ public class SchedulerController {
 	}
 	
 	@Operation(summary="Schedule job")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/schedule", method= RequestMethod.POST)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@PostMapping(value="/jobs/{typeName}/{jobName}/schedule")
 	public JobSchedule scheduleJob(@PathVariable final String typeName, 
 			@PathVariable final String jobName,
-			@RequestBody JobSchedule jobSchedule) throws BusinessServiceException {
+			@RequestBody JobSchedule jobSchedule) {
 		return scheduleService.scheduleJob(typeName, jobName, jobSchedule);
 	}
 	
 	@Operation(summary="Remove job schedule")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/schedule/{scheduleId}", method= RequestMethod.DELETE)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@DeleteMapping(value="/jobs/{typeName}/{jobName}/schedule/{scheduleId}")
 	public void deleteSchedule(@PathVariable final String typeName, 
 			@PathVariable final String jobName,
-			@PathVariable final UUID scheduleId) throws BusinessServiceException {
+			@PathVariable final UUID scheduleId) {
 		scheduleService.deleteSchedule(typeName, jobName, scheduleId);
 	}
 	
 	@Operation(summary="Get job run")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/{runId}", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/{typeName}/{jobName}/runs/{runId}")
 	public JobRun getJobStatus(@PathVariable final String typeName,
 			@PathVariable final String jobName,
-			@PathVariable final UUID runId) throws BusinessServiceException {
+			@PathVariable final UUID runId) {
 		return scheduleService.getJobRun(typeName, jobName, runId);
 	}
 	
 	@Operation(summary="Delete job run")
-	@RequestMapping(value = "/jobs/{typeName}/{jobName}/runs/{runId}", method = RequestMethod.DELETE)
-	public ResponseEntity<?> deleteJobRun(@PathVariable final String typeName,
+	@DeleteMapping(value = "/jobs/{typeName}/{jobName}/runs/{runId}")
+	public ResponseEntity<JobRun> deleteJobRun(@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@PathVariable final UUID runId) {
 		boolean deleted = scheduleService.deleteJobRun(typeName, jobName, runId);
 		if (!deleted) {
-			return new ResponseEntity<JobRun>(HttpStatus.NOT_FOUND);
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
-		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 	
 	@Operation(summary="Re-initialise")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/initialise", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/initialise")
 	public void initialise(HttpServletRequest request) throws BusinessServiceException {
 		scheduleService.initialise();
 		AuthData authData = getAuthData(request);
 		accessControlService.clearCache(authData.userName);
 	}
 
+	@Operation(summary="Clear all Caches")
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/clear-all-caches")
+	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	public void clearCaches() {
+		accessControlService.clearAllCaches();
+	}
+
 	@Operation(summary="List whitelisted concepts for the given job & code system")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist", method= RequestMethod.GET)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@GetMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist")
 	public Set<WhiteListedConcept> getWhiteList(
 			@PathVariable final String typeName,
 			@PathVariable final String codeSystemShortname,
-			@PathVariable final String jobName) throws BusinessServiceException {
+			@PathVariable final String jobName) {
 		return scheduleService.getWhiteList(typeName, codeSystemShortname, jobName);
 	}
 	
 	@Operation(summary="Set whitelisted concept for the given job & code system")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist", method= RequestMethod.POST)
+	@ApiResponse(responseCode = "200", description = "OK")
+	@PostMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist")
 	public void setWhiteList(
 			@PathVariable final String typeName, 
 			@PathVariable final String jobName,
 			@PathVariable final String codeSystemShortname,
-			@RequestBody Set<WhiteListedConcept> whiteList) throws BusinessServiceException {
+			@RequestBody Set<WhiteListedConcept> whiteList) {
 		scheduleService.setWhiteList(typeName, jobName, codeSystemShortname, whiteList);
 	}
 
 	@Operation(summary="Clear any jobs that have been stuck for more than 10 hours.")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "OK")
-	})
-	@RequestMapping(value="/jobs/clearStuckJobs", method= RequestMethod.POST)
-	public int clearStuckJobs() throws BusinessServiceException {
+	@ApiResponse(responseCode = "200", description = "OK")
+	@PostMapping(value="/jobs/clearStuckJobs")
+	public int clearStuckJobs() {
 		return scheduleService.clearStuckJobs();
 	}
 	
-	private void sanitise(Page<JobRun> jobRuns) {
-		jobRuns.stream()
-				.peek(j -> j.suppressParameters())
-				.peek(j -> j.setTerminologyServerUrl(null))
-				.peek(j -> j.setIssuesReported(null))
-				.peek(j -> j.setDebugInfo(null));
+	private Page<JobRun> sanitise(Page<JobRun> jobRuns) {
+		List<JobRun> sanitizedJobRuns = jobRuns.stream()
+				.map(this::sanitise)
+				.toList();
+		return new PageImpl<>(sanitizedJobRuns, jobRuns.getPageable(), jobRuns.getTotalElements());
+	}
+
+	private JobRun sanitise(JobRun jobRun) {
+		jobRun.suppressParameters();
+		jobRun.setTerminologyServerUrl(null);
+		jobRun.setIssuesReported(null);
+		jobRun.setDebugInfo(null);
+		return jobRun;
 	}
 }
