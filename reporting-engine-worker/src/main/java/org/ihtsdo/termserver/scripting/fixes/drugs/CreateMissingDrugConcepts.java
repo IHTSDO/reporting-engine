@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -10,11 +8,11 @@ import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -42,10 +40,13 @@ import org.slf4j.LoggerFactory;
 
 public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 
+	static {
+		ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
+		dryRun = true;
+	}
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
 
-	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
-	
 	Set<Concept> createMPFs = new HashSet<>();
 	Set<Concept> knownMPFs = new HashSet<>();
 	
@@ -58,28 +59,30 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	Set<Concept> createMPFOs = new HashSet<>();
 	Set<Concept> knownMPFOs = new HashSet<>();
 	
-	String[] substanceExceptions = new String[] {}; //{"liposome"};
-	String[] complexExceptions = new String[] {}; //{ "lipid", "phospholipid", "cholesteryl" };
+	String[] substanceExceptions = new String[] {}; //"liposome"
+	String[] complexExceptions = new String[] {}; // "lipid", "phospholipid", "cholesteryl"
 	
 	Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
 	
 	Set<String> suppress = new HashSet<>();
+	protected boolean reportMissingUnderlyingCDs = false;
 	
 	private boolean newConceptsOnly = true;
 	
 	public CreateMissingDrugConcepts() {
 		super(null);
 	}
-	
+
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(CreateMissingDrugConcepts.class, args, params);
+		TermServerScript.run(CreateMissingDrugConcepts.class, args, params);
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		processFile();
 	}
@@ -104,7 +107,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	
 	@Override
 	protected void preInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
+		getArchiveManager().setPopulateReleasedFlag(true);
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		selfDetermining = true;
@@ -112,12 +115,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
-		//dryRun = jobRun.getParamBoolean(DRY_RUN);
-		dryRun = true;
-		//taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
 		taskSize = 5;
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
 				"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
@@ -127,9 +128,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				"Suppressed Concepts"};
 		
 		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
-			/*if (c.getConceptId().equals("774384006")) {
-				LOGGER.debug("Here");
-			}*/
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				knownMPFs.add(c);
@@ -214,7 +212,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 			}
 			conceptsRequired.add(required);
 		}
-		
+		int changesMade = 0;
 		for (Concept required : conceptsRequired) {
 			termGenerator.ensureTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
@@ -228,7 +226,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 						.stream()
 						.filter(parent -> parent.getConceptType().equals(invalidParentType))
-						.map(parent -> parent.toString())
+						.map(Concept::toString)
 						.collect(Collectors.joining(",\n"));
 				//If we don't detect problems with the parents, then don't report anything
 				if (!currentParents.isEmpty()) {
@@ -243,9 +241,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 			incrementSummaryInformation(ISSUE_COUNT);
 			report (task, required, Severity.LOW, ReportActionType.INFO, expression);
 		
-			return CHANGE_MADE; 
+			changesMade++;
 		}
-		return NO_CHANGES_MADE;
+		return changesMade;
 	}
 
 	private boolean isContained(Concept needle, Set<Concept> haystack) {
@@ -254,10 +252,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		Set<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-			/*if (straw.getConceptId().equals("774384006")) {
-				LOGGER.debug ("LOGGER.debug here also");
-			}*/
-			
 			//Do a simple sum check to see if we can rule out a match early doors
 			if (straw.getStatedAttribSum() != needle.getStatedAttribSum()) {
 				continue;
@@ -278,7 +272,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 					//the IS A that's in the same axiom as the Role will throw this check out.
 					//Also ignore group as ingredient may not be in expected order
 					if (thisRel.equals(thatRel, true)) {
-						if (true);
 						relMatchFound = true;
 						break;
 					} else if (thisRel.getType().equals(HAS_ACTIVE_INGRED) || thisRel.getType().equals(HAS_PRECISE_INGRED)) {
@@ -320,7 +313,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 									.map(i -> DrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
 									.collect(Collectors.toSet());
 		
-		if (baseIngredients.size() == 0) {
+		if (baseIngredients.isEmpty()) {
 			throw new ValidationFailure(c,"Zero ingredients found.");
 		}
 		
@@ -336,9 +329,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		for (Concept base : baseIngredients) {
 			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, ++groupId);
 			drug.addRelationship(ingredRel);
-			/*if (base.getId().equals("391769002")) {
-				LOGGER.debug("here");
-			}*/
 		}
 		return drug;
 	}
@@ -346,119 +336,142 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	public boolean inScope(Concept c) {
 		return !newConceptsOnly || (!c.hasEffectiveTime() && !c.isReleased());
 	}
-	
+
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.debug("Identifying concepts to process");
-		List<Concept> allAffected = new ArrayList<Concept>();
+		List<Concept> allAffected = new ArrayList<>();
 		termGenerator.setQuiet(true);
-		List<Concept> conceptsToProcess = MEDICINAL_PRODUCT.getDescendants(NOT_SET).stream()
-				.filter(c -> inScope(c))
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-				.collect(Collectors.toList());
-		nextConcept:
-		for (Concept c : conceptsToProcess) {
-		//for (Concept c : Collections.singleton(gl.getConcept("425226008"))) {
-			try {
-				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
-					//If the concept has a more specific mpf than the one we've calculated, warn 
-					List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
-							.stream()
-							.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM))
-							.collect(Collectors.toList());
-					for (Concept currentMPF : currentMPFs) {
-						//Some dose forms are allowed to be more specific
-						Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
-						if (!allowMoreSpecificDoseForms.contains(doseForm)) {
-							if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
-								report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-								continue nextConcept;
-							}
-						}
-					}
-					//Do we already know about this concept or plan to create it?
-					if (!isContained(mpf, knownMPFs) && 
-							!isContained(mpf, createMPFs) &&
-							!isSuppressed(mpf)) {
-						createMPFs.add(mpf);
-						allAffected.add(c);
-					}
-				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-					Concept mp = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT);
-					//If the concept has a more specific mp than the one we've calculated, warn 
-					List<Concept> currentMPs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
-							.stream()
-							.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT))
-							.collect(Collectors.toList());
-					for (Concept currentMP : currentMPs) {
-						if (SnomedUtils.hasMoreSpecificModel(currentMP, mp, AncestorsCache.getAncestorsCache())) {
-							report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-							continue nextConcept;
-						}
-					}
-					//Do we already know about this concept or already have a plan to create it?
-					if (!isContained(mp, knownMPs) && !isContained(mp, createMPs)) {
-						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
-						if (hasClinicalDrugDescendant(c)) {
-							if (!isSuppressed(mp)) {
-								createMPs.add(mp);
-								allAffected.add(c);
-							}
-						} else {
-							//report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-						}
-					}
-					
-					//For a given MPF, as well as looking for an MP, we may also need a sibling MPFO
-					if (containsExceptionSubstance(c)) {
-						continue nextConcept;
-					}
-					Concept mpfo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
-					//Do we already know about this concept or already have a plan to create it?
-					if (!isContained(mpfo, knownMPFOs) && !isContained(mpfo, createMPFOs)) {
-						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
-						if (hasClinicalDrugDescendant(c)) {
-							if (!isSuppressed(mpfo)) {
-								createMPFOs.add(mpfo);
-								if (!allAffected.contains(c)) {
-									allAffected.add(c);
-								}
-							}
-						} else {
-							//report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-						}
-					}
-				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
-					if (containsExceptionSubstance(c)) {
-						continue nextConcept;
-					}
-					Concept mpo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_ONLY);
-					//Do we already know about this concept or already have a plan to create it?
-					if (!isContained(mpo, knownMPOs) && !isContained(mpo, createMPOs)) {
-						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
-						if (hasClinicalDrugDescendant(c)) {
-							if (!isSuppressed(mpo)) {
-								createMPOs.add(mpo);
-								allAffected.add(c);
-							}
-						} else {
-							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO", mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
-						}
-					}
-				} 
-			} catch (Exception e) {
-				String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
-				report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
-				LOGGER.warn (msg);
-				if (!msg.contains("has multiple modification attributes")) {
-					e.printStackTrace(new PrintStream(System.out));
+		List<Concept> conceptsToReview = MEDICINAL_PRODUCT.getDescendants(NOT_SET).stream()
+				.filter(this::inScope)
+				.sorted(SnomedUtils::compareSemTagFSN)
+				.toList();
+		for (Concept c : conceptsToReview) {
+			reviewConcept(c, allAffected);
+		}
+		LOGGER.info ("Identified {} concepts to process", allAffected.size());
+		allAffected.sort(Comparator.comparing(Concept::getFsn));
+		termGenerator.setQuiet(false);
+		return new ArrayList<>(allAffected);
+	}
+
+	private void reviewConcept(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		try {
+			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+				reviewClinicalDrug(c, allAffected);
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+				reviewMPF(c, allAffected);
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+				reviewMP(c, allAffected);
+			} else {
+				report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Unexpected concept type: " + c.getConceptType());
+			}
+		} catch (Exception e) {
+			String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
+			report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
+			LOGGER.warn(msg);
+		}
+	}
+
+	private void reviewClinicalDrug(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
+		//If the concept has a more specific mpf than the one we've calculated, warn
+		List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+				.stream()
+				.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM))
+				.toList();
+		for (Concept currentMPF : currentMPFs) {
+			//Some dose forms are allowed to be more specific
+			Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
+			if (!allowMoreSpecificDoseForms.contains(doseForm)) {
+				if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
+					report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+					return;
 				}
 			}
 		}
-		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
-		allAffected.sort(Comparator.comparing(Concept::getFsn));
-		termGenerator.setQuiet(false);
-		return new ArrayList<Component>(allAffected);
+		//Do we already know about this concept or plan to create it?
+		if (!isContained(mpf, knownMPFs) &&
+				!isContained(mpf, createMPFs) &&
+				!isSuppressed(mpf)) {
+			createMPFs.add(mpf);
+			allAffected.add(c);
+		}
+	}
+
+	private void reviewMPF(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		Concept mp = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT);
+		//If the concept has a more specific mp than the one we've calculated, warn
+		List<Concept> currentMPs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+				.stream()
+				.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT))
+				.toList();
+		for (Concept currentMP : currentMPs) {
+			if (SnomedUtils.hasMoreSpecificModel(currentMP, mp, AncestorsCache.getAncestorsCache())) {
+				report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				return;
+			}
+		}
+
+		reviewCreatedMP(c, allAffected, mp);
+
+		//For a given MPF, as well as looking for an MP, we may also need a sibling MPFO
+		if (containsExceptionSubstance(c)) {
+			return;
+		}
+		Concept mpfo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+		reviewCreatedMPFO(c, allAffected, mpfo);
+	}
+
+	private void reviewCreatedMPFO(Concept c, List<Concept> allAffected, Concept mpfo) throws TermServerScriptException {
+		//Do we already know about this concept or already have a plan to create it?
+		if (!isContained(mpfo, knownMPFOs) && !isContained(mpfo, createMPFOs)) {
+			//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+			if (hasClinicalDrugDescendant(c)) {
+				if (!isSuppressed(mpfo)) {
+					createMPFOs.add(mpfo);
+					if (!allAffected.contains(c)) {
+						allAffected.add(c);
+					}
+				}
+			} else if (reportMissingUnderlyingCDs) {
+				report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			}
+		}
+	}
+
+	private void reviewCreatedMP(Concept c, List<Concept> allAffected, Concept mp) throws TermServerScriptException {
+		//Do we already know about this concept or already have a plan to create it?
+		if (!isContained(mp, knownMPs) && !isContained(mp, createMPs)) {
+			//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+			if (hasClinicalDrugDescendant(c)) {
+				if (!isSuppressed(mp)) {
+					createMPs.add(mp);
+					allAffected.add(c);
+				}
+			} else if (reportMissingUnderlyingCDs) {
+				report (SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			}
+		}
+	}
+
+	private void reviewMP(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		if (containsExceptionSubstance(c)) {
+			return;
+		}
+		Concept mpo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_ONLY);
+		//Do we already know about this concept or already have a plan to create it?
+		if (!isContained(mpo, knownMPOs) && !isContained(mpo, createMPOs)) {
+			//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+			if (hasClinicalDrugDescendant(c)) {
+				if (!isSuppressed(mpo)) {
+					createMPOs.add(mpo);
+					allAffected.add(c);
+				}
+			} else {
+				report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO", mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			}
+		}
 	}
 
 	private boolean hasClinicalDrugDescendant(Concept c) throws TermServerScriptException {

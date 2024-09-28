@@ -4,72 +4,40 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
-
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DrugBatchFix.class);
-
-	static Map<String, String> wordSubstitution = new HashMap<String, String>();
+	static Map<String, String> wordSubstitution = new HashMap<>();
 	static {
 		wordSubstitution.put("acetaminophen", "paracetamol");
 	}
 	
-	String [] unwantedWords = new String[] { "preparation", "product" };
-	
-	static final String find = "/1 each";
-	static final String replace = "";
-	static final String PLUS = "+";
-	static final String PLUS_ESCAPED = "\\+";
-	static final String PLUS_SPACED_ESCAPED = " \\+ ";
-	static final String IN = " in ";
-	static final String ONLY = "only ";
+	protected static final String [] unwantedWords = new String[] { "preparation", "product" };
 	static final String AND = " and ";
-	static final String newSemanticTag = "(medicinal product)";
-	
-	List<String> doseForms = new ArrayList<String>();
-	
+
 	TermGenerator termGenerator;
 
 	protected DrugBatchFix(BatchFix clone) {
 		super(clone);
 	}
-	
-	public void postInit() throws TermServerScriptException {
-		//Are we living in a post concrete domains era?
-		boolean useConcreteValues = false;
-		Concept random = gl.getConcept("774966003 |Product containing only caffeine (medicinal product)|");
-		loop:
-		for (Concept c : random.getDescendants(NOT_SET)) {
-			for (Relationship r : c.getRelationships()) {
-				if (r.isConcrete()) {
-					useConcreteValues = true;
-					break loop;
-				}
-			}
-		}
-		
-		if (useConcreteValues) {
-			termGenerator = new DrugTermGenerator(this);
-		} else {
-			termGenerator = new DrugTermGenerator(this);
-		}
+
+	@Override
+	public void postInit(String googleFolder, String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+		super.postInit(googleFolder, tabNames, columnHeadings, csvOutput);
+		termGenerator = new DrugTermGenerator(this);
 	}
 
 	public int assignIngredientCounts(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
 		int changes = 0;
 		List<Concept> ingredients = DrugUtils.getIngredients(c, charType);
-		if (ingredients == null || ingredients.size() == 0) {
+		if (ingredients == null || ingredients.isEmpty()) {
 			throw new ValidationFailure(c, "No ingredients found for ingredient count");
 		} else if (ingredients.size() == 1) {
 			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, DrugUtils.getNumberAsConcept("1"), UNGROUPED, true);
@@ -102,7 +70,7 @@ public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 		String semTag = "";
 		//Keep the semantic tag separate
 		if (isFSN) {
-			String[] parts = SnomedUtils.deconstructFSN(str);
+			String[] parts = SnomedUtilsBase.deconstructFSN(str);
 			str = parts[0];
 			semTag = " " + parts[1];
 		}
