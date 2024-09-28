@@ -411,7 +411,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	}
 
 	@Override
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}

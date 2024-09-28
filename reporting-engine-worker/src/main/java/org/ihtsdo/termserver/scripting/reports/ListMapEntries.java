@@ -20,27 +20,29 @@ import org.slf4j.LoggerFactory;
 public class ListMapEntries extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ListMapEntries.class);
-	private static String COMPACT = "Compact";
-	private static String MAP_CONCEPT = "Map Concept";
-	private static String REVERSE_MAP = "Reverse Map";
-	private static String MAP_TARGET = "mapTarget";
-	private static String EXCLUDE = "Exclude";
-	private static int MAX_CELL_SIZE = 49900;
+	private static final String COMPACT = "Compact";
+	private static final String MAP_CONCEPT = "Map Concept";
+	private static final String REVERSE_MAP = "Reverse Map";
+	private static final String MAP_TARGET = "mapTarget";
+	private static final String EXCLUDE = "Exclude";
+	private static final int MAX_CELL_SIZE = 49900;
+	public static final String FALSE = "false";
 	
 	protected Concept mapConcept;
-	protected boolean compact = false;
-	protected boolean reverseMap = false;
+	protected boolean doCompact = false;
+	protected boolean doReverseMap = false;
 	protected String excludeECL = null;
 	protected Collection<Concept> exclusions = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(MAP_CONCEPT, "447562003 |SNOMED CT to ICD-10 extended map|");
-		params.put(COMPACT, "false");
-		params.put(REVERSE_MAP, "false");
+		params.put(COMPACT, FALSE);
+		params.put(REVERSE_MAP, FALSE);
 		TermServerScript.run(ListMapEntries.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setLoadOtherReferenceSets(true);
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true); //This forces a delta import - needed because we don't yet save 'Other' refset members to disk.
@@ -51,8 +53,8 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		mapConcept = gl.getConcept(jobRun.getMandatoryParamValue(MAP_CONCEPT));
-		compact = jobRun.getMandatoryParamBoolean(COMPACT);
-		reverseMap = jobRun.getMandatoryParamBoolean(REVERSE_MAP);
+		doCompact = jobRun.getMandatoryParamBoolean(COMPACT);
+		doReverseMap = jobRun.getMandatoryParamBoolean(REVERSE_MAP);
 		excludeECL = jobRun.getParamValue(EXCLUDE);
 		if (!StringUtils.isEmpty(excludeECL)) {
 			exclusions = findConcepts(excludeECL);
@@ -61,7 +63,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		String[] columnHeadings;
 		String[] tabNames;
 
-		if (reverseMap) {
+		if (doReverseMap) {
 			columnHeadings = new String[]{
 					"Map Target, Count, Concept, RefsetMember",
 					"SCTID, FSN, SemTag, Refset Member" };
@@ -80,8 +82,8 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(MAP_CONCEPT).withType(JobParameter.Type.CONCEPT).withMandatory()
-				.add(COMPACT).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue("false")
-				.add(REVERSE_MAP).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue("false")
+				.add(COMPACT).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(FALSE)
+				.add(REVERSE_MAP).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(FALSE)
 				.build();
 		
 		return new Job()
@@ -99,7 +101,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 
 	@Override
 	public void runJob() throws TermServerScriptException {
-		if (reverseMap) {
+		if (doReverseMap) {
 			reportMapReversed();
 		} else {
 			reportMap();
@@ -110,7 +112,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 		Map<String, List<RefsetMember>> reverseMap = generateReverseMap();
 		for (String mapTarget : reverseMap.keySet()) {
 			List<RefsetMember> members = reverseMap.get(mapTarget);
-			if (compact) {
+			if (doCompact) {
 				String concepts = members.stream()
 						.map(rm -> gl.getConceptSafely(rm.getReferencedComponentId()).toString())
 						.collect(Collectors.joining("\n"));
@@ -145,17 +147,13 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 				continue;
 			}
 			for (RefsetMember rm : c.getOtherRefsetMembers()) {
-				if (rm.isActive() && rm.getRefsetId().equals(mapConcept.getId())) {
+				if (rm.isActiveSafely() && rm.getRefsetId().equals(mapConcept.getId())) {
 					String mapTarget = rm.getField(MAP_TARGET);
 					if (StringUtils.isEmpty(mapTarget)) {
 						report(SECONDARY_REPORT, c, rm);
 						continue;
 					}
-					List<RefsetMember> entries = reverseMap.get(mapTarget);
-					if (entries == null) {
-						entries = new ArrayList<>();
-						reverseMap.put(mapTarget, entries);
-					}
+					List<RefsetMember> entries = reverseMap.computeIfAbsent(mapTarget, k -> new ArrayList<>());
 					entries.add(rm);
 				}
 			}

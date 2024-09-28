@@ -23,9 +23,9 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	private static final Logger LOGGER = LoggerFactory.getLogger(ComponentTraceability.class);
 
 	public static final String COMPONENT_IDS = "Component Ids";
-	TraceabilityService traceabilityService;
-	List<String> componentIds;
-	
+	private TraceabilityService traceabilityService;
+	private List<String> componentIds;
+
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(COMPONENT_IDS,
@@ -36,7 +36,6 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
-
 		if (!StringUtils.isEmpty(run.getParamValue(COMPONENT_IDS))) {
 			componentIds = Arrays.stream(run.getMandatoryParamValue(COMPONENT_IDS).split(",",-1))
 					.map(String::trim)
@@ -57,6 +56,8 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 		postInit(tabNames, columnHeadings);
 		
 		traceabilityService = new MultiDetailTraceabilityService(jobRun, this);
+		//Do not set a search path because we want to know about all activity, not just
+		//that which has been promoted.
 	}
 	
 	@Override

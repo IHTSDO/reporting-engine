@@ -158,7 +158,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);

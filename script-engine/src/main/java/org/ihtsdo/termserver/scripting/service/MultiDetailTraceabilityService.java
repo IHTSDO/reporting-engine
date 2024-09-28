@@ -16,29 +16,21 @@ import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ComponentChange;
 import org.snomed.otf.traceability.domain.ConceptChange;
 
-public class MultiDetailTraceabilityService implements TraceabilityService {
+public class MultiDetailTraceabilityService extends CommonTraceabilityService  {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiDetailTraceabilityService.class);
 
-	private TraceabilityServiceClient client;
-	private TermServerScript ts;
-	private String onBranch = null;
-	
 	public MultiDetailTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.ts = ts;
 	}
-	
-	public void tidyUp() {
-		
-	}
-	
+
 	public int populateTraceabilityAndReport(int tabIdx, Component c, Object... details) throws TermServerScriptException {
 		int rowsReported = 0;
 		Concept owningConcept = ts.getGraphLoader().getComponentOwner(c.getId());
 		try {
 			List<Activity> activities = client.getComponentActivity(c.getId(), onBranch);
-			for (Activity activity : activities) {
+			for (Activity activity : filter(activities)) {
 				for (ConceptChange conceptchange : activity.getConceptChanges()) {
 					for (ComponentChange compChange: conceptchange.getComponentChanges()) {
 						if (compChange.getComponentId().equals(c.getId())) {
@@ -69,21 +61,6 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 	@Override
 	public void populateTraceabilityAndReport(String fromDate, String toDate, int tab, Concept c, Object... details) {
 		throw new NotImplementedException("This class uses bulk method, not single concept lookup");
-	}
-
-	@Override
-	public void setBranchPath(String onBranch) {
-		this.onBranch = onBranch;
-	}
-
-	@Override
-	public void flush() throws TermServerScriptException {
-	}
-
-	@Override
-	public void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details)
-			throws TermServerScriptException {
-		throw new NotImplementedException("This class works with components, not concepts.");
 	}
 
 }

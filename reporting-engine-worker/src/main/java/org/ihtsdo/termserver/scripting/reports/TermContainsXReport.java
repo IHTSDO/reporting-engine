@@ -253,7 +253,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	}
 	
 	@Override
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		String[] hiearchies = getHierarchies(c);
 		String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
 		String ds = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());

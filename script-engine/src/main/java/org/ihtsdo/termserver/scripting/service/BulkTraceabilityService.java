@@ -12,7 +12,6 @@ import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
 import org.snomed.otf.traceability.domain.ConceptChange;
-import org.apache.commons.lang.StringUtils;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -21,27 +20,25 @@ import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
-public class BulkTraceabilityService implements TraceabilityService {
+public class BulkTraceabilityService extends CommonTraceabilityService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkTraceabilityService.class);
 
-	TraceabilityServiceClient client;
-	TermServerScript ts;
-	private static int MAX_PENDING_SIZE  = 1000;
-	Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
-	Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
-	String onBranch = null;
-	
+	private static final int MAX_PENDING_SIZE  = 1000;
+	private Map<String, List<ReportRow>> batchedReportRowMap = new LinkedHashMap<>();
+	private Map<String, Object[]> traceabilityInfoCache = new HashMap<>();
+
 	public BulkTraceabilityService(JobRun jobRun, TermServerScript ts) {
 		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.ts = ts;
 	}
-	
+
+	@Override
 	public void tidyUp() {
 		traceabilityInfoCache.clear();
 	}
 	
-	public void populateTraceabilityAndReport(int reportTabIdx, Concept c, Object... details) throws TermServerScriptException {
+	public int populateTraceabilityAndReport(int reportTabIdx, Concept c, Object... details) throws TermServerScriptException {
 		//We'll cache this row until we have enough to be worth making a call to traceability
 		//Do we already have a row for this concept?
 		List<ReportRow> rows = batchedReportRowMap.get(c.getConceptId());
@@ -54,6 +51,7 @@ public class BulkTraceabilityService implements TraceabilityService {
 				batchedReportRowMap.size() >= MAX_PENDING_SIZE) {
 			flush();
 		}
+		return reportTabIdx;
 	}
 	
 	private int getRequiredRowCount() {
@@ -67,7 +65,7 @@ public class BulkTraceabilityService implements TraceabilityService {
 		return infoRequiredCount;
 	}
 
-
+	@Override
 	public void flush() throws TermServerScriptException {
 		try {
 			populateReportRowsWithTraceabilityInfo(ts.getProject().getKey());

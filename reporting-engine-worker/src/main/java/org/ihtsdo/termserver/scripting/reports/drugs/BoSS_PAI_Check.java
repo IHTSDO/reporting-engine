@@ -331,12 +331,14 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 	boolean isConcAttribute(Concept type) {
 		return concAttributes.contains(type);
 	}
-	
+
+	@Override
 	protected void initialiseSummary(String issue) {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
-	
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+
+	@Override
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);

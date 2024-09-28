@@ -195,7 +195,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	}
 
 	@Override
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
