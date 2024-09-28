@@ -8,6 +8,7 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.service.CommonTraceabilityService;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -827,7 +828,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		return summaryCounts.get(type);
 	}
 	
-	class PassThroughTraceability implements TraceabilityService {
+	class PassThroughTraceability extends CommonTraceabilityService {
 		
 		TermServerScript ts;
 		
@@ -838,12 +839,6 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		@Override
 		public void flush() throws TermServerScriptException {
 			ts.getReportManager().flushFilesSoft();
-		}
-
-		@Override
-		public void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details)
-				throws TermServerScriptException {
-			ts.report(tabIdx, c , details);
 		}
 
 		@Override
