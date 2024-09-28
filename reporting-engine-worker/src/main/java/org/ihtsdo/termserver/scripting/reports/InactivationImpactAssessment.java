@@ -13,7 +13,9 @@ import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.CodeSystem;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
+import org.ihtsdo.termserver.scripting.reports.qi.AllKnownTemplates;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -35,7 +37,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InactivationImpactAssessment extends TermServerReport implements ReportClass {
+public class InactivationImpactAssessment extends AllKnownTemplates implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivationImpactAssessment.class);
 
@@ -64,7 +66,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 	}
 	
 	@Override
-	public void init (JobRun run) throws TermServerScriptException {
+	public void init(JobRun run) throws TermServerScriptException {
 		getArchiveManager().setPopulateReleasedFlag(true);
 		importDerivativeLocations();
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc reports
@@ -142,6 +144,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 				.add("Notes").withType(Type.STRING)
 					.withDescription("Any notes the Author might want to make about why they're running this report.  Has no functional impact")
 				.add(INCLUDE_INFERRED).withType(Type.BOOLEAN).withDefaultValue(false).withMandatory()
+				.add(SERVER_URL).withType(JobParameter.Type.HIDDEN).withMandatory()
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
@@ -168,6 +171,7 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		checkAttributeUsage();
 		checkHistoricalAssociations();
 		checkMRCM();
+		checkTemplates();
 	}
 
 	private void checkChildInactivation() throws TermServerScriptException {
@@ -358,6 +362,14 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 				report(PRIMARY_REPORT, sctId, "Unknown in specified release/project", recordType + "/" + fieldName, rm);
 			} else if (!c.isActiveSafely()) {
 				report(c, "Inactive in specified release/project", recordType + "/" + fieldName, rm);
+			}
+		}
+	}
+	
+	private void checkTemplates() throws TermServerScriptException {
+		for (Concept c : inactivatingConcepts) {
+			for (Template t : listTemplatesUsingConcept(c)) {
+				report (c, "used in template ", t.getName());
 			}
 		}
 	}

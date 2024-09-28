@@ -47,6 +47,19 @@ public class Template implements ScriptConstants {
 	public void setAttributeGroups(List<AttributeGroup> attributeGroups) { 
 		this.attributeGroups = attributeGroups;
 	}
+	
+	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
+	
+	@Override
+	public boolean equals (Object o) {
+		if (o instanceof Template t) {
+			return this.name.equals(t.name);
+		}
+		return false;
+	}
 
 	public List<AttributeGroup> getAttributeGroups() {
 		//Does the logical template have any ungrouped attributes?  We can simplify the code by calling that 

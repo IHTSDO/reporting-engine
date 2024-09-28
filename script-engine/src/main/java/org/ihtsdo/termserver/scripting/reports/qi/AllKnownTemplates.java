@@ -1,9 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
@@ -18,17 +21,22 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AllKnownTemplates extends TermServerReport {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(AllKnownTemplates.class);
-
-	TemplateServiceClient tsc;
-	Map<String, List<Template>> domainTemplates = new HashMap<>();
-	boolean singleTemplateMode = false;
+	static {
+		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+	}
 	
+	private static final Logger LOGGER = LoggerFactory.getLogger(AllKnownTemplates.class);
+	private Pattern sctidExtractorPattern;
+	protected TemplateServiceClient tsc;
+	protected Map<String, List<Template>> domainTemplates = new HashMap<>();
+	protected boolean singleTemplateMode = false;
+
 	public static final String TEMPLATE_SERVICE = "Template Service";
 	public static final String QI = "QI Project";
 	public static final String WOUND_OF_BODYSITE = "templates/wound/wound of bodysite.json";
 	public static final String FINDING_OF_RANGE_OF_JOINT_MOVEMENT = "templates/Finding of range of joint movement.json";
 
+	private Map<Template, Set<String>> templateToSctidMap;
 	
 	protected void commonInit(JobRun run, boolean singleTemplateMode) {
 		this.singleTemplateMode = singleTemplateMode;
@@ -37,7 +45,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			templateServiceUrl += "/template-service";
 		}
 		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
-		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+		sctidExtractorPattern = Pattern.compile("\\d{8,}");
 	}
 
 	public void init (JobRun run) throws TermServerScriptException {
@@ -395,5 +403,45 @@ public abstract class AllKnownTemplates extends TermServerReport {
 					throw new TermServerScriptException("Unable to load " + ecl + " template " + templateNames[x] + " from local resources", e);
 				}
 			}
+	}
+	
+	public List<Template> listTemplatesUsingConcept (Concept c) {
+		List<Template> templatesUsingConcept = new ArrayList<>();
+		//To save us parsing each template for each concept checked, we'll 
+		//set up a map of templates to SCTIDs
+		for (Map.Entry<Template, Set<String>> entry : getTemplateToSctidMap().entrySet()) {
+			Set<String> sctidsUsedInTemplate = entry.getValue();
+			if (sctidsUsedInTemplate.contains(c.getId())) {
+				templatesUsingConcept.add(entry.getKey());
+			}
+		}
+		return templatesUsingConcept;
+	}
+
+	private Map<Template, Set<String>> getTemplateToSctidMap() {
+		if (templateToSctidMap == null) {
+			templateToSctidMap = new HashMap<>();
+			for (Map.Entry<String, List<Template>> entry : domainTemplates.entrySet()) {
+				Set<String> idsUsedInDomain = extractSctids(entry.getKey());
+				for (Template t : entry.getValue()) {
+					Set<String> sctidsUsedInTemplate = extractSctids(t.getSource());
+					//Add those used in the domain as well
+					sctidsUsedInTemplate.addAll(idsUsedInDomain);
+					templateToSctidMap.put(t, sctidsUsedInTemplate);
+				}
+			}
+		}
+		return templateToSctidMap;
+	}
+
+	private Set<String> extractSctids(String source) {
+		Set<String> sctIds = new HashSet<>();
+		Matcher matcher = sctidExtractorPattern.matcher(source);
+		
+		// Find and add each matching number to the result set
+		while (matcher.find()) {
+			sctIds.add(matcher.group());
+		}
+		return sctIds;
 	}
 }
