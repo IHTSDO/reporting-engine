@@ -39,6 +39,11 @@ import org.slf4j.LoggerFactory;
 
 public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 
+	static {
+		ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
+		dryRun = true;
+	}
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
 
 	private Set<Concept> createMPFs = new HashSet<>();
