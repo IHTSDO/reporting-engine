@@ -28,8 +28,7 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateList.class);
 	
 	final static String defaultTemplateServiceUrl = "https://dev-snowstorm.ihtsdotools.org/template-service";
-	//final static String defaultTemplateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
-	
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, defaultTemplateServiceUrl);
@@ -112,7 +111,6 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 	}
 	
 	private int compare(Entry<String, List<Template>> entry1, Entry<String, List<Template>> entry2) {
-		
 		try {
 			//First sort on top level hierarchy
 			Collection<Concept> c1 = findConcepts(entry1.getKey());
