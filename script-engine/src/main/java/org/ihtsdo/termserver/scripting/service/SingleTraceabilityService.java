@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.service;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
@@ -23,9 +22,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class SingleTraceabilityService implements TraceabilityService {
+public class SingleTraceabilityService extends CommonTraceabilityService {
 	
-	Set<String> unacceptableUsernames = new HashSet<>();
+	private Set<String> unacceptableUsernames = new HashSet<>();
 	{
 		unacceptableUsernames.add("System");
 		unacceptableUsernames.add("mapping-prod");
@@ -37,37 +36,34 @@ public class SingleTraceabilityService implements TraceabilityService {
 		unacceptableUsernames.add("tcooksey");
 	}
 
+	private static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	private static final Logger LOGGER = LoggerFactory.getLogger(SingleTraceabilityService.class);
 	private static int WORKER_COUNT = 4;
 	
-	private TraceabilityServiceClient client;
 	private JiraHelper jiraHelper;
-	private TermServerScript ts;
-	private static int MAX_PENDING_SIZE  = 100;
-	private static int MIN_PENDING_SIZE  = 50;
+	private static final int MAX_PENDING_SIZE  = 100;
+	private static final int MIN_PENDING_SIZE  = 50;
 	
 	private Map<String, Issue> jiraIssueMap = new HashMap<>();
 	
-	private static int IDX_USERNAME = 0;
-	private static int IDX_BRANCH = 1;
-	private static int IDX_COMMIT_DATE = 2;
+	private static final int IDX_USERNAME = 0;
+	private static final int IDX_BRANCH = 1;
+	private static final int IDX_COMMIT_DATE = 2;
 	
 	private int requestCount = 0;
 	String branchPrefix = null;
 	
 	private Worker[] workers;
-	
-	static private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-	
+
 	private Map<String, Map<String, Object[]>> cachePerTimeSlot = new HashMap<>();
 	
 	public SingleTraceabilityService(JobRun jobRun, TermServerScript ts) {
-		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.jiraHelper = new JiraHelper();
 		this.ts = ts;
 	}
-	
+
+	@Override
 	public void tidyUp() {
 		if (workers == null) {
 			LOGGER.info("No traceability workers have been created, skipping tidy up.");
@@ -381,12 +377,6 @@ public class SingleTraceabilityService implements TraceabilityService {
 				}
 			}
 		}
-	}
-
-	@Override
-	public void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details)
-			throws TermServerScriptException {
-		throw new NotImplementedException("This class uses variant that takes date range");
 	}
 
 	@Override
