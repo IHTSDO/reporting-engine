@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.EclCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
+import org.ihtsdo.termserver.scripting.dao.ResourceDataLoader;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.CodeSystem;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 public class InactivationImpactAssessment extends AllKnownTemplates implements ReportClass {
 
@@ -67,6 +69,14 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
+		//Are we running in a SpringBoot context?  Get the ResourceDataLoader Service
+		//if so, to ensure that it's finished loading our resources from S3
+		ApplicationContext context = getApplicationContext();
+		if (context != null) {
+			ResourceDataLoader resourceDataLoader = context.getBean(ResourceDataLoader.class);
+			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
+		}
+		
 		getArchiveManager().setPopulateReleasedFlag(true);
 		importDerivativeLocations();
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc reports
@@ -246,8 +256,9 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 				conceptsProcessed++;
 			}
 			String ecl = "^" + refset.getId() + " AND ( " + subsetList + " )";
+			String detail = "As per branch " + eclCache.getBranch() + " on " + eclCache.getServer();
 			for (Concept c : eclCache.findConcepts(ecl)) {
-				report(c, "active in refset", refset.getPreferredSynonym());
+				report(c, "active in refset", refset.getPreferredSynonym(), detail);
 			}
 			try {
 				Thread.sleep(1 * 200);

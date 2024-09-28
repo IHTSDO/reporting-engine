@@ -52,6 +52,8 @@ public class ResourceDataLoader {
 	
 	@Value("${resources.useCloud}")
 	private String useCloudStr;
+
+	private boolean initialised = false;
 	
 	@EventListener(ApplicationReadyEvent.class)
 	private void init() throws TermServerScriptException {
@@ -97,6 +99,7 @@ public class ResourceDataLoader {
 				LOGGER.error(errorMsg, t);
 			}
 			LOGGER.info("Resources download complete");
+			initialised = true;
 		} else {
 			LOGGER.info("AWS S3 marked as local due to 'resources.useCloud=false' setting.");
 		}
@@ -110,5 +113,9 @@ public class ResourceDataLoader {
 		loader.awsSecretKey = properties.getProperty("aws.secretKey");
 		loader.useCloudStr = properties.getProperty("resources.useCloud");
 		return loader;
+	}
+
+	public String getInitalisationConfirmation() {
+		return initialised ? "confirms" : "denies";
 	}
 }
