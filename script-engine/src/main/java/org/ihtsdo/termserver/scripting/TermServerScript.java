@@ -350,40 +350,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		this.jobRun = jobRun;
 		EclCache.reset();
 		authenticatedCookie = jobRun.getAuthToken();
-		
-		if (jobRun != null && !StringUtils.isEmpty(jobRun.getProject())) {
-			projectName = jobRun.getProject();
-		} else if ((jobRun == null && projectName == null) || 
-				(jobRun != null && StringUtils.isEmpty(jobRun.getProject()))) {
-			LOGGER.warn("No project specified, running against MAIN");
-			projectName = "MAIN";
-		}
-		
-		if (!StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
-			subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
-		}
-		
-		if (!StringUtils.isEmpty(jobRun.getParamValue(ECL))) {
-			subsetECL =jobRun.getParamValue(ECL);
-		}
-		
-		String inputFileName = jobRun.getParamValue(INPUT_FILE);
-		if (!StringUtils.isEmpty(inputFileName)) {
-			setInputFile(0,new File(inputFileName));
-		}
-		
-		if (jobRun.getWhiteList() != null) {
-			whiteListedConceptIds = jobRun.getWhiteList().stream()
-					.map( w -> SnomedUtils.makeMachineReadable(w.getSctId()))
-					.collect(Collectors.toSet());
-		}
-		
-		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
-			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
-		}
-		
+		recoverCommonParametersFromJobRun();
 		init();
-		
+		recoverProjectDetails();
+		LOGGER.info("Init Complete. Project Key determined: " + project.getKey() + " on " + project.getBranchPath());
+	}
+
+	private void recoverProjectDetails() throws TermServerScriptException {
 		if (projectName.equals("MAIN") || projectName.startsWith("MAIN/")) {
 			//MAIN is not a project.  Recover Main metadata from branch
 			project.setMetadata(tsClient.getBranch(projectName).getMetadata());
@@ -393,38 +366,78 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				int retry = 0;
 				boolean ok = false;
 				while (!ok && retry < 3) {
-					try {
-						project = scaClient.getProject(projectName);
-						ok = true;
-						
-						//Are we in fact running against a task?
-						if (jobRun != null && !StringUtils.isEmpty(jobRun.getTask())) {
-							String taskBranchPath = project.getBranchPath() + "/" + jobRun.getTask();
-							project.setBranchPath(taskBranchPath);
-						} else if (taskKey != null) {
-							String taskBranchPath = project.getBranchPath() + "/" + taskKey;
-							project.setBranchPath(taskBranchPath);
-						}
-					} catch (Exception e) {
-						//No need to retry if we get a 403
-						String exceptionMsg = ExceptionUtils.getExceptionCause("Unable to recover project", e) + " Retrying after short nap.";
-						if (!exceptionMsg.contains("403") && ++retry < 3) {
-							System.err.println(exceptionMsg);
-							Thread.sleep(1000 * 10);
-						} else {
-							throw new TermServerScriptException("Failed to recover project " + projectName, e);
-						}
-					}
+					boolean lastChance = retry == 2;
+					ok = recoverProjectDetailsFromTS(lastChance);
+					retry++;
 				}
-				
-			} catch (InterruptedException e) {
+			} catch (InterruptedException | TermServerScriptException e) {
 				throw new TermServerScriptException("Failed to recover project " + projectName, e);
 			}
 		}
-		
-		LOGGER.info("Init Complete. Project Key determined: " + project.getKey() + " on " + project.getBranchPath());
 	}
-	
+
+	private boolean recoverProjectDetailsFromTS(boolean lastChance) throws InterruptedException, TermServerScriptException {
+		try {
+			project = scaClient.getProject(projectName);
+			//Are we in fact running against a task?
+			if (jobRun != null && !StringUtils.isEmpty(jobRun.getTask())) {
+				String taskBranchPath = project.getBranchPath() + "/" + jobRun.getTask();
+				project.setBranchPath(taskBranchPath);
+			} else if (taskKey != null) {
+				String taskBranchPath = project.getBranchPath() + "/" + taskKey;
+				project.setBranchPath(taskBranchPath);
+			}
+			return true;
+		} catch (Exception e) {
+			//No need to retry if we get a 403.  //No need to sleep if this was our last chance
+			String exceptionMsg = ExceptionUtils.getExceptionCause("Unable to recover project", e) + " Retrying after short nap.";
+			if (!exceptionMsg.contains("403") && !lastChance) {
+				System.err.println(exceptionMsg);
+				Thread.sleep(1000 * 10);
+			} else {
+				throw new TermServerScriptException("Failed to recover project " + projectName, e);
+			}
+		}
+		return false;
+	}
+
+	private void recoverCommonParametersFromJobRun() throws TermServerScriptException {
+		if (jobRun != null && !StringUtils.isEmpty(jobRun.getProject())) {
+			projectName = jobRun.getProject();
+		} else if ((jobRun == null && projectName == null) ||
+				(jobRun != null && StringUtils.isEmpty(jobRun.getProject()))) {
+			LOGGER.warn("No project specified, running against MAIN");
+			projectName = "MAIN";
+		}
+
+		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
+			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
+		}
+
+		if (jobRun == null) {
+			return;
+		}
+
+		if (!StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
+			subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
+		}
+
+		if (!StringUtils.isEmpty(jobRun.getParamValue(ECL))) {
+			subsetECL =jobRun.getParamValue(ECL);
+		}
+
+		String inputFileName = jobRun.getParamValue(INPUT_FILE);
+		if (!StringUtils.isEmpty(inputFileName)) {
+			setInputFile(0,new File(inputFileName));
+		}
+
+		if (jobRun.getWhiteList() != null) {
+			whiteListedConceptIds = jobRun.getWhiteList().stream()
+					.map( w -> SnomedUtils.makeMachineReadable(w.getSctId()))
+					.collect(Collectors.toSet());
+		}
+	}
+
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
 		if (!terminologyServerUrl.startsWith(EXPECTED_PROTOCOL)) {
 			throw new TermServerScriptException("Termserver URL should start with " + EXPECTED_PROTOCOL);
@@ -1349,9 +1362,43 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public void finish() throws TermServerScriptException {
 		LOGGER.info(BREAK);
-		List<String> reportLast = new ArrayList<String>(Arrays.asList("Issue count", "Report lines written"));
-		
-		List<String> criticalIssues = new ArrayList<String>();
+		Date endTime = new Date();
+		finaliseSummaryText(endTime);
+		//If we're running in dry run mode, we won't have written any reports
+		//Allow report to have some final word before completing.  Override if required
+		recordFinalWords();
+		outputSummaryText("Finished at: " + endTime);
+		if (getReportManager() != null) {
+			outputSummaryText("Processing Report URL: " + getReportManager().getUrl());
+		}
+		LOGGER.info(BREAK);
+		flushFiles(false);
+	}
+
+	private void finaliseSummaryText(Date endTime) {
+		List<String> reportLast = new ArrayList<>(Arrays.asList("Issue count", "Report lines written"));
+		List<String> criticalIssues = new ArrayList<>();
+		outputAllSummaryText(reportLast, criticalIssues);
+		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
+			if (summaryDetails.get(CONCEPTS_TO_PROCESS) != null &&  summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
+				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
+				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
+				double avg = Math.round((c/t) * 10) / 10.0;
+				outputSummaryText("Concepts per task: " + avg);
+			}
+		}
+
+		outputCriticalIssues(criticalIssues);
+		outputFinalWords(reportLast);
+
+		if (startTime != null) {
+			long diff = endTime.getTime() - startTime.getTime();
+			outputSummaryText("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
+			outputSummaryText("Started at: " + startTime);
+		}
+	}
+
+	private void outputAllSummaryText(List<String> reportLast, List<String> criticalIssues) {
 		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
 			String key = summaryDetail.getKey();
 			if (reportLast.contains(key)) {
@@ -1369,65 +1416,44 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					display = value.toString();
 				}
 			}
-			recordSummaryText (key + (display.isEmpty()?"":": ") + display);
+			outputSummaryText(key + (display.isEmpty()?"":": ") + display);
 		}
-		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
-			if (summaryDetails.get(CONCEPTS_TO_PROCESS) != null &&  summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
-				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
-				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
-				double avg = Math.round((c/t) * 10) / 10.0;
-				recordSummaryText("Concepts per task: " + avg);
-			}
-		}
-		
+	}
+
+	private void outputCriticalIssues(List<String> criticalIssues) {
 		if (criticalIssues.size() > 0) {
-			recordSummaryText("\nCritical Issues Encountered (" + criticalIssues.size() + ")\n========================");
+			outputSummaryText("\nCritical Issues Encountered (" + criticalIssues.size() + ")\n========================");
 			for (String thisCriticalIssue : criticalIssues) {
-				recordSummaryText(thisCriticalIssue);
+				outputSummaryText(thisCriticalIssue);
 			}
-			recordSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
+			outputSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
 		}
-		
+	}
+
+	private void outputFinalWords(List<String> reportLast) {
 		if (summaryTabIdx != NOT_SET) {
-			recordSummaryText("");
-			recordSummaryText("");
+			outputSummaryText("");
+			outputSummaryText("");
 		}
-		
+
 		for (String key : reportLast) {
 			if (summaryDetails.containsKey(key)) {
 				String display = summaryDetails.get(key).toString();
-				recordSummaryText(key + (display.isEmpty()?"":": ") + display);
+				outputSummaryText(key + (display.isEmpty()?"":": ") + display);
 			}
 		}
-		
-		Date endTime = new Date();
-		if (startTime != null) {
-			long diff = endTime.getTime() - startTime.getTime();
-			recordSummaryText("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
-			recordSummaryText("Started at: " + startTime);
-		}
-		//Allow report to have some final word before completing.  Override if required
-		recordFinalWords();
-
-		recordSummaryText("Finished at: " + endTime);
-		if (getReportManager() != null) {
-			recordSummaryText("Processing Report URL: " + getReportManager().getUrl());
-		}
-		LOGGER.info(BREAK);
-		
-		flushFiles(false);
 	}
 
 	protected void recordFinalWords() throws TermServerScriptException {
 		//Override in base class if required
 	}
 
-	private synchronized void recordSummaryText(String msg) {
+	private synchronized void outputSummaryText(String msg) {
 		LOGGER.info(msg);
 		if (getReportManager() != null) {
 			if (summaryTabIdx != NOT_SET) {
 				try {
-					//Split the colon into it's own column (unless it's a time stamp!)
+					//Split the colon into its own column (unless it's a time stamp!)
 					if (msg.contains(":") 
 							&& !msg.contains("http")
 							&& !msg.contains("at: ")
@@ -1437,11 +1463,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					}
 					writeToReportFile(summaryTabIdx, msg);
 				} catch (Exception e) {
-					LOGGER.error("Failed to write summary info: " + msg, e);
+					LOGGER.error("Failed to write summary info to summary tab {} ", msg, e);
 				}
+			} else {
+				LOGGER.info("Summary: {}", msg);
 			}
 		} else {
-			LOGGER.info("Unable to report: " + msg);
+			LOGGER.info("Unable to report due to missing report manager: {} ", msg);
 		}
 	}
 	

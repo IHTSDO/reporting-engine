@@ -360,10 +360,51 @@ public class Description extends Component implements ScriptConstants {
 		return inactivationIndicator;
 	}
 
-	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
-		this.inactivationIndicator = inactivationIndicator;
+	public void setInactivationIndicator(InactivationIndicator ii) {
+		this.inactivationIndicator = ii;
+
+		if (ii == null) {
+			//Consider we migth want to inactivate any inactivation indicator entries here
+			return;
+		}
+
+		//Do we already have an inactivation indicator to modify, or are we creating a new one?
+		String reasonSCTID = SnomedUtils.translateInactivationIndicator(ii);
+		//Attempt reuse of existing inactivation indicator as follows:  active and matching reason, inactivate and matching reason
+		//active and not matching, inactive and not matching.
+		if (reuseInactivationIndicator(reasonSCTID, true, true) ||
+				reuseInactivationIndicator(reasonSCTID, false, true) ||
+				reuseInactivationIndicator(reasonSCTID, true, false) ||
+				reuseInactivationIndicator(reasonSCTID, false, false)) {
+			return;
+		}
+		//If we get here, we need to create a new inactivation indicator entry
+		InactivationIndicatorEntry iie = InactivationIndicatorEntry.withDefaults(this, reasonSCTID);
+		this.getInactivationIndicatorEntries().add(iie);
 	}
-	
+
+	private boolean reuseInactivationIndicator(String reasonSCTID, boolean existingActive, boolean matchingReason) {
+		for (InactivationIndicatorEntry iie : getInactivationIndicatorEntries()) {
+			if (iie.isActive() == existingActive &&
+					(matchingReason && iie.getInactivationReasonId().equals(reasonSCTID) ||
+							!matchingReason && !iie.getInactivationReasonId().equals(reasonSCTID))) {
+				//If we're active and we match, we don't actually have to do anything - indicator is already set correctly
+				if (existingActive && matchingReason) {
+					return true;
+				} else {
+					iie.setInactivationReasonId(reasonSCTID);
+					iie.setActive(true);
+					iie.setDirty();
+					return true;
+				}
+			} else {
+				//If we're not reusing this SCTID, set it to inactive
+				iie.setActive(false);
+			}
+		}
+		return false;
+	}
+
 	public void setAcceptability(String refsetId, Acceptability acceptability) throws TermServerScriptException {
 		setAcceptability(refsetId, acceptability, false);
 	}
@@ -917,5 +958,19 @@ public class Description extends Component implements ScriptConstants {
 
 	public void removeLangRefsetEntry(LangRefsetEntry l) {
 		langRefsetEntries.remove(l);
+	}
+
+	public InactivationIndicatorEntry getFirstActiveInactivationIndicatorEntry() {
+		InactivationIndicatorEntry found = null;
+		for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
+			if (i.isActive()) {
+				if (found != null) {
+					throw new IllegalStateException("Multiple active inactivation indicators found for " + this);
+				} else {
+					found = i;
+				}
+			}
+		}
+		return found;
 	}
 }
