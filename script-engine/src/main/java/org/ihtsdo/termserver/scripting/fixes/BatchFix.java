@@ -400,6 +400,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			report(f);
 		} catch (InterruptedException | TermServerScriptException e) {
 			report(task, component, Severity.CRITICAL, ReportActionType.API_ERROR, getMessage(e));
+			LOGGER.error("Critical issues encountered {} / {}. Failed to process {}, c", component, failureCount, maxFailures, e);
 			if (++failureCount >= maxFailures) {
 				throw new TermServerScriptException("Failure count exceeded " + maxFailures, e);
 			}
