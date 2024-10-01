@@ -39,8 +39,8 @@ public class WordUsageReport extends TermServerScript{
 		WordUsageReport report = new WordUsageReport();
 		try {
 			report.additionalReportColumns = "Word, Total Instance, Distribution, Examples";
-			Description.padTerm = true; //Pad terms with spaces to assist whole word matching.
 			report.init(args);
+			Description.setPaddingMode(true);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.loadWords();
 			report.reportWordUsage();

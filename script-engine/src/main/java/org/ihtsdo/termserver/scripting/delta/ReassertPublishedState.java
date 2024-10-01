@@ -1,11 +1,9 @@
-package org.ihtsdo.termserver.scripting.delta.ms;
+package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -16,17 +14,16 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * NOTE: Run this script against a release archive
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ReassertPublishedState extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedState.class);
+	static {
+		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+	}
 
 	String processMe = "372440000, 384786009";
 	String intReleaseBranch="MAIN/2022-01-31";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReassertPublishedState delta = new ReassertPublishedState();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
@@ -43,19 +40,17 @@ public class ReassertPublishedState extends DeltaGenerator {
 			}
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Component Reasserted"};

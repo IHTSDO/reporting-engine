@@ -54,12 +54,10 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 			delta.outputSummaryCounts();
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"File, Severity, Action, Details, Details, , "
@@ -70,12 +68,13 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	protected void initialiseFileHeaders() throws TermServerScriptException {
 		LOGGER.info("Skipping initialisation of usual delta output files");
 	}
 	
-	private  void outputSummaryCounts() throws TermServerScriptException {
+	private void outputSummaryCounts() throws TermServerScriptException {
 		report(PRIMARY_REPORT, "");
 		for (Map.Entry<String, SummaryCount> summaryCountEntry : summaryCounts.entrySet()) {
 			String fileName = summaryCountEntry.getKey();

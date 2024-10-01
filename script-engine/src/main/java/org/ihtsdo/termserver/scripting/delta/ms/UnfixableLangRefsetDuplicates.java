@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -13,23 +12,21 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(UnfixableLangRefsetDuplicates.class);
+	static {
+		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
+	}
 
-	public static String US_MODULE = "731000124108";
-	public static String NO_MODULE = "51000202101";
+	public static final String US_MODULE = "731000124108";
+	public static final String NO_MODULE = "51000202101";
 	
 	boolean includeLegacyIssues = false;
 	Set<RefsetMember> mentioned = new HashSet<>();
 	String intReleaseBranch="MAIN/2023-06-30";
 	Map<String, RefsetMember> intReleaseRefsetMembers = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		UnfixableLangRefsetDuplicates delta = new UnfixableLangRefsetDuplicates();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
@@ -47,15 +44,12 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 			}
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
@@ -63,7 +57,8 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 			throw new TermServerScriptException("UnfixableLangRefsetDuplicates report cannot be run against MAIN");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Description, Issue, IntActive, IntEffective, IntRM, ExtActive, ExtEffective, ExtRM, , ",
@@ -126,19 +121,19 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 								tabIdx = SECONDARY_REPORT;
 							}
 							
-							if (intRM.isActive() && !extRM.isActive() && StringUtils.isEmpty(extRM.getEffectiveTime())) {
+							if (intRM.isActiveSafely() && !extRM.isActiveSafely() && StringUtils.isEmpty(extRM.getEffectiveTime())) {
 								report(c, d, "Active Int replaced Inactive Ext", intRM.isActive(), intRM.getEffectiveTime(), intRM.toString(), extRM.isActive(), extRM.getEffectiveTime(), extRM.toString());
 								mentioned.add(thisEntry);
 								mentioned.add(thatEntry);
-							} else if (intRM.isActive() && extRM.isActive()) {
+							} else if (intRM.isActiveSafely() && extRM.isActiveSafely()) {
 								report(tabIdx, c, d, "Active Int duplicates Active Ext", intRM.isActive(), intRM.getEffectiveTime(), intRM.toString(), extRM.isActive(), extRM.getEffectiveTime(), extRM.toString());
 								mentioned.add(thisEntry);
 								mentioned.add(thatEntry);
-							} else if (!intRM.isActive() && !extRM.isActive()) {
+							} else if (!intRM.isActiveSafely() && !extRM.isActiveSafely()) {
 								report(tabIdx, c, d, "Inactive Int duplicates Inactive Ext", intRM.isActive(), intRM.getEffectiveTime(), intRM.toString(), extRM.isActive(), extRM.getEffectiveTime(), extRM.toString());
 								mentioned.add(thisEntry);
 								mentioned.add(thatEntry);
-							} else if (!intRM.isActive() && extRM.isActive() && (StringUtils.isEmpty(extRM.getEffectiveTime()) || StringUtils.isEmpty(intRM.getEffectiveTime()))) {
+							} else if (!intRM.isActiveSafely() && extRM.isActiveSafely() && (StringUtils.isEmpty(extRM.getEffectiveTime()) || StringUtils.isEmpty(intRM.getEffectiveTime()))) {
 								report(tabIdx, c, d, "Active Ext duplicates Inactive Int", intRM.isActive(), intRM.getEffectiveTime(), intRM.toString(), extRM.isActive(), extRM.getEffectiveTime(), extRM.toString());
 								mentioned.add(thisEntry);
 								mentioned.add(thatEntry);
@@ -185,9 +180,8 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 
 	private RefsetMember hasModule(String[] targetModules, boolean matchLogic, RefsetMember... refsetMembers) {
 		for (RefsetMember rm : refsetMembers) {
-			if (matchLogic && SnomedUtils.hasModule(rm, targetModules)) {
-				return rm;
-			} else if (!matchLogic && SnomedUtils.hasNotModule(rm, targetModules)) {
+			if ( (matchLogic && SnomedUtils.hasModule(rm, targetModules)) ||
+					(!matchLogic && SnomedUtils.hasNotModule(rm, targetModules))) {
 				return rm;
 			}
 		}

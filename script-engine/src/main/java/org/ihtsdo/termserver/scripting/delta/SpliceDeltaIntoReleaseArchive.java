@@ -26,32 +26,30 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SpliceDeltaIntoReleaseArchive.class);
 
-	public static String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
-	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
-	public static String SCTID_CH_MOD = "2011000195101"; //Swiss Module
-	public static String SCTID_CH_LRS = "2021000195106"; //Swiss French Language Reference Set
+	public static final String SCTID_CF_LRS = "21000241105";   //Common French Language Reference Set
+	public static final String SCTID_CF_MOD = "11000241103";   //Common French Module
+	public static final String SCTID_CH_MOD = "2011000195101"; //Swiss Module
+	public static final String SCTID_CH_LRS = "2021000195106"; //Swiss French Language Reference Set
 	
 	Map<String, String[]> descriptionMap = new HashMap<>();
 	Map<String, InactivationIndicatorEntry> cfInactivationIndicatorsMapSept = new HashMap<>();
-	public static String ET = "20220930";
+	public static final String ET = "20220930";
 	
 	Map<String, SummaryCount> summaryCounts = new HashMap<>();
 	
-	public static Map<String, String> fileMap = new HashMap<>(); 
+	private static final Map<String, String> fileMap = new HashMap<>();
 	static {
 		//Package filename, mapped to the name of the delta filename to be pulled in
 		fileMap.put("sct2_Description_#TYPE#-fr_CH1000195_20221207.txt", "sct2_Description_Delta_CommonFrench-Extension");
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		SpliceDeltaIntoReleaseArchive delta = new SpliceDeltaIntoReleaseArchive();
 		try {
 			delta.sourceModuleIds = Set.of(SCTID_CH_MOD);
 			delta.runStandAlone = true;
-			//delta.inputFileHasHeaderRow = true;
-			delta.newIdsRequired = false; 
+			delta.newIdsRequired = false;
 			delta.init(args);
-			//delta.loadProjectSnapshot(false); //Don't need anything in memory for this
 			delta.postInit();
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
@@ -59,12 +57,10 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 			delta.outputSummaryCounts();
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"File, Severity, Action, Details, Details, , "
@@ -75,7 +71,8 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	protected void initialiseFileHeaders() throws TermServerScriptException {
 		LOGGER.info("Skipping initialisation of usual delta output files");
 	}
@@ -206,7 +203,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		return false;
 	}
 
-	private void loadDelta() throws IOException, TermServerScriptException {
+	private void loadDelta() throws IOException {
 		LOGGER.info("Loading " + getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
@@ -246,12 +243,12 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 					loadLanguageFile(is);
 				}*/
 			}
-		} catch (TermServerScriptException | IOException e) {
+		} catch (IOException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream is) throws IOException, TermServerScriptException {
+	public void loadDescriptionFile(InputStream is) throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;

@@ -1379,6 +1379,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		List<String> reportLast = new ArrayList<>(Arrays.asList("Issue count", "Report lines written"));
 		List<String> criticalIssues = new ArrayList<>();
 		outputAllSummaryText(reportLast, criticalIssues);
+
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
 			if (summaryDetails.get(CONCEPTS_TO_PROCESS) != null &&  summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
 				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();

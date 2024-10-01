@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -13,7 +14,7 @@ import com.google.gson.annotations.SerializedName;
  * Note that this class is the representation in JSON whereas 
  * HistoricalAssociation is how it's done in RF2
  */
-public class AssociationTargets {
+public class AssociationTargets implements Serializable {
 
 	@SerializedName("REPLACED_BY")
 	@Expose
@@ -161,7 +162,7 @@ public class AssociationTargets {
 		return targets;
 	}
 	
-	public static AssociationTargets Alternative(Concept c) {
+	public static AssociationTargets alternative(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
 		Set<String> targetSet = new HashSet<>();
 		targetSet.add(c.getId());
@@ -242,27 +243,27 @@ public class AssociationTargets {
 	}
 
 	private String toString(String assocType, Set<String> associations, GraphLoader gl, boolean firstRow) throws TermServerScriptException {
-		String str = "";
+		StringBuilder str = new StringBuilder();
 		boolean isFirst = true;
 		for (String association : associations) {
 			if (!isFirst) {
-				str += "\n    ";
+				str.append("\n    ");
 			} else {
 				isFirst = false;
-				str = (firstRow?"":"\n") + assocType;
+				str.append((firstRow?"":"\n") + assocType);
 			}
-			str += gl.getConcept(association).toStringWithIndicator();
+			str.append(gl.getConcept(association).toStringWithIndicator());
 		}
-		return str;
+		return str.toString();
 	}
 
 	public boolean isWasACombo() {
 		//Return true if we have a WAS A association in combination with another association type
-		return (wasA.size() > 0 && (
-				sameAs.size() > 0 ||
-				replacedBy.size() > 0 ||
-				possEquivTo.size() > 0||
-				partEquivTo.size() > 0));
+		return (!wasA.isEmpty() && (
+				!sameAs.isEmpty() ||
+				!replacedBy.isEmpty() ||
+				!possEquivTo.isEmpty() ||
+				!partEquivTo.isEmpty()));
 	}
 
 	public void clearWasA() {

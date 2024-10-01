@@ -1,17 +1,9 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.otf.RF2Constants.ReportActionType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -32,9 +24,13 @@ import org.slf4j.LoggerFactory;
 
 public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 
+	static {
+		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+	}
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RevertNewInactiveStateModuleJump delta = new RevertNewInactiveStateModuleJump();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
@@ -54,19 +50,17 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 			}
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Action, ComponentType, Component Reasserted"};
@@ -82,11 +76,11 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 				continue;
 			}
 			if (++processedCount%100000==0) {
-				LOGGER.debug ("Processed: " + processedCount);
+				LOGGER.debug("Processed: {}", processedCount);
 			}
 			//Work through all the components for this concept
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				if (!c.isActive() && sourceModuleIds.contains(c.getModuleId())
+				if (!c.isActiveSafely() && sourceModuleIds.contains(c.getModuleId())
 						&& c.getIssues(" ").contains(targetModuleId)) {
 					//Only need to worry if it was also previously inactive
 					String[] previousState = c.getIssuesArray();
@@ -98,8 +92,8 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 							report(concept, ReportActionType.VALIDATION_CHECK,"Check inactive unpublished component", c);
 						}
 						//For a description, make sure any langrefset or associations follow
-						if (c instanceof Description) {
-							switchDescriptionComponentsIfRequired(concept, (Description)c);
+						if (c instanceof Description d) {
+							switchDescriptionComponentsIfRequired(concept, d);
 						}
 						report(concept, ReportActionType.MODULE_CHANGE_MADE, c.getComponentType(), c);
 					}
