@@ -1,6 +1,7 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,9 +15,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Description extends Component implements ScriptConstants {
+public class Description extends Component implements ScriptConstants, Serializable {
 
-	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
+	private static boolean padTerm = false;
 
 	@SerializedName(value = "descriptionId", alternate = {"id"})
 	@Expose
@@ -74,7 +75,7 @@ public class Description extends Component implements ScriptConstants {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param moduleId
 	 * @param term
 	 * @param conceptId
@@ -84,9 +85,9 @@ public class Description extends Component implements ScriptConstants {
 	 * @param descriptionId
 	 * @param caseSignificance
 	 * @param lang
-	 * @param AcceptabilityMap
+	 * @param acceptabilityMap
 	 */
-	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DescriptionType type, String lang, String term, CaseSignificance caseSignificance, Map<String, Acceptability> AcceptabilityMap) {
+	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DescriptionType type, String lang, String term, CaseSignificance caseSignificance, Map<String, Acceptability> acceptabilityMap) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -100,7 +101,7 @@ public class Description extends Component implements ScriptConstants {
 			this.term = term;
 		}
 		this.caseSignificance = caseSignificance;
-		this.acceptabilityMap = AcceptabilityMap;
+		this.acceptabilityMap = acceptabilityMap;
 	}
 
 	public Description(String descriptionId) {
@@ -143,34 +144,16 @@ public class Description extends Component implements ScriptConstants {
 		return d;
 	}
 
-	public String getEffectiveTime() {
-		return effectiveTime;
+	public static void setPaddingMode(boolean b) {
+		padTerm = b;
 	}
 
-	public void setEffectiveTime(String effectiveTime) {
-		this.effectiveTime = effectiveTime;
-	}
-
-	public String getModuleId() {
-		return moduleId;
-	}
-
-	public void setModuleId(String moduleId) { 
-		setModuleId(moduleId, false);
-	}
-	public void setModuleId(String moduleId, boolean isPublished) {
-		if (this.moduleId != null && !this.moduleId.equals(moduleId) && !isPublished) {
-			setDirty();
-			this.effectiveTime = null;
-		}
-		this.moduleId = moduleId;
-	}
-
+	@Override
 	public void setActive(boolean newActiveState, boolean forceDirty) {
 		if (forceDirty || (this.active != null && !this.active == newActiveState)) {
 			setDirty();
 			//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
-			if (newActiveState == false && this.langRefsetEntries != null) {
+			if (!newActiveState && this.langRefsetEntries != null) {
 				//If we're working with RF2, modify the lang ref set
 				for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
 					thisDialect.setActive(false, forceDirty);
@@ -186,13 +169,14 @@ public class Description extends Component implements ScriptConstants {
 	public String getDescriptionId() {
 		return descriptionId;
 	}
-	
+
+	@Override
 	public void setId(String descriptionId) {
 		this.descriptionId = descriptionId;
 	}
 
 	public void setDescriptionId(String descriptionId) {
-		this.descriptionId = descriptionId;
+		setId(descriptionId);
 	}
 
 	public String getConceptId() {
@@ -251,18 +235,13 @@ public class Description extends Component implements ScriptConstants {
 		return acceptabilityMap;
 	}
 
-	/**
-	 * 
-	 * @param AcceptabilityMap
-	 *	 The AcceptabilityMap
-	 */
-	public void setAcceptabilityMap(Map<String, Acceptability> AcceptabilityMap) {
-		this.acceptabilityMap = AcceptabilityMap;
+	public void setAcceptabilityMap(Map<String, Acceptability> acceptabilityMap) {
+		this.acceptabilityMap = acceptabilityMap;
 	}
 
 	@Override
 	public String toString() {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		if (descriptionId == null && (term == null || term.isEmpty())) {
 			return "";
 		}
@@ -271,9 +250,11 @@ public class Description extends Component implements ScriptConstants {
 			if (caseSignificance != null) {
 				caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance);
 			}
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			caseSig = "CSERROR";
+		}
 		
-		sb.append((isActive() == null || isActive())?"":"*")
+		sb.append(isActiveSafely()?"":"*")
 		.append(descriptionId==null?"NEW":descriptionId)
 		.append(" [")
 		.append(conceptId)
@@ -305,7 +286,7 @@ public class Description extends Component implements ScriptConstants {
 		if (other == this) {
 			return true;
 		}
-		if ((other instanceof Description) == false) {
+		if (!(other instanceof Description)) {
 			return false;
 		}
 		Description rhs = ((Description) other);
@@ -341,7 +322,7 @@ public class Description extends Component implements ScriptConstants {
 		if (this.released != null) {
 			clone.setReleased(keepIds ? this.released : false);
 		}
-		clone.acceptabilityMap = new HashMap<String, Acceptability>();
+		clone.acceptabilityMap = new HashMap<>();
 		if (this.acceptabilityMap != null) { 
 			clone.acceptabilityMap.putAll(this.acceptabilityMap);
 		}
@@ -385,7 +366,7 @@ public class Description extends Component implements ScriptConstants {
 
 	private boolean reuseInactivationIndicator(String reasonSCTID, boolean existingActive, boolean matchingReason) {
 		for (InactivationIndicatorEntry iie : getInactivationIndicatorEntries()) {
-			if (iie.isActive() == existingActive &&
+			if (iie.isActiveSafely() == existingActive &&
 					(matchingReason && iie.getInactivationReasonId().equals(reasonSCTID) ||
 							!matchingReason && !iie.getInactivationReasonId().equals(reasonSCTID))) {
 				//If we're active and we match, we don't actually have to do anything - indicator is already set correctly
@@ -411,7 +392,7 @@ public class Description extends Component implements ScriptConstants {
 
 	public void setAcceptability(String refsetId, Acceptability acceptability, boolean isReplacement) throws TermServerScriptException {
 		if (acceptabilityMap == null) {
-			acceptabilityMap = new HashMap<String, Acceptability> ();
+			acceptabilityMap = new HashMap<> ();
 		}
 
 		acceptabilityMap.put(refsetId, acceptability);
@@ -467,21 +448,21 @@ public class Description extends Component implements ScriptConstants {
 
 	public String[] toRF2() throws TermServerScriptException {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
-		return new String[] {descriptionId, effectiveTime, (active?"1":"0"), moduleId, conceptId, lang,
+		return new String[] {descriptionId, effectiveTime, (isActiveSafely()?"1":"0"), moduleId, conceptId, lang,
 				SnomedUtils.translateDescType(type), term, SnomedUtils.translateCaseSignificanceToSctId(getCaseSignificance())};
 	}
 	
 	public String[] toRF2Deletion() throws TermServerScriptException {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
 		return new String[] {descriptionId, effectiveTime, deletionEffectiveTime,
-				(active?"1":"0"), "1",
+				(isActiveSafely()?"1":"0"), "1",
 				moduleId, conceptId, lang,
 				SnomedUtils.translateDescType(type), term, SnomedUtils.translateCaseSignificanceToSctId(getCaseSignificance())};
 	}
 
 	public List<LangRefsetEntry> getLangRefsetEntries() {
 		if (langRefsetEntries == null) {
-			langRefsetEntries = new ArrayList<LangRefsetEntry>();
+			langRefsetEntries = new ArrayList<>();
 		}
 		return langRefsetEntries;
 	}
@@ -490,10 +471,10 @@ public class Description extends Component implements ScriptConstants {
 		if (activeState.equals(ActiveState.BOTH)) {
 			return getLangRefsetEntries();
 		}
-		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
+		List<LangRefsetEntry> result = new ArrayList<>();
 		for (LangRefsetEntry l : getLangRefsetEntries()) {
-			if ((activeState.equals(ActiveState.ACTIVE) && l.isActive()) ||
-				(activeState.equals(ActiveState.INACTIVE) && !l.isActive()) ) {
+			if ((activeState.equals(ActiveState.ACTIVE) && l.isActiveSafely()) ||
+				(activeState.equals(ActiveState.INACTIVE) && !l.isActiveSafely()) ) {
 				result.add(l);
 			}
 		}
@@ -509,14 +490,13 @@ public class Description extends Component implements ScriptConstants {
 	}
 	
 	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String[] langRefsetIds, String moduleId) {
-		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
+		List<LangRefsetEntry> result = new ArrayList<>();
 		for (LangRefsetEntry thisLangRefSetEntry : getLangRefsetEntries(activeState)) {
 			for (String langRefsetId : langRefsetIds) {
-				if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId)) {
-					if (moduleId == null || thisLangRefSetEntry.getModuleId().equals(moduleId)) {
-						result.add(thisLangRefSetEntry);
-						break;
-					}
+				if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId) &&
+					(moduleId == null || thisLangRefSetEntry.getModuleId().equals(moduleId))) {
+					result.add(thisLangRefSetEntry);
+					break;
 				}
 			}
 		}
@@ -572,21 +552,17 @@ public class Description extends Component implements ScriptConstants {
 		boolean langFound = false;
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry entry : langRefsetEntries) {
-				if (entry.isActive()) {
-					if ((langRefsetSctId == null || entry.getRefsetId().equals(langRefsetSctId))) {
-						langFound = true;
-						if (acceptability.equals(Acceptability.BOTH) || 
-								entry.getAcceptabilityId().equals(acceptablitySCTID)) {
-							return true;
-						}
+				if (entry.isActiveSafely() && (langRefsetSctId == null || entry.getRefsetId().equals(langRefsetSctId))) {
+					langFound = true;
+					if (acceptability.equals(Acceptability.BOTH) ||
+							entry.getAcceptabilityId().equals(acceptablitySCTID)) {
+						return true;
 					}
+
 				}
 			}
 			//Were we in fact looking for there to be no entry here?
-			if (acceptability.equals(Acceptability.NONE) && !langFound) {
-				return true;
-			}
-			return false;
+			return acceptability.equals(Acceptability.NONE) && !langFound;
 		}
 		
 		return false;
@@ -616,13 +592,21 @@ public class Description extends Component implements ScriptConstants {
 		if (d.getEffectiveTime() != null) {
 			d.setReleased(true);
 		}
-		boolean isPublished = d.isReleased() == null ? false :  d.isReleased();
+		boolean isPublished = d.isReleased() != null && d.isReleased();
 		d.setModuleId(lineItems[DES_IDX_MODULID], isPublished);
 		d.setCaseSignificance(SnomedUtils.translateCaseSignificanceToEnum(lineItems[DES_IDX_CASESIGNIFICANCEID]));
 		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
 		d.setTerm(lineItems[DES_IDX_TERM]);
 		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
+	}
+
+	public void setModuleId(String moduleId, boolean isPublished) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId) && !isPublished) {
+			setDirty();
+			this.effectiveTime = null;
+		}
+		this.moduleId = moduleId;
 	}
 
 	public void addAcceptability(LangRefsetEntry lang) throws TermServerScriptException {
@@ -638,7 +622,7 @@ public class Description extends Component implements ScriptConstants {
 	public void addLangRefsetEntry(LangRefsetEntry lang, boolean ensureReuse) throws TermServerScriptException {
 		//Keep the JSON view of acceptability in sync.  Don't call setAcceptability, as it is similarly duplicating the data by creating a langrefset entry
 		//Ideally we'd consolidate these two functions, probably using this one as we don't know what the lang refsetentry here might contain
-		if (lang.isActive()) {
+		if (lang.isActiveSafely()) {
 			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
 			if (acceptabilityMap == null) {
 				acceptabilityMap = new HashMap<>();
@@ -673,14 +657,6 @@ public class Description extends Component implements ScriptConstants {
 		langRefsetEntries.add(lang);
 	}
 
-	public Boolean isReleased() {
-		return released;
-	}
-
-	public void setReleased(Boolean released) {
-		this.released = released;
-	}
-
 	public Acceptability getAcceptability(String langRefsetId) throws TermServerScriptException {
 		//Are we working with the JSON map, or RF2 Lang refset entries?
 		if (acceptabilityMap != null) {
@@ -693,7 +669,7 @@ public class Description extends Component implements ScriptConstants {
 		
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry entry : langRefsetEntries) {
-				if (entry.getRefsetId().equals(langRefsetId) && entry.isActive()) {
+				if (entry.getRefsetId().equals(langRefsetId) && entry.isActiveSafely()) {
 					return SnomedUtils.translateAcceptability(entry.getAcceptabilityId());
 				}
 			}
@@ -701,7 +677,7 @@ public class Description extends Component implements ScriptConstants {
 		return null;
 	}
 	
-	public Collection<Acceptability> getAcceptabilities() throws TermServerScriptException {
+	public Collection<Acceptability> getAcceptabilities() {
 		//Are we working with the JSON map, or RF2 Lang refset entries?
 		if (acceptabilityMap != null) {
 			return acceptabilityMap.values();
@@ -709,7 +685,7 @@ public class Description extends Component implements ScriptConstants {
 		
 		if (langRefsetEntries != null) {
 			return langRefsetEntries.stream()
-					.filter(rm -> rm.isActive())
+					.filter(Component::isActive)
 					.map(rm -> SnomedUtils.translateAcceptabilitySafely(rm.getAcceptabilityId()))
 					.collect(Collectors.toSet());
 		}
@@ -718,7 +694,7 @@ public class Description extends Component implements ScriptConstants {
 	
 	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries() {
 		if (inactivationIndicatorEntries == null) {
-			inactivationIndicatorEntries = new ArrayList<InactivationIndicatorEntry>();
+			inactivationIndicatorEntries = new ArrayList<>();
 		}
 		return inactivationIndicatorEntries;
 	}
@@ -727,7 +703,7 @@ public class Description extends Component implements ScriptConstants {
 		//Replace any indicators with the same UUID
 		getInactivationIndicatorEntries().remove(i);
 		getInactivationIndicatorEntries().add(i);
-		if (i.isActive()) {
+		if (i.isActiveSafely()) {
 			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));
 		}
 	}
@@ -737,9 +713,9 @@ public class Description extends Component implements ScriptConstants {
 			return getInactivationIndicatorEntries();
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
-			List<InactivationIndicatorEntry> selectedInactivationIndicatortEntries = new ArrayList<InactivationIndicatorEntry>();
+			List<InactivationIndicatorEntry> selectedInactivationIndicatortEntries = new ArrayList<>();
 			for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
-				if (i.isActive() == isActive) {
+				if (i.isActiveSafely() == isActive) {
 					selectedInactivationIndicatortEntries.add(i);
 				}
 			}
@@ -754,7 +730,7 @@ public class Description extends Component implements ScriptConstants {
 
 	@Override
 	public String getId() {
-		return descriptionId;
+		return getDescriptionId();
 	}
 
 	@Override
@@ -764,7 +740,7 @@ public class Description extends Component implements ScriptConstants {
 
 	@Override
 	public String getReportedName() {
-		return term;
+		return getTerm();
 	}
 
 	@Override
@@ -806,7 +782,7 @@ public class Description extends Component implements ScriptConstants {
 	
 	public List<AssociationEntry> getAssociationEntries() {
 		if (associationEntries == null) {
-			associationEntries = new ArrayList<AssociationEntry>();
+			associationEntries = new ArrayList<>();
 		}
 		return associationEntries;
 	}
@@ -817,7 +793,7 @@ public class Description extends Component implements ScriptConstants {
 
 	public List<AssociationEntry> getAssociationEntries(ActiveState activeState, boolean historicalAssociationsOnly) {
 		if (activeState.equals(ActiveState.BOTH)) {
-			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
+			List<AssociationEntry> selectedAssociations = new ArrayList<>();
 			for (AssociationEntry h : getAssociationEntries()) {
 				//TODO Find a better way of working out if an association is a historical association
 				if ((!historicalAssociationsOnly ||	h.getRefsetId().startsWith("9000000"))) {
@@ -827,10 +803,10 @@ public class Description extends Component implements ScriptConstants {
 			return selectedAssociations;
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
-			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
+			List<AssociationEntry> selectedAssociations = new ArrayList<>();
 			for (AssociationEntry h : getAssociationEntries()) {
 				//TODO Find a better way of working out if an association is a historical association
-				if (h.isActive() == isActive && (!historicalAssociationsOnly ||
+				if (h.isActiveSafely() == isActive && (!historicalAssociationsOnly ||
 					(h.getRefsetId().startsWith("9000000")))) {
 					selectedAssociations.add(h);
 				}
@@ -896,20 +872,20 @@ public class Description extends Component implements ScriptConstants {
 			throw new IllegalStateException("Must have langrefset entries loaded from RF2 to calculate acceptability map");
 		}
 		acceptabilityMap = new HashMap<>();
-		for (LangRefsetEntry lang : getLangRefsetEntries(ActiveState.ACTIVE)) {
-			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
-			setAcceptability(lang.getRefsetId(), acceptability);
+		for (LangRefsetEntry lre : getLangRefsetEntries(ActiveState.ACTIVE)) {
+			Acceptability acceptability = SnomedUtils.translateAcceptability(lre.getAcceptabilityId());
+			setAcceptability(lre.getRefsetId(), acceptability);
 		}
 	}
 
 	public LangRefsetEntry getLangRefsetEntry(ActiveState active, String refsetId) {
-		List<LangRefsetEntry> langRefsetEntries = getLangRefsetEntries(active, refsetId);
-		if (langRefsetEntries == null || langRefsetEntries.size() == 0) {
+		List<LangRefsetEntry> matchingEntries = getLangRefsetEntries(active, refsetId);
+		if (matchingEntries == null || matchingEntries.isEmpty()) {
 			return null;
-		} else if (langRefsetEntries.size() > 1) {
+		} else if (matchingEntries.size() > 1) {
 			throw new IllegalStateException("More than one langrefset entry for refset " + refsetId + " for " + this);
 		}
-		return langRefsetEntries.get(0);
+		return matchingEntries.get(0);
 	}
 	
 	@Override
@@ -963,7 +939,7 @@ public class Description extends Component implements ScriptConstants {
 	public InactivationIndicatorEntry getFirstActiveInactivationIndicatorEntry() {
 		InactivationIndicatorEntry found = null;
 		for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
-			if (i.isActive()) {
+			if (i.isActiveSafely()) {
 				if (found != null) {
 					throw new IllegalStateException("Multiple active inactivation indicators found for " + this);
 				} else {

@@ -1,11 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -35,9 +30,9 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertUnexpectedModuleIssues.class);
 
-	String intReleaseBranch="MAIN/2022-01-31";
-	String extReleaseBranch="MAIN/SNOMEDCT-SE/2021-11-30";
-	List<String> intReleaseDates = new ArrayList<>();
+	private static final String INT_RELEASE_BRANCH = "MAIN/2022-01-31";
+	private static final String EXT_RELEASE_BRANCH = "MAIN/SNOMEDCT-SE/2021-11-30";
+	private List<String> intReleaseDates = new ArrayList<>();
 	
 	static List<String> checkNoChangeDelta = new ArrayList<>();
 	{
@@ -48,10 +43,9 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	Map<String, Concept> publishedExtConceptCache = new HashMap<>();
 	Map<String, RefsetMember> publishedMemberCache = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RevertUnexpectedModuleIssues delta = new RevertUnexpectedModuleIssues();
 		try {
-			//delta.getArchiveManager().setPopulateReleasedFlag(true);
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false;
@@ -60,24 +54,21 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 			delta.postInit();
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);
-			if (!dryRun) {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
-			}
+			delta.createOutputArchive(false);
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
 		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Action, ComponentType, Component Reasserted"};
@@ -122,7 +113,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	Concept loadIntConcept(Concept c) throws TermServerScriptException {
 		Concept published = publishedIntConceptCache.get(c.getId());
 		if (published == null) {
-			published = loadConcept(c, intReleaseBranch);
+			published = loadConcept(c, INT_RELEASE_BRANCH);
 			publishedIntConceptCache.put(c.getId(), published);
 		}
 		return published;
@@ -131,7 +122,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	Concept loadExtConcept(Concept c) throws TermServerScriptException {
 		Concept published = publishedExtConceptCache.get(c.getId());
 		if (published == null) {
-			published = loadConcept(c, extReleaseBranch);
+			published = loadConcept(c, EXT_RELEASE_BRANCH);
 			publishedExtConceptCache.put(c.getId(), published);
 		}
 		return published;
@@ -140,7 +131,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	RefsetMember loadMember(String uuid) throws TermServerScriptException {
 		RefsetMember published = publishedMemberCache.get(uuid);
 		if (published == null) {
-			published = loadRefsetMember(uuid, intReleaseBranch);
+			published = loadRefsetMember(uuid, INT_RELEASE_BRANCH);
 			publishedMemberCache.put(uuid, published);
 		}
 		return published;
@@ -198,7 +189,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 					if (component.getId().contains("-")) {
 						component.setDirty();
 						component.setModuleId(targetModuleId);
-						report(c, ReportActionType.INFO, "Apparently modified Core component doesn't exist in " + intReleaseBranch);
+						report(c, ReportActionType.INFO, "Apparently modified Core component doesn't exist in " + INT_RELEASE_BRANCH);
 						report(c, ReportActionType.MODULE_CHANGE_MADE, component.getComponentType(), component);
 						componentModified = true;
 						continue;
@@ -251,7 +242,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 							&& !SnomedUtils.isCore(l)
 							&& SnomedUtils.isEnglishDialect(l)) {
 						//Need to find from members endpoint as concept does not have full details of refset members
-						RefsetMember publishedLRS = loadRefsetMember(l.getId(), intReleaseBranch);
+						RefsetMember publishedLRS = loadRefsetMember(l.getId(), INT_RELEASE_BRANCH);
 						l.setModuleId(publishedLRS.getModuleId());
 						//Make sure to set the effectiveTime AFTER the active state, because changing state
 						//resets the effective date!
@@ -268,7 +259,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				for (RefsetMember i : d.getInactivationIndicatorEntries()) {
 					if (StringUtils.isEmpty(i.getEffectiveTime())
 							&& !SnomedUtils.isCore(i)) {
-						RefsetMember publishedRM = loadRefsetMember(i.getId(), intReleaseBranch);
+						RefsetMember publishedRM = loadRefsetMember(i.getId(), INT_RELEASE_BRANCH);
 						if (publishedRM != null) {
 							i.setModuleId(publishedRM.getModuleId());
 							//Make sure to set the effectiveTime AFTER the active state, because changing state
@@ -284,7 +275,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				for (RefsetMember a : d.getAssociationEntries()) {
 					if (StringUtils.isEmpty(a.getEffectiveTime())
 							&& !SnomedUtils.isCore(a)) {
-						RefsetMember publishedRM = loadRefsetMember(a.getId(), intReleaseBranch);
+						RefsetMember publishedRM = loadRefsetMember(a.getId(), INT_RELEASE_BRANCH);
 						if (publishedRM != null) {
 							a.setModuleId(publishedRM.getModuleId());
 							//Make sure to set the effectiveTime AFTER the active state, because changing state
@@ -304,7 +295,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 		if (StringUtils.isEmpty(c.getEffectiveTime())
 				&& !SnomedUtils.hasExtensionSCTID(c) 
 				&& !SnomedUtils.isCore(c)) {
-			Concept published = loadConcept(c, intReleaseBranch);
+			Concept published = loadConcept(c, INT_RELEASE_BRANCH);
 			if (published.isActive()) {
 				report(c, ReportActionType.VALIDATION_CHECK, "Core concept moved to extension - check me");
 			} else {
@@ -325,7 +316,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 					Concept published = loadConceptPriorTo(c, r.getEffectiveTime());
 					Relationship pubRel = published.getRelationship(r.getId());
 					if (pubRel == null) {
-						report(c, ReportActionType.VALIDATION_CHECK, "Core SCTID not found in " + intReleaseBranch, r);
+						report(c, ReportActionType.VALIDATION_CHECK, "Core SCTID not found in " + INT_RELEASE_BRANCH, r);
 					} else if (!pubRel.isActive()) {
 						if (StringUtils.isEmpty(r.getEffectiveTime())) {
 							report(c, ReportActionType.VALIDATION_CHECK, "Inactive Rel moved without reason. Fresh.", r);
@@ -386,7 +377,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 
 	private String getIntBranchPriorTo(String effectiveTime) {
 		if (StringUtils.isEmpty(effectiveTime)) {
-			return intReleaseBranch;
+			return INT_RELEASE_BRANCH;
 		}
 		for (int i=0; i < intReleaseDates.size(); i++) {
 			if (effectiveTime.compareTo(intReleaseDates.get(i+1)) < 0) {

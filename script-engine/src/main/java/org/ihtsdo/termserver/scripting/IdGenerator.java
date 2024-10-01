@@ -10,9 +10,13 @@ import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class IdGenerator implements ScriptConstants{
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(IdGenerator.class);
 
 	private String fileName;
 	private BufferedReader availableSctIds;
@@ -21,15 +25,15 @@ public class IdGenerator implements ScriptConstants{
 	private int idsAssigned = 0;
 	private String namespace = "";
 	private boolean isExtension = false;
-	private PartitionIdentifier partitionIdentifier;
+	private final PartitionIdentifier partitionIdentifier;
 	private int runForwardCount = 0;
 	
 	private boolean useValidSequence = false;
 	private long validSequence = 0;
 	
-	static private String ID_CONFIG = "running_id_config.txt";
-	static private boolean configFileReset = false;
-	
+	 private static final String ID_CONFIG = "running_id_config.txt";
+	 private static boolean configFileReset = false;
+
 	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
 		if (sctidFilename.toLowerCase().endsWith("dummy")) {
 			return new IdGenerator(p);
@@ -47,7 +51,9 @@ public class IdGenerator implements ScriptConstants{
 				runForward(idGen);
 				return idGen;
 			}
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failure while reading reading sctids from " + sctidFilename, e);
+		}
 		
 		throw new TermServerScriptException("Unable to read sctids from " + sctidFilename);
 	}
@@ -73,11 +79,11 @@ public class IdGenerator implements ScriptConstants{
 		//Is there a config file to consider? If not, do nothing.
 		File idConfigFile = new File (ID_CONFIG);
 		if (idConfigFile.canRead()) {
-			for (String line : FileUtils.readLines(idConfigFile, "UTF-8")) {
+			for (String line : FileUtils.readLines(idConfigFile, StandardCharsets.UTF_8)) {
 				String[] lineItems = line.split(TAB);
 				if (lineItems[0].equals(idGen.partitionIdentifier.toString())) {
 					idGen.runForwardCount = Integer.parseInt(lineItems[1]);
-					System.out.println(idGen.partitionIdentifier +" running forward by " + idGen.runForwardCount);
+					LOGGER.warn("{} running forward by {}", idGen.partitionIdentifier, idGen.runForwardCount);
 					for (int i=0; i<idGen.runForwardCount; i++) {
 						idGen.availableSctIds.readLine();
 					}
@@ -101,13 +107,13 @@ public class IdGenerator implements ScriptConstants{
 		try {
 			sctId = availableSctIds.readLine();
 		} catch (IOException e) {
-			throw new RuntimeException("Unable to recover SCTID from file " + fileName, e);
+			throw new IllegalStateException("Unable to recover SCTID from file " + fileName, e);
 		}
 		
 		if (sctId == null || sctId.isEmpty()) {
 			//Report switch to use dummy strategy
 			useDummySequence = true;
-			System.out.println("Ran out of ids for partition " + partitionIdentifier  + " at " + idsAssigned + " switching to dummy...");
+			LOGGER.warn("Ran out of ids for partition {} at {}, switching to dummy...", partitionIdentifier, idsAssigned);
 			return getSCTID(); 
 		}
 		//Check the SCTID is valid, and belongs to the correct partition
@@ -140,21 +146,23 @@ public class IdGenerator implements ScriptConstants{
 		this.namespace = namespace;
 	}	
 	
-	public String finish() throws FileNotFoundException {
+	public void finish() throws FileNotFoundException {
 		try {
 			if (!useDummySequence && !useValidSequence) {
 				availableSctIds.close();
 			}
-		} catch (Exception e){}
+		} catch (Exception e){
+			//It's OK if we don't manage to close the file, the program is ending now anyway.
+		}
 		//Are we the first generator to write out the final state?  Blitz the file if so, otherwise append.
 		OutputStreamWriter osw; 
 		String dataLine = partitionIdentifier + TAB + (runForwardCount + idsAssigned);
  		if (!IdGenerator.configFileReset) {
- 			System.out.println("Writing " + dataLine + " to " + ID_CONFIG);
+ 			LOGGER.debug("Writing {} to {}", dataLine, ID_CONFIG);
  			osw = new OutputStreamWriter(new FileOutputStream(new File(ID_CONFIG), false), StandardCharsets.UTF_8);
 			IdGenerator.configFileReset = true;
  		} else {
-			System.out.println("Appending " + dataLine + " to " + ID_CONFIG);
+			LOGGER.debug("Appending {} to {}", dataLine, ID_CONFIG);
 			osw = new OutputStreamWriter(new FileOutputStream(new File(ID_CONFIG), true), StandardCharsets.UTF_8);
 		}
 		PrintWriter pw = new PrintWriter(new BufferedWriter(osw));
@@ -164,7 +172,7 @@ public class IdGenerator implements ScriptConstants{
 		if (dummySequence > 100) {
 			ofWhich = " of which " + (dummySequence - 100) + " were dummy.";
 		}
-		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids in namespace " + namespace + ofWhich;
+		LOGGER.info("IdGenerator supplied {} {} sctids in namespace {}{}", idsAssigned, partitionIdentifier, namespace, ofWhich) ;
 	}
 	
 	public void isExtension(boolean b) {

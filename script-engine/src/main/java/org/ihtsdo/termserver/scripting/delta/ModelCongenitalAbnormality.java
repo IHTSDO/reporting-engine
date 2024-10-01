@@ -1,13 +1,8 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -25,20 +20,19 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModelCongenitalAbnormality.class);
 
 	String subHierarchyStr = "276654001"; // | Congenital malformation (disorder) |
-	//String subHierarchyStr = "66091009"; //  |Congenital disease (disorder)|
 	Concept findingSite;
 	Concept occurrence;
 	Concept pathologicalProcess;
 	Concept associatedMorphology;
 	
-	List<RelationshipTemplate> findRelationshipsForReplace = new ArrayList<RelationshipTemplate>();
-	List<RelationshipTemplate> replacements = new ArrayList<RelationshipTemplate>();
+	List<RelationshipTemplate> findRelationshipsForReplace = new ArrayList<>();
+	List<RelationshipTemplate> replacements = new ArrayList<>();
 	
-	List<RelationshipTemplate> findRelationshipsForAdd = new ArrayList<RelationshipTemplate>();
-	List<RelationshipTemplate> addRelationships = new ArrayList<RelationshipTemplate>();
+	List<RelationshipTemplate> findRelationshipsForAdd = new ArrayList<>();
+	List<RelationshipTemplate> addRelationships = new ArrayList<>();
 
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ModelCongenitalAbnormality delta = new ModelCongenitalAbnormality();
 		try {
 			delta.runStandAlone = true;
@@ -53,12 +47,10 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
 
+	@Override
 	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		
@@ -101,7 +93,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		addSummaryInformation("Concepts considered", concepts.size());
 		for (Concept concept : concepts) {
 			//If the concept has no modelling, or no we'll skip it.
-			if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, associatedMorphology, ActiveState.ACTIVE).size() == 0) {
+			if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, associatedMorphology, ActiveState.ACTIVE).isEmpty()) {
 				String msg = "Concept has no stated associated morphology, skipping";
 				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.NO_CHANGE, msg);
 			} else {
@@ -170,8 +162,8 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		
 		//Work through the relationships looking for matches
-		Set<Relationship> matchedRelationships = new HashSet<Relationship>();
-		Set<Integer>groupsAffected = new HashSet<Integer>();
+		Set<Relationship> matchedRelationships = new HashSet<>();
+		Set<Integer>groupsAffected = new HashSet<>();
 		for (Relationship rel : rels) {
 			for (RelationshipTemplate findRel : findRelationships) {
 				if (findRel.equalsTypeAndTargetValue(rel)) {
@@ -203,30 +195,6 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		}
 		return changesMade;
 	}
-
-/*	private int groupFindingSite(Concept c, Relationship f) throws TermServerScriptException {
-		int changesMade = 0;
-		//Put finding site in all active groups that doesn't already have one
-		for (Integer groupId : getActiveGroups(c)) {
-			if (!existsInGroup(c, findingSite, groupId)) {
-				Relationship groupedF = f.clone(relIdGenerator.getSCTID());
-				groupedF.setGroupId(groupId);
-				c.addRelationship(groupedF);
-				changesMade++;
-				report (c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Finding site copied to group" + groupedF);
-			}
-		}
-		
-		//And we'll retire the group 0 finding site
-		if (changesMade > 0) {
-			f.setActive(false);
-			report (c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated group 0 finding site: " + f);
-		} else {
-			LOGGER.warn ("Failed to move finding site for " + c);
-		}
-		return changesMade;
-	}
-	*/
 
 	/**
 	 * @return true if a relationship with the specified type exists in the specified group
@@ -329,11 +297,4 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		return new RelationshipTemplate(type, target, ct);
 	}
 	
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
-	}
-
 }

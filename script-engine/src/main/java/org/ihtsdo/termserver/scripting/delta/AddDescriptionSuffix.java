@@ -1,16 +1,8 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConstants{
 

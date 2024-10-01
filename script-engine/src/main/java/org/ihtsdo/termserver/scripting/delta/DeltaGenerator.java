@@ -49,7 +49,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
-	//protected String moduleId = SCTID_CORE_MODULE;
 	protected Set<String> sourceModuleIds = new HashSet<>();
 	protected String nameSpace="0";
 	protected String targetModuleId = SCTID_CORE_MODULE;
@@ -235,12 +234,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (projectName != null && projectName.endsWith(".zip")) {
 			String choice = dependencySpecified? "Y":"N";
 			if (!dependencySpecified) {
-				LOGGER.info ("Is " + projectName + " an extension that requires a dependant edition to be loaded first?");
-				print ("Choice Y/N: ");
+				println("Is " + projectName + " an extension that requires a dependant edition to be loaded first?");
+				print("Choice Y/N: ");
 				choice = STDIN.nextLine().trim();
 			}
+
 			if (choice.toUpperCase().equals("Y")) {
-				print ("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
+				print("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
 				String response = STDIN.nextLine().trim();
 				if (!response.isEmpty()) {
 					setDependencyArchive(response);
@@ -258,7 +258,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
-			"SCTID, FSN, SemTag, Severity, Action, Details, Details, , "
+			"SCTID, FSN, SemTag, Severity, Action, Details," + additionalReportColumns
 		};
 		
 		String[] tabNames = new String[]{
@@ -279,16 +279,16 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected void closeIdGenerators() {
 		try {
 			if (conIdGenerator != null) {
-				LOGGER.info(conIdGenerator.finish());
+				conIdGenerator.finish();
 			}
 			if (descIdGenerator != null) {
-				LOGGER.info(descIdGenerator.finish());
+				descIdGenerator.finish();
 			}
 			if (relIdGenerator != null) {
-				LOGGER.info(relIdGenerator.finish());
+				relIdGenerator.finish();
 			}
 		} catch (FileNotFoundException e) {
-			LOGGER.error ("Failed to close id generators",e);
+			LOGGER.error("Failed to close id generators", e);
 		}
 	}
 
@@ -345,7 +345,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		int conceptsOutput = 0;
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {
-				if (outputRF2((Concept)thisConcept, alwaysCheckSubComponents)) {
+				if (outputRF2(thisConcept, alwaysCheckSubComponents)) {
 					conceptsOutput++;
 				}
 			} catch (TermServerScriptException e) {
@@ -489,7 +489,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				a.setEffectiveTime(null);
 				c.getAxiomEntries().add(a);
 				if (!c.getModuleId().equals(axiomModuleId)) {
-					LOGGER.warn("Mismatch between Concept and Axiom module: " + c + " " + a);
+					LOGGER.warn("Mismatch between Concept and Axiom module: {} vs {}", c, a);
 				}
 				conceptComponentOutput = true;
 			}
@@ -522,16 +522,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 		conceptComponentOutput |= outputComponentAnnotations(c);
 		return conceptComponentOutput;
 	}
-
-	private boolean hasDirtyAxiom(Concept c) {
-		for (AxiomEntry a : c.getAxiomEntries()) {
-			if (a.isDirty()) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 
 	private boolean hasDirtyStatedRelationships(Concept c) {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
@@ -595,6 +585,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return 0;
 	}
 
+	@Override
 	protected boolean inScope(Component c, boolean includeExpectedExtensionModules) {
 		if (project.getKey().endsWith(".zip")) {
 				//If we're working from a zip file, then we're targeting whatever module we said as part of this Delta generation

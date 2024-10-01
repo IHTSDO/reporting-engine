@@ -1,13 +1,12 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -25,19 +24,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * MSSP-1288 Norway again
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(InactivedCoreRelationshipsToExtensionModule.class);
-
-	//String effectiveTime = "20211015";
 	String targetEffectiveTime = null;
 	
 	Map<String, String> semTagModuleMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivedCoreRelationshipsToExtensionModule delta = new InactivedCoreRelationshipsToExtensionModule();
 		try {
 			delta.targetModuleId = "51000202101";
@@ -53,12 +46,10 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void init(String[] args) throws TermServerScriptException {
 		semTagModuleMap.put("medicinal", "57091000202101");
 		semTagModuleMap.put("drug", "57091000202101");
@@ -102,11 +93,11 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 	}
 
 	private String determineTargetModuleId(Concept c) {
-		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		//Do we have a known map for this semantic tag
-		for (String key : semTagModuleMap.keySet()) {
-			if (semTag.contains(key)) {
-				return semTagModuleMap.get(key);
+		for (Map.Entry<String, String> entry : semTagModuleMap.entrySet()) {
+			if (semTag.contains(entry.getKey())) {
+				return entry.getValue();
 			}
 		}
 		return targetModuleId;

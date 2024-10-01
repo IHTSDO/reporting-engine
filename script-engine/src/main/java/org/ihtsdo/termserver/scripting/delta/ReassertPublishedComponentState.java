@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -14,17 +13,16 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * but restricted to those exact components
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ReassertPublishedComponentState extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ReassertPublishedComponentState.class);
+	static {
+		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+	}
 
 	String[] componentsToProcess = new String[] {
 			"663114025","663113020","734078021","776663023"};
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReassertPublishedComponentState delta = new ReassertPublishedComponentState();
 		try {
 			delta.getArchiveManager().setPopulateReleasedFlag(true);
@@ -46,18 +44,16 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			}
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
-	
+
+	@Override
 	public void init (String[] args) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
 		super.init(args);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, ModuleId, Component Reasserted"};
@@ -68,7 +64,6 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 	}
 	
 	public void process() throws TermServerScriptException {
-		//Set<String> componentsToProcess = new HashSet<>(Arrays.asList(processMe.split(",")));
 		for (String componentId : componentsToProcess) {
 			Component component = gl.getComponent(componentId);
 			if (component == null) {
