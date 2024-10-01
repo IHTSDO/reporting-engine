@@ -345,7 +345,7 @@ public class Description extends Component implements ScriptConstants, Serializa
 		this.inactivationIndicator = ii;
 
 		if (ii == null) {
-			//Consider we migth want to inactivate any inactivation indicator entries here
+			//Consider we might want to inactivate any inactivation indicator entries here
 			return;
 		}
 
