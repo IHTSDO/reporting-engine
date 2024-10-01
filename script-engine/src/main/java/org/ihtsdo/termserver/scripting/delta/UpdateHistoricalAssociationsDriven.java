@@ -486,6 +486,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			return false;
 		}
 
+		if (c.getInactivationIndicator() == null) {
+			notes.add(familyRelationship + " not included for processing - check for missing inactivation indicator");
+			return false;
+		}
+
 		if (!c.getInactivationIndicator().equals(InactivationIndicator.AMBIGUOUS)) {
 			notes.add(familyRelationship + " not included for processing - inactivation indicator is not Ambiguous");
 			return false;
