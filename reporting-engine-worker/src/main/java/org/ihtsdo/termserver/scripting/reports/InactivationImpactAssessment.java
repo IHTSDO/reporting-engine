@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -10,23 +9,16 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.dao.ResourceDataLoader;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.CodeSystem;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Template;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.qi.AllKnownTemplates;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,14 +35,12 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivationImpactAssessment.class);
 
-	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
-	private static String CONCEPT_INACTIVATIONS = "Concepts to inactivate";
-	private static String INCLUDE_INFERRED = "Include Inferred Relationships";
+	public static final String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
+	private static final String CONCEPT_INACTIVATIONS = "Concepts to inactivate";
+	private static final String INCLUDE_INFERRED = "Include Inferred Relationships";
 	private Collection<Concept> referenceSets;
-	private List<Concept> emptyReferenceSets;
-	private List<Concept> outOfScopeReferenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
-	private static int CHUNK_SIZE = 200;
+	private static final int CHUNK_SIZE = 200;
 	private boolean includeInferred = false;
 	private String selectionCriteria;
 	private boolean isECL = false;
@@ -78,14 +68,13 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		}
 		
 		getArchiveManager().setPopulateReleasedFlag(true);
-		importDerivativeLocations();
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc reports
 		super.init(run);
 	}
 
 	@Override
 	public void postInit() throws TermServerScriptException {
 		referenceSets = findConcepts(REFSET_ECL);
+		importDerivativeLocations();
 		removeEmptyNoScopeAndDerivativeRefsets();
 		LOGGER.info ("Recovered {} simple reference sets and maps", referenceSets.size());
 
@@ -120,13 +109,13 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		}
 		
 		includeInferred = jobRun.getParameters().getMandatoryBoolean(INCLUDE_INFERRED);
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
 	}
 
 	private void removeEmptyNoScopeAndDerivativeRefsets() throws TermServerScriptException {
 		LOGGER.info("Checking local refsets for emptiness, out of scope and derivative refsets");
-		emptyReferenceSets = new ArrayList<>();
-		outOfScopeReferenceSets = new ArrayList<>();
+		List<Concept> emptyReferenceSets = new ArrayList<>();
+		List<Concept> outOfScopeReferenceSets = new ArrayList<>();
 		List<Concept> derivativeRefsets = new ArrayList<>();
 		for (Concept refset : referenceSets) {
 			if (!inScope(refset)) {
@@ -140,7 +129,11 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			} else {
 				refsetSummary.put(refset, 0);
 			}
-			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
+			try {
+				Thread.sleep(1 * 1000L);
+			} catch (Exception e) {
+				//still need to work out what to do with interrupted sleeps
+			}
 		}
 		referenceSets.removeAll(emptyReferenceSets);
 		referenceSets.removeAll(derivativeRefsets);
@@ -247,13 +240,12 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private void reportRefsetInactivationsAgainstEnumeratedList(Concept refset, EclCache eclCache) throws TermServerScriptException {
 		int conceptsProcessed = 0;
 		do {
-			String subsetList = "";
-			for (int i = 0; i < CHUNK_SIZE && conceptsProcessed < inactivatingConceptIds.size(); i++) {
+			StringBuilder subsetList = new StringBuilder();
+			for (int i = 0; i < CHUNK_SIZE && conceptsProcessed < inactivatingConceptIds.size(); i++, conceptsProcessed++) {
 				if (i > 0) {
-					subsetList += " OR ";
+					subsetList.append(" OR ");
 				}
-				subsetList += inactivatingConceptIds.get(conceptsProcessed);
-				conceptsProcessed++;
+				subsetList.append(inactivatingConceptIds.get(conceptsProcessed));
 			}
 			String ecl = "^" + refset.getId() + " AND ( " + subsetList + " )";
 			String detail = "As per branch " + eclCache.getBranch() + " on " + eclCache.getServer();
@@ -261,8 +253,10 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 				report(c, "active in refset", refset.getPreferredSynonym(), detail);
 			}
 			try {
-				Thread.sleep(1 * 200);
-			} catch (Exception e) {}
+				Thread.sleep(1 * 200L);
+			} catch (Exception e) {
+				//still need to work out what to do with interrupted sleeps
+			}
 		} while (conceptsProcessed < inactivatingConceptIds.size());
 	}
 
@@ -316,9 +310,9 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private void checkHighVolumeUsage() throws TermServerScriptException {
 		LOGGER.debug ("Checking {} inactivating concepts against High Usage SCTIDs", inactivatingConceptIds.size());
 		String fileName = "resources/HighVolumeSCTIDs.txt";
-		LOGGER.debug ("Loading " + fileName );
+		LOGGER.debug ("Loading {}", fileName );
 		try {
-			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
 			for (String line : lines) {
 				String id = line.split(TAB)[0];
 				if (inactivatingConceptIds.contains(id)) {
