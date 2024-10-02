@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.managedService;
+package org.ihtsdo.termserver.scripting.reports.managed_service;
 
 import java.io.IOException;
 import java.util.*;
@@ -13,44 +13,42 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
-/**
- * RP-548 / MSSP-1306
- */
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TranslatedConceptsReport extends TermServerReport implements ReportClass {
+public class ConceptsMissingMultiLanguageTranslations extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TranslatedConceptsReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsMissingMultiLanguageTranslations.class);
 
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
+	//private static final String INCLUDE_UNTRANSLATED_CONCEPTS = "Include untranslated concepts";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
-	//private static final String VERBOSE_OUTPUT = "Verbose Output";
-	
 	Set<String> expectedLanguages = new HashSet<>();
 	boolean includeIntConcepts = true;
+	boolean includeUntranslatedConcepts = false;
 	boolean includeInactiveConcepts = false;
-	private boolean verboseOutput = true;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(EXTENSION_CONCEPTS_ONLY, "false");
-		params.put(INCLUDE_INACTIVE_CONCEPTS, "true");
-		//params.put(VERBOSE_OUTPUT, "true");
-		TermServerReport.run(TranslatedConceptsReport.class, args, params);
+		//params.put(INCLUDE_UNTRANSLATED_CONCEPTS, "false");
+		params.put(INCLUDE_INACTIVE_CONCEPTS, "false");
+		TermServerReport.run(ConceptsMissingMultiLanguageTranslations.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
-		//getArchiveManager().setRunIntegrityChecks(false);
+		getArchiveManager().setRunIntegrityChecks(false);
 		subsetECL = run.getParamValue(ECL);
 		includeIntConcepts = !run.getParamBoolean(EXTENSION_CONCEPTS_ONLY);
+		//includeUntranslatedConcepts=run.getParamBoolean(INCLUDE_UNTRANSLATED_CONCEPTS);
+		includeUntranslatedConcepts = false;
 		includeInactiveConcepts = run.getParamBoolean(INCLUDE_INACTIVE_CONCEPTS);
-		//verboseOutput = run.getParameters().getMandatoryBoolean(VERBOSE_OUTPUT);
 		super.init(run);
 		if (project.getKey().equals("MAIN")) {
-			throw new TermServerScriptException("Translated Concepts report cannot be run against MAIN");
+			throw new TermServerScriptException("Concepts Missing Translations report cannot be run against MAIN");
 		}
 	}
 	
@@ -64,12 +62,10 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			expectedLanguages.remove("en");
 		}
 		
-		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions"};
-		if (verboseOutput) {
-			columnHeadings = new String[] {"SCTID, FSN, SemTag, language, DescriptionId, term"};
-		}
+		String[] columnHeadings = new String[] {
+				"Id, FSN, SemTag, Missing Translation(s), ModuleId"};
 		String[] tabNames = new String[] {	
-				"Translated Concepts"};
+				"Concepts missing translations"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -85,18 +81,17 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(Type.ECL)
 				.add(EXTENSION_CONCEPTS_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
+				//.add(INCLUDE_UNTRANSLATED_CONCEPTS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.add(INCLUDE_INACTIVE_CONCEPTS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
-				//.add(VERBOSE_OUTPUT).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
-				.withName("Translated Concepts")
-				.withDescription("This reports lists all descriptions in the configured language(s)")
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.MS_RELEASE_VALIDATION))
+				.withName("Concepts Missing Multi-Language Translations")
+				.withDescription("This reports is for extensions that use multiple languages. It allows finding concepts that are missing a translation in at least one of the extension languages. To see a list of concepts without any translation, please refer to the untranslated concepts report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
 				.withTag(INT)
-				.withExpectedDuration(30)
 				.build();
 	}
 	
@@ -109,21 +104,13 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		}
 		
 		for (Concept c : scopeAndSort(conceptsOfInterest)) {
-			if (verboseOutput) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (expectedLanguages.contains(d.getLang())) {
-						report (c, d.getLang(), d.getId(), d.getTerm());
-					}
-				}
-			} else {
-				String detail = c.getDescriptions(ActiveState.ACTIVE).stream()
-						.filter(d -> d.isActive())
-						.filter(d -> expectedLanguages.contains(d.getLang()))
-						.map(d -> d.toString())
-						.collect(Collectors.joining(",\n"));
-				report (c, detail);
+			Set<String> missingLanguages = new HashSet<>(expectedLanguages);
+			missingLanguages.removeAll(getLanguages(c, false));
+			if (missingLanguages.size() > 0) {
+				String missLangStr = String.join(", ", missingLanguages);
+				report (c, missLangStr, gl.getConcept(c.getModuleId()).toStringPref());
+				countIssue(c);
 			}
-			countIssue(c);
 		}
 	}
 	
@@ -137,7 +124,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 	private boolean inScope(Concept c) {
 		return ((includeInactiveConcepts || c.isActive()) 
 			&& (includeIntConcepts || !SnomedUtils.isInternational(c))
-			&& getLanguages(c, false).size() > 0);
+			&& (includeUntranslatedConcepts || getLanguages(c, false).size() > 0));
 	}
 
 	private Set<String> getLanguages(Concept c, boolean includeEnglish) {
