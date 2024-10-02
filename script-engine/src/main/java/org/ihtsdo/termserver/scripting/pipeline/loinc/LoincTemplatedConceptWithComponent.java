@@ -28,10 +28,6 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttribType = typeMap.get("COMPONENT");
 
-		if (!compNumPartNameAcceptable(attributes)) {
-			return attributes;
-		}
-		
 		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
@@ -45,10 +41,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 			processSubComponents(attributes, componentAttribType);
 		}
 
-		//If we didn't find the component, return a null so that we record that failed mapping usage
-		if (attributes.isEmpty()) {
-			attributes.add(null);
-		}
+		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
 	}
 
