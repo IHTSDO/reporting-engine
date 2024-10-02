@@ -146,8 +146,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("18290-7")) {
-			LOGGER.debug("Check removal of (Property)");
+		if (externalIdentifier.equals("74299-9")) {
+			LOGGER.debug("Should be primitive");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
