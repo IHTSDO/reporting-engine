@@ -40,11 +40,6 @@ import org.slf4j.LoggerFactory;
 
 public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 
-	static {
-		ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
-		dryRun = true;
-	}
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
 
 	Set<Concept> createMPFs = new HashSet<>();
@@ -116,6 +111,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
 		taskSize = 5;
+		TermServerScript.setDryRun(true);
 	}
 
 	@Override
@@ -173,7 +169,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		suppress.add("Product containing only antigen of Mumps orthorubulavirus and antigen of Rubella virus (medicinal product)");
 		suppress.add("Product containing only antigen of Clostridium tetani toxoid adsorbed and antigen of Corynebacterium diphtheriae toxoid and antigen of whole cell Bordetella pertussis (medicinal product)");
 
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_DRUGS_MISSING, tabNames, columnHeadings, false);
 		
 		for (String suppressedConcept : suppress) {
 			report (TERTIARY_REPORT, suppressedConcept);

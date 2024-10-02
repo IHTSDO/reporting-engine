@@ -21,10 +21,6 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AllKnownTemplates extends TermServerReport {
 
-	static {
-		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-	}
-	
 	private static final Logger LOGGER = LoggerFactory.getLogger(AllKnownTemplates.class);
 	private Pattern sctidExtractorPattern;
 	protected TemplateServiceClient tsc;
@@ -46,6 +42,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		}
 		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
 		sctidExtractorPattern = Pattern.compile("\\d{8,}");
+		ReportSheetManager.setTargetFolderId(GFOLDER_QI_STATS);
 	}
 
 	public void init (JobRun run) throws TermServerScriptException {

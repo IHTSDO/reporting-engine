@@ -10,13 +10,8 @@ import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
-
-	static {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
-	}
 
 	public static final String US_MODULE = "731000124108";
 	public static final String NO_MODULE = "51000202101";
@@ -66,7 +61,7 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 		String[] tabNames = new String[] {	
 				"UnfixableLangRefsetDuplicates",
 				"Historic Duplications"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_RELEASE_QA, tabNames, columnHeadings, false);
 	}
 	
 	public void process() throws TermServerScriptException {

@@ -11,17 +11,12 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * Lists all active descriptions that have no acceptability
  */
 
 public class DescriptionAnomalies extends TermServerReport implements ReportClass {
-
-	static {
-		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN-1GA"; //QI
-	}
 
 	private Map<String, Integer> descriptionIssueSummaryMap = new HashMap<>();
 	
@@ -46,7 +41,7 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 				"Summary",
 				"Issues"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_QI, tabNames, columnHeadings, false);
 	}
 	
 	@Override

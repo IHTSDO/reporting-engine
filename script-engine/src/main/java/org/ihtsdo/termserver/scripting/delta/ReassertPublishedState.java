@@ -7,7 +7,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * INFRA-8273 Need to reassert various components back to their previously published state
@@ -15,10 +14,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 
 public class ReassertPublishedState extends DeltaGenerator {
-
-	static {
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
-	}
 
 	String processMe = "372440000, 384786009";
 	String intReleaseBranch="MAIN/2022-01-31";
@@ -56,7 +51,7 @@ public class ReassertPublishedState extends DeltaGenerator {
 				"Id, FSN, SemTag, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
 	}
 	
 	public void process() throws TermServerScriptException {

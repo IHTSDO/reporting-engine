@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * MSSP-1598 where we've moved a component from one module to another
@@ -23,10 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
-
-	static {
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
-	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
 
@@ -66,7 +61,7 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 				"Id, FSN, SemTag, Action, ComponentType, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
 	}
 	
 	public void process() throws TermServerScriptException {

@@ -24,10 +24,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
 
-	static {
-		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
-
-	}
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<< 105590001"); // Substance
@@ -37,6 +33,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		additionalReportColumns = "FSN, SemTag, Stated Parents, Stated Parents' Module, Calculated PPPs";
+		ReportSheetManager.setTargetFolderId(GFOLDER_QI);
 		super.init(run);
 	}
 	

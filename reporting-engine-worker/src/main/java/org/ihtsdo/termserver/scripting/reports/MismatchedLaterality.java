@@ -27,10 +27,6 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 	private static final String COMMON_HEADERS = "Concept, FSN, SemTag, Expression";
 	private static final String SEMTAG_BODY_STRUCTURE = "(body structure)";
 
-	static {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-	}
-	
 	Set<String> hierarchies = new HashSet<>();
 	Set<Concept> reportedSuspect = new HashSet<>();
 	Map<String, Concept> fsnMap = new HashMap<>();
@@ -79,7 +75,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 			COMMON_HEADERS,
 			COMMON_HEADERS
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
 		hierarchies.add("< 71388002 |Procedure (procedure)|");
 		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
 		hierarchies.add("< 123037004 |Body structure (body structure)|");

@@ -19,10 +19,6 @@ import java.util.regex.Pattern;
 
 public class CompareConceptsBetweenReleases extends TermServerReport implements ReportClass {
 
-	static {
-		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
-	}
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(CompareConceptsBetweenReleases.class);
 
 	private static final String CONCEPT_IDS = "Concepts";
@@ -157,7 +153,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 				getDateFromRelease(projectKey),
 				"Differences"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_QI, tabNames, columnHeadings, false);
 	}
 
 	private String getDateFromRelease(String release) {

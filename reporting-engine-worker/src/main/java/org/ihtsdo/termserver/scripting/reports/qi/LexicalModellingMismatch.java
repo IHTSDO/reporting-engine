@@ -17,10 +17,6 @@ import java.util.stream.Collectors;
 
 public class LexicalModellingMismatch extends TermServerReport implements ReportClass {
 
-	static {
-		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
-	}
-
 	public static final String WORDS = "Words";
 	public static final String NOT_WORDS = "Not Words";
 	public static final String FSN_ONLY = "Check FSNs Only";
@@ -80,7 +76,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions, Model",
 				"SCTID, FSN, SemTag, Model",};
 		String[] tabNames = new String[] {"Text without Attribute", "Attribute without Text"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_QI, tabNames, columnHeadings, false);
 	}
 	
 	@Override
