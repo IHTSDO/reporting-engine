@@ -23,6 +23,7 @@ public interface ScriptConstants extends RF2Constants {
 	String GFOLDER_RELEASE_QA = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
 	String GFOLDER_QI_STATS = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
 	String GFOLDER_RELEASE_STATS = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+	String GFOLDER_LOINC = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
 	
 	Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	Concept NULL_CONCEPT = new Concept ("-1");
@@ -116,6 +117,7 @@ public interface ScriptConstants extends RF2Constants {
 	Concept HAS_INTERPRETATION = new Concept("363713009","Has interpretation (attribute)");
 	Concept COMPONENT = new Concept("246093002", "Component (attribute)");
 	Concept PROPERTY_ATTRIB = new Concept ("370130000", "Property (attribute)");
+	Concept INHERES_IN = new Concept("704319004", "Inheres in (attribute)");
 
 	Concept LEFT = new Concept("7771000", "Left (qualifier value)");
 	Concept RIGHT = new Concept("24028007", "Right (qualifier value)|");

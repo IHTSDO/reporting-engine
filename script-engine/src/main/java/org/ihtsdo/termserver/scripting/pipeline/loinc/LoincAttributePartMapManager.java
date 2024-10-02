@@ -17,7 +17,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincAttributePartMapManager.class);
 
-	private LoincScript ls;
+	private final LoincScript ls;
 	
 	public LoincAttributePartMapManager (LoincScript ls, Map<String, Part> partMap, Map<String, String> partMapNotes) {
 		super(ls, partMap, partMapNotes);
@@ -38,10 +38,6 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedTypeReplacementMap.put(gl.getConcept("410670007 |Time|"), gl.getConcept("370134009 |Time aspect|"));
 
 		populateHardCodedMappings();
-	}
-
-	private LoincPart getLoincPart(String loincPartNum) {
-		return (LoincPart) parts.get(loincPartNum);
 	}
 
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
@@ -96,10 +92,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		} else {
 			partsSeen.add(partNum);
 			Concept attributeValue = gl.getConcept(items[4], false, true);
-			LoincPart part = getLoincPart(partNum);
-			String partName = part == null ? "Unlisted" : part.getPartName();
-			String partStatus = part == null ? "Unlisted" : part.getPartStatus().name();
-			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
+			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum);
 			if (attributeValue != null && attributeValue.isActive()) {
 				mappingNotes.add("Inactive concept");
 			}
@@ -113,10 +106,9 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		
 	}
 
-	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum,
-										  String partName, String partStatus) throws TermServerScriptException {
-		
-		
+	@Override
+	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum) {
+
 		if (!attributeValue.isActiveSafely()) {
 			String hardCodedIndicator = " hardcoded";
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
@@ -138,7 +130,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		return attributeValue;
 	}
 
-	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType, String partNum) throws TermServerScriptException {
+	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType, String partNum) {
 		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
 			attributeType = hardCodedTypeReplacementMap.get(attributeType);
 		}
