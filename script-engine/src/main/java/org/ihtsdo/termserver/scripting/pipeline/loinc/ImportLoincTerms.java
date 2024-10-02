@@ -6,15 +6,10 @@ import java.util.*;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
-
-	protected static final String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	private static final String commonLoincColumns = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
+	private static final String COMMON_LOINC_COLUMNS = "COMPONENT, PROPERTY, TIME_ASPCT, SYSTEM, SCALE_TYP, METHOD_TYP, CLASS, CLASSTYPE, VersionLastChanged, CHNG_TYPE, STATUS, STATUS_REASON, STATUS_TEXT, ORDER_OBS, LONG_COMMON_NAME, COMMON_TEST_RANK, COMMON_ORDER_RANK, COMMON_SI_TEST_RANK, PanelType, , , , , ";
 	//-f "G:\My Drive\018_Loinc\2023\LOINC Top 100 - loinc.tsv" 
 	//-f1 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - Parts Map 2023.tsv"  
 	//-f2 "G:\My Drive\018_Loinc\2023\LOINC Top 100 - LoincPartLink_Primary.tsv"
@@ -22,8 +17,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	//-f4 "C:\Users\peter\Backup\Loinc_2.73\LoincTable\Loinc.csv"
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_2.75_Active_Lab_NonVet.tsv"
 	
-	int existedPreviousIteration = 0;
-
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
 			TAB_LOINC_DETAIL_MAP_NOTES,
@@ -38,10 +31,12 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		new ImportLoincTerms().ingestExternalContent(args);
 	}
 
+	@Override
 	protected String[] getTabNames() {
 		return tabNames;
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				/*"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,*/
@@ -49,7 +44,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"Item, Info, Details, ,",
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, Item of Special Interest, LoincName, Issues, details",
-				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + commonLoincColumns,
+				"LoincNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, "  + COMMON_LOINC_COLUMNS,
 				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, LoincNum, Descriptions, Expression, Status, , ",
 				"Category, LoincNum, Detail, , , ",

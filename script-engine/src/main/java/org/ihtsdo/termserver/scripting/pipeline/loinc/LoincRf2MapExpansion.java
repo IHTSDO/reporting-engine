@@ -17,6 +17,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincRf2MapExpansion.class);
 
 	public static final String TAB_RF2_MAP = "RF2 Map";
+	public static final String NOT_FOUND = "Not Found";
 	
 	private static final String[] tabNames = new String[] { TAB_RF2_MAP };
 	
@@ -84,10 +85,10 @@ public class LoincRf2MapExpansion extends LoincScript {
 				value == null ? "N/A" : reportIfValueReplaced(value),
 				items[REF_IDX_MAP_TARGET],
 				getUsageCount(items[REF_IDX_MAP_TARGET]),
-				part == null ? "Not Found" : part.getPartName(),
-				part == null ? "Not Found" : part.getPartTypeName(),
+				part == null ? NOT_FOUND : part.getPartName(),
+				part == null ? NOT_FOUND : part.getPartTypeName(),
 				items[REF_IDX_ATTRIB],
-				type == null ? "Not Found" : type.getPreferredSynonym(),
+				type == null ? NOT_FOUND : type.getPreferredSynonym(),
 				type == null ? "N/A" : reportIfTypeReplaced(type)
 				);
 	}
@@ -115,10 +116,10 @@ public class LoincRf2MapExpansion extends LoincScript {
 		}
 	}
 
-	private String reportIfValueReplaced(Concept value) throws TermServerScriptException {
-		Concept replacementValue = attributePartManager.replaceValueIfRequired(null, value, null, null, null);
+	private String reportIfValueReplaced(Concept value) {
+		Concept replacementValue = attributePartManager.replaceValueIfRequired(null, value, null);
 		//If this concept is inactive and we don't have a replacement, then we really need one
-		if (!value.isActive() && replacementValue.equals(value)) {
+		if (!value.isActiveSafely() && replacementValue.equals(value)) {
 			return "REQUIRED";
 		}
 		
@@ -132,12 +133,12 @@ public class LoincRf2MapExpansion extends LoincScript {
 
 	@Override
 	protected void loadSupportingInformation() throws TermServerScriptException {
-
+		stop();
 	}
 
 	@Override
 	protected void importPartMap() throws TermServerScriptException {
-
+		throw new IllegalStateException("This class is not expected to do any modelling");
 	}
 
 	@Override

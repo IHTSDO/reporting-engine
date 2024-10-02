@@ -19,7 +19,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 
 	@Override
 	public String getSemTag() {
-		return "(valence)";
+		return " (valence)";
 	}
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
