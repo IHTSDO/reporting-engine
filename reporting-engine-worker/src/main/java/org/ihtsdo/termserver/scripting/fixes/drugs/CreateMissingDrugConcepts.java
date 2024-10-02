@@ -16,7 +16,6 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * DRUGS-515 - Create MPF-containing concepts where required.  Identify missing MPFs

@@ -21,6 +21,7 @@ public interface ScriptConstants extends RF2Constants {
 	String GFOLDER_MS = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
 	String GFOLDER_RELEASE_QA = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
 	String GFOLDER_QI_STATS = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+	String GFOLDER_RELEASE_STATS = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 	
 	Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	Concept NULL_CONCEPT = new Concept ("-1");
