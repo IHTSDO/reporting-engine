@@ -9,7 +9,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.AttributePartMapManager;
-import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +16,6 @@ import org.slf4j.LoggerFactory;
 public class LoincAttributePartMapManager extends AttributePartMapManager implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincAttributePartMapManager.class);
-
-	private static final int NOT_SET = -1;
 
 	private LoincScript ls;
 	
@@ -41,10 +38,6 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedTypeReplacementMap.put(gl.getConcept("410670007 |Time|"), gl.getConcept("370134009 |Time aspect|"));
 
 		populateHardCodedMappings();
-	}
-
-	private LoincPart getLoincPart(String loincPartNum) {
-		return (LoincPart) parts.get(loincPartNum);
 	}
 
 	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
@@ -99,10 +92,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		} else {
 			partsSeen.add(partNum);
 			Concept attributeValue = gl.getConcept(items[4], false, true);
-			LoincPart part = getLoincPart(partNum);
-			String partName = part == null ? "Unlisted" : part.getPartName();
-			String partStatus = part == null ? "Unlisted" : part.getPartStatus().name();
-			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum, partName, partStatus);
+			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum);
 			if (attributeValue != null && attributeValue.isActive()) {
 				mappingNotes.add("Inactive concept");
 			}
@@ -116,11 +106,10 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		
 	}
 
-	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum,
-										  String partName, String partStatus) throws TermServerScriptException {
-		
-		
-		if (!attributeValue.isActive()) {
+	@Override
+	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum) {
+
+		if (!attributeValue.isActiveSafely()) {
 			String hardCodedIndicator = " hardcoded";
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
 			if (replacementValue == null) {

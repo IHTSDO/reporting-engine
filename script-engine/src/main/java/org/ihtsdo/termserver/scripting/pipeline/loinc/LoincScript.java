@@ -36,8 +36,8 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		throw new IllegalStateException("Please override getTabNames() in your script");
 	}
 
+	@Override
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
 		tabForFinalWords = SECONDARY_REPORT;
 		
 		//Just temporarily, we need to create some concepts that aren't visible yet
@@ -46,7 +46,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 		
-		super.postInit(tabNames, columnHeadings, csvOutput);
+		super.postInit(GFOLDER_LOINC, tabNames, columnHeadings, csvOutput);
 	}
 
 	@Override
@@ -62,7 +62,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	
 	protected void loadLoincDetail() throws TermServerScriptException {
-		LOGGER.info ("Loading Loinc Detail: " + getInputFile(FILE_IDX_LOINC_DETAIL));
+		LOGGER.info ("Loading Loinc Detail: {}", getInputFile(FILE_IDX_LOINC_DETAIL));
 		BufferedReader in = null;
 		try {
 			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_DETAIL)));
@@ -93,7 +93,9 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			if (in != null) {
 				try {
 					in.close();
-				} catch (IOException e) {}
+				} catch (IOException e) {
+					//Don't worry about a failure to close the file, we'll survive
+				}
 			}
 		}
 	}
@@ -117,12 +119,12 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 	
 	protected void loadLoincParts() throws TermServerScriptException {
-		LOGGER.info ("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
+		LOGGER.info ("Loading Loinc Parts: {}", getInputFile(FILE_IDX_LOINC_PARTS));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_PARTS)));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
 			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
-			CSVRecord header = iterator.next();
+			iterator.next(); //Throw away the header row
 			while (iterator.hasNext()) {
 				CSVRecord thisLine = iterator.next();
 				LoincPart loincPart = LoincPart.parse(thisLine);
@@ -131,7 +133,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 				}
 				partMap.put(loincPart.getPartNumber(), loincPart);
 			}
-			LOGGER.info("Loaded " + partMap.size() + " loinc parts.");
+			LOGGER.info("Loaded {} loinc parts.", partMap.size());
 		} catch (Exception e) {
 			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_LOINC_PARTS), e);
 		}
@@ -143,14 +145,14 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) throws TermServerScriptException {
 		additionalThreadCount++;
-		LOGGER.info ("Loading Full Loinc: " + fullLoincFile);
+		LOGGER.info ("Loading Full Loinc: {}", fullLoincFile);
 		externalConceptMap = new HashMap<>();
 		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(fullLoincFile));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
 			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
-			CSVRecord header = iterator.next();
+			iterator.next();  //throw away the header row
 			int hasTargettedPropertyIn20K = 0;
 			int hasTargettedPropertyNotIn20K = 0;
 			while (iterator.hasNext()) {
@@ -163,10 +165,8 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 					if (targettedProperties.contains(loincTerm.getProperty())) {
 						hasTargettedPropertyNotIn20K++;
 					}
-				} else if (tabIdx != NOT_SET){
-					if (targettedProperties.contains(loincTerm.getProperty())) {
-						hasTargettedPropertyIn20K++;
-					}
+				} else if (tabIdx != NOT_SET && targettedProperties.contains(loincTerm.getProperty())) {
+					hasTargettedPropertyIn20K++;
 				}
 			}
 			if (tabIdx != NOT_SET) {
@@ -256,5 +256,9 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	@Override
 	protected Set<String> getObjectionableWords() {
 		return objectionableWords;
+	}
+
+	protected void stop() {
+		throw new IllegalStateException("This class is not expected to do any modelling");
 	}
 }
