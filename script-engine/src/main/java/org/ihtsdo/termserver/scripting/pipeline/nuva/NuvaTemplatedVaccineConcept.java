@@ -22,7 +22,7 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 
 	@Override
 	public String getSemTag() {
-		return "(vaccine)";
+		return " (vaccine)";
 	}
 
 	protected NuvaTemplatedVaccineConcept(ExternalConcept externalConcept) {

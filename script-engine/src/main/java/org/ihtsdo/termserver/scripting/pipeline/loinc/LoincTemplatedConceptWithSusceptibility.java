@@ -42,24 +42,14 @@ public class LoincTemplatedConceptWithSusceptibility extends LoincTemplatedConce
 		//All Susceptibility concepts will have a Inheres in of Organism
 		attributes.add(new RelationshipTemplate(inheresIn, organism));
 
-		if (!compNumPartNameAcceptable(attributes)) {
-			return attributes;
-		}
-
 		if (hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 		} else {
 			processSubComponents(attributes, componentAttribType);
 		}
-		//If we didn't find the component, return a null so that we record that failed mapping usage
-		//And in fact, don't map this term at all
-		if (attributes.isEmpty()) {
-			attributes.add(null);
-			if (!hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
-				addProcessingFlag(ProcessingFlag.DROP_OUT);
-			}
-		}
+
+		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
 	}
 }
