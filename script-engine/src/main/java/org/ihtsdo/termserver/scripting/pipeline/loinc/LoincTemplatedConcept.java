@@ -54,7 +54,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
 	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
-	protected static Set<String> columnsToCheckForUnknownIndicators = new HashSet<>(Arrays.asList(COMPDENOM_PN, COMPDENOM_PN, SYSTEM_PN));
+	protected static Set<String> columnsToCheckForUnknownIndicators = new HashSet<>(Arrays.asList(COMPNUM_PN, COMPDENOM_PN, SYSTEM_PN));
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal", "total"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
 	protected static Set<String> allowSpecimenTermForLoincParts = new HashSet<>(Arrays.asList("LP7593-9", "LP7735-6", "LP189538-4"));
@@ -72,7 +72,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	@Override
 	protected String getSemTag() {
-		return "(observable entity)";
+		return " (observable entity)";
 	}
 
 	public static void initialise(ContentPipelineManager cpm, 
@@ -414,7 +414,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		List<RelationshipTemplate> attributes = new ArrayList<>();
 		Concept componentAttrib = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
-		if (hasNoSubParts()) {
+		if (hasDetailForColName(COMPONENT_PN) && hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 		} else {
@@ -434,14 +434,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				if(attributes.isEmpty()) {
 					addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 				}
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib);
+				if (!addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib)) {
+					//Did we not find a map for the challenge?  Then we're going to mark this as primitive
+					addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+				}
 			}
 		}
 
-		//If we didn't find the component, return a null so that we record that failed mapping usage
-		if (attributes.isEmpty()) {
-			attributes.add(null);
-		}
+		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
 	}
 
@@ -472,7 +472,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	protected boolean hasDetailForColName(String ldtColumnName) {
-		//Does this LoincNum feature this particular detail
+		//Does this LoincNum feature this particular detail?
 		return loincDetailMap.containsKey(ldtColumnName);
 	}
 
@@ -567,25 +567,35 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if(attributes.isEmpty()) {
 				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 			}
-			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), precondition);
+			if (!addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), precondition)) {
+				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			}
 		}
 
-		if (detailPresent(COMPSUBPART3_PN)) {
+		addSubPartDetailIfPresent(COMPSUBPART3_PN, attributes, componentAttribType);
+		addSubPartDetailIfPresent(COMPSUBPART4_PN, attributes, componentAttribType);
+	}
+
+	private void addSubPartDetailIfPresent(String subPartName, List<RelationshipTemplate> attributes, Concept componentAttribType) throws TermServerScriptException {
+		if (detailPresent(subPartName)) {
 			if (attributes.isEmpty()) {
 				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 			}
-			LoincDetail componentDetail = getLoincDetailOrThrow(COMPSUBPART3_PN);
+			LoincDetail componentDetail = getLoincDetailOrThrow(subPartName);
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
 			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
+	}
 
-		if (detailPresent(COMPSUBPART4_PN)) {
-			if (attributes.isEmpty()) {
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
+	protected void ensureComponentMappedOrRepresentedInTerm(List<RelationshipTemplate> attributes) {
+		//If we didn't find the component, return a null so that we record that failed mapping usage
+		//And in fact, don't map this term at all
+		if (attributes.isEmpty()) {
+			attributes.add(null);
+			if (!hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)
+				&& !slotTermMap.containsKey(LOINC_PART_TYPE_COMPONENT)) {
+				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
-			LoincDetail componentDetail = getLoincDetailOrThrow(COMPSUBPART4_PN);
-			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, componentDetail.getPartName());
-			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 		}
 	}
 
@@ -598,18 +608,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
 		typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
 		typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
-	}
-
-	protected boolean compNumPartNameAcceptable(List<RelationshipTemplate> attributes) throws TermServerScriptException {
-		//We can't yet deal with "given"
-		if (detailPresent(COMPNUM_PN) &&
-				getLoincDetailOrThrow(COMPNUM_PN).getPartName().endsWith(" given")) {
-			String issue = "Skipping concept using 'given'";
-			concept.addIssue(issue);
-			attributes.add(null);
-			return false;
-		}
-		return true;
 	}
 
 }
