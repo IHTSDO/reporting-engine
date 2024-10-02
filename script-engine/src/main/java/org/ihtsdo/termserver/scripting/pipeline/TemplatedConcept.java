@@ -264,7 +264,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	private String removeUnpopulatedTermSlot(String term, String str) {
 		if (term.contains(str)) {
 			//Need to make string regex safe
-			str = str.replaceAll("\\[","\\\\\\[").replaceAll("\\]","\\\\\\]");
+			str = str.replaceAll("\\[|\\]", "\\\\$0");
 			term = term.replaceAll(str, "");
 		}
 		return term;
