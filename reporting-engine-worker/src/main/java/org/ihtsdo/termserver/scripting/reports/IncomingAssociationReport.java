@@ -26,10 +26,6 @@ import org.slf4j.LoggerFactory;
 
 public class IncomingAssociationReport extends TermServerReport implements ReportClass {
 
-	static {
-		ReportSheetManager.targetFolderId = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
-	}
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(IncomingAssociationReport.class);
 
 	public static final String TEXT_MATCH = "Text Match";
@@ -66,6 +62,7 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
 		additionalReportColumns = "FSN (Inactive Concept), SemTag, EffectiveTime, Assoc Type, Target (Active Concept), Details";
+		ReportSheetManager.setTargetFolderId(GFOLDER_QI);
 	}
 
 	@Override

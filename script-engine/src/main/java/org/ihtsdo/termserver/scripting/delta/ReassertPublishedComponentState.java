@@ -6,7 +6,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * MSSP-1661 Need to reassert various components back to their previously published state,
@@ -14,10 +13,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 
 public class ReassertPublishedComponentState extends DeltaGenerator {
-
-	static {
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
-	}
 
 	String[] componentsToProcess = new String[] {
 			"663114025","663113020","734078021","776663023"};
@@ -60,7 +55,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 		String[] tabNames = new String[] {	
 				"Reassertions"};
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
 	}
 	
 	public void process() throws TermServerScriptException {

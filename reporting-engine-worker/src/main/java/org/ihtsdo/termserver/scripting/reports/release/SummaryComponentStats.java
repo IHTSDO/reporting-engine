@@ -125,10 +125,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	public static final EnumSet<ComponentType> typesToDebugToFile = EnumSet.of(ComponentType.CONCEPT);
 	
 	public static Set<String> refsetsToDebugToFile = new HashSet<>();
-	/*static {
-		refsetsToDebugToFile.add(SCTID_OWL_AXIOM_REFSET);
-	}*/
-	
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration;
+import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.CharMatcher;
@@ -142,6 +143,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
 	
 	private boolean asyncSnapshotCacheInProgress = false;
+
+	protected static void setDryRun(boolean b) {
+		dryRun = b;
+	}
 
 	public String detectReleaseBranch() {
 		return getArchiveManager(true).detectReleaseBranch(project.getKey());
@@ -460,7 +465,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public void postInit(boolean csvOutput) throws TermServerScriptException {
 		postInit(null, new String[] {headers + additionalReportColumns}, csvOutput);
 	}
-	
+
+	public void postInit(String googleFolder, String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+		ReportSheetManager.setTargetFolderId(googleFolder);
+		postInit(tabNames, columnHeadings, csvOutput);
+	}
+
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (jobRun != null && jobRun.getParamValue(SUB_HIERARCHY) != null) {
 			subHierarchy = gl.getConcept(jobRun.getMandatoryParamValue(SUB_HIERARCHY));
