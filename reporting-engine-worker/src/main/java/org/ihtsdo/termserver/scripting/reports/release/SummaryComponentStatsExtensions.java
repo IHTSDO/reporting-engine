@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -84,17 +86,17 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		if (project.getKey().equals("MAIN") && StringUtils.isEmpty(prevDependency)) {
 			throw new TermServerScriptException ("This report cannot be run on MAIN.  Use 'Summary Component Stats for Editions' instead.");
 		}
-		
-		
+
+
 		if (StringUtils.isEmpty(prevDependency)) {
 			prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
 			if (StringUtils.isEmpty(prevDependency)) {
 				throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
 			}
 		}
-		
+
 		setDependencyArchive(prevDependency);
-		
+
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
 		if (StringUtils.isEmpty(thisDependency)) {
 			thisDependency = getProject().getMetadata().getDependencyPackage();
@@ -112,10 +114,11 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 			}
 			moduleFilter = Collections.singletonList(defaultModule);
 		}
-		
+
+		ensurePrevIsEarlierThanThis(thisDependency, prevDependency);
 		super.loadProjectSnapshot(fsnOnly);
 	}
-	
+
 	private boolean XOR(String... paramValues) {
 		Boolean lastValueSeenPresent = null;
 		for (String paramValue : paramValues) {
