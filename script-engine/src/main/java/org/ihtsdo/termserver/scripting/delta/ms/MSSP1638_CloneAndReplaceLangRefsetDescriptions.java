@@ -40,9 +40,6 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			}
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
 	
