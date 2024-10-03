@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.oneOffs;
+package org.ihtsdo.termserver.scripting.reports.one_offs;
 
 import java.io.File;
 import java.io.IOException;
