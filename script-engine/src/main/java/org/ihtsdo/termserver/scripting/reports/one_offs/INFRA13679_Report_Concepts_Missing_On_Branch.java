@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports.oneOffs;
+package org.ihtsdo.termserver.scripting.reports.one_offs;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
