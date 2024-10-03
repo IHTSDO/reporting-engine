@@ -20,7 +20,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 
 public abstract class TermServerReport extends TermServerScript {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerReport.class);
+	static final Logger LOGGER = LoggerFactory.getLogger(TermServerReport.class);
 
 	public static final String IP = "IP";
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
