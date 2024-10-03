@@ -44,9 +44,6 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
 	
