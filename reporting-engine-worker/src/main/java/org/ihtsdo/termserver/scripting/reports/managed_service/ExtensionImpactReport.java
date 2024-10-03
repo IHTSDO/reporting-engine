@@ -223,7 +223,10 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		Set<Concept> noInScopeDescendentsCache = new HashSet<>();
 		Set<Concept> yesInScopeDescendentsCache = new HashSet<>();
 		for (String sctId : thisHierarchy) {
-			reportInactivations(sctId, summaryNames, noInScopeDescendentsCache, yesInScopeDescendentsCache, examples);
+			int[] theseInactivationCounts = reportInactivations(sctId, summaryNames, noInScopeDescendentsCache, yesInScopeDescendentsCache, examples);
+			for (int i = 0; i < theseInactivationCounts.length; i++) {
+				inactivationCounts[i] += theseInactivationCounts[i];
+			}
 		}
 
 		report(SECONDARY_REPORT, topLevelConcept,
@@ -308,7 +311,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			examples[3] = currentConcept.toString();
 			incrementSummaryInformation(summaryNames[6]);
 			//And since we're not expecting very many of these, output each one on a detail tab
-			report(QUINARY_REPORT, currentConcept);
+			report(QUINARY_REPORT, currentConcept, getFirstNonCoreAxiom(currentConcept));
 		}
 
 		return new int[] {
@@ -518,6 +521,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		return c.getAxiomEntries(ActiveState.ACTIVE, false)
 				.stream()
 				.anyMatch(a -> !SnomedUtils.inModule(a, INTERNATIONAL_MODULES));
+	}
+
+	private AxiomEntry getFirstNonCoreAxiom(Concept c) {
+		return c.getAxiomEntries(ActiveState.ACTIVE, false)
+				.stream()
+				.filter(a -> !SnomedUtils.inModule(a, INTERNATIONAL_MODULES))
+				.findFirst()
+				.orElse(null);
 	}
 
 	class TranslationStats {
