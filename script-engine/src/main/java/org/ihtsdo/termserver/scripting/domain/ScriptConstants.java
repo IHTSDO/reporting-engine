@@ -84,6 +84,9 @@ public interface ScriptConstants extends RF2Constants {
 	Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
 	Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");
+	Concept PROCEDURE_SITE = new Concept("363704007","Procedure site (attribute)|");
+	Concept PROCEDURE_SITE_DIRECT = new Concept("405813007","Procedure site - direct (attribute)|");
+	Concept PROCEDURE_SITE_INDIRECT = new Concept("405814001","Procedure site - indirect (attribute)|");
 	Concept SITN_WITH_EXP_CONTXT = new Concept ("243796009","Situation with explicit context (situation)");
 	Concept SPECIMEN = new Concept("123038009","Specimen (specimen)");
 	Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
