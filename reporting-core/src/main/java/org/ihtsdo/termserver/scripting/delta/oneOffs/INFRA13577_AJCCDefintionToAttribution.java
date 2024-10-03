@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.delta.one_offs;
+package org.ihtsdo.termserver.scripting.delta.oneOffs;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;

@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.delta.one_offs;
+package org.ihtsdo.termserver.scripting.delta.oneOffs;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -44,9 +44,6 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				delta.descIdGenerator.finish();
-			}
 		}
 	}
 	

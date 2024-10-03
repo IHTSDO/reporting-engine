@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.delta.one_offs;
+package org.ihtsdo.termserver.scripting.delta.oneOffs;
 
 import java.io.*;
 
@@ -31,9 +31,6 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				delta.descIdGenerator.finish();
-			}
 		}
 	}
 	

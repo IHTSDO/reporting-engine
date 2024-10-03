@@ -37,9 +37,6 @@ public class AlignLangRefsetEntriesToEN_GB extends DeltaGenerator implements Scr
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				delta.descIdGenerator.finish();
-			}
 		}
 	}
 	
