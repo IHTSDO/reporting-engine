@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -18,6 +20,11 @@ import org.slf4j.LoggerFactory;
 public class HistoricDataUser extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricDataUser.class);
+
+	private static final Pattern DATE_EXTRACTOR_PATTERN;
+	static {
+		DATE_EXTRACTOR_PATTERN = Pattern.compile("\\d{8}(?=T)");
+	}
 
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
@@ -54,11 +61,37 @@ public class HistoricDataUser extends TermServerReport {
 
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		boolean compareTwoSnapshots = false;
+
 		projectKey = getProject().getKey();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
 		getArchiveManager(true).reset(false);
 
+		boolean compareTwoSnapshots = recoverReleaseConfiguration();
+
+		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
+		String task = getJobRun().getTask();
+		getJobRun().setTask(null);
+		try {
+			ArchiveManager mgr = getArchiveManager(true);
+			mgr.setLoadEditionArchive(true);
+			mgr.loadSnapshot(fsnOnly);
+
+			previousEffectiveTime = gl.getCurrentEffectiveTime();
+			LOGGER.info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
+
+			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
+			statsGenerator.setModuleFilter(moduleFilter);
+			statsGenerator.runJob();
+			mgr.reset();
+			getJobRun().setTask(task);
+		} catch (TermServerScriptException e) {
+			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
+		}
+		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+	}
+
+	private boolean recoverReleaseConfiguration() throws TermServerScriptException {
+		boolean compareTwoSnapshots = false;
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
 				StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
 			throw new TermServerScriptException("This release must be specified if previous release is.");
@@ -86,28 +119,13 @@ public class HistoricDataUser extends TermServerReport {
 			prevRelease = getProject().getMetadata().getPreviousPackage();
 		}
 
-		getProject().setKey(prevRelease);
-		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
-		String task = getJobRun().getTask();
-		getJobRun().setTask(null);
-		try {
-			ArchiveManager mgr = getArchiveManager(true);
-			mgr.setLoadEditionArchive(true);
-			mgr.loadSnapshot(fsnOnly);
-
-			previousEffectiveTime = gl.getCurrentEffectiveTime();
-			LOGGER.info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
-
-			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
-			statsGenerator.setModuleFilter(moduleFilter);
-			statsGenerator.runJob();
-			mgr.reset();
-			getJobRun().setTask(task);
-		} catch (TermServerScriptException e) {
-			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
+		if (isPublishedReleaseAnalysis) {
+			ensurePrevIsEarlierThanThis(projectKey, prevRelease);
 		}
-		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
-	};
+
+		getProject().setKey(prevRelease);
+		return compareTwoSnapshots;
+	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		LOGGER.info ("Previous Data Generated, now loading 'current' position");
@@ -293,5 +311,24 @@ public class HistoricDataUser extends TermServerReport {
 			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
 		}
 		return true;
+	}
+
+
+	protected void ensurePrevIsEarlierThanThis(String now, String earlier) {
+		try {
+			if (getET(earlier).compareTo(getET(now)) > 0) {
+				throw new IllegalArgumentException("Previous " + earlier + " is later than this release " + now);
+			}
+		} catch (IllegalArgumentException e) {
+			LOGGER.warn("Unable to determine dates for correct ordering of releases between {} and (earlier) {}.  Proceeding anyway.", now, earlier);
+		}
+	}
+
+	private String getET(String str) {
+		Matcher matcher = DATE_EXTRACTOR_PATTERN.matcher(str);
+		if (matcher.find()) {
+			return matcher.group();
+		}
+		throw new IllegalArgumentException("Unable to extract date from " + str);
 	}
 }
