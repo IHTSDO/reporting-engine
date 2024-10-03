@@ -31,9 +31,6 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				LOGGER.info(delta.descIdGenerator.finish());
-			}
 		}
 	}
 	
