@@ -3,7 +3,10 @@ package org.ihtsdo.termserver.scripting.reports;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.EclCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -44,7 +47,10 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private boolean includeInferred = false;
 	private String selectionCriteria;
 	private boolean isECL = false;
-	
+
+	//The branch for a code system or project doesn't change between iterations, so we'll cache it
+	private Map<String, String> branchForProjectOrCodeSystem = new HashMap<>();
+
 	private Collection<Concept> inactivatingConcepts = new ArrayList<>();
 	private List<String> inactivatingConceptIds = new ArrayList<>();
 
@@ -52,7 +58,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(CONCEPT_INACTIVATIONS, "<< 48694002 |Anxiety|");  //Found in the Nursing Issues Reset
+		params.put(CONCEPT_INACTIVATIONS, "<< 48694002 |Anxiety| OR 1237275009");  //Found in the Nursing Issues Refset && EDQM respectively
 		params.put(INCLUDE_INFERRED, "false");
 		TermServerScript.run(InactivationImpactAssessment.class, args, params);
 	}
@@ -73,11 +79,6 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		referenceSets = findConcepts(REFSET_ECL);
-		importDerivativeLocations();
-		removeEmptyNoScopeAndDerivativeRefsets();
-		LOGGER.info ("Recovered {} simple reference sets and maps", referenceSets.size());
-
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Issue, Detail, Additional Detail"};
 		String[] tabNames = new String[] {	
@@ -85,6 +86,18 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		
 		selectionCriteria = jobRun.getMandatoryParamValue(CONCEPT_INACTIVATIONS);
 		isECL = SnomedUtils.isECL(selectionCriteria);
+		includeInferred = jobRun.getParameters().getMandatoryBoolean(INCLUDE_INFERRED);
+
+		super.postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
+		prepReferenceSetsAndConceptsToInactivate();
+	}
+
+	private void prepReferenceSetsAndConceptsToInactivate() throws TermServerScriptException {
+		referenceSets = findConcepts(REFSET_ECL);
+		importDerivativeLocations();
+		removeEmptyNoScopeAndDerivativeRefsets();
+		LOGGER.info ("Recovered {} simple reference sets and maps", referenceSets.size());
+
 		if (isECL) {
 			//With ECL selection we don't need to worry about the concept already being inactive
 			inactivatingConcepts = findConcepts(selectionCriteria);
@@ -103,13 +116,10 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 				}
 			}
 		}
-		
+
 		if (inactivatingConcepts.isEmpty()) {
 			throw new TermServerScriptException("Selection criteria '" + selectionCriteria + "' represents 0 active concepts");
 		}
-		
-		includeInferred = jobRun.getParameters().getMandatoryBoolean(INCLUDE_INFERRED);
-		super.postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
 	}
 
 	private void removeEmptyNoScopeAndDerivativeRefsets() throws TermServerScriptException {
@@ -261,27 +271,29 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	}
 
 	private void checkDerivativeUsage() throws TermServerScriptException {
-		Map<String, Map<String, TermServerClient>> serverCodeSystemTsClientMap = new HashMap<>();
-		Map<String, String> branchForCodeSystemMap = new HashMap<>();
+		//These clients will be specific to this user cookie, so create fresh each run of report
+		Map<String, TermServerClient> serverTsClientMap = new HashMap<>();
+		Map<String, AuthoringServicesClient> serverAsClientMap = new HashMap<>();
 		for (DerivativeLocation location : derivativeLocationMap.values()) {
 			try {
-				checkInactivationsForDerivative(location, serverCodeSystemTsClientMap, branchForCodeSystemMap);
+				checkInactivationsForDerivative(location, serverTsClientMap, serverAsClientMap);
 			} catch (IllegalStateException | TermServerScriptException e) {
 				report(PRIMARY_REPORT, e.getMessage());
 			}
 		}
 	}
 
-	private void checkInactivationsForDerivative(DerivativeLocation location, Map<String, Map<String, TermServerClient>> serverCodeSystemTsClientMap, Map<String, String> branchForCodeSystemMap) throws TermServerScriptException {
+	private void checkInactivationsForDerivative(DerivativeLocation location, Map<String,TermServerClient> serverTsClientMap, Map<String,AuthoringServicesClient> serverAsClientMap) throws TermServerScriptException {
 		//Keep a map of server specific clients for each codeSystem / server combination.
 		//For SNOMEDCT-DERIVATIVES on the browser, for example, we should only need to do this once.
-		Map<String, TermServerClient> codeSystemTsClientMap = serverCodeSystemTsClientMap.computeIfAbsent(location.server, k -> new HashMap<>());
-		TermServerClient tsClient = codeSystemTsClientMap.computeIfAbsent(location.codeSystem, k -> new TermServerClient(location.server, location.codeSystem));
+		TermServerClient tsClient = serverTsClientMap.computeIfAbsent(location.server, k -> new TermServerClient(k, getAuthenticatedCookie()));
+		AuthoringServicesClient asClient = serverAsClientMap.computeIfAbsent(location.server, k -> new AuthoringServicesClient(getAsServerURL(k), getAuthenticatedCookie()));
 
 		//Now get an Ecl Cache which is specific to this server (via the tsClient) and the branch
 		//Watch that the same branch on another server will not be considered distinct so that's a danger point.
-		String branch = branchForCodeSystemMap.computeIfAbsent(location.codeSystem, k -> getBranchForCodeSystem(tsClient, location));
-		EclCache eclCache = EclCache.getCache(branch, tsClient, gl, false);
+ 		String branch = branchForProjectOrCodeSystem.computeIfAbsent(location.getProjectOrCodeSystem(), k -> getBranchForDerivativeLocation(tsClient, asClient, location));
+ 		EclCache eclCache = EclCache.getCache(branch, tsClient, gl, false);
+
 		//Refset might not be known to the current project, so create a temporary concept
 		Concept refset = new Concept(location.sctId);
 		refset.setPreferredSynonym(location.pt);
@@ -292,19 +304,29 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		}
 	}
 
-	private String getBranchForCodeSystem(TermServerClient tsClient, DerivativeLocation location) {
-		String reason = "";
+	private String getAsServerURL(String serverUrl) {
+		return serverUrl.replace("snowstorm/snomed-ct", "");
+	}
+
+	private String getBranchForDerivativeLocation(TermServerClient tsClient, AuthoringServicesClient asClient, DerivativeLocation location) {
+		String errorMessage = "Unable to recover " ;
 		try {
+			//Look up a project if we have that, otherwise use the code system
+			if (location.project != null) {
+				errorMessage += "project " + location.project + " from " + location.server;
+				//For projects, we need to work with authoring-services.  Allow first time release so we don't check Metadata
+				return asClient.getProject(location.project, true).getBranchPath();
+			}
 			//What is the current branch for this CodeSystem?
+			errorMessage += "code system " + location.codeSystem + " from " + location.server;
 			CodeSystem cs = tsClient.getCodeSystem(location.codeSystem);
 			if (cs != null && cs.getLatestVersion() != null) {
 				return cs.getLatestVersion().getBranchPath();
 			}
-		} catch (TermServerScriptException e) {
-			reason = " due to " + e.getMessage();
+		} catch (RestClientException | TermServerScriptException e) {
+			errorMessage += " due to : " + e.getMessage();
 		}
-
-		throw new IllegalStateException("Unable to recover CodeSystem " + location.codeSystem + " from " + location.server + reason);
+		throw new IllegalStateException(errorMessage);
 	}
 
 	private void checkHighVolumeUsage() throws TermServerScriptException {
@@ -404,9 +426,11 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 					location.sctId = columns[0];
 					location.pt = columns[1];
 					location.server = columns[2];
-					location.codeSystem = columns[3];
-					location.project = columns[4];
+					location.codeSystem = hasDataOrNull(columns[3]);
+					location.project = hasDataOrNull(columns[4]);
 					derivativeLocationMap.put(location.sctId, location);
+				} else {
+					report(PRIMARY_REPORT, "Check " + fileName + " for correct format (5 columns): " + line);
 				}
 			}
 		} catch (IOException e) {
@@ -415,12 +439,20 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		LOGGER.info("Configured the location of {} derivatives", derivativeLocationMap.size());
 	}
 
+	private String hasDataOrNull(String str) {
+		return StringUtils.isEmpty(str)? null : str;
+	}
+
 	private class DerivativeLocation {
 		String sctId;
 		String pt;
 		String server;
 		String codeSystem;
 		String project;
+
+		public String getProjectOrCodeSystem() {
+			return project != null ? project : codeSystem;
+		}
 	}
 
 }

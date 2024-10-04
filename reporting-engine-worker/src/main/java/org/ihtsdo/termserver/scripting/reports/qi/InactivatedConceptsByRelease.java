@@ -103,7 +103,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 				//Work 2 months earlier, as changes could have been sitting in a task
 				try {
 					if (StringUtils.isEmpty(fromDate) || fromDate.length() < 5) {
-						logger.warn("What's the story here?");
+						LOGGER.warn("What's the story here?");
 						//If we 're running to the current time, work back 
 						fromDate = dateFormat.format(new Date());
 					}
