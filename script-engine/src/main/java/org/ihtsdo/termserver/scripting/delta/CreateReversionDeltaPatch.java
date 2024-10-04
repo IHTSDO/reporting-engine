@@ -2,14 +2,13 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
@@ -42,7 +41,7 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 			 "68052521000146123"
 	};*/
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CreateReversionDeltaPatch delta = new CreateReversionDeltaPatch();
 		try {
 			delta.runStandAlone=true;
@@ -68,15 +67,19 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 		for (String componentId : componentIds) {
 			Component c = gl.getComponent(componentId);
 			if (c == null) {
-				LOGGER.warn("Did not find component: " + componentId);
+				LOGGER.warn("Did not find component: {}", componentId);
 			} else {
 				c.setDirty();
 				Concept concept = gl.getComponentOwner(componentId);
 				if (concept == null) {
-					logger.warn("No concept could be found as the ower of " + c + " : id=" + componentId);
+					String msg = "No concept could be found as the owner of " + c + " : id=" + componentId;
+					report(null, Severity.HIGH, ReportActionType.COMPONENT_REVERTED,c.getEffectiveTime(), c);
+					LOGGER.warn(msg);
+				} else {
+					concept.setModified();
+					report(concept, Severity.LOW, ReportActionType.COMPONENT_REVERTED,c.getEffectiveTime(), c);
 				}
-				concept.setModified();
-				report(concept, Severity.LOW, ReportActionType.COMPONENT_REVERTED,c.getEffectiveTime(), c);
+
 			}
 		}
 		
@@ -88,9 +91,9 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 	}
 
 	private void loadComponentsToProcess() throws TermServerScriptException {
-		LOGGER.debug ("Loading " + getInputFile() );
+		LOGGER.debug ("Loading {}", getInputFile() );
 		try {
-			componentIds = Files.readLines(getInputFile(), Charsets.UTF_8).toArray(new String[0]);
+			componentIds = Files.readLines(getInputFile(), StandardCharsets.UTF_8).toArray(new String[0]);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to read " + getInputFile(), e);
 		}
