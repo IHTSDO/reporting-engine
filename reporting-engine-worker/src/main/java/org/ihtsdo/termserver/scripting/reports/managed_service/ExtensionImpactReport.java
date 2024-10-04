@@ -292,7 +292,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 		//Does this concept have any inScope children?  We'll step this with new code
 		//to shortcut finding the complete set and allocating memory for that
-		if (hasInScopeDescendents(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
+		if (hasInScopeDescendants(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
 			long countInferredChildren = currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).stream()
 					.filter(this::inScope)
 					.count();
