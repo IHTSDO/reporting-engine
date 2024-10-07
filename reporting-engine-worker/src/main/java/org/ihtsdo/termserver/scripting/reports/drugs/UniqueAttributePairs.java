@@ -60,7 +60,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 				"BoSS/PAI",
 				"BoSS/PAI/MDF"
 				};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

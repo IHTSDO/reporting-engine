@@ -103,7 +103,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				"New FSNs",
 				"Text Defn",
 				"ICD-O"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	public void runJob() throws TermServerScriptException {

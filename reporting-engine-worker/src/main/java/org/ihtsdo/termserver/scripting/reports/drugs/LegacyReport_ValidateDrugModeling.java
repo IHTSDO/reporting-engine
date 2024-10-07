@@ -89,7 +89,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		populateGrouperSubstances();
 		populateBaseMDFMap();
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		presAttributes.add(HAS_PRES_STRENGTH_VALUE);
 		presAttributes.add(HAS_PRES_STRENGTH_UNIT);

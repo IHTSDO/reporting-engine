@@ -69,7 +69,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
 		String[] columnHeadings = new String[]{
 				"Identifier, FSN, SemTag, Member, Comment"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	public void runJob() throws TermServerScriptException {
