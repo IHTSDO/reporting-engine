@@ -94,7 +94,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 											"IPs with Counts",
 											"Attribute Usage"};
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		setSubHierarchy();
 	}
 	

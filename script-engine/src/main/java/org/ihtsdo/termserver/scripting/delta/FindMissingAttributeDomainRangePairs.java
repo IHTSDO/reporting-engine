@@ -74,7 +74,7 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
                 "Attributes without Ranges"
         };
 
-        super.postInit(tabNames, columnHeadings, false);
+        super.postInit(tabNames, columnHeadings);
     }
 
     @Override

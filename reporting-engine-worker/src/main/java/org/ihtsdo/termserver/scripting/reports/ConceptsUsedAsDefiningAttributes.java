@@ -74,7 +74,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 		String[] tabNames = new String[] {	
 				"Concepts using Attribute Values",
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		if (!StringUtils.isEmpty(outOfScopeECL)) {
 			outOfScope = findConcepts(outOfScopeECL);

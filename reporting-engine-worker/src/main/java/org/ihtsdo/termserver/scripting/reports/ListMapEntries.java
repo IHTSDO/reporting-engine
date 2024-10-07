@@ -73,7 +73,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 			columnHeadings = new String[]{ "SCTID, FSN, SemTag, MapTarget, RefsetMember"};
 			tabNames = new String[]{"Map" };
 		}
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 
 	}
 	

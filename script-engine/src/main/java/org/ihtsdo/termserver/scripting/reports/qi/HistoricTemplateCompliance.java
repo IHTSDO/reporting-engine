@@ -72,7 +72,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 												"Template Name, Change Identified, Change Aligned, Currently Aligned, Out of Possible..."};
 		String[] tabNames = new String[] {	"Concept Alignment", 
 											"Template Alignment"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

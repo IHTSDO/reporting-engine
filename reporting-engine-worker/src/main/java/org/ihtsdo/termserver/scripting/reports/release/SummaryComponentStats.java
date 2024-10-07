@@ -183,7 +183,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.add(ROOT_CONCEPT);
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
-		super.postInit(getTabNames(), getColumnHeadings(), false);
+		super.postInit(getTabNames(), getColumnHeadings());
 	}
 
 	public String[] getTabNames() {

@@ -48,7 +48,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		String[] tabNames = new String[] {	"Template Compliance", 
 											"Summary Stats / KPIs",
 											"Template issues"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

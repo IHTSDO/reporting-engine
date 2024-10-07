@@ -51,7 +51,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		};
 		String[] tabNames = new String[] {	
 				"Description", "Text Definition", "Annotation", "Annotation Count"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

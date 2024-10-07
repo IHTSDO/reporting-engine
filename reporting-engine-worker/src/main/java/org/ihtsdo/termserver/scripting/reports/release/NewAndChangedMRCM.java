@@ -42,7 +42,7 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 				"MRCM Attribute Domain",
 				"MRCM Attribute Range"
 				};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

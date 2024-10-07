@@ -43,7 +43,7 @@ public class SEP_Laterality_RefsetUpdates extends TermServerReport implements Re
 				"Summary",
 				"SEP Updates",
 				"Lateralizable Updates"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

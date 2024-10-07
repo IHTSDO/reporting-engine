@@ -69,7 +69,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				"Summary",
 				"Pattern 11 Detail"};
 		cache = gl.getAncestorsCache();
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

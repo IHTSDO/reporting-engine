@@ -76,7 +76,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				"Repeated Attribute - Illegal",
 				"Repeated Attribute - Singles"
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 
 	@Override
