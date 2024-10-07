@@ -434,7 +434,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				"Misaligned Both",
 				"Excluded Concepts",
 				"Aligned Concepts"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		outputMetaData();
 	}
 	

@@ -62,7 +62,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateGrouperSubstances();
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		bannedMpParents = new ArrayList<>();
 		bannedMpParents.add(gl.getConcept("763158003 |Medicinal product (product)|"));

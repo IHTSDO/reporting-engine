@@ -65,7 +65,7 @@ public class CisReconciliation extends TermServerReport {
 											"Missing Ids",
 											"Incorrect Status",
 											"Corrective Action"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 }
 
 	private void importDbState() throws IOException {

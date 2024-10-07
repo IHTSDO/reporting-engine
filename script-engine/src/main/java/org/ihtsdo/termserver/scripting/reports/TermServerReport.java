@@ -45,7 +45,7 @@ public abstract class TermServerReport extends TermServerScript {
 			LOGGER.info("Populating map of unpromoted change components");
 			unpromotedChangesHelper.populateUnpromotedChangesMap(project, getArchiveManager().isLoadOtherReferenceSets());
 		}
-		super.postInit(tabNames, columnHeadings, csvOutput);
+		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	@Override

@@ -77,7 +77,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 				"No viable changes",
 				"Repeated Attribute - Illegal",
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 
 	@Override

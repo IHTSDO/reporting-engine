@@ -62,7 +62,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		for (int i=0; i< tabNames.length; i++) {
 			columnHeadings[i] = "Concept, FSN, SemTag, Affected Component, Component Active, Snapshot vs Generated";
 		}
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

@@ -45,7 +45,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 				"ConceptId, FSN, SemTag, Has Stated Changes, Has Inferred Changes, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count (Ignoring skipped types), Concern"};
 		String[] tabNames = new String[] {	
 				"Comparing MAIN to " + project.getKey()};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
