@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -440,7 +439,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				"Misaligned Both",
 				"Excluded Concepts",
 				"Aligned Concepts"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		outputMetaData();
 	}
 	

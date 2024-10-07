@@ -55,7 +55,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				"Attribute Details",
 				"Spotlight Attribute SummaryCounts"};
 		summaryTabIdx = SECONDARY_REPORT;
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {

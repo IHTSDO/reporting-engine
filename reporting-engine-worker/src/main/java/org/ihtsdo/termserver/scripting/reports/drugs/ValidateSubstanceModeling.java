@@ -42,7 +42,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override
