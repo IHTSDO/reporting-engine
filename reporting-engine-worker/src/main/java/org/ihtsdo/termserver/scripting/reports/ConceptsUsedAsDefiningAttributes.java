@@ -79,7 +79,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 				"Concepts using Attribute Values",
 				"Attributes of Interest"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		if (!StringUtils.isEmpty(outOfScopeECL)) {
 			outOfScope = findConcepts(outOfScopeECL);
