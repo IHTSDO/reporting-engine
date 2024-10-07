@@ -69,7 +69,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		String[] tabNames = new String[]{
 			"Splicing"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

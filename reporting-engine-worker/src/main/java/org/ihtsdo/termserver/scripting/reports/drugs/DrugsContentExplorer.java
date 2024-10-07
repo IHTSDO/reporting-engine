@@ -67,7 +67,7 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 		String[] tabNames = new String[] {	
 				"Drugs Content Explored"
 				};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	private String[] getDefaultDrugClasses() {

@@ -46,7 +46,7 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 												"Template Name, Invalid Reason"};
 		String[] tabNames = new String[] {	"Template List", 
 											"Invalid Templates"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

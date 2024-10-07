@@ -73,7 +73,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				"SCTID, FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data, Data"};
 		String[] tabNames = new String[] {	
 				"Summary", "Issues"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

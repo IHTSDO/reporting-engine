@@ -41,7 +41,7 @@ public class FsnPtAlignmentStats extends TermServerReport implements ReportClass
 				"SCTID, FSN, SemTag, FSN, PT",};
 		String[] tabNames = new String[] {	"Summary",
 				"Details"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

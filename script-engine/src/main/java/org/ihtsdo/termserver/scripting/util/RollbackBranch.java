@@ -20,7 +20,7 @@ public class RollbackBranch extends TermServerReport {
 		try {
 			ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist Kung Foo
 			importer.init(args);
-			importer.postInit(new String[] {"Actions"}, new String[] {"Branch, HeadTimestamp, BaseTimestamp, Status, Action"}, false);
+			importer.postInit(new String[] {"Actions"}, new String[] {"Branch, HeadTimestamp, BaseTimestamp, Status, Action"});
 			importer.rollbackBranch();
 		} finally {
 			importer.finish();

@@ -73,7 +73,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 				"No changes required",
 				"Repeated Attribute - Illegal",
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 
 	@Override

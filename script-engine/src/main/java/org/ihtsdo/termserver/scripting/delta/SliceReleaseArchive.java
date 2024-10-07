@@ -62,7 +62,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		String[] tabNames = new String[]{
 			"Splicing"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

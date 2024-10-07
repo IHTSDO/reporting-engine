@@ -39,7 +39,7 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 				"Records Processed",
 				"Records Skipped"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		startingPoint = gl.getConcept("1222584008 |American Joint Committee on Cancer allowable value (qualifier value)| ");
 	}
 

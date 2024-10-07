@@ -242,7 +242,7 @@ public class PublishSctids extends TermServerReport {
 		String[] tabNames = new String[] {	"Summary",
 											"Batch Request/Response",
 											"SCTID Detail"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 

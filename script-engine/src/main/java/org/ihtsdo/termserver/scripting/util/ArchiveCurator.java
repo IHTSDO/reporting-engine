@@ -51,8 +51,8 @@ public class ArchiveCurator extends TermServerReport {
                             "Code System, Status, Comment,",
                             "Code System, Effective Time, Status, Time (seconds), Comment,",
                             "Code System, Effective Time, Package Name"
-                    },
-                    false);
+                    }
+            );
             curator.curateArchives();
         } finally {
             curator.finish();

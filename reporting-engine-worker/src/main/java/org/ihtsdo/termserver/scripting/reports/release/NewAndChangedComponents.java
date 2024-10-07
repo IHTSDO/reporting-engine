@@ -233,7 +233,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			traceabilityService.setBranchPath(project.getBranchPath());
 		}
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

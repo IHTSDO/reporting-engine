@@ -42,7 +42,7 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Groups"};
 		String[] tabNames = new String[] {	"Issues"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

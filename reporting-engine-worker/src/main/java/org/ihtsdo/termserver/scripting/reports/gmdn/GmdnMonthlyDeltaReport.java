@@ -131,7 +131,7 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
                 "Term Code, Term Name, Term Definition, Term Status, Created Date, Modified Date"
         };
 
-        super.postInit(spreadsheetTabNames, spreadsheetColumnHeadings, false);
+        super.postInit(spreadsheetTabNames, spreadsheetColumnHeadings);
     }
 
     @Override

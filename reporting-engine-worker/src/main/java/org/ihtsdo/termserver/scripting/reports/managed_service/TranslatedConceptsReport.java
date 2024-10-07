@@ -64,7 +64,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		}
 		String[] tabNames = new String[] {	
 				"Translated Concepts"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	private Set<String> getLanguagesFromDescriptions() {

@@ -54,7 +54,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 		String[] columnHeadings = new String[] {
 				"Id, Type, Action, Created Date, Promoted Date, Task, Author, Highest Promoted Branch, Concept, Component",
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 		
 		traceabilityService = new MultiDetailTraceabilityService(jobRun, this);
 		//Do not set a search path because we want to know about all activity, not just

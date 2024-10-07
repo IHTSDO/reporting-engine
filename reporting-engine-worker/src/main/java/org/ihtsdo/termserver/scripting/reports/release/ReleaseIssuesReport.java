@@ -248,7 +248,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		deprecatedHierarchies = new HashSet<>();
 		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
 	

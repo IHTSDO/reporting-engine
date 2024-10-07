@@ -45,7 +45,7 @@ public class ChangesInEclSelectSinceRelease extends TermServerReport {
 				"Gained", 
 				"Lost" , 
 				"Unchanged"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	private void runChangesInEclSelectSinceReleaseReport() throws TermServerScriptException {

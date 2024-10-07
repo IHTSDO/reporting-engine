@@ -86,7 +86,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 				"Components Ignored"
 		};
 
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	private void validateScriptArguments() throws TermServerScriptException {

@@ -52,7 +52,7 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 		String[] columnHeadings = new String[] {
 				"SCTID, FSN, SemTag, Component Type, Parent Component, Component Details,",
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

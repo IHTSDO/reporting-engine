@@ -49,7 +49,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 
 		String[] tabNames = new String[] {	
 				"Untranslated Concepts"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

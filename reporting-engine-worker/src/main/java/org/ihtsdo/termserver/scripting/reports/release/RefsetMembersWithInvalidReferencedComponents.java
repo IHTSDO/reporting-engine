@@ -122,8 +122,8 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 
 	public void postInit() throws TermServerScriptException {
 		super.postInit(REPORT_TAB_NAMES,
-				new String[]{REPORT_TAB_ISSUES_COLUMNS, REPORT_TAB_SUMMARY_COLUMNS},
-				false);
+				new String[]{REPORT_TAB_ISSUES_COLUMNS, REPORT_TAB_SUMMARY_COLUMNS}
+		);
 	}
 
 	public void runJob() throws TermServerScriptException {

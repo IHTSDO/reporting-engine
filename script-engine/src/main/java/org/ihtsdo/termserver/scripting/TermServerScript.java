@@ -471,7 +471,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		postInit(tabNames, columnHeadings, csvOutput);
 	}
 
-	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+	//Need to ensure that we don't end up calling a derivative version of this method and get into a loop
+	//Descendant classes should override the version that does not take the csvOutput
+	public final void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (jobRun != null && jobRun.getParamValue(SUB_HIERARCHY) != null) {
 			subHierarchy = gl.getConcept(jobRun.getMandatoryParamValue(SUB_HIERARCHY));
 			//RP-4 And post that back in, so the FSN is always populated

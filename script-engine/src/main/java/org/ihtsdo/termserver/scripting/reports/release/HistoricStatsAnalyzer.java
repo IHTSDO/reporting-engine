@@ -77,7 +77,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 			tabNames[i-1] = releasesToAnalyse[i-1] + " - " + releasesToAnalyse[i];
 			tabNames[i] = releasesToAnalyse[i-1] + " - " + releasesToAnalyse[i] + " Perc";
 		}
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

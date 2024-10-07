@@ -30,7 +30,7 @@ public class TextDefinitionsPresentAndMissing extends TermServerReport implement
 		String[] tabNames = new String[] {	"Text Definitions",
 											"Missing Text Definitions"};
 
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

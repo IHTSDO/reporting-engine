@@ -58,7 +58,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 		populateGrouperSubstances();
 		populateBaseMDFMap();
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		presAttributes.add(HAS_PRES_STRENGTH_VALUE);
 		presAttributes.add(HAS_PRES_STRENGTH_UNIT);

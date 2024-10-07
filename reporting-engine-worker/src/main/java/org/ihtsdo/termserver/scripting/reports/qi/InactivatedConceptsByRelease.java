@@ -55,7 +55,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 		Arrays.fill(columnHeadings,"Id, FSN, SemTag, EffectiveTime, Indicators, Associations, Author, Branch, Date, Spare");
 		String[] tabNames = releaseETs.toArray(new String[releases]);
 		tabNames[0] = "Current";
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		traceabilityService = new SingleTraceabilityService(jobRun, this);
 	}
 	

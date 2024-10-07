@@ -42,7 +42,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 		String[] tabNames = new String[] {	"New Observable Entities",
 				"New Evaluation Procedures"};
 		semTagExclusions.add("(regime/therapy)");
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override
