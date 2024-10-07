@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
@@ -54,7 +53,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 				"Id, FSN, SemTag, Reason, Assoc Type, Assoc Value"};
 		String[] tabNames = new String[] {	
 				"Concepts Inactivated"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

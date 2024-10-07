@@ -1,13 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +48,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 				"ConceptId, FSN, SemTag, Has Stated Changes, Has Inferred Changes, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count (Ignoring skipped types), Concern"};
 		String[] tabNames = new String[] {	
 				"Comparing MAIN to " + project.getKey()};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);

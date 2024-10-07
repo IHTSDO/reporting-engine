@@ -1,27 +1,19 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 
 import org.slf4j.Logger;
@@ -69,7 +61,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateGrouperSubstances();
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		bannedMpParents = new ArrayList<>();
 		bannedMpParents.add(gl.getConcept("763158003 |Medicinal product (product)|"));
