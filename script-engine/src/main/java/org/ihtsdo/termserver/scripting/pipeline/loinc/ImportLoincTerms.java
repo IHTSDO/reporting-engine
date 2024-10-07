@@ -51,7 +51,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"Property, In Scope, Included, Included in Top 2K, Excluded, Excluded in Top 2K"
 		};
 
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		scheme = gl.getConcept(SCTID_LOINC_SCHEMA);
 		externalContentModule = SCTID_LOINC_EXTENSION_MODULE;
 		namespace = "1010000";

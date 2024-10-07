@@ -48,7 +48,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 		String[] columnHeadings = new String[] {
 				"id, active, refCompId, PT, replacementValue, mapTarget, Usage Count, PartName, PartType, attribute, attribtPT, replacementType, , , "
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	private void runReport() throws TermServerScriptException, IOException {

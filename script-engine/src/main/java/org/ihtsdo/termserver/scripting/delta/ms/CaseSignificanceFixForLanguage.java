@@ -58,7 +58,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				"Changed",
 				"Unchanged",
 				"Special"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		gl.setAllComponentsClean();
 	}
 
