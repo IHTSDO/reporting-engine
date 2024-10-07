@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
