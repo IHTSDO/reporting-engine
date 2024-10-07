@@ -22,7 +22,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "< 195967001 |Asthma (disorder)|");
+		params.put(ECL, "< 71388002 |Procedure (procedure)| : 424876005 |Surgical approach (attribute)| = *");
 		TermServerScript.run(FindConceptsAcrossAllExtensions.class, args, params);
 	}
 	
@@ -64,7 +64,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 				.mapToObj(i -> "SCTID, FSN, SemTag,")
 				.toArray(String[]::new);
 		columnHeadings[0] = "Extension, count";
-		postInit(tabList.toArray(String[]::new), columnHeadings, false);
+		postInit(tabList.toArray(String[]::new), columnHeadings);
 		
 	}
 	
@@ -91,6 +91,10 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	@Override
 	public void runJob() throws TermServerScriptException {
 		int tabIdx = 0;
+
+		//Bracket the ECL so that the module filter is applied to the whole expression, not just the last clause
+		subsetECL = "(" + subsetECL + ")";
+
 		for (CodeSystem cs : codeSystems) {
 			tabIdx++;
 
