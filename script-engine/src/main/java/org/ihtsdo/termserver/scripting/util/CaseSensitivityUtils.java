@@ -70,7 +70,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	public void init() throws TermServerScriptException {
 		loadCSWords();
-
 		if (substancesAndOrganismsAreSourcesOfTruth) {
 			sourceOfTruthHierarchies = List.of(SUBSTANCE, ORGANISM);
 			for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
