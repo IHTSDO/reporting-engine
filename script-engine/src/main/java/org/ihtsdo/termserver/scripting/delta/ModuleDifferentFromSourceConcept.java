@@ -54,7 +54,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
                 "Summary"
         };
 
-        super.postInit(tabNames, columnHeadings, false);
+        super.postInit(tabNames, columnHeadings);
     }
 
     private void process() throws TermServerScriptException {

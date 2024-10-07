@@ -65,7 +65,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		ptc = gl.getPreviousTC();
 		tc = gl.getTransitiveClosure();
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

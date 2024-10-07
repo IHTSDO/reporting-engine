@@ -69,7 +69,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 		String[] columnHeadings = new String[]{
 				columnStr
 				};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	protected void determineConceptsOfInterest() throws TermServerScriptException {
