@@ -58,7 +58,8 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(CONCEPT_INACTIVATIONS, "<< 48694002 |Anxiety| OR 1237275009");  //Found in the Nursing Issues Refset && EDQM respectively
+		// << 48694002 |Anxiety| OR 1237275009  //Found in the Nursing Issues Refset && EDQM respectively
+		params.put(CONCEPT_INACTIVATIONS, "246454002");
 		params.put(INCLUDE_INFERRED, "false");
 		TermServerScript.run(InactivationImpactAssessment.class, args, params);
 	}
@@ -201,11 +202,19 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private void checkAttributeUsage() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActiveSafely() && !inactivatingConcepts.contains(c)) {
-				Set<Relationship> rels = includeInferred ? c.getRelationships() : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-				for (Relationship r : rels) {
-					if (r.isNotConcrete() && Boolean.TRUE.equals(r.isActive()) && !r.getType().equals(IS_A) && inactivatingConcepts.contains(r.getTarget())) {
-						report(r.getTarget(), "used as attribute target value", c, r);
-					}
+				checkAttributeUsage(c);
+			}
+		}
+	}
+
+	private void checkAttributeUsage(Concept c) throws TermServerScriptException {
+		Set<Relationship> rels = includeInferred ? c.getRelationships() : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		for (Relationship r : rels) {
+			if (Boolean.TRUE.equals(r.isActive()) && !r.getType().equals(IS_A)) {
+				if (inactivatingConcepts.contains(r.getType())) {
+					report(r.getType(), "used as attribute type", c, r);
+				} else if (r.isNotConcrete() && inactivatingConcepts.contains(r.getTarget())) {
+					report(r.getTarget(), "used as attribute target value", c, r);
 				}
 			}
 		}
