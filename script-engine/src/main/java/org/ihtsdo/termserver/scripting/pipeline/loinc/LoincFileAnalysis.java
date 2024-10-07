@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
@@ -38,7 +37,7 @@ public class LoincFileAnalysis extends LoincScript {
 
 	public void postInit() throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
-		super.postInit(new String[]{"Analysis"}, new String[]{"Property, Count, In Preview"}, false);
+		super.postInit(new String[]{"Analysis"}, new String[]{"Property, Count, In Preview"});
 	}
 
 	public void reportFileAnalysis(int fileIdx) throws Exception {

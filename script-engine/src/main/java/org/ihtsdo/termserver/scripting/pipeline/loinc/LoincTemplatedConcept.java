@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
@@ -99,7 +100,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		removals = Arrays.asList("(property)");
 		typeValueTermRemovalMap.put(PROPERTY_ATTRIB, removals);
 
-
 		removals = Arrays.asList("clade", "class", "division", "domain", "family", "genus",
 				"infraclass", "infraclass", "infrakingdom", "infraorder", "infraorder", "kingdom", "order", 
 				"phylum", "species", "subclass", "subdivision", "subfamily", "subgenus", "subkingdom", 
@@ -161,7 +161,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	@Override
-	protected String populateTemplateItem(String templateItem, String ptTemplateStr) {
+	protected String populateTemplateItem(String templateItem, String ptTemplateStr) throws TermServerScriptException {
 		String regex = "\\[" + templateItem + "\\]";
 		if (templateItem.equals(LOINC_PART_TYPE_METHOD)
 				&& hasProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM)) {
@@ -181,7 +181,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
 					.replace(" in ", "");
 		} else if (slotTermMap.containsKey(templateItem)) {
-			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
+			String itemStr = slotTermMap.get(templateItem);
+			if (!CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
+				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+			}
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
 			//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
 			if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
@@ -235,7 +238,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//Can we make this lower case?
 			if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) ||
 					targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
-				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+				//We'll decapitalise the first letter here, but only if it's not a proper noun
+				if (!CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
+					itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+				}
 			}
 			return itemStr;
 		} catch (TermServerScriptException e) {
@@ -281,9 +287,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					continue;
 				}
 				String removalWithSpaces = " " + removal + " ";
-				term = term.replaceAll(removalWithSpaces, " ");
+				term = term.replace(removalWithSpaces, " ");
+
+				//Try again capitalised
 				removalWithSpaces = " " + StringUtils.capitalizeFirstLetter(removal) + " ";
-				term = term.replaceAll(removalWithSpaces, " ");
+				term = term.replace(removalWithSpaces, " ");
 			}
 			term = term.trim();
 		}
