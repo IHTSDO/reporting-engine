@@ -66,7 +66,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 				"Id, FSN, SemTag, Missing Translation(s), ModuleId"};
 		String[] tabNames = new String[] {	
 				"Concepts missing translations"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	private Set<String> getLanguagesFromDescriptions() {
