@@ -39,13 +39,13 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 	}
 	
-	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		if (unpromotedChangesOnly) {
 			unpromotedChangesHelper = new UnpromotedChangesHelper(this);
 			LOGGER.info("Populating map of unpromoted change components");
 			unpromotedChangesHelper.populateUnpromotedChangesMap(project, getArchiveManager().isLoadOtherReferenceSets());
 		}
-		super.postInit(tabNames, columnHeadings, csvOutput);
+		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	@Override

@@ -20,9 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -133,7 +131,7 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
                 "Term Code, Term Name, Term Definition, Term Status, Created Date, Modified Date"
         };
 
-        super.postInit(spreadsheetTabNames, spreadsheetColumnHeadings, false);
+        super.postInit(spreadsheetTabNames, spreadsheetColumnHeadings);
     }
 
     @Override
