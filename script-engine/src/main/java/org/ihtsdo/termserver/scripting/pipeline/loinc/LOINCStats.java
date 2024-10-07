@@ -59,7 +59,7 @@ public class LOINCStats extends TermServerReport {
 				"Summary Counts",
 				"Details"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		loadFiles();
 	}
 

@@ -180,7 +180,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	
 	protected abstract void applyTemplateSpecificTermingRules(Description pt);
 
-	protected String populateTermTemplateFromSlots(String ptTemplateStr) {
+	protected String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
 		//Do we have any slots left to fill?  Find their attribute types via the slot map
 		String [] templateItems = org.apache.commons.lang3.StringUtils.substringsBetween(ptTemplateStr,"[", "]");
 		if (templateItems == null) {
@@ -193,7 +193,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		return ptTemplateStr;
 	}
 
-	protected String populateTemplateItem(String templateItem, String ptTemplateStr) {
+	protected String populateTemplateItem(String templateItem, String ptTemplateStr) throws TermServerScriptException {
 		String regex = "\\[" + templateItem + "\\]";
 		if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
