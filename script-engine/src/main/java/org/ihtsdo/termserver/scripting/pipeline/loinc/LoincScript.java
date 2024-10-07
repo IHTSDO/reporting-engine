@@ -10,7 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 import org.slf4j.Logger;
@@ -36,8 +35,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		throw new IllegalStateException("Please override getTabNames() in your script");
 	}
 
-	@Override
-	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		tabForFinalWords = SECONDARY_REPORT;
 		
 		//Just temporarily, we need to create some concepts that aren't visible yet
@@ -46,7 +44,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 		
-		super.postInit(GFOLDER_LOINC, tabNames, columnHeadings, csvOutput);
+		super.postInit(GFOLDER_LOINC, tabNames, columnHeadings, false);
 	}
 
 	@Override
