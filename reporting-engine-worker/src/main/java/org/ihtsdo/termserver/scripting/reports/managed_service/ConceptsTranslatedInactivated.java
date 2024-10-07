@@ -49,7 +49,7 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 				"Id, FSN, SemTag, Translation(s), Reason, Assoc Type, Assoc Value, Translation(s)"};
 		String[] tabNames = new String[] {	
 				"Concepts Inactivated"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

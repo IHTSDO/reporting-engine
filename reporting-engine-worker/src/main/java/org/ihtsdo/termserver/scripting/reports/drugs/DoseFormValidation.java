@@ -60,7 +60,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateAcceptableDoseFormMaps();
 		
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		
 		if (jobRun.getParamBoolean(RECENT_CHANGES_ONLY)) {
 			isRecentlyTouchedConceptsOnly = true;

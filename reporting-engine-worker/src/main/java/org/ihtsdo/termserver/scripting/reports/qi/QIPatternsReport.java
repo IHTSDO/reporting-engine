@@ -51,7 +51,7 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
 		cache = gl.getAncestorsCache();
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

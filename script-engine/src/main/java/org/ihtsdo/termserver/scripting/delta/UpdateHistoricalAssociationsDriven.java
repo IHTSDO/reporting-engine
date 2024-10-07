@@ -76,7 +76,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				"Inactivated without indicator",*/
 				"Final State"
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 
 	@Override

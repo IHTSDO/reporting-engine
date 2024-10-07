@@ -255,8 +255,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 
-	@Override
-	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		super.postInit(tabNames, columnHeadings, false);
 		if (!dryRun) {
 			initialiseFileHeaders();
@@ -272,7 +271,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		String[] tabNames = new String[]{
 			"Delta Records Created"
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 
 	@Override

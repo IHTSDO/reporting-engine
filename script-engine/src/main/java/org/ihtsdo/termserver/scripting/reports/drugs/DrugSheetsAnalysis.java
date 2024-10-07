@@ -97,7 +97,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 		columnHeadings.add("FileA, DrugA, Overlap, DrugB, FileB");
 		overlapTab = tabNames.size() - 1;
 		
-		super.postInit(tabNames.toArray(new String[0]), columnHeadings.toArray(new String[0]), false);
+		super.postInit(tabNames.toArray(new String[0]), columnHeadings.toArray(new String[0]));
 	}
 
 	private void analyzeDrugSheets() throws TermServerScriptException, FileNotFoundException {

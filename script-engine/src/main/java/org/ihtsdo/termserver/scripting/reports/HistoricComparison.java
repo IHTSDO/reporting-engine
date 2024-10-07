@@ -55,7 +55,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 												"SCTID, FSN, Issue"};
 		String[] tabNames = new String[] {	"Summary Counts", 
 											"Detail"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

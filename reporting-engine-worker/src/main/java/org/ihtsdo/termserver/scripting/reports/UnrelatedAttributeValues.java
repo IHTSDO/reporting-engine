@@ -51,7 +51,7 @@ public class UnrelatedAttributeValues extends TermServerReport implements Report
 				};
 		String[] tabNames = new String[] {	"Most Popular GrandParents",
 				"Concepts with unpopular grandparents"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 	
 	@Override

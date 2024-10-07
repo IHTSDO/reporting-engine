@@ -83,7 +83,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				"Module Summary",
 				"Per Refset Counts",
 				"Concepts Inactivated in Refsets"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	private void removeEmptyAndNoScopeRefsets() throws TermServerScriptException {

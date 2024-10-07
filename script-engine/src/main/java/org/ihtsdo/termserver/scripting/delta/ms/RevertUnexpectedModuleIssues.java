@@ -71,7 +71,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				"Id, FSN, SemTag, Action, ComponentType, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override
