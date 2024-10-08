@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> {
 
 	private String component;
-	private String property;
+	//Note that property is a field inherited from ExternalConcept
 	private String timeAspct;
 	private String system;
 	private String scaleType;
@@ -45,7 +45,7 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 	private String associatedObservations;
 	private String versionFirstReleased;
 	private String validHL7AttachmentRequest;
-	private String displayName;
+	private String shortDisplayName;
 	
 	private LoincTerm() {
 	}
@@ -75,9 +75,13 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 	public void setComponent(String component) {
 		this.component = component;
 	}
+
+	@Override
 	public String getProperty() {
 		return property;
 	}
+
+	@Override
 	public void setProperty(String property) {
 		this.property = property;
 	}
@@ -303,12 +307,19 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 	public void setValidHL7AttachmentRequest(String validHL7AttachmentRequest) {
 		this.validHL7AttachmentRequest = validHL7AttachmentRequest;
 	}
-	public String getDisplayName() {
-		return displayName;
+
+	public String getLongDisplayName() {
+		return getLongCommonName();
 	}
-	public void setDisplayName(String displayName) {
-		this.displayName = displayName;
+
+	public void setShortDisplayName(String shortDisplayName) {
+		this.shortDisplayName = shortDisplayName;
 	}
+
+	public String getShortDisplayName() {
+		return this.shortDisplayName;
+	}
+
 	public static LoincTerm parse(String[] items) {
 		LoincTerm loincTerm = new LoincTerm();
 		loincTerm.setLoincNum(items[0]);
@@ -321,37 +332,37 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 		loincTerm.setLoincClass(items[7]);
 		loincTerm.setVersionLastChanged(items[8]);
 		loincTerm.setChngType(items[9]);
-		//loincTerm.setDefinitionDescription(items[10]);
+		//loincTerm.setDefinitionDescription(items[10])
 		loincTerm.setStatus(items[11]);
-		//loincTerm.setConsumerName(items[12]);
+		//loincTerm.setConsumerName(items[12])
 		loincTerm.setClassType(items[13]);
-		//loincTerm.setFormula(items[14]);
-		//loincTerm.setExmplAnswers(items[15]);
-		//loincTerm.setSurveyQuestText(items[16]);
-		//loincTerm.setSurveyQuestSrc(items[17]);
-		//loincTerm.setUnitsRequired(items[18]);
-		//loincTerm.setRelatedNames2(items[19]);
-		//loincTerm.setShortName(items[20]);
+		//loincTerm.setFormula(items[14])
+		//loincTerm.setExmplAnswers(items[15])
+		//loincTerm.setSurveyQuestText(items[16])
+		//loincTerm.setSurveyQuestSrc(items[17])
+		//loincTerm.setUnitsRequired(items[18])
+		//loincTerm.setRelatedNames2(items[19])
+		//loincTerm.setShortName(items[20])
 		loincTerm.setOrderObs(items[21]);
-		//loincTerm.setHl7FieldSubfieldId(items[22]);
-		//loincTerm.setExternalCopyrightNotice(items[23]);
-		//loincTerm.setExampleUnits(items[24]);
+		//loincTerm.setHl7FieldSubfieldId(items[22])
+		//loincTerm.setExternalCopyrightNotice(items[23])
+		//loincTerm.setExampleUnits(items[24])
 		loincTerm.setLongCommonName(items[25]);
-		//loincTerm.setExampleUCUMUnits(items[26]);
+		//loincTerm.setExampleUCUMUnits(items[26])
 		loincTerm.setStatusReason(items[27]);
 		loincTerm.setStatusText(items[28]);
-		//loincTerm.setChangeReasonPublic(items[29]);
+		//loincTerm.setChangeReasonPublic(items[29])
 		loincTerm.setCommonTestRank(items[30]);
 		loincTerm.setCommonOrderRank(items[31]);
 		loincTerm.setCommonSItestRank(items[32]);
-		//loincTerm.setHl7AttachmentStructure(items[33]);
-		//loincTerm.setExternalCopyrightLink(items[34]);
+		//loincTerm.setHl7AttachmentStructure(items[33])
+		//loincTerm.setExternalCopyrightLink(items[34])
 		loincTerm.setPanelType(items[35]);
-		//loincTerm.setAskatOrderEntry(items[36]);
-		//loincTerm.setAssociatedObservations(items[37]);
-		//loincTerm.setVersionFirstReleased(items[38]);
-		//loincTerm.setValidHL7AttachmentRequest(items[39]);
-		loincTerm.setDisplayName(items[40]);
+		//loincTerm.setAskatOrderEntry(items[36])
+		//loincTerm.setAssociatedObservations(items[37])
+		//loincTerm.setVersionFirstReleased(items[38])
+		//loincTerm.setValidHL7AttachmentRequest(items[39])
+		loincTerm.setShortDisplayName(items[40]);
 		return loincTerm;
 	}
 	
@@ -367,49 +378,49 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 		loincTerm.setLoincClass(csv.get(7));
 		loincTerm.setVersionLastChanged(csv.get(8));
 		loincTerm.setChngType(csv.get(9));
-		//loincTerm.setDefinitionDescription(csv.get(10));
+		//loincTerm.setDefinitionDescription(csv.get(10))
 		loincTerm.setStatus(csv.get(11));
-		//loincTerm.setConsumerName(csv.get(12));
+		//loincTerm.setConsumerName(csv.get(12))
 		loincTerm.setClassType(csv.get(13));
-		//loincTerm.setFormula(csv.get(14));
-		//loincTerm.setExmplAnswers(csv.get(15));
-		//loincTerm.setSurveyQuestText(csv.get(16));
-		//loincTerm.setSurveyQuestSrc(csv.get(17));
-		//loincTerm.setUnitsRequired(csv.get(18));
-		//loincTerm.setRelatedNames2(csv.get(19));
-		//loincTerm.setShortName(csv.get(20));
+		//loincTerm.setFormula(csv.get(14))
+		//loincTerm.setExmplAnswers(csv.get(15))
+		//loincTerm.setSurveyQuestText(csv.get(16))
+		//loincTerm.setSurveyQuestSrc(csv.get(17))
+		//loincTerm.setUnitsRequired(csv.get(18))
+		//loincTerm.setRelatedNames2(csv.get(19))
+		//loincTerm.setShortName(csv.get(20))
 		loincTerm.setOrderObs(csv.get(21));
-		//loincTerm.setHl7FieldSubfieldId(csv.get(22));
-		//loincTerm.setExternalCopyrightNotice(csv.get(23));
-		//loincTerm.setExampleUnits(csv.get(24));
+		//loincTerm.setHl7FieldSubfieldId(csv.get(22))
+		//loincTerm.setExternalCopyrightNotice(csv.get(23))
+		//loincTerm.setExampleUnits(csv.get(24))
 		loincTerm.setLongCommonName(csv.get(25));
-		//loincTerm.setExampleUCUMUnits(csv.get(26));
+		//loincTerm.setExampleUCUMUnits(csv.get(26))
 		loincTerm.setStatusReason(csv.get(27));
 		loincTerm.setStatusText(csv.get(28));
-		//loincTerm.setChangeReasonPublic(csv.get(29));
+		//loincTerm.setChangeReasonPublic(csv.get(29))
 		loincTerm.setCommonTestRank(csv.get(30));
 		loincTerm.setCommonOrderRank(csv.get(31));
 		
 		//Does not exist from LOINC 2.77
-		//loincTerm.setCommonSItestRank(csv.get(32));
-		//loincTerm.setHl7AttachmentStructure(csv.get(33));
-		//loincTerm.setExternalCopyrightLink(csv.get(34));
-		//loincTerm.setPanelType(csv.get(35));
-		//loincTerm.setAskatOrderEntry(csv.get(36));
-		//loincTerm.setAssociatedObservations(csv.get(37));
-		//loincTerm.setVersionFirstReleased(csv.get(38));
-		//loincTerm.setValidHL7AttachmentRequest(csv.get(39));
-		//loincTerm.setDisplayName(csv.get(40));
+		//loincTerm.setCommonSItestRank(csv.get(32))
+		//loincTerm.setHl7AttachmentStructure(csv.get(33))
+		//loincTerm.setExternalCopyrightLink(csv.get(34))
+		//loincTerm.setPanelType(csv.get(35))
+		//loincTerm.setAskatOrderEntry(csv.get(36))
+		//loincTerm.setAssociatedObservations(csv.get(37))
+		//loincTerm.setVersionFirstReleased(csv.get(38))
+		//loincTerm.setValidHL7AttachmentRequest(csv.get(39))
+		//loincTerm.setDisplayName(csv.get(40))
 		
 		
-		//loincTerm.setHl7AttachmentStructure(csv.get(32));
-		//loincTerm.setExternalCopyrightLink(csv.get(33));
-		//loincTerm.setPanelType(csv.get(34));
-		//loincTerm.setAskatOrderEntry(csv.get(35));
-		//loincTerm.setAssociatedObservations(csv.get(36));
-		//loincTerm.setVersionFirstReleased(csv.get(37));
-		//loincTerm.setValidHL7AttachmentRequest(csv.get(38));
-		loincTerm.setDisplayName(csv.get(39));
+		//loincTerm.setHl7AttachmentStructure(csv.get(32))
+		//loincTerm.setExternalCopyrightLink(csv.get(33))
+		//loincTerm.setPanelType(csv.get(34))
+		//loincTerm.setAskatOrderEntry(csv.get(35))
+		//loincTerm.setAssociatedObservations(csv.get(36))
+		//loincTerm.setVersionFirstReleased(csv.get(37))
+		//loincTerm.setValidHL7AttachmentRequest(csv.get(38))
+		loincTerm.setShortDisplayName(csv.get(39));
 		return loincTerm;
 	}
 	
@@ -440,7 +451,7 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 		String term = getComponent() + ":" + getProperty() + ":" +
 				getTimeAspct() + ":" + getSystem() + ":" + getScaleType() + ":" +
 				getMethodType();
-		term = term.replaceAll("::", ":");
+		term = term.replace("::", ":");
 		if (term.endsWith(":")) {
 			term = term.substring(0, term.length() - 1);
 		}

@@ -29,7 +29,7 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		super(externalConcept);
 		setPreferredTermTemplate(bracket(NAME));
 		externalConcept.setProperty("Vaccine");
-		slotTermMap.put(NAME, getNuvaVaccine().getDisplayName());
+		slotTermMap.put(NAME, getNuvaVaccine().getLongDisplayName());
 	}
 
 	@Override

@@ -238,7 +238,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 		highUsageIndicators[2] = loincTerms.stream()
 				.sorted()
-				.map(lt -> "(" + lt.getCommonTestRank() + ") " + lt.getLoincNum() + ": " + lt.getDisplayName() )
+				.map(lt -> "(" + lt.getCommonTestRank() + ") " + lt.getLoincNum() + ": " + lt.getLongDisplayName() )
 				.limit(5)
 				.collect(Collectors.joining(",\n"));
 

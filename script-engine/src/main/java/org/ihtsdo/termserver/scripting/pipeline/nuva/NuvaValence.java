@@ -58,7 +58,7 @@ public class NuvaValence extends NuvaConcept implements Comparable<NuvaValence> 
 	}
 
 	@Override
-	protected String getDisplayName() {
+	protected String getLongDisplayName() {
 		return enLabel;
 	}
 
