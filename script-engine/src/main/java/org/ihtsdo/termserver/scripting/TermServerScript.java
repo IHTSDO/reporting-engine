@@ -80,7 +80,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String subsetECL;
 	protected String overrideEclBranch = null;
 	protected Concept subHierarchy;
-	protected String[] excludeHierarchies;
+	protected List<Concept> excludeHierarchies;
 	protected boolean ignoreWhiteList = false;
 	protected boolean allowMissingExpectedModules = false;
 	protected boolean allowDirectoryInputFile = false;
@@ -1816,7 +1816,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		inputFiles.set(idx, file);
 	}
 
-	public void setExclusions(String[] exclusions) throws TermServerScriptException {
+	public void setExclusions(List<Concept> exclusions) throws TermServerScriptException {
 		this.excludeHierarchies = exclusions;
 	}
 	

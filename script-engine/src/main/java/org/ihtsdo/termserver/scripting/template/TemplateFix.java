@@ -126,14 +126,10 @@ abstract public class TemplateFix extends BatchFix {
 		if (exclusions == null) {
 			exclusions = new HashSet<>();
 		}
-		
-		if (excludeHierarchies == null) {
-			excludeHierarchies = new String[] {};
-		}
 
-		for (String thisExclude : excludeHierarchies) {
+		for (Concept thisExclude : excludeHierarchies) {
 			LOGGER.info("Setting exclusion of " + thisExclude + " subHierarchy.");
-			exclusions.addAll(gl.getConcept(thisExclude).getDescendants(NOT_SET));
+			exclusions.addAll(thisExclude.getDescendants(NOT_SET));
 		}
 		
 		//Note add words as lower case as we do all lower case matching

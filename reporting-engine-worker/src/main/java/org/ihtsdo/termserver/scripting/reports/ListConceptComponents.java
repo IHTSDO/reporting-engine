@@ -32,7 +32,7 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(CONCEPT_IDS,
-				"32001000087107");
+				"821000172102");
 		TermServerReport.run(ListConceptComponents.class, args, params);
 	}
 	
@@ -50,7 +50,7 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 	
 	public void postInit() throws TermServerScriptException {
 		String[] tabNames = new String[] {
-				"Concept Componentns",
+				"Concept Components",
 		};
 		String[] columnHeadings = new String[] {
 				"SCTID, FSN, SemTag, Component Type, Parent Component, Component Details,",

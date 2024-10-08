@@ -44,7 +44,7 @@ public class DrugsContentExplorer extends TermServerReport implements ReportClas
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		drugClassesOfInterest = getJob().getParameters().getValues(RESTRICT_TO_CLASSES);
+		drugClassesOfInterest = getJobRun().getParameters().getValues(RESTRICT_TO_CLASSES);
 		if (drugClassesOfInterest.isEmpty()) {
 			drugClassesOfInterest = Arrays.asList(defaultDrugClasses);
 		}

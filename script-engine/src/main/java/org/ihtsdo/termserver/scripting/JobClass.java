@@ -1,10 +1,13 @@
 package org.ihtsdo.termserver.scripting;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.context.ApplicationContext;
+
+import java.util.List;
 
 public interface JobClass {
 	
@@ -21,7 +24,7 @@ public interface JobClass {
 	
 	public String getReportName();
 
-	public void setExclusions(String[] exclusions) throws TermServerScriptException;
+	public void setExclusions(List<Concept> exclusions) throws TermServerScriptException;
 
 	public void setReportManager(ReportManager reportManager);
 }

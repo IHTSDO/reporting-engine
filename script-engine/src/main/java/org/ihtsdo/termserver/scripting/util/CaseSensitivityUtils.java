@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.*;
 
@@ -20,18 +21,37 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private static CaseSensitivityUtils singleton;
 
-	Map<String, Description> sourcesOfTruth = new HashMap<>();
-	List<String> properNouns = new ArrayList<>();
-	Map<String, List<String>> properNounPhrases = new HashMap<>();
-	List<String> knownLowerCase = new ArrayList<>();
-	Pattern numberLetter = Pattern.compile("\\d[a-z]");
-	Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
-	Set<String> wildcardWords = new HashSet<>();
-	File inputFile = new File("resources/cs_words.tsv");
+	private final Map<String, Description> sourcesOfTruth = new HashMap<>();
+	private final List<String> properNouns = new ArrayList<>();
+	private final Map<String, List<String>> properNounPhrases = new HashMap<>();
+	private final List<String> knownLowerCase = new ArrayList<>();
+	private final Pattern numberLetter = Pattern.compile("\\d[a-z]");
+	private final Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
+	private final Set<String> wildcardWords = new HashSet<>();
+	private final File inputFile = new File("resources/cs_words.tsv");
+	private boolean substancesAndOrganismsAreSourcesOfTruth = true;
+	private List<Concept> sourceOfTruthHierarchies;
+
+	private static String[] taxonomyWordsArray = new String[] { "Clade","Class","Division",
+			"Domain","Family","Genus","Infraclass",
+			"Infraclass","Infrakingdom","Infraorder",
+			"Infraorder","Kingdom","Order","Phylum",
+			"Species","Subclass","Subdivision",
+			"Subfamily","Subgenus","Subkingdom",
+			"Suborder","Subphylum","Subspecies",
+			"Superclass","Superdivision","Superfamily",
+			"Superkingdom","Superorder"};
+
+	private static Set<String> taxonomyWords = new HashSet<>(Arrays.asList(taxonomyWordsArray));
 
 	public static CaseSensitivityUtils get() throws TermServerScriptException {
+		return get(true);
+	}
+
+	public static CaseSensitivityUtils get(boolean substancesAndOrganismsAreSourcesOfTruth) throws TermServerScriptException {
 		if (singleton == null) {
 			singleton = new CaseSensitivityUtils();
+			singleton.substancesAndOrganismsAreSourcesOfTruth = substancesAndOrganismsAreSourcesOfTruth;
 			singleton.init();
 		}
 		return singleton;
@@ -40,20 +60,58 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	public void init() throws TermServerScriptException {
 		loadCSWords();
 
-		List<Concept> sourceOfTruthHierarchies = List.of(SUBSTANCE, ORGANISM);
-		for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
-			LOGGER.info ("Processing case sensitivity source of truth: {}", sourceOfTruth);
-			for (Concept c : sourceOfTruth.getDescendants(NOT_SET)) {
-				for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
-					if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-						String term = d.getTerm();
-						if (d.getType().equals(DescriptionType.FSN)) {
-							term = SnomedUtilsBase.deconstructFSN(term)[0];
-						}
-						sourcesOfTruth.put(term, d);
+		if (substancesAndOrganismsAreSourcesOfTruth) {
+			sourceOfTruthHierarchies = List.of(SUBSTANCE, ORGANISM);
+			for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
+				processSourceOfTruth(sourceOfTruth);
+			}
+		} else {
+			sourceOfTruthHierarchies = new ArrayList<>();
+		}
+	}
+
+	public boolean isSourceOfTruthHierarchy(Concept hierarchy) {
+		return sourceOfTruthHierarchies.contains(hierarchy);
+	}
+
+	private void processSourceOfTruth(Concept sourceOfTruth) throws TermServerScriptException {
+		LOGGER.info("Processing case sensitivity source of truth: {}", sourceOfTruth);
+		for (Concept c : sourceOfTruth.getDescendants(NOT_SET)) {
+			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
+				String term = d.getTerm();
+				if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+					if (d.getType().equals(DescriptionType.FSN)) {
+						term = SnomedUtilsBase.deconstructFSN(term)[0];
 					}
+					sourcesOfTruth.put(term, d);
+				}
+
+				//Now we might have a term like 107580008 |Family Fabaceae| and here we want to also match Fabaceae
+				//So we'll add those noun phrases once the taxonomy words have been removed
+				if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)
+						&& !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
+					addSourcesOfTruthWithoutTaxonomy(term, d);
 				}
 			}
+		}
+	}
+
+	private void addSourcesOfTruthWithoutTaxonomy(String term, Description d) {
+		//Split the term up into words
+		String termWithoutTaxonomy = term;
+		for (String taxonomyWord : taxonomyWords) {
+			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord, "");
+		}
+
+		if (!termWithoutTaxonomy.equals(term)) {
+			termWithoutTaxonomy = termWithoutTaxonomy.replace("  ", " ").trim();
+			sourcesOfTruth.put(termWithoutTaxonomy, d);
+		}
+
+		//Also split on words and if the first word is a taxonomy word, and the 2nd starts with a capital, then add that too
+		String[] words = term.split(" ");
+		if (words.length > 1 && taxonomyWords.contains(words[0]) && words[1].equals(words[1].toUpperCase())) {
+			sourcesOfTruth.put(words[1], d);
 		}
 	}
 
@@ -78,7 +136,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			if (!phrase.equals(phrase.toLowerCase())) {
 				//Does this word end in a wildcard?
 				if (phrase.endsWith("*")) {
-					String wildWord = phrase.replaceAll("\\*", "");
+					String wildWord = phrase.replace("*", "");
 					wildcardWords.add(wildWord);
 					continue;
 				}
@@ -101,7 +159,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public CaseSignificance suggestCorrectCaseSignficance(Description d) throws TermServerScriptException {
-		String term = d.getTerm().replaceAll("\\-", " ");
+		String term = d.getTerm().replace("-", " ");
 		String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 		String firstLetter = term.substring(0,1);
 		String chopped = term.substring(1);
@@ -154,7 +212,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return CaseSignificance.CASE_INSENSITIVE;
 	}
 	
-	private boolean startsWithSingleLetter(String term) {
+	public boolean startsWithSingleLetter(String term) {
 		if (Character.isLetter(term.charAt(0))) {
 			//If it's only 1 character long, then yes! Otherwise, no!
 			return (term.length() == 1 || !Character.isLetter(term.charAt(1)));
@@ -178,6 +236,13 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		if (properNouns.contains(firstWord)) {
 			return true;
 		}
+
+		//Is the first word or the phrase one of our sources of truth?
+		//This is a quick lookup, so do this first before we get into loops
+		if (sourcesOfTruth.containsKey(firstWord) || sourcesOfTruth.containsKey(term)) {
+			return true;
+		}
+
 		//Also split on a slash
 		firstWord = firstWord.split("/")[0];
 		if (properNouns.contains(firstWord)) {
@@ -199,12 +264,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				return true;
 			}
 		}
-		
-		//Is the first word or the phrase one of our sources of truth?
-		if (sourcesOfTruth.containsKey(firstWord) || sourcesOfTruth.containsKey(term)) {
-			return true;
-		} 
-		
+
 		//Work the number of words up progressively to see if we get a match 
 		//eg first two words in "Influenza virus vaccine-containing product in nasal dose form" is an Organism
 		StringBuilder progressive = new StringBuilder(firstWord);
@@ -218,9 +278,9 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return false;
 	}
 
-	private boolean singleLetterCombo(String term) {
+	public boolean singleLetterCombo(String term) {
 		//Do we have a letter following a number - optionally with a dash?
-		term = term.replaceAll("-", "");
+		term = term.replace("-", "");
 		Matcher matcher = numberLetter.matcher(term);
 		if (matcher.find()) {
 			return true;
@@ -230,4 +290,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return singleLetter.matcher(term).find();
 	}
 
+	public Map<String, Description> getSourcesOfTruth() {
+		return sourcesOfTruth;
+	}
 }
