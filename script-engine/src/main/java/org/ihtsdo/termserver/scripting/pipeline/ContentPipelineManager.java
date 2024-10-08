@@ -644,7 +644,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			report(getTab(TAB_MODELING_ISSUES),
 					externalConcept.getExternalIdentifier(),
 					ContentPipelineManager.getSpecialInterestIndicator(externalConcept.getExternalIdentifier()),
-					externalConcept.getDisplayName(),
+					externalConcept.getLongDisplayName(),
 					"Does not meet criteria for template match",
 					"Property: " + externalConcept.getProperty());
 		} else {
@@ -660,7 +660,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				report(getTab(TAB_MODELING_ISSUES),
 						externalConcept.getExternalIdentifier(),
 						ContentPipelineManager.getSpecialInterestIndicator(externalConcept.getExternalIdentifier()),
-						externalConcept.getDisplayName(),
+						externalConcept.getLongDisplayName(),
 						templatedConcept.getConcept().getIssues(",\n"));
 			}
 		}
@@ -681,13 +681,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected boolean containsObjectionableWord(ExternalConcept externalConcept) throws TermServerScriptException {
 		//Does this LoincNum feature an objectionable word?  Skip if so.
 		for (String objectionableWord : getObjectionableWords()) {
-			if (externalConcept.getDisplayName() == null) {
+			if (externalConcept.getLongDisplayName() == null) {
 				LOGGER.debug("Unable to obtain display name for {}", externalConcept.getExternalIdentifier());
-			} else if (externalConcept.getDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
+			} else if (externalConcept.getLongDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
 				report(getTab(TAB_MODELING_ISSUES),
 						externalConcept.getExternalIdentifier(),
 						ContentPipelineManager.getSpecialInterestIndicator( externalConcept.getExternalIdentifier()),
-						externalConcept.getDisplayName(),
+						externalConcept.getLongDisplayName(),
 						"Contains objectionable word - " + objectionableWord);
 				return true;
 			}
