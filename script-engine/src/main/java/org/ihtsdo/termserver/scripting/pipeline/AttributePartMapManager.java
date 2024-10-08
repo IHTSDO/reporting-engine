@@ -53,7 +53,7 @@ public abstract class AttributePartMapManager {
 			cpm.report(idxTab,
 					externalIdentifier,
 					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
-					cpm.getExternalConcept(externalIdentifier).getDisplayName(),
+					cpm.getExternalConcept(externalIdentifier).getLongDisplayName(),
 					"No attribute mapping available",
 					loincPartStr);
 			cpm.addMissingMapping(partNum, externalIdentifier);
