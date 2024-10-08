@@ -170,7 +170,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 		if (cpm.includeLongNameDescription) {
 			//Also add the Long Common Name as a Synonym
-			String lcnStr = getExternalConcept().getDisplayName();
+			String lcnStr = getExternalConcept().getLongDisplayName();
 			Description lcn = Description.withDefaults(lcnStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			//Override the case significance for these
 			lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
