@@ -72,6 +72,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return singleton;
 	}
 
+	public static CaseSensitivityUtils get() throws TermServerScriptException {
+		if (singleton == null) {
+			singleton = new CaseSensitivityUtils();
+			singleton.init();
+		}
+		return singleton;
+	}
+
 	public void init() throws TermServerScriptException {
 		loadCSWords();
 		determineKnownNames();
