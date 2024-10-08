@@ -28,7 +28,6 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
 		super.init(run);
 		tsClient = new TermServerClient(browserURL, getAuthenticatedCookie());
 		codeSystems = tsClient.getCodeSystems();
@@ -64,8 +63,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 				.mapToObj(i -> "SCTID, FSN, SemTag,")
 				.toArray(String[]::new);
 		columnHeadings[0] = "Extension, count";
-		postInit(tabList.toArray(String[]::new), columnHeadings);
-		
+		postInit(tabList.toArray(String[]::new), columnHeadings, false);
 	}
 	
 	@Override
