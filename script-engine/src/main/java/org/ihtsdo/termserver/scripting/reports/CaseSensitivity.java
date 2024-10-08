@@ -1,20 +1,17 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 /**
  * DRUGS-269, SUBST-130, MAINT-77, INFRA-2723, MAINT-345
@@ -28,68 +25,39 @@ import org.slf4j.LoggerFactory;
 public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivity.class);
+	private static final String INCLUDE_SUB_ORG = "Include Substances and Organisms";
+	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 
-	private static String INCLUDE_SUB_ORG = "Include Substances and Organisms";
-	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
-
-	private List<Concept> targetHierarchies = new ArrayList<>();
-	private List<Concept> excludeHierarchies = new ArrayList<>();
-	private Map<String, Description> sourcesOfTruth = new HashMap<>();
 	private Set<Concept> allExclusions = new HashSet<>();
 	private Set<String> whiteList = new HashSet<>();  //Note this can be both descriptions and concept SCTIDs
-	private boolean includeSubOrg = false;
 	private boolean recentChangesOnly = true;
-	private List<String> properNouns = new ArrayList<>();
-	private Map<String, List<String>> properNounPhrases = new HashMap<>();
-	private List<String> knownLowerCase = new ArrayList<>();
-	private Pattern numberLetter = Pattern.compile("\\d[a-z]");
-	private Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
-	private Set<String>wilcardWords = new HashSet<>();
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	private CaseSensitivityUtils csUtils;
+
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		params.put(RECENT_CHANGES_ONLY, "N");
-		TermServerReport.run(CaseSensitivity.class, params, args);
+		params.put(INCLUDE_SUB_ORG, "N");
+		TermServerScript.run(CaseSensitivity.class, params, args);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setPopulateReleasedFlag(true);
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
+		ReportSheetManager.setTargetFolderId(GFOLDER_RELEASE_QA);
+		recentChangesOnly = run.getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);
 		additionalReportColumns = "FSN, Semtag, Description, isPreferred, CaseSignificance, Issue";
 		inputFiles.add(0, new File("resources/cs_words.tsv"));
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
-		loadCSWords();
-		LOGGER.info ("Processing exclusions");
-		targetHierarchies.add(ROOT_CONCEPT);
-		recentChangesOnly = getJob().getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);
-		includeSubOrg = getJob().getParameters().getMandatoryBoolean(INCLUDE_SUB_ORG);
-		if (!includeSubOrg) {
-			excludeHierarchies.add(SUBSTANCE);
-			excludeHierarchies.add(ORGANISM);
-		}
 
-		for (Concept excludeThis : excludeHierarchies) {
-			excludeThis = gl.getConcept(excludeThis.getConceptId());
-			allExclusions.addAll(gl.getDescendantsCache().getDescendants(excludeThis));
-		}
-		
-		//We're making these exclusions because they're a source of truth for CS
-		for (Concept c : allExclusions) {
-			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
-				if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-					String term = d.getTerm();
-					if (d.getType().equals(DescriptionType.FSN)) {
-						term = SnomedUtils.deconstructFSN(term)[0];
-					}
-					sourcesOfTruth.put(term, d);
-				}
-			}
-		}
+		//If we include substances and organisms for cs checking, then we're not treating them as sources of truth
+		boolean substancesAndOrganismsAreSourcesOfTruth = !getJobRun().getParameters().getMandatoryBoolean(INCLUDE_SUB_ORG);
+		csUtils = CaseSensitivityUtils.get(substancesAndOrganismsAreSourcesOfTruth);
 		
 		whiteList.add("3722547016");
 		whiteList.add("3722542010");
@@ -114,238 +82,164 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		initialiseSummaryInformation(ISSUE_COUNT);
-		checkCaseSignificance();
-	}
-
-	public void loadCSWords() throws TermServerScriptException {
-		print("Loading " + getInputFile() + "...");
-		if (!getInputFile().canRead()) {
-			throw new TermServerScriptException("Cannot read: " + getInputFile());
-		}
-		List<String> lines;
-		try {
-			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
-		}
-		LOGGER.info ("Complete");
-		LOGGER.debug("Processing cs words file");
-		for (String line : lines) {
-			//Split the line up on tabs
-			String[] items = line.split(TAB);
-			String phrase = items[0];
-			//Does the word contain a capital letter (ie not the same as it's all lower case variant)
-			if (!phrase.equals(phrase.toLowerCase())) {
-				//Does this word end in a wildcard?
-				if (phrase.endsWith("*")) {
-					String wildWord = phrase.replaceAll("\\*", "");
-					wilcardWords.add(wildWord);
-					continue;
-				}
-				//Is this a phrase?
-				String[] words = phrase.split(" ");
-				if (words.length == 1) {
-					properNouns.add(phrase);
-				} else {
-					List<String> phrases = properNounPhrases.get(words[0]);
-					if (phrases == null) {
-						phrases = new ArrayList<>();
-						properNounPhrases.put(words[0], phrases);
-					}
-					phrases.add(phrase);
-				}
-			} else {
-				knownLowerCase.add(phrase);
-			}
-		}
-	}
-
-	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
-		for (Concept targetHierarchy : targetHierarchies) {
-			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendants(NOT_SET));
-			LOGGER.info ("Checking case significance in target hierarchy: " + targetHierarchy);
-			
-			int count = 0;
-			nextConcept:
-			for (Concept c : hiearchyDescendants) {
-				if (whiteListedConceptIds.contains(c.getId())) {
-					incrementSummaryInformation(WHITE_LISTED_COUNT);
-					continue;
-				}
-				if (++count %10000 == 0) {
-					print (".");
-				}
-				
-/*				if (c.getConceptId().equals("688271000119100")) {
-					LOGGER.debug ("Temp - check here");
-				}*/
-				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
-					continue;
-				}
+		for (Concept targetHierarchy : ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			//We won't process any hierarchies that are a source of truth
+			if (!csUtils.isSourceOfTruthHierarchy(targetHierarchy)) {
+				List<Concept> hierarchyDescendants = new ArrayList<>(targetHierarchy.getDescendants(NOT_SET));
+				LOGGER.info("Checking case significance in target hierarchy: {}", targetHierarchy);
+				checkCaseSignificanceOfHierarchy(hierarchyDescendants);
+				LOGGER.info("Completed hierarchy: {}", targetHierarchy);
+			}
+		}
+	}
+
+	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
+		for (Concept c : hierarchyDescendants) {
+			if (c.getId().equals("107580008")) {
+				LOGGER.info("Checking case significance in concept: {}", c);
+			}
+			if (inScopeForCsChecking(c)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					//Are we checking only unpromoted changes?
-					if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(d)) {
-						continue;
-					}
-					incrementSummaryInformation("Descriptions checked");
-					if (whiteList.contains(d.getDescriptionId())) {
-						continue;
-					}
-					if (!recentChangesOnly || !d.isReleased()) {
-						String term = d.getTerm().replaceAll("\\-", " ");
-						String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
-						String firstLetter = term.substring(0,1);
-						String secondLetter = term.substring(1,2);
-						String chopped = term.substring(1);
-						String preferred = d.isPreferred()?"Y":"N";
-						
-						//Text Definitions must be CS
-						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
-							if (!caseSig.equals(CS)) {
-								report(c, d, preferred, caseSig, "Text Definitions must be CS");
-								countIssue(c);
-							}
-						} else if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
-							//Lower case first letters must be entire term case sensitive
-							report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
-							countIssue(c);
-							continue nextConcept;
-						} else if ((Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
-								&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase()))
-								&& !caseSig.equals(CS)) {
-							//Terms starting with acronyms should be entire term case sensitive
-							report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
-							countIssue(c);
-							continue nextConcept;
-						} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-							if (chopped.equals(chopped.toLowerCase()) && 
-									!singleLetterCombo(term) && 
-									!startsWithProperNounPhrase(term) &&
-									!containsKnownLowerCaseWord(term)) {
-								if (caseSig.equals(CS) && startsWithSingleLetter(d.getTerm())){
-									//Probably OK
-								} else {
-									report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
-									countIssue(c);
-									continue nextConcept;
-								}
-							}
-						} else {
-							//For case insensitive terms, we're on the look out for capital letters after the first letter
-							if (!chopped.equals(chopped.toLowerCase())) {
-								report (c, d, preferred, caseSig, "Case insensitive term has a capital after first letter");
-								countIssue(c);
-								continue nextConcept;
-							}
-							
-							//Or if one of our sources of truth?
-							String firstWord = d.getTerm().split(" ")[0];
-							if (sourcesOfTruth.containsKey(firstWord)) {
-								report (c, d, preferred, caseSig, "Case insensitive term should be CS as per " + sourcesOfTruth.get(firstWord));
-								countIssue(c);
-								continue nextConcept;
-							}
-						}
+					if (checkCaseSignificance(c, d)) {
+						break;
 					}
 				}
 			}
-			print ("\n\n");
-			LOGGER.info ("Completed hierarchy: " + targetHierarchy);
-			
 		}
 	}
-	
-	private boolean startsWithSingleLetter(String term) {
-		if (Character.isLetter(term.charAt(0))) {
-			//If it's only 1 character long, then yes!
-			if (term.length() == 1 || !Character.isLetter(term.charAt(1))) {
-				return true;
-			} 
+
+	/*
+	*@return - true if we've reported an issue on this concept
+	 */
+	private boolean checkCaseSignificance(Concept c, Description d) throws TermServerScriptException {
+		if (!inScopeForCsChecking(d)) {
 			return false;
 		}
-		return false;
-	}
 
-	public boolean containsKnownLowerCaseWord(String term) {
-		for (String lowerCaseWord : knownLowerCase) {
-			if (term.equals(lowerCaseWord) || term.contains(" "  + lowerCaseWord + " ") || term.contains(" " + lowerCaseWord + "/") || term.contains("/" + lowerCaseWord + " ")) {
+		String term = d.getTerm().replace("-", " ");
+		String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+		String chopped = term.substring(1);
+		String preferred = d.isPreferred() ? "Y" : "N";
+
+		if (reportedForTextDefinitionRuleOrAccepted(c, d, caseSig, preferred)) {
+			return true;
+		}
+
+		if (reportedForFirstLetterInfractionOrAccepted(c, d,term, caseSig, preferred)) {
+			return true;
+		}
+
+		if (caseSig.equals(CS) || caseSig.equals(cI)) {
+			if (checkCaseSignicanceOfCaseSensitiveTerm(c, d, chopped, preferred, caseSig, term)) {
+				return true;
+			}
+		} else {
+			if (checkCaseSignificanceOfCaseInsensitiveTerm(c, d, chopped, preferred, caseSig)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public boolean startsWithProperNounPhrase(String term) {
-		String[] words = term.split(" ");
-		String firstWord = words[0];
-		
-		if (properNouns.contains(firstWord)) {
-			return true;
-		}
-		//Also split on a slash
-		firstWord = firstWord.split("/")[0];
-		if (properNouns.contains(firstWord)) {
-			return true;
+	private boolean reportedForFirstLetterInfractionOrAccepted(Concept c, Description d, String term, String caseSig, String preferred) throws TermServerScriptException {
+		String firstLetter = term.substring(0, 1);
+		//Some terms of course are only one character long!
+		String secondLetter = null;
+		boolean isOneCharacterLong = true;
+		if (term.length() > 1) {
+			secondLetter = term.substring(1, 2);
+			isOneCharacterLong = false;
 		}
 
-		//Could we match a noun phrase?
-		if (properNounPhrases.containsKey(firstWord)) {
-			for (String phrase : properNounPhrases.get(firstWord)) {
-				if (term.startsWith(phrase)) {
-					return true;
-				}
+		if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase())) {
+			if (!caseSig.equals(CS)) {
+				//Lower case first letters must be entire term case sensitive
+				report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
+				countIssue(c);
 			}
-		}
-		
-		//Does the firstWord start with one of our wildcard words?
-		for (String wildword : wilcardWords) {
-			if (firstWord.startsWith(wildword)) {
-				return true;
-			}
-		}
-		
-		//Is the first word or the phrase one of our sources of truth?
-		if (sourcesOfTruth.containsKey(firstWord) || sourcesOfTruth.containsKey(term)) {
 			return true;
-		} 
-		
-		//Work the number of words up progressively to see if we get a match 
-		//eg first two words in "Influenza virus vaccine-containing product in nasal dose form" is an Organism
-		String progressive = firstWord;
-		for (int i=1; i<words.length; i++) {
-			progressive += " " + words[i];
-			if (sourcesOfTruth.containsKey(progressive)) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-
-	private boolean singleLetterCombo(String term) {
-		//Do we have a letter following a number - optionally with a dash?
-		term = term.replaceAll("-", "");
-		Matcher matcher = numberLetter.matcher(term);
-		if (matcher.find()) {
-			return true;
-		}
-		
-		//A letter on it's own will often be lower case eg 3715305012 [768869001] US: P, GB: P: Interferon alfa-n3-containing product [cI]
-		matcher = singleLetter.matcher(term);
-		if (matcher.find()) {
+		} else if (!isOneCharacterLong
+				&& (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
+				&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase()))
+				&& !caseSig.equals(CS)) {
+			//Terms starting with acronyms should be entire term case-sensitive
+			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
+			countIssue(c);
 			return true;
 		}
 		return false;
 	}
 
-	public boolean singleCapital(String term) {
-		if (Character.isUpperCase(term.charAt(0))) {
-			if (term.length() == 1) {
-				return true;
-			} else if (!Character.isLetter(term.charAt(1))) {
+	private boolean reportedForTextDefinitionRuleOrAccepted(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
+		//Text Definitions must be CS
+		if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+			if (!caseSig.equals(CS)) {
+				report(c, d, preferred, caseSig, "Text Definitions must be CS");
+				countIssue(c);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private boolean inScopeForCsChecking(Concept c) {
+		if (whiteListedConceptIds.contains(c.getId())) {
+			incrementSummaryInformation(WHITE_LISTED_COUNT);
+			return false;
+		}
+
+		return !(allExclusions.contains(c) || whiteList.contains(c.getId()));
+	}
+
+	private boolean inScopeForCsChecking(Description d) {
+		//Are we checking only unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(d)) {
+			return false;
+		}
+
+		if (whiteList.contains(d.getDescriptionId())) {
+			return false;
+		}
+
+		if (recentChangesOnly && d.isReleasedSafely()) {
+			return false;
+		}
+		incrementSummaryInformation("Descriptions checked");
+		return true;
+	}
+
+	private boolean checkCaseSignificanceOfCaseInsensitiveTerm(Concept c, Description d, String chopped, String preferred, String caseSig) throws TermServerScriptException {
+		//For case insensitive terms, we're on the look out for capital letters after the first letter
+		if (!chopped.equals(chopped.toLowerCase())) {
+			report(c, d, preferred, caseSig, "Case insensitive term has a capital after first letter");
+			countIssue(c);
+			return true;
+		}
+
+		//Or if one of our sources of truth?
+		String firstWord = d.getTerm().split(" ")[0];
+		if (csUtils.getSourcesOfTruth().containsKey(firstWord)) {
+			report(c, d, preferred, caseSig, "Case insensitive term should be CS as per " + csUtils.getSourcesOfTruth().get(firstWord));
+			countIssue(c);
+			return true;
+		}
+		return false;
+	}
+
+	private boolean checkCaseSignicanceOfCaseSensitiveTerm(Concept c, Description d, String chopped, String preferred, String caseSig, String term) throws TermServerScriptException {
+		if (chopped.equals(chopped.toLowerCase()) &&
+				!csUtils.singleLetterCombo(term) &&
+				!csUtils.startsWithProperNounPhrase(term) &&
+				!csUtils.containsKnownLowerCaseWord(term)) {
+			if (caseSig.equals(CS) && csUtils.startsWithSingleLetter(d.getTerm())) {
+				//Probably OK
+			} else {
+				report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
+				countIssue(c);
 				return true;
 			}
 		}
