@@ -23,7 +23,7 @@ public class NuvaDisease extends NuvaConcept implements Comparable<NuvaDisease> 
 	}
 
 	@Override
-	protected String getDisplayName() {
+	protected String getLongDisplayName() {
 		return "";
 	}
 

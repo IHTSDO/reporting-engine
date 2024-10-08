@@ -53,7 +53,7 @@ public abstract class NuvaConcept extends ExternalConcept {
 	}
 
 	@Override
-	protected String getDisplayName() {
+	protected String getLongDisplayName() {
 		if (StringUtils.isEmpty(enLabel)) {
 			LOGGER.debug("Check no display name here");
 			return externalIdentifier + " - display name not specified";
