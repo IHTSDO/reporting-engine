@@ -128,10 +128,6 @@ abstract public class TemplateFix extends BatchFix {
 		if (exclusions == null) {
 			exclusions = new HashSet<>();
 		}
-		
-		if (excludeHierarchies == null) {
-			excludeHierarchies = new ArrayList<>();
-		}
 
 		for (Concept thisExclude : excludeHierarchies) {
 			LOGGER.info("Setting exclusion of {} subHierarchy.", thisExclude);

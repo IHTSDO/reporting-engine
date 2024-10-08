@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -1080,20 +1080,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 
-	/**
-	 * Creates a set of concepts based on a structure around the initial concept 
-	 * ie parents as high as is required, siblings and children.
-	 * @param initialConcept
-	 * @return a list of the new concepts created.
-	 */
-	protected List<Concept> createConceptStructure(Concept initialConcept) {
-		List<Concept> created = new ArrayList<>();
-		return created;
-	}
-	
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		try {
-			LOGGER.debug((dryRun ?"Dry run deleting ":"Deleting ") + c );
+			LOGGER.debug((dryRun ?"Dry run deleting {}":"Deleting {}"), c);
 			if (!dryRun) {
 				tsClient.deleteConcept(c.getConceptId(), t.getBranchPath());
 			}
@@ -1106,7 +1095,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected int deleteDescription(Task t, Description d) throws TermServerScriptException {
 		try {
-			LOGGER.debug((dryRun ?"Dry run deleting ":"Deleting ") + d );
+			LOGGER.debug((dryRun ?"Dry run deleting {}":"Deleting {}"), d);
 			if (!dryRun) {
 				tsClient.deleteDescription(d.getId(), t.getBranchPath());
 			}
@@ -1118,7 +1107,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected int removeRefsetMember(Task t, Concept c, RefsetMember r, String info) throws TermServerScriptException {
-		if (r.isReleased()) {
+		if (r.isReleasedSafely()) {
 			r.setActive(false);
 			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_INACTIVATED, r, info);
 			if (!dryRun) {
@@ -1137,7 +1126,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected int deleteRefsetMember(Task t, String uuid, boolean force) throws TermServerScriptException {
 		try {
-			LOGGER.debug((dryRun ?"Dry run deleting ":"Deleting ") + uuid );
+			LOGGER.debug((dryRun ?"Dry run deleting {}":"Deleting {}"), uuid);
 			if (!dryRun) {
 				tsClient.deleteRefsetMember(uuid, t.getBranchPath(), force); 
 			}
@@ -1191,8 +1180,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return findConcepts(ecl, true, true);
 		} catch (Exception e) {
 			LOGGER.error("Exception while recovering " + ecl + 
-			info == null ? "" : " in " + info +
-			". Skipping.", e);
+			(info == null ? "" : " in " + info) + ". Skipping.", e);
 		}
 		return new HashSet<>();
 	}
@@ -1229,7 +1217,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			
 			if (!archiveEclWarningGiven.contains(branch)) {
-				LOGGER.warn("Not using " + branch + " to recover ECL.  Using " + historicECLBranch + " instead.");
+				LOGGER.warn("Not using {} to recover ECL. Using {} instead.", branch, historicECLBranch);
 				archiveEclWarningGiven.add(branch);
 			}
 			branch = historicECLBranch;
@@ -1241,11 +1229,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 		//If this is the first time we've seen these results, check for duplicates
 		if (!wasCached) {
-			LOGGER.debug(concepts.size() + " concepts recovered.  Checking for duplicates...");
+			LOGGER.debug("{} concepts recovered for {}", concepts.size(), ecl);
 			//Failure in the pagination can cause duplicates.  Check for this
 			Set<Concept> uniqConcepts = new HashSet<>(concepts);
 			if (uniqConcepts.size() != concepts.size()) {
-				LOGGER.warn("Duplicates detected " + concepts.size() + " vs " + uniqConcepts.size() + " - identifying...");
+				LOGGER.warn("Duplicates detected {} vs {} - identifying...", concepts.size(), uniqConcepts.size());
 				//Work out what the actual duplication is
 				for (Concept c : uniqConcepts) {
 					concepts.remove(c);
@@ -1255,7 +1243,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
 			}
-			LOGGER.debug("No duplicates detected.");
 		}
 		return concepts; 
 	}
@@ -1271,7 +1258,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		Set<Component> allComponents= new LinkedHashSet<>();
 		LOGGER.debug("Loading input file {}", file.getAbsolutePath());
 		try {
-			List<String> lines = Files.readLines(file, Charsets.UTF_8);
+			List<String> lines = Files.readLines(file, StandardCharsets.UTF_8);
 			lines = StringUtils.removeBlankLines(lines);
 			
 			//Are we restarting the file from some line number
@@ -1282,7 +1269,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					continue; //skip header row  
 				}
 				String[] lineItems;
-				if (inputFileDelimiter == CSV_FIELD_DELIMITER) {
+				if (Objects.equals(inputFileDelimiter, CSV_FIELD_DELIMITER)) {
 					//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 					lineItems = splitCarefully(lines.get(lineNum));
 				} else {
