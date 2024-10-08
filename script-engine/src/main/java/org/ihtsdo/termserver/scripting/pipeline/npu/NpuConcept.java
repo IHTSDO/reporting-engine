@@ -344,7 +344,7 @@ public class NpuConcept extends ExternalConcept {
 	}
 
 	@Override
-	public String getDisplayName() {
+	public String getLongDisplayName() {
 		return fullDefinition;
 	}
 

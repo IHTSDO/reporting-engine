@@ -34,7 +34,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	protected NuvaTemplatedValenceConcept(ExternalConcept externalConcept) {
 		super(externalConcept);
 		setPreferredTermTemplate(bracket(NAME));
-		slotTermMap.put(NAME, getNuvaValence().getDisplayName());
+		slotTermMap.put(NAME, getNuvaValence().getLongDisplayName());
 		externalConcept.setProperty("Valence");
 	}
 

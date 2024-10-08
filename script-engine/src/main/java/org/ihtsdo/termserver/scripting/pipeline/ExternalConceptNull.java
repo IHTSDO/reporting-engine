@@ -22,7 +22,7 @@ public class ExternalConceptNull extends ExternalConcept {
 	}
 
 	@Override
-	public String getDisplayName() {
+	public String getLongDisplayName() {
 		return "Dummy Concept";
 	}
 
