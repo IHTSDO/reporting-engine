@@ -36,7 +36,7 @@ public class NpuTemplatedConceptPanel extends NpuTemplatedConcept {
 
 	private void generateDescriptions() throws TermServerScriptException {
 		NpuConcept npuConcept = getNpuConcept();
-		String ptStr = npuConcept.getDisplayName();
+		String ptStr = npuConcept.getLongDisplayName();
 
 		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED)
 				.withCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
