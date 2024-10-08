@@ -12,8 +12,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 
 import com.google.common.io.Files;
 
-import java.nio.charset.StandardCharsets;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
