@@ -47,7 +47,7 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] tabNames = new String[] {
-				"Concept Componentns",
+				"Concept Components",
 		};
 		String[] columnHeadings = new String[] {
 				"SCTID, FSN, SemTag, Component Type, Parent Component, Component Details,",
