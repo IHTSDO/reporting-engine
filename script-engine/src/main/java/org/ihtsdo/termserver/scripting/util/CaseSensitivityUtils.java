@@ -91,8 +91,13 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public static CaseSensitivityUtils get() throws TermServerScriptException {
+		return get(true);
+	}
+
+	public static CaseSensitivityUtils get(boolean substancesAndOrganismsAreSourcesOfTruth) throws TermServerScriptException {
 		if (singleton == null) {
 			singleton = new CaseSensitivityUtils();
+			singleton.substancesAndOrganismsAreSourcesOfTruth = substancesAndOrganismsAreSourcesOfTruth;
 			singleton.init();
 		}
 		return singleton;
@@ -212,6 +217,25 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			if (!csWords.contains(term)) {
 				csWords.add(term);
 			}
+		}
+	}
+
+	private void addSourcesOfTruthWithoutTaxonomy(String term, Description d) {
+		//Split the term up into words
+		String termWithoutTaxonomy = term;
+		for (String taxonomyWord : taxonomyWords) {
+			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord, "");
+		}
+
+		if (!termWithoutTaxonomy.equals(term)) {
+			termWithoutTaxonomy = termWithoutTaxonomy.replace("  ", " ").trim();
+			sourcesOfTruth.put(termWithoutTaxonomy, d);
+		}
+
+		//Also split on words and if the first word is a taxonomy word, and the 2nd starts with a capital, then add that too
+		String[] words = term.split(" ");
+		if (words.length > 1 && taxonomyWords.contains(words[0]) && words[1].equals(words[1].toUpperCase())) {
+			sourcesOfTruth.put(words[1], d);
 		}
 	}
 
