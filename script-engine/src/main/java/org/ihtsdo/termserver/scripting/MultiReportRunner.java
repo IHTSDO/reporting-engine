@@ -7,7 +7,6 @@ import java.util.*;
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
-import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 import com.google.common.io.Files;
