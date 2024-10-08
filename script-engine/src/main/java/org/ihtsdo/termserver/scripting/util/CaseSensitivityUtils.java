@@ -6,12 +6,10 @@ import java.util.*;
 import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.domain.*;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,30 +18,37 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
 
+	private static CaseSensitivityUtils singleton;
+
 	Map<String, Description> sourcesOfTruth = new HashMap<>();
 	List<String> properNouns = new ArrayList<>();
 	Map<String, List<String>> properNounPhrases = new HashMap<>();
 	List<String> knownLowerCase = new ArrayList<>();
 	Pattern numberLetter = Pattern.compile("\\d[a-z]");
 	Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
-	Set<String> wilcardWords = new HashSet<>();
+	Set<String> wildcardWords = new HashSet<>();
 	File inputFile = new File("resources/cs_words.tsv");
+
+	public static CaseSensitivityUtils get() throws TermServerScriptException {
+		if (singleton == null) {
+			singleton = new CaseSensitivityUtils();
+			singleton.init();
+		}
+		return singleton;
+	}
 
 	public void init() throws TermServerScriptException {
 		loadCSWords();
-		LOGGER.info ("Processing sources of truth");
-		List<Concept> sourceOfTruthHierarchies = new ArrayList<>();
-		sourceOfTruthHierarchies.add(SUBSTANCE);
-		sourceOfTruthHierarchies.add(ORGANISM);
-		
-		//We're making these exclusions because they're a source of truth for CS
+
+		List<Concept> sourceOfTruthHierarchies = List.of(SUBSTANCE, ORGANISM);
 		for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
+			LOGGER.info ("Processing case sensitivity source of truth: {}", sourceOfTruth);
 			for (Concept c : sourceOfTruth.getDescendants(NOT_SET)) {
 				for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 					if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 						String term = d.getTerm();
 						if (d.getType().equals(DescriptionType.FSN)) {
-							term = SnomedUtils.deconstructFSN(term)[0];
+							term = SnomedUtilsBase.deconstructFSN(term)[0];
 						}
 						sourcesOfTruth.put(term, d);
 					}
@@ -53,17 +58,17 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public void loadCSWords() throws TermServerScriptException {
-		LOGGER.info("Loading " + inputFile + "...");
+		LOGGER.info("Loading {}...", inputFile);
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException("Cannot read: " + inputFile);
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(inputFile, Charsets.UTF_8);
+			lines = Files.readLines(inputFile, StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
 		}
-		LOGGER.info ("Complete");
+		LOGGER.info("Complete");
 		LOGGER.info("Processing cs words file");
 		for (String line : lines) {
 			//Split the line up on tabs
@@ -74,7 +79,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				//Does this word end in a wildcard?
 				if (phrase.endsWith("*")) {
 					String wildWord = phrase.replaceAll("\\*", "");
-					wilcardWords.add(wildWord);
+					wildcardWords.add(wildWord);
 					continue;
 				}
 				//Is this a phrase?
@@ -95,10 +100,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 	}
 
-	private void info(String string) {
-		TermServerScript.info(string);
-	}
-
 	public CaseSignificance suggestCorrectCaseSignficance(Description d) throws TermServerScriptException {
 		String term = d.getTerm().replaceAll("\\-", " ");
 		String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
@@ -109,7 +110,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		} else if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
-			//Lower case first letters must be entire term case sensitive
+			//Lower case first letters must be entire term case-sensitive
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
 			if (chopped.equals(chopped.toLowerCase()) && 
@@ -134,7 +135,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 			}
 			
-			//For case insensitive terms, we're on the look out for capital letters after the first letter
+			//For case-insensitive terms, we're on the look out for capital letters after the first letter
 			if (!chopped.equals(chopped.toLowerCase())) {
 				return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 			}
@@ -155,11 +156,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	
 	private boolean startsWithSingleLetter(String term) {
 		if (Character.isLetter(term.charAt(0))) {
-			//If it's only 1 character long, then yes!
-			if (term.length() == 1 || !Character.isLetter(term.charAt(1))) {
-				return true;
-			} 
-			return false;
+			//If it's only 1 character long, then yes! Otherwise, no!
+			return (term.length() == 1 || !Character.isLetter(term.charAt(1)));
 		}
 		return false;
 	}
@@ -196,7 +194,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 		
 		//Does the firstWord start with one of our wildcard words?
-		for (String wildword : wilcardWords) {
+		for (String wildword : wildcardWords) {
 			if (firstWord.startsWith(wildword)) {
 				return true;
 			}
@@ -209,10 +207,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		
 		//Work the number of words up progressively to see if we get a match 
 		//eg first two words in "Influenza virus vaccine-containing product in nasal dose form" is an Organism
-		String progressive = firstWord;
+		StringBuilder progressive = new StringBuilder(firstWord);
 		for (int i=1; i<words.length; i++) {
-			progressive += " " + words[i];
-			if (sourcesOfTruth.containsKey(progressive)) {
+			progressive.append(" ").append(words[i]);
+			if (sourcesOfTruth.containsKey(progressive.toString())) {
 				return true;
 			}
 		}
@@ -229,22 +227,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 		
 		//A letter on it's own will often be lower case eg 3715305012 [768869001] US: P, GB: P: Interferon alfa-n3-containing product [cI]
-		matcher = singleLetter.matcher(term);
-		if (matcher.find()) {
-			return true;
-		}
-		return false;
-	}
-
-	public boolean singleCapital(String term) {
-		if (Character.isUpperCase(term.charAt(0))) {
-			if (term.length() == 1) {
-				return true;
-			} else if (!Character.isLetter(term.charAt(1))) {
-				return true;
-			}
-		}
-		return false;
+		return singleLetter.matcher(term).find();
 	}
 
 }
