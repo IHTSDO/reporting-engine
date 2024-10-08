@@ -90,6 +90,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 	}
 
+	public static CaseSensitivityUtils get() throws TermServerScriptException {
+		if (singleton == null) {
+			singleton = new CaseSensitivityUtils();
+			singleton.init();
+		}
+		return singleton;
+	}
+
 	public void init() throws TermServerScriptException {
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		loadCSWords();
