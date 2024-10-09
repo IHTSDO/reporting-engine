@@ -657,10 +657,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				continue;
 			}
 
-			if (inScope(d)) {
-				if (d.getTerm().length() > MAX_DESC_LENGTH) {
-					reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
-				}
+			if (inScope(d) && d.getTerm().length() > MAX_DESC_LENGTH) {
+				reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
 			}
 		}
 	}
@@ -1014,7 +1012,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		Map<String, Description> fsnMap = new HashMap<>();
 		for (Concept c : allConceptsSorted) {
 			fsnMap.clear();
-			nextDescription:
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
 				boolean inScopeFSNDetected = false;
 				if (inScope(d)) {
@@ -1024,7 +1021,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (inScopeFSNDetected) {
 						String detailStr = d + ",\n" + fsnMap.get(d.getLang());
 						report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr);
-						continue nextDescription;
 					}
 				} else {
 					fsnMap.put(d.getLang(), d);
