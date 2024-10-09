@@ -350,11 +350,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 			}
 			
 			//Is this a number we have as a concept?
-			if (DrugUtils.getNumberAsConcept(numerator.getStrengthStr()) == null) {
-				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Missing number concept: " + numerator.getStrengthStr());
-				blackListedConcepts.add(c);
-				return null;
-			}
+			//N/A Concepts as numbers don't exist anymore
 			
 			if (usesConcentration) {
 				ingredient.concStrength = DrugUtils.getNumberAsConcept(numerator.getStrengthStr());

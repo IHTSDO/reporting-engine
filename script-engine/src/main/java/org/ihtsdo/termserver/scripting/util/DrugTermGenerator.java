@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -21,18 +20,15 @@ public class DrugTermGenerator extends TermGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DrugTermGenerator.class);
 
-	private TermServerScript parent;
-	private boolean quiet = false;
-	private boolean useEach = false;
 	private boolean ptOnly = false;
-	private boolean specifyDenominator = false;
-	private boolean includeUnitOfPresentation = false;
+	private static final boolean SPECIFY_DENOMINATOR = false;
+	private static final boolean INCLUDE_UNIT_OF_PRESENTATION = false;
 
-	private String[] forceCS = new String[]{"N-" };
-	private String[] vitamins = new String[]{" A ", " B ", " C ", " D ", " E ", " G " };
+	private final String[] forceCS = new String[]{"N-" };
+	private final String[] vitamins = new String[]{" A ", " B ", " C ", " D ", " E ", " G " };
 
-	private List<Concept> neverAbbrev = new ArrayList<>();
-	private Map<Concept, String> overridePTs = new HashMap<>();
+	private final List<Concept> neverAbbrev = new ArrayList<>();
+	private final Map<Concept, String> overridePTs = new HashMap<>();
 
 	public DrugTermGenerator(TermServerScript parent) {
 		this.parent = parent;
@@ -48,31 +44,8 @@ public class DrugTermGenerator extends TermGenerator {
 		overridePTs.put(INTERNATIONAL_UNIT, "unit");
 	}
 
-	public DrugTermGenerator includeUnitOfPresentation(Boolean state) {
-		includeUnitOfPresentation = state;
-		return this;
-	}
-
 	public boolean includeUnitOfPresentation() {
-		return includeUnitOfPresentation;
-	}
-
-	public DrugTermGenerator useEach(Boolean state) {
-		useEach = state;
-		return this;
-	}
-
-	public boolean specifyDenominator() {
-		return specifyDenominator;
-	}
-
-	public DrugTermGenerator specifyDenominator(Boolean state) {
-		specifyDenominator = state;
-		return this;
-	}
-
-	public boolean useEach() {
-		return useEach;
+		return INCLUDE_UNIT_OF_PRESENTATION;
 	}
 
 	public int ensureTermsConform(Task t, Concept c, String X, CharacteristicType charType) throws TermServerScriptException {
@@ -241,7 +214,7 @@ public class DrugTermGenerator extends TermGenerator {
 			}
 			isFirstIngred = false;
 		}
-		//TODO Watch that this doesn't allow for any case sensitivity in the dose form, units, or presentation.  Currently there is none...
+		//Watch that this doesn't allow for any case sensitivity in the dose form, units, or presentation.  Currently there is none...
 		if (!hasCaseSensitiveIngredient && !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm())) {
 			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Set term to ci due to lack of case sensitivity in any ingredient");
 			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
@@ -257,6 +230,7 @@ public class DrugTermGenerator extends TermGenerator {
 		}
 		return NO_CHANGES_MADE;
 	}
+
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		return calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType, false);
 	}
@@ -288,7 +262,7 @@ public class DrugTermGenerator extends TermGenerator {
 										semTag = "(medicinal product)";
 										break;
 				case MEDICINAL_PRODUCT_FORM_ONLY : 
-										prefix += "only ";
+										prefix += "only ";  //No break here, we want to also process as per MPF
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										semTag = "(medicinal product form)";
 										break;
@@ -297,9 +271,7 @@ public class DrugTermGenerator extends TermGenerator {
 										suffix =  getCdSuffix(c, isFSN, langRefset);
 										semTag = "(clinical drug)";
 										break;
-				case STRUCTURE_AND_DISPOSITION_GROUPER :
-				case STRUCTURAL_GROUPER :
-				case DISPOSITION_GROUPER : 
+				case STRUCTURE_AND_DISPOSITION_GROUPER, STRUCTURAL_GROUPER,DISPOSITION_GROUPER :
 				default:
 			}
 		} else if (isPT) {
@@ -321,12 +293,11 @@ public class DrugTermGenerator extends TermGenerator {
 										break;
 				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN, langRefset);
 										break;
-				case STRUCTURE_AND_DISPOSITION_GROUPER :
-				case STRUCTURAL_GROUPER :
-				case DISPOSITION_GROUPER : 
+				case STRUCTURE_AND_DISPOSITION_GROUPER ,STRUCTURAL_GROUPER, DISPOSITION_GROUPER :
 											suffix = "containing product";
 											ptContaining = true;
 											semTag = "(product)";
+											break;
 				default:
 			}
 		}
@@ -357,7 +328,7 @@ public class DrugTermGenerator extends TermGenerator {
 	private boolean firstIngredientCS(Concept c, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		
 		List<Description> ingredDescs = getOrderedIngredientDescriptions(c, langRefset, charType);
-		if (ingredDescs.size() == 0) {
+		if (ingredDescs.isEmpty()) {
 			throw new TermServerScriptException("Failed to find ingredient description for " + c);
 		}
 		return ingredDescs.get(0)
@@ -370,11 +341,11 @@ public class DrugTermGenerator extends TermGenerator {
 		String doseForm = DrugUtils.getDosageForm(c, isFSN, langRefset);
 		boolean isActuation = unitOfPresentation.equals("actuation");
 		
-		if (includeUnitOfPresentation ||
+		if (INCLUDE_UNIT_OF_PRESENTATION ||
 				(hasAttribute(c, HAS_UNIT_OF_PRESENTATION) 
 						&& !doseForm.endsWith(unitOfPresentation)
 						&& !doseForm.startsWith(unitOfPresentation)) ) {
-			if ((isFSN  && !specifyDenominator) || isActuation ) {
+			if ((isFSN  && !SPECIFY_DENOMINATOR) || isActuation ) {
 				if (isActuation && !isFSN) {
 					suffix = "/" + unitOfPresentation + " "  + doseForm;
 				} else {
@@ -384,7 +355,7 @@ public class DrugTermGenerator extends TermGenerator {
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN, langRefset) + " "  + unitOfPresentation;
 			}
 		} else {
-			if (isFSN && !specifyDenominator && !hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
+			if (isFSN && !SPECIFY_DENOMINATOR && !hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				suffix = "/1 each "  + doseForm;
 			} else {
 				suffix = " " + doseForm;
@@ -399,15 +370,11 @@ public class DrugTermGenerator extends TermGenerator {
 		for (Description d : allTerms) {
 			boolean isFSN = d.getType().equals(DescriptionType.FSN);
 			if (!isFSN && !d.isPreferred()) {
-				//Is this term the FSN counterpart?  Remove if not
-				//Update: We don't do fsnCounterparts due to us / gb issues
-				//String fsnCounterpart = SnomedUtils.deconstructFSN(c.getFsn())[0];
-				//if (!d.getTerm().equals(fsnCounterpart)) {
-					boolean isInactivated = removeDescription(c,d);
-					String msg = (isInactivated?"Inactivated redundant desc ":"Deleted redundant desc ") +  d;
-					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, msg);
-					changesMade++;
-				//}
+				//Note that we don't do FSN PT Counterparts here due to US/GB Issues
+				boolean isInactivated = removeDescription(c,d);
+				String msg = (isInactivated?"Inactivated redundant desc ":"Deleted redundant desc ") +  d;
+				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, msg);
+				changesMade++;
 			}
 		}
 		return changesMade;
@@ -424,8 +391,8 @@ public class DrugTermGenerator extends TermGenerator {
 	private int removeOldPTs(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Description> allTerms = c.getDescriptions(ActiveState.ACTIVE);
-		String PT = c.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
-		String badTerm = PT.replaceAll(" product", "");
+		String pt = c.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+		String badTerm = pt.replace(" product", "");
 		for (Description d : allTerms) {
 			boolean isFSN = d.getType().equals(DescriptionType.FSN);
 			if (!isFSN && !d.isPreferred()) {
@@ -515,7 +482,7 @@ public class DrugTermGenerator extends TermGenerator {
 			//Does the unit have more than one PT?
 			//OR is it never abbreviated (ie use FSN) and contains the word liter?
 			if (unit.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 || 
-					(neverAbbrev.contains(unit) && unit.getFsn().contains("liter")) ) {
+					(neverAbbrev.contains(unit) && unit.getFsn().contains(LITER)) ) {
 				strengthUnitsVariance = true;
 				break;
 			} 
@@ -540,7 +507,7 @@ public class DrugTermGenerator extends TermGenerator {
 			Description gbPT = usPT.clone(null);
 			gbPT.setTerm("GBTERM:" + gbPT.getTerm());
 			gbPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
-			report (t, c, Severity.HIGH, ReportActionType.DESCRIPTION_ADDED, "Split PT into US/GB variants: " + usPT + "/" + gbPT);
+			report(t, c, Severity.HIGH, ReportActionType.DESCRIPTION_ADDED, "Split PT into US/GB variants: " + usPT + "/" + gbPT);
 			c.addDescription(gbPT, allowDuplicates);
 		}
 	}
@@ -566,7 +533,7 @@ public class DrugTermGenerator extends TermGenerator {
 	private Set<String> getIngredientsWithStrengths(Concept c, boolean isFSN, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		Set<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
-		Set<String> ingredientsWithStrengths = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
+		Set<String> ingredientsWithStrengths = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
 		
 		for (Relationship r : ingredientRels) {
 			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
@@ -584,9 +551,9 @@ public class DrugTermGenerator extends TermGenerator {
 			
 			//Are we adding the denominator strength and units?
 			String denominatorStr = "";
-			if (specifyDenominator || hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
+			if (SPECIFY_DENOMINATOR || hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				denominatorStr = "/";
-				String denStrenStr = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType).toString();
+				String denStrenStr = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType);
 				if (!denStrenStr.equals("1") || isFSN) {
 					denominatorStr += denStrenStr + " ";
 				}
@@ -611,7 +578,7 @@ public class DrugTermGenerator extends TermGenerator {
 				.map(r -> GraphLoader.getGraphLoader().getConceptSafely(r.getTarget().getConceptId()))
 				.map(i -> i.getPreferredSynonymSafely(langRefset))
 				.sorted((d1, d2) -> d1.getTerm().compareTo(d2.getTerm()))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	private boolean hasAttribute(Concept c, Concept attrib) {
@@ -668,7 +635,7 @@ public class DrugTermGenerator extends TermGenerator {
 		} else {
 			desc = c.getPreferredSynonym(langRefset);
 			if (desc == null) {
-				LOGGER.warn("No preferred description found for {} in {}", c, langRefset);
+				throw new TermServerScriptException("No preferred description found for " + c + " in " + langRefset);
 			}
 			term = desc.getTerm();
 		}
@@ -677,7 +644,8 @@ public class DrugTermGenerator extends TermGenerator {
 		}
 		return term;
 	}
-	
+
+	@Override
 	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		if (!quiet) {
 			parent.report(task, component, severity, actionType, details);
@@ -691,10 +659,6 @@ public class DrugTermGenerator extends TermGenerator {
 				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 			}
 		}
-	}
-	
-	public void setQuiet(boolean quiet) {
-		this.quiet = quiet;
 	}
 	
 	public void setPtOnly(boolean ptOnly) {

@@ -11,7 +11,6 @@ import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
@@ -76,10 +75,12 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		this.headers = "TaskKey, TaskDesc, SCTID, FSN, ConceptType, Severity, ActionType, ";
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		processFile();
 	}
 
+	@Override
 	protected List<Component> processFile() throws TermServerScriptException {
 		startTimer();
 		if (selfDetermining) {
@@ -88,14 +89,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			allComponentsToProcess = super.processFile();
 		}
 		batchProcess(formIntoBatch(allComponentsToProcess));
-		/*if (emailDetails != null) {
-			String msg = "Batch Scripting has completed successfully." + getSummaryText();
-			sendEmail(msg, reportFiles[0]);
-		}*/
 		return allComponentsToProcess;
 	}
 
-	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		throw new NotImplementedException("Override doFix in the Concrete Class");
 	}
 
@@ -156,7 +153,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 
 	protected String getNextReviewer() {
-		if (reviewers == null || reviewers.size() == 0) {
+		if (reviewers == null || reviewers.isEmpty()) {
 			return null;
 		}
 		int nextReviewerIdx = Task.getNextTaskSequence() % reviewers.size();
@@ -226,7 +223,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 
 			if (processingLimit > NOT_SET && currentTaskNum >= processingLimit) {
-				LOGGER.info("Processing limit of " + processingLimit + " tasks reached.  Stopping");
+				LOGGER.info("Processing limit of {} tasks reached.  Stopping", processingLimit);
 				break;
 			}
 		}
@@ -261,14 +258,15 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 			Classification classification = null;
 			if (classifyTasks) {
-				LOGGER.info("Classifying " + task);
+				LOGGER.info("Classifying {}", task);
 				classification = scaClient.classify(task.getKey());
-				LOGGER.debug(classification.toString());
+				LOGGER.debug("{}",classification);
 			}
+
 			if (validateTasks) {
-				LOGGER.info("Validating " + task);
+				LOGGER.info("Validating {}", task);
 				Status status = scaClient.validate(task.getKey());
-				LOGGER.debug(status.toString());
+				LOGGER.debug("{}", status);
 			}
 
 			if (classification != null) {
@@ -360,6 +358,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					try {
 						scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
 					} catch (Exception e2) {
+						//Don't worry about failing to delete the task, we can do that directly in JIRA
 					}
 
 					if (taskCreationAttempts >= 3) {
@@ -431,8 +430,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	protected void updateTask(Task task, String reportName, String reportURL) throws Exception {
 		String taskDescription;
-		if (this instanceof BatchImport) {
-			taskDescription = ((BatchImport) this).getAllNotes(task);
+		if (this instanceof BatchImport batchImport) {
+			taskDescription = batchImport.getAllNotes(task);
 		} else {
 			taskDescription = populateTaskDescription ? task.getDescriptionHTML() : DEFAULT_TASK_DESCRIPTION;
 		}
@@ -448,7 +447,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 		//Reassign the task to the intended author.  Set at task or processing level
 		String reviewMsg = task.getReviewer() == null ? "" : " into review for " + task.getReviewer();
-		LOGGER.debug("Assigning " + task + " to " + task.getAssignedAuthor() + reviewMsg);
+		LOGGER.debug("Assigning {} to {}{}", task, task.getAssignedAuthor(),reviewMsg);
 		scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, task.getAssignedAuthor(), task.getReviewer());
 	}
 
@@ -661,8 +660,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				}
 				break;
 			case AT_LEAST_ONE:
-				if (attributes.size() < 1) {
-					msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected one or more.";
+				if (attributes.isEmpty()) {
+					msg = "Concept has 0 active stated attributes of type " + attributeType + " expected one or more.";
 				}
 				break;
 		}
@@ -739,7 +738,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		int changesMade = 0;
 		AncestorsCache aCache = gl.getAncestorsCache();
 		Set<Concept> newParentAncestors = addParents.stream()
-				.map(p -> aCache.getAncestorsSafely(p))
+				.map(aCache::getAncestorsSafely)
 				.flatMap(Collection::stream)
 				.collect(Collectors.toSet());
 
@@ -929,11 +928,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 		//We'll recover an original copy of the description so that we see the original name in the report
 		Concept origConcept = gl.getConcept(c.getId());
-
-		if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) &&
-				!StringUtils.isCaseSensitive(newTerm)) {
-			//LOGGER.debug ("Check case sensitivity here");
-		}
 
 		if (reuseMe != null) {
 			if (reuseMe.isActive()) {
@@ -1605,7 +1599,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		for (Concept replacement : replacements) {
 			report(t, originalTarget, severity, ReportActionType.ASSOCIATION_CHANGED, "Historical incoming association from " + incomingConcept, " rewired as " + assocType, replacement);
 		}
-		;
+
 		//Add this concept into our task so we know it's been updated
 		t.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		updateConcept(t, incomingConcept, "");
