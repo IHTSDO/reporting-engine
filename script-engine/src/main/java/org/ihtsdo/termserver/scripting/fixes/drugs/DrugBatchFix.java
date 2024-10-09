@@ -40,7 +40,8 @@ public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 		if (ingredients == null || ingredients.isEmpty()) {
 			throw new ValidationFailure(c, "No ingredients found for ingredient count");
 		} else if (ingredients.size() == 1) {
-			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, DrugUtils.getNumberAsConcept("1"), UNGROUPED, true);
+			ConcreteValue cv = new ConcreteValue(ConcreteValue.ConcreteValueType.INTEGER, "1");
+			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, null, cv, UNGROUPED, RelationshipTemplate.Mode.PERMISSIVE);
 		} else {
 			//Quick check that the number of ingredients matches the number of " and "
 			if (ingredients.size() != c.getFsn().split(AND).length) {
@@ -50,8 +51,8 @@ public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 			if (bases.size() != ingredients.size()) {
 				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Ingredients / Base Count: " + ingredients.size() + " / " + bases.size());
 			}
-			Concept baseCountConcept = DrugUtils.getNumberAsConcept(Integer.toString(bases.size()));
-			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, baseCountConcept, UNGROUPED, true);
+			ConcreteValue cv = new ConcreteValue(ConcreteValue.ConcreteValueType.INTEGER,Integer.toString(bases.size()));
+			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT,null, cv, UNGROUPED, RelationshipTemplate.Mode.PERMISSIVE);
 		}
 		return changes;
 	}

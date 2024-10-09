@@ -8,13 +8,9 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public abstract class TermGenerator implements ScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TermGenerator.class);
+	public static final String LITER = "liter";
 
 	protected TermServerScript parent;
 	
@@ -39,7 +35,7 @@ public abstract class TermGenerator implements ScriptConstants {
 	protected boolean removeDescription(Concept c, Description d) {
 		if (d.isReleased() == null) {
 			throw new IllegalStateException ("'Released' flag must be populated to safely remove description in: " + c);
-		} else if (d.isReleased()) {
+		} else if (d.isReleasedSafely()) {
 			d.setActive(false);
 			d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			d.setAcceptabilityMap(null);
@@ -73,16 +69,8 @@ public abstract class TermGenerator implements ScriptConstants {
 		}
 		
 		if (removing != null) {
-			//Has our description been published?  Remove entirely if not
-			boolean isInactivated = removeDescription(c,removing);
-			String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
+			processRemovingDescription(t, c, removing);
 			changesMade++;
-			
-			//We're only going to report this if the term really existed, silently delete null terms
-			if (removing.getTerm() != null) {
-				Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
-				report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
-			}
 		}
 		
 		if (doReplacement) {
@@ -93,6 +81,18 @@ public abstract class TermGenerator implements ScriptConstants {
 		}
 		
 		return changesMade;
+	}
+
+	private void processRemovingDescription(Task t, Concept c, Description removing) throws TermServerScriptException {
+		//Has our description been published?  Remove entirely if not
+		boolean isInactivated = removeDescription(c,removing);
+		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
+
+		//We're only going to report this if the term really existed, silently delete null terms
+		if (removing.getTerm() != null) {
+			Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
+			report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
+		}
 	}
 
 	private void mergeAcceptability(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
