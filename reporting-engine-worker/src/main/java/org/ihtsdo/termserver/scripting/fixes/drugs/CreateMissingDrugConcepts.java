@@ -387,6 +387,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 
 	private void reviewClinicalDrug(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		if (containsGaseousIngredient(c)) {
+			return;  //RP-915
+		}
 		Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
 		//If the concept has a more specific mpf than the one we've calculated, warn
 		List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
