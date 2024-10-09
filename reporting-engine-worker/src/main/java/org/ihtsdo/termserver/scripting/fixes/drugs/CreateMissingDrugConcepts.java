@@ -41,28 +41,30 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CreateMissingDrugConcepts.class);
 
-	Set<Concept> createMPFs = new HashSet<>();
-	Set<Concept> knownMPFs = new HashSet<>();
-	
-	Set<Concept> createMPs = new HashSet<>();
-	Set<Concept> knownMPs = new HashSet<>();
-	
-	Set<Concept> createMPOs = new HashSet<>();
-	Set<Concept> knownMPOs = new HashSet<>();
-	
-	Set<Concept> createMPFOs = new HashSet<>();
-	Set<Concept> knownMPFOs = new HashSet<>();
-	
-	String[] substanceExceptions = new String[] {}; //"liposome"
-	String[] complexExceptions = new String[] {}; // "lipid", "phospholipid", "cholesteryl"
-	
-	Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
-	
-	Set<String> suppress = new HashSet<>();
+	private Set<Concept> createMPFs = new HashSet<>();
+	private Set<Concept> knownMPFs = new HashSet<>();
+
+	private Set<Concept> createMPs = new HashSet<>();
+	private Set<Concept> knownMPs = new HashSet<>();
+
+	private Set<Concept> createMPOs = new HashSet<>();
+	private Set<Concept> knownMPOs = new HashSet<>();
+
+	private Set<Concept> createMPFOs = new HashSet<>();
+	private Set<Concept> knownMPFOs = new HashSet<>();
+
+	private String[] substanceExceptions = new String[] {}; //"liposome"
+	private String[] complexExceptions = new String[] {}; // "lipid", "phospholipid", "cholesteryl"
+
+	private Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
+
+	private Set<String> suppress = new HashSet<>();
 	protected boolean reportMissingUnderlyingCDs = false;
 	
 	private boolean newConceptsOnly = true;
-	
+
+	private Set<Concept> gaseousSubstances;
+
 	public CreateMissingDrugConcepts() {
 		super(null);
 	}
@@ -85,8 +87,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(NEW_CONCEPTS_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
-				//.add(CONCEPTS_PER_TASK).withType(JobParameter.Type.STRING).withDefaultValue(5).withMandatory()
-				//.add(DRY_RUN).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).withMandatory()
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
@@ -121,7 +121,16 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		String[] tabNames = new String[] {	"Missing MP/MPF Concepts",
 				"Processing Issues",
 				"Suppressed Concepts"};
+
+		super.postInit(GFOLDER_DRUGS_MISSING, tabNames, columnHeadings, false);
 		
+		populateKnownConcepts();
+
+		//We'll just report the results, no need to expose the working
+		termGenerator.setQuiet(true);
+	}
+
+	private void populateKnownConcepts() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
@@ -134,14 +143,14 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				knownMPFOs.add(c);
 			}
 		}
-		
+
 		allowMoreSpecificDoseForms.add(gl.getConcept("764671009 | Sublingual dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("766964003 | Oropharyngeal dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("765167000 | Nasal or ocular or otic dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("765166009 | Ocular or otic dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("772805002 | Endotracheopulmonary dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("772806001 | Buccal dose form (dose form)||"));
-		
+
 		suppress.add("Product containing human alpha1 proteinase inhibitor (medicinal product)");
 		suppress.add("Product containing Influenza virus vaccine (medicinal product)");
 		suppress.add("Product containing amino acid (medicinal product)");
@@ -168,8 +177,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		suppress.add("Product containing only antigen of Mumps orthorubulavirus and antigen of Rubella virus (medicinal product)");
 		suppress.add("Product containing only antigen of Clostridium tetani toxoid adsorbed and antigen of Corynebacterium diphtheriae toxoid and antigen of whole cell Bordetella pertussis (medicinal product)");
 
-		super.postInit(GFOLDER_DRUGS_MISSING, tabNames, columnHeadings, false);
-		
 		for (String suppressedConcept : suppress) {
 			report (TERTIARY_REPORT, suppressedConcept);
 		}
@@ -336,7 +343,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.debug("Identifying concepts to process");
 		List<Concept> allAffected = new ArrayList<>();
-		termGenerator.setQuiet(true);
 		List<Concept> conceptsToReview = MEDICINAL_PRODUCT.getDescendants(NOT_SET).stream()
 				.filter(this::inScope)
 				.sorted(SnomedUtils::compareSemTagFSN)
@@ -346,7 +352,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		}
 		LOGGER.info ("Identified {} concepts to process", allAffected.size());
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
-		termGenerator.setQuiet(false);
 		return new ArrayList<>(allAffected);
 	}
 
@@ -356,10 +361,13 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				reviewClinicalDrug(c, allAffected);
 			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				reviewMPF(c, allAffected);
-			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)
+					|| c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
 				reviewMP(c, allAffected);
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY)) {
+				reviewMPO(c, allAffected);
 			} else {
-				report (SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Unexpected concept type: " + c.getConceptType());
+				report(SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Unexpected concept type: " + c.getConceptType());
 			}
 		} catch (Exception e) {
 			String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
@@ -369,6 +377,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 
 	private void reviewClinicalDrug(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		if (containsGaseousIngredient(c)) {
+			return;  //RP-915
+		}
 		Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
 		//If the concept has a more specific mpf than the one we've calculated, warn
 		List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
@@ -392,6 +403,24 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 			createMPFs.add(mpf);
 			allAffected.add(c);
 		}
+	}
+
+	private boolean containsGaseousIngredient(Concept c) {
+		try {
+			if (gaseousSubstances == null) {
+				gaseousSubstances = gl.getConcept("74947009 |Gaseous substance (substance)|").getDescendants(NOT_SET);
+			}
+			for (Concept ingredient : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (gaseousSubstances.contains(ingredient)) {
+					return true;
+				}
+			}
+		} catch (Exception e) {
+			//If anything about this check fails, we'll just say no it didn't, and then we'll get some false
+			//positives in the output, but at least the report will complete
+			LOGGER.error("Failure while checking {} for gaseous ingredients", c, e);
+		}
+		return false;
 	}
 
 	private void reviewMPF(Concept c, List<Concept> allAffected) throws TermServerScriptException {
@@ -463,8 +492,27 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 					createMPOs.add(mpo);
 					allAffected.add(c);
 				}
-			} else {
+			} else if (reportMissingUnderlyingCDs) {
 				report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO", mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			}
+		}
+	}
+
+	private void reviewMPO(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		if (containsExceptionSubstance(c)) {
+			return;
+		}
+		Concept mp = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT);
+		//Do we already know about this concept or already have a plan to create it?
+		if (!isContained(mp, knownMPs) && !isContained(mp, createMPs)) {
+			//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+			if (hasClinicalDrugDescendant(c)) {
+				if (!isSuppressed(mp)) {
+					createMPs.add(mp);
+					allAffected.add(c);
+				}
+			} else if (reportMissingUnderlyingCDs) {
+				report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			}
 		}
 	}
@@ -481,11 +529,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	private boolean isSuppressed (Concept c) throws TermServerScriptException {
 		termGenerator.ensureTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP);
 		//Are we suppressing this concept?
-		if (suppress.contains(c.getFsn())) {
-			report ((Task)null, c, Severity.MEDIUM, ReportActionType.INFO, "Concept suppressed");
-			return true;
-		}
-		return false;
+		//RP-915 Don't report suppressed concepts
+		return suppress.contains(c.getFsn());
 	}
 
 	private boolean containsExceptionSubstance(Concept c) throws TermServerScriptException {
