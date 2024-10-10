@@ -7,20 +7,22 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/* INFRA-10432 Update On Examination historical associations based on a spreadsheet.
-*/
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/* INFRA-10432 Update On Examination historical associations based on a spreadsheet.
+	INFRA-12931 O/E and C/O inactivation reason and historical association changes, continued
+*/
 public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implements ScriptConstants{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
+
+	private static final String UNKNOWN = "Unknown";
 
 	private Map<Concept, UpdateAction> replacementMap = new HashMap<>();
 	private Map<Concept, String> cathyNotes = new HashMap<>();
@@ -56,6 +58,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, Cathy Notes, , ",
@@ -77,7 +80,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		postInit(tabNames, columnHeadings, false);
 	}
 
-	private void process() throws ValidationFailure, TermServerScriptException {
+	private void process() throws TermServerScriptException {
 		populateCathyNotes();
 		populateSkipList();
 		populateReplacementMap();
@@ -86,12 +89,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		checkForRecentInactivations();
 
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			/*if (!c.getId().equals("164427005")) {
-				continue;
-			}*/
 			//Is this a concept we've been told to replace the associations on?
 			if (replacementMap.containsKey(c)) {
-				if (!c.isActive()) {
+				if (!c.isActiveSafely()) {
 					processConcept(c);
 				} else {
 					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is active");
@@ -109,9 +109,10 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				String thisTerm = d.getTerm();
 				if (d.getType().equals(DescriptionType.FSN)) {
-					thisTerm = SnomedUtils.deconstructFSN(thisTerm, true)[0];
+					thisTerm = SnomedUtilsBase.deconstructFSN(thisTerm, true)[0];
 				}
-				thisTerm = thisTerm.replace("-", "").replaceAll("  ", " ");
+				thisTerm = thisTerm.replace("-", "")
+						.replace("  ", " ");
 				thisConceptTerms.add(thisTerm);
 			}
 		}
@@ -137,6 +138,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		UpdateAction action = replacementMap.get(c);
 		if (action != null && action.inactivationIndicator != null) {
 			newII = action.inactivationIndicator;
+		} else if (action == null) {
+			throw new TermServerScriptException("No action found for " + c);
 		}
 
 		if (!action.inactivationIndicator.equals(prevInactValue)) {
@@ -195,7 +198,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		//Loop around a copy of this collection so we can safely modify the orignal
 		for (Concept replacement : new HashSet<>(updatedReplacements)) {
 			//Check that our replacement is still active
-			if (!replacement.isActive()) {
+			if (!replacement.isActiveSafely()) {
 				report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Originally suggested replacement is now inactive", replacement);
 				Concept updatedReplacement = null;
 				try {
@@ -203,7 +206,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				} catch (Exception e) {
 					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Failed to find replacement for inactive replacement" + replacement, e.getMessage());
 				}
-				if (updatedReplacement == null || !updatedReplacement.isActive()) {
+				if (updatedReplacement == null || !updatedReplacement.isActiveSafely()) {
 					return updatedReplacements;
 				}
 				updatedReplacements.remove(replacement);
@@ -217,27 +220,30 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		int lineNo = 0;
 		try {
 			for (String line : Files.readAllLines(getInputFile().toPath(), Charset.defaultCharset())) {
-				try {
-					lineNo++;
-					if (line.startsWith("#")) {
-						report(SECONDARY_REPORT,"Skipped line (commented out) " + lineNo + ": " + line, getInputFile().toPath());
-						continue;
-					}
-					String[] items = line.split(TAB);
-					Concept inactive = gl.getConcept(items[0]);
-					Concept replacement = gl.getConcept(items[2]);
-					UpdateAction alreadyMapped = replacementMap.get(inactive);
-					UpdateAction thisMapping = createReplacementAssociation(replacement);
-					if (alreadyMapped != null && !alreadyMapped.replacements.contains(replacement)) {
-						report(SECONDARY_REPORT,"Map replacement for inactive " + inactive + " already seen.  Was " + alreadyMapped + " now " + thisMapping);
-					}
-					replacementMap.put(inactive, thisMapping);
-				} catch (Exception e) {
-					report(SECONDARY_REPORT,"Failed to parse line (1st file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
-				}
+				populateReplacementMap(line, lineNo++);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
+		}
+	}
+
+	private void populateReplacementMap(String line, int lineNo) throws TermServerScriptException {
+		try {
+			if (line.startsWith("#")) {
+				report(SECONDARY_REPORT,"Skipped line (commented out) " + lineNo + ": " + line, getInputFile().toPath());
+				return;
+			}
+			String[] items = line.split(TAB);
+			Concept inactive = gl.getConcept(items[0]);
+			Concept replacement = gl.getConcept(items[2]);
+			UpdateAction alreadyMapped = replacementMap.get(inactive);
+			UpdateAction thisMapping = createReplacementAssociation(replacement);
+			if (alreadyMapped != null && !alreadyMapped.replacements.contains(replacement)) {
+				report(SECONDARY_REPORT,"Map replacement for inactive " + inactive + " already seen.  Was " + alreadyMapped + " now " + thisMapping);
+			}
+			replacementMap.put(inactive, thisMapping);
+		} catch (Exception e) {
+			report(SECONDARY_REPORT,"Failed to parse line (1st file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
 		}
 	}
 
@@ -245,43 +251,44 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		int lineNo = 0;
 		try {
 			for (String line : Files.readAllLines(getInputFile(1).toPath(), Charset.defaultCharset())) {
-				try {
-					lineNo++;
-					String[] items = line.split(TAB);
-					Concept inactive = gl.getConcept(items[0]);
-					String inactivationIndicatorStr = items[2];
-					String replacementsStr = items[3];
-					InactivationIndicator inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
-					Association association = Association.REPLACED_BY;
-					if (inactivationIndicatorStr.contains("Ambiguous")) {
-						inactivationIndicator = InactivationIndicator.AMBIGUOUS;
-						association = Association.POSS_EQUIV_TO;
-					} else if (inactivationIndicatorStr.contains("Outdated")) {
-						inactivationIndicator = InactivationIndicator.OUTDATED;
-						association = Association.REPLACED_BY;
-					} else if (inactivationIndicatorStr.contains("CDC")) {
-						inactivationIndicator = InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
-						association = Association.REPLACED_BY;
-					}
-
-					UpdateAction action = new UpdateAction();
-					action.inactivationIndicator = inactivationIndicator;
-					replacementMap.put(inactive, action);
-
-					if (replacementsStr.equals("UNCHANGED")) {
-						action.associationTargetsUnchanged = true;
-					} else {
-						Set<Concept> replacements = splitConcepts(replacementsStr);
-						action.replacements = replacements;
-						action.type = association;
-					}
-
-				} catch (Exception e) {
-					report(SECONDARY_REPORT,"Failed to parse line (2nd file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
-				}
+				populateUpdatedReplacementMap(line, lineNo++);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
+		}
+	}
+
+	private void populateUpdatedReplacementMap(String line, int lineNo) throws TermServerScriptException {
+		try {
+			String[] items = line.split(TAB);
+			Concept inactive = gl.getConcept(items[0]);
+			String inactivationIndicatorStr = items[2];
+			String replacementsStr = items[3];
+			InactivationIndicator inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+			Association association = Association.REPLACED_BY;
+			if (inactivationIndicatorStr.contains("Ambiguous")) {
+				inactivationIndicator = InactivationIndicator.AMBIGUOUS;
+				association = Association.POSS_EQUIV_TO;
+			} else if (inactivationIndicatorStr.contains("Outdated")) {
+				inactivationIndicator = InactivationIndicator.OUTDATED;
+			} else if (inactivationIndicatorStr.contains("CDC")) {
+				inactivationIndicator = InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
+			}
+
+			UpdateAction action = new UpdateAction();
+			action.inactivationIndicator = inactivationIndicator;
+			replacementMap.put(inactive, action);
+
+			if (replacementsStr.equals("UNCHANGED")) {
+				action.associationTargetsUnchanged = true;
+			} else {
+				Set<Concept> replacements = splitConcepts(replacementsStr);
+				action.replacements = replacements;
+				action.type = association;
+			}
+
+		} catch (Exception e) {
+			report(SECONDARY_REPORT,"Failed to parse line (2nd file) at line " + lineNo + ": " + line + " due to " + e.getMessage());
 		}
 	}
 
@@ -341,18 +348,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			if (++conceptsChecked % 10000 == 0) {
 				LOGGER.info("Checked {} concepts for recent inactivation", conceptsChecked);
 			}
-            if (c.getFSNDescription() == null) {
-				LOGGER.warn("Unpopulated " + c.getId());
-				continue;
-			}
-			if (c.isActive()) {
-				continue;
-			}
-			if (!inScope(c) ||
-					manageManually.contains(c.getId()) ||
-					reportedAsAdditional.contains(c)) {
-				continue;
-			}
+           if (shouldBeSkippedForRecentInactivationCheck(c)) {
+			   continue;
+           }
 
 			List<String> notes = new ArrayList<>();
 			boolean alreadyIncludedForProcessed = replacementMap.containsKey(c) || reportedAsAdditional.contains(c);
@@ -376,7 +374,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				addedForProcessing |= checkForProcessInclusion("Sibling", sibling, notes, action, c);
 				reportedAsAdditional.add(sibling);
 				siblingData[0] = sibling.toString();
-				siblingData[1] = sibling.isActive()?"Y":"N";
+				siblingData[1] = sibling.isActiveSafely()?"Y":"N";
 				siblingData[2] = replacementMap.containsKey(sibling)?"Y":"N";
 				siblingData[3] = SnomedUtils.prettyPrintHistoricalAssociations(sibling, gl, true);
 			}
@@ -386,7 +384,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			if (cousin != null) {
 				addedForProcessing |= checkForProcessInclusion("Cousin", cousin, notes, action, familyMember);
 				cousinData[0] = cousin.toString();
-				cousinData[1] = cousin.isActive()?"Y":"N";
+				cousinData[1] = cousin.isActiveSafely()?"Y":"N";
 				cousinData[2] = SnomedUtils.prettyPrintHistoricalAssociations(cousin, gl, true);
 			}
 
@@ -411,6 +409,18 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				report(TERTIARY_REPORT, c, notesStr, mismatchFlag, assocStr, siblingData, cousinData);
 			}
 		}
+	}
+
+	private boolean shouldBeSkippedForRecentInactivationCheck(Concept c) {
+		if (c.getFSNDescription() == null) {
+			LOGGER.warn("Unpopulated {}", c.getId());
+			return true;
+		}
+		
+		return c.isActiveSafely()
+				|| !inScope(c)
+				|| 	manageManually.contains(c.getId())
+				|| reportedAsAdditional.contains(c);
 	}
 
 	private boolean checkForProcessInclusion(String familyRelationship, Concept c, List<String> notes, UpdateAction action, Concept familyMember) {
@@ -631,32 +641,34 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		return false;
 	}
 
+	private List<String> getTargetFsns(String thisPrefix, String rootFsn) {
+		List<String> targetFsns = new ArrayList<>();
+
+		targetPrefixes.stream().filter(siblingPrefix -> !siblingPrefix.equals(thisPrefix)).forEach(siblingPrefix -> {
+			String targetFsn = siblingPrefix + " " + rootFsn;
+			targetFsn = targetFsn.replace("  ", " ").trim();
+			targetFsns.add(targetFsn);
+		});
+
+		return targetFsns;
+	}
+
 	//A cousin is the same basic FSN, but with a _different_ prefix
-	private Concept findSibling(Concept c) throws TermServerScriptException {
-		String rootFsn = "Unknown";
-		String thisPrefix = "Unknown";
+	private Concept findSibling(Concept c) {
+		String rootFsn = UNKNOWN;
+		String thisPrefix = UNKNOWN;
 		for (String targetPrefix : targetPrefixes) {
 			if (c.getFsn().startsWith(targetPrefix)) {
 				rootFsn = c.getFsn().replace(targetPrefix, "").replace("- ", "").trim();
-				rootFsn = SnomedUtils.deconstructFSN(rootFsn)[0];
+				rootFsn = SnomedUtilsBase.deconstructFSN(rootFsn)[0];
 				thisPrefix = targetPrefix;
 				break;
 			}
 		}
-		
-		List<String> targetFSNs = new ArrayList<>();
-		
+
 		//Check for all alternative prefixes
 		//Pre-generate these so we're not doing that inside the loop with all concepts
-		for (String siblingPrefix : targetPrefixes) {
-			if (siblingPrefix.equals(thisPrefix)) {
-				continue;
-			}
-
-			String targetFsn = siblingPrefix + " " + rootFsn;
-			targetFsn = targetFsn.replace("  ", " ").trim();
-			targetFSNs.add(targetFsn);
-		}
+		List<String> targetFSNs = getTargetFsns(thisPrefix, rootFsn);
 
 		for (Concept sibling : gl.getAllConcepts()) {
 			//Don't compare with self
@@ -677,11 +689,11 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 
 	//A cousin is the same basic FSN, but without any prefix
 	private Concept findCousin(Concept c, boolean includeActive) {
-		String targetFsn = "Unknown";
+		String targetFsn = UNKNOWN;
 		for (String targetPrefix : targetPrefixes) {
 			if (c.getFsn().startsWith(targetPrefix)) {
 				targetFsn = c.getFsn().replace(targetPrefix, "").replace("- ", "").trim();
-				targetFsn = SnomedUtils.deconstructFSN(targetFsn)[0];
+				targetFsn = SnomedUtilsBase.deconstructFSN(targetFsn)[0];
 				break;
 			}
 		}
@@ -727,6 +739,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		return "";
 	}
 
+	@Override
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details, getCathyNotes(c));
 	}
@@ -780,7 +793,9 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		public String toString() {
 			String replacementsStr = "UNCHANGED";
 			if (this.replacements != null) {
-				replacementsStr = this.replacements.stream().map(c -> c.toString()).collect(Collectors.joining(","));
+				replacementsStr = this.replacements.stream()
+						.map(Concept::toString)
+						.collect(Collectors.joining(","));
 			}
 			return inactivationIndicator + ": " + type + " " + replacementsStr;
 		}
