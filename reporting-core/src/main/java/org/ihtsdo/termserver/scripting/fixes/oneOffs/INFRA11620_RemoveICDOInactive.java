@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.oneOffs;
+package org.ihtsdo.termserver.scripting.fixes.one_offs;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
