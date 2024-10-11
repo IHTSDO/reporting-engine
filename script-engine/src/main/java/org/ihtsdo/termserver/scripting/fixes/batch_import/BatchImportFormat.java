@@ -18,7 +18,7 @@ public class BatchImportFormat implements ScriptConstants {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportFormat.class);
 
-	public enum FORMAT { SIRS, ICD11, LOINC }
+	public enum FORMAT { SIRS, ICD11, LOINC, PHAST }
 
 	public enum FIELD { SCTID, PARENT_1, PARENT_2, FSN, CAPS, FSN_ROOT, CAPSFSN, PREF_TERM, NOTES, SEMANTIC_TAG, EXPRESSION, ORIG_REF}
 
@@ -29,10 +29,10 @@ public class BatchImportFormat implements ScriptConstants {
 	public static final String NEW_LINE = "\n";
 	public static final String SYNONYM = "Synonym";
 	public static final String NOTE = "Note";
-	public static final String NOTES = "Notes";
-	public static final String EXPRESSION = "Expression";
 	private static final String NEW_SCTID = "NEW_SCTID";  //Indicates we'll pass blank to TS
 	private static final String NULL_STR = "NULL";
+	public static final String TERM1 = "TERM1";
+	public static final String TERM2 = "TERM2";
 	
 	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
@@ -56,6 +56,7 @@ public class BatchImportFormat implements ScriptConstants {
 		HEADERS_MAP.put(FORMAT.SIRS, SIRS_HEADERS);
 		HEADERS_MAP.put(FORMAT.ICD11, ICD11_HEADERS);
 		HEADERS_MAP.put(FORMAT.LOINC, LOINC_HEADERS);
+		HEADERS_MAP.put(FORMAT.PHAST, PHAST_HEADERS);
 	}
 	protected static final Map<FIELD, String>SIRS_MAP = new HashMap<>();
 	static {
@@ -85,8 +86,20 @@ public class BatchImportFormat implements ScriptConstants {
 		LOINC_MAP.put(FIELD.FSN, "3");
 		LOINC_MAP.put(FIELD.CAPSFSN, "4");
 	}
+
+	protected static final Map<FIELD, String> PHAST_MAP = new HashMap<>();
+	static {
+		//Note that these are 0-based indexes
+		PHAST_MAP.put(FIELD.SCTID, "0");
+		PHAST_MAP.put(FIELD.FSN, "1");
+		PHAST_MAP.put(FIELD.EXPRESSION, "5");
+	}
 	
 	protected static final int[] LOINC_Documentation = new int[] {25,26,27};
+
+	public boolean isFormat(FORMAT format) {
+		return this.format == format;
+	}
 
 	private static BatchImportFormat create(FORMAT format) throws TermServerScriptException {
 		//Booleans are:  defines by expression, constructs FSN, multipleTerms
@@ -95,8 +108,9 @@ public class BatchImportFormat implements ScriptConstants {
 		} else if (format == FORMAT.ICD11) {
 			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, null, true, false, true);
 		} else if (format == FORMAT.LOINC) {
-			
 			return new BatchImportFormat(FORMAT.LOINC, LOINC_MAP, LOINC_Documentation, false, false, true);
+		} else if (format == FORMAT.PHAST) {
+			return new BatchImportFormat(FORMAT.PHAST, PHAST_MAP, null, true, false, true);
 		} else {
 			throw new TermServerScriptException("Unsupported format: " + format);
 		}
@@ -262,10 +276,46 @@ public class BatchImportFormat implements ScriptConstants {
 		} 
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Set<Relationship> relationships = new HashSet<>();
+		addFocusConcepts(source, expression, relationships, gl);
+		
+		for (RelationshipGroup group : expression.getAttributeGroups()) {
+			relationships.addAll(group.getRelationships());
+		}
+
+		addRelationshipsToConcept(source, relationships, moduleId, gl);
+	}
+
+	private void addRelationshipsToConcept(Concept source, Set<Relationship> relationships, String moduleId, GraphLoader gl) throws TermServerScriptException {
+		for (Relationship r : relationships) {
+			r.setModuleId(moduleId);
+			r.setActive(true);
+			//Let's get the actual type / target so we can see the FSNs
+			Concept type = gl.getConcept(r.getType().getConceptId(), false, false);
+			if (type != null) {
+				r.setType(type);
+			}
+
+			//Are we working with a Concept or Concrete Value?
+			String targetStr = r.getTarget().getConceptId();
+			if (targetStr.startsWith("#")) {
+				//Is this a type that normally takes an integer?
+				ConcreteValue cv = new ConcreteValue(targetStr);
+				r.setConcreteValue(cv);
+			} else {
+				Concept target = gl.getConcept(r.getTarget().getConceptId(), false, false);
+				if (target != null) {
+					r.setTarget(target);
+				}
+			}
+		}
+		source.setRelationships(relationships);
+	}
+
+	private void addFocusConcepts(Concept source, BatchImportExpression expression, Set<Relationship> relationships, GraphLoader gl) throws TermServerScriptException {
 		for (String parentId : expression.getFocusConcepts()) {
 			//Do not create parent, validate that it exists
 			Concept parent = gl.getConcept(parentId, false, true);
-			
+
 			//Parents must be active concepts of course!
 			if (!parent.isActiveSafely()) {
 				throw new TermServerScriptException("Specified parent " + parent + " is inactive");
@@ -274,26 +324,6 @@ public class BatchImportFormat implements ScriptConstants {
 			Relationship isA = new Relationship(source, IS_A, parent, UNGROUPED);
 			relationships.add(isA);
 		}
-		
-		for (RelationshipGroup group : expression.getAttributeGroups()) {
-			relationships.addAll(group.getRelationships());
-		}
-		
-		for (Relationship r : relationships) {
-			r.setModuleId(moduleId);
-			r.setActive(true);
-			//Lets get the actual type / target so we can see the FSNs
-			Concept type = gl.getConcept(r.getType().getConceptId(), false, false);
-			if (type != null) {
-				r.setType(type);
-			}
-			
-			Concept target = gl.getConcept(r.getTarget().getConceptId(), false, false);
-			if (target != null) {
-				r.setTarget(target);
-			}
-		}
-		source.setRelationships(relationships);
 	}
 
 	public List<String> getAllNotes(BatchImportConcept thisConcept) {
@@ -323,7 +353,6 @@ public class BatchImportFormat implements ScriptConstants {
 	}
 
 	public static BatchImportFormat determineFormat(CSVRecord header) throws TermServerScriptException {
-		
 		BatchImportFormat thisFormat = null;
 		nextFormat:
 		for (Map.Entry<FORMAT, String[]> thisFormatHeaders : HEADERS_MAP.entrySet()) {
@@ -333,16 +362,18 @@ public class BatchImportFormat implements ScriptConstants {
 			List<Integer> notesIndexList = new ArrayList<>();
 			List<Integer> synonymIndexList = new ArrayList<>();
 			for (int colIdx=0; colIdx < header.size() && !mismatchDetected ;colIdx++) {
-				if (colIdx < checkHeaders.length && !header.get(colIdx).trim().equalsIgnoreCase(checkHeaders[colIdx])) {
+				//The first field might have some non-ASCII encoding in it, so we'll trim it
+				String colStr = header.get(colIdx).replaceAll("[^a-zA-Z0-9]", "");
+				if (colIdx < checkHeaders.length && !colStr.equalsIgnoreCase(checkHeaders[colIdx])) {
 					LOGGER.info("File is not {} format because header {}:'{}' is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
 					mismatchDetected = true;
 					continue nextFormat;
 				} else {
-					if (header.get(colIdx).equalsIgnoreCase(NOTE)) {
+					if (colStr.equalsIgnoreCase(NOTE)) {
 						notesIndexList.add(colIdx);
 					}
 					
-					if (header.get(colIdx).equalsIgnoreCase(SYNONYM)) {
+					if (colStr.equalsIgnoreCase(SYNONYM)) {
 						synonymIndexList.add(colIdx);
 					}
 				}
@@ -375,8 +406,9 @@ public class BatchImportFormat implements ScriptConstants {
 			case SIRS : return SIRS_HEADERS;
 			case ICD11 : return ICD11_HEADERS;
 			case LOINC : return LOINC_HEADERS;
+			case PHAST : return PHAST_HEADERS;
+			default : throw new TermServerScriptException("Unrecognised format: " + format);
 		}
-		throw new TermServerScriptException("Unrecognised format: " + format);
 	}
 	
 	public int[] getDocumentationFields() {
