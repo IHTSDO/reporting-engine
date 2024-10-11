@@ -144,7 +144,7 @@ public class ArchiveManager implements ScriptConstants {
 			return branch;
 		} catch (Exception e) {
 			if (e.getMessage().contains("[404] Not Found")) {
-				LOGGER.debug ("Unable to find branch " + branchPath);
+				LOGGER.debug ("Unable to find branch {}", branchPath);
 				return null;
 			}
 			throw new TermServerScriptException("Failed to recover " + project + " from TS (" + server + ") due to " + e.getMessage(),e);
@@ -563,21 +563,10 @@ public class ArchiveManager implements ScriptConstants {
 		
 		ensureProjectMetadataPopulated(project);
 	
-		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
-		if (!previous.exists()) {
-			getArchiveDataLoader().download(previous);
-		}
-		LOGGER.info("Building snapshot release based on previous: " + previous);
+		File previous = determinePreviousPackage(project);
 		
 		//In the case of managed service, we will also have a dependency package
-		File dependency = null;
-		if (project.getMetadata().getDependencyPackage() != null) {
-			dependency = new File (dataStoreRoot + "releases/"  + project.getMetadata().getDependencyPackage());
-			if (!dependency.exists()) {
-				getArchiveDataLoader().download(dependency);
-			}
-			LOGGER.info("Building Extension snapshot release also based on dependency: " + dependency);
-		}
+		File dependency = determineDependencyIfRequired(project);
 		
 		//Now we need a recent delta to add to it
 		File delta = generateDelta(project);
@@ -587,7 +576,28 @@ public class ArchiveManager implements ScriptConstants {
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
 		snapshotGenerator.generateSnapshot(ts, dependency, previous, delta, snapshot);
 	}
-	
+
+	private File determineDependencyIfRequired(Project project) throws TermServerScriptException {
+		File dependency = null;
+		if (project.getMetadata().getDependencyPackage() != null) {
+			dependency = new File (dataStoreRoot + "releases/"  + project.getMetadata().getDependencyPackage());
+			if (!dependency.exists()) {
+				getArchiveDataLoader().download(dependency);
+			}
+			LOGGER.info("Building Extension snapshot release also based on dependency: " + dependency);
+		}
+		return dependency;
+	}
+
+	public File determinePreviousPackage(Project project) throws TermServerScriptException {
+		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
+		if (!previous.exists()) {
+			getArchiveDataLoader().download(previous);
+		}
+		LOGGER.info("Building snapshot release based on previous: " + previous);
+		return previous;
+	}
+
 	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
 		LOGGER.debug("In getArchiveLoader method, scriptName = {}", ts.getScriptName());
 		if (ts.getScriptName().equals("PackageComparisonReport")) {
