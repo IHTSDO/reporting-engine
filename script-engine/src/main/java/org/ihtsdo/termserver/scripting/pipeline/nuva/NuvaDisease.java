@@ -23,11 +23,6 @@ public class NuvaDisease extends NuvaConcept implements Comparable<NuvaDisease> 
 	}
 
 	@Override
-	protected String getLongDisplayName() {
-		return "";
-	}
-
-	@Override
 	public int compareTo(@NotNull NuvaDisease o) {
 		return o.externalIdentifier.compareTo(this.externalIdentifier);
 	}
