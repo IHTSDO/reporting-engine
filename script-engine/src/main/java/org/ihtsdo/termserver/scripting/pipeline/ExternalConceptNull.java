@@ -27,6 +27,11 @@ public class ExternalConceptNull extends ExternalConcept {
 	}
 
 	@Override
+	public String getShortDisplayName() {
+		return "Dummy Concept";
+	}
+
+	@Override
 	protected String[] getCommonColumns() {
 		return new String[0];
 	}
