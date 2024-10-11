@@ -23,15 +23,18 @@ import org.slf4j.LoggerFactory;
 public class BatchImport extends BatchFix implements BatchJobClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImport.class);
+	private static final char DELIMITER = ';';
+	private static final String LIST_ITEM_START = "<li>";
+	private static final String LIST_ITEM_END = "</li>";
 
 	private static final String[] LATERALITY = new String[] { "left", "right"};
-	Map<String, Concept> conceptsLoaded;
-	private BatchImportFormat format;
+	private Map<String, Concept> conceptsLoaded;
+	private BatchImportFormat fileFormat;
 	private String moduleId;
 	private Boolean allowLateralizedContent = true;
 	private BatchImportConcept rootConcept = BatchImportConcept.createRootConcept();
 	private Map <String, BatchImportConcept> allValidConcepts = new HashMap<>();
-	CharacteristicType charType = CharacteristicType.STATED_RELATIONSHIP;
+	private CharacteristicType charType = CharacteristicType.STATED_RELATIONSHIP;
 	
 	public BatchImport() {
 		super(null);
@@ -59,7 +62,8 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	protected void init(JobRun jobRun) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"); // Batch Import
 		selfDetermining = true;
@@ -81,9 +85,14 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			Reader in = new InputStreamReader(new FileInputStream(getInputFile()));
 			//SIRS files contain duplicate headers (eg multiple Notes columns) 
 			//So read 1st row as a record instead.
-			CSVParser parser = CSVFormat.EXCEL.parse(in);
+			CSVFormat csvFormat = CSVFormat.EXCEL.builder().setDelimiter(DELIMITER).build();
+			CSVParser parser = csvFormat.parse(in);
 			CSVRecord header = parser.iterator().next();
-			format = BatchImportFormat.determineFormat(header);
+			fileFormat = BatchImportFormat.determineFormat(header);
+
+			if (fileFormat.isFormat(BatchImportFormat.FORMAT.PHAST)) {
+				moduleId = "11000188109";
+			}
 			//And load the remaining records into memory
 			prepareConcepts(parser.getRecords());
 			allowLateralizedContent(allowLateralizedContent);
@@ -97,18 +106,15 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	
 	private void prepareConcepts(List<CSVRecord> rows) throws TermServerScriptException {
 		// Loop through concepts and form them into a hierarchy to be loaded, if valid
-		int minViableColumns = format.getHeaders().length;
+		int minViableColumns = fileFormat.getHeaders().length;
 		for (CSVRecord thisRow : rows) {
 			if (thisRow.getRecordNumber() % 50 == 0) {
-				LOGGER.info("Row " + thisRow.getRecordNumber());
+				LOGGER.info("Row {}", thisRow.getRecordNumber());
 			}
-			
-			/*if (thisRow.getRecordNumber() == 69) {
-				LOGGER.debug("here");
-			}*/
+
 			if (thisRow.size() >= minViableColumns) {
 				try {
-					BatchImportConcept thisConcept = format.createConcept(thisRow, moduleId);
+					BatchImportConcept thisConcept = fileFormat.createConcept(thisRow, moduleId);
 					if (validate(thisConcept)) {
 						insertIntoLoadHierarchy(thisConcept);
 					}
@@ -116,12 +122,12 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 					throw new TermServerScriptException(thisRow.toString(), e);
 				}
 			} else {
-				throw new TermServerScriptException("Blank row detected: "  + thisRow.toString());
+				throw new TermServerScriptException("Blank row detected: "  + thisRow);
 			}
 		}
 	}
 	
-	public void insertIntoLoadHierarchy(BatchImportConcept thisConcept) throws TermServerScriptException {
+	public void insertIntoLoadHierarchy(BatchImportConcept thisConcept) {
 		allValidConcepts.put(thisConcept.getId(), thisConcept);
 		
 		//Are we loading the parent of this concept? Add as a child if so
@@ -135,7 +141,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		//Is this concept a parent of existing known children?  Remove children 
 		//from the root concept and add under this concept if so
 		for (BatchImportConcept existingConcept : allValidConcepts.values()) {
-			if (existingConcept.getFirstParent().equals((Concept)thisConcept)) {
+			if (existingConcept.getFirstParent().equals(thisConcept)) {
 				rootConcept.removeChild(charType, existingConcept);
 				thisConcept.addChild(charType, existingConcept);
 			}
@@ -190,17 +196,17 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		return batch;
 	}
 	
-
+	@Override
 	protected int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		BatchImportConcept concept = (BatchImportConcept)c;
 		String statedForm = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		try{
-			validateConcept(t, c);
+			validateConcept(c);
 			removeTemporaryIds(c);
 			Concept createdConcept = createConcept(t, c, null);
 			String origRef = "";
-			if (format.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
-				origRef = concept.get(format.getIndex(BatchImportFormat.FIELD.ORIG_REF));
+			if (fileFormat.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
+				origRef = concept.get(fileFormat.getIndex(BatchImportFormat.FIELD.ORIG_REF));
 			}
 			report(t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, origRef, statedForm);
 			conceptsLoaded.put(createdConcept.getId(), createdConcept);
@@ -226,31 +232,32 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			.append(":</h5>")
 			.append("<ul>");
 			
-			if (format.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
-				String origRef = biConcept.get(format.getIndex(BatchImportFormat.FIELD.ORIG_REF));
+			if (fileFormat.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
+				String origRef = biConcept.get(fileFormat.getIndex(BatchImportFormat.FIELD.ORIG_REF));
 				if (origRef != null && !origRef.isEmpty()) {
-					str.append("<li>Originating Reference: ")
-					.append(origRef)
-					.append("</li>");
+					str.append(LIST_ITEM_START)
+							.append("Originating Reference: ")
+							.append(origRef)
+							.append(LIST_ITEM_END);
 				}
 			}
 			
-			for (int docIdx : format.getDocumentationFields()) {
+			for (int docIdx : fileFormat.getDocumentationFields()) {
 				String docStr = biConcept.get(docIdx);
 				if (docStr != null && !docStr.isEmpty()) {
-					str.append("<li>")
-					.append(format.getHeaders()[docIdx])
+					str.append(LIST_ITEM_START)
+					.append(fileFormat.getHeaders()[docIdx])
 					.append(": ")
 					.append(docStr)
-					.append("</li>");
+					.append(LIST_ITEM_END);
 				}
 			}
 			
-			List<String> notes = format.getAllNotes(biConcept);
+			List<String> notes = fileFormat.getAllNotes(biConcept);
 			for (String thisNote: notes) {
-				str.append("<li>")
+				str.append(LIST_ITEM_START)
 					.append(thisNote)
-					.append("</li>");
+					.append(LIST_ITEM_END);
 			}
 			str.append("</ul>");
 		}
@@ -260,7 +267,6 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	/**
 	 * We assigned temporary text ids so that we could tell the user which components failed validation
 	 * but we don't want to save those, so remove.
-	 * @param newConcept
 	 */
 	private void removeTemporaryIds(Concept c) {
 		c.setId(null);
@@ -273,7 +279,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		}
 	}
 	
-	private String validateConcept(Task task, Concept newConcept) throws TermServerScriptException {
+	private String validateConcept(Concept newConcept) throws TermServerScriptException {
 		if (!isLateralizedContentAllowed()) {
 			//Check for lateralized content
 			for (String thisBadWord : LATERALITY) {
