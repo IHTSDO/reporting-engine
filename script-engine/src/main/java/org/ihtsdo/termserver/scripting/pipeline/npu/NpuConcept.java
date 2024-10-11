@@ -349,6 +349,11 @@ public class NpuConcept extends ExternalConcept {
 	}
 
 	@Override
+	public String getShortDisplayName() {
+		return shortDefinition;
+	}
+
+	@Override
 	protected String[] getCommonColumns() {
 		return new String[] {shortDefinition};
 	}
