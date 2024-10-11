@@ -92,7 +92,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		} else {
 			partsSeen.add(partNum);
 			Concept attributeValue = gl.getConcept(items[4], false, true);
-			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue, partNum);
+			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue);
 			if (attributeValue != null && attributeValue.isActive()) {
 				mappingNotes.add("Inactive concept");
 			}
@@ -107,7 +107,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 	}
 
 	@Override
-	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum) {
+	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue) {
 
 		if (!attributeValue.isActiveSafely()) {
 			String hardCodedIndicator = " hardcoded";
@@ -130,7 +130,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		return attributeValue;
 	}
 
-	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType, String partNum) {
+	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType) {
 		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
 			attributeType = hardCodedTypeReplacementMap.get(attributeType);
 		}
