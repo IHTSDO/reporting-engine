@@ -100,7 +100,7 @@ public class ConceptsDefinedUsingConcepts extends TermServerReport implements Re
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Concepts Defined Using Concepts")
 				.withDescription("This report lists concepts that use any of the specified list of concepts in their stated model attributes (ie IS-A relationships are ignored).  Specify concepts comma delimited.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(params)
 				.withTag(INT)
 				.build();

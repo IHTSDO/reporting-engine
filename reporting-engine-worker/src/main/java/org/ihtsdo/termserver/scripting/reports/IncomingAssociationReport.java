@@ -49,7 +49,7 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Incoming Historical Associations")
 				.withDescription("List concepts matching both ECL and lexically, which have an incoming historical assertion. Multiple terms can be specified, separated with a comma.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(params)
 				.withTag(INT)
 				.build();

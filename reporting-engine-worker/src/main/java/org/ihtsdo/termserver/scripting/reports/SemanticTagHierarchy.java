@@ -49,7 +49,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 				.withName("Semantic Tag Hierarchy")
 				.withDescription("This report lists all semantic tags used in the specified subhierarchy. " +
 						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(params)
 				.withTag(INT)
 				.build();
