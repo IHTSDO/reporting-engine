@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.DialectChecker;
+import org.ihtsdo.termserver.scripting.util.HistoryHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -116,12 +117,13 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		String processingDetail = null;
 		ReportActionType action = ReportActionType.NO_CHANGE;
 		String rmStr = "";
+		String conceptOrigPubDate = HistoryHelper.get(this).findOriginalPublicationDate(c);
 		if (!c.isActiveSafely()) {
 			processingDetail = "Concept now inactive";
 		} else if (!c.getComponentAnnotationEntries().isEmpty()) {
 			processingDetail = "Already has annotation";
-		} else if (c.getEffectiveTime().compareTo("20160131") < 0) {
-			processingDetail = "Concept effective time = " + c.getEffectiveTime();
+		} else if (conceptOrigPubDate.compareTo("20160131") < 0) {
+			processingDetail = "Concept original publicated date " + conceptOrigPubDate;
 		} else {
 			changesMade = replaceTextDefinitions(c);
 			if (c.hasIssues()) {
