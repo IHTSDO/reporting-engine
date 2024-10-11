@@ -139,8 +139,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	protected void applyTemplateSpecificTermingRules(Description d) {
-		//Do we need to apply any specific rules to the description?
-		//Override this function if so
+		if (!d.getType().equals(DescriptionType.FSN)) {
+			//LOINC will use their long common name as the PT
+			d.setTerm(getLoincTerm().getLongCommonName());
+		}
 	}
 
 	protected static LoincTerm getLoincTerm(String loincNum) {

@@ -63,15 +63,14 @@ public abstract class AttributePartMapManager {
 	
 	public abstract void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException; 
 
-	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue, String partNum) {
-		
-		
+	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue) {
+
 		if (!attributeValue.isActiveSafely()) {
 			String hardCodedIndicator = " hardcoded";
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
 			if (replacementValue == null) {
 				hardCodedIndicator = "";
-				replacementValue = cpm.getReplacementSafely(mappingNotes, partNum, attributeValue, false);
+				replacementValue = cpm.getReplacementSafely(mappingNotes, attributeValue, false);
 			}
 			
 			String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
@@ -87,7 +86,7 @@ public abstract class AttributePartMapManager {
 		return attributeValue;
 	}
 
-	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType, String partNum) {
+	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType) {
 		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
 			attributeType = hardCodedTypeReplacementMap.get(attributeType);
 		}
@@ -97,7 +96,7 @@ public abstract class AttributePartMapManager {
 			Concept replacementType = knownReplacementMap.get(attributeType);
 			if (replacementType == null) {
 				hardCodedIndicator = "";
-				replacementType = cpm.getReplacementSafely(mappingNotes, partNum, attributeType, false);
+				replacementType = cpm.getReplacementSafely(mappingNotes, attributeType, false);
 			} 
 			String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
 			if (replacementType == null) unsuccessfullTypeReplacement++;

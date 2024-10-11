@@ -61,6 +61,11 @@ public abstract class NuvaConcept extends ExternalConcept {
 		return enLabel;
 	}
 
+	@Override
+	protected String getShortDisplayName() {
+		return getLongDisplayName();
+	}
+
 	protected static boolean isPredicate(Statement stmt, NuvaOntologyLoader.NuvaUri uri) {
 		return stmt.getPredicate().hasURI(uri.value);
 	}
