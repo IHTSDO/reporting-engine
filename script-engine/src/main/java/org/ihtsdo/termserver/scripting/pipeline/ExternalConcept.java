@@ -36,4 +36,6 @@ public abstract class ExternalConcept {
 	protected abstract String[] getCommonColumns();
 
 	protected abstract String getLongDisplayName();
+
+	protected abstract String getShortDisplayName();
 }
