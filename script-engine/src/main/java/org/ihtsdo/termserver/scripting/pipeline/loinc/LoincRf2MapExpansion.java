@@ -117,7 +117,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 
 	private String reportIfValueReplaced(Concept value) {
-		Concept replacementValue = attributePartManager.replaceValueIfRequired(null, value, null);
+		Concept replacementValue = attributePartManager.replaceValueIfRequired(null, value);
 		//If this concept is inactive and we don't have a replacement, then we really need one
 		if (!value.isActiveSafely() && replacementValue.equals(value)) {
 			return "REQUIRED";
@@ -127,7 +127,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 	
 	private String reportIfTypeReplaced(Concept value) {
-		Concept replacementType = attributePartManager.replaceTypeIfRequired(null, value, null);
+		Concept replacementType = attributePartManager.replaceTypeIfRequired(null, value);
 		return replacementType.equals(value) ? "" : replacementType.toStringPref();
 	}
 

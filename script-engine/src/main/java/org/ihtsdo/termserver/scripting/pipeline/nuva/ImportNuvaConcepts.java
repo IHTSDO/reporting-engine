@@ -48,7 +48,7 @@ public class ImportNuvaConcepts extends ContentPipelineManager implements NuvaCo
 		scheme = gl.getConcept(SCTID_NUVA_SCHEMA);
 		externalContentModule = SCTID_NUVA_EXTENSION_MODULE;
 		namespace = "1002000";
-		includeLongNameDescription = false;
+		includeShortNameDescription = false;
 	}
 
 	@Override

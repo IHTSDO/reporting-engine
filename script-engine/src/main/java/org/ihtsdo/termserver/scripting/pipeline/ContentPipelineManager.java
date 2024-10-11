@@ -55,7 +55,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 	protected Set<TemplatedConcept> successfullyModelled = new HashSet<>();
-	protected boolean includeLongNameDescription = true;
+	protected boolean includeShortNameDescription = true;
 
 	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
 
