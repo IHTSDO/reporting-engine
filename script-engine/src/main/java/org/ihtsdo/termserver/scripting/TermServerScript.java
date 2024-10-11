@@ -1853,10 +1853,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return this.offlineMode;
 	}
 
-	public static void runHeadless(Integer envNum) {
-		headlessEnvironment = envNum;
-	}
-
 	protected boolean inScope(Component c) {
 		return inScope(c, true);
 	}
