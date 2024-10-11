@@ -197,8 +197,15 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT,
 													ConceptType.MEDICINAL_PRODUCT_FORM_ONLY };
 				break;
+			case MEDICINAL_PRODUCT_FORM_ONLY :
+				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT,
+													ConceptType.MEDICINAL_PRODUCT_FORM };
+				break;
 			case MEDICINAL_PRODUCT : 
 				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT_ONLY};
+				break;
+			case MEDICINAL_PRODUCT_ONLY:
+				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT};
 				break;
 			default : throw new IllegalStateException("Unexpected driver concept type: " + concept.getConceptType());
 		}
@@ -356,6 +363,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 
 	private void reviewConcept(Concept c, List<Concept> allAffected) throws TermServerScriptException {
+		if (containsGaseousIngredient(c)) {
+			return;  //RP-915
+		}
 		try {
 			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				reviewClinicalDrug(c, allAffected);
@@ -377,9 +387,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	}
 
 	private void reviewClinicalDrug(Concept c, List<Concept> allAffected) throws TermServerScriptException {
-		if (containsGaseousIngredient(c)) {
-			return;  //RP-915
-		}
 		Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
 		//If the concept has a more specific mpf than the one we've calculated, warn
 		List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
@@ -409,6 +416,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		try {
 			if (gaseousSubstances == null) {
 				gaseousSubstances = gl.getConcept("74947009 |Gaseous substance (substance)|").getDescendants(NOT_SET);
+				gaseousSubstances.addAll(gl.getConcept("765040008 |Noble gas|").getDescendants(NOT_SET));
 			}
 			for (Concept ingredient : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				if (gaseousSubstances.contains(ingredient)) {
@@ -525,7 +533,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		}
 		return false;
 	}
-	
+
 	private boolean isSuppressed (Concept c) throws TermServerScriptException {
 		termGenerator.ensureTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP);
 		//Are we suppressing this concept?
