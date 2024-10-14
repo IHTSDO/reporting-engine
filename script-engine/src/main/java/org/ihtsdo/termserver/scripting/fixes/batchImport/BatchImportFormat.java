@@ -43,7 +43,7 @@ public class BatchImportFormat implements ScriptConstants {
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
 	protected static final String[] ICD11_HEADERS = {"icd11","sctid","fsn",TERM1,"US1","GB1",TERM2,"US2","GB2","TERM3","US3","GB3","TERM4","US4","GB4","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
 	protected static final String[] LOINC_HEADERS = {"SCTID","Parent_1","Parent_2","FSN","CAPSFSN",TERM1,"US1","GB1","CAPS1",TERM2,"US2","GB2","CAPS2","TERM3","US3","GB3","CAPS3","TERM4","US4","GB4","CAPS4","TERM5","US5","GB5","CAPS5","Associated LOINC Part(s)","Reference link(s)","Notes"};
-	protected static final String[] PHAST_HEADERS = {"SCTID","fsn",TERM1,"FR1",TERM2,"expression"};
+	protected static final String[] PHAST_HEADERS = {"SCTID","fsn",TERM1,"FR1","FR2","expression"};
 
 	public static final Map<FORMAT, String[]> HEADERS_MAP = new HashMap<>();
 	static {
@@ -187,10 +187,10 @@ public class BatchImportFormat implements ScriptConstants {
 		//Phast has no acceptability indicators, so skip less
 		int columnIncrement = (format == FORMAT.PHAST) ? 1 : 3;
 		for (int i = 0; i < headers.length; i++) {
-			if (headers[i].toLowerCase().startsWith("term")) {
+			if (isTermColumn(headers[i])) {
 				String termStr = row.get(i);
-				if (!termStr.isEmpty() && !termStr.toUpperCase().equals(NULL_STR)) {
-					Description desc = createDescriptionFromColumns(termStr, row, i);
+				if (!termStr.isEmpty() && !termStr.equalsIgnoreCase(NULL_STR)) {
+					Description desc = createDescriptionFromColumns(termStr, row, i, headers[i]);
 					i += columnIncrement;
 					//Do we have a CAPS indicator here?
 					if (headers[i].toLowerCase().startsWith("caps")) {
@@ -204,18 +204,47 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 	}
 
-	private Description createDescriptionFromColumns(String termStr, CSVRecord row, int i) throws TermServerScriptException {
-		//Phast has no acceptability columns
-		if (format == FORMAT.PHAST) {
-			return Description.withDefaults(termStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
-		}
+	private boolean isTermColumn(String header) {
+		return header.toLowerCase().startsWith("term") || header.toLowerCase().startsWith("fr");
+	}
 
-		char usAccept = row.get(i+1).isEmpty()? null : row.get(i+1).charAt(0);
-		char gbAccept =  row.get(i+2).isEmpty()? null : row.get(i+2).charAt(0);
-		Map<String, Acceptability> acceptabilityMap = new HashMap<>();
-		acceptabilityMap.put(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptabilityFromChar(gbAccept));
-		acceptabilityMap.put(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptabilityFromChar(usAccept));
-		return Description.withDefaults(termStr, DescriptionType.SYNONYM, acceptabilityMap);
+	private Description createDescriptionFromColumns(String termStr, CSVRecord row, int i, String header) throws TermServerScriptException {
+		//PHAST has no acceptability columns
+		if (format == FORMAT.PHAST) {
+			//Is this the first or 2nd term?  1st one is preferred
+			Acceptability acceptability = removeNonNumeric(header) == 1 ? Acceptability.PREFERRED : Acceptability.ACCEPTABLE;
+			Description d = Description.withDefaults(termStr, DescriptionType.SYNONYM, acceptability);
+			if (isNonEnglishColumn(header)) {
+				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+				alignToLanguage(d, header);
+			}
+			return d;
+		} else {
+			char usAccept = row.get(i + 1).isEmpty() ? null : row.get(i + 1).charAt(0);
+			char gbAccept = row.get(i + 2).isEmpty() ? null : row.get(i + 2).charAt(0);
+			Map<String, Acceptability> acceptabilityMap = new HashMap<>();
+			acceptabilityMap.put(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptabilityFromChar(gbAccept));
+			acceptabilityMap.put(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptabilityFromChar(usAccept));
+			return Description.withDefaults(termStr, DescriptionType.SYNONYM, acceptabilityMap);
+		}
+	}
+
+	private Description alignToLanguage(Description d, String header) throws TermServerScriptException {
+		String lang = removeNonAlpha(header).toLowerCase();
+		return LanguageHelper.alignToLanguage(d, lang);
+	}
+
+	private boolean isNonEnglishColumn(String header) {
+		String potentialLanguage = removeNonAlpha(header).toLowerCase();
+		return LanguageHelper.isLanguageCode(potentialLanguage);
+	}
+
+	private String removeNonAlpha(String header) {
+		return header.replaceAll("[^a-zA-Z]", "");
+	}
+
+	private int removeNonNumeric(String header) {
+		return Integer.parseInt(header.replaceAll("\\D", ""));
 	}
 
 	private BatchImportConcept createConceptModel(CSVRecord row, String moduleId) throws TermServerScriptException {
