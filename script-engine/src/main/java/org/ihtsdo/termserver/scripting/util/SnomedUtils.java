@@ -84,25 +84,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 	
 	public static String toString(Map<String, Acceptability> acceptabilityMap) {
-		if (acceptabilityMap == null) {
-			return "";
-		}
-		try {
-			String US = "N";
-			String GB = "N";
-			if (acceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
-				US = translateAcceptability(acceptabilityMap.get(US_ENG_LANG_REFSET));
-			}
-			
-			if (acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
-				GB = translateAcceptability(acceptabilityMap.get(GB_ENG_LANG_REFSET));
-			}
-			
-			return "US: " + US + ", GB: " + GB;
-		} catch (TermServerScriptException e) {
-			System.out.println("Failed to convert acceptability map to string: " + e);
-		}
-		return "";
+		return LanguageHelper.toString(acceptabilityMap);
 	}
 	
 	public static String translateAcceptability (Acceptability a) throws TermServerScriptException {
@@ -1542,6 +1524,12 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 				.map(d -> d.getTerm()).collect(Collectors.joining(",\n"));
 	}
 
+
+	public static String getDescriptionsFull(Concept c) {
+		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
+				.map(d -> d.toString()).collect(Collectors.joining(",\n"));
+	}
+
 	public static String getDescriptionsToString(Concept c) {
 		return getDescriptionsToString(c, false);
 	}
@@ -2720,5 +2708,5 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 		return activeStr;
 	}
-	
+
 }
