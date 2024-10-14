@@ -2511,7 +2511,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			expression += group.getRelationships().stream()
 					.filter(r -> r.getType().equals(IS_A))
 					.map(r -> r.getTarget())
-					.map(p -> p.toString())
+					.map(Object::toString)
 					.collect(Collectors.joining (" + \n"));
 		}
 
@@ -2762,5 +2762,19 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		} else {
 			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
 		}
+	}
+
+	public static String getPartition(String id) {
+		//return the last 3 characters of the SCTID, but not the last character
+		return id.substring(id.length() - 3, id.length() - 1);
+	}
+
+	public static Long getSequenceNumber(String id) {
+		//Do we expect to have a namespace?
+		int chopPoint = id.length() - 3;
+		if (getPartition(id).charAt(0) == '1') {
+			chopPoint -= 7;
+		}
+		return Long.parseLong(id.substring(0, chopPoint));
 	}
 }
