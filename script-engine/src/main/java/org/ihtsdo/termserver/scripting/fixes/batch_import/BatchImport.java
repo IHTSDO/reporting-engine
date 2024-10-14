@@ -8,6 +8,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.LanguageHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -72,6 +73,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		conceptsLoaded = new HashMap<>();
 		moduleId = SCTID_CORE_MODULE;
 		maxFailures = 1500;
+		headers = "TaskKey, TaskDesc, SCTID, Descriptions, ConceptType, Severity, ActionType, ";
 		super.init(jobRun);
 	}
 	
@@ -92,6 +94,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 
 			if (fileFormat.isFormat(BatchImportFormat.FORMAT.PHAST)) {
 				moduleId = "11000188109";
+				LanguageHelper.setLangResetOverride("fr", "21000188104" ); //PHAST French language reference set (foundation metadata concept)
 			}
 			//And load the remaining records into memory
 			prepareConcepts(parser.getRecords());

@@ -10,6 +10,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
+import org.ihtsdo.termserver.scripting.util.LanguageHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -260,19 +261,17 @@ public class Description extends Component implements ScriptConstants, Serializa
 		.append(conceptId)
 		.append( "] ");
 		
-		if (lang != null) {
-			if (lang.contentEquals("en")) {
-				sb.append(SnomedUtils.toString(acceptabilityMap));
-			} else {
-				sb.append(lang);
-			}
-		}
-		
-		sb.append(": ")
+		sb.append(LanguageHelper.toString(acceptabilityMap));
+
+		sb.append(" ")
 		.append(term)
 		.append(" [")
 		.append(caseSig)
 		.append("]");
+
+		if (lang != null && !lang.contentEquals("en")) {
+			sb.append(" (").append(lang).append(")");
+		}
 		return sb.toString();
 	}
 
@@ -958,4 +957,5 @@ public class Description extends Component implements ScriptConstants, Serializa
 		}
 		return found;
 	}
+
 }
