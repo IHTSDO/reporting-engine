@@ -68,12 +68,19 @@ public class LanguageHelper implements RF2Constants {
 		if (acceptabilityMap == null) {
 			return "";
 		}
+
 		try {
 			StringBuilder sb = new StringBuilder();
 			boolean isFirst = true;
 			for (Map.Entry<String, Acceptability> entry : acceptabilityMap.entrySet()) {
 				if (!isFirst) {
 					sb.append(", ");
+				}
+				String refsetId = entry.getKey();
+				if (isKnownRefset(refsetId)) {
+					sb.append(getLang(refsetId).toUpperCase());
+				} else {
+					sb.append(refsetId);
 				}
 				sb.append(getLang(entry.getKey()).toUpperCase());
 				sb.append(": ");
@@ -82,9 +89,13 @@ public class LanguageHelper implements RF2Constants {
 			}
 
 			return sb.toString();
-		} catch (TermServerScriptException e) {
+		} catch (NullPointerException | TermServerScriptException e) {
 			LOGGER.error("Failed to convert acceptability map to string ", e);
 		}
 		return "";
+	}
+
+	public static boolean isKnownRefset(String refsetId) {
+		return knownPrimaryLanguageReferenceSets.containsValue(refsetId);
 	}
 }
