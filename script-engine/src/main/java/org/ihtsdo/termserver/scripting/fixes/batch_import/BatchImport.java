@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.batchImport;
+package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import org.apache.commons.csv.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 public class BatchImport extends BatchFix implements BatchJobClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImport.class);
-	private static final char DELIMITER = ';';
+	private static final char DELIMITER = TAB_CHAR;  // ';'
 	private static final String LIST_ITEM_START = "<li>";
 	private static final String LIST_ITEM_END = "</li>";
 
@@ -233,7 +233,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		for (Component thisComponent : task.getComponents()) {
 			BatchImportConcept biConcept = (BatchImportConcept)thisComponent;
 			if (thisComponent.getId() == null) {
-				LOGGER.warn(biConcept + " did not get assigned an SCTID - load failed?");
+				LOGGER.warn("{} did not get assigned an SCTID - load failed?", biConcept);
 				continue;
 			}
 			Concept thisConcept = conceptsLoaded.get(thisComponent.getId());
@@ -301,7 +301,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		return null;
 	}
 
-	public Boolean isLateralizedContentAllowed() {
+	public boolean isLateralizedContentAllowed() {
 		return allowLateralizedContent;
 	}
 
