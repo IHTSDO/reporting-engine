@@ -10,13 +10,10 @@ public class BatchImportExpression implements ScriptConstants {
 
 	public static final String FULLY_DEFINED = "===";
 	public static final String PRIMITVE = "<<<";
-	public static final String PIPE = "|";
-	public static final char PIPE_CHAR = '|';
 	public static final char SPACE = ' ';
-	public static final char[] REFINEMENT_START = new char[] {':', '{'};
+	protected static final char[] REFINEMENT_START = new char[] {':', '{'};
 	public static final String GROUP_START = "\\{";
 	public static final char GROUP_START_CHAR = '{';
-	public static final String GROUP_END = "}";
 	public static final char GROUP_END_CHAR = '}';
 	public static final String FOCUS_CONCEPT_SEPARATOR = "\\+";
 	public static final String ATTRIBUTE_SEPARATOR = ",";
@@ -33,7 +30,7 @@ public class BatchImportExpression implements ScriptConstants {
 	
 	public static BatchImportExpression parse(String expressionStr, String moduleId) throws TermServerScriptException {
 		BatchImportExpression result = new BatchImportExpression();
-		StringBuffer expressionBuff = new StringBuffer(SnomedUtils.makeMachineReadable(expressionStr));
+		StringBuilder expressionBuff = new StringBuilder(SnomedUtils.makeMachineReadable(expressionStr));
 		//After each extract we're left with the remainder of the expression
 		result.definitionStatus = extractDefinitionStatus(expressionBuff);
 		result.focusConcepts = extractFocusConcepts(expressionBuff);
@@ -41,7 +38,7 @@ public class BatchImportExpression implements ScriptConstants {
 		return result;
 	}
 
-	static DefinitionStatus extractDefinitionStatus(StringBuffer expressionBuff) throws TermServerScriptException {
+	static DefinitionStatus extractDefinitionStatus(StringBuilder expressionBuff) throws TermServerScriptException {
 		Boolean isFullyDefined = null;
 		if (expressionBuff.indexOf(FULLY_DEFINED) == 0) {
 			isFullyDefined = Boolean.TRUE;
@@ -54,10 +51,10 @@ public class BatchImportExpression implements ScriptConstants {
 		}
 		
 		expressionBuff.delete(0, FULLY_DEFINED.length());
-		return isFullyDefined ? DefinitionStatus.FULLY_DEFINED : DefinitionStatus.PRIMITIVE;
+		return isFullyDefined.booleanValue() ? DefinitionStatus.FULLY_DEFINED : DefinitionStatus.PRIMITIVE;
 	}
 	
-	static List<String> extractFocusConcepts(StringBuffer expressionBuff) {
+	static List<String> extractFocusConcepts(StringBuilder expressionBuff) {
 		// Do we have a refinement, or just the parent(s) defined?
 		//Ah, we're sometimes missing the colon.  Allow open curly brace as well.
 		int focusEnd = indexOf(expressionBuff, REFINEMENT_START, 0);
@@ -75,46 +72,59 @@ public class BatchImportExpression implements ScriptConstants {
 		return Arrays.asList(focusConcepts);
 	}
 
-	static List<RelationshipGroup> extractGroups(StringBuffer expressionBuff, String moduleId) throws TermServerScriptException {
+	static List<RelationshipGroup> extractGroups(StringBuilder expressionBuff, String moduleId) throws TermServerScriptException {
 		List<RelationshipGroup> groups = new ArrayList<>();
 		//Do we have any groups to parse?
-		if (expressionBuff == null || expressionBuff.length() == 0) {
+		if (expressionBuff == null || expressionBuff.isEmpty()) {
 			return groups;
 		} else if (expressionBuff.charAt(0) == GROUP_START_CHAR) {
-			remove(expressionBuff,GROUP_END_CHAR);
-			expressionBuff.deleteCharAt(0);
-			String[] arrGroup = expressionBuff.toString().split(GROUP_START);
-			int groupNumber = 0;
-			for (String thisGroupStr : arrGroup) {
-				RelationshipGroup newGroup = parse(++groupNumber, thisGroupStr, moduleId);
-				groups.add(newGroup);
-			}
+			extractGroup(expressionBuff, groups, moduleId);
 		} else if (Character.isDigit(expressionBuff.charAt(0))) {
-			//Do we have a block of ungrouped attributes to start with?  parse
-			//up to the first open group character, ensuring that it occurs before the 
-			//next close group character.
-			int nextGroupOpen = expressionBuff.indexOf(Character.toString(GROUP_START_CHAR));
-			int nextGroupClose = expressionBuff.indexOf(Character.toString(GROUP_END_CHAR));
-			//Case no further groups
-			if (nextGroupOpen == -1 && nextGroupClose == -1) {
-				RelationshipGroup newGroup = parse(0, expressionBuff.toString(), moduleId);
-				groups.add(newGroup);
-			} else if (nextGroupOpen > -1 && nextGroupClose > nextGroupOpen) {
-				RelationshipGroup newGroup = parse(0, expressionBuff.substring(0, nextGroupOpen), moduleId);
-				groups.add(newGroup);
-				//And now work through the bracketed groups
-				StringBuffer remainder = new StringBuffer(expressionBuff.substring(nextGroupOpen, expressionBuff.length()));
-				groups.addAll(extractGroups(remainder, moduleId));
-			} else {
-				throw new TermServerScriptException("Unable to separate grouped from ungrouped attributes in: " + expressionBuff.toString());
-			}
+			//Do we have a block of ungrouped attributes to start with?
+			parseUngroupedAttributes(expressionBuff, groups, moduleId);
 		} else {
-			throw new TermServerScriptException("Unable to parse attributes groups from: " + expressionBuff.toString());
+			throw new TermServerScriptException("Unable to parse attributes groups from: " + expressionBuff);
 		}
 		return groups;
 	}
-	
-	static void remove (StringBuffer haystack, char needle) {
+
+	private static void extractGroup(StringBuilder expressionBuff, List<RelationshipGroup> groups, String moduleId) throws TermServerScriptException {
+		remove(expressionBuff,GROUP_END_CHAR);
+		expressionBuff.deleteCharAt(0);
+		String[] arrGroup = expressionBuff.toString().split(GROUP_START);
+		int groupNumber = 0;
+		for (String thisGroupStr : arrGroup) {
+			try {
+				RelationshipGroup newGroup = parse(++groupNumber, thisGroupStr, moduleId);
+				groups.add(newGroup);
+			} catch (TermServerScriptException e) {
+				throw new TermServerScriptException("Failed to parse group: " + thisGroupStr, e);
+			}
+		}
+	}
+
+	private static void parseUngroupedAttributes(StringBuilder expressionBuff, List<RelationshipGroup> groups, String moduleId) throws TermServerScriptException {
+		//Do we have a block of ungrouped attributes to start with?  parse
+		//up to the first open group character, ensuring that it occurs before the
+		//next close group character.
+		int nextGroupOpen = expressionBuff.indexOf(Character.toString(GROUP_START_CHAR));
+		int nextGroupClose = expressionBuff.indexOf(Character.toString(GROUP_END_CHAR));
+		//Case no further groups
+		if (nextGroupOpen == -1 && nextGroupClose == -1) {
+			RelationshipGroup newGroup = parse(0, expressionBuff.toString(), moduleId);
+			groups.add(newGroup);
+		} else if (nextGroupOpen > -1 && nextGroupClose > nextGroupOpen) {
+			RelationshipGroup newGroup = parse(0, expressionBuff.substring(0, nextGroupOpen), moduleId);
+			groups.add(newGroup);
+			//And now work through the bracketed groups
+			StringBuilder remainder = new StringBuilder(expressionBuff.substring(nextGroupOpen, expressionBuff.length()));
+			groups.addAll(extractGroups(remainder, moduleId));
+		} else {
+			throw new TermServerScriptException("Unable to separate grouped from ungrouped attributes in: " + expressionBuff);
+		}
+	}
+
+	static void remove (StringBuilder haystack, char needle) {
 		for (int idx = 0; idx < haystack.length(); idx++) {
 			if (haystack.charAt(idx) == needle) {
 				haystack.deleteCharAt(idx);
@@ -122,9 +132,8 @@ public class BatchImportExpression implements ScriptConstants {
 			}
 		}
 	}
-	
-	
-	static int indexOf (StringBuffer haystack, char[] needles, int startFrom) {
+
+	static int indexOf (StringBuilder haystack, char[] needles, int startFrom) {
 		for (int idx = startFrom; idx < haystack.length(); idx++) {
 			for (char thisNeedle : needles) {
 				if (haystack.charAt(idx) == thisNeedle) {
@@ -150,20 +159,18 @@ public class BatchImportExpression implements ScriptConstants {
 	public static RelationshipGroup parse(int groupNumber, String expression, String moduleId) throws TermServerScriptException {
 		RelationshipGroup thisGroup = new RelationshipGroup(groupNumber);
 		String[] attributes = expression.split(BatchImportExpression.ATTRIBUTE_SEPARATOR);
-		int attributeNumber = 0;
 		for (String thisAttribute : attributes) {
-			String tmpId = "rel_" + groupNumber + "." + (attributeNumber++);
-			Relationship relationship = parseAttribute(groupNumber, tmpId, thisAttribute, moduleId);
+			Relationship relationship = parseAttribute(groupNumber, thisAttribute, moduleId);
 			thisGroup.addRelationship(relationship);
 		}
 		return thisGroup;
 	}
 
-	private static Relationship parseAttribute(int groupNum, String tmpId, String thisAttribute, String moduleId) throws TermServerScriptException {
+	private static Relationship parseAttribute(int groupNum, String thisAttribute, String moduleId) throws TermServerScriptException {
 		//Expected format  type=value so bomb out if we don't end up with two concepts
 		String[] attributeParts = thisAttribute.split(BatchImportExpression.TYPE_SEPARATOR);
 		if (attributeParts.length != 2) {
-			throw new TermServerScriptException("Unable to detect type=value in attribute: " + thisAttribute);
+			throw new TermServerScriptException("Unable to detect type=value in attribute: '" + thisAttribute + "'");
 		}
 		//Check we have SCTIDs that pass the Verhoeff check
 		SnomedUtils.isValid(attributeParts[0], PartitionIdentifier.CONCEPT);

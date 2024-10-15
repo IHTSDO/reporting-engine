@@ -82,7 +82,6 @@ public class LanguageHelper implements RF2Constants {
 				} else {
 					sb.append(refsetId);
 				}
-				sb.append(getLang(entry.getKey()).toUpperCase());
 				sb.append(": ");
 				sb.append(translateAcceptability(entry.getValue()));
 				isFirst = false;
