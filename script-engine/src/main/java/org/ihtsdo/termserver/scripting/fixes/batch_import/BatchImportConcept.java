@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.batchImport;
+package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import java.util.*;
 
