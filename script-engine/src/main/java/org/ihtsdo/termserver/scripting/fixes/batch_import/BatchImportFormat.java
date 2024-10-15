@@ -34,15 +34,14 @@ public class BatchImportFormat implements ScriptConstants {
 	public static final String TERM1 = "TERM1";
 	public static final String TERM2 = "TERM2";
 	
-	private FORMAT format;
-	private Map<FIELD, String> fieldMap;
+	private final FORMAT format;
+	private final Map<FIELD, Integer> fieldMap;
 	private int[] documentationFields = new int[0];
-	private int[] synonymFields = new int[0];
 	private int[] notesFields = new int[0];
 	private boolean definesByExpression = false;
 	private boolean constructsFSN = false;
 	private boolean multipleTerms = false;
-	
+
 	//There are variable numbers of Synonym and Notes fields, so they're optional and we'll work them out at runtime
 	protected static final String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
@@ -87,12 +86,31 @@ public class BatchImportFormat implements ScriptConstants {
 		LOINC_MAP.put(FIELD.CAPSFSN, "4");
 	}
 
-	protected static final Map<FIELD, String> PHAST_MAP = new HashMap<>();
+	protected static final Map<FIELD, Integer> ICD11_MAP = new EnumMap<>(FIELD.class);
 	static {
 		//Note that these are 0-based indexes
-		PHAST_MAP.put(FIELD.SCTID, "0");
-		PHAST_MAP.put(FIELD.FSN, "1");
-		PHAST_MAP.put(FIELD.EXPRESSION, "5");
+		ICD11_MAP.put(FIELD.ORIG_REF, 0);
+		ICD11_MAP.put(FIELD.SCTID, 1);
+		ICD11_MAP.put(FIELD.FSN, 2);
+		ICD11_MAP.put(FIELD.EXPRESSION, 15);
+	}
+
+	protected static final Map<FIELD, Integer> LOINC_MAP = new EnumMap<>(FIELD.class);
+	static {
+		//Note that these are 0-based indexes
+		LOINC_MAP.put(FIELD.SCTID, 0);
+		LOINC_MAP.put(FIELD.PARENT_1, 1);
+		LOINC_MAP.put(FIELD.PARENT_2, 2);
+		LOINC_MAP.put(FIELD.FSN, 3);
+		LOINC_MAP.put(FIELD.CAPSFSN, 4);
+	}
+
+	protected static final Map<FIELD, Integer> PHAST_MAP = new EnumMap<>(FIELD.class);
+	static {
+		//Note that these are 0-based indexes
+		PHAST_MAP.put(FIELD.SCTID, 0);
+		PHAST_MAP.put(FIELD.FSN, 1);
+		PHAST_MAP.put(FIELD.EXPRESSION, 6);
 	}
 	
 	protected static final int[] LOINC_Documentation = new int[] {25,26,27};
@@ -108,7 +126,7 @@ public class BatchImportFormat implements ScriptConstants {
 		} else if (format == FORMAT.ICD11) {
 			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, null, true, false, true);
 		} else if (format == FORMAT.LOINC) {
-			return new BatchImportFormat(FORMAT.LOINC, LOINC_MAP, LOINC_Documentation, false, false, true);
+			return new BatchImportFormat(FORMAT.LOINC, LOINC_MAP, LOINC_DOCUMENTATION, false, false, true);
 		} else if (format == FORMAT.PHAST) {
 			return new BatchImportFormat(FORMAT.PHAST, PHAST_MAP, null, true, false, true);
 		} else {
@@ -116,7 +134,7 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 	}
 	
-	private BatchImportFormat(FORMAT format, Map<FIELD, String> fieldMap, int[] documentationFields, boolean definesByExpression, boolean constructsFSN, boolean multipleTerms) {
+	private BatchImportFormat(FORMAT format, Map<FIELD, Integer> fieldMap, int[] documentationFields, boolean definesByExpression, boolean constructsFSN, boolean multipleTerms) {
 		this.format = format;
 		this.fieldMap = fieldMap;
 		this.definesByExpression = definesByExpression;
@@ -129,7 +147,7 @@ public class BatchImportFormat implements ScriptConstants {
 	
 	public int getIndex(FIELD field) {
 		if (fieldMap.containsKey(field)) {
-			return Integer.parseInt(fieldMap.get(field));
+			return fieldMap.get(field);
 		}
 		return FIELD_NOT_FOUND;
 	}
@@ -365,7 +383,7 @@ public class BatchImportFormat implements ScriptConstants {
 				//The first field might have some non-ASCII encoding in it, so we'll trim it
 				String colStr = header.get(colIdx).replaceAll("[^a-zA-Z0-9]", "");
 				if (colIdx < checkHeaders.length && !colStr.equalsIgnoreCase(checkHeaders[colIdx])) {
-					LOGGER.info("File is not {} format because header {}:'{}' is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
+					LOGGER.info("File is not {} format because header {}:'{}' is not {}.", checkFormat, colIdx, colStr, checkHeaders[colIdx]);
 					mismatchDetected = true;
 					continue nextFormat;
 				} else {
@@ -378,11 +396,11 @@ public class BatchImportFormat implements ScriptConstants {
 					}
 				}
 			}
+
 			if (!mismatchDetected) {
 				LOGGER.info("File Batch Import file format determined to be {}.", checkFormat);
 				thisFormat = create(checkFormat);
 				thisFormat.notesFields = Ints.toArray(notesIndexList);
-				thisFormat.synonymFields = Ints.toArray(synonymIndexList);
 				break;
 			}
 		}

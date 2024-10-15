@@ -856,7 +856,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			LOGGER.debug("Validation issues: " + validations.length);
 			for (DroolsResponse response : validations) {
 				if (response.getSeverity().equals(DroolsResponse.Severity.ERROR)) {
-					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage());
+					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage() + " on " + response.getComponentId());
 				} else if (response.getSeverity().equals(DroolsResponse.Severity.WARNING)) {
 					//Only report a particular warning text once
 					if (!warningsReported.contains(response.getMessage())) {
