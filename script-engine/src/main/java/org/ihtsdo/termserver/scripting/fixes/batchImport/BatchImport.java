@@ -233,7 +233,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		for (Component thisComponent : task.getComponents()) {
 			BatchImportConcept biConcept = (BatchImportConcept)thisComponent;
 			if (thisComponent.getId() == null) {
-				LOGGER.warn(biConcept + " did not get assigned an SCTID - load failed?");
+				LOGGER.warn("{} did not get assigned an SCTID - load failed?", biConcept);
 				continue;
 			}
 			Concept thisConcept = conceptsLoaded.get(thisComponent.getId());
@@ -301,7 +301,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		return null;
 	}
 
-	public Boolean isLateralizedContentAllowed() {
+	public boolean isLateralizedContentAllowed() {
 		return allowLateralizedContent;
 	}
 

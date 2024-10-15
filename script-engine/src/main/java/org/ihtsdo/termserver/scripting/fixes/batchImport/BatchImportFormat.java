@@ -32,7 +32,6 @@ public class BatchImportFormat implements ScriptConstants {
 	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
 	private int[] documentationFields = new int[0];
-	private int[] synonymFields = new int[0];
 	private int[] notesFields = new int[0];
 	private boolean definesByExpression = false;
 	private boolean constructsFSN = false;
@@ -358,17 +357,6 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 		return notes;
 	}
-	
-	public List<String> getAllSynonyms(BatchImportConcept thisConcept) throws TermServerScriptException {
-		List<String> synList = new ArrayList<>();
-		for (int synonymField : synonymFields) {
-			String thisSyn = thisConcept.getRow().get(synonymField);
-			if (thisSyn != null && thisSyn.trim().length() > 0) {
-				synList.add(thisSyn);
-			}
-		}
-		return synList;
-	}
 
 	public static BatchImportFormat determineFormat(CSVRecord header) throws TermServerScriptException {
 		BatchImportFormat thisFormat = null;
@@ -400,7 +388,6 @@ public class BatchImportFormat implements ScriptConstants {
 				LOGGER.info("File Batch Import file format determined to be {}.", checkFormat);
 				thisFormat = create(checkFormat);
 				thisFormat.notesFields = Ints.toArray(notesIndexList);
-				thisFormat.synonymFields = Ints.toArray(synonymIndexList);
 				break;
 			}
 		}
