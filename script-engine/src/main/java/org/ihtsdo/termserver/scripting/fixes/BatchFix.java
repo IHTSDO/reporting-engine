@@ -14,7 +14,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
-import org.ihtsdo.termserver.scripting.fixes.batchImport.BatchImport;
+import org.ihtsdo.termserver.scripting.fixes.batch_import.BatchImport;
 import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobParameters;

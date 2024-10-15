@@ -7,6 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +39,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	@SerializedName("descriptions")
 	@Expose
-	private List<Description> descriptions = new ArrayList<Description>();
+	private List<Description> descriptions = new ArrayList<>();
 	
 	@SerializedName("relationships")
 	@Expose
-	private Set<Relationship> relationships = new HashSet<Relationship>();
+	private Set<Relationship> relationships = new HashSet<>();
 	
 	@SerializedName("isLeafStated")
 	@Expose
@@ -172,7 +173,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		c.setActive(true);
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		String fsnStr = parts[1];
-		String[] fsnParts = SnomedUtils.deconstructFSN(fsnStr);
+		String[] fsnParts = SnomedUtilsBase.deconstructFSN(fsnStr);
 		Description fsn = Description.withDefaults(fsnStr, DescriptionType.FSN, Acceptability.PREFERRED);
 		Description pt = Description.withDefaults(fsnParts[0], DescriptionType.SYNONYM, Acceptability.PREFERRED);
 		c.addDescription(fsn);
@@ -186,7 +187,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public void setActive(boolean newActiveState) {
 		super.setActive(newActiveState);
-		if (newActiveState == false) {
+		if (!newActiveState) {
 			//If the concept has been made active, then set DefnStatus
 			setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			
@@ -215,7 +216,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			} else if (fsn instanceof Map){
 				Map<?,?> fsnMap = (Map<?,?>)fsn;
 				if (!fsnMap.containsKey("term")) {
-					System.out.println("Check unexpected map here: " + fsn.toString());
+					LOGGER.error("Check unexpected map here: {}", fsn);
 					return fsnMap.toString();
 				} else {
 					return ((Map<?,?>)fsn).get("term").toString();
@@ -401,7 +402,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, int groupId, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, target, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -412,7 +413,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ConcreteValue concreteValue, int groupId, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, concreteValue, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -423,7 +424,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, int groupId) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, ActiveState.ACTIVE);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -512,9 +513,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public boolean isLeaf (CharacteristicType c) {
 		if (c.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-			return getStatedChildren().size() == 0;
+			return getStatedChildren().isEmpty();
 		} else {
-			return getInferredChildren().size() == 0;
+			return getInferredChildren().isEmpty();
 		}
 	}
 
@@ -861,9 +862,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 					this.setFsn(fsns.get(0).getTerm());
 				} else {
 					//Set en if we have one otherwise any
-					for (Description fsn : fsns) {
-						if (fsn.getLang().equals("en")) {
-							this.setFsn(fsn.getTerm());
+					for (Description fsnDesc : fsns) {
+						if (fsnDesc.getLang().equals("en")) {
+							this.setFsn(fsnDesc.getTerm());
 						}
 					}
 				}
@@ -956,7 +957,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			throw new IllegalArgumentException(err);
 		}
 		for (Description d : descriptions) {
-			if (d.isActive() 
+			if (d.isActiveSafely()
 					&& d.getType().equals(DescriptionType.FSN)
 					&& d.getLang().equals(lang)) {
 				return d;
@@ -1194,6 +1195,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		conceptId = id;
 	}
 
+	@Override
 	public String getId() {
 		if (id == null && conceptId != null) {
 			super.setId(conceptId);
@@ -1283,6 +1285,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				dClone.setDescriptionId(UUID.randomUUID().toString());
 			}
 			dClone.setInactivationIndicator(d.getInactivationIndicator());
+			dClone.setAcceptabilityMap(d.getAcceptabilityMap());
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
@@ -1535,7 +1538,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				//which throws this calculation out
 				if (!r.getType().equals(PLAYS_ROLE) && !r.getType().equals(IS_A)) {
 					if (r.isConcrete()) {
-						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getConcreteValue().getValue().toString());
+						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getConcreteValue().getValue());
 					} else {
 						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getTarget().getId());
 					}
@@ -1674,7 +1677,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		
 		if (!SnomedUtils.isEmpty(fsn)) {
-			String[] parts = SnomedUtils.deconstructFSN(fsn.toString());
+			String[] parts = SnomedUtilsBase.deconstructFSN(fsn.toString());
 			if (!StringUtils.isEmpty(parts[1])) {
 				semTag = parts[1];
 				return semTag;
@@ -1741,7 +1744,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	 * no references back to the original axioms
 	 */
 	public Concept cloneAsNewConcept(String sctid) {
-		Concept clone = this.clone();  //Will not copy inferred rels unless keepIds = true;
+		Concept clone = this.clone();  //Will not copy inferred rels unless keepIds = true
 		clone.setId(sctid);
 		//remove any inactive components
 		clone.removeInactiveComponents();
@@ -1801,7 +1804,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public void addAlternateIdentifier(String id, String schemeId) {
 		if (alternateIdentifiers == null) {
-			alternateIdentifiers = new HashSet<AlternateIdentifier>();
+			alternateIdentifiers = new HashSet<>();
 		}
 		AlternateIdentifier altId = new AlternateIdentifier();
 		altId.setReferencedComponentId(this.getId());

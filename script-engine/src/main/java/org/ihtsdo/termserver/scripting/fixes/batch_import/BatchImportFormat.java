@@ -1,9 +1,10 @@
-package org.ihtsdo.termserver.scripting.fixes.batchImport;
+package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import java.util.*;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -29,67 +30,67 @@ public class BatchImportFormat implements ScriptConstants {
 	public static final String TERM1 = "TERM1";
 	public static final String TERM2 = "TERM2";
 	
-	private FORMAT format;
-	private Map<FIELD, String> fieldMap;
+	private final FORMAT format;
+	private final Map<FIELD, Integer> fieldMap;
 	private int[] documentationFields = new int[0];
-	private int[] synonymFields = new int[0];
 	private int[] notesFields = new int[0];
 	private boolean definesByExpression = false;
 	private boolean constructsFSN = false;
 	private boolean multipleTerms = false;
-	
+
 	//There are variable numbers of Synonym and Notes fields, so they're optional and we'll work them out at runtime
 	protected static final String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
 	protected static final String[] ICD11_HEADERS = {"icd11","sctid","fsn",TERM1,"US1","GB1",TERM2,"US2","GB2","TERM3","US3","GB3","TERM4","US4","GB4","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
 	protected static final String[] LOINC_HEADERS = {"SCTID","Parent_1","Parent_2","FSN","CAPSFSN",TERM1,"US1","GB1","CAPS1",TERM2,"US2","GB2","CAPS2","TERM3","US3","GB3","CAPS3","TERM4","US4","GB4","CAPS4","TERM5","US5","GB5","CAPS5","Associated LOINC Part(s)","Reference link(s)","Notes"};
-	protected static final String[] PHAST_HEADERS = {"SCTID","fsn",TERM1,"FR1","FR2","expression"};
+	protected static final String[] PHAST_HEADERS = {"SCTID","fsn",TERM1,"FR1","FR2","IT1","expression"};
 
-	public static final Map<FORMAT, String[]> HEADERS_MAP = new HashMap<>();
+	protected static final Map<FORMAT, String[]> HEADERS_MAP = new EnumMap<>(FORMAT.class);
 	static {
 		HEADERS_MAP.put(FORMAT.SIRS, SIRS_HEADERS);
 		HEADERS_MAP.put(FORMAT.ICD11, ICD11_HEADERS);
 		HEADERS_MAP.put(FORMAT.LOINC, LOINC_HEADERS);
 		HEADERS_MAP.put(FORMAT.PHAST, PHAST_HEADERS);
 	}
-	public static final Map<FIELD, String>SIRS_MAP = new HashMap<>();
+
+	protected static final Map<FIELD, Integer> SIRS_MAP = new EnumMap<>(FIELD.class);
 	static {
 		//Note that these are 0-based indexes
-		SIRS_MAP.put(FIELD.ORIG_REF, "0");
-		SIRS_MAP.put(FIELD.SCTID, "2");
-		SIRS_MAP.put(FIELD.PARENT_1, "8");
-		SIRS_MAP.put(FIELD.FSN_ROOT, "4");
-		SIRS_MAP.put(FIELD.SEMANTIC_TAG, "5");
-	}
-	
-	public static final Map<FIELD, String>ICD11_MAP = new HashMap<>();
-	static {
-		//Note that these are 0-based indexes
-		ICD11_MAP.put(FIELD.ORIG_REF, "0");
-		ICD11_MAP.put(FIELD.SCTID, "1");
-		ICD11_MAP.put(FIELD.FSN, "2");
-		ICD11_MAP.put(FIELD.EXPRESSION, "15");
-	}
-	
-	public static final Map<FIELD, String>LOINC_MAP = new HashMap<>();
-	static {
-		//Note that these are 0-based indexes
-		LOINC_MAP.put(FIELD.SCTID, "0");
-		LOINC_MAP.put(FIELD.PARENT_1, "1");
-		LOINC_MAP.put(FIELD.PARENT_2, "2");
-		LOINC_MAP.put(FIELD.FSN, "3");
-		LOINC_MAP.put(FIELD.CAPSFSN, "4");
+		SIRS_MAP.put(FIELD.ORIG_REF, 0);
+		SIRS_MAP.put(FIELD.SCTID, 2);
+		SIRS_MAP.put(FIELD.PARENT_1, 8);
+		SIRS_MAP.put(FIELD.FSN_ROOT, 4);
+		SIRS_MAP.put(FIELD.SEMANTIC_TAG, 5);
 	}
 
-	protected static final Map<FIELD, String> PHAST_MAP = new HashMap<>();
+	protected static final Map<FIELD, Integer> ICD11_MAP = new EnumMap<>(FIELD.class);
 	static {
 		//Note that these are 0-based indexes
-		PHAST_MAP.put(FIELD.SCTID, "0");
-		PHAST_MAP.put(FIELD.FSN, "1");
-		PHAST_MAP.put(FIELD.EXPRESSION, "5");
+		ICD11_MAP.put(FIELD.ORIG_REF, 0);
+		ICD11_MAP.put(FIELD.SCTID, 1);
+		ICD11_MAP.put(FIELD.FSN, 2);
+		ICD11_MAP.put(FIELD.EXPRESSION, 15);
+	}
+
+	protected static final Map<FIELD, Integer> LOINC_MAP = new EnumMap<>(FIELD.class);
+	static {
+		//Note that these are 0-based indexes
+		LOINC_MAP.put(FIELD.SCTID, 0);
+		LOINC_MAP.put(FIELD.PARENT_1, 1);
+		LOINC_MAP.put(FIELD.PARENT_2, 2);
+		LOINC_MAP.put(FIELD.FSN, 3);
+		LOINC_MAP.put(FIELD.CAPSFSN, 4);
+	}
+
+	protected static final Map<FIELD, Integer> PHAST_MAP = new EnumMap<>(FIELD.class);
+	static {
+		//Note that these are 0-based indexes
+		PHAST_MAP.put(FIELD.SCTID, 0);
+		PHAST_MAP.put(FIELD.FSN, 1);
+		PHAST_MAP.put(FIELD.EXPRESSION, 6);
 	}
 	
-	public static int[] LOINC_Documentation = new int[] {25,26,27};
+	protected static final int[] LOINC_DOCUMENTATION = new int[] {25,26,27};
 
 	public boolean isFormat(FORMAT format) {
 		return this.format == format;
@@ -102,7 +103,7 @@ public class BatchImportFormat implements ScriptConstants {
 		} else if (format == FORMAT.ICD11) {
 			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, null, true, false, true);
 		} else if (format == FORMAT.LOINC) {
-			return new BatchImportFormat(FORMAT.LOINC, LOINC_MAP, LOINC_Documentation, false, false, true);
+			return new BatchImportFormat(FORMAT.LOINC, LOINC_MAP, LOINC_DOCUMENTATION, false, false, true);
 		} else if (format == FORMAT.PHAST) {
 			return new BatchImportFormat(FORMAT.PHAST, PHAST_MAP, null, true, false, true);
 		} else {
@@ -110,7 +111,7 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 	}
 	
-	private BatchImportFormat(FORMAT format, Map<FIELD, String> fieldMap, int[] documentationFields, boolean definesByExpression, boolean constructsFSN, boolean multipleTerms) {
+	private BatchImportFormat(FORMAT format, Map<FIELD, Integer> fieldMap, int[] documentationFields, boolean definesByExpression, boolean constructsFSN, boolean multipleTerms) {
 		this.format = format;
 		this.fieldMap = fieldMap;
 		this.definesByExpression = definesByExpression;
@@ -121,9 +122,9 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 	}
 	
-	public int getIndex(FIELD field) throws TermServerScriptException {
+	public int getIndex(FIELD field) {
 		if (fieldMap.containsKey(field)) {
-			return Integer.parseInt(fieldMap.get(field));
+			return fieldMap.get(field);
 		}
 		return FIELD_NOT_FOUND;
 	}
@@ -140,14 +141,15 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 		
 		List<Description> descriptions = new ArrayList<>();
-		String prefTerm, fsnTerm;
+		String prefTerm;
+		String fsnTerm;
 		
 		if (constructsFSN()) {
 			prefTerm = newConcept.get(getIndex(BatchImportFormat.FIELD.FSN_ROOT));
 			fsnTerm = prefTerm + " (" + newConcept.get(getIndex(BatchImportFormat.FIELD.SEMANTIC_TAG)) +")";
 		} else {
 			fsnTerm = newConcept.get(getIndex(BatchImportFormat.FIELD.FSN));
-			prefTerm = SnomedUtils.deconstructFSN(fsnTerm)[0];
+			prefTerm = SnomedUtilsBase.deconstructFSN(fsnTerm)[0];
 			if (!hasMultipleTerms()) {
 				prefTerm = newConcept.get(getIndex(BatchImportFormat.FIELD.PREF_TERM));
 			}
@@ -289,7 +291,7 @@ public class BatchImportFormat implements ScriptConstants {
 	void convertExpressionToRelationships(Concept source,
 			BatchImportExpression expression, String moduleId) throws TermServerScriptException {
 		
-		if (expression.getFocusConcepts() == null || expression.getFocusConcepts().size() < 1) {
+		if (expression.getFocusConcepts() == null || expression.getFocusConcepts().isEmpty()) {
 			throw new TermServerScriptException("Unable to determine a parent for concept from expression");
 		} 
 		GraphLoader gl = GraphLoader.getGraphLoader();
@@ -344,7 +346,7 @@ public class BatchImportFormat implements ScriptConstants {
 		}
 	}
 
-	public List<String> getAllNotes(BatchImportConcept thisConcept) throws TermServerScriptException {
+	public List<String> getAllNotes(BatchImportConcept thisConcept) {
 		List<String> notes = new ArrayList<>();
 		for (int notesField : notesFields) {
 			try {
@@ -357,17 +359,6 @@ public class BatchImportFormat implements ScriptConstants {
 			}
 		}
 		return notes;
-	}
-	
-	public List<String> getAllSynonyms(BatchImportConcept thisConcept) throws TermServerScriptException {
-		List<String> synList = new ArrayList<>();
-		for (int synonymField : synonymFields) {
-			String thisSyn = thisConcept.getRow().get(synonymField);
-			if (thisSyn != null && thisSyn.trim().length() > 0) {
-				synList.add(thisSyn);
-			}
-		}
-		return synList;
 	}
 
 	public static BatchImportFormat determineFormat(CSVRecord header) throws TermServerScriptException {
@@ -383,7 +374,7 @@ public class BatchImportFormat implements ScriptConstants {
 				//The first field might have some non-ASCII encoding in it, so we'll trim it
 				String colStr = header.get(colIdx).replaceAll("[^a-zA-Z0-9]", "");
 				if (colIdx < checkHeaders.length && !colStr.equalsIgnoreCase(checkHeaders[colIdx])) {
-					LOGGER.info("File is not {} format because header {}:'{}' is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
+					LOGGER.info("File is not {} format because header {}:'{}' is not {}.", checkFormat, colIdx, colStr, checkHeaders[colIdx]);
 					mismatchDetected = true;
 					continue nextFormat;
 				} else {
@@ -396,11 +387,11 @@ public class BatchImportFormat implements ScriptConstants {
 					}
 				}
 			}
+
 			if (!mismatchDetected) {
 				LOGGER.info("File Batch Import file format determined to be {}.", checkFormat);
 				thisFormat = create(checkFormat);
 				thisFormat.notesFields = Ints.toArray(notesIndexList);
-				thisFormat.synonymFields = Ints.toArray(synonymIndexList);
 				break;
 			}
 		}
