@@ -217,7 +217,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			} else if (fsn instanceof Map){
 				Map<?,?> fsnMap = (Map<?,?>)fsn;
 				if (!fsnMap.containsKey("term")) {
-					System.out.println("Check unexpected map here: " + fsn.toString());
+					LOGGER.error("Check unexpected map here: {}", fsn);
 					return fsnMap.toString();
 				} else {
 					return ((Map<?,?>)fsn).get("term").toString();
@@ -863,9 +863,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 					this.setFsn(fsns.get(0).getTerm());
 				} else {
 					//Set en if we have one otherwise any
-					for (Description fsn : fsns) {
-						if (fsn.getLang().equals("en")) {
-							this.setFsn(fsn.getTerm());
+					for (Description fsnDesc : fsns) {
+						if (fsnDesc.getLang().equals("en")) {
+							this.setFsn(fsnDesc.getTerm());
 						}
 					}
 				}
@@ -958,7 +958,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			throw new IllegalArgumentException(err);
 		}
 		for (Description d : descriptions) {
-			if (d.isActiveSafely() 
+			if (d.isActiveSafely()
 					&& d.getType().equals(DescriptionType.FSN)
 					&& d.getLang().equals(lang)) {
 				return d;
@@ -1286,6 +1286,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				dClone.setDescriptionId(UUID.randomUUID().toString());
 			}
 			dClone.setInactivationIndicator(d.getInactivationIndicator());
+			dClone.setAcceptabilityMap(d.getAcceptabilityMap());
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
@@ -1744,7 +1745,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	 * no references back to the original axioms
 	 */
 	public Concept cloneAsNewConcept(String sctid) {
-		Concept clone = this.clone();  //Will not copy inferred rels unless keepIds = true;
+		Concept clone = this.clone();  //Will not copy inferred rels unless keepIds = true
 		clone.setId(sctid);
 		//remove any inactive components
 		clone.removeInactiveComponents();
