@@ -56,13 +56,13 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected List<Component> allComponentsToProcess = new ArrayList<>();
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
-	private boolean firstTaskCreated = false;
 	protected boolean correctRoundedSCTIDs = false;
 	public static String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
 	public String taskPrefix = null;
 	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	private Batch currentBatch;
+	protected TaskHelper taskHelper;
 
 	protected BatchFix(BatchFix clone) {
 		if (clone != null) {
@@ -83,6 +83,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	@Override
 	protected List<Component> processFile() throws TermServerScriptException {
 		startTimer();
+		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
 		if (selfDetermining) {
 			allComponentsToProcess = identifyComponentsToProcess();
 		} else {
@@ -291,7 +292,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			LOGGER.info((dryRun ? "Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
 		} else {
 			//Create a task for this batch of concepts
-			createTask(task);
+			taskHelper.createTask(task);
 			String msg = (dryRun ? "Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath();
 			LOGGER.info(msg);
 			incrementSummaryInformation("Tasks created", 1);
@@ -319,60 +320,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	protected void onNewTask(Task task) {
 		// Override to do some processing for each new task;
-	}
-
-	protected void createTask(Task task) throws TermServerScriptException, InterruptedException {
-		if (!dryRun) {
-			if (firstTaskCreated) {
-				LOGGER.debug("Letting TS catch up - " + taskThrottle + "s nap.");
-				Thread.sleep(taskThrottle * 1000);
-			} else {
-				firstTaskCreated = true;
-			}
-			boolean taskCreated = false;
-			int taskCreationAttempts = 0;
-			while (!taskCreated) {
-				try {
-					LOGGER.debug("Creating jira task on project: " + project);
-					String taskDescription;
-					if (populateTaskDescription && task.size() <= 150) {
-						taskDescription = task.getDescriptionHTML();
-					} else {
-						taskDescription = DEFAULT_TASK_DESCRIPTION;
-						if (task.size() > 150 && populateTaskDescription) {
-							LOGGER.warn("Task size " + task.size() + ", cannot populate Jira ticket description, even though populateTaskDescription flag set to true.");
-							populateTaskDescription = false;
-						}
-					}
-					String taskSummary = task.getSummary();
-					if (taskPrefix != null) {
-						taskSummary = taskPrefix + taskSummary;
-					}
-					task.setKey(scaClient.createTask(project.getKey(), taskSummary, taskDescription));
-					LOGGER.debug("Creating task branch in terminology server: " + task);
-					task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
-					tsClient.setAuthorFlag(task.getBranchPath(), "batch-change", "true");
-					taskCreated = true;
-				} catch (Exception e) {
-					taskCreationAttempts++;
-					try {
-						scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
-					} catch (Exception e2) {
-						//Don't worry about failing to delete the task, we can do that directly in JIRA
-					}
-
-					if (taskCreationAttempts >= 3) {
-						throw new TermServerScriptException("Maxed out failure attempts", e);
-					}
-					LOGGER.warn("Task creation failed (" + e.getMessage() + "), retrying...");
-				}
-			}
-		} else {
-			task.setKey(project + "-" + getNextDryRunNum());
-			//If we're running in debug mode, the task path will not exist so use the project instead
-			task.setBranchPath(project.getBranchPath());
-			LOGGER.info("Dry run task creation: " + task.getKey());
-		}
 	}
 
 	private void processComponent(Task task, Component component, int conceptInTask, String xOfY) throws TermServerScriptException {
