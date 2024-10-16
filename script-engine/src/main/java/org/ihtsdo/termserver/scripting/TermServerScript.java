@@ -54,7 +54,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static Integer headlessEnvironment = null;
 	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
-	protected static int dryRunCounter = 0;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean stateComponentType = true;
@@ -160,10 +159,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return authenticatedCookie;
 	}
 	
-	public static int getNextDryRunNum() {
-		return ++dryRunCounter;
-	}
-
 	public void setAuthenticatedCookie(String authenticatedCookie) {
 		this.authenticatedCookie = authenticatedCookie;
 	}
@@ -2353,4 +2348,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			newGroups.add(group);
 		}
 	}
+
+	public boolean isDryRun() {
+		return dryRun;
+	}
+
 }

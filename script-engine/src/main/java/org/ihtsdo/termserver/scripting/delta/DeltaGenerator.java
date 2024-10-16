@@ -42,6 +42,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String langDeltaFilename;
 	protected String altIdDeltaFilename;
 	protected String compAnnotDeltaFilename;
+	protected String simpleMapDeltaFilename;
 	protected String edition = "INT";
 	
 	protected String eclSubset = null;
@@ -64,12 +65,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
 	protected String[] altIdHeader = new String[] {"alternateIdentifier","effectiveTime","active","moduleId","identifierSchemeId","referencedComponentId"};
 	protected String[] compAnnotHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","languageDialectCode","typeId","value"};
+	protected String[] simpleMapHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","mapTarget"};
 
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;
 	protected IdGenerator relIdGenerator;
 	
-	protected Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
+	protected Map<ComponentType, String> fileMap = new HashMap<>();
 	
 	protected boolean batchDelimitersDetected = false;
 	protected int archivesCreated = 0;
@@ -166,7 +168,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			try{
 				scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 				//MAIN is not a project, but we know what the default module is
-				if (projectName.toUpperCase().equals("MAIN")) {
+				if (projectName.equalsIgnoreCase("MAIN")) {
 					sourceModuleIds = Set.of(INTERNATIONAL_MODULES);
 				} else {
 					project = scaClient.getProject(projectName);
@@ -326,6 +328,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.LANGREFSET, langDeltaFilename);
 		writeToRF2File(langDeltaFilename, langHeader);
+
+		simpleMapDeltaFilename = refDir + "Content/der2_sRefset_SimpleMapDelta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.SIMPLE_MAP, simpleMapDeltaFilename);
+		writeToRF2File(simpleMapDeltaFilename, simpleMapHeader);
 		
 		attribValDeltaFilename = refDir + "Content/der2_cRefset_AttributeValueDelta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.ATTRIBUTE_VALUE, attribValDeltaFilename);
