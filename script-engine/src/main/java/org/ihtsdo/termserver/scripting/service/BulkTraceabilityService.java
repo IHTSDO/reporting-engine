@@ -50,7 +50,7 @@ public class BulkTraceabilityService implements TraceabilityService {
 			batchedReportRowMap.put(c.getConceptId(), rows);
 		}
 		rows.add(new ReportRow(reportTabIdx, c, details));
-		if (getRequiredRowCount() >= TraceabilityServiceClient.BATCH_SIZE || 
+		if (getRequiredRowCount() >= TraceabilityServiceClient.getBatchSize() ||
 				batchedReportRowMap.size() >= MAX_PENDING_SIZE) {
 			flush();
 		}
