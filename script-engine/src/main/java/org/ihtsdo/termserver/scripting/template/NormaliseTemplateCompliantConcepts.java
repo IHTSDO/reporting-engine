@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,13 +42,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			LOGGER.info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to NormaliseTemplateCompliantConcepts", e);
 		} finally {
 			app.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		reportNoChange = false;
 		selfDetermining = true;
@@ -441,15 +440,17 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/procedures/Endoscopy.json" };
 		templateNames = new String[] { "templates/procedures/Periodontal.json" };
 		templateNames = new String[] { "templates/procedures/Exteriorization.json" }
-		*/
-		
 		templateNames = new String[] { "templates/procedures/Construction of stoma.json" };
+		*/
+
+		templateNames = new String[] { "templates/procedures/Radiotherapy.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
 		super.init(args);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
 				"Report Metadata, Detail, Detail", 
@@ -580,7 +581,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> alignedConcepts = new HashSet<>();
 		Set<Concept> misalignedConcepts = new HashSet<>();
 		
-		LOGGER.info ("Identifying concepts aligned to template");
+		LOGGER.info("Identifying concepts aligned to template");
 		for (Template template : templates) {
 			//Are we finding concepts to process, or are they stated in a file?
 			Collection<Concept> potentialMatches;
@@ -625,7 +626,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		setQuiet(false);
 		addSummaryInformation("Concepts matching templates & no change required", noChangesRequired.size());
-		noChangesRequired.stream()
+		noChangesRequired
 			.forEach(c -> reportSafely(QUINARY_REPORT, c));
 		outputMetaData();
 		return asComponents(changesRequired);
