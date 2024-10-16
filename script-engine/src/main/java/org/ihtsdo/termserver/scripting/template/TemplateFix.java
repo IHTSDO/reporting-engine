@@ -39,7 +39,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
-	TemplateServiceClient tsc = null; //Don't try and initalise this before we know the server and cookie details
+	TemplateServiceClient tsc = null; //Don't try and initialise this before we know the server and cookie details
 	
 	Map<Concept, Template> conceptToTemplateMap = new HashMap<>();
 
@@ -51,6 +51,8 @@ abstract public class TemplateFix extends BatchFix {
 		if (args != null) {
 			super.init(args);
 		}
+
+		tsc = new TemplateServiceClient(getServerUrl(), getAuthenticatedCookie());
 		
 		AttributeGroup.useDefaultValues = true;
 		//We'll check these now so we know if there's some parsing error
@@ -60,7 +62,7 @@ abstract public class TemplateFix extends BatchFix {
 				Template t = loadLocalTemplate(id, templateNames[x]);
 				subsetECL = t.getDomain();
 				validateTemplate(t);
-				LOGGER.info ("Validated template: " + templateNames[x]);
+				LOGGER.info("Validated template: {}", templateNames[x]);
 			}
 		}
 		//We're going to scrub the ECL cache at this point, because we've now cached a bunch of concepts just as the SCTIDs, which will fail
@@ -128,12 +130,12 @@ abstract public class TemplateFix extends BatchFix {
 		}
 		
 		if (excludeHierarchies == null) {
-			excludeHierarchies = new String[] {};
+			excludeHierarchies = new ArrayList<>();
 		}
 
-		for (String thisExclude : excludeHierarchies) {
-			LOGGER.info("Setting exclusion of " + thisExclude + " subHierarchy.");
-			exclusions.addAll(gl.getConcept(thisExclude).getDescendants(NOT_SET));
+		for (Concept thisExclude : excludeHierarchies) {
+			LOGGER.info("Setting exclusion of {} subHierarchy.", thisExclude);
+			exclusions.addAll(thisExclude.getDescendants(NOT_SET));
 		}
 		
 		//Note add words as lower case as we do all lower case matching

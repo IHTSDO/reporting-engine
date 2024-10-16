@@ -80,7 +80,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String subsetECL;
 	protected String overrideEclBranch = null;
 	protected Concept subHierarchy;
-	protected String[] excludeHierarchies;
+	protected List<Concept> excludeHierarchies = new ArrayList<>();
 	protected boolean ignoreWhiteList = false;
 	protected boolean allowMissingExpectedModules = false;
 	protected boolean allowDirectoryInputFile = false;
@@ -88,7 +88,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
-	private List<String> finalWords = new ArrayList<>();
+	private final List<String> finalWords = new ArrayList<>();
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String headers = "Concept SCTID,";
@@ -1816,7 +1816,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		inputFiles.set(idx, file);
 	}
 
-	public void setExclusions(String[] exclusions) throws TermServerScriptException {
+	public void setExclusions(List<Concept> exclusions) {
 		this.excludeHierarchies = exclusions;
 	}
 	
