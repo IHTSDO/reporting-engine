@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
@@ -87,7 +88,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't include the project export in our timings
-			delta.additionalReportColumns = "FSN, SemTag, Severity, ChangeType, Detail, Additional Detail, , ";
+			delta.additionalReportColumns = "Defn Status, Stated Parent(s), Additional Detail, , ";
 			delta.postInit();
 			delta.startTimer();
 			delta.preProcessFile();
@@ -324,7 +325,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				//so it's available as a parent for subsequent loads
 				//requiresFirstPassLoad.add(c);
 				//continue;
-				LOGGER.warn("Exceeding batch size by " + (descendantsToImport.size() - conceptsPerArchive) + " for " + c + " (" + descendantsToImport.size() + " descendants).  Consider pre-importing and promoting first.");
+				int excess = descendantsToImport.size() - conceptsPerArchive;
+				LOGGER.warn("Exceeding batch size by {} for {} ({} descendants).  Consider pre-importing and promoting first.", excess, c, descendantsToImport.size());
 			}
 			//Don't want to import a concept twice, but if we do, we have a problem
 			int origSize = descendantsToImport.size();
@@ -515,7 +517,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			replaceFsnInTransit(c);
 			subComponentsMoved = true;
 		} else {
-			subComponentsMoved = moveDescriptions(c, conceptOnTS, componentsToProcess);
+			subComponentsMoved = moveDescriptions(c, conceptOnTS);
 		}
 
 		subComponentsMoved |= switchModuleOfRelationships(c, conceptOnTS, componentsToProcess);
@@ -631,14 +633,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		List<Description> replacementTerms = new ArrayList<>();
 		String fsnTern = replacementFSNs.get(c.getId());
 		Description fsn = Description.withDefaults(fsnTern, DescriptionType.FSN, Acceptability.PREFERRED);
+		replacementTerms.add(fsn);
 
-		String ptTerm = SnomedUtils.deconstructFSN(fsnTern)[0];
+		String ptTerm = SnomedUtilsBase.deconstructFSN(fsnTern)[0];
 		Description pt = Description.withDefaults(ptTerm, DescriptionType.SYNONYM, Acceptability.PREFERRED);
-
+		replacementTerms.add(pt);
+		
 		c.setDescriptions(replacementTerms);
 	}
 
-	private boolean moveDescriptions(Concept c, Concept conceptOnTS, List<Component> componentsToProcess) throws TermServerScriptException {
+	private boolean moveDescriptions(Concept c, Concept conceptOnTS) throws TermServerScriptException {
 		boolean subComponentsMoved = false;
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
 			//We're going to skip any non-English Descriptions
@@ -997,12 +1001,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 	}
 
+	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		//Do we have an FSN override to deal with?
-		if (containsReplacementFSNs) {
-			if (lineItems.length == 3) {
-				replacementFSNs.put(lineItems[0], lineItems[2]);
-			}
+		if (containsReplacementFSNs && lineItems.length == 3) {
+			replacementFSNs.put(lineItems[0], lineItems[2]);
 		}
 		return super.loadLine(lineItems);
 	}
@@ -1022,7 +1025,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	private boolean moveDescriptionToTargetModule(Description d, Concept conceptOnTS) throws TermServerScriptException {
-		Description descriptionOnTS = null;
+		Description descriptionOnTS;
 		Concept c = gl.getConcept(d.getConceptId());
 		
 		//If we already have the concept on the Terminology Server, perhaps we already have the description too,
@@ -1076,12 +1079,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
 					usEntry.setModuleId(targetModuleId);
 					usEntry.setDirty();
-					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).size() == 0) {
+					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).isEmpty()) {
 						//Might be an inactive GB refset entry that we can reuse
 						//In which case, bring it into line with the US value
 						List<LangRefsetEntry> gbInactiveLangRefs = d.getLangRefsetEntries(ActiveState.INACTIVE, GB_ENG_LANG_REFSET);
 						if (gbInactiveLangRefs.size() > 0) {
-							LOGGER.debug("Reactivating GB langrefset entry " + d.getDescriptionId());
+							LOGGER.debug("Reactivating GB langrefset entry {}", d.getDescriptionId());
 							LangRefsetEntry gbEntry = gbInactiveLangRefs.get(0);
 							gbEntry.setActive(true);
 							gbEntry.setEffectiveTime(null);
