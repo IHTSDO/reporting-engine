@@ -1056,73 +1056,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			d.setDirty();
 		}
 		
-		//AU for example doesn't give language refset entries for FSNs
-		if (d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
-			//The international edition however, does PREF for FSNs
-			String acceptability = SCTID_PREFERRED_TERM;
-			if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred()) {
-				acceptability = SCTID_ACCEPTABLE_TERM;
-			}
-			
-			for (String refsetId : targetLangRefsetIds) {
-				LangRefsetEntry entry = LangRefsetEntry.withDefaults(d, refsetId, acceptability);
-				entry.setModuleId(targetModuleId);
-				entry.setDirty();
-				d.addAcceptability(entry);
-			}
-		} else {
-			boolean hasUSLangRefset = false;
-			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
-				hasUSLangRefset = true;
-				//Only move if there's a difference
-				//Note we cannot get LangRefsetEntries from TS because browser format only uses AcceptabilityMap
-				if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
-					usEntry.setModuleId(targetModuleId);
-					usEntry.setDirty();
-					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).isEmpty()) {
-						//Might be an inactive GB refset entry that we can reuse
-						//In which case, bring it into line with the US value
-						List<LangRefsetEntry> gbInactiveLangRefs = d.getLangRefsetEntries(ActiveState.INACTIVE, GB_ENG_LANG_REFSET);
-						if (gbInactiveLangRefs.size() > 0) {
-							LOGGER.debug("Reactivating GB langrefset entry {}", d.getDescriptionId());
-							LangRefsetEntry gbEntry = gbInactiveLangRefs.get(0);
-							gbEntry.setActive(true);
-							gbEntry.setEffectiveTime(null);
-							gbEntry.setModuleId(targetModuleId);
-							gbEntry.setAcceptabilityId(usEntry.getAcceptabilityId());
-							gbEntry.setDirty();
-							d.addLangRefsetEntry(gbEntry);
-						} else {
-							//Otherwise, clone the US entry to use as GB
-							LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
-							d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
-						}
-					}
-				}
-			}
-
-			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
-				//if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
-				gbEntry.setModuleId(targetModuleId);
-				gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
-				//}
-				//Do we need to copy the GB Langref as the US one?
-				if (!hasUSLangRefset) {
-					// This ensures existing langrefset entries are re-used if present, or a new one is created.
-					d.setAcceptability(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(gbEntry.getAcceptabilityId()));
-				}
-			}
-		}
-		
-		//If Desc has been made inactive, take over the inactivation indicators
-		if(!d.isActive()) {
-			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
-				if (StringUtils.isEmpty(i.getEffectiveTime())) {
-					i.setModuleId(targetModuleId);
-					i.setDirty(); //Just in case we're missing this component rather than shifting module
-				}
-			}
-		}
+		moveLangRefsetEntriesToTargetModule(d, usGbVariance, doShiftDescription);
 		
 		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
@@ -1137,6 +1071,88 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 		return true;
+	}
+
+	private void moveLangRefsetEntriesToTargetModule(Description d, boolean usGbVariance, boolean doShiftDescription) throws TermServerScriptException {
+		//AU for example doesn't give language refset entries for FSNs
+		if (d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
+			createTargetLangRefsetEntries(d);
+		} else {
+			moveExistingLangRefsetEntries(d, usGbVariance, doShiftDescription);
+		}
+
+		//If Desc has been made inactive, take over the inactivation indicators
+		if(!d.isActive()) {
+			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+				if (StringUtils.isEmpty(i.getEffectiveTime())) {
+					i.setModuleId(targetModuleId);
+					i.setDirty(); //Just in case we're missing this component rather than shifting module
+				}
+			}
+		}
+	}
+
+	private void moveExistingLangRefsetEntries(Description d, boolean usGbVariance, boolean doShiftDescription) throws TermServerScriptException {
+		boolean hasUSLangRefset = false;
+		for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
+			hasUSLangRefset = true;
+			//Only move if there's a difference
+			//Note we cannot get LangRefsetEntries from TS because browser format only uses AcceptabilityMap
+			if (doShiftDescription || StringUtils.isEmpty(usEntry.getEffectiveTime())) {
+				moveExistingUSLangRefsetEntry(d, usEntry, usGbVariance);
+			}
+		}
+
+		for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
+			//if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
+			gbEntry.setModuleId(targetModuleId);
+			gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
+			//}
+			//Do we need to copy the GB Langref as the US one?
+			if (!hasUSLangRefset) {
+				// This ensures existing langrefset entries are re-used if present, or a new one is created.
+				d.setAcceptability(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(gbEntry.getAcceptabilityId()));
+			}
+		}
+	}
+
+	private void moveExistingUSLangRefsetEntry(Description d, LangRefsetEntry usEntry, boolean usGbVariance) throws TermServerScriptException {
+		usEntry.setModuleId(targetModuleId);
+		usEntry.setDirty();
+		if (!usGbVariance && d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).isEmpty()) {
+			//Might be an inactive GB refset entry that we can reuse
+			//In which case, bring it into line with the US value
+			List<LangRefsetEntry> gbInactiveLangRefs = d.getLangRefsetEntries(ActiveState.INACTIVE, GB_ENG_LANG_REFSET);
+			if (!gbInactiveLangRefs.isEmpty()) {
+				LOGGER.debug("Reactivating GB langrefset entry {}", d.getDescriptionId());
+				LangRefsetEntry gbEntry = gbInactiveLangRefs.get(0);
+				gbEntry.setActive(true);
+				gbEntry.setEffectiveTime(null);
+				gbEntry.setModuleId(targetModuleId);
+				gbEntry.setAcceptabilityId(usEntry.getAcceptabilityId());
+				gbEntry.setDirty();
+				d.addLangRefsetEntry(gbEntry);
+			} else {
+				//Otherwise, clone the US entry to use as GB
+				LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
+				d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
+			}
+		}
+	}
+
+	private void createTargetLangRefsetEntries(Description d) throws TermServerScriptException {
+		//The international edition however, does PREF for FSNs
+		String acceptability = SCTID_PREFERRED_TERM;
+		if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred()) {
+			acceptability = SCTID_ACCEPTABLE_TERM;
+		}
+
+		for (String refsetId : targetLangRefsetIds) {
+			LangRefsetEntry entry = LangRefsetEntry.withDefaults(d, refsetId, acceptability);
+			entry.setModuleId(targetModuleId);
+			entry.setDirty();
+			d.addAcceptability(entry);
+		}
 	}
 
 	private Description findMatchingDescription(Description d, Concept conceptOnTS) {

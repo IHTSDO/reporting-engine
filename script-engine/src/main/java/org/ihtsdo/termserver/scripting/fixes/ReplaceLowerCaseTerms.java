@@ -8,9 +8,9 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
 Fix finds terms where the 2nd word is lower case and no equivalent upper case term exists.
@@ -105,11 +105,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements ScriptConstants{
 		return termAlreadyExists;
 	}
 
-	/**
-	 * Identify any concept 
-	 * @return
-	 * @throws TermServerScriptException
-	 */
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<Component>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
@@ -122,7 +118,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements ScriptConstants{
 			}
 			//Find terms which only exist in lower case
 			List<Description> unmatchedLowerCaseTerms = findUnmatchedLowerCaseTerms(thisConcept);
-			if (unmatchedLowerCaseTerms.size() > 0) {
+			if (!unmatchedLowerCaseTerms.isEmpty()) {
 				processMe.add(thisConcept);
 			}
 		}
@@ -139,13 +135,13 @@ public class ReplaceLowerCaseTerms extends BatchFix implements ScriptConstants{
 			//Also if it's an FSN, strip off the semantic tag
 			String term = lowerCase.getTerm();
 			if (lowerCase.getType().equals(DescriptionType.FSN)) {
-				term = SnomedUtils.deconstructFSN(term)[0];
+				term = SnomedUtilsBase.deconstructFSN(term)[0];
 			}
 			String [] words = term.split(" ");
 			words = removeRomanNumerals(words);
 			if (words.length == 2 && 
 					words[0].equals(firstWord) && 
-					!words[1].matches(".*\\d+.*") &&
+					!words[1].matches("\\d") &&
 					!words[1].contains("[") &&
 					words[1].equals(words[1].toLowerCase())) {
 				//Are there no other terms differing only in case?

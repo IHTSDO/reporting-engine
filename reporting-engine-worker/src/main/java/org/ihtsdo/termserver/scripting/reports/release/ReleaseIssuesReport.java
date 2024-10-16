@@ -292,7 +292,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		LOGGER.info("Checking " + gl.getAllConcepts().size() + " concepts...");
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConceptsSorted = allConceptsSorted.stream()
-				.filter(c -> c.isActive())
+				.filter(c -> c.isActiveSafely())
 				.collect(Collectors.toList());
 		LOGGER.info("Sorted " + allConceptsSorted.size() + " concepts");
 		LOGGER.info("Detecting recently touched concepts");
@@ -470,7 +470,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (c instanceof LangRefsetEntry &&
 				prevModule.equals(SCTID_CF_MOD) &&
 				currModule.equals(SCTID_CH_MOD) &&
-				!c.isActive() && prevActive.equals("1")) {
+				!c.isActiveSafely() && prevActive.equals("1")) {
 			return true;
 		}
 		return false;
@@ -523,7 +523,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			
 			//Also skip the top of the metadata hierarchy - it has a core parent
 			//900000000000441003 |SNOMED CT Model Component (metadata)|
-			if (!c.isActive() || c.getConceptId().equals("900000000000441003")) {
+			if (!c.isActiveSafely() || c.getConceptId().equals("900000000000441003")) {
 				continue;
 			}
 			
@@ -612,7 +612,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 			//Only look at concepts that have been in some way edited in this release cycle
 			//Unless we're interested in legacy issues
-			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
+			if (c.isActiveSafely() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
@@ -645,7 +645,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 			//Only look at concepts that have been in some way edited in this release cycle
 			//Unless we're interested in legacy issues
-			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
+			if (c.isActiveSafely() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				checkDescriptionsForExcessiveLength(c, issueStr);
 			}
 		}
@@ -674,17 +674,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue3Str);
 		for (Concept c : allConceptsSorted) {
 			if (inScope(c) && isInternational(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
-				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
+				if (c.getFSNDescription() == null || !c.getFSNDescription().isActiveSafely()) {
 					reportAndIncrementSummary(c, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c,null));
 				}
 				
 				Description usPT = c.getPreferredSynonym(US_ENG_LANG_REFSET);
-				if (usPT == null || !usPT.isActive()) {
+				if (usPT == null || !usPT.isActiveSafely()) {
 					reportAndIncrementSummary(c, isLegacySimple(c), issue2Str, getLegacyIndicator(c), isActive(c,null));
 				}
 				
 				Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
-				if (gbPT == null || !gbPT.isActive()) {
+				if (gbPT == null || !gbPT.isActiveSafely()) {
 					reportAndIncrementSummary(c, isLegacySimple(c), issue3Str, getLegacyIndicator(c), isActive(c,null));
 				}
 			}
@@ -711,11 +711,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (inScope(c) && !semTagHierarchyMap.containsValue(c)) {
 				for (Map.Entry<String, Concept> entry : semTagHierarchyMap.entrySet()) {
 					String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), true)[1];
-					if (semTag != null && semTag.equals(entry.getKey())) {
-						//Are we in the appropriate Hierarchy?
-						if (!c.getAncestors(NOT_SET).contains(entry.getValue())) {
-							report(c, issueStr, "-", isActive(c,c.getFSNDescription()), entry.getValue());
-						}
+					//Are we in the appropriate Hierarchy?
+					if (semTag != null && semTag.equals(entry.getKey()) && !c.getAncestors(NOT_SET).contains(entry.getValue())) {
+						report(c, issueStr, "-", isActive(c,c.getFSNDescription()), entry.getValue());
 					}
 				}
 			}
@@ -1128,10 +1126,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//First pass through all active concepts to find semantic tags
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.getFSNDescription() == null) {
-				LOGGER.warn("No FSN Description found for concept " + c.getConceptId());
+				LOGGER.warn("No FSN Description found for concept {}", c.getConceptId());
 				continue;
 			}
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				if (!inScope(c)) {
 					continue;
 				}
@@ -1145,7 +1143,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		
-		LOGGER.info ("Collected " + knownSemanticTags.size() + " distinct semantic tags");
+		LOGGER.info ("Collected {} distinct semantic tags", knownSemanticTags.size());
 		
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
@@ -1153,21 +1151,19 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (!inScope(c)) {
 				continue;
 			}
-			if (whiteList.contains(c.getId())) {
-				continue;
-			}
-			if (whiteListedConceptIds.contains(c)) {
+			if (whiteList.contains(c.getId()) || whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
+
 			if (c.getFSNDescription() == null) {
-				LOGGER.warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
+				LOGGER.warn("No FSN Description found (2nd pass) for concept {}", c.getConceptId());
 				continue;
 			}
 			String legacy = getLegacyIndicator(c.getFSNDescription());
 			
 			//Don't log lack of semantic tag for inactive concepts
-			String termWithoutTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), !c.isActive())[0];
+			String termWithoutTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), !c.isActiveSafely())[0];
 			
 			//We can short cut this if we don't have any brackets here.  
 			if (!termWithoutTag.contains("(")) {
@@ -1243,7 +1239,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		nextConcept:
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.isActive() || includeLegacyIssues) {
+			if (c.isActiveSafely() || includeLegacyIssues) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
@@ -1271,11 +1267,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (!inScope(c)) {
 				continue;
 			}
-			if (whiteListedConceptIds.contains(c)) {
+			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				String legacy = getLegacyIndicator(c);
 				
 				//Skip root concept - has no highest ancestor
@@ -1300,10 +1296,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					Set<Concept> topLevels = SnomedUtils.getHighestAncestorsBefore(p, ROOT_CONCEPT);
 					
 					if (topLevels.size() > 1) {
-						String topLevelStr = topLevels.stream().map(cp -> cp.toString()).collect(Collectors.joining(",\n"));
+						String topLevelStr = topLevels.stream().map(Object::toString).collect(Collectors.joining(",\n"));
 						report(c, issueStr, legacy, isActive(c,null), topLevelStr);
 						continue nextConcept;
-					} else if (topLevels.size() == 0) {
+					} else if (topLevels.isEmpty()) {
 						report(c, "Failed to find top level of parent ", legacy, isActive(c,null), p);
 						continue nextConcept;
 					}
@@ -1332,14 +1328,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Check all concepts referenced in relationships are valid
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.isActive() && inScope(c)) {
+			if (c.isActiveSafely() && inScope(c)) {
 				//Check all RHS relationships are active
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = getLegacyIndicator(r);
-					if (!r.getType().isActive()) {
+					if (!r.getType().isActiveSafely()) {
 						report(c, issueStr, legacy, isActive(c,r), r);
 					}
-					if (r.isNotConcrete() && !r.getTarget().isActive()) {
+					if (r.isNotConcrete() && !r.getTarget().isActiveSafely()) {
 						report(c, issue2Str, legacy, isActive(c,r), r);
 					}
 				}
@@ -1355,10 +1351,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}
 						
 						for (Relationship r : AxiomUtils.getLHSRelationships(c, axiom)) {
-							if (!r.getType().isActive()) {
+							if (!r.getType().isActiveSafely()) {
 								report(c, issue3Str, legacy, isActive(c,r), r);
 							}
-							if (r.isNotConcrete() && !r.getTarget().isActive()) {
+							if (r.isNotConcrete() && !r.getTarget().isActiveSafely()) {
 								report(c, issue4Str, legacy, isActive(c,r), r);
 							}
 						}
@@ -1381,7 +1377,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Check no active relationship is non-axiom
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.isActive() && inScope(c)) {
+			if (c.isActiveSafely() && inScope(c)) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = getLegacyIndicator(r);
 					if (!r.fromAxiom()) {
@@ -1435,10 +1431,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		List<Description> bothDialectTextDefns = new ArrayList<>();
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				List<Description> textDefns = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
 				if (textDefns.size() > 2) {
-					LOGGER.warn (c + " has " + textDefns.size() + " active text definitions - check for compatibility");
+					LOGGER.warn ("{} has {} active text definitions - check for compatibility", c, textDefns.size());
 				}
 				boolean hasUS = false;
 				boolean hasGB = false;
@@ -1457,7 +1453,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						bothDialectTextDefns.add(textDefn);
 					}
 					if (!isUS && !isGB) {
-						LOGGER.warn ("Text definition is not preferred in either dialect: " + textDefn);
+						LOGGER.warn("Text definition is not preferred in either dialect: {}", textDefn);
 					}
 				}
 				if ((hasUS && !hasGB) || (hasGB && !hasUS)) {
@@ -1514,7 +1510,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			
 		nextConcept:
 		for (Concept c : allActiveConceptsSorted) {
-			if (!c.isActive()) {
+			if (!c.isActiveSafely()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						for (Character[] bracketPair : bracketPairs) {
@@ -1557,7 +1553,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
 		Set<Concept> subHierarchyList = cache.getDescendantsOrSelf(subHierarchy);
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.isActive() && inScope(c)) {
+			if (c.isActiveSafely() && inScope(c)) {
 				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
 			}
 		}
@@ -1586,7 +1582,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		Set<Concept> invalidValues = cache.getDescendantsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
 		
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.isActive() && inScope(c)) {
+			if (c.isActiveSafely() && inScope(c)) {
 				for (Concept type : typesOfInterest) {
 					validateTypeValueCombo(c, type, invalidValues, issueStr, false);
 				}
@@ -1652,7 +1648,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//RP-181 No new combined bodysite concepts should be created
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
 			for (Concept c : deprecatedHierarchy.getDescendants(NOT_SET)) {
-				if (!c.isReleased() && inScope(c)) {
+				if (!c.isReleasedSafely() && inScope(c)) {
 					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
 				}
 			}
@@ -1688,7 +1684,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		for (RefsetMember rm : refsetMembers) {
-			if (rm.isActive()) {
+			if (rm.isActiveSafely()) {
 				Concept c = gl.getConcept(rm.getReferencedComponentId());
 				for (String additionalField : rm.getAdditionalFieldNames()) {
 					validateTermsInField(partName, c, rm, additionalField);
@@ -1705,7 +1701,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr2);
 
 		for (Concept concept : allConceptsSorted) {
-			if (Boolean.FALSE.equals(concept.isActive())) {
+			if (Boolean.FALSE.equals(concept.isActiveSafely())) {
 				checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(ActiveState.INACTIVE), issueStr);
 			} else {
 				checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(), issueStr2);
@@ -1742,7 +1738,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String field = rm.getField(fieldName);
 		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field) && field.length() > 7) {
 			Concept refConcept = gl.getConcept(field, false, false);
-			if (refConcept == null || !refConcept.isActive()) {
+			if (refConcept == null || !refConcept.isActiveSafely()) {
 				report (c, issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);
 			}
 			return;
@@ -1753,7 +1749,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Group 1 is the SCTID, group 3 is the FSN. Group 2 is optional whitespace
 			if (matcher.groupCount() == 3) {
 				Concept refConcept = gl.getConcept(matcher.group(1), false, false);
-				if (refConcept == null || !refConcept.isActive()) {
+				if (refConcept == null || !refConcept.isActiveSafely()) {
 					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 				} else {
 					if (refConcept.getPreferredSynonym(US_ENG_LANG_REFSET) == null) {
@@ -1804,7 +1800,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String issueStr = "Attributes " + neverTogether[0].toStringPref() + " and " + neverTogether[1].toStringPref() + " must not appear in same group";
 			initialiseSummary(issueStr);
 			for (Concept c : allActiveConceptsSorted) {
-				if (c.isActive() && inScope(c)) {
+				if (c.isActiveSafely() && inScope(c)) {
 					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
 						report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
 					}
@@ -1813,6 +1809,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 
+	@Override
 	public boolean report(Concept c, Object... details) throws TermServerScriptException {
 		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {

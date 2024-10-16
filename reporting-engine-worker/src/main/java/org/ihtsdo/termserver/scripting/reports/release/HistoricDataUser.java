@@ -11,6 +11,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.HistoricData;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 
@@ -34,7 +35,7 @@ public class HistoricDataUser extends TermServerReport {
 
 	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown");
 
-	public static final boolean debugToFile = false;
+	public static final boolean DEBUG_TO_FILE = false;
 	protected List<String> moduleFilter;
 
 	protected String prevRelease;
@@ -46,7 +47,7 @@ public class HistoricDataUser extends TermServerReport {
 
 	protected String projectKey;
 	protected String origProject;
-	protected Map<String, Datum> prevData;
+	protected Map<String, HistoricData> prevData;
 	//2D data structure Concepts, Descriptions, Relationships, Axioms, LangRefset, Inactivation Indicators, Historical Associations
 	protected Map<Concept, int[][]> summaryDataMap;
 	protected Map<String, int[]> refsetDataMap;
@@ -77,7 +78,7 @@ public class HistoricDataUser extends TermServerReport {
 			mgr.loadSnapshot(fsnOnly);
 
 			previousEffectiveTime = gl.getCurrentEffectiveTime();
-			LOGGER.info("EffectiveTime of previous release detected to be: " + previousEffectiveTime);
+			LOGGER.info("EffectiveTime of previous release detected to be: {}", previousEffectiveTime);
 
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.setModuleFilter(moduleFilter);
@@ -138,7 +139,7 @@ public class HistoricDataUser extends TermServerReport {
 			setProject(new Project(projectKey));
 			mgr.loadSnapshot(false);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			LOGGER.info ("Detected this effective time as " + thisEffectiveTime);
+			LOGGER.info ("Detected this effective time as {}", thisEffectiveTime);
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
@@ -149,132 +150,41 @@ public class HistoricDataUser extends TermServerReport {
 		}
 	}
 
-	protected Map<String, Datum> loadData(String release) throws TermServerScriptException {
+	protected Map<String, HistoricData> loadData(String release) throws TermServerScriptException {
 		return loadData(release, false);
 	}
 
-	protected Map<String, Datum> loadData(String release, boolean minimalSet) throws TermServerScriptException {
+	protected Map<String, HistoricData> loadData(String release, boolean minimalSet) throws TermServerScriptException {
 		File dataFile = null;
 		prevData = new HashMap<>();
-		//Might need all the memory we can get at this point
-		System.gc();
 		try {
 			dataFile = new File("historic-data/" + release + ".tsv");
 			if (!dataFile.exists() || !dataFile.canRead()) {
 				throw new TermServerScriptException("Unable to load historic data: " + dataFile);
 			}
-			LOGGER.info ("Loading " + dataFile);
-			BufferedReader br = new BufferedReader(new FileReader(dataFile));
-			int lineNumber = 0;
-			String line = "";
-			try {
-				while ((line = br.readLine()) != null) {
-					lineNumber++;
-					Datum datum = fromLine(line, minimalSet);
-					if (StringUtils.isEmpty(datum.hierarchy)){
-						datum.hierarchy = UNKNOWN_CONCEPT.getConceptId();
-					}
-					prevData.put(Long.toString(datum.conceptId), datum);
-				}
-			} catch (Exception e) {
-				String err = e.getClass().getSimpleName();
-				throw new TermServerScriptException(err + " at line " + lineNumber + " columnCount: " + line.split(TAB).length + " content: " + line);
-			} finally {
-				br.close();
-			}
+			loadDataFile(dataFile, minimalSet);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to load " + dataFile, e);
 		}
 		return prevData;
 	}
 
-	protected class Datum {
-		public long conceptId;
-		public String fsn;
-		public boolean isActive;
-		public boolean isSD;
-		public String hierarchy;
-		public boolean isIP;
-		public boolean hasSdDescendant;
-		public boolean hasSdAncestor;
-		public int hashCode;
-		public String moduleId;
-		public List<String> relIds;
-		public List<String> descIds;
-		public List<String> axiomIds;
-		public List<String> langRefsetIds;
-		public List<String> inactivationIds;
-		public List<String> histAssocIds;
-		public List<String> relIdsInact;
-		public List<String> descIdsInact;
-		public List<String> axiomIdsInact;
-		public List<String> langRefsetIdsInact;
-		public List<String> inactivationIdsInact;
-		public List<String> histAssocIdsInact;
-		public boolean hasAttributes;
-		public List<String> descHistAssocIds;
-		public List<String> descHistAssocIdsInact;
-		public List<String> descInactivationIds;
-		public List<String> descInactivationIdsInact;
-		public List<String> histAssocTargets;
-
-		@Override
-		public int hashCode () {
-			return hashCode;
+	private void loadDataFile(File dataFile, boolean minimalSet) throws TermServerScriptException {
+		int lineNumber = 0;
+		String line = "";
+		try (BufferedReader br = new BufferedReader(new FileReader(dataFile))) {
+		    while ((line = br.readLine()) != null) {
+		        lineNumber++;
+		        HistoricData datum = HistoricData.fromLine(line, minimalSet);
+		        if (StringUtils.isEmpty(datum.getHierarchy())){
+		            datum.setHierarchy(UNKNOWN_CONCEPT.getConceptId());
+		        }
+		        prevData.put(Long.toString(datum.getConceptId()), datum);
+		    }
+		} catch (Exception e) {
+		    String err = e.getClass().getSimpleName();
+		    throw new TermServerScriptException(err + " at line " + lineNumber + " columnCount: " + line.split(TAB).length + " content: " + line);
 		}
-
-		@Override
-		public boolean equals (Object o) {
-			if (o instanceof Datum) {
-				return this.conceptId == ((Datum)o).conceptId;
-			}
-			return false;
-		}
-	}
-
-	Datum fromLine (String line, boolean minimalSet) {
-		int idx = 0;
-		Datum datum = new Datum();
-		String[] lineItems = line.split(TAB, -1);
-		datum.conceptId = Long.parseLong(lineItems[idx]);
-		datum.hashCode = Long.hashCode(datum.conceptId);
-		datum.fsn = lineItems[++idx];
-		datum.isActive = lineItems[++idx].equals("Y");
-		if (!minimalSet) {
-			datum.isSD = lineItems[++idx].equals("SD");
-			datum.hierarchy = lineItems[++idx];
-			datum.isIP = lineItems[++idx].equals("Y");
-			datum.hasSdAncestor = lineItems[++idx].equals("Y");
-			datum.hasSdDescendant = lineItems[++idx].equals("Y");
-			datum.relIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.relIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.descIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.descIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.axiomIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.axiomIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.langRefsetIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.langRefsetIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.inactivationIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.inactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.histAssocIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.histAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.moduleId = lineItems[++idx];
-			datum.hasAttributes = lineItems[++idx].equals("Y");
-			datum.descHistAssocIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.descHistAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.descInactivationIds = Arrays.asList(lineItems[++idx].split(","));
-			datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
-			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
-		} else {
-			idx++;
-			datum.hierarchy = lineItems[++idx];
-			idx += 21;
-			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
-			if (datum.histAssocTargets.size() == 1 && datum.histAssocTargets.get(0).equals("")) {
-				datum.histAssocTargets = null;  //Save the memory!
-			}
-		}
-		return datum;
 	}
 
 	@Override
@@ -297,7 +207,7 @@ public class HistoricDataUser extends TermServerReport {
 		}
 		//If we've specified some modules explicitly, then allow those to
 		//take precedence
-		if (moduleFilter != null && moduleFilter.size() > 0) {
+		if (moduleFilter != null && !moduleFilter.isEmpty()) {
 			return moduleFilter.contains(c.getModuleId());
 		}
 		//RP-349 Allow MS customers to run reports against MAIN.

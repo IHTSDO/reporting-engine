@@ -280,7 +280,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 	}
 
-	private void createTaskIfRequired(Batch batch, Task task, String xOfY) throws TermServerScriptException, InterruptedException {
+	private void createTaskIfRequired(Batch batch, Task task, String xOfY) throws TermServerScriptException {
 		//Did user specify that we're working in a particular task?  If so, we can only
 		//work within a single task
 		if (this.taskKey != null) {

@@ -157,11 +157,11 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
-				Datum prevDatum = prevData.get(c.getId());
+				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
 					Concept topLevel = SnomedUtils.getHierarchy(gl, c);
-					if (!prevDatum.hierarchy.equals(topLevel.getId())) {
-						report (SECONDARY_REPORT, c, topLevel.toStringPref(), gl.getConcept(prevDatum.hierarchy).toStringPref());
+					if (!prevDatum.getHierarchy().equals(topLevel.getId())) {
+						report (SECONDARY_REPORT, c, topLevel.toStringPref(), gl.getConcept(prevDatum.getHierarchy()).toStringPref());
 						incrementSummaryInformation(summaryItem);
 					}
 				}
@@ -177,10 +177,10 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
-				Datum prevDatum = prevData.get(c.getId());
+				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
-					if (!prevDatum.fsn.equals(c.getFsn())) {
-						report (TERTIARY_REPORT, c, prevDatum.fsn, StringUtils.difference(c.getFsn(), prevDatum.fsn));
+					if (!prevDatum.getFsn().equals(c.getFsn())) {
+						report (TERTIARY_REPORT, c, prevDatum.getFsn(), StringUtils.difference(c.getFsn(), prevDatum.getFsn()));
 						incrementSummaryInformation(summaryItem);
 					}
 				}
@@ -196,9 +196,9 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		for (Concept c : allInactiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
-				Datum prevDatum = prevData.get(c.getId());
+				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
-					if (prevDatum.isActive) {
+					if (prevDatum.isActive()) {
 						report (QUATERNARY_REPORT, c);
 						incrementSummaryInformation(summaryItem);
 					}
@@ -215,9 +215,9 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
-				Datum prevDatum = prevData.get(c.getId());
+				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
-					if (!prevDatum.isActive) {
+					if (!prevDatum.isActive()) {
 						report (QUINARY_REPORT, c);
 						incrementSummaryInformation(summaryItem);
 					}
@@ -237,10 +237,10 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		for (Concept c : allActiveConceptsSorted) {
 			try {
 				//Was this concept in the previous release and if so, has it switched?
-				Datum prevDatum = prevData.get(c.getId());
+				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
 					//If what was SD is now P, or visa versa, report
-					if (prevDatum.isSD == c.isPrimitive()) {
+					if (prevDatum.isSD() == c.isPrimitive()) {
 						report (SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
 						incrementSummaryInformation(c.isPrimitive()?summaryItem1:summaryItem2);
 					}
@@ -258,8 +258,8 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			try {
 				Description fsn = c.getFSNDescription();
 				//Was this concept in the previous release and if so, has it switched?
-				Datum prevDatum = prevData.get(c.getId());
-				if (prevDatum == null || !prevDatum.descIds.contains(fsn.getId())) {
+				HistoricData prevDatum = prevData.get(c.getId());
+				if (prevDatum == null || !prevDatum.getDescIds().contains(fsn.getId())) {
 					report (SEPTENARY_REPORT, c);
 					incrementSummaryInformation(summaryItem);
 				}

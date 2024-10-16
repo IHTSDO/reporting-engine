@@ -255,6 +255,6 @@ public class EclCache implements ScriptConstants {
 	}
 
 	public String getServer() {
-		return tsClient.getUrl();
+		return tsClient.getServerUrl();
 	}
 }

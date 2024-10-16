@@ -36,6 +36,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public abstract class TermServerScript extends Script implements ScriptConstants {
+
+	protected static final String EXCEPTION_ENCOUNTERED = "Exception encountered";
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerScript.class);
 	public static final String COMMAND_LINE_USAGE = "Usage: java <VM_ARGUMENTS> <TSScriptClass> " +
 			"[-a author] " +
@@ -547,7 +549,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				try {
 					Thread.sleep(5 * 1000);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					LOGGER.error(EXCEPTION_ENCOUNTERED,e);
 				}
 			}
 		}
@@ -675,7 +677,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
 			if (runStandAlone) {
-				LOGGER.debug("Loading: " + gl.getDescription(sctId) + " from local store");
+				LOGGER.debug("Loading: {} from local store", gl.getDescription(sctId));
 				return gl.getDescription(sctId).clone(null, true);
 			}
 		}
@@ -685,10 +687,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
 				|| e.getMessage().contains("404 Not Found")
 				|| e.getMessage().contains("NOT_FOUND")) {
-				LOGGER.debug("Unable to find description " + sctId + " on branch " + branchPath);
+				LOGGER.debug("Unable to find description {} on branch {}", sctId, branchPath);
 				return null;
 			}
-			e.printStackTrace();
 			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 			throw new TermServerScriptException("Failed to recover description " + sctId + " from TS branch " + branchPath + ", due to: " + msg,e);
 		}
@@ -717,7 +718,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected Concept loadConcept(TermServerClient client, String sctId, String branchPath) throws TermServerScriptException {
 		Concept concept =  gl.getConcept(sctId);
 		try {
-			LOGGER.debug("Loading: " + concept + " from TS branch " + branchPath);
+			LOGGER.debug("Loading: {} from TS branch {}", concept, branchPath);
 			Concept loadedConcept = client.getConcept(sctId, branchPath);
 			loadedConcept.setLoaded(true);
 			convertAxiomsToRelationships(loadedConcept, loadedConcept.getClassAxioms());
@@ -727,10 +728,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
 					|| e.getMessage().contains("404 Not Found")
 					|| e.getMessage().contains("NOT_FOUND")) {
-				LOGGER.debug("Unable to find " + concept + " on branch " + branchPath);
+				LOGGER.debug("Unable to find {} on branch {}", concept, branchPath);
 				return null;
 			}
-			e.printStackTrace();
 			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS branch " + branchPath + ", due to: " + msg,e);
 		}
@@ -807,7 +807,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} catch (Exception e) {
 				String excpStr =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 				String msg = "Failed to update " + c + " in TS due to " + excpStr;
-				LOGGER.error(msg + " JSON = " + gson.toJson(c), e);
+				LOGGER.info("{} JSON = {}", msg, gson.toJson(c));
 				throw new TermServerScriptException(msg,e); 
 			}
 		} 

@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SingleTraceabilityService implements TraceabilityService {
+
+	protected static final String EXCEPTION_ENCOUNTERED = "Exception encountered";
 	
 	Set<String> unacceptableUsernames = new HashSet<>();
 	{
@@ -214,7 +216,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 			boolean summaryOnly = true;
 			return client.getConceptActivity(sctId, ActivityType.CONTENT_CHANGE, row.fromDate, row.toDate, summaryOnly, intOnly, branchPrefix);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error(EXCEPTION_ENCOUNTERED,e);
 			return Collections.singletonList(createDummyActivity(sctId, e));
 		}
 	}
@@ -271,7 +273,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 						try {
 							Thread.sleep(1000 * 5);
 						} catch (InterruptedException e) {
-							e.printStackTrace();
+							LOGGER.error(EXCEPTION_ENCOUNTERED,e);
 						}
 					} else {
 						LOGGER_WORKER.debug("Worker {}'s queue contains " + queue.size() + " rows to process", workerId);
@@ -309,7 +311,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 					try {
 						Thread.sleep(1000 * 5);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						LOGGER.error(EXCEPTION_ENCOUNTERED,e);
 					}
 					
 					if (!isRunning) {
@@ -374,7 +376,7 @@ public class SingleTraceabilityService implements TraceabilityService {
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
-							e.printStackTrace();
+							LOGGER.error(EXCEPTION_ENCOUNTERED,e);
 						}
 					}
 					LOGGER.info("Worker confirmed shutdown");
