@@ -242,20 +242,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		LOGGER.info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
-			/*if (c.getId().equals("1908008") || c.getId().equals("1010625007") || c.getId().equals("8661000119102")) {
-				LOGGER.debug("here");
-			}*/
-			if (c.getId().equals("182385006") || c.getId().equals("138198004")) {
-				LOGGER.debug("here");
-			}
-			Datum datum = prevData.get(c.getConceptId());
+			HistoricData datum = prevData.get(c.getConceptId());
 			//Is this concept in scope?  Even if its not, some of its components might be.
 			if (c.isActive()) {
 				topLevel = SnomedUtils.getHierarchy(gl, c);
 			} else {
 				//Was it active in the previous release?
 				if (datum != null) {
-					topLevel = gl.getConcept(datum.hierarchy);
+					topLevel = gl.getConcept(datum.getHierarchy());
 				} else {
 					//If not, it's been created and made inactive since the previous data was created.
 					//This is a separate category of concept.
@@ -264,18 +258,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 
 			//Have we seen this hierarchy before?
-			int[][] summaryData = summaryDataMap.get(topLevel);
-			if (summaryData == null) {
-				summaryData = new int[MAX_REPORT_TABS][DATA_WIDTH];
-				summaryDataMap.put(topLevel, summaryData);
-			}
-
+			int[][] summaryData = summaryDataMap.computeIfAbsent(topLevel, k -> new int[MAX_REPORT_TABS][DATA_WIDTH]);
 			boolean isNewConcept = datum == null;
 
 			//If the concept is no longer in the target module, we'll count that and ignore the rest
 			if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
 				//Was it in the target module last time?
-				if (datum != null && moduleFilter.contains(datum.moduleId)) {
+				if (datum != null && moduleFilter.contains(datum.getModuleId())) {
 					summaryData[TAB_CONCEPTS][IDX_PROMOTED]++;
 				}
 			} else {
@@ -291,25 +280,25 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 			List<Relationship> concreteRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
-					.filter(r -> r.isConcrete())
+					.filter(Relationship::isConcrete)
 					.collect(Collectors.toList());
 
 			//Component changes
-			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
-			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
-			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], normalRels);
-			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_CD], concreteRels);
-			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), (datum==null?null:datum.axiomIdsInact), summaryData[TAB_AXIOMS], c.getAxiomEntries());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), (datum==null?null:datum.inactivationIdsInact), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociationEntries(ActiveState.BOTH, true));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getDescIds()), (datum==null?null:datum.getDescIdsInact()), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getDescIds()), (datum==null?null:datum.getDescIdsInact()), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getRelIds()), (datum==null?null:datum.getRelIdsInact()), summaryData[TAB_RELS], normalRels);
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getRelIds()), (datum==null?null:datum.getRelIdsInact()), summaryData[TAB_CD], concreteRels);
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getAxiomIds()), (datum==null?null:datum.getAxiomIdsInact()), summaryData[TAB_AXIOMS], c.getAxiomEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getInactivationIds()), (datum==null?null:datum.getInactivationIdsInact()), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getHistAssocIds()), (datum==null?null:datum.getHistAssocIdsInact()), summaryData[TAB_HIST], c.getAssociationEntries(ActiveState.BOTH, true));
 			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
 					.flatMap(d -> d.getLangRefsetEntries().stream())
 					.collect(Collectors.toList());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), (datum==null?null:datum.langRefsetIdsInact), summaryData[TAB_LANG], langRefsetEntries);
+			analyzeComponents(isNewConcept, (datum==null?null:datum.getLangRefsetIds()), (datum==null?null:datum.getLangRefsetIdsInact()), summaryData[TAB_LANG], langRefsetEntries);
 		}
 	}
 
-	private void analyzeConcept(Concept c, Concept topLevel, Datum datum, int[] counts, int[] qiCounts) throws TermServerScriptException {
+	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		if (c.isActive()) {
 			counts[IDX_TOTAL_ACTIVE]++;
 			if (datum == null) {
@@ -321,30 +310,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				}
 				counts[IDX_NEW]++;
 				counts[IDX_NEW_NEW]++;
-			} else if (!datum.isActive) {
+			} else if (!datum.isActive()) {
 				//Were we inactive in the last release?  Reactivated if so
 				counts[IDX_REACTIVATED]++;
-			} else if (datum.isActive) {
+			} else if (datum.isActive()) {
 				if (isChangedSinceLastRelease(c)) {
 					counts[IDX_CHANGED]++;
 				}
 			}
 			//Has the concept remained active, but moved into this module?
-			if (datum != null && !datum.moduleId.equals(c.getModuleId())) {
+			if (datum != null && !datum.getModuleId().equals(c.getModuleId())) {
 				counts[IDX_MOVED_MODULE]++;
 			}
 		} else {
 			if (datum == null) {
 				//If it's inactive and we DIDN'T see it before, then we've got a born inactive or "New Inactive" concept
 				counts[IDX_NEW_INACTIVE]++;
-			} else if (datum.isActive) {
+			} else if (datum.isActive()) {
 				//If we had it last time active, then it's been inactivated in this release
 				counts[IDX_INACTIVATED]++;
-			} else if (!datum.isActive) {
-				if (isChangedSinceLastRelease(c)) {
-					//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
-					counts[IDX_CHANGED_INACTIVE]++;
-				}
+			} else if (!datum.isActive() && isChangedSinceLastRelease(c)) {
+				//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
+				counts[IDX_CHANGED_INACTIVE]++;
 			}
 		}
 		counts[IDX_TOTAL]++;
@@ -354,7 +341,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (inQIScope(topLevel)) {
 			//Does it have a model?
 			boolean hasModel = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0;
-			boolean hadModel = datum != null && datum.hasAttributes;
+			boolean hadModel = datum != null && datum.hasAttributes();
 			//Is it new with a model ?
 			//Or Has it gained a model since we last saw it?
 			if (datum == null && hasModel) {
@@ -399,7 +386,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return descCounts;
 	}
 	
-	private void analyzeDescriptions(Concept c, Datum datum, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
+	private void analyzeDescriptions(Concept c, HistoricData datum, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
 			/*if (d.getId().equals("3770564011")) {
 				LOGGER.debug("here");
@@ -415,15 +402,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				incrementCounts(a, counts, IDX_TOTAL);
 				if (a.isActive()) {
 					incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
-					if (datum == null || !(datum.descHistAssocIds.contains(a.getId()) || datum.descHistAssocIdsInact.contains(a.getId()))) {
+					if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
 						// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 						incrementCounts(a, counts, IDX_NEW);
 						debugToFile(a, "New");
-					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
+					} else if (datum != null && datum.getDescHistAssocIdsInact().contains(a.getId())) {
 						// If previously inactive and now active, then it's reactivated
 						incrementCounts(a, counts, IDX_REACTIVATED);
 						debugToFile(a, "Reactivated");
-					} else if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
+					} else if (datum != null && datum.getDescHistAssocIds().contains(a.getId())) {
 						if (isChangedSinceLastRelease(a)) {
 							// Was and is active, yet it has changed since last release, then it's changed
 							incrementCounts(a, counts, IDX_CHANGED);
@@ -431,15 +418,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						}
 					}
 				} else {
-					if (datum == null || !(datum.descHistAssocIds.contains(a.getId()) || datum.descHistAssocIdsInact.contains(a.getId()))) {
+					if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
 						// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 						incrementCounts(a, counts, IDX_NEW_INACTIVE);
 						debugToFile(a, "New Inactive");
-					} else if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
+					} else if (datum != null && datum.getDescHistAssocIds().contains(a.getId())) {
 						// If previously active and now inactive, then it's inactivated
 						incrementCounts(a, counts, IDX_INACTIVATED);
 						debugToFile(a, "Inactivated");
-					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
+					} else if (datum != null && datum.getDescHistAssocIdsInact().contains(a.getId())) {
 						if (isChangedSinceLastRelease(a)) {
 							// Was and is inactive, yet it has changed since last release, then it's changed inactive
 							incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
@@ -456,15 +443,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				incrementCounts(i, thisInactTab, IDX_TOTAL);
 				if (i.isActive()) {
 					incrementCounts(i, thisInactTab, IDX_TOTAL_ACTIVE);
-					if (datum == null || !(datum.descInactivationIds.contains(i.getId()) || datum.descInactivationIdsInact.contains(i.getId()))) {
+					if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
 						// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 						incrementCounts(i, thisInactTab, IDX_NEW);
 						debugToFile(i, "New");
-					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
+					} else if (datum != null && datum.getDescInactivationIdsInact().contains(i.getId())) {
 						// If previously inactive and now active, then it's reactivated
 						incrementCounts(i, thisInactTab, IDX_REACTIVATED);
 						debugToFile(i, "Reactivated");
-					} else if (datum != null && datum.descInactivationIds.contains(i.getId())) {
+					} else if (datum != null && datum.getDescInactivationIds().contains(i.getId())) {
 						if (isChangedSinceLastRelease(i)) {
 							// Was and is active, yet it has changed since last release, then it's changed
 							incrementCounts(i, thisInactTab, IDX_CHANGED);
@@ -472,15 +459,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						}
 					}
 				} else {
-					if (datum == null || !(datum.descInactivationIds.contains(i.getId()) || datum.descInactivationIdsInact.contains(i.getId()))) {
+					if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
 						// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 						incrementCounts(i, thisInactTab, IDX_NEW_INACTIVE);
 						debugToFile(i, "New Inactive");
-					} else if (datum != null && datum.descInactivationIds.contains(i.getId())) {
+					} else if (datum != null && datum.getDescInactivationIds().contains(i.getId())) {
 						// If previously active and now inactive, then it's inactivated
 						incrementCounts(i, thisInactTab, IDX_INACTIVATED);
 						debugToFile(i, "Inactivated");
-					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
+					} else if (datum != null && datum.getDescInactivationIdsInact().contains(i.getId())) {
 						if (isChangedSinceLastRelease(i)) {
 							// Was and is inactive, yet it has changed since last release, then it's changed inactive
 							incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
@@ -597,7 +584,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
 		// Only debug if we enable it (for testing really).
-		if (!debugToFile || !typesToDebugToFile.contains(c.getComponentType())) {
+		if (!DEBUG_TO_FILE || !typesToDebugToFile.contains(c.getComponentType())) {
 			return;
 		}
 		

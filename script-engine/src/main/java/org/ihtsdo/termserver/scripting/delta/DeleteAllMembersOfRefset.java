@@ -7,8 +7,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.TaskHelper;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-import java.io.IOException;
-
 public class DeleteAllMembersOfRefset extends DeltaGenerator implements ScriptConstants{
 
 	//This is a bit of a hybrid between our two types of fixes - API and Delta

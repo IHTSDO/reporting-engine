@@ -4,7 +4,6 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +15,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class BrowserClient {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(BrowserClient.class);
 	
 	protected static Gson gson;
 	static {
@@ -27,10 +28,8 @@ public class BrowserClient {
 	
 	private final RestTemplate restTemplate;
 	private final String serverUrl;
-	private static final Logger LOGGER = LoggerFactory.getLogger(BrowserClient.class);
 
 	public BrowserClient() {
-		//String browserURL = "https://dailybuild.ihtsdotools.org/api/snomed/en-edition/v20200131/descriptions?query=pain%20ear&limit=50&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0&returnLimit=100&semanticFilter=finding&normalize=true&groupByConcept=1";
 		this("https://dailybuild.ihtsdotools.org/api/snomed/en-edition/v20200131/descriptions");
 	}
 
@@ -55,7 +54,7 @@ public class BrowserClient {
 							"&returnLimit=100" +
 							(semTagFilter==null ? "" : ("semanticFilter=" + semTagFilter)) +
 							"normalize=true&groupByConcept=1";
-					LOGGER.debug("Browser search: " + url);
+					LOGGER.debug("Browser search: {}", url);
 					BrowserMatch matches = restTemplate.getForObject(url, BrowserMatch.class);
 					return matches.get();
 				} catch (Exception e) {
@@ -63,11 +62,12 @@ public class BrowserClient {
 					if (attempts == 3) {
 						throw (e);
 					}
-					TermServerScript.warn("Lexical search attempt " + attempts + " due to " + e.getMessage());
-					Thread.sleep(5 * 100);
+					LOGGER.error("Lexical search attempt {} due to ", attempts, e);
+					Thread.sleep(5 * 100L);
 				}
 			}
 		} catch (Exception e) {
+			Thread.currentThread().interrupt();
 			throw new TermServerScriptException("Failed to recover search for " + searchTerms ,e);
 		}
 		throw new IllegalStateException("Can't reach here");

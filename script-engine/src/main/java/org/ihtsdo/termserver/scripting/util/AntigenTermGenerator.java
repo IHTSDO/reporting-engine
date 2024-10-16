@@ -10,7 +10,6 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +111,7 @@ public class AntigenTermGenerator extends TermGenerator {
 		
 		//Validation, check that we have some acceptability for both US and GB
 		if (replacement.getAcceptability(US_ENG_LANG_REFSET) == null || replacement.getAcceptability(GB_ENG_LANG_REFSET) == null) {
-			TermServerScript.warn (d + " has unacceptable acceptability");
+			LOGGER.warn("{} has unacceptable acceptability", d);
 		}
 		
 		return changesMade;

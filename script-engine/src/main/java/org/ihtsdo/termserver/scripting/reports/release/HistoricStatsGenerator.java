@@ -141,7 +141,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 					fw.close();
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOGGER.error("Exception encountered",e);
 			}
 		}
 	}

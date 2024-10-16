@@ -5,7 +5,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.DataBroker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,18 +84,11 @@ public class ReportDataBroker implements DataBroker {
         }
     }
 
- /*   public void setReportDataBrokerConfig(ReportDataBrokerConfig reportDataUploaderConfig, S3Manager s3Manager) {
-        this.reportDataBrokerConfig = reportDataUploaderConfig;
-        this.s3Manager = s3Manager;
-    }*/
-
     public static ReportDataBroker create() throws TermServerScriptException {
         LOGGER.info("Creating ReportDataBroker based on local properties");
-        
         ReportDataBroker broker = new ReportDataBroker();
         broker.reportDataBrokerConfig = new ReportDataBrokerConfig();
         broker.s3Manager = new S3Manager(broker.reportDataBrokerConfig, getConfigurationPrefix());
-        //broker.setReportDataBrokerConfig(reportDataBrokerConfig, s3Manager);
         return broker;
     }
 
@@ -107,7 +99,7 @@ public class ReportDataBroker implements DataBroker {
 	public boolean exists(File file) throws IOException, TermServerScriptException {
 		boolean exists = s3Manager.getResourceManager().doesObjectExist(file);
 		if (!exists) {
-			Script.debug(file + " not found in S3.");
+			LOGGER.debug("{} not found in S3.", file);
 		}
 		return exists;
 	}

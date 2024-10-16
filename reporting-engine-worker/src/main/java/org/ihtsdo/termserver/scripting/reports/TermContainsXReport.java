@@ -68,6 +68,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		descTypes.add("PT");
 		descTypes.add("SYN");
 		params.put(TERM_TYPES, descTypes);
+		params.put(EXT_ONLY, "false");
 		TermServerReport.run(TermContainsXReport.class, params, args);
 	}
 	

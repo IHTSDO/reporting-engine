@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.dao;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
@@ -11,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -40,22 +36,22 @@ public class BuildArchiveDataLoader implements DataLoader {
 		Path targetFilePath = archive.toPath();
 		Path sourceFilePath = archive.toPath().subpath(1, archive.toPath().getNameCount()); // remove first name from the path
 
-		LOGGER.debug("Target filepath: " + targetFilePath);
-		LOGGER.debug("Source filepath: " + sourceFilePath);
+		LOGGER.debug("Target filepath: {}", targetFilePath);
+		LOGGER.debug("Source filepath: {}", sourceFilePath);
 
 		S3Manager s3Manager;
 
 		if (sourceFilePath.getNameCount() > 1) {
 			// Download build archive
 			s3Manager = new S3Manager(buildArchiveConfig);
-			TermServerScript.info("Create S3 manager for download of build archive via: " + buildArchiveConfig);
+			LOGGER.info("Create S3 manager for download of build archive via: {}", buildArchiveConfig);
 		} else {
 			// Download published dependency archive
 			s3Manager = new S3Manager(publishedArchiveConfig);
-			TermServerScript.info("Create S3 manager for download of published archive via: " + publishedArchiveConfig);
+			LOGGER.info("Create S3 manager for download of published archive via: {}", publishedArchiveConfig);
 		}
 
-		LOGGER.debug("isUseCloud = " + s3Manager.isUseCloud());
+		LOGGER.debug("isUseCloud = {}", s3Manager.isUseCloud());
 
 		if (s3Manager.isUseCloud()) {
 			try {
@@ -65,15 +61,15 @@ public class BuildArchiveDataLoader implements DataLoader {
 
 				try (InputStream input = resourceManager.readResourceStream(sourceFilePath.toString());
 					 OutputStream output = new FileOutputStream(archive)) {
-					TermServerScript.info("Downloading " + sourceFilePath + " from S3");
+					LOGGER.info("Downloading {} from S3", sourceFilePath);
 					IOUtils.copy(input, output);
-					TermServerScript.info("Download complete");
+					LOGGER.info("Download complete");
 				}
 			} catch (Throwable t) {
 				throw new TermServerScriptException("Error when trying to download " + sourceFilePath + " from S3 via: " + s3Manager.getStandAloneResourceConfig(), t);
 			}
 		} else {
-			LOGGER.info("ArchiveDataLoader set to local source. Will expect " + targetFilePath + " to be available.");
+			LOGGER.info("ArchiveDataLoader set to local source. Will expect {} to be available.", targetFilePath);
 		}
 	}
 

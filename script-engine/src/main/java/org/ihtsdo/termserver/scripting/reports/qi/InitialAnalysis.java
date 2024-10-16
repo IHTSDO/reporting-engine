@@ -289,7 +289,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 				try {
 					reportTotalFDsUnderIP(k.getKey());
 				} catch (TermServerScriptException e) {
-					e.printStackTrace();
+					LOGGER.error("Exception encountered",e);
 				}
 			});
 	}

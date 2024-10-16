@@ -61,7 +61,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			report.postLoadInit();
 			report.generateWorkDoneStats();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce work done report due to " + e.getMessage());
+			LOGGER.info("Failed to produce work done report due to {}", e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -72,7 +72,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		subHierarchies = new ArrayList<>();
 		targetValues = new ArrayList<>();
 		
-		LOGGER.info ("Loading " + getInputFile());
+		LOGGER.info ("Loading {}", getInputFile());
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
@@ -180,7 +180,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		}
 	}
 
-	private TemplateType getTemplateType(Concept c) throws TermServerScriptException {
+	private TemplateType getTemplateType(Concept c) {
 		//Zero case, do we in fact have no attributes?
 		if (countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {
 			return TemplateType.NONE;

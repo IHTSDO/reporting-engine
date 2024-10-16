@@ -173,7 +173,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			}
 			
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 		}
 	}
 	
@@ -200,7 +200,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			}
 			scanner.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 		}
 	}
 

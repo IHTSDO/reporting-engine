@@ -232,7 +232,7 @@ public class LOINCStats extends TermServerReport {
 		try {
 			return getLoincNumFromDescription(c);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 		}
 		return ERROR;
 	}

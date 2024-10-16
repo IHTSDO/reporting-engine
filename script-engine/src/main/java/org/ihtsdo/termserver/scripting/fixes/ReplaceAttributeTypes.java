@@ -131,7 +131,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 					try {
 						report((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept did not meeting processing criteria", c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 					} catch (TermServerScriptException e) {
-						e.printStackTrace();
+						LOGGER.error("Exception encountered",e);
 					}
 				});*/
 		

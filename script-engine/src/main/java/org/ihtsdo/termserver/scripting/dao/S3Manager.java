@@ -3,19 +3,21 @@ package org.ihtsdo.termserver.scripting.dao;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
-import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.LocalProperties;
 import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.snomed.otf.script.dao.StandAloneResourceConfig;
 import org.springframework.core.io.ResourceLoader;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3Manager {
+	private static final Logger LOGGER = LoggerFactory.getLogger(S3Manager.class);
+
 	private String region;
 	private String awsKey;
 	private String awsSecretKey;
@@ -63,13 +65,13 @@ public class S3Manager {
 					s3Client = S3Client.builder()
 							.region(DefaultAwsRegionProviderChain.builder().build().getRegion())
 							.build();
-					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials");
+					LOGGER.info("Connecting to S3 with EC2 environment configured credentials");
 				} else {
 					s3Client = S3Client.builder()
 							.region(Region.of(region))
 							.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsKey, awsSecretKey)))
 							.build();
-					TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
+					LOGGER.info("Connecting to S3 with locally specified account: {}", awsKey);
 					//AWS will still attempt to connect locally to discover its credentials, so let's only
 					//do debugging at "WARN"   See logback.xml file for configuration
 				}

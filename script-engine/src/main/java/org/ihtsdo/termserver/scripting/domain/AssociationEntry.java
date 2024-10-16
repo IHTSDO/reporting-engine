@@ -7,11 +7,14 @@ import java.util.UUID;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
 public class AssociationEntry extends RefsetMember implements ScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(AssociationEntry.class);
 
 	public static String TARGET_COMPONENT_ID = "targetComponentId";
 	
@@ -64,7 +67,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		h.setRefsetId(lineItems[ASSOC_IDX_REFSETID]);
 		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
 		if (lineItems.length <= ASSOC_IDX_TARGET) {
-			TermServerScript.warn(" HistAssoc " + lineItems[ASSOC_IDX_ID] + " missing targetComponetId");
+			LOGGER.warn(" HistAssoc {} is missing targetComponentId", lineItems[ASSOC_IDX_ID]);
 		} else {
 			h.setTargetComponentId(lineItems[ASSOC_IDX_TARGET]);
 		}

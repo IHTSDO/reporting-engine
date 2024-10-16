@@ -44,7 +44,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 			LOGGER.info("Processing Complete");
 		} catch (Exception e) {
 			LOGGER.info("Failed to produce SubstanceAcidWithBase Report due to " + e.getMessage());
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 		} 
 	}
 

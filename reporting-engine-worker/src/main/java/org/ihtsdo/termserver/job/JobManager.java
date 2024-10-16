@@ -4,11 +4,9 @@ import java.util.*;
 
 import jakarta.annotation.PostConstruct;
 
-//import org.ihtsdo.otf.resourcemanager.*;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.job.mq.Transmitter;
 import org.ihtsdo.termserver.scripting.JobClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
@@ -22,15 +20,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class JobManager {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(JobManager.class);
+
 	private static final int DEBUG_LENGTH_LIMIT = 50000;
 	
 	static final String METADATA = "METADATA";
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(JobManager.class);
-
 	private Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
-	private Map<String, JobType> knownJobTypes = new HashMap<>();
-	private Map<String, Integer> expectedDurations = new HashMap<>();
+	private final Map<String, JobType> knownJobTypes = new HashMap<>();
+	private final Map<String, Integer> expectedDurations = new HashMap<>();
 	
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
@@ -87,7 +85,7 @@ public class JobManager {
 			try {
 				return constructJob(jobClass);
 			} catch (ReflectiveOperationException e) {
-				TermServerScript.warn("Unable to instantiate job: " + jobName);
+				LOGGER.warn("Unable to instantiate job: {}", jobName);
 			}
 		}
 		return null;
@@ -103,34 +101,7 @@ public class JobManager {
 				metadataRequest = true;
 				transmitMetadata();
 			} else {
-				//Do I know about this job?
-				Class<? extends JobClass> jobClass = knownJobs.get(jobRun.getJobName());
-				if (applicationContext == null) {
-					jobRun.setStatus(JobStatus.Failed);
-					jobRun.setDebugInfo("Reporting engine worker not yet initialised");
-				} else if (jobClass == null) {
-					jobRun.setStatus(JobStatus.Failed);
-					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
-				} else {
-					try {
-						if (ensureJobValid(jobRun, constructJob(jobClass))) {
-							JobClass thisJob = jobClass.getDeclaredConstructor().newInstance();
-							jobRun.setStatus(JobStatus.Running);
-							transmitter.send(this, jobRun);
-							
-							JobWatcher watcher = new JobWatcher(expectedDurations.get(jobRun.getJobName()), jobRun, transmitter);
-							watcherThread = new Thread(watcher, jobRun.getJobName() + " watcher thread");
-							watcherThread.start();
-
-							thisJob.instantiate(jobRun, applicationContext);
-						} else {
-							jobRun.setStatus(JobStatus.Failed);
-						}
-					} catch (Exception e) {
-						jobRun.setStatus(JobStatus.Failed);
-						jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' failed due to: '" + e + "'");
-					} 
-				}
+				watcherThread = runJob(jobRun);
 			}
 		} finally {
 			if (!metadataRequest) {
@@ -141,9 +112,46 @@ public class JobManager {
 				transmitter.send(this, jobRun);
 			}
 			try {
-				watcherThread.interrupt();
-			} catch (Exception e) {}
+				if (watcherThread != null) {
+					watcherThread.interrupt();
+				}
+			} catch (Exception e) {
+				LOGGER.error("Failed to interrupt watcher thread", e);
+			}
 		}
+	}
+
+	private Thread runJob(JobRun jobRun) {
+		//Do I know about this job?
+		Class<? extends JobClass> jobClass = knownJobs.get(jobRun.getJobName());
+		if (applicationContext == null) {
+			jobRun.setStatus(JobStatus.Failed);
+			jobRun.setDebugInfo("Reporting engine worker not yet initialised");
+		} else if (jobClass == null) {
+			jobRun.setStatus(JobStatus.Failed);
+			jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
+		} else {
+			try {
+				if (ensureJobValid(jobRun, constructJob(jobClass))) {
+					JobClass thisJob = jobClass.getDeclaredConstructor().newInstance();
+					jobRun.setStatus(JobStatus.Running);
+					transmitter.send(this, jobRun);
+
+					JobWatcher watcher = new JobWatcher(expectedDurations.get(jobRun.getJobName()), jobRun, transmitter);
+					Thread watcherThread = new Thread(watcher, jobRun.getJobName() + " watcher thread");
+					watcherThread.start();
+
+					thisJob.instantiate(jobRun, applicationContext);
+					return watcherThread;
+				} else {
+					jobRun.setStatus(JobStatus.Failed);
+				}
+			} catch (Exception e) {
+				jobRun.setStatus(JobStatus.Failed);
+				jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' failed due to: '" + e + "'");
+			}
+		}
+		return null;
 	}
 
 	private boolean ensureJobValid(JobRun jobRun, Job job) {
@@ -182,7 +190,7 @@ public class JobManager {
 				//Some jobs shouldn't see the light of day.
 				//TODO Make this code environment aware so it allows testing status in Dev and UAT
 				if (thisJob.getProductionStatus() == null) {
-					TermServerScript.info(thisJob.getName() + " does not indicate its production status.  Skipping");
+					LOGGER.info("{} does not indicate its production status.  Skipping", thisJob.getName());
 					continue;
 				}
 

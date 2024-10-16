@@ -8,6 +8,8 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Removes a substring from all active Terms, where matched in context for a given subHierarchy
@@ -15,13 +17,15 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * MSSP-1851 Remove "yp-" from Dutch terms
  */
 public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceExistingTerms.class);
 	
 	static Map<String, String> replacementMap = new HashMap<String, String>();
 	static final String match = "yp-stadium";
 	static final String replace =  "stadium";
 	boolean retainPtAsAcceptable = false;
 	
-	private static Set<String> exclusions = new HashSet<>(); 
+	private static final Set<String> exclusions = new HashSet<>();
 	static {
 		exclusions.add("1222594003");
 	}
@@ -71,13 +75,12 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
-		//Set<Concept> allPotential = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
 		List<Concept> allPotential = SnomedUtils.sort(gl.getAllConcepts());
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		List<DescriptionType> descTypes = new ArrayList<>();
 		descTypes.add(DescriptionType.FSN);
 		descTypes.add(DescriptionType.SYNONYM);
-		info("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		for (Concept c : allPotential) {
 			if (exclusions.contains(c.getId())) {
 				continue;
@@ -90,7 +93,7 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		info ("Identified " + allAffected.size() + " concepts to process");
-		return new ArrayList<Component>(allAffected);
+		LOGGER.info ("Identified {} concepts to process", allAffected.size());
+		return new ArrayList<>(allAffected);
 	}
 }

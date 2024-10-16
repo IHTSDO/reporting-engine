@@ -8,14 +8,14 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Module;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 import java.util.stream.*;
 
 public class FindConceptsAcrossAllExtensions extends TermServerReport implements ReportClass {
 
-	private static final String browserURL = "https://browser.ihtsdotools.org/snowstorm/snomed-ct";
+	private static final String BROWSER_URL = "https://browser.ihtsdotools.org/snowstorm/snomed-ct";
+	private static final String SNOMEDCT = "SNOMEDCT";
 
 	private List<CodeSystem> codeSystems;
 	private List<String> internationalModules;
@@ -29,10 +29,10 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		super.init(run);
-		tsClient = new TermServerClient(browserURL, getAuthenticatedCookie());
+		tsClient = new TermServerClient(BROWSER_URL, getAuthenticatedCookie());
 		codeSystems = tsClient.getCodeSystems();
 		internationalModules = codeSystems.stream()
-				.filter(cs -> cs.getShortName().equals("SNOMEDCT"))
+				.filter(cs -> cs.getShortName().equals(SNOMEDCT))
 				.findFirst()
 				.orElseThrow(() -> new TermServerScriptException("No International Modules Detected"))
 				.getModules()
@@ -53,8 +53,8 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	public void postInit() throws TermServerScriptException {
 		List<String> tabList = codeSystems.stream()
 				.map(CodeSystem::getShortName)
-				.map(sn -> sn.replace("SNOMEDCT-", ""))
-				.map(sn -> sn.replace("SNOMEDCT", "INT"))
+				.map(sn -> sn.replace(SNOMEDCT + "-", ""))
+				.map(sn -> sn.replace(SNOMEDCT, "INT"))
 				.collect(Collectors.toList());
 
 		tabList.add(0, "Summary");
@@ -110,7 +110,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 				for (Concept c : findConcepts(eclForExtensionModules)) {
 					report(tabIdx, c);
 					issueSummaryMap.merge(cs.getName(), 1, Integer::sum);
-					if (!cs.getShortName().equals("SNOMEDCT")) {
+					if (!cs.getShortName().equals(SNOMEDCT)) {
 						countIssue(c);
 					}
 				}
@@ -122,7 +122,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	}
 
 	private String addModuleFilter(String ecl, CodeSystem cs) {
-		if (cs.getShortName().equals("SNOMEDCT")) {
+		if (cs.getShortName().equals(SNOMEDCT)) {
 			return ecl;
 		}
 

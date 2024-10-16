@@ -1,51 +1,38 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportConfiguration.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RP-390 Summary Component Stats for Extensions
  * */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStatsExtensions.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException{
 		Map<String, String> params = new HashMap<>();
 		
-		/*params.put(THIS_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20220401T000000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20220401T000000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
 		
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20211001T121212Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
 		
-		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20221115T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220930T120000Z.zip");
-		
-		params.put(PREV_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20220315T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		
-		params.put(MODULES, "11000172109"); // Belgium Module
-		
 		params.put(MODULES, "21000210109");  //NZ Module
 		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");*/
+		params.put(REPORT_FORMAT_TYPE, "JSON");
 		
-		TermServerReport.run(SummaryComponentStatsExtensions.class, args, params);
+		TermServerScript.run(SummaryComponentStatsExtensions.class, args, params);
 	}
 
 	@Override
@@ -78,7 +65,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		//Either specify all values or none of them.   Use the XOR indicator
-		if (XOR(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
+		if (xor(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
 			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");
 		}
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
@@ -119,14 +106,14 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		super.loadProjectSnapshot(fsnOnly);
 	}
 
-	private boolean XOR(String... paramValues) {
+	private boolean xor(String... paramValues) {
 		Boolean lastValueSeenPresent = null;
 		for (String paramValue : paramValues) {
 			if (lastValueSeenPresent == null) {
 				lastValueSeenPresent = !StringUtils.isEmpty(jobRun.getParamValue(paramValue));
 			} else {
 				Boolean thisValueSeenPresent = !StringUtils.isEmpty(jobRun.getParamValue(paramValue));
-				if (lastValueSeenPresent != thisValueSeenPresent) {
+				if (!lastValueSeenPresent.equals(thisValueSeenPresent)) {
 					return true;
 				}
 			}
@@ -136,7 +123,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		LOGGER.info("Setting dependency archive: " + thisDependency);
+		LOGGER.info("Setting dependency archive: {}", thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}

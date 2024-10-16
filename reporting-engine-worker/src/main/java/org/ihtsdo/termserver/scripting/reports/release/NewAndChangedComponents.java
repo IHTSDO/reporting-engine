@@ -8,7 +8,6 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -16,10 +15,8 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -30,29 +27,31 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NewAndChangedComponents.class);
 
-	private Set<Concept> newConcepts = new HashSet<>();
-	private Set<Concept> inactivatedConcepts = new HashSet<>();
-	private Set<Concept> defStatusChanged = new HashSet<>();
-	private Set<Concept> hasNewInferredRelationships = new HashSet<>();
-	private Set<Concept> hasLostInferredRelationships = new HashSet<>();
-	private Set<Concept> hasNewAxioms = new HashSet<>();
-	private Set<Concept> hasChangedAxioms = new HashSet<>();
-	private Set<Concept> hasLostAxioms = new HashSet<>();
-	private Set<Concept> hasNewDescriptions = new HashSet<>();
-	private Set<Concept> hasChangedDescriptions = new HashSet<>();
-	private Set<Concept> hasLostDescriptions = new HashSet<>();
-	private Set<Concept> hasNewTextDefn = new HashSet<>();
-	private Set<Concept> hasChangedTextDefn = new HashSet<>();
-	private Set<Concept> hasLostTextDefn = new HashSet<>();
-	private Set<Concept> hasChangedAssociations = new HashSet<>();
-	private Set<Concept> hasChangedInactivationIndicators = new HashSet<>();
-	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
-	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
-	private Set<Concept> hasChangedAcceptabilityDesc = new HashSet<>();
-	private Set<Concept> hasChangedAcceptabilityTextDefn = new HashSet<>();
-	private Set<Concept> hasNewLanguageRefSets = new HashSet<>();
-	private Set<Concept> hasLostLanguageRefSets = new HashSet<>();
-	private Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
+	public static final String CONCEPTS_WITH_DESCRIPTIONS = "Concepts with Descriptions";
+
+	private final Set<Concept> newConcepts = new HashSet<>();
+	private final Set<Concept> inactivatedConcepts = new HashSet<>();
+	private final Set<Concept> defStatusChanged = new HashSet<>();
+	private final Set<Concept> hasNewInferredRelationships = new HashSet<>();
+	private final Set<Concept> hasLostInferredRelationships = new HashSet<>();
+	private final Set<Concept> hasNewAxioms = new HashSet<>();
+	private final Set<Concept> hasChangedAxioms = new HashSet<>();
+	private final Set<Concept> hasLostAxioms = new HashSet<>();
+	private final Set<Concept> hasNewDescriptions = new HashSet<>();
+	private final Set<Concept> hasChangedDescriptions = new HashSet<>();
+	private final Set<Concept> hasLostDescriptions = new HashSet<>();
+	private final Set<Concept> hasNewTextDefn = new HashSet<>();
+	private final Set<Concept> hasChangedTextDefn = new HashSet<>();
+	private final Set<Concept> hasLostTextDefn = new HashSet<>();
+	private final Set<Concept> hasChangedAssociations = new HashSet<>();
+	private final Set<Concept> hasChangedInactivationIndicators = new HashSet<>();
+	private final Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
+	private final Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
+	private final Set<Concept> hasChangedAcceptabilityDesc = new HashSet<>();
+	private final Set<Concept> hasChangedAcceptabilityTextDefn = new HashSet<>();
+	private final Set<Concept> hasNewLanguageRefSets = new HashSet<>();
+	private final Set<Concept> hasLostLanguageRefSets = new HashSet<>();
+	private final Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
 	
 	private List<String> wordMatches;
 	private String changesFromET;
@@ -60,18 +59,18 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	private static final String CHANGES_SINCE = "Changes From";
 	private static final String INCLUDE_DETAIL = "Include Detail";
 	
-	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
+	private final SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
 	private boolean forceTraceabilityPopulation = false;
 	private boolean includeDescriptionDetail = true;
 	
 	TraceabilityService traceabilityService;
 	
-	public static int MAX_ROWS_FOR_TRACEABILITY = 10000;
+	public static final int MAX_ROWS_FOR_TRACEABILITY = 10000;
 	private boolean loadHistoricallyGeneratedData = false;
 	
 	Map<String, SummaryCount> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<<118245000 |Measurement finding (finding)|");
 		//params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
@@ -83,9 +82,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		//params.put(CHANGES_SINCE, "20210801");
 		params.put(INCLUDE_DETAIL, "true");
 		params.put(UNPROMOTED_CHANGES_ONLY, "false");
-		TermServerReport.run(NewAndChangedComponents.class, args, params);
+		TermServerScript.run(NewAndChangedComponents.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		getArchiveManager().setPopulateReleasedFlag(true);
@@ -96,10 +96,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 		
 		if (!StringUtils.isEmpty(run.getParamValue(WORD_MATCHES))) {
-			wordMatches = Arrays.asList(run.getParamValue(WORD_MATCHES).split("\\s*,\\s*"));
+			wordMatches = Arrays.asList(run.getParamValue(WORD_MATCHES).split("\\s*,\\s*+"));
 			wordMatches = wordMatches.stream()
 					.map(String::toLowerCase)
-					.collect(Collectors.toList());
+					.toList();
 		}
 		
 		if (!StringUtils.isEmpty(run.getParamValue(CHANGES_SINCE))) {
@@ -113,7 +113,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
 					.map(String::trim)
-					.collect(Collectors.toList());
+					.toList();
 		}
 		
 		super.init(run);
@@ -164,11 +164,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		LOGGER.info("Setting dependency archive: " + thisDependency);
+		LOGGER.info("Setting dependency archive: {}", thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
@@ -217,7 +218,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				(project.getBranchPath() != null && project.getBranchPath().contains("SNOMEDCT-"))) {
 			//If we have a dependency then we're loading an extension so tell traceability
 			//that specific CodeSystem branch
-			String onBranch = null;
+			String onBranch;
 			if (project.getKey().endsWith(".zip")) {
 				if (project.getKey().startsWith("SnomedCT_ManagedService")) {
 					onBranch = "MAIN/SNOMEDCT-" + project.getKey().substring(23, 25);
@@ -260,7 +261,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				.withExpectedDuration(60)  //BE with large RF2 imports easily hitting this
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (loadHistoricallyGeneratedData) {
 			LOGGER.info ("Loading Previous Data");
@@ -294,11 +296,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		LOGGER.info("Determining concepts of interest");
 		Collection<Concept> conceptsOfInterest = determineConceptsOfInterest();
 		
-		LOGGER.info("Examining " +  conceptsOfInterest.size() + " concepts of interest");
+		LOGGER.info("Examining {} concepts of interest", conceptsOfInterest.size());
 		for (Concept c : conceptsOfInterest) {
-			/*if (c.getId().equals("58851000052104")) {
-				LOGGER.debug("here");
-			}*/
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
@@ -309,7 +308,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					summaryCount.isNew++;
 				} else if (SnomedUtils.hasChangesSince(c, changesFromET, false)) {
 					//Only want to log def status change if the concept has not been made inactive
-					if (c.isActive()) {
+					if (c.isActiveSafely()) {
 						defStatusChanged.add(c);
 						summaryCount.isChanged++;
 					} else {
@@ -344,7 +343,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 						isNew = true;
 						summaryCount.isNew++;
 					} else if (SnomedUtils.hasChangesSince(d, changesFromET, false)) {
-						if (!d.isActive()) {
+						if (!d.isActiveSafely()) {
 							hasLost.add(c);
 							wasInactivated = true;
 							summaryCount.isInactivated++;
@@ -370,12 +369,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 						if (SnomedUtils.hasChangesSince(i, changesFromET, false)) {
 							if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
-								if (i.isActive()) {
+								if (i.isActiveSafely()) {
 									summaryCount.isChanged++;
 								} else {
 									summaryCount.isInactivated++;
 								}
-							} else if (i.isActive()) {
+							} else if (i.isActiveSafely()) {
 								summaryCount.isNew++;
 							}
 						}
@@ -386,12 +385,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					for (AssociationEntry h : d.getAssociationEntries()) {
 						if (SnomedUtils.hasChangesSince(h, changesFromET, false)) {
 							if (isReleased(c, h, ComponentType.HISTORICAL_ASSOCIATION)) {
-								if (h.isActive()) {
+								if (h.isActiveSafely()) {
 									summaryCount.isChanged++;
 								} else {
 									summaryCount.isInactivated++;
 								}
-							} else if (h.isActive()) {
+							} else if (h.isActiveSafely()) {
 								summaryCount.isNew++;
 							}
 						}
@@ -404,7 +403,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 						if (inScope(l)) {
 							if (SnomedUtils.hasChangesSince(l, changesFromET, false)) {
 								if (isReleased(c, l, ComponentType.LANGREFSET)) {
-									if (l.isActive()) {
+									if (l.isActiveSafely()) {
 										hasChangedLanguageRefSets.add(c);
 										langRefSetIsChanged = true;
 										summaryCountLRF.isChanged++;
@@ -434,41 +433,37 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			
 			summaryCount = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
-				if (inScope(r)) {
-					if (SnomedUtils.hasChangesSince(r, changesFromET, false)) {
-						if (r.isActive()) {
-							hasNewInferredRelationships.add(c);
-							if (r.isNotConcrete()) {
-								isTargetOfNewInferredRelationship.add(r.getTarget());
-								summaryCount.isNew++;
-							}
-						} else {
-							if (r.isNotConcrete()) {
-								wasTargetOfLostInferredRelationship.add(r.getTarget());
-							}
-							hasLostInferredRelationships.add(c);
-							summaryCount.isInactivated++;
+				if (inScope(r) && SnomedUtils.hasChangesSince(r, changesFromET, false)) {
+					if (r.isActiveSafely()) {
+						hasNewInferredRelationships.add(c);
+						if (r.isNotConcrete()) {
+							isTargetOfNewInferredRelationship.add(r.getTarget());
+							summaryCount.isNew++;
 						}
+					} else {
+						if (r.isNotConcrete()) {
+							wasTargetOfLostInferredRelationship.add(r.getTarget());
+						}
+						hasLostInferredRelationships.add(c);
+						summaryCount.isInactivated++;
 					}
 				}
 			}
 			
 			summaryCount = getSummaryCount(ComponentType.AXIOM.name());
 			for (AxiomEntry a : c.getAxiomEntries()) {
-				if (inScope(a)) {
-					if (SnomedUtils.hasChangesSince(a, changesFromET, false)) {
-						if (isReleased(c, a, ComponentType.AXIOM)) {
-							if (a.isActive()) {
-								summaryCount.isChanged++;
-								hasChangedAxioms.add(c);
-							} else {
-								summaryCount.isInactivated++;
-								hasLostAxioms.add(c);
-							}
-						} else if (a.isActive()) {
-							summaryCount.isNew++;
-							hasNewAxioms.add(c);
+				if (inScope(a) && SnomedUtils.hasChangesSince(a, changesFromET, false)) {
+					if (isReleased(c, a, ComponentType.AXIOM)) {
+						if (a.isActiveSafely()) {
+							summaryCount.isChanged++;
+							hasChangedAxioms.add(c);
+						} else {
+							summaryCount.isInactivated++;
+							hasLostAxioms.add(c);
 						}
+					} else if (a.isActiveSafely()) {
+						summaryCount.isNew++;
+						hasNewAxioms.add(c);
 					}
 				}
 			}
@@ -479,12 +474,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					if (SnomedUtils.hasChangesSince(i, changesFromET, false)) {
 						hasChangedInactivationIndicators.add(c);
 						if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
-							if (i.isActive()) {
+							if (i.isActiveSafely()) {
 								summaryCount.isChanged++;
 							} else {
 								summaryCount.isInactivated++;
 							}
-						} else if (i.isActive()) {
+						} else if (i.isActiveSafely()) {
 							summaryCount.isNew++;
 						}
 					}
@@ -495,12 +490,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					if (SnomedUtils.hasChangesSince(a, changesFromET, false)) {
 						hasChangedAssociations.add(c);
 						if (isReleased(c, a, ComponentType.HISTORICAL_ASSOCIATION)) {
-							if (a.isActive()) {
+							if (a.isActiveSafely()) {
 								summaryCount.isChanged++;
 							} else {
 								summaryCount.isInactivated++;
 							}
-						} else if (a.isActive()) {
+						} else if (a.isActiveSafely()) {
 							summaryCount.isNew++;
 						}
 					}
@@ -510,59 +505,56 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			conceptsExamined++;
 			double perc = (conceptsExamined / (double)conceptsOfInterest.size()) * 100;
 			if (perc >= lastPercentageReported + 10) {
-				LOGGER.info ("Examined " + String.format("%.2f", perc) + "%");
+				String percStr = String.format("%.2f", perc);
+				LOGGER.info ("Examined {}%", percStr);
 				lastPercentageReported = perc;
 			}
 		}
 		
-		LOGGER.info ("Not Released: " + notReleased);
-		LOGGER.info ("Not Changed: " + notChanged);
-		LOGGER.info ("Not In Scope " +  notInScope);
-		LOGGER.info ("Total examined: " + conceptsOfInterest.size());
+		LOGGER.info ("Not Released: {}", notReleased);
+		LOGGER.info ("Not Changed: {}", notChanged);
+		LOGGER.info ("Not In Scope {}",  notInScope);
+		LOGGER.info ("Total examined: {}", conceptsOfInterest.size());
 	}
 
-	private Boolean isReleased(Concept c, Component comp, ComponentType type) throws TermServerScriptException {
+	private boolean isReleased(Concept c, Component comp, ComponentType type) throws TermServerScriptException {
 		//If we're working off a previous release + delta, we'll know this directly
 		//otherwise we'll need to lookup the historic data
 		if (loadHistoricallyGeneratedData) {
-			Collection<String> idsActive = getHistoricData(c, comp, type, true);
+			Collection<String> idsActive = getHistoricData(c, type, true);
 			//If either active or inactive ids exist, then this component has been previously published
 			if (idsActive.contains(comp.getId())) {
 				return true;
 			}
-			Collection<String> idsInactive = getHistoricData(c, comp, type, false);
+			Collection<String> idsInactive = getHistoricData(c, type, false);
 			//If either active or inactive ids exist, then this component has been previously published
-			if (idsInactive.contains(comp.getId())) {
-				return true;
-			}
-			return false;
+			return idsInactive.contains(comp.getId());
 		} else {
 			return comp.isReleased();
 		}
 	}
 
-	private Collection<String> getHistoricData(Concept c, Component comp, ComponentType type, boolean active) throws TermServerScriptException {
-		Datum datum = prevData.get(c.getConceptId());
+	private Collection<String> getHistoricData(Concept c, ComponentType type, boolean active) throws TermServerScriptException {
+		HistoricData datum = prevData.get(c.getConceptId());
 		if (datum == null) {
-			return Collections.<String>emptySet();
+			return Collections.emptySet();
 		}
-		switch (type) {
-			case CONCEPT : return Collections.singleton(c.getConceptId());
-			case DESCRIPTION : 
-			case TEXT_DEFINITION : return active? datum.descIds : datum.descIdsInact;
-			case INFERRED_RELATIONSHIP : return active ? datum.relIds : datum.relIdsInact;
-			case AXIOM : return active ? datum.axiomIds : datum.axiomIdsInact;
-			case HISTORICAL_ASSOCIATION : return active ? datum.histAssocIds : datum.descHistAssocIdsInact;
-			case ATTRIBUTE_VALUE : return active ? datum.inactivationIds : datum.inactivationIdsInact;
-			case LANGREFSET : return active ? datum.langRefsetIds : datum.langRefsetIdsInact;
-			default : throw new TermServerScriptException("Unexpected component type : " + type);
-		}
+		return switch (type) {
+			case CONCEPT -> Collections.singleton(c.getConceptId());
+			case DESCRIPTION, TEXT_DEFINITION -> active ? datum.getDescIds() : datum.getDescIdsInact();
+			case INFERRED_RELATIONSHIP -> active ? datum.getRelIds() : datum.getRelIdsInact();
+			case AXIOM -> active ? datum.getAxiomIds() : datum.getAxiomIdsInact();
+			case HISTORICAL_ASSOCIATION -> active ? datum.getHistAssocIds() : datum.getDescHistAssocIdsInact();
+			case ATTRIBUTE_VALUE -> active ? datum.getInactivationIds() : datum.getInactivationIdsInact();
+			case LANGREFSET -> active ? datum.getLangRefsetIds() : datum.getLangRefsetIdsInact();
+			default -> throw new TermServerScriptException("Unexpected component type : " + type);
+		};
 	}
 
 	private Collection<Concept> determineConceptsOfInterest() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest;
 		if (!StringUtils.isEmpty(subsetECL)) {
-			LOGGER.info("Running Concepts Changed report against subset: " + subsetECL);
+			LOGGER.info("Running Concepts Changed report against subset: {}", subsetECL);
 			conceptsOfInterest = new ArrayList<>(findConcepts(subsetECL));
 		} else {
 			conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
@@ -572,16 +564,16 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				.filter(this::hasLexicalMatch)
 				.filter(c -> SnomedUtils.hasChangesSinceIncludingSubComponents(c, changesFromET, false))
 				.sorted(SnomedUtils::compareSemTagFSN)
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	private boolean hasLexicalMatch(Concept c) {
-		if (wordMatches == null || wordMatches.size() == 0) {
+		if (wordMatches == null || wordMatches.isEmpty()) {
 			return true;
 		}
 		
 		for (Description d : c.getDescriptions()) {
-			if (!d.isActive() || d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+			if (!d.isActiveSafely() || d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
 				continue;
 			}
 			for (String word : wordMatches) {
@@ -595,58 +587,90 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 
 	private void reportConceptsChanged() throws TermServerScriptException {
 		
-		HashSet<Concept> superSet = new HashSet<>();
-		superSet.addAll(newConcepts);
-		superSet.addAll(defStatusChanged);
-		superSet.addAll(inactivatedConcepts);
-		LOGGER.debug ("Creating concept report for " + superSet.size() + " concepts");
-		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport(SECONDARY_REPORT, c,
-				c.getEffectiveTime(),
-				c.isActive()?"Y":"N",
-				newConcepts.contains(c)?"Y":"N",
-				defStatusChanged.contains(c)?"Y":"N",
-				getLanguages(c));
+		produceConceptReport();
+		produceInferredRelationshipReport();
+		produceAxiomReport();
+		produceDescriptionReport();
+		produceTextDefinitionReport();
+		produceAssociationReport();
+		produceIncomingRelationshipReport();
+
+		//Populate the summary numbers for each type of component
+		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
+		Collections.sort(summaryCountKeys);
+		for (String componentType : summaryCountKeys) {
+			SummaryCount sc = summaryCounts.get(componentType);
+			String componentName = StringUtils.capitalizeFirstLetter(componentType.toLowerCase());
+			if (!componentName.endsWith("s") && !componentName.contains(" - ")) {
+				componentName += "s";
+			}
+			report(PRIMARY_REPORT, componentName, sc.isNew, sc.isChanged, sc.isInactivated);
 		}
-		superSet.clear();
-		
-		superSet.addAll(hasNewInferredRelationships);
-		superSet.addAll(hasLostInferredRelationships);
-		LOGGER.debug ("Creating relationship report for " + superSet.size() + " concepts");
+	}
+
+	private void produceIncomingRelationshipReport() throws TermServerScriptException {
+		Set<Concept> superSet = new HashSet<>();
+		superSet.addAll(isTargetOfNewInferredRelationship);
+		superSet.addAll(wasTargetOfLostInferredRelationship);
+		LOGGER.debug("Creating incoming relationship report for {} concepts", superSet.size());
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			report(TERTIARY_REPORT, c,
-				c.getEffectiveTime(),
-				c.isActive()?"Y":"N",
-				newWithNewConcept,
-				hasNewInferredRelationships.contains(c)?"Y":"N",
-				hasLostInferredRelationships.contains(c)?"Y":"N");
+			report(OCTONARY_REPORT, c,
+					c.getEffectiveTime(),
+					c.isActiveSafely()?"Y":"N",
+					reportMembership(isTargetOfNewInferredRelationship,c),
+					reportMembership(wasTargetOfLostInferredRelationship,c));
 		}
-		superSet.clear();
-		
-		superSet.addAll(hasNewAxioms);
-		superSet.addAll(hasChangedAxioms);
-		superSet.addAll(hasLostAxioms);
-		LOGGER.debug ("Creating axiom report for " + superSet.size() + " concepts");
+	}
+
+	private void produceAssociationReport() throws TermServerScriptException {
+		Set<Concept> superSet = new HashSet<>();
+
+		superSet.addAll(hasChangedAssociations);
+		superSet.addAll(hasChangedInactivationIndicators);
+		LOGGER.debug("Creating association report for {} concepts", superSet.size());
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			populateTraceabilityAndReport(QUATERNARY_REPORT, c,
-				c.getEffectiveTime(),
-				c.isActive()?"Y":"N",
-				newWithNewConcept,
-				hasNewAxioms.contains(c)?"Y":"N",
-				hasChangedAxioms.contains(c)?"Y":"N",
-				hasLostAxioms.contains(c)?"Y":"N");
+			populateTraceabilityAndReport(SEPTENARY_REPORT, c,
+					c.getEffectiveTime(),
+					reportBoolean(c.isActiveSafely()),
+					reportMembership(hasChangedAssociations,c),
+					reportMembership(hasChangedInactivationIndicators,c));
 		}
-		superSet.clear();
-		
+	}
+
+	private void produceTextDefinitionReport() throws TermServerScriptException {
+		Set<Concept> superSet = new HashSet<>();
+
+		superSet.addAll(hasNewTextDefn);
+		superSet.addAll(hasChangedTextDefn);
+		superSet.addAll(hasLostTextDefn);
+		superSet.addAll(hasChangedAcceptabilityTextDefn);
+
+		LOGGER.debug ("Creating text defn report for {} concepts", superSet.size());
+		for (Concept c : SnomedUtils.sort(superSet)) {
+			String newWithNewConcept = (hasNewTextDefn.contains(c) && newConcepts.contains(c)) ? "Y":"N";
+			populateTraceabilityAndReport(SENARY_REPORT, c,
+					c.getEffectiveTime(),
+					reportBoolean(c.isActiveSafely()),
+					newWithNewConcept,
+					reportMembership(hasNewTextDefn,c),
+					reportMembership(hasChangedTextDefn,c),
+					reportMembership(hasLostTextDefn,c),
+					reportMembership(hasChangedAcceptabilityTextDefn,c));
+		}
+		getSummaryCount("Concepts with TextDefn").isNew = hasNewTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
+	}
+
+	private void produceDescriptionReport() throws TermServerScriptException {
+		Set<Concept> superSet = new HashSet<>();
 		superSet.addAll(hasNewDescriptions);
 		superSet.addAll(hasChangedDescriptions);
 		superSet.addAll(hasLostDescriptions);
 		superSet.addAll(hasChangedAcceptabilityDesc);
-		LOGGER.debug ("Creating description report for " + superSet.size() + " concepts");
-		boolean includeTraceability = superSet.size() < MAX_ROWS_FOR_TRACEABILITY ? true : false;
-		
+		LOGGER.debug ("Creating description report for {} concepts", superSet.size());
+		boolean includeTraceability = superSet.size() < MAX_ROWS_FOR_TRACEABILITY;
+
 		if (forceTraceabilityPopulation) {
 			includeTraceability = true;
 		}
@@ -654,94 +678,98 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			report (QUINARY_REPORT, "", "", "", "", "", "", "", "Cannot report traceability for > 10K rows due to performance constraints");
 		}
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = (hasNewDescriptions.contains(c) && newConcepts.contains(c)) ? "Y":"N";
-			if (includeTraceability) {
-				populateTraceabilityAndReport(QUINARY_REPORT, c,
-					c.getEffectiveTime(),
-					c.isActive()?"Y":"N",
-					newWithNewConcept,
-					hasNewDescriptions.contains(c)?"Y":"N",
-					hasChangedDescriptions.contains(c)?"Y":"N",
-					hasLostDescriptions.contains(c)?"Y":"N",
-					hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
-			} else {
-				report(QUINARY_REPORT, c,
-					c.getEffectiveTime(),
-					c.isActive()?"Y":"N",
-					newWithNewConcept,
-					hasNewDescriptions.contains(c)?"Y":"N",
-					hasChangedDescriptions.contains(c)?"Y":"N",
-					hasLostDescriptions.contains(c)?"Y":"N",
-					hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
-			}
+			produceDescriptionReportForConcept(c, includeTraceability);
 		}
-		getSummaryCount("Concepts with Descriptions").isNew = hasNewDescriptions.size();
-		getSummaryCount("Concepts with Descriptions").isChanged = hasChangedDescriptions.size();
-		getSummaryCount("Concepts with Descriptions").isInactivated = hasLostDescriptions.size();
-		superSet.clear();
+		getSummaryCount(CONCEPTS_WITH_DESCRIPTIONS).isNew = hasNewDescriptions.size();
+		getSummaryCount(CONCEPTS_WITH_DESCRIPTIONS).isChanged = hasChangedDescriptions.size();
+		getSummaryCount(CONCEPTS_WITH_DESCRIPTIONS).isInactivated = hasLostDescriptions.size();
+	}
 
-		superSet.addAll(hasNewTextDefn);
-		superSet.addAll(hasChangedTextDefn);
-		superSet.addAll(hasLostTextDefn);
-		superSet.addAll(hasChangedAcceptabilityTextDefn);
-
-		LOGGER.debug ("Creating text defn report for " + superSet.size() + " concepts");
-		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = (hasNewTextDefn.contains(c) && newConcepts.contains(c)) ? "Y":"N";
-			populateTraceabilityAndReport(SENARY_REPORT, c,
+	private void produceDescriptionReportForConcept(Concept c, boolean includeTraceability) throws TermServerScriptException {
+		String newWithNewConcept = (hasNewDescriptions.contains(c) && newConcepts.contains(c)) ? "Y":"N";
+		if (includeTraceability) {
+			populateTraceabilityAndReport(QUINARY_REPORT, c,
 					c.getEffectiveTime(),
-					c.isActive()?"Y":"N",
+					reportBoolean(c.isActiveSafely()),
 					newWithNewConcept,
-					hasNewTextDefn.contains(c)?"Y":"N",
-					hasChangedTextDefn.contains(c)?"Y":"N",
-					hasLostTextDefn.contains(c)?"Y":"N",
-					hasChangedAcceptabilityTextDefn.contains(c)?"Y":"N");
-		}
-		getSummaryCount("Concepts with TextDefn").isNew = hasNewTextDefn.size();
-		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
-		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
-		superSet.clear();
-		
-		superSet.addAll(hasChangedAssociations);
-		superSet.addAll(hasChangedInactivationIndicators);
-		LOGGER.debug ("Creating association report for " + superSet.size() + " concepts");
-		for (Concept c : SnomedUtils.sort(superSet)) {
-			populateTraceabilityAndReport(SEPTENARY_REPORT, c,
-				c.getEffectiveTime(),
-				c.isActive()?"Y":"N",
-				hasChangedAssociations.contains(c)?"Y":"N",
-				hasChangedInactivationIndicators.contains(c)?"Y":"N");
-		}
-		superSet.clear();
-		
-		superSet.addAll(isTargetOfNewInferredRelationship);
-		superSet.addAll(wasTargetOfLostInferredRelationship);
-		LOGGER.debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
-		for (Concept c : SnomedUtils.sort(superSet)) {
-			report(OCTONARY_REPORT, c,
-				c.getEffectiveTime(),
-				c.isActive()?"Y":"N",
-				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
-				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
-		}
-		superSet.clear();
-		
-		//Populate the summary numbers for each type of component
-		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
-		Collections.sort(summaryCountKeys);
-		for (String componentType : summaryCountKeys) {
-			SummaryCount sc = summaryCounts.get(componentType);
-			String componentName = StringUtils.capitalizeFirstLetter(componentType.toString().toLowerCase());
-			if (!componentName.endsWith("s") && !componentName.contains(" - ")) {
-				componentName += "s";
-			}
-			report(PRIMARY_REPORT, componentName, sc.isNew, sc.isChanged, sc.isInactivated);
+					reportMembership(hasNewDescriptions, c),
+					reportMembership(hasChangedDescriptions, c),
+					reportMembership(hasLostDescriptions, c),
+					reportMembership(hasChangedAcceptabilityDesc, c));
+		} else {
+			report(QUINARY_REPORT, c,
+					c.getEffectiveTime(),
+					reportBoolean(c.isActiveSafely()),
+					newWithNewConcept,
+					reportMembership(hasNewDescriptions, c),
+					reportMembership(hasChangedDescriptions, c),
+					reportMembership(hasLostDescriptions, c),
+					reportMembership(hasChangedAcceptabilityDesc, c));
 		}
 	}
-	
+
+	private String reportMembership(Collection<Concept> concepts, Concept c) {
+		return concepts.contains(c)?"Y":"N";
+	}
+
+	private String reportBoolean(boolean value) {
+		return value?"Y":"N";
+	}
+
+	private void produceAxiomReport() throws TermServerScriptException {
+		Set<Concept> superSet = new HashSet<>();
+		superSet.addAll(hasNewAxioms);
+		superSet.addAll(hasChangedAxioms);
+		superSet.addAll(hasLostAxioms);
+		LOGGER.debug ("Creating axiom report for {} concepts", superSet.size());
+		for (Concept c : SnomedUtils.sort(superSet)) {
+			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
+			populateTraceabilityAndReport(QUATERNARY_REPORT, c,
+					c.getEffectiveTime(),
+					reportBoolean(c.isActiveSafely()),
+					newWithNewConcept,
+					reportMembership(hasNewAxioms, c),
+					reportMembership(hasChangedAxioms, c),
+					reportMembership(hasLostAxioms, c));
+		}
+	}
+
+	private void produceInferredRelationshipReport() throws TermServerScriptException {
+		Set<Concept> superSet = new HashSet<>();
+		superSet.addAll(hasNewInferredRelationships);
+		superSet.addAll(hasLostInferredRelationships);
+		LOGGER.debug("Creating relationship report for {} concepts", superSet.size());
+		for (Concept c : SnomedUtils.sort(superSet)) {
+			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
+			report(TERTIARY_REPORT, c,
+					c.getEffectiveTime(),
+					reportBoolean(c.isActiveSafely()),
+					newWithNewConcept,
+					reportMembership(hasNewInferredRelationships, c),
+					reportMembership(hasLostInferredRelationships, c));
+		}
+	}
+
+	private void produceConceptReport() throws TermServerScriptException {
+		HashSet<Concept> superSet = new HashSet<>();
+		superSet.addAll(newConcepts);
+		superSet.addAll(defStatusChanged);
+		superSet.addAll(inactivatedConcepts);
+		LOGGER.debug("Creating concept report for {} concepts", superSet.size());
+		for (Concept c : SnomedUtils.sort(superSet)) {
+			populateTraceabilityAndReport(SECONDARY_REPORT, c,
+					c.getEffectiveTime(),
+					reportBoolean(c.isActiveSafely()),
+					reportMembership(newConcepts, c),
+					reportMembership(defStatusChanged, c),
+					getLanguages(c));
+		}
+		superSet.clear();
+	}
+
 	private void populateTraceabilityAndReport(int tabIdx, Concept c, Object... data) throws TermServerScriptException {
 		//Are we working on a published release, or "in-flight" project?
-		String fromDate = null;
+		String fromDate;
 		if (project.getKey().endsWith(".zip")) {
 			fromDate = changesFromET;
 		} else {
@@ -795,10 +823,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	}
 	
 	SummaryCount getSummaryCount(String type) {
-		if (!summaryCounts.containsKey(type)) {
-			SummaryCount summaryCount = new SummaryCount();
-			summaryCounts.put(type, summaryCount);
-		}
+		summaryCounts.computeIfAbsent(type, k -> new SummaryCount());
 		return summaryCounts.get(type);
 	}
 	

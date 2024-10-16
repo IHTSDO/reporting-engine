@@ -128,7 +128,7 @@ public class ArchiveManager implements ScriptConstants {
 		String server = "uknown";
 		try {
 			LOGGER.debug ("Checking TS branch metadata: {}", branchPath);
-			server = ts.getTSClient().getUrl();
+			server = ts.getTSClient().getServerUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//If metadata is empty, or missing previous release, recover parent
 			//But timestamp will remain a property of the branch
@@ -720,13 +720,13 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 
-	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuffer sb) throws TermServerScriptException {
+	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuffer sb) {
 		Set<Concept> parents = c.getParents(charType);
-		if (parents.size() == 0) {
-			if (sb.length() > 0) {
+		if (parents.isEmpty()) {
+			if (!sb.isEmpty()) {
 				sb.append(",\n");
 			}
-			sb.append(c + " has no " + charType + " parents.");
+			sb.append(c).append(" has no ").append(charType).append(" parents.");
 		}
 		
 		for (Concept parent : parents) {
@@ -734,10 +734,10 @@ public class ArchiveManager implements ScriptConstants {
 				continue;
 			}
 			if (!parent.isActive()) {
-				if (sb.length() > 0) {
+				if (!sb.isEmpty()) {
 					sb.append(",\n");
 				}
-				sb.append(c + " has inactive " + charType + " parent: " + parent);
+				sb.append(c).append(" has inactive ").append(charType).append(" parent: ").append(parent);
 			}
 		}
 		
@@ -966,7 +966,7 @@ public class ArchiveManager implements ScriptConstants {
 			try {
 				Thread.sleep(5 * 1000);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				LOGGER.error("Exception encountered",e);
 			}
 		}
 		

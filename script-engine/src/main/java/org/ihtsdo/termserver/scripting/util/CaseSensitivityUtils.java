@@ -19,6 +19,17 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
 
+	private static final String[] GREEK_LETTERS_UPPER = new String[] { "Alpha", "Beta", "Delta", "Gamma", "Epsilon", "Tau" };
+	private  static final String[] GREEK_LETTERS_LOWER = new String[] { "alpha", "beta", "delta", "gamma", "epsilon", "tau" };
+
+	public static String[] getGreekLettersUpper() {
+		return GREEK_LETTERS_UPPER;
+	}
+
+	public static String[] getGreekLettersLower() {
+		return GREEK_LETTERS_LOWER;
+	}
+
 	private static CaseSensitivityUtils singleton;
 
 	private final Map<String, Description> sourcesOfTruth = new HashMap<>();
@@ -68,6 +79,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		} else {
 			sourceOfTruthHierarchies = new ArrayList<>();
 		}
+	}
+
+	public boolean isProperNoun(String word) {
+		return properNouns.contains(word);
 	}
 
 	public boolean isSourceOfTruthHierarchy(Concept hierarchy) {

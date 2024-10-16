@@ -5,7 +5,6 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -100,7 +99,7 @@ public class UnitConsistency extends TermServerReport {
 			typeString += type.getFsn() + " ";
 		}
 		if (rels.size() > 1) {
-			TermServerScript.warn(c + " has multiple " + typeString + " in group " + groupId);
+			LOGGER.warn("{} has multiple {} in group {}", c, typeString, groupId);
 		} else if (rels.size() == 1) {
 			Concept target = rels.iterator().next().getTarget();
 			//This might not be the full concept, so recover it fully from our loaded cache
