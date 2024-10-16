@@ -77,7 +77,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		additionalReportColumns = "FSN, SemTag, Def Status, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
 		runStandAlone = false; //We need a proper path lookup for MS projects
 		super.init(run);
-		getArchiveManager().setPopulateHierarchyDepth(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		
 		if (!StringUtils.isEmpty(run.getParamValue(WORDS))) {
 			textsToMatch = run.getParamValue(WORDS).split(COMMA);
