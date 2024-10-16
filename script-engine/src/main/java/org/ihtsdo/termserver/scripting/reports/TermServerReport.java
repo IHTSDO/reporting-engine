@@ -187,8 +187,12 @@ public abstract class TermServerReport extends TermServerScript {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 
-	protected Object isActive(Component c1, Component c2) {
-		return (c1.isActive() ? "Y" : "N") + "/" + (c2 == null ? "" : (c2.isActive() ? "Y" : "N"));
+	protected String isActive(Component c1, Component c2) {
+		return isActive(c1) + "/" + (c2 == null ? "" : isActive(c2));
+	}
+
+	private String isActive (Component c) {
+		return c.isActiveSafely() ? "Y" : "N";
 	}
 
 	protected void reportAndIncrementSummary(Concept concept, boolean isLegacy, Object... details) throws TermServerScriptException {

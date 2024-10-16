@@ -36,7 +36,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private static final boolean RUN_INTEGRITY_CHECKS = true;  //Make false locally if required
 
 	private String incomingDataKey;
-	private Map<String, Datum> incomingData;
+	private Map<String, HistoricData> incomingData;
 	
 	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
 	private Map<Concept, Set<Concept>> usedAsStatedParentMap;
@@ -255,8 +255,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 
 		//Or if it's not in the International Edition or still active in the incoming data
-		Datum datum = incomingData.get(sctId);
-		if (datum == null || datum.isActive) {
+		HistoricData datum = incomingData.get(sctId);
+		if (datum == null || datum.isActive()) {
 			return emptyCounts;
 		}
 
@@ -352,7 +352,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			return COUNT_AS_EXISTING_CONCEPT;
 		}
 
-		Datum datum = incomingData.get(sctId);
+		HistoricData datum = incomingData.get(sctId);
 		if (datum == null) {
 			throw new TermServerScriptException(sctId + " is known to extension, is considered International and yet is not known to proposed update package.  Check date specified.  It must be in advance of current extension upgrade point");
 		}
@@ -361,17 +361,17 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		return COUNT_AS_EXISTING_CONCEPT;
 	}
 
-	private TranslationStats compareCurrentConceptWithPreviousState(Concept currentConcept, Datum datum, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
+	private TranslationStats compareCurrentConceptWithPreviousState(Concept currentConcept, HistoricData datum, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
 		TranslationStats translationStats = new TranslationStats();
 		checkForChangedFSN(currentConcept, datum, translationStats, summaryNames);
 
 		//Report translated concepts that have been inactivated where the replacement has not been translated
-		if (!datum.isActive &&
+		if (!datum.isActive() &&
 				currentConcept.isActiveSafely() &&
 				hasTranslation(currentConcept)) {
 			//Can't use association entries because of course _this_ snapshot doesn't know
 			//about the inactivation.  Pull it from the datum instead
-			if (datum.histAssocTargets == null) {
+			if (datum.getHistAssocTargets() == null) {
 				translationStats.translatedInactivatedWithoutReplacement++;
 				incrementSummaryInformation(summaryNames[4]);
 				LOGGER.warn("Concept {} has been inactivated but no replacement specified.  Check historical associations.", currentConcept);
@@ -383,8 +383,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		return translationStats;
 	}
 
-	private void checkHistoricalAssociationsForReplacements(Datum datum, TranslationStats translationStats, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
-		for (String histAssocTarget : datum.histAssocTargets) {
+	private void checkHistoricalAssociationsForReplacements(HistoricData datum, TranslationStats translationStats, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
+		for (String histAssocTarget : datum.getHistAssocTargets()) {
 			//Only count a given replacement once
 			if (!conceptReplacementSeen.contains(histAssocTarget)) {
 				Concept targetConcept = gl.getConcept(histAssocTarget, false, false);
@@ -398,9 +398,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 	}
 
-	private void checkForChangedFSN(Concept currentConcept, Datum datum, TranslationStats translationStats, String[] summaryNames) {
+	private void checkForChangedFSN(Concept currentConcept, HistoricData datum, TranslationStats translationStats, String[] summaryNames) {
 		//Has the FSN changed from what's currently here?
-		if (!currentConcept.getFsn().equals(datum.fsn)) {
+		if (!currentConcept.getFsn().equals(datum.getFsn())) {
 			if (hasTranslation(currentConcept)) {
 				translationStats.changedFSNCount++;
 				incrementSummaryInformation(summaryNames[1]);
@@ -436,9 +436,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				.collect(Collectors.toSet());
 		
 		//Now add in what we see in the proposed upgrade version
-		for (Map.Entry<String, Datum> entry : incomingData.entrySet()) {
-			if (entry.getValue().hierarchy != null
-					&& entry.getValue().hierarchy.equals(topLevelConcept.getId())) {
+		for (Map.Entry<String, HistoricData> entry : incomingData.entrySet()) {
+			if (entry.getValue().getHierarchy() != null
+					&& entry.getValue().getHierarchy().equals(topLevelConcept.getId())) {
 				hierarchy.add(entry.getKey());
 			}
 		}

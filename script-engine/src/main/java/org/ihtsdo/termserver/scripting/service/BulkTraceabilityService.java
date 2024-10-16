@@ -145,7 +145,7 @@ public class BulkTraceabilityService implements TraceabilityService {
 		try {
 			return client.getConceptActivity(conceptIds, ActivityType.CONTENT_CHANGE, null);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 			return conceptIds.stream()
 					.map(c -> createDummyActivity(c, e))
 					.collect(Collectors.toList());

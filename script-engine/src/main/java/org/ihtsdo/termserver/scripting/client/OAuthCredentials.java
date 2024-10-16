@@ -18,6 +18,7 @@ import java.net.URISyntaxException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.*;
@@ -73,7 +74,7 @@ public class OAuthCredentials implements ICredentials {
 				Map<String, String> params = nameValuePairsToMap(uriBuilder.getQueryParams());
 				params.put(OAUTH_CONSUMER_KEY, consumerKey);
 				params.put(OAUTH_TIMESTAMP, OAuthUtil.getTimestamp());
-				params.put(OAUTH_NONCE, OAuthUtil.getNonce() + (Math.random() + "".replace(".", "")));
+				params.put(OAUTH_NONCE, OAuthUtil.getNonce() + (new SecureRandom().nextInt(1000000)) + "".replace(".", ""));
 				params.put(USER_ID, username);
 				params.put(OAUTH_SIGNATURE_METHOD, RSA_SHA1);
 				params.put(OAUTH_TOKEN, BLANK);

@@ -25,7 +25,7 @@ public class MultiArchiveImporter extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
-	private static final String TASK_PREFIX = "";
+	private static final String TASK_PREFIX = "";  //Remember to finish with a space
 	private static final MODE mode = MODE.TASK_PER_ARCHIVE;
 
 	protected MultiArchiveImporter(BatchFix clone) {

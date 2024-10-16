@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.creation
 
-import org.ihtsdo.otf.RF2Constants
 import org.ihtsdo.otf.exception.TermServerScriptException
 import org.ihtsdo.termserver.scripting.GraphLoader
 import org.ihtsdo.termserver.scripting.domain.Concept

@@ -263,7 +263,7 @@ public class Rf2Player extends BatchFix {
 				additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
 			} 
 			report(t, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to make changes to concept " + concept.toString() + ": " + e.getClass().getSimpleName()  + " - " + additionalInfo);
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 			return 0;
 		}
 		

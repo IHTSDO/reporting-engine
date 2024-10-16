@@ -286,7 +286,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 			return pts.size() == 0 ? null : pts.iterator().next();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 			debug = e.getMessage();
 		}
 		return new Description("Exception recovering PT: " + debug);
@@ -1089,14 +1089,14 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return getAssociationEntries().stream()
 				.filter(a -> a.hasActiveState(activeState))
 				.filter(a -> refsetId == null || a.getRefsetId().contentEquals(refsetId))
-				.filter(a -> !historicalAssociationsOnly || Script.HISTORICAL_REFSETS.contains(a.getRefsetId()))
+				.filter(a -> !historicalAssociationsOnly || Script.isHistoricalRefset(a.getRefsetId()))
 				.collect(Collectors.toList());
 	}
 
 	public List<AssociationEntry> getAssociationEntries(ActiveState activeState, boolean historicalAssociationsOnly) {
 		return getAssociationEntries().stream()
 				.filter(a -> a.hasActiveState(activeState))
-				.filter(a -> !historicalAssociationsOnly || Script.HISTORICAL_REFSETS.contains(a.getRefsetId()))
+				.filter(a -> !historicalAssociationsOnly || Script.isHistoricalRefset(a.getRefsetId()))
 				.collect(Collectors.toList());
 	}
 	

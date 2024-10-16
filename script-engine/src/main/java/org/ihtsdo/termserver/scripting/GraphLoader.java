@@ -834,7 +834,7 @@ public class GraphLoader implements ScriptConstants {
 					}
 				}
 				
-				if (!fsnOnly || lineItems[DES_IDX_TYPEID].equals(FSN)) {
+				if (!fsnOnly || lineItems[DES_IDX_TYPEID].equals(SCTID_FSN)) {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription(lineItems[DES_IDX_ID]);
 					
@@ -1612,7 +1612,7 @@ public class GraphLoader implements ScriptConstants {
 			try {
 				tc.addConcept(c);
 			} catch (TermServerScriptException e) {
-				e.printStackTrace();
+				LOGGER.error("Exception encountered",e);
 			} 
 		});
 		LOGGER.info ("Completed transative closure: " + tc.size() + " relationships mapped");

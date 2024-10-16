@@ -62,7 +62,7 @@ public class CDUpdate extends DrugBatchFix implements ScriptConstants {
 			return changesMade;
 		} catch (Exception e) {
 			report(t, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to remodel " + concept + " due to " + e.getClass().getSimpleName()  + " - " + e.getMessage());
-			e.printStackTrace();
+			LOGGER.error("Exception encountered",e);
 		}
 		return 0;
 	}

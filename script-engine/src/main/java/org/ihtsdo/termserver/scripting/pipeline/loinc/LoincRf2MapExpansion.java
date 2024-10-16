@@ -1,21 +1,13 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-
-
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,16 +17,16 @@ public class LoincRf2MapExpansion extends LoincScript {
 
 	public static final String TAB_RF2_MAP = "RF2 Map";
 	
-	private static String[] tabNames = new String[] { TAB_RF2_MAP };
+	private static final String[] tabNames = new String[] { TAB_RF2_MAP };
 	
-	private static int REF_IDX_MAP_TARGET = 6;
-	private static int REF_IDX_ATTRIB = 7;
+	private static final int REF_IDX_MAP_TARGET = 6;
+	private static final int REF_IDX_ATTRIB = 7;
 	
 	AttributePartMapManager attributePartManager;
 	
 	Map<String, Set<String>> partToLoincTermMap;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		LoincRf2MapExpansion report = new LoincRf2MapExpansion();
 		try {
 			report.runStandAlone = false;
@@ -48,7 +40,8 @@ public class LoincRf2MapExpansion extends LoincScript {
 			report.finish();
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"id, active, refCompId, PT, replacementValue, mapTarget, Usage Count, PartName, PartType, attribute, attribtPT, replacementType, , , "
@@ -56,7 +49,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
-	private void runReport() throws TermServerScriptException, InterruptedException, IOException {
+	private void runReport() throws TermServerScriptException, IOException {
 		loadLoincParts();
 		attributePartManager = new AttributePartMapManager(this, loincParts, null);
 		loadLoincDetail();
@@ -65,7 +58,7 @@ public class LoincRf2MapExpansion extends LoincScript {
 
 	private void expandRf2Map(int tabIdx, File attributeMapFile) throws IOException, TermServerScriptException {
 		int lineNum = 0;
-		TermServerScript.info("Loading Part Attribute Map: " + attributeMapFile);
+		LOGGER.info("Loading Part Attribute Map: {}", attributeMapFile);
 		try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -79,7 +72,6 @@ public class LoincRf2MapExpansion extends LoincScript {
 	}
 
 	private void expandRf2Line(int tabIdx, String[] items) throws TermServerScriptException {
-		// TODO Auto-generated method stub
 		Concept value = gl.getConcept(items[REF_IDX_REFCOMPID], false, false);
 		LoincPart part = loincParts.get(items[REF_IDX_MAP_TARGET]);
 		Concept type = gl.getConcept(items[REF_IDX_ATTRIB], false, false);

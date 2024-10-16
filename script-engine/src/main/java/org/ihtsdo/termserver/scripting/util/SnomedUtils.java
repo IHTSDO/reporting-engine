@@ -279,20 +279,19 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return parts;
 	}
 
-	public static String translateDescType(DescriptionType type) throws TermServerScriptException {
-		switch (type) {
-			case FSN : return FSN;
-			case SYNONYM : return SYN;
-			case TEXT_DEFINITION : return DEF;
-		}
-		throw new TermServerScriptException("Unable to translate description type " + type);
+	public static String translateDescType(DescriptionType type) {
+		return switch (type) {
+			case FSN -> SCTID_FSN;
+			case SYNONYM -> SCTID_SYN;
+			case TEXT_DEFINITION -> SCTID_DEF;
+		};
 	}
 
 	public static DescriptionType translateDescType(String descTypeId) throws TermServerScriptException {
 		switch (descTypeId) {
-			case FSN : return DescriptionType.FSN;
-			case SYN : return DescriptionType.SYNONYM;
-			case DEF : return DescriptionType.TEXT_DEFINITION; 
+			case SCTID_FSN : return DescriptionType.FSN;
+			case SCTID_SYN : return DescriptionType.SYNONYM;
+			case SCTID_DEF : return DescriptionType.TEXT_DEFINITION;
 		}
 		throw new TermServerScriptException("Unable to translate description type: " + descTypeId);
 	}
@@ -1034,7 +1033,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return null;
 	}
 	
-	public static Set<Concept> getTargets(Concept c, Concept[] types, CharacteristicType charType) throws TermServerScriptException {
+	public static Set<Concept> getTargets(Concept c, Concept[] types, CharacteristicType charType) {
 		Set<Concept> targets = new HashSet<>();
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
@@ -1692,9 +1691,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 				.replaceAll("\\+ID", " +ID") // Ensure "+ID" has a space before the plus.
 				.replaceAll("\\@", " @") // Ensure "@" has a space before.
 				.replaceAll("\\s+", " ") // Replace multiple whitespace (space, tab, newline etc) with single space.
-				.replaceAll("^\\s+", "") // Trim leading spaces.
-				.replaceAll("\\s+$", "") // Trim trailing spaces.
-				;
+				.trim();
 	}
 
 	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {

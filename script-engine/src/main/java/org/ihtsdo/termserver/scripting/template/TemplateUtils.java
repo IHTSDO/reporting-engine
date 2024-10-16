@@ -5,16 +5,20 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 
 public class TemplateUtils implements ScriptConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateUtils.class);
 
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
@@ -62,7 +66,7 @@ public class TemplateUtils implements ScriptConstants {
 		//Do a check here that unspecified cardinality on a group should be clarified as [[0..*]]
 		for (AttributeGroup g : t.getAttributeGroups()) {
 			if (g.getCardinalityMin() == null || g.getCardinalityMax() == null) {
-				TermServerScript.warn("Template " + t.getName() + " failed to specify cardinality in group " + g + " clarifying as [[1..1]]");
+				LOGGER.warn("Template {} failed to specify cardinality in group {} clarifying as [[1..1]]", t.getName(), g);
 				g.setCardinalityMin("1");
 				g.setCardinalityMax("1");
 			}
@@ -246,7 +250,7 @@ public class TemplateUtils implements ScriptConstants {
 				matchesAttributeValue = r.getTarget().getConceptId().equals(a.getValue());
 			} else if (a.getValueSlotReference() != null) {
 				if (!SLOT_NAME_WARNING_MADE) {
-					TermServerScript.warn("TODO - maintain list of matched slot name values to pass in");
+					LOGGER.warn("TODO - maintain list of matched slot name values to pass in");
 					SLOT_NAME_WARNING_MADE = true;
 				}
 				matchesAttributeValue = true;

@@ -27,8 +27,8 @@ public class JobWatcher implements Runnable {
 	@Override
 	public void run() {
 		try {
-			LOGGER.debug("JobWatcher starting for " + jobRun.getJobName() + " expecting completion within " + timeout + " minutes");
-			Thread.sleep(timeout * 60 * 1000);
+			LOGGER.debug("JobWatcher starting for {} expecting completion within {} minutes", jobRun.getJobName(), timeout);
+			Thread.sleep(timeout * 60 * 1000L);
 			SnomedServiceException sse = new SnomedServiceException();
 			Map<String, Object> configuration = new HashMap<>();
 			configuration.put("JobRun", jobRun);
@@ -40,7 +40,7 @@ public class JobWatcher implements Runnable {
 			sse.setConfiguration(configuration);
 			transmitter.send(sse);
 		} catch (InterruptedException e) {
-			LOGGER.debug("JobWatcher standing down for job: " + jobRun.getJobName());
+			LOGGER.info("JobWatcher standing down for job: {}", jobRun.getJobName());
 		}
 	}
 

@@ -420,7 +420,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 						try {
 							LOGGER.warn (conceptId + " expected in " + gl.getConcept(hierarchyStr) + " but found in " + gl.getConcept(datum.hierarchy));
 						} catch (TermServerScriptException e) {
-							e.printStackTrace();
+							LOGGER.error("Exception encountered",e);
 						}
 					}
 					return datum;

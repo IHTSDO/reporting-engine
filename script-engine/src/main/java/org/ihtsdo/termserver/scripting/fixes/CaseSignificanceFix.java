@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -8,7 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.NounHelper;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
@@ -36,19 +35,19 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 	String[] exceptions = new String[] {"86622001", "710898000", "116559002"};
 	String[] exceptionStr = new String[] {"Alphavirus", "Taur"};
 	
-	NounHelper nounHelper;
+	CaseSensitivityUtils csUtils;
 	
 	protected CaseSignificanceFix(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CaseSignificanceFix fix = new CaseSignificanceFix(null);
 		try {
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d"; //SUBSTANCES
 			fix.selfDetermining = true;
 			fix.init(args);
-			fix.nounHelper = NounHelper.instance();
+			fix.csUtils = CaseSensitivityUtils.get();
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.postInit();
@@ -116,8 +115,8 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 				if (caseSig.equals(CS)) {
 					//If we start with a small letter, single letter or a proper noun, that's fine
 					if (!firstLetter.equals(firstLetter.toLowerCase()) 
-							&& !nounHelper.isProperNoun(firstWord)
-							&& !nounHelper.startsWithProperNounPhrase(firstWord, d.getTerm())
+							&& !csUtils.isProperNoun(firstWord)
+							&& !csUtils.startsWithProperNounPhrase(d.getTerm())
 							&& !firstLetterSingle(d.getTerm())) {
 						report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
@@ -146,22 +145,21 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 		boolean greekLetterFound = false;
 		
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			String matchedGreekUpper = StringUtils.containsAny(d.getTerm(), NounHelper.greekLettersUpper);
-			String matchedGreekLower = StringUtils.containsAny(d.getTerm(), NounHelper.greekLettersLower);
+			String matchedGreekUpper = StringUtils.containsAny(d.getTerm(), CaseSensitivityUtils.getGreekLettersUpper());
+			String matchedGreekLower = StringUtils.containsAny(d.getTerm(), CaseSensitivityUtils.getGreekLettersLower());
 			if ( (matchedGreekUpper != null || matchedGreekLower != null) && 
-				//d.getTerm().contains("Product containing") && d.getTerm().contains("milliliter")) {
 				(!unpublishedContentOnly || !d.isReleased())) {
 				greekLetterFound = true;
 				Description checkTerm = d;
 				
-				//If we start with the greek letter captitalised, that's OK to be capital
+				//If we start with the greek letter capitalised, that's OK to be capital
 				if (matchedGreekUpper != null && !d.getTerm().startsWith(matchedGreekUpper)) {
 					String replacementTerm = d.getTerm().replaceAll(matchedGreekUpper, matchedGreekUpper.toLowerCase());
 					checkTerm = replaceDescription(t, c, d, replacementTerm, InactivationIndicator.ERRONEOUS);
 					changesMade++;
 				}
 				
-				//If we START with the greek letter lower, that's needs to be captialised
+				//If we START with the greek letter lower, that's needs to be capitalised
 				if (matchedGreekLower != null && d.getTerm().startsWith(matchedGreekLower)) {
 					String replacementTerm = StringUtils.capitalize(d.getTerm());
 					//Now we might have an erroneous capital after a dash, or after "< ", say within 5 characters
@@ -196,13 +194,13 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 						//Not dealing with this situation right now
 						//report (c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 					} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-						if (chopped.equals(chopped.toLowerCase()) && !nounHelper.isProperNoun(firstWord)) {
+						if (chopped.equals(chopped.toLowerCase()) && !csUtils.isProperNoun(firstWord)) {
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> ci" );
 							checkTerm.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							changesMade++;
 						} else if (caseSig.equals(CS)){
 							//Might be CS when doesn't need to be
-							if (!nounHelper.isProperNoun(firstWord)) {
+							if (!csUtils.isProperNoun(firstWord)) {
 								report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> cI" );
 								checkTerm.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 								changesMade++;
