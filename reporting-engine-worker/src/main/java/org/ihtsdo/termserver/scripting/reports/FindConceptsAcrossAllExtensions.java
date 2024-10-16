@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Module;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 import java.util.stream.*;
