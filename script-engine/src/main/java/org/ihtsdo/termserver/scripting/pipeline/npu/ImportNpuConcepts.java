@@ -10,13 +10,16 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConceptWithDefaultMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 public class ImportNpuConcepts extends ContentPipelineManager {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ImportNpuConcepts.class);
 
 	private List<String> panelNpuNums;
 	
@@ -42,7 +45,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Item, Info, Details, Foo, Bar, What, Goes, Here?",
+				"npu_code, shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType, active, , ",
 				"NpuPartNum, NpuPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"NpuNum, Item of Special Interest, NpuName, Issues, details",
 				"NpuNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, ADD_COMMON_COLUMNS",
@@ -71,6 +74,20 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	private void importNpuConcepts() throws TermServerScriptException {
 		ObjectMapper mapper = new XmlMapper();
 		TypeReference<List<NpuConcept>> listType = new TypeReference<List<NpuConcept>>(){};
+		report(PRIMARY_REPORT, 
+		  "npu_code", 
+		  "shortDefinition", 
+		  "system", 
+		  "component", 
+		  "kindOfProperty", 
+		  "proc", 
+		  "unit", 
+		  "specialty", 
+		  "contextDependent", 
+		  "group", 
+		  "scaleType", 
+		  "active"
+				);
 		try {
 			FileInputStream is = FileUtils.openInputStream(getInputFile());
 			List<NpuConcept> npuConcepts = mapper.readValue(is, listType);
@@ -79,8 +96,18 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 						.toMap(NpuConcept::getExternalIdentifier, 
 								c -> c,
 								(first, second) -> ((NpuConcept)second).getEffectiveTo() == null ? second : first));
-		} catch (IOException e) {
+				} catch (IOException e) {
 			throw new TermServerScriptException(e);
+		}
+		
+		outputNPUConceptsToSheet();
+		LOGGER.info("Loaded {} NPU Concepts", externalConceptMap.size());
+	}
+
+	private void outputNPUConceptsToSheet() throws TermServerScriptException {
+		for (Map.Entry<String, ExternalConcept> entry : externalConceptMap.entrySet()) {
+			NpuConcept npu = (NpuConcept) entry.getValue();
+			report(PRIMARY_REPORT, npu.getExternalIdentifier(), npu.getCommonColumns());
 		}
 	}
 
