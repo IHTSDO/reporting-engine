@@ -13,10 +13,8 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
 import org.snomed.otf.scheduler.domain.JobRun;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 public abstract class TermServerReport extends TermServerScript {
 
@@ -30,6 +28,7 @@ public abstract class TermServerReport extends TermServerScript {
 	
 	protected UnpromotedChangesHelper unpromotedChangesHelper;
 	
+	@Override
 	protected void init (JobRun jobRun) throws TermServerScriptException {
 		super.init(jobRun);
 

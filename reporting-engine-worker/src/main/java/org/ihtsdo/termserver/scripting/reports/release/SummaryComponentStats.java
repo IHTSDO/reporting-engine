@@ -49,9 +49,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			IDX_INACT_OUTDATED = 18, IDX_INACT_PENDING_MOVE = 19, IDX_INACT_NON_CONFORMANCE = 20,
 			IDX_INACT_NOT_EQUIVALENT = 21, IDX_CONCEPTS_AFFECTED = 22, IDX_TOTAL_ACTIVE = 23, IDX_PROMOTED=24,
 			IDX_NEW_IN_QI_SCOPE = 25, IDX_GAINED_ATTRIBUTES = 26, IDX_LOST_ATTRIBUTES = 27; 
+	
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
-	static List<DescriptionType> TEXT_DEFN;
-	static List<DescriptionType> NOT_TEXT_DEFN;
+
+	protected static final List<DescriptionType> TEXT_DEFN = List.of(DescriptionType.TEXT_DEFINITION);
+	protected static final List<DescriptionType> NOT_TEXT_DEFN = List.of(DescriptionType.FSN, DescriptionType.SYNONYM);
 
 	static final String DESCRIPTION = "Description";
 	static final String TEXT_DEFINITION = "Text Defn";
@@ -161,19 +163,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				.build();
 	}
 	
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		//Reset this flag for Editions as we might run against the same project so not reset as expected.
 		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
 		summaryDataMap = new HashMap<>();
 		refsetDataMap = new HashMap<>();
-		
-		TEXT_DEFN = new ArrayList<>();
-		TEXT_DEFN.add(DescriptionType.TEXT_DEFINITION);
-		
-		NOT_TEXT_DEFN = new ArrayList<>();
-		NOT_TEXT_DEFN.add(DescriptionType.FSN);
-		NOT_TEXT_DEFN.add(DescriptionType.SYNONYM);
 		
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
@@ -244,7 +240,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		for (Concept c : gl.getAllConcepts()) {
 			HistoricData datum = prevData.get(c.getConceptId());
 			//Is this concept in scope?  Even if its not, some of its components might be.
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				topLevel = SnomedUtils.getHierarchy(gl, c);
 			} else {
 				//Was it active in the previous release?
@@ -276,12 +272,12 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			List<Relationship> normalRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
 					.filter(r -> !r.isConcrete())
-					.collect(Collectors.toList());
+					.toList();
 
 			List<Relationship> concreteRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
 					.stream()
 					.filter(Relationship::isConcrete)
-					.collect(Collectors.toList());
+					.toList();
 
 			//Component changes
 			analyzeComponents(isNewConcept, (datum==null?null:datum.getDescIds()), (datum==null?null:datum.getDescIdsInact()), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
@@ -298,30 +294,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 
-	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) throws TermServerScriptException {
-		if (c.isActive()) {
-			counts[IDX_TOTAL_ACTIVE]++;
-			if (datum == null) {
-				// No previous data, so this is a new concept
-				if (c.isPrimitive()) {
-					counts[IDX_NEW_P]++;
-				} else {
-					counts[IDX_NEW_SD]++;
-				}
-				counts[IDX_NEW]++;
-				counts[IDX_NEW_NEW]++;
-			} else if (!datum.isActive()) {
-				//Were we inactive in the last release?  Reactivated if so
-				counts[IDX_REACTIVATED]++;
-			} else if (datum.isActive()) {
-				if (isChangedSinceLastRelease(c)) {
-					counts[IDX_CHANGED]++;
-				}
-			}
-			//Has the concept remained active, but moved into this module?
-			if (datum != null && !datum.getModuleId().equals(c.getModuleId())) {
-				counts[IDX_MOVED_MODULE]++;
-			}
+	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) {
+		if (c.isActiveSafely()) {
+			incrementActiveConceptCounts(c, datum, counts);
 		} else {
 			if (datum == null) {
 				//If it's inactive and we DIDN'T see it before, then we've got a born inactive or "New Inactive" concept
@@ -339,28 +314,54 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		//Check state change for QI tab
 		//Are we in scope for QI?
 		if (inQIScope(topLevel)) {
-			//Does it have a model?
-			boolean hasModel = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0;
-			boolean hadModel = datum != null && datum.hasAttributes();
-			//Is it new with a model ?
-			//Or Has it gained a model since we last saw it?
-			if (datum == null && hasModel) {
-				qiCounts[IDX_NEW_IN_QI_SCOPE]++;
-			} else if (datum != null && !hadModel && hasModel) {
-				qiCounts[IDX_GAINED_ATTRIBUTES]++;
-			} else if (c.isActive() && datum != null && hadModel && !hasModel) {
-				qiCounts[IDX_LOST_ATTRIBUTES]++;
-			} else if (!c.isActive() && hadModel) {
-				qiCounts[IDX_INACTIVATED]++;
-			}
-
-			if (hasModel) {
-				qiCounts[IDX_TOTAL_ACTIVE]++;
-			}
+			incrementQIScopeCounts(c, datum, qiCounts);
 		}
-		
+	}
+
+	private void incrementActiveConceptCounts(Concept c, HistoricData datum, int[] counts) {
+		counts[IDX_TOTAL_ACTIVE]++;
+		if (datum == null) {
+			// No previous data, so this is a new concept
+			if (c.isPrimitive()) {
+				counts[IDX_NEW_P]++;
+			} else {
+				counts[IDX_NEW_SD]++;
+			}
+			counts[IDX_NEW]++;
+			counts[IDX_NEW_NEW]++;
+		} else if (!datum.isActive()) {
+			//Were we inactive in the last release?  Reactivated if so
+			counts[IDX_REACTIVATED]++;
+		} else if (datum.isActive()&& isChangedSinceLastRelease(c)) {
+			counts[IDX_CHANGED]++;
+		}
+		//Has the concept remained active, but moved into this module?
+		if (datum != null && !datum.getModuleId().equals(c.getModuleId())) {
+			counts[IDX_MOVED_MODULE]++;
+		}
 	}
 	
+	private void incrementQIScopeCounts(Concept c, HistoricData datum, int[] qiCounts) {
+		//Does it have a model?
+		boolean hasModel = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0;
+		boolean hadModel = datum != null && datum.hasAttributes();
+		//Is it new with a model ?
+		//Or Has it gained a model since we last saw it?
+		if (datum == null && hasModel) {
+			qiCounts[IDX_NEW_IN_QI_SCOPE]++;
+		} else if (datum != null && !hadModel && hasModel) {
+			qiCounts[IDX_GAINED_ATTRIBUTES]++;
+		} else if (c.isActiveSafely() && datum != null && hadModel && !hasModel) {
+			qiCounts[IDX_LOST_ATTRIBUTES]++;
+		} else if (!c.isActiveSafely() && hadModel) {
+			qiCounts[IDX_INACTIVATED]++;
+		}
+
+		if (hasModel) {
+			qiCounts[IDX_TOTAL_ACTIVE]++;
+		}
+	}
+
 	private int[] getRefsetData (String refsetId) {
 		int[] refsetCounts = refsetDataMap.get(refsetId);
 		if (refsetCounts == null) {
