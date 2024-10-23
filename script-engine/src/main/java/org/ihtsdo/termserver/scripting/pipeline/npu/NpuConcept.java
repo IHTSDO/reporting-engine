@@ -350,12 +350,12 @@ public class NpuConcept extends ExternalConcept {
 
 	@Override
 	public String getShortDisplayName() {
-		return shortDefinition;
+		return getShortDefinition();
 	}
 
 	@Override
 	protected String[] getCommonColumns() {
-		return new String[] {shortDefinition};
+		return new String[] {shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType,  active};
 	}
 
 }
