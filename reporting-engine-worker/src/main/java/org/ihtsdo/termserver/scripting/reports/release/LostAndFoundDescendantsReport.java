@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
@@ -17,16 +17,13 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
- */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LostAndFoundDescendantsReport extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LostAndFoundDescendantsReport.class);
-	private static String COUNT_NEW_AS_GAINED = "Count new concepts as gained";
+	private static final String COUNT_NEW_AS_GAINED = "Count new concepts as gained";
 	
 	private AncestorsCache cache;
 	private TransitiveClosure tc;
@@ -36,16 +33,17 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	
 	private boolean countNewAsGained = true;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		params.put(COUNT_NEW_AS_GAINED, "N");
 		params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
-		TermServerReport.run(LostAndFoundDescendantsReport.class, args, params);
+		TermServerScript.run(LostAndFoundDescendantsReport.class, args, params);
 	}
 	
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		ReportSheetManager.setTargetFolderId(GFOLDER_RELEASE_QA);
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		ArchiveManager mgr = getArchiveManager();
@@ -55,6 +53,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		}
 	}
 	
+	@Override
 	public void postInit() throws TermServerScriptException {
 		countNewAsGained = getJobRun().getParamBoolean(COUNT_NEW_AS_GAINED);
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Active, Previous Count, Current Count " + (countNewAsGained?"(includes new)":"(does not include new)") + ", Hierarchy Movement Count (does not include inactivated)",
@@ -81,16 +80,79 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 				.withDescription("This report lists descendants gained and lost in the current authoring cycle.  Note that a concept being made inactive does not qualify it for being 'lost'.  A lost concept must still be active.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
+				.withTag(MS)
 				.withParameters(params)
 				.withExpectedDuration(150)
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (ptc == null) {
 			throw new TermServerScriptException("Previous Transitive Closure not available.  Cannot continue.");
 		}
 		
+		Collection<Concept> conceptsOfInterest = getConceptsOfInterest();
+		
+		int lastPercReported = 0;
+		int conceptsProcessed = 0;
+ 		for (Concept c : conceptsOfInterest) {
+ 			//Skip the root concept, it's descendant's lost/gained would take all day!
+ 			if (c.equals(ROOT_CONCEPT) 
+ 					|| (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c))
+ 					|| !inScope(c)) {
+ 				continue;
+ 			}
+ 			
+ 			int percCompleted = (int)((++conceptsProcessed/(double)conceptsOfInterest.size())*100);
+ 			if (percCompleted >= lastPercReported + 1) {
+ 				LOGGER.info ("{}% complete.", percCompleted);
+ 				lastPercReported = percCompleted;
+ 			}
+			
+			analyzeConcept(c, conceptsOfInterest);
+		}
+	}
+
+	private void analyzeConcept(Concept c, Collection<Concept> conceptsOfInterest) throws TermServerScriptException {
+		Set<Long> gainedDescendants = getGainedDescendants(c);
+		Set<Long> lostDescendants = getLostDescendants(c);
+		if (hasGainedOrLostDescendants(c) || isTopLevelConcept(c,conceptsOfInterest)) {
+			String stats = "+" + gainedDescendants.size() + " / -" + lostDescendants.size();
+			int previousCount = ptc.getDescendants(c).size();
+			int currentCount = tc.getDescendants(c).size();
+			//Skip concept if - despite being top level in our set, has no descendants and hasn't lost any
+			if (currentCount == 0 && lostDescendants.isEmpty()) {
+				return;
+			}
+			
+			report(c, c.isActiveSafely() ? "Y":"N", previousCount, currentCount, stats);
+			countIssue(c);
+			reportGainedAndLostDescendants(c, gainedDescendants, lostDescendants);
+		}
+	}
+
+	private void reportGainedAndLostDescendants(Concept c, Set<Long> gainedDescendants, Set<Long> lostDescendants) throws TermServerScriptException {
+		for (Long gainedConceptId : gainedDescendants) {
+			Concept gainedConcept = gl.getConcept(gainedConceptId);
+			//If this concept has ancestors in this set that are also being reported
+			//then we don't need to also report the children.
+			if (!hasAncestorsBeingReported(c, gainedDescendants)) {
+				report(SECONDARY_REPORT, c, c.isActiveSafely() ? "Y":"N", "Gained", gainedConcept);
+			}
+		}
+		
+		for (Long lostConceptId : lostDescendants) {
+			Concept lostConcept = gl.getConcept(lostConceptId);
+			//If this concept has ancestors in this set that are also being reported
+			//then we don't need to also report the children.
+			if (!hasAncestorsBeingReported(c, lostDescendants)) {
+				report(SECONDARY_REPORT, c, c.isActiveSafely() ? "Y":"N", "Lost", lostConcept);
+			}
+		}
+	}
+
+	private Collection<Concept> getConceptsOfInterest() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
 			conceptsOfInterest = findConcepts(subsetECL);
@@ -98,61 +160,10 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
-		int lastPercReported = 0;
-		int conceptsProcessed = 0;
-		
 		LOGGER.info("Sorting concepts of interest...");
- 		for (Concept c : SnomedUtils.sort(conceptsOfInterest)) {
- 			if (conceptsProcessed == 0) {
- 				LOGGER.info("Sorting complete.");
- 			}
- 			if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
- 				continue;
- 			}
- 			
- 			//Skip the root concept, it's descendant's lost/gained would take all day!
- 			if (c.equals(ROOT_CONCEPT)) {
- 				continue;
- 			}
- 			
- 			int percCompleted = (int)((++conceptsProcessed/(double)conceptsOfInterest.size())*100);
- 			if (percCompleted >= lastPercReported + 1) {
- 				LOGGER.info (percCompleted + "% complete.");
- 				lastPercReported = percCompleted;
- 			}
-			Set<Long> gainedDescendants = getGainedDescendants(c);
-			Set<Long> lostDescendants = getLostDescendants(c);
-			if (hasGainedOrLostDescendants(c) || isTopLevelConcept(c,conceptsOfInterest)) {
-				String stats = "+" + gainedDescendants.size() + " / -" + lostDescendants.size();
-				int previousCount = ptc.getDescendants(c).size();
-				int currentCount = tc.getDescendants(c).size();
-				//Skip concept if - despite being top level in our set, has no descendants and hasn't lost any
-				if (currentCount == 0 && lostDescendants.size() == 0) {
-					continue;
-				}
-				
-				report(c, c.isActive() ? "Y":"N", previousCount, currentCount, stats);
-				countIssue(c);
-				
-				for (Long gainedConceptId : gainedDescendants) {
-					Concept gainedConcept = gl.getConcept(gainedConceptId);
-					//If this concept has ancestors in this set that are also being reported
-					//then we don't need to also report the children.
-					if (!hasAncestorsBeingReported(c, gainedDescendants)) {
-						report(SECONDARY_REPORT, c, c.isActive() ? "Y":"N", "Gained", gainedConcept);
-					}
-				}
-				
-				for (Long lostConceptId : lostDescendants) {
-					Concept lostConcept = gl.getConcept(lostConceptId);
-					//If this concept has ancestors in this set that are also being reported
-					//then we don't need to also report the children.
-					if (!hasAncestorsBeingReported(c, lostDescendants)) {
-						report(SECONDARY_REPORT, c, c.isActive() ? "Y":"N", "Lost", lostConcept);
-					}
-				}
-			}
-		}
+		conceptsOfInterest = SnomedUtils.sort(conceptsOfInterest);
+		LOGGER.info("Sorting complete.");
+		return conceptsOfInterest;
 	}
 
 	private boolean isTopLevelConcept(Concept c, Collection<Concept> conceptsOfInterest) throws NumberFormatException, TermServerScriptException {
@@ -180,7 +191,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	}
 
 	private boolean hasGainedOrLostDescendants(Concept c) {
-		return getGainedDescendants(c).size() > 0 || getLostDescendants(c).size() > 0;
+		return !getGainedDescendants(c).isEmpty() || !getLostDescendants(c).isEmpty();
 	}
 
 	private Set<Long> getLostDescendants(Concept c) {
@@ -200,12 +211,12 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	private void populateGainedLostDescendants(Concept c) {
 		//What descendants have we lost?  Make sure they're still active or they're not 'lost'
 		Set<Long> previousDescendantIds = ptc.getDescendants(c);
-		Set<Long> lostDescendantIds = new HashSet<Long>(previousDescendantIds);
+		Set<Long> lostDescendantIds = new HashSet<>(previousDescendantIds);
 
 		Set<Long> currentDescendantIds = tc.getDescendants(c);
-		Set<Long> gainedDescendantIds = new HashSet<Long>();
+		Set<Long> gainedDescendantIds = new HashSet<>();
 		if (currentDescendantIds != null) {
-			gainedDescendantIds = new HashSet<Long>(currentDescendantIds);
+			gainedDescendantIds = new HashSet<>(currentDescendantIds);
 		}
 
 		//Remove the current set, to see what's no longer a descendant
