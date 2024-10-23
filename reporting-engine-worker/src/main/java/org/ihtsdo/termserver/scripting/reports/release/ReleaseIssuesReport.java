@@ -92,6 +92,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String LEFT_QUOTE = "\u201C";
 	private static final String GRAVE_ACCENT = "\u0060";
 	private static final String ACUTE_ACCENT = "\u00B4";
+	private static final String SOFT_HYPHEN = "\u00AD";
 
 	private static final String URL_REGEX = "https?://\\S+\\b";
 	
@@ -1191,7 +1192,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			{ RIGHT_QUOTE , "Right quote" },
 			{ LEFT_QUOTE , "Left quote" },
 			{ GRAVE_ACCENT , "Grave accent" },
-			{ ACUTE_ACCENT , "Acute accent" }
+			{ ACUTE_ACCENT , "Acute accent" },
+			{ SOFT_HYPHEN , "Soft hyphen" }
 		};
 		
 		for (String unwantedChar[] : unwantedChars) {
