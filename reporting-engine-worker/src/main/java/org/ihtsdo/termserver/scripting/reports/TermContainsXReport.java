@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,14 +50,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	private List<String> targetTypes;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
-		//params.put(ECL, "<< 372087000 |Primary malignant neoplasm (disorder)| ");
 		params.put(ECL, "<< 363346000 |Malignant neoplastic disease (disorder)| MINUS (<< 372087000 |Primary malignant neoplasm (disorder)| OR << 269475001 |Malignant tumor of lymphoid, hemopoietic AND/OR related tissue (disorder)|)"); 
-		//params.put(WORDS, "angiography, angiogram, arteriography, arteriogram");
-		//params.put(WITHOUT, "fluoroscopic, fluoroscopy, computed tomography, CT, magnetic resonance, MR, MRA, MRI");
-		//params.put(WITHOUT, "primary");
 		params.put(WORDS, "primary");
 		params.put(WITHOUT_MODE, ANY_WITHOUT);
 		params.put(WHOLE_WORD, "false");
@@ -72,8 +67,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		TermServerReport.run(TermContainsXReport.class, params, args);
 	}
 	
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_REPORTS);
 		additionalReportColumns = "FSN, SemTag, Def Status, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
 		runStandAlone = false; //We need a proper path lookup for MS projects
 		super.init(run);
@@ -149,6 +145,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.build();
 	}
 	
+	@Override
 	public void runJob() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
 		if (subsetECL != null && !subsetECL.isEmpty()) {
@@ -162,7 +159,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 			/*if (c.getId().equals("307651005")) {
 				LOGGER.debug("Here");
 			}*/
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				if (whiteListedConceptIds.contains(c.getId())) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;
@@ -258,6 +255,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	}
 	
+	@Override
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		String[] hiearchies = getHierarchies(c);
 		String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
@@ -286,7 +284,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		return false;
 	}
 
-	private String getAttributeDetail(Concept c) throws TermServerScriptException {
+	private String getAttributeDetail(Concept c) {
 		if (attributeDetail != null) {
 			return SnomedUtils.getTargets(c, new Concept[] {attributeDetail}, CharacteristicType.INFERRED_RELATIONSHIP)
 					.stream()
