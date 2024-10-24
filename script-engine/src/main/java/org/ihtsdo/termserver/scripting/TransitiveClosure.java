@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -8,12 +9,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TransitiveClosure implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TransitiveClosure.class);
 
 	Map<Long, Set<Long>> ancestorMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
 	Map<Long, Set<Long>> descendantMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
@@ -53,11 +49,19 @@ public class TransitiveClosure implements ScriptConstants {
 	}
 	
 	public Set<Long> getDescendants (Concept c) {
+		return getDescendants(c, null);
+	}
+	
+	public Set<Long> getDescendants (Concept c, Predicate<Long> filter) {
 		long id = Long.parseLong(c.getConceptId());
 		if (!descendantMap.containsKey(id)) {
 			return new HashSet<>();
 		}
-		return descendantMap.get(id);
+		
+		if (filter == null) {
+			return descendantMap.get(id);
+		}
+		return descendantMap.get(id).stream().filter(filter).collect(Collectors.toSet());
 	}
 	
 	public boolean contains(Long id) {
