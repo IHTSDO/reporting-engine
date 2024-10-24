@@ -28,8 +28,12 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	private AncestorsCache cache;
 	private TransitiveClosure tc;
 	private TransitiveClosure ptc;
+	
 	private Map<Concept, Set<Long>> gainedDescendantsMap = new HashMap<>();
 	private Map<Concept, Set<Long>> lostDescendantsMap = new HashMap<>();
+	
+	private Map<Concept, Set<Long>> gainedDescendantsInScopeMap = new HashMap<>();
+	private Map<Concept, Set<Long>> lostDescendantsInScopeMap = new HashMap<>();
 	
 	private boolean countNewAsGained = true;
 	
@@ -97,10 +101,9 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		int lastPercReported = 0;
 		int conceptsProcessed = 0;
  		for (Concept c : conceptsOfInterest) {
- 			//Skip the root concept, it's descendant's lost/gained would take all day!
+ 			//Skip the root concept, its descendant's lost/gained would take all day!
  			if (c.equals(ROOT_CONCEPT) 
- 					|| (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c))
- 					|| !inScope(c)) {
+ 					|| (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c))) {
  				continue;
  			}
  			
@@ -117,7 +120,11 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	private void analyzeConcept(Concept c, Collection<Concept> conceptsOfInterest) throws TermServerScriptException {
 		Set<Long> gainedDescendants = getGainedDescendants(c);
 		Set<Long> lostDescendants = getLostDescendants(c);
-		if (hasGainedOrLostDescendants(c) || isTopLevelConcept(c,conceptsOfInterest)) {
+		//Now if this concept is in scope eg Dutch, then we're interested if it's gained/lost ANY concepts
+		//But it's it's International, we're only interested if in scope concepts have been lost
+		if (isTopLevelConcept(c,conceptsOfInterest)
+				|| (inScope(c) && hasGainedOrLostDescendants(c))
+				|| !inScope(c) && hasGainedOrLostDescendantsInScope(c)) {
 			String stats = "+" + gainedDescendants.size() + " / -" + lostDescendants.size();
 			int previousCount = ptc.getDescendants(c).size();
 			int currentCount = tc.getDescendants(c).size();
@@ -196,35 +203,67 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 
 	private Set<Long> getLostDescendants(Concept c) {
 		if (!lostDescendantsMap.containsKey(c)) {
-			populateGainedLostDescendants(c);
+			populateGainedLostDescendants(c, false);
 		}
-		return lostDescendantsMap.get(c);
+		return lostDescendantsMap.getOrDefault(c, new HashSet<>());
 	}
 
 	private Set<Long> getGainedDescendants(Concept c) {
 		if (!gainedDescendantsMap.containsKey(c)) {
-			populateGainedLostDescendants(c);
+			populateGainedLostDescendants(c, false);
 		}
-		return gainedDescendantsMap.get(c);
+		return gainedDescendantsMap.getOrDefault(c, new HashSet<>());
+	}
+	
+	private boolean hasGainedOrLostDescendantsInScope(Concept c) {
+		return !getGainedDescendantsInScope(c).isEmpty() || !getLostDescendantsInScope(c).isEmpty();
 	}
 
-	private void populateGainedLostDescendants(Concept c) {
-		//What descendants have we lost?  Make sure they're still active or they're not 'lost'
-		Set<Long> previousDescendantIds = ptc.getDescendants(c);
-		Set<Long> lostDescendantIds = new HashSet<>(previousDescendantIds);
+	private Set<Long> getLostDescendantsInScope(Concept c) {
+		if (!lostDescendantsInScopeMap.containsKey(c)) {
+			populateGainedLostDescendants(c, true);
+		}
+		return lostDescendantsInScopeMap.getOrDefault(c, new HashSet<>());
+	}
 
-		Set<Long> currentDescendantIds = tc.getDescendants(c);
+	private Set<Long> getGainedDescendantsInScope(Concept c) {
+		if (!gainedDescendantsInScopeMap.containsKey(c)) {
+			populateGainedLostDescendants(c, true);
+		}
+		return gainedDescendantsInScopeMap.getOrDefault(c, new HashSet<>());
+	}
+
+	private void populateGainedLostDescendants(Concept c, boolean inScopeOnly) {
+		Set<Long> previousDescendantIds;
+		if (inScopeOnly) {
+			previousDescendantIds = ptc.getDescendants(c, d -> inScope(gl.getConceptSafely(d.toString())));
+		} else {
+			previousDescendantIds = ptc.getDescendants(c);
+		}
+		
+
+		Set<Long> currentDescendantIds;
+		if (inScopeOnly) {
+			currentDescendantIds = tc.getDescendants(c, d -> inScope(gl.getConceptSafely(d.toString())));
+		} else {
+			currentDescendantIds = tc.getDescendants(c);
+		}
+		
 		Set<Long> gainedDescendantIds = new HashSet<>();
+		
 		if (currentDescendantIds != null) {
 			gainedDescendantIds = new HashSet<>(currentDescendantIds);
 		}
 
+		Set<Long> lostDescendantIds = new HashSet<>(previousDescendantIds);
+		
 		//Remove the current set, to see what's no longer a descendant
-		lostDescendantIds.removeAll(tc.getDescendants(c));
+		lostDescendantIds.removeAll(currentDescendantIds);
 		
 		//Remove the previous descendants to find the ones we've gained
 		gainedDescendantIds.removeAll(previousDescendantIds);
 		
+		//What descendants have we lost?  Make sure they're still active or they're not 'lost'
 		//Map to concepts and filter to retain only those that are active
 		lostDescendantIds = lostDescendantIds.stream()
 				.map(l -> gl.getConceptSafely(l.toString()))
