@@ -92,6 +92,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				gl.getConcept("272396007 |Ranked categories|"));
 	}
 
+
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
