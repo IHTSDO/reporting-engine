@@ -67,6 +67,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		}
 	}
 
+
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
