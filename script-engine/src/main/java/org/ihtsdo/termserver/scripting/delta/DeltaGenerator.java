@@ -347,7 +347,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	protected int outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
-		LOGGER.info ("Outputting to RF2 in " + outputDirName + "...");
+		LOGGER.info ("Outputting to RF2 in {}...", outputDirName);
 		int conceptsOutput = 0;
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {
@@ -355,7 +355,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 					conceptsOutput++;
 				}
 			} catch (TermServerScriptException e) {
-				report ((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report (thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return conceptsOutput;

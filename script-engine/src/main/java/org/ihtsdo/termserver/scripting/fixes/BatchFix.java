@@ -341,7 +341,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			incrementSummaryInformation("Total changes made", changesMade);
 		} catch (ValidationFailure f) {
 			if (++validationCount > maxFailures) {
-				LOGGER.warn("Validation failures now " + validationCount);
+				LOGGER.warn("Validation failures now {}", validationCount);
 			}
 			report(f);
 		} catch (InterruptedException | TermServerScriptException e) {
@@ -366,7 +366,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				}
 				scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
 			} else if (populateEditPanel) {
-				LOGGER.debug("Unable to populate edit panel due to high task size: " + task.size());
+				LOGGER.debug("Unable to populate edit panel due to high task size: {}", task.size());
 			}
 		} catch (Exception e) {
 			String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
@@ -427,10 +427,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		authors = List.of(jobRun.getUser());
 	}
 
-	public void inflightInit(String[] args) throws TermServerScriptException {
-		init(args);
-	}
-
 	protected void init(String[] args) throws TermServerScriptException {
 		if (args.length < 3) {
 			print("Usage: java <FixClass> [-a author][-a2 reviewer ][-n <taskSize>] [-r <restart position in file>] [-r2 <restart from task #>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
@@ -480,7 +476,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				isTaskSize = false;
 			} else if (isLimit) {
 				processingLimit = Integer.parseInt(thisArg);
-				LOGGER.info("Limiting number of tasks being created to " + processingLimit);
+				LOGGER.info("Limiting number of tasks being created to {}", processingLimit);
 				isLimit = false;
 			}
 		}
@@ -508,6 +504,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		if (!selfDetermining) {
 			LOGGER.info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
 		}
+
+		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {

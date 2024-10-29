@@ -1997,7 +1997,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public Concept getReplacementSafely(List<String> notes, Object context, Concept inactiveConcept, boolean isIsA) {
 		try {
-			return getReplacement(notes, context, inactiveConcept, isIsA);
+			return getReplacement(notes, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {
 			notes.add(e.getMessage());
 			LOGGER.error("Failed to find a replacement for {}", inactiveConcept, e);
@@ -2005,7 +2005,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return null;
 	}
 
-	protected Concept getReplacement(List<String> notes, Object context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
+	protected Concept getReplacement(List<String> notes, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
 		Set<String> assocs = new HashSet<>(inactiveConcept.getAssociationTargets().getReplacedBy());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getAlternatives());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
@@ -2029,7 +2029,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected Concept getReplacement(int reportTabIdx, Object context, Concept inactiveConcept, boolean isIsA) throws TermServerScriptException {
 		List<String> notes = new ArrayList<>();
-		Concept replacement = getReplacement(notes, context, inactiveConcept, isIsA);
+		Concept replacement = getReplacement(notes, inactiveConcept, isIsA);
 		for (String note : notes) {
 			if (context instanceof Concept) {
 				report((Concept)context, Severity.HIGH, ReportActionType.VALIDATION_CHECK, note);
