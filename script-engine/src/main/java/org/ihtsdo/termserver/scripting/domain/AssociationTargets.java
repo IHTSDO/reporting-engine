@@ -252,7 +252,13 @@ public class AssociationTargets implements Serializable {
 				isFirst = false;
 				str.append((firstRow?"":"\n") + assocType);
 			}
-			str.append(gl.getConcept(association).toStringWithIndicator());
+			//If the concept is not loaded, we'll assume it's active for not until we can load it propertly
+			Concept assocConcept = gl.getConcept(association);
+			if (assocConcept.getActive() == null) {
+				str.append(association);
+			} else {
+				str.append(assocConcept.toStringWithIndicator());
+			}
 		}
 		return str.toString();
 	}

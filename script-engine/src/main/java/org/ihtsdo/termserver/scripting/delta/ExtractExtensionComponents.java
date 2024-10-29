@@ -389,7 +389,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (archiveBatches != null) {
 			int batchNum = 1;
 			while (!archiveBatches.isEmpty()) {
-				LOGGER.info ("Processing archive batch " + batchNum++);
+				batchNum++;
+				LOGGER.info ("Processing archive batch {}", batchNum);
 				process(archiveBatches.remove());
 				createOutputArchive();
 				gl.setAllComponentsClean();
@@ -455,6 +456,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			if (doAdditionalProcessing) {
 				doAdditionalProcessing(thisConcept, componentsToProcess);
 			}
+		} catch (IllegalStateException e) {
+			throw new TermServerScriptException("Exception while processing: " + thisConcept, e);
 		} catch (TermServerScriptException e) {
 			report(thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 		}
@@ -660,7 +663,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
 				//However, don't move inactive descriptions if they don't already exist at the target location
 				if (!d.isActive() && conceptOnTS.getDescription(d.getId()) == null) {
-					LOGGER.info("Skipping inactive description, not existing in target location: " + d);
+					LOGGER.info("Skipping inactive description, not existing in target location: {}", d);
 					continue;
 				}
 
@@ -965,11 +968,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						}
 						
 						if (replacement == null && isIsA) {
-							report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Unable to find safe replacement for parent: " + loadedTarget + " doing without.");
+							report(r.getSource(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to find safe replacement for parent: " + loadedTarget + " doing without.");
 						} else {
 							String msg = "Target of " + r + " is inactive in MAIN due to " + reason;
 							msg += ". Replacing with " + replacement;
-							report(r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
+							report(r.getSource(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 							target = replacement;
 							Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
 							//Ensure it gets allocated to the same Axiom
