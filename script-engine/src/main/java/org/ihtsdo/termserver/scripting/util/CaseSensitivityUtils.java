@@ -112,21 +112,15 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	private void addSourcesOfTruthWithoutTaxonomy(String term, Description d) {
-		//Split the term up into words
 		String termWithoutTaxonomy = term;
 		for (String taxonomyWord : taxonomyWords) {
 			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord, "");
+			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord.toLowerCase(), "");
 		}
 
 		if (!termWithoutTaxonomy.equals(term)) {
 			termWithoutTaxonomy = termWithoutTaxonomy.replace("  ", " ").trim();
 			sourcesOfTruth.put(termWithoutTaxonomy, d);
-		}
-
-		//Also split on words and if the first word is a taxonomy word, and the 2nd starts with a capital, then add that too
-		String[] words = term.split(" ");
-		if (words.length > 1 && taxonomyWords.contains(words[0]) && words[1].equals(words[1].toUpperCase())) {
-			sourcesOfTruth.put(words[1], d);
 		}
 	}
 
@@ -144,7 +138,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		LOGGER.info("Complete");
 		LOGGER.info("Processing cs words file");
 		for (String line : lines) {
-			//Split the line up on tabs
+			//Split the line on tabs
 			String[] items = line.split(TAB);
 			String phrase = items[0];
 			//Does the word contain a capital letter (ie not the same as it's all lower case variant)

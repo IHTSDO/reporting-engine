@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 
 
-import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,7 +158,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			Concept replacementValue = knownReplacementMap.get(attributeValue);
 			if (replacementValue == null) {
 				hardCodedIndicator = "";
-				replacementValue = ls.getReplacementSafely(mappingNotes, partNum, attributeValue, false);
+				replacementValue = ls.getReplacementSafely(mappingNotes, attributeValue, false);
 			}
 			
 			String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
@@ -185,7 +184,7 @@ public class AttributePartMapManager implements LoincScriptConstants {
 			Concept replacementType = knownReplacementMap.get(attributeType);
 			if (replacementType == null) {
 				hardCodedIndicator = "";
-				replacementType = ls.getReplacementSafely(mappingNotes, partNum, attributeType, false);
+				replacementType = ls.getReplacementSafely(mappingNotes, attributeType, false);
 			} 
 			String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
 			if (replacementType == null) unsuccessfullTypeReplacement++;

@@ -1995,7 +1995,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return null;
 	}
 
-	public Concept getReplacementSafely(List<String> notes, Object context, Concept inactiveConcept, boolean isIsA) {
+	public Concept getReplacementSafely(List<String> notes, Concept inactiveConcept, boolean isIsA) {
 		try {
 			return getReplacement(notes, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {
