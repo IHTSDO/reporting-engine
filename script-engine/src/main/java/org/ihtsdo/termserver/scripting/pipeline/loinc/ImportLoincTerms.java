@@ -5,7 +5,12 @@ import java.util.*;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.pipeline.*;
+
+import java.util.UUID;
 
 public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 
@@ -98,6 +103,39 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		LoincTemplatedConceptPanel templatedPanelConcept = LoincTemplatedConceptPanel.create(panelTerm);
 		validateTemplatedConcept(templatedPanelConcept);
 		return templatedPanelConcept;
+	}
+
+	@Override
+	protected void postModelling() throws TermServerScriptException {
+		//We will need to import the existing OBS/ORD Refsets and work out what needs to change, but
+		//for the moment we have the luxury of a greenfield site.  Just create them.
+		for (TemplatedConcept tc : successfullyModelled) {
+			if (tc instanceof LoincTemplatedConcept ltc) {
+				LoincTerm loincTerm = ltc.getLoincTerm();
+				switch (loincTerm.getOrderObs()) {
+					case "Order" -> createNewRefsetMember(ltc, ORD_REFSET);
+					case "Observation" -> createNewRefsetMember(ltc, OBS_REFSET);
+					case "Both" -> {
+						createNewRefsetMember(ltc, ORD_REFSET);
+						createNewRefsetMember(ltc, OBS_REFSET);
+					}
+					default -> {
+						//Do nothing
+					}
+				}
+			}
+		}
+	}
+
+	private void createNewRefsetMember(LoincTemplatedConcept ltc, Concept refset) throws TermServerScriptException {
+		RefsetMember rm = new RefsetMember();
+		rm.setModuleId(externalContentModule);
+		rm.setReferencedComponentId(ltc.getConcept().getId());
+		rm.setActive(true, true);
+		rm.setRefsetId(refset.getId());
+		rm.setId(UUID.randomUUID().toString());
+		incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " created");
+		conceptCreator.outputRF2(Component.ComponentType.SIMPLE_REFSET_MEMBER, rm.toRF2());
 	}
 	
 	@Override
