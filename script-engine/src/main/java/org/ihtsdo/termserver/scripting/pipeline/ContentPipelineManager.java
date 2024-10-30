@@ -21,6 +21,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String CHANGES_SINCE_LAST_ITERATION = "Changes since last iteration";
 	public static final String HIGHEST_USAGE_COUNTS = "Highest usage counts";
 	public static final String CONTENT_COUNT = "Content counts";
+	public static final String REFSET_COUNT = "Refset counts";
 	public static final String FAILED_TO_LOAD = "Failed to load ";
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
@@ -55,6 +56,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 	protected Set<TemplatedConcept> successfullyModelled = new HashSet<>();
+	protected Set<TemplatedConcept> inactivatedConcepts = new HashSet<>();
 	protected boolean includeShortNameDescription = true;
 
 	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
@@ -87,23 +89,24 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			loadSupportingInformation();
 			importPartMap();
 			doModeling();
-			checkSpecificConcepts(successfullyModelled);
+			checkSpecificConcepts();
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
 			if (tabExists(TAB_MAP_ME)) {
 				reportMissingMappings(getTab(TAB_MAP_ME));
 			}
-			reportIncludedExcludedConcepts(getTab(TAB_STATS), successfullyModelled);
+			reportIncludedExcludedConcepts(getTab(TAB_STATS));
 			flushFiles(false);
 			switch (runMode) {
-				case NEW: outputAllConceptsToDelta(successfullyModelled);
+				case NEW: outputAllConceptsToDelta();
 					break;
 				case INCREMENTAL_API, INCREMENTAL_DELTA:
-					determineChangeSet(successfullyModelled);
+					determineChangeSet();
 					conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 					break;
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
+			postModelling();
 			reportSummaryCounts();
 		} finally {
 			while (additionalThreadCount > 0) {
@@ -119,6 +122,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				conceptCreator.finish();
 			}
 		}
+	}
+
+	protected void postModelling() throws TermServerScriptException {
+		//Override this method in base class to do some final work with the sucessfully modelled concepts
+		//and also those being inactivated eg sorting out the ORD/OBS Refset Members in LOINC
 	}
 
 	private boolean tabExists(String tabName) {
@@ -194,7 +202,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				});
 	}
 
-	private void outputAllConceptsToDelta(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	private void outputAllConceptsToDelta() throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {
@@ -207,7 +215,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 	
 
-	private void determineChangeSet(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	private void determineChangeSet() throws TermServerScriptException {
 		LOGGER.info("Determining change set for {} successfully modelled concepts", successfullyModelled.size());
 
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
@@ -232,22 +240,32 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		Set<String> inactivatingCodes =  new HashSet<>(altIdentifierMap.keySet());
 		inactivatingCodes.removeAll(sortedModelled.stream().map(m -> m.getExternalIdentifier()).collect(Collectors.toSet()));
 		for (String inactivatingCode : inactivatingCodes) {
-			String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
-			Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
-			if (existingConcept != null) {
-				inactivateConcept(existingConcept);
-				conceptCreator.outputRF2Inactivation(existingConcept);
-			}
-			doProposedModelComparison(TemplatedConceptNull.createNull(inactivatingCode, null));
-			incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, TemplatedConcept.IterationIndicator.REMOVED.toString());
+			processInactivation(inactivatingCode, altIdentifierMap);
+		}
+	}
 
-			//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
-			//So - temporarily again - we'll normalize the scheme id
-			//Temporarily correct all Alternate Identifiers
-			if (existingConcept != null) {
-				existingConcept.setAlternateIdentifiers(new HashSet<>());
-				existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
-			}
+	private void processInactivation(String inactivatingCode, Map<String, String> altIdentifierMap) throws TermServerScriptException {
+		String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
+		Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
+		if (existingConcept != null) {
+			inactivateConcept(existingConcept);
+			conceptCreator.outputRF2Inactivation(existingConcept);
+		}
+
+		//Create a Templated Concept to record the inactivation
+		TemplatedConcept inactivation = TemplatedConceptNull.createNull(inactivatingCode, null);
+		inactivation.setConcept(existingConcept);
+		inactivatedConcepts.add(inactivation);
+
+		doProposedModelComparison(inactivation);
+		incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, TemplatedConcept.IterationIndicator.REMOVED.toString());
+
+		//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
+		//So - temporarily again - we'll normalize the scheme id
+		//Temporarily correct all Alternate Identifiers
+		if (existingConcept != null) {
+			existingConcept.setAlternateIdentifiers(new HashSet<>());
+			existingConcept.addAlternateIdentifier(inactivatingCode, scheme.getId());
 		}
 	}
 
@@ -447,7 +465,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return differencesList;
 	}
 	
-	protected void reportIncludedExcludedConcepts(int tabIdx, Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	protected void reportIncludedExcludedConcepts(int tabIdx) throws TermServerScriptException {
 		Set<String> successfullyModelledExternalIds = successfullyModelled.stream()
 				.map(tc -> tc.getExternalIdentifier())
 				.collect(Collectors.toSet());
@@ -524,7 +542,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	private static final String TOP_88 = "Top 88";
-	private void checkSpecificConcepts(Set<TemplatedConcept> successfullyModelled) throws TermServerScriptException {
+	private void checkSpecificConcepts() throws TermServerScriptException {
 		for (String loincNum : ITEMS_OF_INTEREST) {
 			boolean found = false;
 			if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
