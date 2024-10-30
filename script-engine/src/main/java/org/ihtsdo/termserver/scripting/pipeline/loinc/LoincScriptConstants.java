@@ -1,9 +1,13 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 
 public interface LoincScriptConstants extends ContentPipeLineConstants {
-	
+
+	public static final Concept ORD_REFSET = new Concept("635111010000100", "LOINC Orderable Reference Set");
+	public static final Concept OBS_REFSET = new Concept("635121010000106", "LOINC Observable Reference Set");
+
 	public static final String LOINC_PART_TYPE_ADJUSTMENT = "ADJUSTMENT";
 	public static final String LOINC_PART_TYPE_CHALLENGE = "CHALLENGE";
 	public static final String LOINC_PART_TYPE_CLASS = "CLASS";
