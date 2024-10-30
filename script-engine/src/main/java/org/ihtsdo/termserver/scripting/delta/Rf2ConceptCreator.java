@@ -32,12 +32,6 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		return conceptCreator;
 	}
 
-	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts) throws TermServerScriptException {
-		for (Concept concept : concepts) {
-			writeConceptToRF2(tabIdx, concept, "");
-		}
-	}
-
 	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
 		concept.setId(null);
 		populateIds(concept);

@@ -44,6 +44,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String altIdDeltaFilename;
 	protected String compAnnotDeltaFilename;
 	protected String simpleMapDeltaFilename;
+	protected String simpleRefsetDeltaFilename;
 	protected String edition = "INT";
 	
 	protected String eclSubset = null;
@@ -338,6 +339,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		simpleMapDeltaFilename = refDir + "Content/der2_sRefset_SimpleMapDelta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.SIMPLE_MAP, simpleMapDeltaFilename);
 		writeToRF2File(simpleMapDeltaFilename, simpleMapHeader);
+
+		simpleRefsetDeltaFilename = refDir + "Content/der2_Refset_SimpleRefsetDelta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.SIMPLE_REFSET_MEMBER, simpleRefsetDeltaFilename);
+		writeToRF2File(simpleRefsetDeltaFilename, simpleRefsetHeader);
 		
 		attribValDeltaFilename = refDir + "Content/der2_cRefset_AttributeValueDelta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.ATTRIBUTE_VALUE, attribValDeltaFilename);
@@ -367,7 +372,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return conceptsOutput;
 	}
 	
-	protected void outputRF2(ComponentType componentType, String[] columns) throws TermServerScriptException {
+	public void outputRF2(ComponentType componentType, String[] columns) throws TermServerScriptException {
 		String fileName = fileMap.get(componentType);
 		writeToRF2File(fileName, columns);
 	}
