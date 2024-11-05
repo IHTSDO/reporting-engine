@@ -266,7 +266,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		String[] tabNames = new String[]{
 			"Delta Records Created"
 		};
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 	}
 	
 	public void finish() {
