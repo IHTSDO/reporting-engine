@@ -47,6 +47,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			"[-m <modules>] " +
 			"[-n <taskSize>] " +
 			"[-p <projectName>] " +
+			"[-dp <dependency package>] " +
 			"[-r2 <restart position>] " +
 			"[-headless <env_number>] " +
 			"[-task <taskKey>]";
@@ -488,10 +489,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public void instantiate(JobRun jobRun, ApplicationContext appContext) {
 		try {
-			LOGGER.debug("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
-			LOGGER.debug("Application context has " + (appContext == null?"not " : "") + "been supplied");
+			LOGGER.debug("Instantiating {} to process request for {}", this.getClass().getName(), jobRun.getJobName());
+			LOGGER.debug("Application context has {}been supplied", (appContext == null?"not " : ""));
 			this.appContext = appContext;
 			this.jobRun = jobRun;
+			this.dependencyArchive = jobRun.getDependencyPackage();
 
 			//Job Runs generally self determine
 			preInit();
@@ -580,6 +582,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				case "-p":
 					jobRun.setProject(parameter);
 					break;
+				case "-dp":
+					jobRun.setDependencyPackage(parameter);
+					break;
 				case "-c":
 					jobRun.setAuthToken(parameter);
 					break;
@@ -611,9 +616,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					break;
 				default:
 					LOGGER.error(COMMAND_LINE_USAGE);
-					throw new IllegalArgumentException("Unknown parameter: " + parameter);
+					throw new IllegalArgumentException("Unknown parameter: " + args[argNumber] + " " + parameter);
 			}
-
 			argNumber += 2;
 		}
 

@@ -74,14 +74,16 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext, boolean forceReuse) {
+		boolean isBrandNew = false;
 		if (singleton == null) {
 			singleton = new ArchiveManager();
 			singleton.appContext = appContext;
+			isBrandNew = true;
 		}
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
 			LOGGER.info("Archive manager under first or new ownership: {}", ts.getClass().getSimpleName());
-			if (forceReuse) {
+			if (forceReuse && !isBrandNew) {
 				LOGGER.info("Re-use request denied due to change in ownership.");
 				forceReuse = false;
 			}
@@ -89,17 +91,19 @@ public class ArchiveManager implements ScriptConstants {
 		} else {
 			LOGGER.info("Archive manager being reused in: {}", ts.getClass().getSimpleName());
 		}
-		
-		if (!forceReuse) {
-			LOGGER.info("Resetting Archive Manager load flags");
-			//Don't assume that just because we're being reused, we're loading the same files
-			singleton.loadEditionArchive = false;
-			singleton.loadDependencyPlusExtensionArchive = false;
-			singleton.populatePreviousTransativeClosure = false;
-			singleton.populateReleasedFlag = false;
-			singleton.loadOtherReferenceSets = false;
-		} else {
-			LOGGER.info("Archive Manager load flags retained - reuse forced.");
+
+		if (!isBrandNew) {
+			if (!forceReuse) {
+				LOGGER.info("Resetting Archive Manager load flags");
+				//Don't assume that just because we're being reused, we're loading the same files
+				singleton.loadEditionArchive = false;
+				singleton.loadDependencyPlusExtensionArchive = false;
+				singleton.populatePreviousTransativeClosure = false;
+				singleton.populateReleasedFlag = false;
+				singleton.loadOtherReferenceSets = false;
+			} else {
+				LOGGER.info("Archive Manager load flags retained - reuse forced.");
+			}
 		}
 		singleton.ts = ts;
 		return singleton;
@@ -125,7 +129,7 @@ public class ArchiveManager implements ScriptConstants {
 
 	protected Branch loadBranch(Project project) throws TermServerScriptException {
 		String branchPath = project.getBranchPath();
-		String server = "uknown";
+		String server = "unknown";
 		try {
 			LOGGER.debug ("Checking TS branch metadata: {}", branchPath);
 			server = ts.getTSClient().getServerUrl();
@@ -881,8 +885,7 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (fileName.contains("ComponentAnnotationStringValue")) {
 					LOGGER.info("Loading ComponentAnnotationStringValue File: {} file: {}", fileType, fileName);
 					gl.loadComponentAnnotationFile(is, isReleased);
-				}
-				else if (loadOtherReferenceSets && fileName.contains("Refset")) {
+				} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
 					loadTheReferenceSet = true;
 				}
 
