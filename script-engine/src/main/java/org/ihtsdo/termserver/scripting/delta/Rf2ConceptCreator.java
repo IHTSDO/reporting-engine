@@ -108,7 +108,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 	private void setConceptId(Component component) throws TermServerScriptException {
 		Concept c = (Concept)component;
 		String conceptId = c.getConceptId();
-		if (conceptId == null) {
+		//Populate the concept ID if it's missing or if it's a temporary UUID
+		if (conceptId == null || conceptId.length() > SCTID_MAX_LENGTH) {
 			conceptId = conIdGenerator.getSCTID();
 			c.setId(conceptId);
 		}

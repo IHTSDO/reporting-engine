@@ -10,6 +10,8 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 
+import java.util.UUID;
+
 
 public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements ContentPipeLineConstants {
 
@@ -59,8 +61,13 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 			TemplatedConcept templatedValence = NuvaTemplatedValenceConcept.getOrModel(valence);
 			//Adding relationships involves a compare call which checks the SCTID of the target, so we need to
 			//work out early doors if this is an existing concept, or are we assigning a new ID
-			//TODO
-			RelationshipTemplate rt = new RelationshipTemplate(HAS_DISPOSITION, templatedValence.getConcept());
+
+			Concept valenceConcept = templatedValence.getConcept();
+			//If the valence is new, give it a temporary identifier of a UUID
+			if (valenceConcept.getConceptId() == null) {
+				valenceConcept.setConceptId(UUID.randomUUID().toString());
+			}
+			RelationshipTemplate rt = new RelationshipTemplate(HAS_DISPOSITION, valenceConcept);
 			concept.addRelationship(rt, GROUP_1);
 		}
 	}

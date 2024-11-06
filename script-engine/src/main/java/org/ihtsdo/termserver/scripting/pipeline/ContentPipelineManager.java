@@ -270,15 +270,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	private void determineChanges(TemplatedConcept tc, Set<String> externalIdentifiersProcessed) throws TermServerScriptException {
-		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
 		Concept concept = tc.getConcept();
 		externalIdentifiersProcessed.add(tc.getExternalIdentifier());
 
-		//Do we already have this concept?
-		String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
-		Set<String> differencesList = new HashSet<>();
-		Concept existingConcept = getExistingConceptIfExists(existingConceptSCTID, tc);
-		tc.setExistingConcept(existingConcept);
+		//Do we already have this concept?  Also, it might use freshly modelled concepts internally which need to have IDs assigned
+		//before we can compare their axioms
+		Concept existingConcept = getExistingConceptAndPopulateReferencedConcepts(tc);
 
 		//We need to make any adjustments to inferred relationships before we lose the stated ones in the transformation to axioms
 		adjustInferredRelationships(concept, existingConcept);
@@ -291,7 +288,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 			if (tc.getIterationIndicator() == null) {
 				tc.setIterationIndicator(TemplatedConcept.IterationIndicator.NEW);
-				differencesList.add("All New");
 			}
 			convertStatedRelationshipsToAxioms(concept, true, true);
 			concept.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(concept));
@@ -318,6 +314,45 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		if (tc.existingConceptHasInactivations()) {
 			conceptCreator.outputRF2Inactivation(tc.getExistingConcept());
 		}
+	}
+
+	private Concept getExistingConceptAndPopulateReferencedConcepts(TemplatedConcept tc) throws TermServerScriptException {
+		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
+		String existingConceptSCTID = altIdentifierMap.get(tc.getExternalIdentifier());
+
+		Concept existingConcept = getExistingConceptIfExists(existingConceptSCTID, tc);
+		tc.setExistingConcept(existingConcept);
+
+		for (Relationship r : tc.getConcept().getRelationships()) {
+			Concept targetValue = r.getTarget();
+			//Do we have a null id, or a temporary UUID?
+			if (targetValue.getConceptId() == null || targetValue.getConceptId().length() > SCTID_MAX_LENGTH) {
+				//Can we find that concept via what it might have been created for?
+				String targetExternalId = findExternalIdentifierForModelledConcept(targetValue);
+				if (targetExternalId == null) {
+					throw new TermServerScriptException("Unable to find external identifier for modelling in concept " + tc.getConcept().toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				} else {
+					String existingTargetSCTID = altIdentifierMap.get(targetExternalId);
+					Concept existingTarget = getExistingConceptIfExists(existingTargetSCTID, tc);
+					if (existingTarget == null) {
+						//We need to give this concept an ID before we can form an axiom
+						conceptCreator.populateComponentId(targetValue,targetValue, externalContentModule);
+					} else {
+						r.setTarget(existingTarget);
+					}
+				}
+			}
+		}
+		return existingConcept;
+	}
+
+	private String findExternalIdentifierForModelledConcept(Concept c) {
+		for (TemplatedConcept tc : successfullyModelled) {
+			if (tc.getConcept().equals(c)) {
+				return tc.getExternalIdentifier();
+			}
+		}
+		return null;
 	}
 
 	/**

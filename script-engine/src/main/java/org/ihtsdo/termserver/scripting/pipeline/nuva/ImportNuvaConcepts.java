@@ -44,7 +44,7 @@ public class ImportNuvaConcepts extends ContentPipelineManager implements NuvaCo
 				"Category, NUVANum, Detail, , , "
 		};
 
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_NUVA, tabNames, columnHeadings, false);
 		scheme = gl.getConcept(SCTID_NUVA_SCHEMA);
 		externalContentModule = SCTID_NUVA_EXTENSION_MODULE;
 		namespace = "1002000";
