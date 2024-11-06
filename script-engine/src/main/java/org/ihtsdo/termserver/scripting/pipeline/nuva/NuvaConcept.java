@@ -75,10 +75,11 @@ public abstract class NuvaConcept extends ExternalConcept {
 	}
 
 	protected boolean isCommonPredicate(Statement stmt) {
-		if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.LABEL)) {
-			String translation = getObject(stmt);
-			if (hasLanguage(stmt, "en")) {
-				enLabel = translation;
+		if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.LABEL)
+			|| isPredicate(stmt, NuvaOntologyLoader.NuvaUri.COMMENT)) {
+			NuvaLabel translation = getLabel(stmt);
+			if (translation.hasLanguage("en")) {
+				enLabel = translation.getValue();
 			}
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ID)) {
@@ -101,10 +102,25 @@ public abstract class NuvaConcept extends ExternalConcept {
 		return false;
 	}
 
+	protected static NuvaLabel getLabel(Statement stmt) {
+		if (stmt.getObject().isLiteral()) {
+			try {
+				return NuvaLabel.fromLiteral(stmt.getObject().asLiteral());
+			} catch (Exception e) {
+				LOGGER.warn("{}: {}", e.getMessage(), stmt);
+				String str = stmt.getObject().toString();
+				int cut = str.indexOf("^^");
+				return new NuvaLabel(str.substring(0,cut), null);
+			}
+		} else {
+			throw new IllegalArgumentException("Not a label: " + stmt);
+		}
+	}
+
 	protected static String getObject(Statement stmt) {
 		if (stmt.getObject().isLiteral()) {
 			try {
-				return stmt.getObject().asLiteral().getValue().toString();
+				return stmt.getObject().asLiteral().toString();
 			} catch (Exception e) {
 				LOGGER.warn("{}: {}", e.getMessage(), stmt);
 				String str = stmt.getObject().toString();
@@ -116,18 +132,6 @@ public abstract class NuvaConcept extends ExternalConcept {
 			int cut = str.indexOf("#") + 1;
 			return str.substring(cut);
 		}
-	}
-
-	public static boolean hasLanguage(Statement stmt, String lang) {
-		if (stmt.getObject().isLiteral()) {
-			try {
-				return stmt.getObject().asLiteral().getLanguage().equals(lang);
-			} catch (Exception e) {
-				LOGGER.warn("{}: {}", e.getMessage(), stmt);
-				return false;
-			}
-		}
-		return false;
 	}
 
 	public int getTranslationCount() {
