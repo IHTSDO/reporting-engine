@@ -238,12 +238,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			itemStr = applyTermTweaking(rt, itemStr);
 
 			//Can we make this lower case?
-			if (targetPt.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) ||
-					targetPt.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
-				//We'll decapitalise the first letter here, but only if it's not a proper noun
-				if (!CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
-					itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
-				}
+			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
+				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
 			return itemStr;
 		} catch (TermServerScriptException e) {

@@ -53,7 +53,9 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(RF2Constants.SCTID_NUVA_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, vaccine);
-		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
+		//Real vaccines (not abstract) only differ in their brand name, so we'll mark those as primitive
+		DefinitionStatus ds = getNuvaVaccine().isAbstract() ? DefinitionStatus.FULLY_DEFINED : DefinitionStatus.PRIMITIVE;
+		concept.setDefinitionStatus(ds);
 
 		//Now link each valence via a HAS_DISPOSITION attribute
 		for (NuvaValence valence : getNuvaVaccine().getValences()) {
@@ -78,7 +80,19 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 
 	@Override
 	protected boolean detailsIndicatePrimitiveConcept() throws TermServerScriptException {
-		return false;
+		//Real vaccines (not abstract) only differ in their brand name, so we'll mark those as primitive
+		return !getNuvaVaccine().isAbstract();
+	}
+
+	@Override
+	public void populateTerms() throws TermServerScriptException {
+		super.populateTerms();
+
+		//Add acceptable synonyms
+		for (String synonym : getNuvaVaccine().getSynonyms()) {
+			Description d = Description.withDefaults(synonym, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			concept.addDescription(d);
+		}
 	}
 	
 }

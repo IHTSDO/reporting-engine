@@ -14,8 +14,8 @@ public class NuvaValence extends NuvaConcept implements Comparable<NuvaValence> 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaValence.class);
 
 	protected NuvaDisease disease;
-	private List<String> prevents = new ArrayList<>();
-	private List<String> parentValenceIds = new ArrayList<>();
+	private final List<String> prevents = new ArrayList<>();
+	private final List<String> parentValenceIds = new ArrayList<>();
 	protected List<NuvaValence> parentValences = new ArrayList<>();
 
 	protected NuvaValence(String externalIdentifier) {
@@ -59,7 +59,7 @@ public class NuvaValence extends NuvaConcept implements Comparable<NuvaValence> 
 
 	@Override
 	protected String getLongDisplayName() {
-		return enLabel;
+		return getEnLabel();
 	}
 
 	@Override
