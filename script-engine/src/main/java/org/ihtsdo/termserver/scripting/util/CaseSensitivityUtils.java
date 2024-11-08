@@ -68,6 +68,12 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return singleton;
 	}
 
+	public static boolean isciorcI(Description d) {
+		return d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) ||
+				d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+	}
+
+
 	public void init() throws TermServerScriptException {
 		loadCSWords();
 		if (substancesAndOrganismsAreSourcesOfTruth) {
