@@ -16,9 +16,10 @@ public abstract class NuvaConcept extends ExternalConcept {
 	protected int translationCount = 0;
 	protected String created;
 	protected String modified;
-	protected String abstractStr;
-	protected String enLabel;
+	protected boolean isAbstract;
+	private String enLabel;
 	protected final List<String> hiddenLabels = new ArrayList<>();
+	protected List<String> synonyms = new ArrayList<>();
 
 	protected NuvaConcept(String externalIdentifier) {
 		super(externalIdentifier);
@@ -78,8 +79,10 @@ public abstract class NuvaConcept extends ExternalConcept {
 		if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.LABEL)
 			|| isPredicate(stmt, NuvaOntologyLoader.NuvaUri.COMMENT)) {
 			NuvaLabel translation = getLabel(stmt);
-			if (translation.hasLanguage("en")) {
-				enLabel = translation.getValue();
+			if (translation.hasNoLanguage()) {
+				synonyms.add(translation.getValue());
+			} else if (translation.hasLanguage("en")) {
+				setEnLabel(translation.getValue());
 			}
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ID)) {
@@ -88,7 +91,8 @@ public abstract class NuvaConcept extends ExternalConcept {
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ALT_LABEL)) {
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ABSTRACT)) {
-			abstractStr = getObject(stmt);
+			String abstractStr = getObject(stmt);
+			isAbstract = abstractStr.contains("true");
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.TYPE)) {
 			return true;
@@ -150,11 +154,28 @@ public abstract class NuvaConcept extends ExternalConcept {
 		return hiddenLabels;
 	}
 
-	public String getAbstractStr() {
-		return abstractStr;
+	public boolean isAbstract() {
+		return isAbstract;
 	}
 
-	public boolean isAbstract() {
-		return abstractStr != null && abstractStr.equals("true");
+	public List<String> getSynonyms() {
+		return synonyms;
+	}
+
+	public void postImportAdjustment() {
+		//Are we missing a label?  See if we can use a label instead
+		if (enLabel == null && !synonyms.isEmpty()) {
+			setEnLabel("Missing translation: " + synonyms.get(0));
+		}
+	}
+
+	private void setEnLabel(String enLabel) {
+		//If this string contains a new line character, cut at that point
+		int cut = enLabel.indexOf("\n");
+		if (cut > 0) {
+			this.enLabel = enLabel.substring(0, cut);
+		} else {
+			this.enLabel = enLabel;
+		}
 	}
 }
