@@ -64,6 +64,7 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 		VALENCE("http://data.esante.gouv.fr/NUVA/nuvs#containsValence"),
 		CONTAINED_IN_VACCINE("http://data.esante.gouv.fr/NUVA/nuvs#containedInVaccine"),
 		PREVENTS("http://data.esante.gouv.fr/NUVA/nuvs#prevents");
+
 		public final String value;
 
 		NuvaUri(String uri) {
@@ -211,7 +212,7 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 	private void reportVaccine(Resource subject) throws TermServerScriptException {
 		String nuvaId = subject.toString().replace(NUVA_NS, "");
 		NuvaVaccine vaccine = NuvaVaccine.fromResource(nuvaId, subject.listProperties());
-		report(getTab(TAB_VACCINES), vaccine.getExternalIdentifier(), vaccine.getAbstractStr(), vaccine.getTranslationCount() + "\n" + vaccine.getEnLabel(), strList(vaccine.getValenceRefs()), strSctList(vaccine.getSnomedCodes()), strList(vaccine.getHiddenLabels()), vaccine.getCreated(), strList(vaccine.getMatches()));
+		report(getTab(TAB_VACCINES), vaccine.getExternalIdentifier(), vaccine.isAbstract(), vaccine.getTranslationCount() + "\n" + vaccine.getEnLabel(), strList(vaccine.getValenceRefs()), strSctList(vaccine.getSnomedCodes()), strList(vaccine.getHiddenLabels()), vaccine.getCreated(), strList(vaccine.getMatches()));
 	}
 	
 	private void reportValence(Resource subject) throws TermServerScriptException {
@@ -308,6 +309,7 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 			if (isObject(subclassStmt, NuvaClass.VACCINE)) {
 				NuvaVaccine vaccine = NuvaVaccine.fromResource(nuvaId, subject.listProperties());
 				vaccineMap.put(vaccine.getExternalIdentifier(), vaccine);
+				vaccine.postImportAdjustment();
 				return;
 			} else if (isObject(subclassStmt, NuvaClass.VALENCE)) {
 				NuvaValence valence = NuvaValence.fromResource(nuvaId, subject.listProperties());

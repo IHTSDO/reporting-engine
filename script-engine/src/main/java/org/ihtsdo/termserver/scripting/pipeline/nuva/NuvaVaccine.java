@@ -22,7 +22,7 @@ public class NuvaVaccine extends NuvaConcept implements Comparable<NuvaVaccine>,
 
 	public static NuvaVaccine fromResource(String nuvaId, StmtIterator stmtIterator) {
 		NuvaVaccine vaccine = new NuvaVaccine(nuvaId);
-		if (nuvaId.equals("VAC1061")) {
+		if (nuvaId.equals("VAC1076")) {
 			LOGGER.debug("here");
 		}
 		while (stmtIterator.hasNext()) {

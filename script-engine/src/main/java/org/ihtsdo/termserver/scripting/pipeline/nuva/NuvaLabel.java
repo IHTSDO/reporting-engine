@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.nuva;
 
 import org.apache.jena.rdf.model.Literal;
-import org.apache.jena.rdf.model.Statement;
+import org.ihtsdo.otf.utils.StringUtils;
 
 public class NuvaLabel {
 	String value;
@@ -24,15 +24,11 @@ public class NuvaLabel {
 		this.value = value;
 	}
 
-	public String getLangCode() {
-		return langCode;
-	}
-
-	public void setLangCode(String langCode) {
-		this.langCode = langCode;
-	}
-
 	public boolean hasLanguage(String langCode) {
 		return this.langCode.equals(langCode);
+	}
+
+	public boolean hasNoLanguage() {
+		return StringUtils.isEmpty(langCode);
 	}
 }
