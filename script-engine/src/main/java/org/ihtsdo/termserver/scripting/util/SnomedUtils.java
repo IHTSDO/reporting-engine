@@ -1538,7 +1538,15 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	 */
 	public static String getDescriptions(Concept c) {
 		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
-				.map(d -> d.getTerm()).collect(Collectors.joining(",\n"));
+				.map(Description::getTerm).collect(Collectors.joining(",\n"));
+	}
+
+	public static String getDescriptionsOfType(Concept c, List<String> targetTypes) {
+		return c.getDescriptions(ActiveState.ACTIVE).stream()
+				.filter(d -> SnomedUtils.isTargetDescriptionType(targetTypes, d))
+				.sorted(SnomedUtils.decriptionPrioritiser)
+				.map(Description::getTerm)
+				.collect(Collectors.joining(",\n"));
 	}
 
 	public static String getDescriptionsToString(Concept c) {
@@ -2716,6 +2724,22 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			activeStr = "Y";
 		}
 		return activeStr;
+	}
+
+	public static boolean isTargetDescriptionType(List<String> targetTypes, Description d) {
+		if (d.getType().equals(DescriptionType.FSN) && targetTypes.contains("FSN")) {
+			return true;
+		}
+
+		if (d.getType().equals(DescriptionType.SYNONYM) && d.isPreferred() && targetTypes.contains("PT")) {
+			return true;
+		}
+
+		if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred() && targetTypes.contains("SYN")) {
+			return true;
+		}
+
+		return d.getType().equals(DescriptionType.TEXT_DEFINITION) && targetTypes.contains("DEFN");
 	}
 	
 }

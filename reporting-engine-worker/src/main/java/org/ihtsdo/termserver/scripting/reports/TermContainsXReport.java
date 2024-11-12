@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -45,7 +46,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	private boolean startsWith = false;
 	private boolean wholeWord = false;
 	private boolean extensionDescriptionsOnly = false;
-	private enum WithoutMode {ALL_WITHOUT, ANY_WITHOUT};
+	private enum WithoutMode {ALL_WITHOUT, ANY_WITHOUT}
 	private WithoutMode withoutMode;
 	
 	private List<String> targetTypes;
@@ -64,7 +65,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		descTypes.add("SYN");
 		params.put(TERM_TYPES, descTypes);
 		params.put(EXT_ONLY, "false");
-		TermServerReport.run(TermContainsXReport.class, params, args);
+		TermServerScript.run(TermContainsXReport.class, params, args);
 	}
 	
 	@Override
@@ -167,7 +168,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				
 				nextDescription:
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (!isTargetDescriptionType(d)) {
+					if (!SnomedUtils.isTargetDescriptionType(targetTypes, d)) {
 						continue;
 					}
 					if (extensionDescriptionsOnly && !inScope(d)) {
@@ -224,17 +225,12 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 						
 						if (getJobRun().getParamValue(WITHOUT) != null && withoutMode == WithoutMode.ANY_WITHOUT) {
 							report(c, "Did not contain: " + getJobRun().getParamValue(WITHOUT), d);
-							reported = true;
 						}
 					}
 				}
 				
 				if (textsToMatch == null && getJobRun().getParamValue(WITHOUT) != null && withoutMode == WithoutMode.ALL_WITHOUT) {
-					String allTerms = c.getDescriptions(ActiveState.ACTIVE).stream()
-							.filter(d -> isTargetDescriptionType(d))
-							.sorted(SnomedUtils.decriptionPrioritiser)
-							.map(d -> d.getTerm())
-							.collect(Collectors.joining(",\n"));
+					String allTerms = SnomedUtils.getDescriptionsOfType(c, targetTypes);
 					report(c, "No terms contained: " + getJobRun().getParamValue(WITHOUT), allTerms);
 				}
 			}
@@ -243,8 +239,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		if (textsToMatch != null && Arrays.asList(textsToMatch).contains("TEST_WATCHER")) {
 			LOGGER.info("Testing watcher functionality.  Pausing for 15 minutes");
 			try {
-				Thread.sleep(15 * 60 * 1000);
+				Thread.sleep(15 * 60 * 1000L);
 			} catch(Exception e) {
+				Thread.currentThread().interrupt();
 				LOGGER.info("Watcher Testing interrupted prematurely");
 			}
 		}
@@ -264,26 +261,6 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		return super.report(c, ds, details, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);
 	}
 	
-	private boolean isTargetDescriptionType(Description d) {
-		if (d.getType().equals(DescriptionType.FSN) && targetTypes.contains("FSN")) {
-			return true;
-		}
-		
-		if (d.getType().equals(DescriptionType.SYNONYM) && d.isPreferred() && targetTypes.contains("PT")) {
-			return true;
-		}
-		
-		if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred() && targetTypes.contains("SYN")) {
-			return true;
-		}
-		
-		if (d.getType().equals(DescriptionType.TEXT_DEFINITION) && targetTypes.contains("DEFN")) {
-			return true;
-		}
-		
-		return false;
-	}
-
 	private String getAttributeDetail(Concept c) {
 		if (attributeDetail != null) {
 			return SnomedUtils.getTargets(c, new Concept[] {attributeDetail}, CharacteristicType.INFERRED_RELATIONSHIP)
