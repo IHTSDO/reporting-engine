@@ -2,25 +2,21 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 	
 	private Set<String> exclusions;
 	private RelationshipTemplate relTemplate;
 
-	private final int BatchSize = 99999;
+	private static final int BATCH_SIZE = 99999;
+
+	private int lastBatchSize = 0;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SwitchAttributeRoleGroupInferred delta = new SwitchAttributeRoleGroupInferred();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
@@ -30,8 +26,8 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 			delta.init(args);
 			delta.loadProjectSnapshot(true);
 			delta.postLoadInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
 			delta.finish();
 		}
@@ -43,14 +39,15 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 		super.postInit();
 	}
 
-	public int process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		int conceptsInThisBatch = 0;
 		for (Concept c : determineConceptsToProcess()) {
 				int changesMade = moveAttributeGroup(c);
 				if (changesMade > 0) {
 					outputRF2(c);
 					conceptsInThisBatch++;
-					if (conceptsInThisBatch >= BatchSize) {
+					if (conceptsInThisBatch >= BATCH_SIZE) {
 						createOutputArchive(false, conceptsInThisBatch);
 						gl.setAllComponentsClean();
 						outputDirName = "output"; //Reset so we don't end up with _1_1_1
@@ -61,7 +58,7 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 				}
 
 		}
-		return conceptsInThisBatch;
+		lastBatchSize = conceptsInThisBatch;
 	}
 
 	private List<Concept> determineConceptsToProcess() throws TermServerScriptException {

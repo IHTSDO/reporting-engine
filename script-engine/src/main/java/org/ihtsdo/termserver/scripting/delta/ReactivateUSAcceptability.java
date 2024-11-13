@@ -38,7 +38,8 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptC
 		}
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		LOGGER.info ("Processing concepts to find issues with US acceptability.");
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			fixFsnAcceptability(concept);

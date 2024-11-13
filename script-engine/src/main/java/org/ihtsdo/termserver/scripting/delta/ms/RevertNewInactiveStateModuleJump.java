@@ -1,13 +1,14 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
-import java.io.File;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MSSP-1598 where we've moved a component from one module to another
@@ -17,35 +18,15 @@ import org.snomed.otf.scheduler.domain.*;
  * Detect where a module change has been made but a concept remains inactive,
  * and revert it back to its original module
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNewInactiveStateModuleJump.class);
 
 	public static void main(String[] args) throws TermServerScriptException {
 		RevertNewInactiveStateModuleJump delta = new RevertNewInactiveStateModuleJump();
-		try {
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.targetModuleId = "15561000146104";
-			delta.runStandAlone = false;
-			delta.inputFileHasHeaderRow = true;
-			delta.newIdsRequired = false;
-			delta.gl.setRecordPreviousState(true);
-			delta.init(args);
-			delta.loadProjectSnapshot(false);
-			delta.postInit();
-			delta.process();
-			delta.getRF2Manager().flushFiles(true);
-			
-			if (!dryRun) {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
-			}
-		} finally {
-			delta.finish();
-		}
+		delta.targetModuleId = "15561000146104";
+		delta.gl.setRecordPreviousState(true);
+		delta.standardExecution(args);
 	}
 
 	@Override
@@ -63,7 +44,8 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 				"Reassertions"};
 		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		int processedCount = 0;
 		for (Concept concept : gl.getAllConcepts()) {
@@ -83,7 +65,7 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 						c.setModuleId(targetModuleId);
 						c.setDirty();
 						concept.setModified();
-						if (!c.isReleased()) {
+						if (!c.isReleasedSafely()) {
 							report(concept, ReportActionType.VALIDATION_CHECK,"Check inactive unpublished component", c);
 						}
 						//For a description, make sure any langrefset or associations follow

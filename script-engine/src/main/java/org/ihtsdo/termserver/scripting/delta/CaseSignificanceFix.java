@@ -98,30 +98,35 @@ public class CaseSignificanceFix extends DeltaGenerator implements ScriptConstan
 		exceptions.add("737547006");
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		LOGGER.info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
-			if (c.isActive()) {
-				if (exceptions.contains(c.getId())) {
-					report (c, null, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
-				} else {
-					for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-						if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE) &&
-								!StringUtils.isCaseSensitive(d.getTerm())) {
-							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-							String msg = "Set to entire term case insensitive.  Last modified " + d.getEffectiveTime();
-							report(c,d,Severity.LOW,ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
-							d.setEffectiveTime(null);
-							d.setDirty();
-							c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
-							incrementSummaryInformation("Descriptions modified", 1);
-						}
-					}
-				}
+			if (c.isActiveSafely()) {
+				process(c);
 			}
 			if (c.isModified()) {
 				incrementSummaryInformation("Concepts modified", 1);
 				outputRF2(c);  //Will only output dirty fields.
+			}
+		}
+	}
+
+	private void process(Concept c) throws TermServerScriptException {
+		if (exceptions.contains(c.getId())) {
+			report (c, null, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
+		} else {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE) &&
+						!StringUtils.isCaseSensitive(d.getTerm())) {
+					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+					String msg = "Set to entire term case insensitive.  Last modified " + d.getEffectiveTime();
+					report(c,d,Severity.LOW,ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+					d.setEffectiveTime(null);
+					d.setDirty();
+					c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
+					incrementSummaryInformation("Descriptions modified", 1);
+				}
 			}
 		}
 	}

@@ -2,14 +2,12 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 public class GroupSelfGroupedAttributes extends DeltaGenerator implements ScriptConstants{
@@ -21,10 +19,10 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	private List<Concept> singleTypes = new ArrayList<>();
 	private List<Concept> allowRepeatingTypes = new ArrayList<>();
 	private Concept COMPONENT;
-	//private final int BatchSize = 30;
 	private final int BatchSize = 99999;
+	private int conceptsInThisBatch = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GroupSelfGroupedAttributes delta = new GroupSelfGroupedAttributes();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
@@ -35,17 +33,16 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 			delta.init(args);
 			delta.loadProjectSnapshot();
 			delta.postInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.conceptsInThisBatch);
 		} finally {
 			delta.finish();
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		eclSelections.add("<< " + OBSERVABLE_ENTITY.getConceptId());
-		//eclSelections.add("<< 386053000 |Evaluation procedure|");
-		//eclSelections.add("<< 386053000 |Evaluation procedure| OR << " + OBSERVABLE_ENTITY.getConceptId());
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
@@ -82,34 +79,38 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 		postInit(tabNames, columnHeadings, false);
 	}
 
-	private int process() throws ValidationFailure, TermServerScriptException, IOException {
-		int conceptsInThisBatch = 0;
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (String eclSelection : eclSelections) {
 			for (Concept c : SnomedUtils.sort(findConcepts(eclSelection))) {
 				if (inScope(c)) {
-					String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-					restateInferredRelationships(c);
-					removeRedundandGroups((Task) null, c);
-					c.recalculateGroups();
-					int reportToTabIdx = groupSelfGroupedAttributes(c, before);
-					if (reportToTabIdx == PRIMARY_REPORT) {
-						outputRF2(c, true);
-						conceptsInThisBatch++;
-						if (conceptsInThisBatch >= BatchSize) {
-							createOutputArchive(false, conceptsInThisBatch);
-							gl.setAllComponentsClean();
-							outputDirName = "output"; //Reset so we don't end up with _1_1_1
-							initialiseOutputDirectory();
-							initialiseFileHeaders();
-							conceptsInThisBatch = 0;
-						}
-					} else {
-						LOGGER.debug("Concept reason for no change already recorded in tab " + reportToTabIdx + " for " + c);
-					}
+					processConcept(c);
 				}
 			}
 		}
-		return conceptsInThisBatch;
+	}
+
+	private void processConcept(Concept c) throws TermServerScriptException {
+		String before = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		restateInferredRelationships(c);
+		removeRedundandGroups((Task) null, c);
+		c.recalculateGroups();
+		int reportToTabIdx = groupSelfGroupedAttributes(c, before);
+		if (reportToTabIdx == PRIMARY_REPORT) {
+			outputRF2(c, true);
+			conceptsInThisBatch++;
+			if (conceptsInThisBatch >= BatchSize) {
+				createOutputArchive(false, conceptsInThisBatch);
+				gl.setAllComponentsClean();
+				outputDirName = "output"; //Reset so we don't end up with _1_1_1
+				initialiseOutputDirectory();
+				initialiseFileHeaders();
+				conceptsInThisBatch = 0;
+			}
+		} else {
+			LOGGER.debug("Concept reason for no change already recorded in tab {} for {}", reportToTabIdx, c);
+		}
+		
 	}
 
 	private int groupSelfGroupedAttributes(Concept c, String before) throws TermServerScriptException {

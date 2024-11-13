@@ -57,8 +57,9 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements ScriptCons
 			delta.finish();
 		}
 	}
-	
-	private void process() throws TermServerScriptException {
+
+	@Override
+	protected void process() throws TermServerScriptException {
 		LOGGER.info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {

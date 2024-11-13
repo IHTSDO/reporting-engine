@@ -2,26 +2,16 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ihtsdo.termserver.scripting.domain.*;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends DeltaGenerator implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateAxiomsOrRelationshipsFeaturingTargetConcept.class);
 
 	private Concept restrictToType;
 	private Concept find;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateAxiomsOrRelationshipsFeaturingTargetConcept delta = new InactivateAxiomsOrRelationshipsFeaturingTargetConcept();
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
@@ -39,35 +29,39 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 	public void postInit() throws TermServerScriptException {
 		eclSubset = "<< 763087004 |Medicinal product categorized by therapeutic role (product)| ";
 		restrictToType = gl.getConcept("766939001 |Plays role (attribute)| ");
-		//find = gl.getConcept("10061010000109 |Screening technique (qualifier value)|");
 		super.postInit();
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		print ("Processing concepts to remove axioms featuring " + find );
 		for (Concept c : findConcepts(eclSubset)) {
 			if (c.isActive()) {
-				//Is this a multi-axiom concept?  If not, just inactivate that relationship within the axiom
-				boolean isMultiAxiom = c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 1;
-				Set<Relationship> relationships = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, restrictToType, ActiveState.ACTIVE);
-				for (Relationship r : relationships) {
-					if (find == null || r.getTarget().equals(find)) {
-						if (isMultiAxiom) {
-							checkOtherRelationshipsInAxiom(c, r);
-							AxiomEntry a = r.getAxiomEntry();
-							a.setActive(false);
-							a.setDirty();
-							c.setModified();
-							report(c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, r, r.getTarget());
-							break;
-						} else {
-							r.setActive(false);
-							r.setDirty();
-							c.setModified();
-							report(c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, r, r.getTarget());
-							break;
-						}
-					}
+				processConcept(c);
+			}
+		}
+	}
+
+	private void processConcept(Concept c) throws TermServerScriptException {
+		//Is this a multi-axiom concept?  If not, just inactivate that relationship within the axiom
+		boolean isMultiAxiom = c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 1;
+		Set<Relationship> relationships = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, restrictToType, ActiveState.ACTIVE);
+		for (Relationship r : relationships) {
+			if (find == null || r.getTarget().equals(find)) {
+				if (isMultiAxiom) {
+					checkOtherRelationshipsInAxiom(c, r);
+					AxiomEntry a = r.getAxiomEntry();
+					a.setActive(false);
+					a.setDirty();
+					c.setModified();
+					report(c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, r, r.getTarget());
+					break;
+				} else {
+					r.setActive(false);
+					r.setDirty();
+					c.setModified();
+					report(c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, r, r.getTarget());
+					break;
 				}
 			}
 		}

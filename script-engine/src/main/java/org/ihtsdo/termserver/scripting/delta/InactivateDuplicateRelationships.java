@@ -35,28 +35,33 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 		}
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (concept.isActiveSafely()) {
 				for (Relationship rExtension : concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					//Where the relationship is not-core, look for a duplicate core relationship 
-					if (!rExtension.getModuleId().equals(SCTID_CORE_MODULE)) {
-						for (Relationship rCore : concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-							if (rExtension.equals(rCore) && rCore.getModuleId().equals(SCTID_CORE_MODULE)) {
-								rExtension.setActive(false);
-								rExtension.setEffectiveTime(null);
-								concept.setModified();
-								String msg = "Inactivated " + rExtension + " + in module " + rExtension.getModuleId();
-								report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
-							}
-						}
-					}
+					processRelationship(concept, rExtension);
 				}
 			}
 			if (concept.isModified()) {
 				incrementSummaryInformation("Concepts modified");
 				outputRF2(concept);  //Will only output dirty fields.
+			}
+		}
+	}
+
+	private void processRelationship(Concept concept, Relationship rExtension) throws TermServerScriptException {
+		//Where the relationship is not-core, look for a duplicate core relationship
+		if (!rExtension.getModuleId().equals(SCTID_CORE_MODULE)) {
+			for (Relationship rCore : concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (rExtension.equals(rCore) && rCore.getModuleId().equals(SCTID_CORE_MODULE)) {
+					rExtension.setActive(false);
+					rExtension.setEffectiveTime(null);
+					concept.setModified();
+					String msg = "Inactivated " + rExtension + " + in module " + rExtension.getModuleId();
+					report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
+				}
 			}
 		}
 	}

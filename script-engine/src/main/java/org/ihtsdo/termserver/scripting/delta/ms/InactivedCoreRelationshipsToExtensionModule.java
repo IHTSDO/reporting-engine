@@ -55,7 +55,8 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 		semTagModuleMap.put("drug", "57091000202101");
 		super.init(args);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		if (getInputFile() != null) {
 			for (Component component : processFile()) {

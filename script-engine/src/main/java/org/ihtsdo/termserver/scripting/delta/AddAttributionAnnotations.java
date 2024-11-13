@@ -1,17 +1,15 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import java.nio.charset.StandardCharsets;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,27 +17,27 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 
 	private Concept annotationType = null;
 	private String annotationStr = "Inserm Orphanet";
-	private final int BatchSize = 999999;
+	private static final int BATCH_SIZE = 999999;
 
 	Set<Concept> confirmedConcepts;
 	Set<Concept> conceptsAnnotated = new HashSet<>();
+	private int lastBatchSize = 0;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AddAttributionAnnotations.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AddAttributionAnnotations delta = new AddAttributionAnnotations();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.inputFileHasHeaderRow = true;
-			//delta.getArchiveManager().setAllowStaleData(true);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
 			delta.loadConfirmationFile();
 			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
 			delta.finish();
 		}
@@ -50,47 +48,48 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			confirmedConcepts = processFile().stream()
 					.map(c -> (Concept)c)
 					.collect(Collectors.toSet());
-			LOGGER.info("Checking annotations against list of " + confirmedConcepts.size() + " concepts");
+			LOGGER.info("Checking annotations against list of {} concepts", confirmedConcepts.size());
 		} else {
 			LOGGER.info("No confirmation file provided, processing full set");
 		}
 	}
 
-	private int process() throws ValidationFailure, TermServerScriptException, IOException {
-		//Work through all inactive concepts and check the inactivation indicator on all
-		//active descriptions
-		int conceptsInThisBatch = 0;
-		for (Concept c : getCandidateConcepts()) {
-			conceptsInThisBatch += addAnnotation(c);
-			if (conceptsInThisBatch >= BatchSize) {
-				if (!dryRun) {
-					createOutputArchive(false, conceptsInThisBatch);
-					outputDirName = "output"; //Reset so we don't end up with _1_1_1
-					initialiseOutputDirectory();
-					initialiseFileHeaders();
+	@Override
+	protected void process() throws TermServerScriptException {
+			//Work through all inactive concepts and check the inactivation indicator on all
+			//active descriptions
+			int conceptsInThisBatch = 0;
+			for (Concept c : getCandidateConcepts()) {
+				conceptsInThisBatch += addAnnotation(c);
+				if (conceptsInThisBatch >= BATCH_SIZE) {
+					if (!dryRun) {
+						createOutputArchive(false, conceptsInThisBatch);
+						outputDirName = "output"; //Reset so we don't end up with _1_1_1
+						initialiseOutputDirectory();
+						initialiseFileHeaders();
+					}
+					gl.setAllComponentsClean();
+					conceptsInThisBatch = 0;
 				}
-				gl.setAllComponentsClean();
-				conceptsInThisBatch = 0;
 			}
-		}
-		//Were any concepts confirmed for annotations that we didn't annotate?
-		if (confirmedConcepts != null) {
-			Set<Concept> unannotated = new HashSet<>(confirmedConcepts);
-			unannotated.removeAll(conceptsAnnotated);
-			for (Concept c : unannotated) {
-				report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept confirmed for annotation, but was marked invalid or missing", "");
+			//Were any concepts confirmed for annotations that we didn't annotate?
+			if (confirmedConcepts != null) {
+				Set<Concept> unannotated = new HashSet<>(confirmedConcepts);
+				unannotated.removeAll(conceptsAnnotated);
+				for (Concept c : unannotated) {
+					report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept confirmed for annotation, but was marked invalid or missing", "");
+				}
 			}
-		}
 
-		return conceptsInThisBatch;
+		lastBatchSize = conceptsInThisBatch;
 	}
 
 	private int addAnnotation(Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		//Do we have a text definition?
-		boolean hasTextDef = getTextDefinitionsSince(c, 2002).size() > 0;
+		boolean hasTextDef = !getTextDefinitionsSince(c, 2002).isEmpty();
 		//Is it after 2015?
-		boolean hasRecentTextDef = getTextDefinitionsSince(c, 2015).size() > 0;
+		boolean hasRecentTextDef = !getTextDefinitionsSince(c, 2015).isEmpty();
 		String processingDetail = "Orphanet attribution added";
 		ReportActionType action = ReportActionType.NO_CHANGE;
 		String rmStr = "";
@@ -98,11 +97,11 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			processingDetail = c.getIssues(",\n");
 		} else if (!hasTextDef) {
 			processingDetail = "No text definition";
-		} else if (!c.isActive()) {
+		} else if (!c.isActiveSafely()) {
 			processingDetail = "Concept now inactive";
 		} else if (!hasRecentTextDef) {
 			processingDetail = "No recent text definition";
-		} else if (c.getComponentAnnotationEntries().size() > 0) {
+		} else if (!c.getComponentAnnotationEntries().isEmpty()) {
 			processingDetail = "Already has annotation";
 		} else if (confirmedConcepts != null && !confirmedConcepts.contains(c)) {
 			processingDetail = "Concept not confirmed for annotation";
@@ -137,7 +136,7 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 		List<Concept> candidateConcepts = new ArrayList<>();
 		int lineNum = 0;
 		try {
-			List<String> lines = Files.readLines(getInputFileOrThrow(2), Charsets.UTF_8);
+			List<String> lines = Files.readLines(getInputFileOrThrow(2), StandardCharsets.UTF_8);
 			for (String line : lines) {
 				lineNum++;
 				String[] columns = line.split(TAB);

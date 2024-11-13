@@ -1,14 +1,12 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -23,7 +21,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 
 	private Set<Concept> conceptsToInactivate;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateConceptsDriven delta = new InactivateConceptsDriven();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
@@ -44,12 +42,13 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 		}
 	}
 
-	private void process() throws ValidationFailure, TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		getConceptsToInactivate();
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			//Is this a concept we've been told to replace the associations on?
 			if (conceptsToInactivate.contains(c)) {
-				if (c.isActive()) {
+				if (c.isActiveSafely()) {
 					inactivateConcept(c);
 					outputRF2(c);
 					countIssue(c);
@@ -101,7 +100,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 					String[] items = line.split(TAB);
 					conceptsToInactivate.add(gl.getConcept(items[0]));
 				} catch (Exception e) {
-					LOGGER.warn("Failed to parse line: " + line);
+					LOGGER.warn("Failed to parse line: {}", line);
 				}
 			}
 		} catch (Exception e) {

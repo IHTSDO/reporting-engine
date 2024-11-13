@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
-import java.io.File;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -23,23 +22,8 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		UnfixableLangRefsetDuplicates delta = new UnfixableLangRefsetDuplicates();
-		try {
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.sourceModuleIds = Set.of(US_MODULE);
-			delta.runStandAlone = false;
-			delta.inputFileHasHeaderRow = true;
-			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
-			delta.init(args);
-			delta.loadProjectSnapshot(false);
-			delta.postInit();
-			delta.process();
-			delta.getRF2Manager().flushFiles(true);  //Flush and Close
-			if (!dryRun) {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
-			}
-		} finally {
-			delta.finish();
-		}
+		delta.sourceModuleIds = Set.of(US_MODULE);
+		delta.standardExecution(args);
 	}
 
 	@Override
@@ -63,7 +47,8 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 				"Historic Duplications"};
 		super.postInit(GFOLDER_RELEASE_QA, tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sortFSN(gl.getAllConcepts())) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {

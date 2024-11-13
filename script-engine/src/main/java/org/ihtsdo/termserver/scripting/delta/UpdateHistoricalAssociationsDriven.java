@@ -80,7 +80,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		postInit(tabNames, columnHeadings, false);
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		populateCathyNotes();
 		populateSkipList();
 		populateReplacementMap();

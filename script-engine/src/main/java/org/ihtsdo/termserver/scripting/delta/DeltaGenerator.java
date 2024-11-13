@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
@@ -600,4 +601,36 @@ public abstract class DeltaGenerator extends TermServerScript {
 		return super.inScope(c, includeExpectedExtensionModules);
 	}
 
+	protected void process() throws TermServerScriptException {
+		throw new UnsupportedOperationException("Override process() in your DeltaGenerator");
+	}
+
+	protected void standardExecution(String[] args) throws TermServerScriptException{
+		try {
+			getArchiveManager().setPopulateReleasedFlag(true);
+			runStandAlone = false;
+			inputFileHasHeaderRow = true;
+			newIdsRequired = false; // We'll only be inactivating existing relationships
+			init(args);
+			loadProjectSnapshot(false);
+			postInit();
+			process();
+			getRF2Manager().flushFiles(true);  //Flush and Close
+			if (!dryRun) {
+				SnomedUtils.createArchive(new File(outputDirName));
+			}
+		} finally {
+			finish();
+		}
+	}
+	
+	
+	protected void close(ZipInputStream zis) {
+		try {
+			zis.closeEntry();
+			zis.close();
+		} catch (Exception e) {
+			//Well, we tried.
+		} 
+	}
 }
