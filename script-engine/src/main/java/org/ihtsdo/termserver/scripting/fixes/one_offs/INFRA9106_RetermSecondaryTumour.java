@@ -11,13 +11,17 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  *INFRA-6637 Re-terming and remodel of AIDS concepts
  */
 public class INFRA9106_RetermSecondaryTumour extends BatchFix {
-	
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA9106_RetermSecondaryTumour.class);
+
 	String semTag = " (disorder)";
 	String ecl = "< 128462008 |Secondary malignant neoplastic disease (disorder)| ";
 	InactivationIndicator inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
@@ -160,7 +164,7 @@ public class INFRA9106_RetermSecondaryTumour extends BatchFix {
 					}
 				} catch (Exception e) {
 					//reportLoud((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
-					info(e.getMessage() + " : " + c);
+					LOGGER.info(e.getMessage() + " : " + c);
 				}
 			}
 		}
