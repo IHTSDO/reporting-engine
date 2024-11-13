@@ -12,12 +12,16 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * MSSP-1532 We have a file that was loaded in.  Check what happened to the descriptions
  */
 public class MSSP1532_MissingTranslations extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MSSP1532_MissingTranslations.class);
 	
 	//private static String previousReleaseBranch = "MAIN/SNOMEDCT-NL/2022-03-31";
 	
@@ -137,7 +141,7 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 
 	private void loadLangRefsetFile() throws TermServerScriptException {
 		String langRefFilePath = "G:\\My Drive\\036_ManagedService\\2022\\NL\\MSSP-1532_Missing_Translations\\Delta\\Refset\\Language\\der2_cRefset_LanguageDelta_NL_20220511.txt";
-		info("Loading Lang Refset File " + langRefFilePath);
+		LOGGER.info("Loading Lang Refset File " + langRefFilePath);
 		try {
 			//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 			BufferedReader br = new BufferedReader(new FileReader(langRefFilePath, StandardCharsets.UTF_8));
@@ -151,7 +155,7 @@ public class MSSP1532_MissingTranslations extends BatchFix {
 					String descId = l.getReferencedComponentId();
 					Description d = importedFileDescriptionMap.get(descId);
 					if (d == null) {
-						warn(l + " relates to description not being modified in import");
+						LOGGER.warn(l + " relates to description not being modified in import");
 					} else {
 						d.addLangRefsetEntry(l);
 					}
