@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
-import java.io.File;
 import java.util.Set;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -18,22 +17,12 @@ public class CreateMissingLangRefsetEntries extends DeltaGenerator implements Sc
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		CreateMissingLangRefsetEntries delta = new CreateMissingLangRefsetEntries();
-		try {
-			delta.sourceModuleIds = Set.of("554471000005108");
-			delta.runStandAlone = true;
-			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
-			delta.additionalReportColumns = "FSN,SemTag,Severity,Action,Detail,Rel Id,";
-			delta.init(args);
-			delta.loadProjectSnapshot(false);
-			delta.postInit();
-			delta.process();
-			delta.getRF2Manager().flushFiles(true);  //Flush and Close
-			SnomedUtils.createArchive(new File(delta.outputDirName));
-		} finally {
-			delta.finish();
-		}
+		delta.sourceModuleIds = Set.of("554471000005108");
+		delta.additionalReportColumns = "FSN,SemTag,Severity,Action,Detail,Rel Id,";
+		delta.standardExecution(args);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			for (Description d : c.getDescriptions()) {

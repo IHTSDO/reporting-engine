@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta.negative;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +30,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptCo
 	static final String deletionEffectiveTime = "20170901";
 	List<Concept> affectedConcepts = new ArrayList<Concept>();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Delete_US_Issues delta = new Delete_US_Issues();
 		try {
 			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries
@@ -78,7 +77,8 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptCo
 		}
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		LOGGER.info ("Processing concepts to find issues with US acceptability.");
 		//First touch all concepts who were erroneously inactivated to remove those rows
 		//Only if the concept is still 

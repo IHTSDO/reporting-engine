@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
@@ -12,11 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implements ScriptConstants{
 
@@ -30,11 +25,11 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 
 	private List<Concept> allowRepeatingTypes = new ArrayList<>();
 
-	private Concept COMPONENT;
+	private static final int BATCH_SIZE = 99999;
 
-	private final int BatchSize = 99999;
+	private int conceptsInThisBatch = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GroupSelfGroupedAttributesTargeted delta = new GroupSelfGroupedAttributesTargeted();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
@@ -44,13 +39,14 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 			delta.init(args);
 			delta.loadProjectSnapshot();
 			delta.postInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.conceptsInThisBatch);
 		} finally {
 			delta.finish();
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		eclSelection = " << 386053000 |Evaluation procedure| : 116686009 |Has specimen (attribute)| = *";
 
@@ -60,11 +56,11 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 		skipAttributeTypes.add(IS_A);
 		skipAttributeTypes.add(PART_OF);
 
-		COMPONENT = gl.getConcept("246093002 |Component (attribute)|");
+		Concept component = gl.getConcept("246093002 |Component (attribute)|");
 
 		allowRepeatingTypes = List.of(
 				gl.getConcept("704321009 |Characterizes (attribute)| "),
-				COMPONENT
+				component
 		);
 
 		//We're not moving modules here, so set target module to be null so we don't change it
@@ -84,38 +80,38 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 		postInit(tabNames, columnHeadings, false);
 	}
 
-	private int process() throws ValidationFailure, TermServerScriptException, IOException {
-		int conceptsInThisBatch = 0;
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (Concept c :  SnomedUtils.sort(findConcepts(eclSelection))) {
-			/*if (c.getId().equals("313919000")) {
-				LOGGER.debug("Debug here");
-			}*/
 			if (inScope(c)) {
-				String beforeStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-				String beforeInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
-				restateInferredRelationships(c);
-				removeRedundandGroups((Task) null, c);
-				c.recalculateGroups();
-				int reportToTabIdx = mergeTargetedAttribute(c, beforeStated, beforeInferred);
-				if (reportToTabIdx == PRIMARY_REPORT) {
-					outputRF2(c, true);
-					conceptsInThisBatch++;
-					if (conceptsInThisBatch >= BatchSize) {
-						if (!dryRun) {
-							createOutputArchive(false, conceptsInThisBatch);
-							outputDirName = "output"; //Reset so we don't end up with _1_1_1
-							initialiseOutputDirectory();
-							initialiseFileHeaders();
-						}
-						gl.setAllComponentsClean();
-						conceptsInThisBatch = 0;
-					}
-				} else {
-					LOGGER.debug("Concept reason for no change already recorded in tab " + reportToTabIdx + " for " + c);
-				}
+				processConcept(c);
 			}
 		}
-		return conceptsInThisBatch;
+	}
+
+	private void processConcept(Concept c) throws TermServerScriptException {
+		String beforeStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String beforeInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
+		restateInferredRelationships(c);
+		removeRedundandGroups((Task) null, c);
+		c.recalculateGroups();
+		int reportToTabIdx = mergeTargetedAttribute(c, beforeStated, beforeInferred);
+		if (reportToTabIdx == PRIMARY_REPORT) {
+			outputRF2(c, true);
+			conceptsInThisBatch++;
+			if (conceptsInThisBatch >= BATCH_SIZE) {
+				if (!dryRun) {
+					createOutputArchive(false, conceptsInThisBatch);
+					outputDirName = "output"; //Reset so we don't end up with _1_1_1
+					initialiseOutputDirectory();
+					initialiseFileHeaders();
+				}
+				gl.setAllComponentsClean();
+				conceptsInThisBatch = 0;
+			}
+		} else {
+			LOGGER.debug("Concept reason for no change already recorded in tab {} for {}", reportToTabIdx, c);
+		}
 	}
 
 	private int mergeTargetedAttribute(Concept c, String beforeStated, String beforeInferred) throws TermServerScriptException {
@@ -123,7 +119,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 		List<RelationshipGroup> populatedGroups = identifyGroups(c);
 		List<RelationshipGroup> sourceGroups = findSourceGroups(c);
 
-		if (sourceGroups.size() == 0) {
+		if (sourceGroups.isEmpty()) {
 			reportToTabIdx = SECONDARY_REPORT;
 			report(reportToTabIdx, c,  "No self grouped " + targetSingleGroupAttributeType + " found", beforeInferred);
 			return reportToTabIdx;
@@ -142,7 +138,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 			return reportToTabIdx;
 		}
 
-		if (populatedGroups.size() == 0) {
+		if (populatedGroups.isEmpty()) {
 			reportToTabIdx = SECONDARY_REPORT;
 			report(reportToTabIdx, c,  "No receiving group identified", beforeInferred);
 			return reportToTabIdx;
@@ -219,14 +215,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 
 	}
 
-	private boolean isSelfGrouped(RelationshipGroup rg) {
-		return rg.size() == 1;
-	}
-
 	private boolean inScope(Concept c) {
-		/*if (!c.getConceptId().equals("699126008")) {
-			return false;
-		}*/
 
 		//Are we in scope more generally?
 		if (!super.inScope(c)) {

@@ -19,9 +19,23 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
     private static final String CONTENT_TYPE_POST_ID = "723595009";
     private static final String CONTENT_TYPE_POST_NAME = " All postcoordinated SNOMED CT content";
     private static final String MRCM_ATTRIBUTE_DOMAIN_REFSET_ID = "723561005";
-    private static final String MRCM_ATTRIBUTE_DOMAIN_REFSET_NAME = "MRCM attribute domain international reference set";
     private static final String MRCM_ATTRIBUTE_RANGE_REFSET_ID = "723562003";
-    private static final String MRCM_ATTRIBUTE_RANGE_REFSET_NAME = "MRCM attribute range international reference set";
+    
+    private static final String CONTENT_TYPE_ID = "contentTypeId";
+
+    private List<RefsetMember> rangesActive = new ArrayList<>();
+    private List<RefsetMember> rangesInactive = new ArrayList<>();
+    private List<RefsetMember> rangesWithoutAttributes = new ArrayList<>();
+
+    private List<RefsetMember> attributesActive = new ArrayList<>();
+    private List<RefsetMember> attributesInactive = new ArrayList<>();
+
+    private List<RefsetMember> ranges;
+    private List<RefsetMember> attributes;
+
+    private int rangesGreaterThanAttributes = 0;
+    private int attributesWithoutRanges = 0;
+    private int suggestions = 0;
 
     /**
      * The branch path to query on terminology server.
@@ -46,6 +60,7 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
         }
     }
 
+    @Override
     public void postInit() throws TermServerScriptException {
         String[] columnHeadings = new String[]{
                 "Item, Count, Note",
@@ -62,68 +77,56 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
         super.postInit(tabNames, columnHeadings, false);
     }
 
-    private void process() throws TermServerScriptException {
-        List<RefsetMember> ranges = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_RANGE_REFSET_ID);
-        List<RefsetMember> attributes = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_DOMAIN_REFSET_ID);
+    @Override
+    protected void process() throws TermServerScriptException {
 
-        List<RefsetMember> rangesActive = new ArrayList<>();
-        List<RefsetMember> rangesInactive = new ArrayList<>();
-        List<RefsetMember> rangesWithoutAttributes = new ArrayList<>();
-        for (RefsetMember range : ranges) {
-            if (range.isActive()) {
-                rangesActive.add(range);
-            } else {
-                rangesInactive.add(range);
-            }
-        }
-
-        List<RefsetMember> attributesActive = new ArrayList<>();
-        List<RefsetMember> attributesInactive = new ArrayList<>();
-        for (RefsetMember attribute : attributes) {
-            if (attribute.isActive()) {
-                attributesActive.add(attribute);
-            } else {
-                attributesInactive.add(attribute);
-            }
-        }
-
-        int rangesGreaterThanAttributes = 0;
-        int attributesWithoutRanges = 0;
-        int suggestions = 0;
+        populateRangesAndAttributes();
 
         for (RefsetMember range : rangesActive) {
-            boolean attributeFound = false;
+           boolean attributeFound = false;
 
-            for (RefsetMember attribute : attributesActive) {
-                boolean matchReferencedComponentId = Objects.equals(attribute.getReferencedComponentId(), range.getReferencedComponentId());
-                boolean matchContentTypeId = Objects.equals(attribute.getField("contentTypeId"), range.getField("contentTypeId"));
+           attributeFound |= processRange(range);
 
-                // Match
-                if (matchReferencedComponentId && matchContentTypeId) {
-                    attributeFound = true;
-                    continue;
-                }
-
-                // Match, but requires scope change
-                if (matchReferencedComponentId && !matchContentTypeId) {
-                    attributeFound = true;
-
-                    int attributeScore = getScore(attribute.getField("contentTypeId"));
-                    int rangeScore = getScore(range.getField("contentTypeId"));
-                    if (rangeScore > attributeScore) {
-                        suggestions = suggestions + 1;
-                        rangesGreaterThanAttributes = rangesGreaterThanAttributes + 1;
-                        report(1, range.getMemberId(), asContentType(range.getField("contentTypeId")), attribute.getMemberId(), asContentType(attribute.getField("contentTypeId")), "Change contentTypeId of Range to match Attribute");
-                    }
-                }
-            }
-
-            if (!attributeFound) {
-                rangesWithoutAttributes.add(range);
-            }
+	        if (!attributeFound) {
+	            rangesWithoutAttributes.add(range);
+	        }
         }
 
-        for (RefsetMember attribute : attributes) {
+        processAttributes();
+
+        outputReports();
+    }
+
+    private boolean processRange(RefsetMember range) throws TermServerScriptException {
+    	 boolean attributeFound = false;
+    	 for (RefsetMember attribute : attributesActive) {
+             boolean matchReferencedComponentId = Objects.equals(attribute.getReferencedComponentId(), range.getReferencedComponentId());
+             boolean matchContentTypeId = Objects.equals(attribute.getField(CONTENT_TYPE_ID), range.getField(CONTENT_TYPE_ID));
+
+             // Match
+             if (matchReferencedComponentId && matchContentTypeId) {
+                 attributeFound = true;
+                 continue;
+             }
+
+             // Match, but requires scope change
+             if (matchReferencedComponentId && !matchContentTypeId) {
+                 attributeFound = true;
+
+                 int attributeScore = getScore(attribute.getField(CONTENT_TYPE_ID));
+                 int rangeScore = getScore(range.getField(CONTENT_TYPE_ID));
+                 if (rangeScore > attributeScore) {
+                     suggestions = suggestions + 1;
+                     rangesGreaterThanAttributes = rangesGreaterThanAttributes + 1;
+                     report(1, range.getMemberId(), asContentType(range.getField(CONTENT_TYPE_ID)), attribute.getMemberId(), asContentType(attribute.getField(CONTENT_TYPE_ID)), "Change contentTypeId of Range to match Attribute");
+                 }
+             }
+         }
+    	 return attributeFound;
+	}
+
+	private void processAttributes() throws TermServerScriptException {
+    	for (RefsetMember attribute : attributes) {
             boolean rangeFound = false;
             for (RefsetMember range : ranges) {
                 boolean matchReferencedComponentId = Objects.equals(attribute.getReferencedComponentId(), range.getReferencedComponentId());
@@ -136,10 +139,13 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
             if (!rangeFound) {
                 suggestions = suggestions + 1;
                 attributesWithoutRanges = attributesWithoutRanges + 1;
-                report(2, attribute.getMemberId(), asContentType(attribute.getField("contentTypeId")), "Create Attribute Range for content type " + asContentType(attribute.getField("contentTypeId")));
+                report(2, attribute.getMemberId(), asContentType(attribute.getField(CONTENT_TYPE_ID)), "Create Attribute Range for content type " + asContentType(attribute.getField(CONTENT_TYPE_ID)));
             }
         }
+		
+	}
 
+	private void outputReports() throws TermServerScriptException {
         report(0, "Attribute Ranges", ranges.size());
         report(0, "Attribute Ranges (active)", rangesActive.size());
         report(0, "Attribute Ranges (inactive)", rangesInactive.size());
@@ -157,9 +163,29 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
         report(0, "");
     }
 
+    private void populateRangesAndAttributes() {
+        ranges = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_RANGE_REFSET_ID);
+        for (RefsetMember range : ranges) {
+            if (range.isActiveSafely()) {
+                rangesActive.add(range);
+            } else {
+                rangesInactive.add(range);
+            }
+        }
+
+        attributes = fetchReferenceSetMembers(BRANCH, MRCM_ATTRIBUTE_DOMAIN_REFSET_ID);
+        for (RefsetMember attribute : attributes) {
+            if (attribute.isActiveSafely()) {
+                attributesActive.add(attribute);
+            } else {
+                attributesInactive.add(attribute);
+            }
+        }
+    }
+
     private void validateScriptArguments() throws TermServerScriptException {
         // Verify branches exist
-        if (BRANCH == null || BRANCH.isBlank()) {
+        if (BRANCH.isBlank()) {
             throw new TermServerScriptException("No branch path given.");
         }
 

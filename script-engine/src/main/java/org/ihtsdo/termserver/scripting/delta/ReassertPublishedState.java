@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.File;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -20,22 +18,7 @@ public class ReassertPublishedState extends DeltaGenerator {
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		ReassertPublishedState delta = new ReassertPublishedState();
-		try {
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
-			delta.runStandAlone = false;
-			delta.inputFileHasHeaderRow = true;
-			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
-			delta.init(args);
-			delta.loadProjectSnapshot(false);
-			delta.postInit();
-			delta.process();
-			delta.getRF2Manager().flushFiles(true);  //Flush and Close
-			if (!dryRun) {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
-			}
-		} finally {
-			delta.finish();
-		}
+		delta.standardExecution(args);
 	}
 
 	@Override
@@ -53,7 +36,8 @@ public class ReassertPublishedState extends DeltaGenerator {
 				"Reassertions"};
 		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		for (String sctId : processMe.split(",")) {
 			Concept c = gl.getConcept(sctId.trim());

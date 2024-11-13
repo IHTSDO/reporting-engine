@@ -33,7 +33,8 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 		}
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
 		for (Concept c : gl.getAllConcepts()) {

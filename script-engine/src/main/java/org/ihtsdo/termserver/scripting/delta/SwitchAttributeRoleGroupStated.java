@@ -8,10 +8,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 	
@@ -19,6 +16,8 @@ public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 	private RelationshipTemplate relTemplate;
 
 	private final int BatchSize = 99999;
+
+	private int lastBatchSize = 0;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		SwitchAttributeRoleGroupStated delta = new SwitchAttributeRoleGroupStated();
@@ -30,8 +29,8 @@ public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 			delta.init(args);
 			delta.loadProjectSnapshot(true);
 			delta.postLoadInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
 			delta.finish();
 		}
@@ -46,7 +45,8 @@ public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 		super.postInit();
 	}
 
-	public int process() throws TermServerScriptException {
+	@Override
+	public void process() throws TermServerScriptException {
 		int conceptsInThisBatch = 0;
 		for (Concept c : determineConceptsToProcess()) {
 				int changesMade = moveAttributeGroup(c);
@@ -64,7 +64,7 @@ public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 				}
 
 		}
-		return conceptsInThisBatch;
+		lastBatchSize = conceptsInThisBatch;
 	}
 
 	private List<Concept> determineConceptsToProcess() throws TermServerScriptException {

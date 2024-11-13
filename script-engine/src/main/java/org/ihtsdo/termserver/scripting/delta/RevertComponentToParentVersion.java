@@ -103,7 +103,8 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		}
 	}
 
-	private void process() throws Exception {
+	@Override
+	protected void process() throws TermServerScriptException {
 		// Verify branches exist
 		Branch parentBranch = getBranchOrThrow(BRANCH_PARENT);
 		Branch childBranch = getBranchOrThrow(BRANCH_CHILD);
@@ -113,7 +114,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		processDescriptions(parentBranch, childBranch);
 	}
 
-	private void processMembers(Branch parentBranch, Branch childBranch) throws Exception {
+	private void processMembers(Branch parentBranch, Branch childBranch) throws TermServerScriptException {
 		if (REVERT_MEMBERS.isEmpty()) {
 			return;
 		}
@@ -154,7 +155,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		}
 	}
 
-	private void processRelationships(Branch parentBranch, Branch childBranch) throws Exception {
+	private void processRelationships(Branch parentBranch, Branch childBranch) throws TermServerScriptException {
 		if (REVERT_RELATIONSHIPS.isEmpty()) {
 			return;
 		}

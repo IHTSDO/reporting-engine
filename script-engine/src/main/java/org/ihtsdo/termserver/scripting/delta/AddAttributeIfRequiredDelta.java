@@ -24,7 +24,8 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 	private RelationshipTemplate relTemplate;
 
 	private final int BatchSize = 271;
-	
+	private int lastBatchSize = 0;
+
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		AddAttributeIfRequiredDelta delta = new AddAttributeIfRequiredDelta();
 		try {
@@ -35,8 +36,8 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 			delta.init(args);
 			delta.loadProjectSnapshot(true);
 			delta.postLoadInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
 			delta.finish();
 		}
@@ -51,7 +52,8 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 		super.postInit();
 	}
 
-	public int process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		int conceptsInThisBatch = 0;
 		for (Concept c : SnomedUtils.sort(findConcepts(subsetECL))) {
 				int changesMade = addAttribute(c);
@@ -69,7 +71,7 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 				}
 
 		}
-		return conceptsInThisBatch;
+		lastBatchSize = conceptsInThisBatch;
 	}
 
 	private int addAttribute(Concept c) throws TermServerScriptException {

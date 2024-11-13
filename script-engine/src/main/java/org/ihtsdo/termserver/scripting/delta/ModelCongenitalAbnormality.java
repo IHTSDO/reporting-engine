@@ -84,8 +84,9 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 			findRelationshipsForAdd.add(createTemplate("116676008", thisValue.getConceptId()));  //Associated Morphology -> subtype of developmental anomaly
 		}
 	}
-	
-	private void process() throws TermServerScriptException {
+
+	@Override
+	protected void process() throws TermServerScriptException {
 		LOGGER.info("Processing...");
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept> concepts = subHierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);

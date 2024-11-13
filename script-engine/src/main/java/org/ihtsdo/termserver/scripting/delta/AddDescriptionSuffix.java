@@ -12,6 +12,7 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 	private static final int BATCH_SIZE = 100;
 
 	private Concept startingPoint;
+	private int lastBatchSize;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		AddDescriptionSuffix delta = new AddDescriptionSuffix();
@@ -20,8 +21,8 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
 			delta.finish();
 		}
@@ -42,8 +43,8 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 		startingPoint = gl.getConcept("1222584008 |American Joint Committee on Cancer allowable value (qualifier value)| ");
 	}
 
-
-	private int process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		int conceptsInThisBatch = 0;
 		for (Concept c : startingPoint.getDescendants(NOT_SET)) {
 			boolean changesMade = false;
@@ -67,7 +68,7 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 				conceptsInThisBatch = 0;
 			}
 		}
-		return conceptsInThisBatch;
+		lastBatchSize = conceptsInThisBatch;
 	}
 
 	private boolean replaceDescriptionIfRequired(Concept c, Description d) throws TermServerScriptException {

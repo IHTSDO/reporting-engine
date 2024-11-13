@@ -2,14 +2,12 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptConstants{
@@ -22,12 +20,13 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 
 	private List<Concept> allowRepeatingTypes = new ArrayList<>();
 
-	private Concept COMPONENT;
+	private static final int BATCH_SIZE = 99999;
 
-	//private final int BatchSize = 25;
-	private final int BatchSize = 99999;
+	private int lastBatchSize = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	private int conceptsInThisBatch = 0;
+
+	public static void main(String[] args) throws TermServerScriptException {
 		FixSelfGroupedCrossovers delta = new FixSelfGroupedCrossovers();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
@@ -37,26 +36,27 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 			delta.init(args);
 			delta.loadProjectSnapshot();
 			delta.postInit();
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
 			delta.finish();
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
-		//hierarchies.add(OBSERVABLE_ENTITY);
+		Concept component;
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
 		skipAttributeTypes.add(IS_A);
 		skipAttributeTypes.add(PART_OF);
 
-		COMPONENT = gl.getConcept("246093002 |Component (attribute)|");
+		component = gl.getConcept("246093002 |Component (attribute)|");
 
 		allowRepeatingTypes = List.of(
 				gl.getConcept("704321009 |Characterizes (attribute)| "),
-				COMPONENT
+				component
 		);
 
 		//We're not moving modules here, so set target module to be null so we don't change it
@@ -76,74 +76,47 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		postInit(tabNames, columnHeadings, false);
 	}
 
-	private int process() throws ValidationFailure, TermServerScriptException, IOException {
-		int conceptsInThisBatch = 0;
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (Concept hierarchy : hierarchies) {
 			for (Concept c :  SnomedUtils.sort(hierarchy.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP))) {
-				/*if (c.getId().equals("407715006")) {
-					LOGGER.debug("Debug here");
-				}*/
-				if (inScope(c)) {
-					String beforeStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-					String beforeInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
-					restateInferredRelationships(c);
-					removeRedundandGroups((Task) null, c);
-					c.recalculateGroups();
-					int reportToTabIdx = fixSelfGroupedCrossover(c, beforeStated, beforeInferred);
-					if (reportToTabIdx == PRIMARY_REPORT) {
-						outputRF2(c, true);
-						conceptsInThisBatch++;
-						if (conceptsInThisBatch >= BatchSize) {
-							if (!dryRun) {
-								createOutputArchive(false, conceptsInThisBatch);
-								outputDirName = "output"; //Reset so we don't end up with _1_1_1
-								initialiseOutputDirectory();
-								initialiseFileHeaders();
-							}
-							gl.setAllComponentsClean();
-							conceptsInThisBatch = 0;
-						}
-					} else {
-						LOGGER.debug("Concept reason for no change already recorded in tab " + reportToTabIdx + " for " + c);
-					}
-				}
+				processConcept(c);
 			}
 		}
-		return conceptsInThisBatch;
+		lastBatchSize = conceptsInThisBatch;
+	}
+
+	private void processConcept(Concept c) throws TermServerScriptException {
+		if (inScope(c)) {
+			String beforeStated = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+			String beforeInferred = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
+			restateInferredRelationships(c);
+			removeRedundandGroups((Task) null, c);
+			c.recalculateGroups();
+			int reportToTabIdx = fixSelfGroupedCrossover(c, beforeStated, beforeInferred);
+			if (reportToTabIdx == PRIMARY_REPORT) {
+				outputRF2(c, true);
+				conceptsInThisBatch++;
+				if (conceptsInThisBatch >= BATCH_SIZE) {
+					if (!dryRun) {
+						createOutputArchive(false, conceptsInThisBatch);
+						outputDirName = "output"; //Reset so we don't end up with _1_1_1
+						initialiseOutputDirectory();
+						initialiseFileHeaders();
+					}
+					gl.setAllComponentsClean();
+					conceptsInThisBatch = 0;
+				}
+			} else {
+				LOGGER.debug("Concept reason for no change already recorded in tab {} for {}", reportToTabIdx, c);
+			}
+		}
 	}
 
 	private int fixSelfGroupedCrossover(Concept c, String beforeStated, String beforeInferred) throws TermServerScriptException {
 		int reportToTabIdx = PRIMARY_REPORT;
-		boolean changesMade = false;
-		List<RelationshipGroup> populatedGroups = identifyGroups(c, false);
-		List<RelationshipGroup> selfGroups = identifyGroups(c, true);
-		Set<RelationshipGroup> groupsToRemove = new HashSet<>();
 		
-		//Work through all the populated groups and see if we can match an
-		//attribute type with a self grouped relationship where the populated 
-		//group is an ancestor of the self grouped value.   Phew!  Make sense?
-		for (RelationshipGroup populatedGroup : populatedGroups) {
-			for (Relationship r : populatedGroup.getRelationships()) {
-				for (RelationshipGroup selfGroup : selfGroups) {
-					if (containsSkippedAttribute(selfGroup)) {
-						continue;
-					}
-					for (Relationship r2 : selfGroup.getRelationships()) {
-						if (resolvesCrossover(r, r2)) {
-							r.setTarget(r2.getTarget());
-							r.setDirty();
-							report(PRIMARY_REPORT, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, r);
-							changesMade = true;
-							groupsToRemove.add(selfGroup);
-						}
-					}
-				}
-			}
-		}
-
-		for (RelationshipGroup groupToRemove : groupsToRemove) {
-			removeRelationshipGroup((Task)null, c, groupToRemove);
-		}
+		boolean changesMade = determineGroupsToRemove(c);
 		
 		String after = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		boolean isIllegal = reportIllegalGrouping(c, beforeStated, beforeInferred, after);
@@ -162,6 +135,46 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 			}
 		}
 		return reportToTabIdx;
+	}
+
+	private boolean determineGroupsToRemove(Concept c) throws TermServerScriptException {
+		boolean changesMade = false;
+		List<RelationshipGroup> populatedGroups = identifyGroups(c, false);
+		List<RelationshipGroup> selfGroups = identifyGroups(c, true);
+		Set<RelationshipGroup> groupsToRemove = new HashSet<>();
+		//Work through all the populated groups and see if we can match an
+		//attribute type with a self grouped relationship where the populated 
+		//group is an ancestor of the self grouped value.   Phew!  Make sense?
+		for (RelationshipGroup populatedGroup : populatedGroups) {
+			for (Relationship r : populatedGroup.getRelationships()) {
+				changesMade |= processSelfGroups(c, selfGroups, groupsToRemove, r);
+			}
+		}
+
+		for (RelationshipGroup groupToRemove : groupsToRemove) {
+			removeRelationshipGroup((Task)null, c, groupToRemove);
+		}
+		return changesMade;
+	}
+
+	private boolean processSelfGroups(Concept c, List<RelationshipGroup> selfGroups, Set<RelationshipGroup> groupsToRemove,
+			Relationship r) throws TermServerScriptException {
+		boolean changesMade = false;
+		for (RelationshipGroup selfGroup : selfGroups) {
+			if (containsSkippedAttribute(selfGroup)) {
+				continue;
+			}
+			for (Relationship r2 : selfGroup.getRelationships()) {
+				if (resolvesCrossover(r, r2)) {
+					r.setTarget(r2.getTarget());
+					r.setDirty();
+					report(PRIMARY_REPORT, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, r);
+					changesMade = true;
+					groupsToRemove.add(selfGroup);
+				}
+			}
+		}
+		return changesMade;
 	}
 
 	private boolean reportIllegalGrouping(Concept c, String beforeStated, String beforeInferred, String after) throws TermServerScriptException {
@@ -220,10 +233,6 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 	}
 
 	private boolean inScope(Concept c) {
-		/*if (!c.getConceptId().equals("699126008")) {
-			return false;
-		}*/
-
 		//Are we in scope more generally?
 		if (!super.inScope(c)) {
 			return false;

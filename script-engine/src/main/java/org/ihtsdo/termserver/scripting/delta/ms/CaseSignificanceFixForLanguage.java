@@ -62,8 +62,9 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		super.postInit(tabNames, columnHeadings, false);
 		gl.setAllComponentsClean();
 	}
-	
-	private void process() throws TermServerScriptException {
+
+	@Override
+	protected void process() throws TermServerScriptException {
 		LOGGER.info("Processing...");
 		
 		knownEntireTermCaseSensitive = processFile();

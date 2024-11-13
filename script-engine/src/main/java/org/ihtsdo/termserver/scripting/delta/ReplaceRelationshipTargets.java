@@ -5,13 +5,10 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Set;
 
 public class ReplaceRelationshipTargets extends DeltaGenerator implements ScriptConstants {
 
@@ -42,7 +39,8 @@ public class ReplaceRelationshipTargets extends DeltaGenerator implements Script
 		super.postInit();
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		print ("Processing concepts replace " + find + " with " + replace);
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {

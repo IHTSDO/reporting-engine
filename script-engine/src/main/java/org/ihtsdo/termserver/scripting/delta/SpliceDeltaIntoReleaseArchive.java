@@ -43,7 +43,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		fileMap.put("sct2_Description_#TYPE#-fr_CH1000195_20221207.txt", "sct2_Description_Delta_CommonFrench-Extension");
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SpliceDeltaIntoReleaseArchive delta = new SpliceDeltaIntoReleaseArchive();
 		try {
 			delta.sourceModuleIds = Set.of(SCTID_CH_MOD);
@@ -88,31 +88,31 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		}
 	}
 
-	public void process() throws TermServerScriptException, IOException {
-		loadDelta();
-		LOGGER.info("Processing " + getInputFile(1));
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile(1)));
-		ZipEntry ze = zis.getNextEntry();
+	@Override
+	public void process() throws TermServerScriptException {
 		try {
-			while (ze != null) {
-				if (!ze.isDirectory()) {
-					Path path = Paths.get(ze.getName());
-					processFile(path, zis);
+			loadDelta();
+			LOGGER.info("Processing {}", getInputFile(1));
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile(1)));
+			ZipEntry ze = zis.getNextEntry();
+			try {
+				while (ze != null) {
+					if (!ze.isDirectory()) {
+						Path path = Paths.get(ze.getName());
+						processFile(path, zis);
+					}
+					ze = zis.getNextEntry();
 				}
-				ze = zis.getNextEntry();
+			} finally {
+				close(zis);
 			}
-		}  finally {
-			try{
-				zis.closeEntry();
-				zis.close();
-			} catch (Exception e){} //Well, we tried.
+			LOGGER.info("Finished Loading {}", getInputFile(1));
+			getRF2Manager().flushFiles(false);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to process " + getInputFile(1), e);
 		}
-		LOGGER.info("Finished Loading " + getInputFile(1));
-		getRF2Manager().flushFiles(false);
 	}
-	
 
-	
 	private void processFile(Path path, InputStream is) throws TermServerScriptException, IOException {
 		String pathStr = path.toString();
 		File targetFile = new File(outputDirName + File.separator + path.toString());
@@ -126,7 +126,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		
 		if (type == null || !isFileOfInterest(pathStr, type)) {
 			report(PRIMARY_REPORT, pathStr, Severity.LOW, ReportActionType.NO_CHANGE, targetFile);
-			LOGGER.info("Passing through " + pathStr);
+			LOGGER.info("Passing through {}", pathStr);
 			FileUtils.copyToFile(is, targetFile);
 		} else {
 			SummaryCount summaryCount = new SummaryCount();
@@ -136,10 +136,10 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 			//If it's Snapshot, we pass through unless we detect a row where we have an entry for that id, and also
 			//top up with new rows that haven't been used at the end.
 			if (type == ExtractType.SNAPSHOT) {
-				LOGGER.info("Splicing " + pathStr);
+				LOGGER.info("Splicing {}", pathStr);
 				processSnapshotFile(pathStr, is, targetFile, descriptionMap, summaryCount);
 			} else if (type == ExtractType.FULL) {
-				LOGGER.info("Appending to " + pathStr);
+				LOGGER.info("Appending to {}", pathStr);
 				FileUtils.copyToFile(is, targetFile);
 				for (String[] columns : descriptionMap.values()) {
 					writeToRF2File(targetFile.getAbsolutePath(), columns);
@@ -157,7 +157,6 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		boolean isHeaderLine = true;
 		String line;
 		while ((line = br.readLine()) != null) {
-			boolean isReplacement = false;
 			String[] lineItems = line.split(FIELD_DELIMITER);
 			if (!isHeaderLine) {
 				String id = lineItems[IDX_ID];
@@ -176,9 +175,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				isHeaderLine = false;
 			}
 			
-			if (!isReplacement) {
-				summaryCount.rowsPassedThrough++;
-			}
+			summaryCount.rowsPassedThrough++;
 			writeToRF2File(targetFile.getAbsolutePath(), lineItems);
 		}
 		
@@ -204,7 +201,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 	}
 
 	private void loadDelta() throws IOException {
-		LOGGER.info("Loading " + getInputFile());
+		LOGGER.info("Loading {}", getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -221,7 +218,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				zis.close();
 			} catch (Exception e){} //Well, we tried.
 		}
-		LOGGER.info("Finished Loading " + getInputFile());
+		LOGGER.info("Finished Loading {}", getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {
@@ -231,17 +228,9 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 				return;
 			}
 			
-			if (fileName.contains(fileType)) {
-				if (fileName.contains("sct2_Description_" )) {
-					LOGGER.info("Loading Description " + fileType + " file.");
-					loadDescriptionFile(is);
-				} /*else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					LOGGER.info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
-					loadInactivationIndicatorFile(is);
-				} else if (fileName.contains("Language")) {
-					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
-					loadLanguageFile(is);
-				}*/
+			if (fileName.contains(fileType) && fileName.contains("sct2_Description_" )) {
+				LOGGER.info("Loading Description {} file.", fileType);
+				loadDescriptionFile(is);
 			}
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);

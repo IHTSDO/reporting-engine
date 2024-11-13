@@ -2,24 +2,17 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class InactivateLangRefsetMembersInWrongLanguage extends DeltaGenerator implements ScriptConstants {
 
-	private boolean allowEnglishTermsInLangRefset = false;
-	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateLangRefsetMembersInWrongLanguage.class);
+	private static final boolean ALLOW_ENGLISH_TERMS_IN_LANG_REFSET = false;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateLangRefsetMembersInWrongLanguage delta = new InactivateLangRefsetMembersInWrongLanguage();
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing members
@@ -35,33 +28,37 @@ public class InactivateLangRefsetMembersInWrongLanguage extends DeltaGenerator i
 		}
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		Map<String, String> refsetLangCodeMap = generateRefsetLangCodeMap();
-
 		for (Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
-				//It's OK - for example - to have an English term in the Dutch LangRefset
-				//So skip 'en' terms, unless it's the FSN
-				if (!allowEnglishTermsInLangRefset ||
-						d.getType().equals(DescriptionType.FSN) ||
-						!d.getLang().equals("en")) {
-					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-						String expectedLangCode = refsetLangCodeMap.get(l.getRefsetId());
-						if (expectedLangCode == null) {
-							throw new TermServerScriptException("Unable to determine appropriate langCode for Langrefset: " + gl.getConcept(l.getRefsetId()));
-						}
-						if (!d.getLang().equals(expectedLangCode)) {
-							l.setActive(false);
-							l.setEffectiveTime(null);
-							c.setModified();
-							report(c, Severity.LOW, ReportActionType.LANG_REFSET_INACTIVATED, d, l);
-						}
-					}
-				}
+				processDescription(c, d, refsetLangCodeMap);
 			}
 
 			if (c.isModified()) {
 				incrementSummaryInformation("Concepts modified");
+			}
+		}
+	}
+
+	private void processDescription(Concept c, Description d, Map<String, String> refsetLangCodeMap) throws TermServerScriptException {
+		//It's OK - for example - to have an English term in the Dutch LangRefset
+		//So skip 'en' terms, unless it's the FSN
+		if (!ALLOW_ENGLISH_TERMS_IN_LANG_REFSET ||
+				d.getType().equals(DescriptionType.FSN) ||
+				!d.getLang().equals("en")) {
+			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+				String expectedLangCode = refsetLangCodeMap.get(l.getRefsetId());
+				if (expectedLangCode == null) {
+					throw new TermServerScriptException("Unable to determine appropriate langCode for Langrefset: " + gl.getConcept(l.getRefsetId()));
+				}
+				if (!d.getLang().equals(expectedLangCode)) {
+					l.setActive(false);
+					l.setEffectiveTime(null);
+					c.setModified();
+					report(c, Severity.LOW, ReportActionType.LANG_REFSET_INACTIVATED, d, l);
+				}
 			}
 		}
 	}

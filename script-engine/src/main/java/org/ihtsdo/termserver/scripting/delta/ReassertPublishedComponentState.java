@@ -57,7 +57,8 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 		
 		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		for (String componentId : componentsToProcess) {
 			Component component = gl.getComponent(componentId);

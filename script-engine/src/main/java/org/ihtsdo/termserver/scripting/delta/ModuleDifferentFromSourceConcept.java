@@ -2,10 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
-import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
-import org.ihtsdo.termserver.scripting.domain.Branch;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.io.File;
@@ -57,7 +54,8 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
         super.postInit(tabNames, columnHeadings, false);
     }
 
-    private void process() throws TermServerScriptException {
+    @Override
+    protected void process() throws TermServerScriptException {
         // Gather required data
         List<String> moduleIds = getModuleIdsOrThrow();
         Collection<Concept> concepts = gl.getAllConcepts();

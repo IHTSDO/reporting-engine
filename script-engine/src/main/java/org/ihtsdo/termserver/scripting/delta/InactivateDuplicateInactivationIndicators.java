@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -10,42 +9,26 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * Class to inactivate duplicated active inactivation indicators
  * INFRA-1232
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class InactivateDuplicateInactivationIndicators extends DeltaGenerator implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateDuplicateInactivationIndicators.class);
 
 	public static String SCTID_ERRONEOUS = "900000000000485001";
 	public static String SCTID_DUPLICATE = "900000000000482003";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+		TermServerClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 		InactivateDuplicateInactivationIndicators delta = new InactivateDuplicateInactivationIndicators();
-		try {
-			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
-			TermServerClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
-			delta.tsRoot="MAIN/2017-01-31/SNOMEDCT-US/";
-			delta.init(args);
-			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			delta.loadProjectSnapshot(true);  //Just FSN, not working with all descriptions here
-			//We won't include the project export in our timings
-			delta.startTimer();
-			delta.process();
-			SnomedUtils.createArchive(new File(delta.outputDirName));
-		} finally {
-			delta.finish();
-		}
+		delta.tsRoot="MAIN/2017-01-31/SNOMEDCT-US/";
+		delta.standardExecution(args);
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		print ("Processing concepts to look for redundant IS A relationships");
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			//We're working with inactive concepts

@@ -76,7 +76,8 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 				"Reassertions"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void process() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			boolean doOutputRF2 = false;
