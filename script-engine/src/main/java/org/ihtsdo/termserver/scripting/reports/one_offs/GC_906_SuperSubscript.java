@@ -7,6 +7,8 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -15,6 +17,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * List all descriptions using super/subscript workaround of ^^ > < 
  */
 public class GC_906_SuperSubscript extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(GC_906_SuperSubscript.class);
 	
 	String[] brackets = new String[] {"<", ">"};
 	

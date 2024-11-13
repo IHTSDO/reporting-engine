@@ -9,11 +9,16 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.reports.one_offs.MSSP_1457_NL_SemTagCheck;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class INFRA7013_Reterm_SubstanceGroupers extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA7013_Reterm_SubstanceGroupers.class);
 	
 	protected INFRA7013_Reterm_SubstanceGroupers(BatchFix clone) {
 		super(clone);
@@ -74,7 +79,7 @@ public class INFRA7013_Reterm_SubstanceGroupers extends BatchFix {
 			}
 			
 			if (d.getTerm().contains(" its ")) {
-				debug("Check me: " + d.getTerm());
+				LOGGER.debug("Check me: " + d.getTerm());
 			}
 			
 			String newTerm = d.getTerm().replace(" and ", " and/or ")
