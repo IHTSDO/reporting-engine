@@ -10,9 +10,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA7053_Reterm_ProductsUsingSubstanceGroupers.class);
 	
 	List<String> knownSubstancePTs;
 	
@@ -79,7 +83,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 			}
 			
 			if (d.getTerm().contains(" its ")) {
-				debug("Check me: " + d.getTerm());
+				LOGGER.debug("Check me: " + d.getTerm());
 			}
 			
 			String newTerm = d.getTerm().replace(" and ", " and/or ")
@@ -88,7 +92,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 					.replace("compounds", "compound");
 			
 			if (newTerm.contains(" and/or derivative")) {
-				debug ("Check calculation of X here");
+				LOGGER.debug ("Check calculation of X here");
 				String X = findXfromKnownSubstances(newTerm.toLowerCase());
 				if (X == null) {
 					X = newTerm.substring(0, newTerm.indexOf(" and/or")).toLowerCase();
@@ -97,7 +101,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 			}
 			
 			if (newTerm.contains(" and/or compound")) {
-				debug ("Check calculation of X here");
+				LOGGER.debug ("Check calculation of X here");
 				String X = findXfromKnownSubstances(newTerm.toLowerCase());
 				if (X == null) {
 					X = newTerm.substring(0, newTerm.indexOf(" and/or")).toLowerCase();
@@ -158,7 +162,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 			conceptsConsidered++;
 			if (conceptsConsidered%500 == 0) {
 				double perc = (conceptsConsidered/(double)conceptsSorted.size()) * (double)100.0;
-				debug ("Processed " + String.format("%.1f", perc) + "%");
+				LOGGER.debug ("Processed " + String.format("%.1f", perc) + "%");
 			}
 			
 			if (c.isActive()) {

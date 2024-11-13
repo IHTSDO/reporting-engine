@@ -9,11 +9,15 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Save a concept that has description inactivation indicator and association
  */
 public class RP629_CheckSaveIntegrity extends BatchFix {
+	
+	private static Logger LOGGER = LoggerFactory.getLogger(RP629_CheckSaveIntegrity.class);
 	
 	protected RP629_CheckSaveIntegrity(BatchFix clone) {
 		super(clone);
@@ -38,16 +42,15 @@ public class RP629_CheckSaveIntegrity extends BatchFix {
 	@Override
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
-		info("Imported View");
+		LOGGER.info("Imported View");
 		outputInactiveDescriptions(c);
 		
-		info("Loaded View");
+		LOGGER.info("Loaded View");
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		outputInactiveDescriptions(loadedConcept);
 		updateConcept(t, loadedConcept, info);
-		if (true);
 		
-		info("Saved View");
+		LOGGER.info("Saved View");
 		loadedConcept = loadConcept(c, t.getBranchPath());
 		outputInactiveDescriptions(loadedConcept);
 		return changesMade;
@@ -55,8 +58,8 @@ public class RP629_CheckSaveIntegrity extends BatchFix {
 
 	private void outputInactiveDescriptions(Concept c) throws TermServerScriptException {
 		for (Description d : c.getDescriptions(ActiveState.INACTIVE)) {
-			debug (d + " : " + d.getInactivationIndicator());
-			debug ("   " + SnomedUtils.prettyPrintHistoricalAssociations(d, gl));
+			LOGGER.debug(d + " : " + d.getInactivationIndicator());
+			LOGGER.debug("   " + SnomedUtils.prettyPrintHistoricalAssociations(d, gl));
 		}
 	}
 
