@@ -11,10 +11,14 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA7048_Reterm_SubstanceGrouperReferences.class);
 	
 	private String[] preambleEnds = new String[] { " of ", " by ", " to " };
 	
@@ -109,7 +113,7 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 			}
 			
 			if (d.getTerm().contains(" its ")) {
-				debug("Check me: " + d.getTerm());
+				LOGGER.debug("Check me: " + d.getTerm());
 			}
 			
 			String newTerm = d.getTerm().replace(" and ", " and/or ")
@@ -118,7 +122,7 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 					.replace("compounds", "compound");
 			
 			if (newTerm.contains(" and/or derivative")) {
-				debug ("Check calculation of X here");
+				LOGGER.debug ("Check calculation of X here");
 				String X = findXfromKnownSubstances(newTerm.toLowerCase());
 				if (X == null) {
 					X = newTerm.substring(0, newTerm.indexOf(" and/or")).toLowerCase();
@@ -127,7 +131,7 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 			}
 			
 			if (newTerm.contains(" and/or compound")) {
-				debug ("Check calculation of X here");
+				LOGGER.debug ("Check calculation of X here");
 				String X = findXfromKnownSubstances(newTerm.toLowerCase());
 				if (X == null) {
 					X = newTerm.substring(0, newTerm.indexOf(" and/or")).toLowerCase();
@@ -171,14 +175,14 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 		List<Component> process = new ArrayList<>();
 		List<Concept> exclude = new ArrayList<>(SUBSTANCE.getDescendants(NOT_SET));
 		exclude.addAll(MEDICINAL_PRODUCT.getDescendants(NOT_SET));
-		info ("Gathering sorted list of potential concepts");
+		LOGGER.info("Gathering sorted list of potential concepts");
 		List<Concept> conceptsSorted = gl.getAllConcepts().stream()
 				//.filter(Concept::isActive)
 				//.filter(c -> !exclude.contains(c))  Too slow
 				.sorted(Comparator.comparing(Concept::getSemTag)
 						.thenComparing(Comparator.comparing(Concept::getFsn)))
 				.collect(Collectors.toList());
-		info ("Gathering list of potential concepts");
+		LOGGER.info("Gathering list of potential concepts");
 		
 		String[] suffixes = new String[] { "derivative", "compound" };
 		String[] plurals = new String[] { "", "s" };
@@ -186,12 +190,12 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 		nextConcept:
 		for (Concept c : conceptsSorted) {
 			/*if (c.getId().equals("4551372014")) {
-				debug("Here: " + c);
+				LOGGER.debug("Here: " + c);
 			}*/
 			conceptsConsidered++;
 			if (conceptsConsidered%5000 == 0) {
 				double perc = (conceptsConsidered/(double)conceptsSorted.size()) * (double)100.0;
-				debug ("Processed " + String.format("%.1f", perc) + "%");
+				LOGGER.debug("Processed " + String.format("%.1f", perc) + "%");
 			}
 			
 			if (c.isActive() && !exclude.contains(c)) {

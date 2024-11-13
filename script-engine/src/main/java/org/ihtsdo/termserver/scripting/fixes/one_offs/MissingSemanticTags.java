@@ -10,6 +10,8 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
@@ -19,6 +21,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * does not contain a currently valid semantic tag.
  */
 public class MissingSemanticTags extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MissingSemanticTags.class);
 
 	private List<String> historicallyAcceptableSemTags = List.of("(administrative concept)",
 			"(context-dependent category)",
@@ -72,7 +76,7 @@ public class MissingSemanticTags extends BatchFix {
 		int changesMade = 0;
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 		if (c.getId().equals("138297002")) {
-			debug ("here");
+			LOGGER.debug("here");
 		}
 		boolean isReplacement = false;
 		String replacementSemTag = "";

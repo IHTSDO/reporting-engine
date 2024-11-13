@@ -404,7 +404,7 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
 
             return output;
         } catch (Exception e) {
-            logger.info("Using fallback as count as {} cannot be converted to integer.", input);
+            LOGGER.info("Using fallback as count as {} cannot be converted to integer.", input);
             return fallback;
         }
     }

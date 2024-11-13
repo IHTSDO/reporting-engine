@@ -11,6 +11,8 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
@@ -18,6 +20,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * First used for INFRA-7142 and ICNP analysis
  */
 public class InactivatedInFiles extends TermServerReport {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(InactivatedInFiles.class);
 
 	private List<File> inputFiles;
 
@@ -29,7 +33,7 @@ public class InactivatedInFiles extends TermServerReport {
 			report.postInit();
 			report.analyzeFiles();
 		} catch (Exception e) {
-			info("Failed to produce report due to " + e.getMessage());
+			LOGGER.info("Failed to produce report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
