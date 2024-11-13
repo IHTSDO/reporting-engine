@@ -11,14 +11,18 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.NounHelper;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  *INFRA-9606
  */
 public class INFRA9608_RetermMeasurementFindings extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA9608_RetermMeasurementFindings.class);
 	
 	private String semTag = " (finding)";
 	private String ecl = "((< 118245000 |Measurement finding (finding)| : { 363713009 |Has interpretation (attribute)| = 394844007 |Outside reference range|, 363714003 |Interprets (attribute)| = (<<122869004 |Measurement procedure (procedure)| OR 363787002 |Observable entity (observable entity)|) } )  OR < 118245000 |Measurement finding (finding)| {{ term = wild:\"*ABNORMAL*\", type = fsn }}  OR   < 118245000 |Measurement finding (finding)| {{ term = wild:\"*outside reference range*\", type = fsn }} ) MINUS < 64572001 |Disease| ";
@@ -40,7 +44,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 
 	Set<String> exclusions = new HashSet<>();
 
-	NounHelper nounHelper;
+	CaseSensitivityUtils nounHelper;
 	
 	protected INFRA9608_RetermMeasurementFindings(BatchFix clone) {
 		super(clone);
@@ -56,7 +60,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
-			fix.nounHelper = NounHelper.instance();
+			fix.nounHelper = CaseSensitivityUtils.get();
 			fix.init(args);
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.loadProjectSnapshot(false);
@@ -97,7 +101,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) 
 					&& !StringUtils.isCaseSensitive(d.getTerm())
-					&& !nounHelper.startsWithProperNoun(d.getTerm())) {
+					&& !nounHelper.startsWithProperNounPhrase(d.getTerm())) {
 				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 				report(t, c, Severity.MEDIUM, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, before + " -> ci", d);
@@ -216,7 +220,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 					}
 				} catch (Exception e) {
 					//reportLoud((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
-					info(e.getMessage() + " : " + c);
+					LOGGER.info("{} : {}", e.getMessage(), c);
 				}
 			}
 		}
