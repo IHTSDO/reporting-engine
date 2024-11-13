@@ -8,11 +8,15 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class ConceptsWithSingleInferredParent extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ConceptsWithSingleInferredParent.class);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -55,6 +59,6 @@ public class ConceptsWithSingleInferredParent extends TermServerReport implement
 				countIssue(c);
 			}
 		}
-		info("Checked " + conceptsChecked + " concepts");
+		LOGGER.info("Checked " + conceptsChecked + " concepts");
 	}
 }

@@ -9,12 +9,18 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * Set Proximal Primitive Parent where possible
  */
-public class QI1176_SetProximalPrimitiveParent extends BatchFix {
+public class
+
+QI1176_SetProximalPrimitiveParent extends BatchFix {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(QI1176_SetProximalPrimitiveParent.class);
 	
 	Concept focusConcept = null;
 	Concept findParent = null;
@@ -34,7 +40,7 @@ public class QI1176_SetProximalPrimitiveParent extends BatchFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to complete fix due to " + e.getMessage());
+			LOGGER.info("Failed to complete fix due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();

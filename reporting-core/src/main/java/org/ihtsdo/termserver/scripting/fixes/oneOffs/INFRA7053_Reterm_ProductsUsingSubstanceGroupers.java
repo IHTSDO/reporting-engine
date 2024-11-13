@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.one_offs;
+package org.ihtsdo.termserver.scripting.fixes.oneOffs;
 
 import java.io.IOException;
 import java.util.*;
@@ -17,7 +17,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 
 	Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
 	List<String> knownSubstancePTs;
 	
 	protected INFRA7053_Reterm_ProductsUsingSubstanceGroupers(BatchFix clone) {

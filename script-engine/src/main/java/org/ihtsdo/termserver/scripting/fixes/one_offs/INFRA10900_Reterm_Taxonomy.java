@@ -151,7 +151,7 @@ public class INFRA10900_Reterm_Taxonomy extends BatchFix {
 		nextConcept:
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (c.getId().equals("64921000119105")) {
-				debug("here");
+				LOGGER.debug("here");
 			}
 			//Organisms can be ignored.
 			if (!c.isActive() || organisms.contains(c) || bodyStructures.contains(c)) {

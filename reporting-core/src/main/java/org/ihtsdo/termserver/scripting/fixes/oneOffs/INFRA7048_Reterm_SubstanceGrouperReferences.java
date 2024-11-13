@@ -15,12 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 
 	Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
 	private String[] preambleEnds = new String[] { " of ", " by ", " to " };
 	
 	private String[] knownPhrases = new String[] {" and its compounds", " and derivatives" };
@@ -184,14 +183,14 @@ public class INFRA7048_Reterm_SubstanceGrouperReferences extends BatchFix {
 						.thenComparing(Comparator.comparing(Concept::getFsn)))
 				.collect(Collectors.toList());
 		logger.info("Gathering list of potential concepts");
-		
+
 		String[] suffixes = new String[] { "derivative", "compound" };
 		String[] plurals = new String[] { "", "s" };
 		int conceptsConsidered = 0;
 		nextConcept:
 		for (Concept c : conceptsSorted) {
 			/*if (c.getId().equals("4551372014")) {
-				debug("Here: " + c);
+				LOGGER.debug("Here: " + c);
 			}*/
 			conceptsConsidered++;
 			if (conceptsConsidered%5000 == 0) {

@@ -23,7 +23,7 @@ import java.io.*;
 import java.util.*;
 
 @Component
-public class ArchiveCurator extends TermServerReport implements ReportClass {
+public class  ArchiveCurator extends TermServerReport implements ReportClass {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveCurator.class);
     private static final List<String> NON_PUBLISHED_PACKAGE_TERMS = List.of("_MEMBER_", "_BETA_", "_PREPROD_", "_PREPRODUCTION_", "_Fake_", "_Identifier_", "f", "x", "MSSP", "ISRS", "RECALL");
     private static final String PARAM_NUMBER_OF_VERSIONS = "Number of versions";
