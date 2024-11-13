@@ -8,11 +8,16 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.one_offs.MSSP_1457_NL_SemTagCheck;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * WIPEDGUIDE-114 
  */
 public class ListAcronyms extends TermServerReport {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(ListAcronyms.class);
 	
 	static String regex ="[A-Z]{2,}";
 	Pattern pattern;
@@ -31,7 +36,7 @@ public class ListAcronyms extends TermServerReport {
 			report.findAcronyms();
 			report.listAcronyms();
 		} catch (Exception e) {
-			info("Failed to ListAcceptableSynonyms due to " + e.getMessage());
+			LOGGER.info("Failed to ListAcceptableSynonyms due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

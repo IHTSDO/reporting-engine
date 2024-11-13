@@ -9,6 +9,8 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -17,6 +19,8 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 public class MSSP_1457_NL_SemTagCheck extends TermServerReport implements ReportClass {
+
+	private static Logger LOGGER = LoggerFactory.getLogger(MSSP_1457_NL_SemTagCheck.class);
 	
 	Map<String,String> semtagTranslationMap = new HashMap<>();
 	
@@ -70,7 +74,7 @@ public class MSSP_1457_NL_SemTagCheck extends TermServerReport implements Report
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
-		info ("File load complete, processing file...");
+		LOGGER.info("File load complete, processing file...");
 		for (String line : lines) {
 			//Split the line up on tabs
 			String[] items = line.split(TAB);
@@ -98,7 +102,7 @@ public class MSSP_1457_NL_SemTagCheck extends TermServerReport implements Report
 			String expectedTranslation = semtagTranslationMap.get(enSemTag);
 			if (expectedTranslation == null) {
 				String msg = "No translation specified for " + enSemTag + " in " + c;
-				warn(msg);
+				LOGGER.warn(msg);
 				report(c, c.isActive()?"Y":"N", enDesc, msg);
 				countIssue(c);
 				noTranslationCount++;
@@ -109,7 +113,7 @@ public class MSSP_1457_NL_SemTagCheck extends TermServerReport implements Report
 				countIssue(c);
 			}
 		}
-		info(noTranslationCount + " concepts did not have a translation");
+		LOGGER.info(noTranslationCount + " concepts did not have a translation");
 	}
 }
 	

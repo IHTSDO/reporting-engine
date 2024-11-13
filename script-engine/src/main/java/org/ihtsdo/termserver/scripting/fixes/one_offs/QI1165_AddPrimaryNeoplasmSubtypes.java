@@ -11,21 +11,25 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.NounHelper;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * QI-1165
  */
 public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(QI1165_AddPrimaryNeoplasmSubtypes.class);
 	
 	private Set<String> exclusions;
 	private RelationshipTemplate relTemplate;
 	private RelationshipTemplate workAroundToRemove;
 	String inclusionText = "primary";
 	private Map<Concept, Concept> replaceValuesMap;
-	NounHelper nounHelper;
+	CaseSensitivityUtils nounHelper;
 	
 	protected QI1165_AddPrimaryNeoplasmSubtypes(BatchFix clone) {
 		super(clone);
@@ -42,7 +46,7 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.overrideEclBranch = "MAIN";
-			fix.nounHelper = NounHelper.instance();
+			fix.nounHelper = CaseSensitivityUtils.get();
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postLoadInit();
@@ -67,7 +71,7 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
 			if (c.getId().equals("1156409003")) {
-				debug("here");
+				LOGGER.debug("here");
 			}
 			//Check for edge case where 'primary' is present to some degree
 			if (anyDescriptionContains(c, "primary")) {
@@ -107,7 +111,7 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 			}
 			if (true);
 			//Do we need to keep that initial capital letter
-			if (nounHelper.startsWithProperNoun(d.getTerm())) {
+			if (nounHelper.startsWithProperNounPhrase(d.getTerm())) {
 				d.setTerm("Primary " + d.getTerm());
 			} else {
 				d.setTerm("Primary " + StringUtils.decapitalizeFirstLetter(d.getTerm()));
