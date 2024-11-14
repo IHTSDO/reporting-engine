@@ -259,7 +259,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		long totalConceptsInBatches = archiveBatches.stream()
 				.flatMap(l -> l.stream())
 				.count();
-		LOGGER.info("Total concepts pre-processed into batches: " + totalConceptsInBatches);
+		LOGGER.info("Total concepts pre-processed into batches: {}", totalConceptsInBatches);
 		
 		if ((int)totalConceptsInBatches != componentsOfInterest.size()) {
 			throw new TermServerScriptException("Expected to allocated " + componentsOfInterest.size() + " concepts.");
@@ -295,7 +295,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			allocated.addAll(footlooseConcepts);
 			componentsOfInterest.removeAll(allocated);
 			componentsOfInterest.stream()
-					.forEach(c -> LOGGER.error("Gone missing: " + c));
+					.forEach(c -> LOGGER.error("Gone missing: {}", c));
 			throw new TermServerScriptException("Batched count " + mapCount + " + " +  footlooseConcepts.size() + " does not equal expected " + componentsOfInterest.size() + " concepts.");
 		}
 	}
@@ -470,9 +470,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private boolean switchModule(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 
-		/*if (c.getConceptId().equals("1255997005")) {
-			LOGGER.debug("Here: " + c);
-		}*/
+		if (c.getConceptId().equals("1119523003")) {
+			LOGGER.debug("Here: {}", c);
+		}
 		
 		//Have we already attempted to move this concept?  Don't try again
 		if (noMoveRequired.contains(c)) {
@@ -721,7 +721,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private void validatePreferredTermsInLanguageRefsets(Concept c) throws TermServerScriptException {
 		// Ensure that the concept has a preferred term in both en-gb and en-us.
-		if (conceptContainsValidTerms(c, false)) {
+		if (validateLangResetEntryCount(c, false, DescriptionType.SYNONYM) &&
+				validateLangResetEntryCount(c, false, DescriptionType.FSN)) {
 			return;
 		}
 
@@ -745,48 +746,38 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 
 		// Re-run the check a 2nd time and output a HIGH warning if it has not been possible to determine the preferred terms.
-		if (conceptContainsValidTerms(c, true)) {
-			return;
-		}
-
-		report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept does not have a preferred term in both en-gb and en-us reference sets: " + SnomedUtils.getDescriptionsToString(c));
+		validateLangResetEntryCount(c, true, DescriptionType.SYNONYM);
+		validateLangResetEntryCount(c, true, DescriptionType.FSN);
 	}
 
 	// Both the FSN and one synonym should be marked as preferred in both
 	// the en-gb and en-us language reference sets.
-	private boolean conceptContainsValidTerms(Concept c, boolean logWarning) {
-		int foundGBPT = 0;
-		int foundUSPT = 0;
-		int foundGBfsn  = 0;
-		int foundUSfsn  = 0;
+	private boolean validateLangResetEntryCount(Concept c, boolean logWarning, DescriptionType type) throws TermServerScriptException {
+		int foundGB = 0;
+		int foundUS = 0;
+		boolean isValid = true;
 
 		for (Description description : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (description.getType() == DescriptionType.SYNONYM) {
+			if (description.getType() == type) {
 				if (description.isPreferred(GB_ENG_LANG_REFSET)) {
-					foundGBPT++;
+					foundGB++;
 				}
 
 				if (description.isPreferred(US_ENG_LANG_REFSET)) {
-					foundUSPT++;
-				}
-			} else if (description.getType() == DescriptionType.FSN) {
-				if (description.isPreferred(GB_ENG_LANG_REFSET)) {
-					foundGBfsn++;
-				}
-
-				if (description.isPreferred(US_ENG_LANG_REFSET)) {
-					foundUSfsn++;
+					foundUS++;
 				}
 			}
 		}
 
-		if (logWarning && !(foundGBPT == 1 && foundGBfsn == 1 && foundUSPT == 1 && foundUSfsn == 1)) {
-			LOGGER.warn("ConceptID={}, foundUKsynonym={}, foundUKfsn={}, foundUSsynonym={}, foundUSfsn={}",
-					c.getConceptId(), foundGBPT, foundGBfsn, foundUSPT, foundUSfsn);
+		if (foundUS != 1 || foundGB != 1) {
+			isValid = false;
+			if (logWarning) {
+				String msg = "Concept has unexpected langrefset count for type " + type + " : US = " + foundUS + ", GB = " + foundGB;
+				report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg, SnomedUtils.getDescriptionsToString(c));
+			}
 		}
-
-		return foundGBPT==1 && foundGBfsn==1 && foundUSPT==1 && foundUSfsn==1;
-    }
+		return isValid;
+	}
 
 	private void setDescriptionAndLangRefModule(Description d) {
 		d.setModuleId(targetModuleId);
@@ -1078,7 +1069,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private void moveLangRefsetEntriesToTargetModule(Description d, boolean usGbVariance, boolean doShiftDescription) throws TermServerScriptException {
 		//AU for example doesn't give language refset entries for FSNs
-		if (d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
+		if (d.isActiveSafely() && d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).isEmpty()) {
 			createTargetLangRefsetEntries(d);
 		} else {
 			moveExistingLangRefsetEntries(d, usGbVariance, doShiftDescription);
@@ -1111,8 +1102,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			gbEntry.setModuleId(targetModuleId);
 			gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
 			//}
-			//Do we need to copy the GB Langref as the US one?
-			if (!hasUSLangRefset) {
+			//Do we need to copy the GB Langref as the US one?  Not if we detected us/gb variance originally
+			if (!usGbVariance && !hasUSLangRefset) {
 				// This ensures existing langrefset entries are re-used if present, or a new one is created.
 				d.setAcceptability(US_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(gbEntry.getAcceptabilityId()));
 			}
