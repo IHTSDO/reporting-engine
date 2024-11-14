@@ -1871,7 +1871,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return true;
 	}
 
-	//Do we in fact have ANY descriptions which are acceptable in US but not in GB AND visa versa
+	//Do we in fact have ANY synonym descriptions which are acceptable/preferred in US but not in GB AND vice versa
 	public static boolean hasUsGbVariance(Concept c) throws TermServerScriptException {
 		boolean hasUsSpecific = false;
 		for (Description d : c.getDescriptions(US_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
