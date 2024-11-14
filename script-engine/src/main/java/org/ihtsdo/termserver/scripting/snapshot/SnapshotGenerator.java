@@ -4,6 +4,7 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -32,6 +33,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String descSnapshotFilename;
 	protected String langSnapshotFilename;
 	protected String altIdSnapshotFilename;
+	protected String annotSnapshotFilename;
 	protected String edition = "INT";
 	protected boolean leaveArchiveUncompressed = false;
 	
@@ -39,13 +41,9 @@ public class SnapshotGenerator extends TermServerScript {
 	protected static boolean skipSave = false;
 
 	protected String languageCode = "en";
-	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
 	protected String moduleId="900000000000207008";
-	protected String nameSpace="0";
-	protected String[] langRefsetIds = new String[] { "900000000000508004",  //GB
-														"900000000000509007" }; //US
-	
+
 	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
@@ -55,12 +53,12 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
 	protected String[] altIdHeader = new String[] {"alternateIdentifier","effectiveTime","active","moduleId","identifierSchemeId","referencedComponentId"};
+	protected String[] annotHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","languageDialectCode","typeId","value"};
 
 	private boolean isIntialised = false;
 	private File fileLocation;
 	private boolean addTodaysDate;
-	
-	
+
 	public static void main(String[] args) throws IOException, TermServerScriptException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
 		try {
@@ -84,14 +82,14 @@ public class SnapshotGenerator extends TermServerScript {
 		setQuiet(true);
 		init(newLocation, false);
 		if (dependencySnapshot != null) {
-			LOGGER.info("Loading dependency snapshot " + dependencySnapshot);
+			LOGGER.info("Loading dependency snapshot {}", dependencySnapshot);
 			loadArchive(parentProcess,dependencySnapshot, false, "Snapshot", true);
 		}
 		
-		LOGGER.info("Loading previous snapshot " + previousSnapshot);
+		LOGGER.info("Loading previous snapshot {}", previousSnapshot);
 		loadArchive(parentProcess, previousSnapshot, false, "Snapshot", true);
 		
-		LOGGER.info("Loading delta " + delta);
+		LOGGER.info("Loading delta {}", delta);
 		loadArchive(parentProcess, delta, false, "Delta", false);
 		gl.finalizeMRCM();
 		setQuiet(false);
@@ -147,7 +145,7 @@ public class SnapshotGenerator extends TermServerScript {
 				packageRoot = outputDirName + File.separator + fileLocation;
 				packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
 			}
-			LOGGER.info("Outputting data to " + packageDir);
+			LOGGER.info("Outputting data to {}", packageDir);
 			initialiseFileHeaders();
 			isIntialised = true;
 		}
@@ -185,7 +183,10 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		altIdSnapshotFilename = termDir + "sct2_Identifier_Snapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(altIdSnapshotFilename, altIdHeader);
-		
+
+		annotSnapshotFilename = refDir + "Metadata/der2_sscsRefset_MemberAnnotationStringValueSnapshot_"+edition+"_" + today + ".txt";
+		writeToRF2File(annotSnapshotFilename, annotHeader);
+
 		getRF2Manager().flushFiles(false);
 	}
 	
@@ -237,6 +238,10 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		for (AxiomEntry o: c.getAxiomEntries()) {
 			writeToRF2File(owlSnapshotFilename, o.toRF2());
+		}
+
+		for (ComponentAnnotationEntry a: c.getComponentAnnotationEntries()) {
+			writeToRF2File(annotSnapshotFilename, a.toRF2());
 		}
 		
 	}
