@@ -31,6 +31,11 @@ public class StandardiseFileNames extends TermServerReport {
 	private static final String RELEASES = "releases";
 	private static final String SNOMED_CT_UNDRSCR = "snomed_ct_";
 	private static final boolean INCLUDE_SIMPLEX = true;
+
+	enum Type {
+		MANIFEST,
+		BUILD
+	}
 	
 	private final ResourceManager resourceManagerDev;
 	private final ResourceManager resourceManagerUAT;
@@ -68,55 +73,22 @@ public class StandardiseFileNames extends TermServerReport {
 	}
 
 	private void process() throws IOException, TermServerScriptException {
-		// Manifest files
-		Set<String> manifestResourcePaths;
-		List<Pair<String, String>> manifestsBeforeAfter;
+		for (Type type : List.of(Type.MANIFEST, Type.BUILD)) {
+			for (String env : List.of("dev", "uat", "prod")) {
+				process(env, type);
+			}
+		}
+	}
 
-		// Dev
-		LOGGER.info("Processing DEV manifest files");
-		manifestResourcePaths = getManifestResourcePaths("dev");
-		manifestsBeforeAfter = renameManifestResourcePaths(manifestResourcePaths);
-		reportBeforeAfter("dev", manifestsBeforeAfter);
-		LOGGER.info("Finished processing DEV manifest files");
+	private void process(String env, Type type) throws IOException, TermServerScriptException {
+		Set<String> resourcePaths;
+		List<Pair<String, String>> beforeAfter;
 
-		// UAT
-		LOGGER.info("Processing UAT manifest files");
-		manifestResourcePaths = getManifestResourcePaths("uat");
-		manifestsBeforeAfter = renameManifestResourcePaths(manifestResourcePaths);
-		reportBeforeAfter("uat", manifestsBeforeAfter);
-		LOGGER.info("Finished processing UAT manifest files");
-
-		// Prod
-		LOGGER.info("Processing PROD manifest files");
-		manifestResourcePaths = getManifestResourcePaths("prod");
-		manifestsBeforeAfter = renameManifestResourcePaths(manifestResourcePaths);
-		reportBeforeAfter("prod", manifestsBeforeAfter);
-		LOGGER.info("Finished processing PROD manifest files");
-
-		// Build files
-		Set<String> buildResourcePaths;
-		List<Pair<String, String>> buildsBeforeAfter;
-
-		// Dev
-		LOGGER.info("Processing DEV build files");
-		buildResourcePaths = getBuildResourcePaths("dev");
-		buildsBeforeAfter = renameBuildResourcePaths(buildResourcePaths);
-		reportBeforeAfter("dev", buildsBeforeAfter);
-		LOGGER.info("Finished processing DEV build files");
-
-		// UAT
-		LOGGER.info("Processing UAT build files");
-		buildResourcePaths = getBuildResourcePaths("uat");
-		buildsBeforeAfter = renameBuildResourcePaths(buildResourcePaths);
-		reportBeforeAfter("uat", buildsBeforeAfter);
-		LOGGER.info("Finished processing UAT build files");
-
-		// Prod
-		LOGGER.info("Processing PROD build files");
-		buildResourcePaths = getBuildResourcePaths("prod");
-		buildsBeforeAfter = renameBuildResourcePaths(buildResourcePaths);
-		reportBeforeAfter("prod", buildsBeforeAfter);
-		LOGGER.info("Finished processing PROD build files");
+		LOGGER.info("Processing {} {} files", env, type);
+		resourcePaths = type == Type.MANIFEST ? getManifestResourcePaths(env) : getBuildResourcePaths(env);
+		beforeAfter = type == Type.MANIFEST ? renameManifestResourcePaths(resourcePaths) : renameBuildResourcePaths(resourcePaths);
+		reportBeforeAfter(env, beforeAfter);
+		LOGGER.info("Finished processing {} {} files", env, type);
 	}
 
 	private void reportIssues(String environment, List<Pair<String, String>> manifestFilesBeforeAfter) throws TermServerScriptException {
