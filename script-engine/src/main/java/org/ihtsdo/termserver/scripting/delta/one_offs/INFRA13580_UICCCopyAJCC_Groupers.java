@@ -34,7 +34,8 @@ public class INFRA13580_UICCCopyAJCC_Groupers extends INFRA13580_UICCCopyAJCC im
 		super.postInit();
 	}
 
-	private void process() throws TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (Concept c : sourceConcepts) {
 			cloneConceptAsUICC(c, newRootConcept);
 		}
