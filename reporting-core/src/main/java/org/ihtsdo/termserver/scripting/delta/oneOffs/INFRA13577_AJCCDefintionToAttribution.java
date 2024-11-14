@@ -17,6 +17,7 @@ public class INFRA13577_AJCCDefintionToAttribution extends DeltaGenerator implem
 
 	private Concept annotationType = null;
 	private String annotationStr = "American College of Surgeons, Chicago, Illinois: https://www.facs.org/quality-programs/cancer/ajcc/cancer-staging";
+	private int conceptsInThisBatch = 0;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		INFRA13577_AJCCDefintionToAttribution delta = new INFRA13577_AJCCDefintionToAttribution();
@@ -30,7 +31,7 @@ public class INFRA13577_AJCCDefintionToAttribution extends DeltaGenerator implem
 			delta.postInit();
 			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
 			delta.process();
-			delta.createOutputArchive(false);
+			delta.createOutputArchive(false, delta.conceptsInThisBatch);
 		} finally {
 			delta.finish();
 		}
@@ -50,8 +51,8 @@ public class INFRA13577_AJCCDefintionToAttribution extends DeltaGenerator implem
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
+	@Override
 	protected void process() throws TermServerScriptException {
-		int conceptsInThisBatch = 0;
 		for (Concept c : findConcepts(ecl)) {
 			conceptsInThisBatch ++;
 			inactivateTextDefinition(c);

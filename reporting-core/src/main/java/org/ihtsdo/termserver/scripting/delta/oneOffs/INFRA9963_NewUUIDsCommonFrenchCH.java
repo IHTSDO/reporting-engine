@@ -46,13 +46,10 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 			delta.finish();
 		}
 	}
-	
-	public void process() throws TermServerScriptException {
-		try {
-			loadCommonFrenchRelease();
-		} catch (IOException e) {
-			throw new TermServerScriptException(e);
-		}
+
+	@Override
+	protected void process() throws TermServerScriptException {
+		loadCommonFrenchRelease();
 		int conceptsProcessed = 0;
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (conceptsProcessed++%10000==0) {
@@ -160,25 +157,30 @@ public class INFRA9963_NewUUIDsCommonFrenchCH extends DeltaGenerator implements 
 		}
 	}
 	
-	private void loadCommonFrenchRelease() throws IOException, TermServerScriptException {
-		LOGGER.info("Loading " + getInputFile());
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
-		ZipEntry ze = zis.getNextEntry();
+	private void loadCommonFrenchRelease() throws TermServerScriptException {
 		try {
-			while (ze != null) {
-				if (!ze.isDirectory()) {
-					Path path = Paths.get(ze.getName());
-					loadFile(path, zis, SNAPSHOT);
+			LOGGER.info("Loading " + getInputFile());
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
+			ZipEntry ze = zis.getNextEntry();
+			try {
+				while (ze != null) {
+					if (!ze.isDirectory()) {
+						Path path = Paths.get(ze.getName());
+						loadFile(path, zis, SNAPSHOT);
+					}
+					ze = zis.getNextEntry();
 				}
-				ze = zis.getNextEntry();
+			} finally {
+				try {
+					zis.closeEntry();
+					zis.close();
+				} catch (Exception e) {
+				} //Well, we tried.
 			}
-		}  finally {
-			try{
-				zis.closeEntry();
-				zis.close();
-			} catch (Exception e){} //Well, we tried.
+			LOGGER.info("Finished Loading " + getInputFile());
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to load Common French Release", e);
 		}
-		LOGGER.info("Finished Loading " + getInputFile());
 	}
 	
 	private void loadFile(Path path, InputStream is, String fileType)  {

@@ -1,8 +1,7 @@
-package org.ihtsdo.termserver.scripting.delta.one_offs;
+package org.ihtsdo.termserver.scripting.delta.oneOffs;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -57,25 +56,30 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 		}
 	}
 
-	private void loadUSLangRefsets() throws IOException {
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
-		ZipEntry ze = zis.getNextEntry();
+	private void loadUSLangRefsets() throws TermServerScriptException {
 		try {
-			while (ze != null) {
-				if (!ze.isDirectory()) {
-					String fileName = Paths.get(ze.getName()).getFileName().toString();
-					if(fileName.contains("Language") && fileName.contains("Snapshot")) {
-						LOGGER.info("Loading Language Reference Set File - " + fileName);
-						loadLanguageFile(zis);
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
+			ZipEntry ze = zis.getNextEntry();
+			try {
+				while (ze != null) {
+					if (!ze.isDirectory()) {
+						String fileName = Paths.get(ze.getName()).getFileName().toString();
+						if (fileName.contains("Language") && fileName.contains("Snapshot")) {
+							LOGGER.info("Loading Language Reference Set File - " + fileName);
+							loadLanguageFile(zis);
+						}
 					}
+					ze = zis.getNextEntry();
 				}
-				ze = zis.getNextEntry();
+			} finally {
+				try {
+					zis.closeEntry();
+					zis.close();
+				} catch (Exception e) {
+				} //Well, we tried.
 			}
-		}  finally {
-			try{
-				zis.closeEntry();
-				zis.close();
-			} catch (Exception e){} //Well, we tried.
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to load US Lang Refsets", e);
 		}
 	}
 
@@ -101,8 +105,8 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 		LOGGER.info("Loaded {} lines for {} descriptions", linesLoaded, descriptionToGbLangRefset.size());
 	}
 
-
-	protected void process() throws ValidationFailure, TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (c.getId().equals("1076391000119106")) {
 				LOGGER.debug("Check what's happening here");

@@ -38,7 +38,8 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 		}
 	}
 
-	public void process() throws ValidationFailure, TermServerScriptException {
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				boolean changesMade = false;
