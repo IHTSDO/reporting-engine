@@ -33,6 +33,7 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 	private Set<Concept> conceptsAnnotated = new HashSet<>();
 	private Map<Concept, String> conceptDefinitions = new HashMap<>();
 	private DialectChecker dialectChecker;
+	private int conceptsInThisBatch = 0;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		INFRA13323_AddAttributionAnnotations delta = new INFRA13323_AddAttributionAnnotations();
@@ -45,8 +46,8 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 			delta.postInit();
 			delta.loadDefinitionsFile();
 			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
-			int lastBatchSize = delta.process();
-			delta.createOutputArchive(false, lastBatchSize);
+			delta.process();
+			delta.createOutputArchive(false, delta.conceptsInThisBatch);
 		} finally {
 			delta.finish();
 		}
@@ -94,8 +95,8 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 		LOGGER.info("Loaded definitions for {} concepts", conceptDefinitions.size());
 	}
 
-	private int process() throws TermServerScriptException {
-		int conceptsInThisBatch = 0;
+	@Override
+	protected void process() throws TermServerScriptException {
 		for (Component c : processFile()) {
 			conceptsInThisBatch += addAnnotation((Concept)c);
 			if (conceptsInThisBatch >= BATCH_SIZE) {
@@ -109,7 +110,6 @@ public class INFRA13323_AddAttributionAnnotations extends DeltaGenerator impleme
 				conceptsInThisBatch = 0;
 			}
 		}
-		return conceptsInThisBatch;
 	}
 
 	private int addAnnotation(Concept c) throws TermServerScriptException {

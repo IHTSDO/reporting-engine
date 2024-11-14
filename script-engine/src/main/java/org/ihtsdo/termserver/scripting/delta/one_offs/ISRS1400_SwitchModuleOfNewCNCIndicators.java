@@ -34,7 +34,7 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 		}
 	}
 	
-	public void process() throws TermServerScriptException, IOException {
+	protected void process() throws TermServerScriptException {
 		int conceptsProcessed = 0;
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (conceptsProcessed++%10000==0) {
@@ -43,7 +43,6 @@ public class ISRS1400_SwitchModuleOfNewCNCIndicators extends DeltaGenerator impl
 			}
 			processConcept(c);
 		}
-		getRF2Manager().flushFiles(false);
 	}
 	
 	private void processConcept(Concept c) throws TermServerScriptException {
