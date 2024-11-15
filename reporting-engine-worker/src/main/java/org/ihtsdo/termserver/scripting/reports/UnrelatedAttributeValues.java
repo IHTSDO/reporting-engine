@@ -65,7 +65,7 @@ public class UnrelatedAttributeValues extends TermServerReport implements Report
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Unrelated Attributes")
 				.withDescription("This report lists concepts featuring the specified attribute type where the value used is unrelated (more distant than first cousin) to the other values.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(params)
 				.withTag(INT)
 				.build();
