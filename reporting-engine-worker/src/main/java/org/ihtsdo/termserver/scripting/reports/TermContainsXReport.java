@@ -29,6 +29,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermContainsXReport.class);
 
+	private static final String TRUE = "true";
+	private static final String FALSE = "false";
+
 	private String[] textsToMatch = null;
 	private String[] textsToAvoid = null;
 	private boolean reportConceptOnceOnly = true;
@@ -57,14 +60,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		params.put(ECL, "<< 363346000 |Malignant neoplastic disease (disorder)| MINUS (<< 372087000 |Primary malignant neoplasm (disorder)| OR << 269475001 |Malignant tumor of lymphoid, hemopoietic AND/OR related tissue (disorder)|)"); 
 		params.put(WORDS, "primary");
 		params.put(WITHOUT_MODE, ANY_WITHOUT);
-		params.put(WHOLE_WORD, "false");
+		params.put(WHOLE_WORD, FALSE);
 		params.put(ATTRIBUTE_TYPE, null);
 		List<String> descTypes = new ArrayList<>();
 		descTypes.add("FSN");
 		descTypes.add("PT");
 		descTypes.add("SYN");
 		params.put(TERM_TYPES, descTypes);
-		params.put(EXT_ONLY, "false");
+		params.put(EXT_ONLY, FALSE);
 		TermServerScript.run(TermContainsXReport.class, params, args);
 	}
 	
@@ -131,7 +134,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(WORDS).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(WITHOUT).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(WITHOUT_MODE).withType(JobParameter.Type.DROPDOWN).withOptions(ALL_WITHOUT, ANY_WITHOUT).withDefaultValue(ALL_WITHOUT)
-				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues("TRUE","TRUE","FALSE","FALSE")
+				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues(TRUE, TRUE,FALSE,FALSE)
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		

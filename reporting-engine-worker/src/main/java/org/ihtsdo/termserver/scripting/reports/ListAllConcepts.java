@@ -17,6 +17,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 public class ListAllConcepts extends TermServerReport implements ReportClass {
 
 	private static final int MAX_CONCEPTS = 10000;
+	private static final String TRUE = "true";
+	private static final String FALSE = "false";
 	
 	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	public static final String EXTENSION_ONLY = "Extension Concepts Only";
@@ -29,8 +31,8 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(ECL, "<< 1222584008 MINUS <! 1222584008");
-		params.put(NEW_CONCEPTS_ONLY, "false");
-		params.put(EXTENSION_ONLY, "false");
+		params.put(NEW_CONCEPTS_ONLY, FALSE);
+		params.put(EXTENSION_ONLY, FALSE);
 		params.put(TERM_TYPES, List.of("PT"));
 		TermServerScript.run(ListAllConcepts.class, params, args);
 	}
@@ -53,7 +55,7 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(NEW_CONCEPTS_ONLY).withType(Type.BOOLEAN).withDefaultValue(false)
 				.add(EXTENSION_ONLY).withType(Type.BOOLEAN).withDefaultValue(false)
-				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues("TRUE","TRUE","FALSE","FALSE")
+				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues(TRUE, TRUE,FALSE,FALSE)
 				.build();
 		
 		return new Job()

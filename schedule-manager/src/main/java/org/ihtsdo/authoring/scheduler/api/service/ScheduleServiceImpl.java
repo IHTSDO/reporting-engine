@@ -29,6 +29,10 @@ public class ScheduleServiceImpl implements ScheduleService {
 
 	private static final int DEBUG_LENGTH_LIMIT = 50000;
 
+	private static final String JOB_UNKNOWN = "Job unknown to Schedule Service: '";
+
+	private static final String CHECK_INITIALISE = "'. If job exists and is active, re-run initialise.";
+
 	@Autowired
     JobRunRepository jobRunRepository;
 	
@@ -119,14 +123,14 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Do we know about this job?
 		Job job = getJob(jobRun.getJobName());
 		if (job == null) {
-			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobRun.getJobName() +"' If job exists and is active, re-run initialise.");
+			throw new ResourceNotFoundException(JOB_UNKNOWN + jobRun.getJobName() + CHECK_INITIALISE);
 		}
 		
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
 		jobRun.setWhiteList(job.getWhiteListConcepts(jobRun.getcodeSystemShortname()));
-		LOGGER.info("Whitelisting {} concepts for {} in codeSystem", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getcodeSystemShortname());
+		LOGGER.info("Whitelisting {} concepts for {} in codeSystem {}", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getcodeSystemShortname());
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
@@ -140,13 +144,13 @@ public class ScheduleServiceImpl implements ScheduleService {
 			if (jobParam == null) {
 				throw new BusinessServiceException(jobRun.getJobName() + " didn't expect user supplied parameter: '" + parameterKey + "'");
 			} else {
-				if (populateProject && parameterKey.toLowerCase().equals("project")) {
+				if (populateProject && parameterKey.equalsIgnoreCase("project")) {
 					jobRun.setProject(jobRun.getParameters().get(parameterKey).getValue());
 				}
 				
 				Integer displayOrder = job.getParameters().get(parameterKey).getDisplayOrder();
 				if (displayOrder == null) {
-					LOGGER.warn(jobRun.getJobName() + " parameter " + parameterKey + " does not specify a display order");
+					LOGGER.warn("{} parameter {} does not specify a display order", jobRun.getJobName(), parameterKey);
 					displayOrder = 0;
 				}
 				jobRun.getParameters().get(parameterKey).setDisplayOrder(displayOrder);
@@ -256,53 +260,57 @@ public class ScheduleServiceImpl implements ScheduleService {
 				//What categories are contained?
 				LOGGER.info("Processing metadata for {} categories in type '{}'",jobType.getCategories().size(), jobType.getName());
 				for (JobCategory jobCategory : jobType.getCategories()) {
-					//Do we know about this job category?
-					String categoryName = jobCategory.getName();
-					jobCategory.setType (jobType);
-					JobCategory knownCategory = jobCategoryRepository.findByName(categoryName);
-					if (knownCategory == null) {
-						knownCategory = jobCategoryRepository.save(jobCategory);
-					}
-					
-					LOGGER.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
-					for (Job job : jobCategory.getJobs()) {
-						job.setCategory(knownCategory);
-
-						//Do we know about this job already
-						Job knownJob = jobRepository.findByName(job.getName());
-						if (knownJob == null) {
-							LOGGER.info("Saving job: " + job);
-						} else {
-							job.setId(knownJob.getId());
-							//Whitelists are maintained by schedule manager, so retain
-							job.setWhiteListMap(knownJob.getWhiteListMap());
-							LOGGER.info("Updating job: " + job);
-						}
-						
-						//We protect the json from having parent links and redundant keys, 
-						//but these are needed  when saving to the database
-						for (String parameterKey : job.getParameters().keySet()) {
-							job.getParameters().get(parameterKey).setParentParams(job.getParameters());
-							job.getParameters().get(parameterKey).setParamKey(parameterKey);
-						}
-						jobRepository.save(job);
-					}
-					
-					//Do we have to remove any jobs that have been withdrawn?
-					List<Job> savedJobs = jobRepository.findByCategoryId(knownCategory.getId());
-					savedJobs.removeAll(jobCategory.getJobs());
-					//All the jobs we're left with were not represented in the metadata, so hide
-					for (Job withdrawnJob : savedJobs) {
-						LOGGER.info("Marking job as withdrawn/hidden: {}", withdrawnJob);
-						withdrawnJob.setProductionStatus(Job.ProductionStatus.HIDEME);
-						jobRepository.save(withdrawnJob);
-					}
+					processJobCategory(jobCategory, jobType);
 				}
 			} catch (Exception e) {
 				LOGGER.error("Unable to process metadata", e);
 			}
 		}
 		LOGGER.info("Metadata processing complete");
+	}
+
+	private void processJobCategory(JobCategory jobCategory, JobType jobType) {
+		//Do we know about this job category?
+		String categoryName = jobCategory.getName();
+		jobCategory.setType (jobType);
+		JobCategory knownCategory = jobCategoryRepository.findByName(categoryName);
+		if (knownCategory == null) {
+			knownCategory = jobCategoryRepository.save(jobCategory);
+		}
+
+		LOGGER.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
+		for (Job job : jobCategory.getJobs()) {
+			job.setCategory(knownCategory);
+
+			//Do we know about this job already
+			Job knownJob = jobRepository.findByName(job.getName());
+			if (knownJob == null) {
+				LOGGER.info("Saving job: {}", job);
+			} else {
+				job.setId(knownJob.getId());
+				//Whitelists are maintained by schedule manager, so retain
+				job.setWhiteListMap(knownJob.getWhiteListMap());
+				LOGGER.info("Updating job: {}", job);
+			}
+
+			//We protect the json from having parent links and redundant keys,
+			//but these are needed  when saving to the database
+			for (String parameterKey : job.getParameters().keySet()) {
+				job.getParameters().get(parameterKey).setParentParams(job.getParameters());
+				job.getParameters().get(parameterKey).setParamKey(parameterKey);
+			}
+			jobRepository.save(job);
+		}
+
+		//Do we have to remove any jobs that have been withdrawn?
+		List<Job> savedJobs = jobRepository.findByCategoryId(knownCategory.getId());
+		savedJobs.removeAll(jobCategory.getJobs());
+		//All the jobs we're left with were not represented in the metadata, so hide
+		for (Job withdrawnJob : savedJobs) {
+			LOGGER.info("Marking job as withdrawn/hidden: {}", withdrawnJob);
+			withdrawnJob.setProductionStatus(Job.ProductionStatus.HIDEME);
+			jobRepository.save(withdrawnJob);
+		}
 	}
 
 	@Override
@@ -323,7 +331,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Do we know about this job?
 		Job job = getJob(jobName);
 		if (job == null) {
-			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName+"' If job exists and is active, re-run initialise.");
+			throw new ResourceNotFoundException(JOB_UNKNOWN + jobName + CHECK_INITIALISE);
 		}
 		return job.getWhiteListConcepts(codeSystemShortname);
 	}
@@ -333,16 +341,16 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Do we know about this job?
 		Job job = getJob(jobName);
 		if (job == null) {
-			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName +"' If job exists and is active, re-run initialise.");
+			throw new ResourceNotFoundException(JOB_UNKNOWN + jobName + CHECK_INITIALISE);
 		}
 		
 		WhiteList whiteList = null;
-		if (whiteListConcepts == null || whiteListConcepts.size() == 0) {
+		if (whiteListConcepts == null || whiteListConcepts.isEmpty()) {
 			LOGGER.info("Removing all whitelisted concepts for job: {}", jobName);
 		} else {
 			LOGGER.info("Whitelisting {} concepts for job: {}", whiteListConcepts.size(), jobName);
 			//If this job doesn't have a whitelist for this code system then we'll need to save it first so
-			//that it has an identifier - TODO I'm sure this can be improved, hibernate should take care of this
+			//that it has an identifier - I'm sure this can be improved, hibernate should take care of this
 			whiteList = job.getWhiteList(codeSystemShortname);
 			if (whiteList == null) {
 				whiteList = new WhiteList(codeSystemShortname, null);
