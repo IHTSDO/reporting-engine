@@ -134,7 +134,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(WORDS).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(WITHOUT).withType(JobParameter.Type.STRING).withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(WITHOUT_MODE).withType(JobParameter.Type.DROPDOWN).withOptions(ALL_WITHOUT, ANY_WITHOUT).withDefaultValue(ALL_WITHOUT)
-				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues(TRUE, TRUE,FALSE,FALSE)
+				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues("true","true","false","false")
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		
