@@ -94,7 +94,21 @@ public class SchedulerController {
 	public List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
 		return scheduleService.listJobTypeCategories(typeName).stream()
 				.filter(jc -> !jc.getJobs().isEmpty())
+				.map(this::reversePameterOptions)
 				.toList();
+	}
+
+	private JobCategory reversePameterOptions(JobCategory jobCategory) {
+		for (Job job : jobCategory.getJobs()) {
+			for (JobParameter jobParameter : job.getParameters().getParameterMap().values()) {
+				if (jobParameter.getOptions() != null) {
+					List<String> reversedOptions = new ArrayList<>(jobParameter.getOptions());
+					Collections.reverse(reversedOptions);
+					jobParameter.setOptions(reversedOptions);
+				}
+			}
+		}
+		return jobCategory;
 	}
 
 	@Operation(summary="Get job details")
