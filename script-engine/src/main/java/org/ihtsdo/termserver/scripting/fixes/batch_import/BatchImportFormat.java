@@ -43,7 +43,7 @@ public class BatchImportFormat implements ScriptConstants {
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
 	protected static final String[] ICD11_HEADERS = {"icd11","sctid","fsn",TERM1,"US1","GB1",TERM2,"US2","GB2","TERM3","US3","GB3","TERM4","US4","GB4","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
 	protected static final String[] LOINC_HEADERS = {"SCTID","Parent_1","Parent_2","FSN","CAPSFSN",TERM1,"US1","GB1","CAPS1",TERM2,"US2","GB2","CAPS2","TERM3","US3","GB3","CAPS3","TERM4","US4","GB4","CAPS4","TERM5","US5","GB5","CAPS5","Associated LOINC Part(s)","Reference link(s)","Notes"};
-	protected static final String[] PHAST_HEADERS = {"SCTID","fsn",TERM1,"FR1","FR2","IT1","expression"};
+	protected static final String[] PHAST_HEADERS = {"SCTID","fsn",TERM1,"FR1","FR2","expression"};
 
 	protected static final Map<FORMAT, String[]> HEADERS_MAP = new EnumMap<>(FORMAT.class);
 	static {
@@ -87,7 +87,7 @@ public class BatchImportFormat implements ScriptConstants {
 		//Note that these are 0-based indexes
 		PHAST_MAP.put(FIELD.SCTID, 0);
 		PHAST_MAP.put(FIELD.FSN, 1);
-		PHAST_MAP.put(FIELD.EXPRESSION, 6);
+		PHAST_MAP.put(FIELD.EXPRESSION, 5);
 	}
 	
 	protected static final int[] LOINC_DOCUMENTATION = new int[] {25,26,27};
