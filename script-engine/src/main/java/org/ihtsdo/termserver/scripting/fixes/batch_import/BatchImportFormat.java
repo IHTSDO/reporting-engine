@@ -110,7 +110,7 @@ public class BatchImportFormat implements ScriptConstants {
 		//Note that these are 0-based indexes
 		PHAST_MAP.put(FIELD.SCTID, 0);
 		PHAST_MAP.put(FIELD.FSN, 1);
-		PHAST_MAP.put(FIELD.EXPRESSION, 6);
+		PHAST_MAP.put(FIELD.EXPRESSION, 5);
 	}
 	
 	protected static final int[] LOINC_Documentation = new int[] {25,26,27};
