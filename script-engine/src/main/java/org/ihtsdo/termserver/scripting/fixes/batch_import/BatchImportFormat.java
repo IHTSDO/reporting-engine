@@ -186,6 +186,7 @@ public class BatchImportFormat implements ScriptConstants {
 
 	private void populateMultipleDescriptions(BatchImportConcept newConcept, CSVRecord row) throws TermServerScriptException {
 		String[] headers = getHeaders();
+		Set<String> seenTerms = new HashSet<>();
 		//Phast has no acceptability indicators, so skip less
 		int columnIncrement = (format == FORMAT.PHAST) ? 1 : 3;
 		for (int i = 0; i < headers.length; i++) {
@@ -200,7 +201,13 @@ public class BatchImportFormat implements ScriptConstants {
 					} else {
 						i--;  //Move back one because loop will take us on to the next term.
 					}
-					newConcept.addDescription(desc);
+
+					if (seenTerms.contains(desc.getTerm())) {
+						newConcept.addIssue("Duplicate term suppressed: " + desc.getTerm());
+					} else {
+						newConcept.addDescription(desc);
+						seenTerms.add(desc.getTerm());
+					}
 				}
 			}
 		}
