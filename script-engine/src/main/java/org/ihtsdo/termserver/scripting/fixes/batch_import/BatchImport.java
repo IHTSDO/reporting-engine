@@ -211,6 +211,14 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			if (fileFormat.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
 				origRef = concept.get(fileFormat.getIndex(BatchImportFormat.FIELD.ORIG_REF));
 			}
+
+			//Did we note any issues on the way in?
+			if (c.hasIssues()) {
+				for (String issue : c.getIssueList()) {
+					report(PRIMARY_REPORT, t.getKey(), Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, issue);
+				}
+			}
+
 			report(PRIMARY_REPORT, t.getKey(),
 					t.getSummary(),
 					createdConcept.getId(),
