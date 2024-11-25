@@ -178,7 +178,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		}
 	}
 	
-	protected abstract void applyTemplateSpecificTermingRules(Description pt);
+	protected abstract void applyTemplateSpecificTermingRules(Description pt) throws TermServerScriptException;
 
 	protected String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
 		//Do we have any slots left to fill?  Find their attribute types via the slot map
