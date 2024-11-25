@@ -417,6 +417,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				case CONCEPT:
 					tc.getConcept().getAlternateIdentifiers().stream()
 							.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
+					//temporarily, remove any alternate identifiers that are for the wrong scheme id
+					tc.getConcept().getAlternateIdentifiers().stream()
+							.filter(a -> !a.getIdentifierSchemeId().equals(tc.getCodeSystemSctId()))
+							.forEach(a -> a.setActive(false));
 					break;
 				case DESCRIPTION:
 					Description desc = (Description)existingComponent;
