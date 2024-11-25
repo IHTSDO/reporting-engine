@@ -138,10 +138,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 	}
 
-	protected void applyTemplateSpecificTermingRules(Description d) {
+	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
 		if (!d.getType().equals(DescriptionType.FSN)) {
+			String useAsAdditionalAcceptableTerm = d.getTerm();
 			//LOINC will use their long common name as the PT
 			d.setTerm(getLoincTerm().getLongCommonName());
+			//And we'll use the FSN minus the semantic tag as another acceptable term
+			Description additionalAcceptableDesc = Description.withDefaults(useAsAdditionalAcceptableTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			getConcept().addDescription(additionalAcceptableDesc);
 		}
 	}
 
