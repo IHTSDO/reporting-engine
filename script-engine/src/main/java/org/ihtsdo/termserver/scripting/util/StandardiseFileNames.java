@@ -26,11 +26,11 @@ public class StandardiseFileNames extends TermServerReport {
 	private static final Logger LOGGER = LoggerFactory.getLogger(StandardiseFileNames.class);
 	private static final String BUCKET_NAME = "snomed-releases";
 	
-	private static final String STANDARD_HEADER = "CodeSystem, Before, After, Action, Command";
+	private static final String STANDARD_HEADER = "CodeSystem, Before, After, Action, S3, MySQL";
 	private static final String ISSUE_HEADER = "Environment, Issue, Message";
 	private static final String RELEASES = "releases";
 	private static final String SNOMED_CT_UNDRSCR = "snomed_ct_";
-	private static final boolean INCLUDE_SIMPLEX = true;
+	private static final boolean INCLUDE_SIMPLEX = false;
 
 	enum Type {
 		MANIFEST,
@@ -87,7 +87,7 @@ public class StandardiseFileNames extends TermServerReport {
 		LOGGER.info("Processing {} {} files", env, type);
 		resourcePaths = type == Type.MANIFEST ? getManifestResourcePaths(env) : getBuildResourcePaths(env);
 		beforeAfter = type == Type.MANIFEST ? renameManifestResourcePaths(resourcePaths) : renameBuildResourcePaths(resourcePaths);
-		reportBeforeAfter(env, beforeAfter);
+		reportBeforeAfter(env, beforeAfter, Type.BUILD == type, Type.BUILD == type);
 		LOGGER.info("Finished processing {} {} files", env, type);
 	}
 
@@ -178,7 +178,7 @@ public class StandardiseFileNames extends TermServerReport {
 				}).collect(Collectors.toSet());
 	}
 
-	private void reportBeforeAfter(String environment, List<Pair<String, String>> beforeAfters) throws TermServerScriptException {
+	private void reportBeforeAfter(String environment, List<Pair<String, String>> beforeAfters, boolean includeMySQL, boolean isFolder) throws TermServerScriptException {
 		for (Pair<String, String> beforeAfter : beforeAfters) {
 			String first = beforeAfter.first();
 			String second = beforeAfter.second();
@@ -186,11 +186,17 @@ public class StandardiseFileNames extends TermServerReport {
 			String codeSystem = beforeAfter.first().split("/")[1];
 
 			String s3Command = "";
+			String mySQLCommand = "";
 			if ("UPDATE".equals(action)) {
-				s3Command = getS3Command(environment, first, second);
+				s3Command = getS3Command(environment, first, second, isFolder);
+				if (includeMySQL) {
+					String f = first.split("/")[2];
+					String s = second.split("/")[2];
+					mySQLCommand = getMySQLCommand(f, s);
+				}
 			}
 
-			report(getTabByEnvironment(environment), codeSystem, first, second, action, s3Command);
+			report(getTabByEnvironment(environment), codeSystem, first, second, action, s3Command, mySQLCommand);
 		}
 
 		reportIssues(environment, beforeAfters);
@@ -296,7 +302,16 @@ public class StandardiseFileNames extends TermServerReport {
 		return beforeAfter;
 	}
 
-	private String getS3Command(String envName, String before, String after) {
-		return String.format("aws s3 --recursive mv \"s3://%s/%s/%s/\" \"s3://%s/%s/%s/\"", BUCKET_NAME, envName, before, BUCKET_NAME, envName, after);
+	private String getS3Command(String envName, String before, String after, boolean isFolder) {
+		if (isFolder) {
+			return String.format("aws s3 --recursive mv \"s3://%s/%s/%s/\" \"s3://%s/%s/%s/\"", BUCKET_NAME, envName, before, BUCKET_NAME, envName, after);
+		} else {
+			// Recursive and trailing slash not needed
+			return String.format("aws s3 mv \"s3://%s/%s/%s\" \"s3://%s/%s/%s\"", BUCKET_NAME, envName, before, BUCKET_NAME, envName, after);
+		}
+	}
+
+	private String getMySQLCommand(String before, String after) {
+		return String.format("UPDATE product SET business_key = '%s' WHERE business_key = '%s';", after, before);
 	}
 }
