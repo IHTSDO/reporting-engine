@@ -4,14 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -23,19 +24,17 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LegacyReport_ValidateDrugModeling extends TermServerReport implements ReportClass {
+public class ValidateDrugModelingLegacyReport extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LegacyReport_ValidateDrugModeling.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateDrugModelingLegacyReport.class);
 
 	private List<Concept> allDrugs;
-	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
+	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
@@ -46,11 +45,9 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
 	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
 	private List<Concept> bannedMpParents;
-	//private Set<RelationshipGroup> reportedForBoSSPAIViolation = new HashSet<>();
 	private Set<BaseMDF> reportedBaseMDFCombos = new HashSet<>();
 	
 	private boolean isRecentlyTouchedConceptsOnly = false;
@@ -64,21 +61,23 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 	
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
-	private static String INJECTION = "injection";
-	private static String INFUSION = "infusion";
+	private static final String INJECTION = "injection";
+	private static final String INFUSION = "infusion";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "false");
-		TermServerReport.run(LegacyReport_ValidateDrugModeling.class, args, params);
+		TermServerScript.run(ValidateDrugModelingLegacyReport.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
@@ -123,17 +122,18 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Legacy Drugs Validation Report")
-				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.  No longer used.")
+				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.withParameters(params)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
-		populateSummaryTab();
+		populateSummaryTabAndTotal(SECONDARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
@@ -151,15 +151,11 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				LOGGER.info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete {}", (int)percComplete);
 			}
-			
-			/*if (c.getId().equals("714209004")) {
-				LOGGER.debug ("here");
-			}*/
-			
+
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
-			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
 				report (c, issueStr);
@@ -262,7 +258,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		//MP / MP with no inferred descendants are not required
 		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
 		initialiseSummary(issueStr);
-		if (c.getDescendants(NOT_SET).size() == 0) {
+		if (c.getDescendants(NOT_SET).isEmpty()) {
 			report (c, issueStr);
 		}
 	}
@@ -300,7 +296,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			}
 		}
 		
-		if (inferredAttribs.size() > 0) {
+		if (!inferredAttribs.isEmpty()) {
 			report(c, issueStr, inferredAttribs.iterator().next());
 		}
 	}
@@ -317,7 +313,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			}
 		}
 		rels.removeAll(forRemoval);
-		return forRemoval.size() > 0;
+		return !forRemoval.isEmpty();
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -349,7 +345,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 					BaseMDF baseMDF = getBaseMDF(rg, mdf);
 					Set<RelationshipGroup> groups = baseMDFMap.get(baseMDF);
 					if (groups == null) {
-						groups = new HashSet<RelationshipGroup>();
+						groups = new HashSet<>();
 						baseMDFMap.put(baseMDF, groups);
 					}
 					groups.add(rg);
@@ -405,17 +401,6 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		}
 	}
 
-	private void populateSummaryTab() throws TermServerScriptException {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
-	}
-
 	/**
 	*	Acutation should be modeled with presentation strength and unit of presentation.
 	*	Has presentation strength denominator unit (attribute) cannot be 258773002|Milliliter (qualifier value)
@@ -444,11 +429,10 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 					report(c, issueStr, g);
 					return;
 				} 
-				if (c.getFsn().toLowerCase().contains("actuation")) {
-					if (ps.size() < 1 || psdu.size() < 1) {
-						report(c, issue2Str, g);
-						return;
-					}
+				if (c.getFsn().toLowerCase().contains("actuation")
+						&& (ps.isEmpty() || psdu.isEmpty()) ) {
+					report(c, issue2Str, g);
+					return;
 				}
 				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLILITER)) {
 					report (c, issue3Str, psdu.iterator().next());
@@ -478,7 +462,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 
 	private String getParentsJoinedStr(Concept c) {
 		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
-				.map(p -> p.getFsn())
+				.map(Concept::getFsn)
 				.collect(Collectors.joining(", \n"));
 	}
 
@@ -580,7 +564,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 				throw new IllegalArgumentException("Units previously detected different between " + unit1 + " and " + unit2 );
 			}
 			
-			factor = unit1Idx > unit2Idx ? new BigDecimal(0.001D) : new BigDecimal(1000) ; 
+			factor = unit1Idx > unit2Idx ?  BigDecimal.valueOf(0.001D) : BigDecimal.valueOf(1000) ;
 		}
 		return factor;
 	}
@@ -674,7 +658,6 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		//Various rules that allow a + to exist next to other characters
 		if (term.contains("^+") ||
 			term.contains("+)") ||
-			term.contains("+)") ||
 			term.contains("+]") ||
 			term.contains("(+")) {
 			return true;
@@ -763,7 +746,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		}
 		
 		if (ingredBases.size() != 1) {
-			LOGGER.debug("Unable to obtain single BoSS from " + rg.toString());
+			LOGGER.debug("Unable to obtain single BoSS from {}",  rg);
 			return null;
 		} else {
 			Concept base = ingredBases.iterator().next();
@@ -785,7 +768,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			BaseMDF baseMDF = getBaseMDF(rg, mdf);
 			
 			if (baseMDF == null) {
-				LOGGER.debug("Failed to obtain baseMDF in " + concept);
+				LOGGER.debug("Failed to obtain baseMDF in {}", concept);
 				continue;
 			}
 			
@@ -798,7 +781,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			BoSSPAI boSSPAI = new BoSSPAI(boSS, pai);
 			Set<RelationshipGroup> relGroups = baseMDFMap.get(baseMDF);
 			if (relGroups == null) {
-				LOGGER.debug("Unable to find stored relGroups against " + baseMDF + " from " + concept);
+				LOGGER.debug("Unable to find stored relGroups against {} from {}", baseMDF, concept);
 			} else {
 				String mismatchingDetails = "";
 				Set<BoSSPAI> bossPAIcombosReported = new HashSet<>();
@@ -911,7 +894,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		String issueStr = "Multiple " + charType + " instances of active ingredient";
 		initialiseSummary(issueStr);
 		
-		Set<Concept> valuesEncountered = new HashSet<Concept>();
+		Set<Concept> valuesEncountered = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, activeIngredient, ActiveState.ACTIVE)) {
 			//Have we seen this value for the target attribute type before?
 			Concept target = r.getTarget();
@@ -951,7 +934,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			//Which inferred relationship is not also stated?
 			Set<Relationship> unmatched = new HashSet<>();
 			for (Relationship r : unmatchedGroup.getRelationships()) {
-				if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
+				if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).isEmpty()) {
 					unmatched.add(r);
 				}
 			}
@@ -1095,13 +1078,13 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		String issueStr =  "MP/MPF must have one or more 'Has active ingredient' attributes";
 		initialiseSummary(issueStr);
 		if ((isMP(c) || isMPF(c)) && 
-				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE).size() < 1) {
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE).isEmpty()) {
 			report(c, issueStr);
 		}
 		
 		issueStr =  "CD must have one or more 'Has precise active ingredient' attributes";
 		initialiseSummary(issueStr);
-		if (isCD(c) && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE).size() < 1) {
+		if (isCD(c) && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE).isEmpty()) {
 			report(c, issueStr);
 		}
 		
@@ -1177,7 +1160,6 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
 				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
 			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-				if (true);
 				report (c, issueStr);
 			}
 		} else if ((isMP(c) || isMPF(c)) && 
@@ -1267,7 +1249,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		if (doseForm.getFsn().toLowerCase().contains(INJECTION) && 
 				!doseForm.getFsn().toLowerCase().contains(INFUSION)) {
 			List<Concept> infusionSiblings = findInfusionSiblings(c);
-			if (infusionSiblings.size() > 0) {
+			if (!infusionSiblings.isEmpty()) {
 				validateDoseFormGrouperParent(c, infusionSiblings.get(0));
 			}
 			//Don't need to report the first one, already reported.
@@ -1340,22 +1322,18 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		}
 	}
 
-	private int getTagLevel(Concept c) throws TermServerScriptException {
+	private int getTagLevel(Concept c) {
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (int i=0; i < semTagHiearchy.length; i++) {
 			if (semTagHiearchy[i].equals(semTag)) {
 				return i;
 			}
 		}
-		//throw new TermServerScriptException("Unable to find semantic tag level for: " + c);
-		LOGGER.error("Unable to find semantic tag level for: " + c, (Exception)null);
+		LOGGER.error("Unable to find semantic tag level for: {}", c);
 		return NOT_SET;
 	}
-	
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
+
+	@Override
 	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
@@ -1365,9 +1343,9 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug ("Loading " + fileName );
+		LOGGER.debug ("Loading {}", fileName );
 		try {
-			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
 			boolean isHeader = true;
 			for (String line : lines) {
 				String[] items = line.split(TAB);
@@ -1436,8 +1414,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		
 		@Override
 		public boolean equals (Object other) {
-			if (other instanceof BaseMDF) {
-				BaseMDF otherBaseMDF = (BaseMDF)other;
+			if (other instanceof BaseMDF otherBaseMDF) {
 				return this.baseSubstance.equals(otherBaseMDF.baseSubstance) && this.pharmDoseForm.equals(otherBaseMDF.pharmDoseForm);
 			}
 			return false;
@@ -1467,8 +1444,7 @@ public class LegacyReport_ValidateDrugModeling extends TermServerReport implemen
 		
 		@Override
 		public boolean equals (Object other) {
-			if (other instanceof BoSSPAI) {
-				BoSSPAI otherBoSSPAI = (BoSSPAI)other;
+			if (other instanceof BoSSPAI otherBoSSPAI) {
 				return this.boSS.equals(otherBoSSPAI.boSS) && this.pai.equals(otherBoSSPAI.pai);
 			}
 			return false;
