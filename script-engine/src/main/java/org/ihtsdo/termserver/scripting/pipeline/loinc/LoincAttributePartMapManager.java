@@ -17,6 +17,11 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincAttributePartMapManager.class);
 
+	private static final int IDX_PART_NUM = 0;
+	private static final int IDX_STATUS = 8;
+	private static final int IDX_NO_MAP = 7;
+	private static final int IDX_TARGET = 3;
+
 	private final LoincScript ls;
 	
 	public LoincAttributePartMapManager (LoincScript ls, Map<String, Part> partMap, Map<String, String> partMapNotes) {
@@ -75,23 +80,23 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 
 	private void processPartFileLine(String line, Set<String> partsSeen, List<String> mappingNotes) throws TermServerScriptException {
 		String[] items = line.split("\t");
-		String partNum = items[0];
+		String partNum = items[IDX_PART_NUM];
 		//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
-		if (items[9].equals("UNMAPPED") ||
-				(items[9].equals("DRAFT") && items[4].isEmpty())) {
+		if (items[IDX_STATUS].equals("UNMAPPED") ||
+				(items[IDX_STATUS].equals("DRAFT") && items[IDX_TARGET].isEmpty())) {
 			//Skip this one
-		} else if (items[8].equals("true")) {
+		} else if (items[IDX_NO_MAP].equals("true")) {
 			//And we can have items that report being mapped, but with 'no map' - warn about those.
 			mappingNotes.add("Map indicates part mapped to 'No Map'");
-		} else if (items[9].equals("REJECTED")) {
+		} else if (items[IDX_STATUS].equals("REJECTED")) {
 			//And we can have items that report being mapped, but with 'no map' - warn about those.
-			mappingNotes.add("Map indicates non-viable map - " + items[9]);
+			mappingNotes.add("Map indicates non-viable map - " + items[IDX_STATUS]);
 		} else if (partsSeen.contains(partNum)) {
 			//Have we seen this part before?  Map should now be unique
 			mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
 		} else {
 			partsSeen.add(partNum);
-			Concept attributeValue = gl.getConcept(items[4], false, true);
+			Concept attributeValue = gl.getConcept(items[IDX_TARGET], false, true);
 			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue);
 			if (attributeValue != null && attributeValue.isActive()) {
 				mappingNotes.add("Inactive concept");
@@ -130,6 +135,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		return attributeValue;
 	}
 
+	@Override
 	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType) {
 		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
 			attributeType = hardCodedTypeReplacementMap.get(attributeType);

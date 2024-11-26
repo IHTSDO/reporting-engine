@@ -4,13 +4,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
 import org.slf4j.Logger;
@@ -271,7 +271,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 		
 		//Are we making any removals based on semantic tag?
-		String semTag = SnomedUtils.deconstructFSN(value.getFsn())[1];
+		String semTag = SnomedUtilsBase.deconstructFSN(value.getFsn())[1];
 		if (valueSemTagTermRemovalMap.containsKey(semTag)) {
 			for (String removal : valueSemTagTermRemovalMap.get(semTag)) {
 				term = term.replaceAll(removal, "");
@@ -367,11 +367,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	private void addAttributesToConcept(RelationshipTemplate rt, LoincDetail loincDetail, boolean expectNullMap) {
 		if (rt != null) {
-			mapped++;
+			cpm.incrementSummaryCount("Part Mappings", "Mapped");
 			concept.addRelationship(rt, GROUP_1);
 		} else if (!expectNullMap
 				&& !cpm.getMappingsAllowedAbsent().contains(loincDetail.getPartNumber())){
-			unmapped++;
+			cpm.incrementSummaryCount("Part Mappings", "Unmapped");
 			String issue = "Not Mapped - " + loincDetail.getPartTypeName() + " | " + loincDetail.getPartNumber() + "| " + loincDetail.getPartName();
 			concept.addIssue(issue);
 			concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);

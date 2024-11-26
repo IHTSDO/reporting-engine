@@ -15,18 +15,13 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		this.externalConcept = externalConcept;
 	}
 
-	public enum IterationIndicator { NEW, REMOVED, RESURRECTED, MODIFIED, UNCHANGED }
+	public enum IterationIndicator { NEW, REMOVED, RESURRECTED, MODIFIED, UNCHANGED, MANUAL }
 
 	protected static ContentPipelineManager cpm;
 	protected static GraphLoader gl;
 
 	protected static Set<String> partNumsMapped = new HashSet<>();
 	protected static Set<String> partNumsUnmapped = new HashSet<>();
-	
-	protected static int mapped = 0;
-	protected static int unmapped = 0;
-	protected static int skipped = 0;
-	protected static int conceptsModelled = 0;
 
 	protected Concept existingConcept = null;
 	protected boolean existingConceptHasInactivations = false;
@@ -48,9 +43,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	public static void reportStats(int tabIdx) throws TermServerScriptException {
 		cpm.report(tabIdx, "");
-		cpm.report(tabIdx, "Parts mapped", mapped);
-		cpm.report(tabIdx, "Parts unmapped", unmapped);
-		cpm.report(tabIdx, "Parts skipped", skipped);
 		cpm.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
 		cpm.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
 	}
