@@ -22,9 +22,9 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportNpuConcepts.class);
 
 	private List<String> panelNpuNums;
-	
+
 	private static final int FILE_IDX_NPU_PARTS_MAP_BASE_FILE = 1;
-	
+
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
 			TAB_MODELING_ISSUES,
@@ -33,7 +33,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 			TAB_IMPORT_STATUS,
 			TAB_IOI,
 			TAB_STATS};
-	
+
 	public static void main(String[] args) throws TermServerScriptException {
 		new ImportNpuConcepts().ingestExternalContent(args);
 	}
@@ -70,22 +70,22 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 		importNpuConcepts();
 		loadPanels();
 	}
-	
+
 	private void importNpuConcepts() throws TermServerScriptException {
 		ObjectMapper mapper = new XmlMapper();
 		TypeReference<List<NpuConcept>> listType = new TypeReference<List<NpuConcept>>(){};
-		report(PRIMARY_REPORT, 
-		  "npu_code", 
-		  "shortDefinition", 
-		  "system", 
-		  "component", 
-		  "kindOfProperty", 
-		  "proc", 
-		  "unit", 
-		  "specialty", 
-		  "contextDependent", 
-		  "group", 
-		  "scaleType", 
+		report(PRIMARY_REPORT,
+		  "npu_code",
+		  "shortDefinition",
+		  "system",
+		  "component",
+		  "kindOfProperty",
+		  "proc",
+		  "unit",
+		  "specialty",
+		  "contextDependent",
+		  "group",
+		  "scaleType",
 		  "active"
 				);
 		try {
@@ -93,13 +93,13 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 			List<NpuConcept> npuConcepts = mapper.readValue(is, listType);
 			externalConceptMap = npuConcepts.stream()
 				.collect(Collectors
-						.toMap(NpuConcept::getExternalIdentifier, 
+						.toMap(NpuConcept::getExternalIdentifier,
 								c -> c,
 								(first, second) -> ((NpuConcept)second).getEffectiveTo() == null ? second : first));
 				} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
-		
+
 		outputNPUConceptsToSheet();
 		LOGGER.info("Loaded {} NPU Concepts", externalConceptMap.size());
 	}
@@ -124,18 +124,19 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 
 	@Override
 	protected void doModeling() throws TermServerScriptException {
-		Set<TemplatedConcept> successfullyModelledConcepts = new HashSet<>();
 		for (String npuNum : getExternalConceptMap().keySet()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(npuNum);
+			validateTemplatedConcept(npuNum, templatedConcept);
 			if (conceptSufficientlyModeled("Observable", npuNum, templatedConcept)) {
-				successfullyModelledConcepts.add(templatedConcept);
+				successfullyModelled.add(templatedConcept);
 			}
 		}
 
 		for (String panelNpuNum : panelNpuNums) {
 			NpuTemplatedConcept templatedConcept = doPanelModeling(panelNpuNum);
+			validateTemplatedConcept(panelNpuNum, templatedConcept);
 			if (conceptSufficientlyModeled("Panel", panelNpuNum, templatedConcept)) {
-				successfullyModelledConcepts.add(templatedConcept);
+				successfullyModelled.add(templatedConcept);
 			}
 		}
 	}
@@ -147,11 +148,9 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 		}
 
 		ExternalConcept panelTerm = getNpuConcept(panelNpuNum);
-		NpuTemplatedConceptPanel templatedPanelConcept = NpuTemplatedConceptPanel.create(panelTerm);
-		validateTemplatedConcept(templatedPanelConcept);
-		return templatedPanelConcept;
+		return NpuTemplatedConceptPanel.create(panelTerm);
 	}
-	
+
 	private NpuConcept getNpuConcept(String externalIdentifier) {
 		return (NpuConcept)externalConceptMap.get(externalIdentifier);
 	}

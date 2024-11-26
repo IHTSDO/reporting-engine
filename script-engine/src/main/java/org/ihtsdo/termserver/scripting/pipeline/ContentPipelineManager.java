@@ -62,8 +62,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
 
 	protected Set<ComponentType> skipForComparison = Set.of(
-			ComponentType.INFERRED_RELATIONSHIP,
-			ComponentType.LANGREFSET);
+			ComponentType.INFERRED_RELATIONSHIP);
 
 	protected List<TemplatedConcept.IterationIndicator> activeIndicators = List.of(
 			TemplatedConcept.IterationIndicator.NEW,
@@ -155,8 +154,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("74299-9")) {
-			LOGGER.debug("Should be primitive");
+		if (externalIdentifier.equals("101752-4")) {
+			LOGGER.debug("Check 'DIVISOR' in FSN");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -169,6 +168,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		if (MANUALLY_MAINTAINED_ITEMS.containsKey(externalIdentifier)) {
 			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(externalConcept, SCTID_NPU_SCHEMA, "(observable entity)");
 			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(externalIdentifier)));
+			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MANUAL);
 			return tc;
 		}
 
@@ -418,7 +418,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					tc.getConcept().getAlternateIdentifiers().stream()
 							.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
 					//temporarily, remove any alternate identifiers that are for the wrong scheme id
-					tc.getConcept().getAlternateIdentifiers().stream()
+					tc.getExistingConcept().getAlternateIdentifiers().stream()
 							.filter(a -> !a.getIdentifierSchemeId().equals(tc.getCodeSystemSctId()))
 							.forEach(a -> a.setActive(false));
 					break;
@@ -426,9 +426,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					Description desc = (Description)existingComponent;
 					Description newDesc = (Description)newlyModelledComponent;
 					newDesc.setConceptId(tc.getExistingConcept().getId());
-					//Copy over the langRefset entries from the existing description
-					//I'm assuming we're never going to change the acceptability
-					newDesc.setLangRefsetEntries(desc.getLangRefsetEntries());
 					break;
 				default:
 					break;
@@ -695,9 +692,20 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return false;
 	}
 
-	protected void validateTemplatedConcept(TemplatedConcept templatedConcept) throws TermServerScriptException {
+	protected void validateTemplatedConcept(String externalIdentifier, TemplatedConcept templatedConcept) throws TermServerScriptException {
+
+		if (templatedConcept == null || templatedConcept.getConcept() == null) {
+			report(getTab(TAB_MODELING_ISSUES),
+					externalIdentifier,
+					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
+					externalConceptMap.get(externalIdentifier).getLongDisplayName(),
+					"Concept not created");
+			return;
+		}
+
 		ExternalConcept externalConcept = templatedConcept.getExternalConcept();
 		Concept concept = templatedConcept.getConcept();
+
 		if (templatedConcept instanceof TemplatedConceptNull) {
 			report(getTab(TAB_MODELING_ISSUES),
 					externalConcept.getExternalIdentifier(),
@@ -711,6 +719,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Some panels have words like '[Moles/volume]' in them, so check also for slot token names (all caps).  Not Great.
 			if (insufficientTermPopulation && hasAllCapsSlot(fsn)) {
 				concept.addIssue(FSN_FAILURE + " to populate required slot: " + fsn);
+				templatedConcept.addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
 
 			if (concept.hasIssues() ) {

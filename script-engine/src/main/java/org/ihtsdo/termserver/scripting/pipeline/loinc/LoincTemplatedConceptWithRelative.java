@@ -54,7 +54,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificTermingRules(Description d) {
+	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
 		//If the DIVISOR slot is stil here but we're allowing it to be empty,
 		//remove it, and then remove the SEPARATOR
 		if (hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_DIVISOR)
@@ -72,6 +72,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		} else {
 			d.setTerm(d.getTerm().replace(SEPARATOR, "/"));
 		}
+		super.applyTemplateSpecificTermingRules(d);
 	}
 
 	private static Set<Concept> getCalculationConcepts() throws TermServerScriptException {
