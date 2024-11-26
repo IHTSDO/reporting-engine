@@ -20,7 +20,6 @@ public abstract class TermServerReport extends TermServerScript {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerReport.class);
 
-	public static final String IP = "IP";
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
 	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
 
