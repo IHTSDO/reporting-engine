@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import org.apache.commons.csv.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.BatchJobClass;
 import org.ihtsdo.termserver.scripting.GraphLoader;
@@ -27,6 +28,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	private static final char DELIMITER = TAB_CHAR;  // ';'
 	private static final String LIST_ITEM_START = "<li>";
 	private static final String LIST_ITEM_END = "</li>";
+	private static final Boolean CLASSIFY_TASKS = true;
 
 	private static final String[] LATERALITY = new String[] { "left", "right"};
 	private Map<String, Concept> conceptsLoaded;
@@ -73,6 +75,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		conceptsLoaded = new HashMap<>();
 		moduleId = SCTID_CORE_MODULE;
 		maxFailures = 1500;
+		classifyTasks = CLASSIFY_TASKS;
 		headers = "TaskKey, TaskDesc, SCTID, Descriptions, ConceptType, Severity, ActionType, ";
 		super.init(jobRun);
 	}
@@ -309,5 +312,5 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	public BatchImportConcept getConcept (String sctId) {
 		return allValidConcepts.get(sctId);
 	}
-	
+
 }
