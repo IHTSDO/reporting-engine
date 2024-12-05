@@ -5,9 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
@@ -31,7 +31,7 @@ public class GraphLoader implements ScriptConstants {
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<>();
-	private Map<String, Description> descriptions = new HashMap<String, Description>();
+	private Map<String, Description> descriptions = new HashMap<>();
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
 	private Map<String, Concept> fsnMap = null;
@@ -68,7 +68,7 @@ public class GraphLoader implements ScriptConstants {
 	protected boolean populateOriginalModuleMap = false;
 	protected Map<Component, String> originalModuleMap = null;
 	
-	public StringBuffer log = new StringBuffer();
+	public StringBuilder log = new StringBuilder();
 	
 	private TransitiveClosure transitiveClosure;
 	private TransitiveClosure previousTransitiveClosure;
@@ -154,9 +154,8 @@ public class GraphLoader implements ScriptConstants {
 		LOGGER.info("free memory now: {}", freeMemoryStr);
 	}
 
-	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
+	public void loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased)
 			throws IOException, TermServerScriptException {
-		Set<Concept> concepts = new HashSet<>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeaderLine = true;
@@ -219,14 +218,12 @@ public class GraphLoader implements ScriptConstants {
 				if (addRelationshipsToConcepts) {
 					addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased, previousState);
 				}
-				concepts.add(thisConcept);
 				relationshipsLoaded++;
 			} else {
 				isHeaderLine = false;
 			}
 		}
 		log.append("\tLoaded {}" + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
-		return concepts;
 	}
 	
 	public boolean isExcluded(String moduleId) {
@@ -324,7 +321,7 @@ public class GraphLoader implements ScriptConstants {
 							axiomEntry.setGCI(true);
 						} else if (!conceptId.equals(lhs)) {
 							//Have we got these weird NL axioms that exist on a different concept?
-							log.append("Encountered " + (axiomEntry.isActive()?"active":"inactive") + " axiom on different concept to lhs argument");
+							log.append("Encountered " + (axiomEntry.isActiveSafely()?"active":"inactive") + " axiom on different concept to lhs argument");
 							continue;
 						}
 						
@@ -839,15 +836,6 @@ public class GraphLoader implements ScriptConstants {
 		return count;
 	}
 
-	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
-		return loadRelationships(characteristicType, relStream, true, true, false);
-	}
-
-	public Set<Concept> getModifiedConcepts(
-			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
-		return loadRelationships(characteristicType, relStream, false, false, false);
-	}
-
 	public void loadLanguageFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
@@ -876,12 +864,12 @@ public class GraphLoader implements ScriptConstants {
 					if (!StringUtils.isEmpty(original.getEffectiveTime()) 
 							&& (isReleased != null && isReleased)
 							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-						//System.out.println("Skipping incoming published langrefset row, older than that held");
+						//Skipping incoming published langrefset row, older than that held
 						continue;
 					}
 					
 					//Set Released Flag if our existing entry has it
-					if (original.isReleased()) {
+					if (original.isReleasedSafely()) {
 						langRefsetEntry.setReleased(true);
 					}
 					//If we're working with not-released data and we already have a not-released entry
@@ -891,7 +879,7 @@ public class GraphLoader implements ScriptConstants {
 					if (isReleased != null && !isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
 						//Have we already reported this duplicate?
 						if (duplicateLangRefsetIdsReported.contains(original)) {
-							LOGGER.warn("Seeing additional duplication for " + original.getId());
+							LOGGER.warn("Seeing additional duplication for {}", original.getId());
 						} else {
 							LOGGER.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
 							duplicateLangRefsetIdsReported.add(original);
@@ -924,7 +912,7 @@ public class GraphLoader implements ScriptConstants {
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
 						//As long as they have different UUIDs, it's OK to have the same effective time
 						//But we'll ignore the inactivation
-						if (!langRefsetEntry.isActive()) {
+						if (!langRefsetEntry.isActiveSafely()) {
 							clearToAdd = false;
 						}
 					} else {
@@ -932,7 +920,9 @@ public class GraphLoader implements ScriptConstants {
 						if (!SnomedUtils.isEmpty(existing.getEffectiveTime()) && !existing.getId().equals(langRefsetEntry.getId())) {
 							attemptPublishedRemovals++;
 							if (attemptPublishedRemovals < 5) {
-								System.err.println ("Attempt to remove published entry: " + existing.toStringWithModule() + " by " + langRefsetEntry.toStringWithModule());
+								String existingStr = existing.toStringWithModule();
+								String newStr = langRefsetEntry.toStringWithModule();
+								LOGGER.error("Attempt to remove published entry: {} by {}", existingStr, newStr);
 							}
 						} else {
 							d.getLangRefsetEntries().remove(existing);
@@ -957,7 +947,7 @@ public class GraphLoader implements ScriptConstants {
 			}
 		}
 		if (attemptPublishedRemovals > 0)  {
-			System.err.println ("Attempted to remove " + attemptPublishedRemovals + " published entries in total");
+			LOGGER.error("Attempted to remove {} published entries in total", attemptPublishedRemovals);
 		}
 	}
 
@@ -991,17 +981,11 @@ public class GraphLoader implements ScriptConstants {
 		if (duplicateLangRefsetEntriesMap == null) {
 			duplicateLangRefsetEntriesMap = new HashMap<>();
 		}
-		Set<DuplicatePair> duplicates = duplicateLangRefsetEntriesMap.get(c);
-		if (duplicates == null) {
-			duplicates = new HashSet<>();
-			duplicateLangRefsetEntriesMap.put(c,  duplicates);
-		}
-		return duplicates;
+		return duplicateLangRefsetEntriesMap.computeIfAbsent(c, k -> new HashSet<>());
 	}
 
 	/**
-	 * Recurse hierarchy and set shortest path depth for all concepts
-	 * @throws TermServerScriptException 
+	 * Recurse hierarchy and set the shortest path depth for all concepts
 	 */
 	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
 		startingPoint.setDepth(currentDepth);
@@ -1441,10 +1425,8 @@ public class GraphLoader implements ScriptConstants {
 		switch (componentType) {
 			case CONCEPT : //Concepts own themselves
 							return (Concept)c;
-			case DESCRIPTION :
-			case TEXT_DEFINITION : return getConcept(((Description)c).getConceptId());
-			case INFERRED_RELATIONSHIP:
-			case STATED_RELATIONSHIP : return getConcept(((Relationship)c).getSourceId());
+			case DESCRIPTION, TEXT_DEFINITION : return getConcept(((Description)c).getConceptId());
+			case INFERRED_RELATIONSHIP, STATED_RELATIONSHIP : return getConcept(((Relationship)c).getSourceId());
 			case HISTORICAL_ASSOCIATION : String referencedComponentId = ((AssociationEntry)c).getReferencedComponentId();
 											ComponentType referencedType = SnomedUtils.getComponentType(referencedComponentId);
 											return getComponentOwner(referencedType, getComponent(referencedComponentId));
@@ -1483,7 +1465,7 @@ public class GraphLoader implements ScriptConstants {
 			try {
 				InputStream is = GraphLoader.class.getResourceAsStream("/data/orphanet_concepts.txt");
 				if (is == null) {
-					throw new RuntimeException ("Failed to load Orphanet data file - not found.");
+					throw new TermServerRuntimeException("Failed to load Orphanet data file - not found.");
 				}
 				orphanetConceptIds = IOUtils.readLines(is, StandardCharsets.UTF_8).stream()
 						.map(String::trim)
@@ -1520,14 +1502,14 @@ public class GraphLoader implements ScriptConstants {
 		LOGGER.info("PREVIOUS transitive closure complete");
 	}
 	
-	public TransitiveClosure getTransitiveClosure() throws TermServerScriptException {
+	public TransitiveClosure getTransitiveClosure() {
 		if (transitiveClosure == null) {
 			transitiveClosure = generateTransativeClosure();
 		}
 		return transitiveClosure;
 	}
 	
-	public TransitiveClosure generateTransativeClosure() throws TermServerScriptException {
+	public TransitiveClosure generateTransativeClosure() {
 		LOGGER.info ("Calculating transative closure...");
 		TransitiveClosure tc = new TransitiveClosure();
 		//For all active concepts, populate their ancestors into the TC
