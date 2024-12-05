@@ -83,4 +83,3 @@ public class CreateConceptsDelta extends DeltaGenerator {
 	}
 
 }
-
