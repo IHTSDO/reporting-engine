@@ -85,6 +85,17 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		return differencesFromExistingConcept.stream().collect(Collectors.joining(",\n"));
 	}
 
+	public String getDifferencesFromExistingConceptWithMultiples() {
+		//Count instances of each difference and add (x N) to the string form for each where N > 1
+		Map<String, Integer> differenceCounts = new HashMap<>();
+		for (String difference : differencesFromExistingConcept) {
+			differenceCounts.merge(difference, 1, Integer::sum);
+		}
+		return differenceCounts.entrySet().stream()
+				.map(e -> e.getKey() + (e.getValue() > 1 ? " (x " + e.getValue() + ")" : ""))
+				.collect(Collectors.joining(",\n"));
+	}
+
 	public void addDifferenceFromExistingConcept(String differenceFromExistingConcept) {
 		this.differencesFromExistingConcept.add(differenceFromExistingConcept);
 	}
@@ -256,7 +267,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	private String removeUnpopulatedTermSlot(String term, String str) {
 		if (term.contains(str)) {
 			//Need to make string regex safe
-			str = str.replaceAll("\\[|\\]", "\\\\$0");
+			str = str.replaceAll("[\\[\\]]", "\\\\$0");
 			term = term.replaceAll(str, "");
 		}
 		return term;

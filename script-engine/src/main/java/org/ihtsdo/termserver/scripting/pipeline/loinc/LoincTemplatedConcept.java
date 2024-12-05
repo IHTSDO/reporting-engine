@@ -529,7 +529,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			String loincPartNum = loincDetail.getPartNumber();
 
 			if ((loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber()))
-				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) || loincDetail.getPartNumber().equals("LP442509-8"))) {
+				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals("LP442509-8"))) {
 				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
 			}
 
