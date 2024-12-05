@@ -17,12 +17,16 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator implements ScriptConstants{
 
+	private static final int MUT_IDX_ACTIVE = 0;
+	private static final int MUT_IDX_VALUE = 4;
+
 	public static void main(String[] args) throws TermServerScriptException {
 		FixMissingOrInappropriateCncIndicators delta = new FixMissingOrInappropriateCncIndicators();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false;
 			delta.init(args);
+			delta.getGraphLoader().setRecordPreviousState(true);
 			delta.loadProjectSnapshot();
 			delta.additionalReportColumns = "Description ET, Details";
 			delta.postInit();
@@ -39,17 +43,19 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 		//active descriptions
 		for (Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
-				if (d.isActiveSafely()) {
-					if (!c.isActiveSafely() && d.getInactivationIndicator() == null && inScope(d)) {
-						d.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
-						InactivationIndicatorEntry iie = d.getFirstActiveInactivationIndicatorEntry();
-						report(c, Severity.LOW, ReportActionType.INACT_IND_ADDED, d, iie);
-						incrementSummaryInformation("Inactivation indicators added");
-					} else if (c.isActiveSafely()) {
-						checkForCncInidicatorAndInactivate(c, d, "active");
+				if (inScope(d)) {
+					if (d.isActiveSafely()) {
+						if (!c.isActiveSafely() && d.getInactivationIndicator() == null && inScope(d)) {
+							d.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
+							InactivationIndicatorEntry iie = d.getFirstActiveInactivationIndicatorEntry();
+							report(c, Severity.LOW, ReportActionType.INACT_IND_ADDED, d, iie);
+							incrementSummaryInformation("Inactivation indicators added");
+						} else if (c.isActiveSafely()) {
+							checkForCncInidicatorAndInactivate(c, d, "active");
+						}
+					} else if (!d.isActiveSafely()) {
+						checkForCncInidicatorAndInactivate(c, d, "inactive");
 					}
-				} else if (!d.isActiveSafely()) {
-					checkForCncInidicatorAndInactivate(c, d, "inactive");
 				}
 			}
 			outputRF2(c);
@@ -60,6 +66,13 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 		InactivationIndicatorEntry iie = d.getFirstActiveInactivationIndicatorEntry();
 		if (iie != null && iie.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 			iie.setActive(false);
+			//Now if this inactivation indicator was previously inactive with a different value, we should return it to that
+			//state, otherwise we're going to see a change to already inactive components
+			String[] previousState = iie.getPreviousState();
+			if (previousState != null && previousState[MUT_IDX_ACTIVE].equals("0")) {
+				iie.setInactivationReasonId(previousState[MUT_IDX_VALUE]);
+				report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, "Inactivation indicator reset to previous inactive value", iie);
+			}
 			iie.setDirty();
 			report(c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, d, iie);
 			incrementSummaryInformation("Inactivation indicators inactivated for "+ activeStateStr + " description");
