@@ -406,8 +406,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					continue;
 				}
 				
-				String[] previousState = c.getIssues().split(",");
-				String[] currentState = c.getMutableFields().split(",");
+				String[] previousState = c.getPreviousState();
+				String[] currentState = c.getMutableFields();
 				if (previousState.length != currentState.length) {
 					throw new TermServerScriptException("Investigate: component's state has changed length! " + c.getIssues() + " vs " + c);
 				}
@@ -482,8 +482,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (!StringUtils.isEmpty(c.getEffectiveTime())) {
 			return false;
 		}
-		String[] previousState = c.getIssues().split(",");
-		String[] currentState = c.getMutableFields().split(",");
+		String[] previousState = c.getPreviousState();
+		String[] currentState = c.getMutableFields();
 		if (previousState.length != currentState.length) {
 			throw new TermServerScriptException("Investigate: component's state has changed length! Previous state: '" + c.getIssues() + "' vs current: " + c);
 		}

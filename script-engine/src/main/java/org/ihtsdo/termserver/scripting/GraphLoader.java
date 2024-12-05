@@ -21,7 +21,6 @@ import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.Script;
@@ -40,7 +39,7 @@ public class GraphLoader implements ScriptConstants {
 	private Map<String, Concept> gbptMap = null;
 	private Map<Concept, Map<String, String>> alternateIdentifierMap = new HashMap<>();
 	private Set<String> excludedModules;
-	public static int MAX_DEPTH = 1000;
+	public static final int MAX_DEPTH = 1000;
 	private Set<String> orphanetConceptIds;
 	private AxiomRelationshipConversionService axiomService;
 	
@@ -50,7 +49,7 @@ public class GraphLoader implements ScriptConstants {
 	private AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
-	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
+	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<>();
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
 
@@ -64,6 +63,7 @@ public class GraphLoader implements ScriptConstants {
 	private boolean checkForExcludedModules = false;
 	private boolean recordPreviousState = false;
 	private boolean allowIllegalSCTIDs = false;
+	private boolean firstPreviousStateRelationshipWarning = false;
 	
 	protected boolean populateOriginalModuleMap = false;
 	protected Map<Component, String> originalModuleMap = null;
@@ -91,7 +91,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	private static void populateKnownConcepts() {
-		//Pre populate known concepts to ensure we only ever refer to one object
+		//Pre-populate known concepts to ensure we only ever refer to one object
 		//Reset concept each time, to avoid contamination from previous runs
 		List<Concept> conceptsToReset = List.of(
 				ROOT_CONCEPT, IS_A, PHARM_BIO_PRODUCT, MEDICINAL_PRODUCT, PHARM_DOSE_FORM,
@@ -110,8 +110,8 @@ public class GraphLoader implements ScriptConstants {
 	
 	public void reset() {
 		LOGGER.info("Resetting Graph Loader");
-		concepts = new HashMap<String, Concept>();
-		descriptions = new HashMap<String, Description>();
+		concepts = new HashMap<>();
+		descriptions = new HashMap<>();
 		allComponents = null;
 		componentOwnerMap = null;
 		fsnMap = null;
@@ -120,7 +120,7 @@ public class GraphLoader implements ScriptConstants {
 		statedDescendantsCache.reset();
 		ancestorsCache.reset();
 		statedAncestorsCache.reset();
-		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
+		historicalAssociations =  new HashMap<>();
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
 		integrityWarnings = new ArrayList<>();
@@ -134,7 +134,7 @@ public class GraphLoader implements ScriptConstants {
 		fsnMap = null;
 		usptMap = null;
 		gbptMap = null;
-		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
+		historicalAssociations =  new HashMap<>();
 		duplicateLangRefsetEntriesMap= null;
 		duplicateLangRefsetIdsReported = new HashSet<>();
 
@@ -150,17 +150,13 @@ public class GraphLoader implements ScriptConstants {
 	private void outputMemoryUsage() {
 		Runtime runtime = Runtime.getRuntime();
 		NumberFormat format = NumberFormat.getInstance();
-
-		//long maxMemory = runtime.maxMemory();
-		//long allocatedMemory = runtime.totalMemory();
-		long freeMemory = runtime.freeMemory();
-
-		LOGGER.info("free memory now: " + format.format(freeMemory / 1024));
+		String freeMemoryStr = format.format(runtime.freeMemory() / 1024);
+		LOGGER.info("free memory now: {}", freeMemoryStr);
 	}
 
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException {
-		Set<Concept> concepts = new HashSet<Concept>();
+		Set<Concept> concepts = new HashSet<>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeaderLine = true;
@@ -172,11 +168,7 @@ public class GraphLoader implements ScriptConstants {
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
-				
-				/*if (lineItems[REL_IDX_ID].equals("243605023")) {
-					LOGGER.debug("here");
-				}*/
-				
+
 				String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.RELATIONSHIP);
 				if (msg != null) {
 					LOGGER.warn(msg);
@@ -186,7 +178,7 @@ public class GraphLoader implements ScriptConstants {
 				characteristicType = SnomedUtils.translateCharacteristicType(lineItems[REL_IDX_CHARACTERISTICTYPEID]);
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
-					LOGGER.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
+					LOGGER.debug ("{} relationship {} referenced a non concept identifier: {}", characteristicType, lineItems[REL_IDX_ID], lineItems[REL_IDX_SOURCEID]);
 				}
 				//Dutch extension has phantom concept referenced in an inactive stated relationship
 				if (lineItems[REL_IDX_DESTINATIONID].equals("39451000146106")) {
@@ -194,24 +186,15 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
-				
-				/*if ( lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_INFERRED_RELATIONSHIP) 
-						&& thisConcept.getId().equals("422435005") 
-						&& lineItems[REL_IDX_TYPEID].equals("116680003")) {
-					LOGGER.debug("here");
-				}*/
-				
-				/*if (lineItems[REL_IDX_ACTIVE].equals("1") && lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(SCTID_STATED_RELATIONSHIP)) {
-					LOGGER.warn("Didn't expected to see any more of these! " + String.join(" ", lineItems));
-				}*/
-				
+
 				//If we've already received a newer version of this component, say
 				//by loading published INT first and a previously published MS 2nd, then skip
 				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
 				
 				String previousState = null;
-				if (isRecordPreviousState() && existing != null) {
-					previousState = existing.getMutableFields();
+				if (isRecordPreviousState() && existing != null && !firstPreviousStateRelationshipWarning) {
+					LOGGER.warn("Not recording previous state of relationships for memory reasons");
+					firstPreviousStateRelationshipWarning = true;
 				}
 				
 				if (existing != null &&
@@ -225,7 +208,7 @@ public class GraphLoader implements ScriptConstants {
 					//edition of International. We would then upgrade that extension with our new component version.
 					if (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) == 0) {
 						if (existing.isActive() && lineItems[IDX_ACTIVE].equals("0")) {
-							System.out.println("Skipping incoming published relationship row with same date as cuurently held, but inactive.");
+							//Skipping incoming published relationship row with same date as curently held, but inactive.
 							continue;
 						}
 					} else {
@@ -242,7 +225,7 @@ public class GraphLoader implements ScriptConstants {
 				isHeaderLine = false;
 			}
 		}
-		log.append("\tLoaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
+		log.append("\tLoaded {}" + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
 		return concepts;
 	}
 	
@@ -270,20 +253,12 @@ public class GraphLoader implements ScriptConstants {
 				}
 				
 				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
-					LOGGER.debug("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
+					LOGGER.debug("Axiom {} referenced a non concept identifier: {}", lineItems[REL_IDX_ID], lineItems[REF_IDX_REFCOMPID]);
 				}
 				
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
-				
-				/*if (conceptId == 241834008L) {
-					LOGGER.debug("Here");
-				}*/
-				
-				/*if (lineItems[IDX_ID].equals("1e684afa-9319-4b24-9489-40caef554e13")) {
-					LOGGER.debug ("here");
-				}*/
-				
+
 				try {
 					//Also save data in RF2 form so we can build Snapshot
 					AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
@@ -296,8 +271,7 @@ public class GraphLoader implements ScriptConstants {
 						previouslyPublishedStatedRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 						axiomEntry.setReleased(replacedAxiomEntry.isReleased());
 						if (isRecordPreviousState()) {
-							String previousState = replacedAxiomEntry.getMutableFields();
-							axiomEntry.addIssue(previousState);
+							axiomEntry.setPreviousState(replacedAxiomEntry.getMutableFields());
 						}
 						//It might be that depending on the point in the release cycle,
 						//we might try to load an extension on top of a more recent dependency
@@ -306,7 +280,7 @@ public class GraphLoader implements ScriptConstants {
 								&& replacedAxiomEntry.getEffectiveTime().compareTo(axiomEntry.getEffectiveTime()) > 0) {
 							ignoredAxioms++;
 							if (ignoredAxioms < 5) {
-								LOGGER.warn("Ignoring " + axiomEntry.getEffectiveTime() + " since " + replacedAxiomEntry.getEffectiveTime() + " " + replacedAxiomEntry.getId() + " already held");
+								LOGGER.warn("Ignoring {} since {} {} already held", axiomEntry.getEffectiveTime(), replacedAxiomEntry.getEffectiveTime(), replacedAxiomEntry.getId());
 							} 
 							continue;
 						}
@@ -338,26 +312,24 @@ public class GraphLoader implements ScriptConstants {
 					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(lineItems[REF_IDX_AXIOM_STR]);
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 					if (axiom != null) {
-						Long LHS = axiom.getLeftHandSideNamedConcept();
-						if (LHS == null) {
+						Long lhs = axiom.getLeftHandSideNamedConcept();
+						if (lhs == null) {
 							//Is this a GCI?
-							Long RHS = axiom.getRightHandSideNamedConcept();
-							if (!conceptId.equals(RHS)) {
-								throw new IllegalArgumentException("GCI Axiom RHS != RefCompId: " + line);
+							Long rhs = axiom.getRightHandSideNamedConcept();
+							if (!conceptId.equals(rhs)) {
+								throw new IllegalArgumentException("GCI Axiom rhs != RefCompId: " + line);
 							}
 							//This will replace any existing axiom with the same UUID
 							c.addGciAxiom(AxiomUtils.toAxiom(c, axiomEntry, axiom));
 							axiomEntry.setGCI(true);
-						} else if (!conceptId.equals(LHS)) {
+						} else if (!conceptId.equals(lhs)) {
 							//Have we got these weird NL axioms that exist on a different concept?
-							log.append("Encountered " + (axiomEntry.isActive()?"active":"inactive") + " axiom on different concept to LHS argument");
+							log.append("Encountered " + (axiomEntry.isActive()?"active":"inactive") + " axiom on different concept to lhs argument");
 							continue;
-							//TODO
-							//throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
 						Set<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
-						if (relationships.size() == 0) {
+						if (relationships.isEmpty()) {
 							log.append("Check here - zero RHS relationships");
 						}
 
@@ -414,7 +386,7 @@ public class GraphLoader implements ScriptConstants {
 		}
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
 		if (ignoredAxioms > 0) {
-			System.err.println("Ignored " + ignoredAxioms + " already held with later effective time");
+			LOGGER.error("Ignored {} already held with later effective time", ignoredAxioms);
 		}
 
 	}
@@ -528,7 +500,7 @@ public class GraphLoader implements ScriptConstants {
 		} else {
 			String destId = lineItems[REL_IDX_DESTINATIONID];
 			if (destId.length() < 4 ) {
-				LOGGER.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": d" + destId );
+				LOGGER.warn("*** Invalid SCTID encountered in relationship {}: d{}", lineItems[REL_IDX_ID], destId );
 			}
 			Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 			r = new Relationship(source, type, destination, groupNum);
@@ -574,10 +546,7 @@ public class GraphLoader implements ScriptConstants {
 		if (revertEffectiveTime != null) {
 			r.setEffectiveTime(revertEffectiveTime);
 		}
-/*		if (r.getType().equals(IS_A) && r.getSourceId().equals("555621000005106")) {
-			LOGGER.debug("here");
-		}*/
-		
+
 		addRelationshipToConcept(charType, r, isDelta);
 	}
 	
@@ -590,24 +559,19 @@ public class GraphLoader implements ScriptConstants {
 		if (r.getType().equals(IS_A) && r.getTarget() != null) {
 			Concept source = r.getSource();
 			Concept target = r.getTarget();
-			
-			/*if (r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
-					r.getSourceId().contentEquals("21731004") && !r.isActive()) {
-				LOGGER.debug("here");
-			}*/
-			
-			if (r.isActive()) {
+
+			if (r.isActiveSafely()) {
 				source.addParent(r.getCharacteristicType(),r.getTarget());
 				target.addChild(r.getCharacteristicType(),r.getSource());
 			} else {
 				//Ah this gets tricky.  We only remove the parent child relationship if
 				//the source concept has no other relationships with the same triple
 				//because the relationship might exist in another axiom
-				if (source.getRelationships(r.getCharacteristicType(), r).size() == 0) {
+				if (source.getRelationships(r.getCharacteristicType(), r).isEmpty()) {
 					source.removeParent(r.getCharacteristicType(),r.getTarget());
 					target.removeChild(r.getCharacteristicType(),r.getSource());
 				} else {
-					//LOGGER.warn("Not removing parent/child relationship as exists in other axiom / alternative relationship: " + r);
+					//Not removing parent/child relationship as exists in other axiom / alternative relationship
 				}
 			}
 		} 
@@ -715,10 +679,6 @@ public class GraphLoader implements ScriptConstants {
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
-				
-				/*if (lineItems[IDX_ID].equals("394576009")) {
-					LOGGER.debug("here");
-				}*/
 
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
@@ -730,8 +690,7 @@ public class GraphLoader implements ScriptConstants {
 					}
 					
 					if (!isReleased  && c.getModuleId() != null) {
-						String previousState = c.getMutableFields();
-						c.addIssue(previousState);
+						c.setPreviousState(c.getMutableFields());
 					}
 				}
 				
@@ -746,7 +705,7 @@ public class GraphLoader implements ScriptConstants {
 				if (!StringUtils.isEmpty(c.getEffectiveTime()) 
 						&& (isReleased != null && isReleased)
 						&& (c.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-					//System.out.println("Skipping incoming published concept row, older than that held");
+					//Skipping incoming published concept row, older than that held
 					continue;
 				}
 				
@@ -818,11 +777,6 @@ public class GraphLoader implements ScriptConstants {
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
-				
-				/*if (lineItems[DES_IDX_ID].equals("63241000195117")) {
-					LOGGER.debug("Debug Here");
-				}*/
-				
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 				
 				if (isRunIntegrityChecks()) {
@@ -841,8 +795,7 @@ public class GraphLoader implements ScriptConstants {
 					//If the term is null, then this is the first we've seen of this description, so no
 					//need to record its previous state.
 					if (isRecordPreviousState() && !isReleased && d.getTerm() != null) {
-						String previousState = d.getMutableFields();
-						d.addIssue(previousState);
+						d.setPreviousState(d.getMutableFields());
 					}
 					
 					//If we've already received a newer version of this component, say
@@ -909,24 +862,13 @@ public class GraphLoader implements ScriptConstants {
 				}
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
-				
-				/*if (langRefsetEntry.getId().equals("85a10b1f-a8ad-4c73-92bd-d6a0ef67cfa8")) {
-					LOGGER.debug("here");
-				}
-				
-				if (langRefsetEntry.getId().equals("e66a48eb-9824-4a62-99ff-ee7058b878ca")) {
-					LOGGER.debug("here");
-				}*/
-				/*if (langRefsetEntry.getReferencedComponentId().equals("2643877015") || langRefsetEntry.getReferencedComponentId().equals("2643878013")) {
-					LOGGER.debug("here");
-				}*/
+
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
 					
 					if (isRecordPreviousState() && original != null && !isReleased) {
-						String previousState = original.getMutableFields();
-						langRefsetEntry.addIssue(previousState);
+						langRefsetEntry.setPreviousState(original.getMutableFields());
 					}
 					
 					//If we've already received a newer version of this component, say
@@ -1063,10 +1005,7 @@ public class GraphLoader implements ScriptConstants {
 	 */
 	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
 		startingPoint.setDepth(currentDepth);
-		/*if (startingPoint.getConceptId().equals("210431006")) {
-			//LOGGER.debug ("Checkpoint");
-		}*/
-		
+
 		for (Concept child : startingPoint.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (currentDepth >= MAX_DEPTH) {
 				throw new TermServerScriptException("Maximum depth exceeded from " + startingPoint + " and inferred child " + child);
@@ -1074,7 +1013,7 @@ public class GraphLoader implements ScriptConstants {
 			try {
 				populateHierarchyDepth(child, currentDepth + 1);
 			} catch (TermServerScriptException e) {
-				LOGGER.debug ("Exception path: " + startingPoint + " -> " + child);
+				LOGGER.debug("Exception path: {} -> {}",startingPoint, child);
 				throw (e);
 			}
 		}
@@ -1092,11 +1031,7 @@ public class GraphLoader implements ScriptConstants {
 					continue;
 				}
 				String id = lineItems[IDX_ID];
-				
-				/*if (id.equals("f0046c6b-287b-545f-aae5-f0a4b9946a0a")) {
-					LOGGER.debug("here");
-				}*/
-				
+
 				String revertEffectiveTime = null;
 				if (detectNoChangeDelta && isReleased != null && !isReleased) {
 					//Recover this entry for the component - concept or description
@@ -1120,35 +1055,26 @@ public class GraphLoader implements ScriptConstants {
 				
 				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
-					/*if (c.getConceptId().equals("198308002")) {
-						LOGGER.debug("Check Here");
-					}*/
 					//Do we already have this indicator?  Copy the released flag if so
 					InactivationIndicatorEntry existing = c.getInactivationIndicatorEntry(id);
 					if (existing != null) {
 						inactivation.setReleased(existing.getReleased());
 						if (isRecordPreviousState() && !isReleased) {
-							String previousState = existing.getMutableFields();
-							inactivation.addIssue(previousState);
+							inactivation.setPreviousState(existing.getMutableFields());
 						}
 					}
 					
 					c.addInactivationIndicator(inactivation);
 				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
-					/*if (d.getDescriptionId().equals("1221136011")) {
-						LOGGER.debug("Check here");
-					}*/
 					//Do we already have this indicator?  Copy the released flag if so
 					InactivationIndicatorEntry existing = d.getInactivationIndicatorEntry(id);
 					if (existing != null) {
 						inactivation.setReleased(existing.getReleased());
 						if (isRecordPreviousState() && !isReleased) {
-							String previousState = existing.getMutableFields();
-							inactivation.addIssue(previousState);
+							inactivation.setPreviousState(existing.getMutableFields());
 						}
 					}
-					
 					d.addInactivationIndicator(inactivation);
 				}
 			} else {
@@ -1212,8 +1138,7 @@ public class GraphLoader implements ScriptConstants {
 				if (existing != null) {
 					componentAnnotationEntry.setReleased(existing.getReleased());
 					if (isRecordPreviousState() && !isReleased) {
-						String previousState = existing.getMutableFields();
-						componentAnnotationEntry.addIssue(previousState);
+						componentAnnotationEntry.setPreviousState(existing.getPreviousState());
 					}
 				}
 
@@ -1282,8 +1207,7 @@ public class GraphLoader implements ScriptConstants {
 					if (existing != null) {
 						association.setReleased(existing.getReleased());
 						if (isRecordPreviousState() && !isReleased) {
-							String previousState = existing.getMutableFields();
-							association.addIssue(previousState);
+							association.setPreviousState(existing.getMutableFields());
 						}
 					}
 					
@@ -1308,8 +1232,7 @@ public class GraphLoader implements ScriptConstants {
 					if (existing != null) {
 						association.setReleased(existing.getReleased());
 						if (isRecordPreviousState() && !isReleased) {
-							String previousState = existing.getMutableFields();
-							association.addIssue(previousState);
+							association.setPreviousState(existing.getMutableFields());
 						}
 					}
 					
@@ -1347,7 +1270,7 @@ public class GraphLoader implements ScriptConstants {
 		if (historicalAssociations.containsKey(target)) {
 			associations = historicalAssociations.get(target);
 		} else {
-			associations = new ArrayList<AssociationEntry>();
+			associations = new ArrayList<>();
 			historicalAssociations.put(target, associations);
 		}
 		associations.add(h);
@@ -1357,7 +1280,7 @@ public class GraphLoader implements ScriptConstants {
 		if (historicalAssociations.containsKey(c)) {
 			return historicalAssociations.get(c);
 		}
-		return new ArrayList<AssociationEntry>();
+		return new ArrayList<>();
 	}
 	
 	public boolean isUsedAsHistoricalAssociationTarget (Concept c) {
@@ -1403,8 +1326,8 @@ public class GraphLoader implements ScriptConstants {
 
 	private void populateAllComponents() {
 		Script.print("Populating maps of all components.");
-		allComponents = new HashMap<String, Component>();
-		componentOwnerMap = new HashMap<Component, Concept>();
+		allComponents = new HashMap<>();
+		componentOwnerMap = new HashMap<>();
 		int tenPercent = getAllConcepts().size()/10;
 		int conceptsProcessed = 0;
 		
@@ -1460,7 +1383,7 @@ public class GraphLoader implements ScriptConstants {
 				componentOwnerMap.put(a, c);
 			}
 		}
-		Script.println("\nComponent owner map complete with " + componentOwnerMap.size() + " entries.");
+		LOGGER.info("Component owner map complete with {} entries.", componentOwnerMap.size());
 	}
 
 	private void populateDescriptionComponents(Concept c, Description d) {
@@ -1556,19 +1479,19 @@ public class GraphLoader implements ScriptConstants {
 	
 	public synchronized Collection<String> getOrphanetConceptIds() {
 		if (orphanetConceptIds == null) {
-			TermServerScript.print("Loading list of Orphanet Concepts...");
+			LOGGER.info("Loading list of Orphanet Concepts...");
 			try {
 				InputStream is = GraphLoader.class.getResourceAsStream("/data/orphanet_concepts.txt");
 				if (is == null) {
 					throw new RuntimeException ("Failed to load Orphanet data file - not found.");
 				}
-				orphanetConceptIds = IOUtils.readLines(is, "UTF-8").stream()
-						.map(s -> s.trim())
+				orphanetConceptIds = IOUtils.readLines(is, StandardCharsets.UTF_8).stream()
+						.map(String::trim)
 						.collect(Collectors.toSet());
 			} catch (Exception e) {
 				throw new RuntimeException ("Failed to load list of Orphanet Concepts",e);
 			}
-			TermServerScript.println("complete.");
+			LOGGER.info("Orphanet import complete.");
 		}
 		return Collections.unmodifiableCollection(orphanetConceptIds);
 	}
@@ -1615,7 +1538,7 @@ public class GraphLoader implements ScriptConstants {
 				LOGGER.error("Exception encountered",e);
 			} 
 		});
-		LOGGER.info ("Completed transative closure: " + tc.size() + " relationships mapped");
+		LOGGER.info("Completed transative closure: {} relationships mapped", tc.size());
 		return tc;
 	}
 
@@ -1648,7 +1571,7 @@ public class GraphLoader implements ScriptConstants {
 			}
 			//Is the component in it's original state any different to the new rows?
 			if (!differsOtherThanEffectiveTime(c.toRF2(), lineItems)) {
-				LOGGER.warn("No change delta detected for " + c + " reverting effective time");
+				LOGGER.warn("No change delta detected for {}, reverting effective time", c);
 				c.setDirty();
 				return c.getEffectiveTime();
 			}
@@ -1846,7 +1769,7 @@ public class GraphLoader implements ScriptConstants {
 	public void setPopulateOriginalModuleMap(boolean populateOriginalModuleMap) {
 		this.populateOriginalModuleMap = populateOriginalModuleMap;
 	}
-	
+
 	public Map<Component, String> getOriginalModuleMap() {
 		return originalModuleMap;
 	}
