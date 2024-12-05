@@ -75,8 +75,8 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 				for (int i=0; i< entireAndPart.length; i++){
 					if (entireAndPart[i] != null) {
 						//Only need a single value for a simple map
-						String[] additionalValues = new String[] { entireAndPart[i] };
-						RefsetMember rm = new RefsetMember(refsetSCTIDs[i], thisConcept, additionalValues);
+						RefsetMember rm = new RefsetMember(refsetSCTIDs[i], thisConcept);
+						rm.setAdditionalValues(new String[] { entireAndPart[i] });
 						refsetMembers.add(rm);
 					}
 				}

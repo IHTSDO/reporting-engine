@@ -537,10 +537,14 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	}
 
 	@Override
-	public String getMutableFields() {
-		String targetOrCValue = isConcrete() ? this.getConcreteValue().getValueWithPrefix() : this.target.getId();
-		return super.getMutableFields() + this.sourceId + "," 
-			+ this.type.getId() + "," + targetOrCValue + "," + this.characteristicType;
+	public String[] getMutableFields() {
+		String[] mutableFields = super.getMutableFields();
+		int idx = super.getMutableFieldCount();
+		mutableFields[idx] = this.sourceId;
+		mutableFields[++idx] = this.type.getId();
+		mutableFields[++idx] = isConcrete() ? this.getConcreteValue().getValueWithPrefix() : this.target.getId();
+		mutableFields[++idx] = this.characteristicType.toString();
+		return mutableFields;
 	}
 	
 	public String toStringWithId() {
