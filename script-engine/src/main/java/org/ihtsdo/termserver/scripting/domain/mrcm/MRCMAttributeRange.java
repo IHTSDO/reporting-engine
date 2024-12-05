@@ -14,8 +14,8 @@ public class MRCMAttributeRange extends RefsetMember implements ScriptConstants 
 	
 	protected static String[] additionalFieldNames = new String[] {RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
 	
-	public MRCMAttributeRange clone(String newComponentSctId) {
-		return (MRCMAttributeRange) populateClone(new MRCMAttributeRange(), newComponentSctId);
+	public MRCMAttributeRange clone(String newComponentSctId, boolean keepIds) {
+		return (MRCMAttributeRange) populateClone(new MRCMAttributeRange(), newComponentSctId, keepIds);
 	}
 
 	public static MRCMAttributeRange fromRf2(String[] lineItems) throws TermServerScriptException {
