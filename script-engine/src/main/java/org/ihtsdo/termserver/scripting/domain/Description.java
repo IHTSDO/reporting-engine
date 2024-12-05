@@ -851,9 +851,18 @@ public class Description extends Component implements ScriptConstants, Serializa
 	}
 
 	@Override
-	public String getMutableFields() {
-		return super.getMutableFields() + this.type + "," 
-				+ this.term + "," + this.caseSignificance;
+	public String[] getMutableFields() {
+		String[] mutableFields = super.getMutableFields();
+		int idx = super.getMutableFieldCount();
+		mutableFields[idx++] = type.toString();
+		mutableFields[idx++] = term;
+		mutableFields[idx] = caseSignificance.toString();
+		return mutableFields;
+	}
+
+	@Override
+	public int getMutableFieldCount() {
+		return super.getMutableFieldCount() + 3;
 	}
 	
 	public AssociationTargets getAssociationTargets() {

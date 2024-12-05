@@ -11,8 +11,8 @@ public class MRCMModuleScope extends RefsetMember implements ScriptConstants {
 
 	protected static String[] additionalFieldNames = new String[] {RULE_REFSET_ID};
 	
-	public MRCMModuleScope clone(String newComponentSctId) {
-		return (MRCMModuleScope) super.populateClone(new MRCMModuleScope(), newComponentSctId);
+	public MRCMModuleScope clone(String newComponentSctId, boolean keepIds) {
+		return (MRCMModuleScope) super.populateClone(new MRCMModuleScope(), newComponentSctId, keepIds);
 	}
 
 	public static MRCMModuleScope fromRf2(String[] lineItems) throws TermServerScriptException {
