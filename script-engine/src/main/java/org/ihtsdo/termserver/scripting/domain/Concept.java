@@ -7,6 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +39,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	@SerializedName("descriptions")
 	@Expose
-	private List<Description> descriptions = new ArrayList<Description>();
+	private List<Description> descriptions = new ArrayList<>();
 	
 	@SerializedName("relationships")
 	@Expose
-	private Set<Relationship> relationships = new HashSet<Relationship>();
+	private Set<Relationship> relationships = new HashSet<>();
 	
 	@SerializedName("isLeafStated")
 	@Expose
@@ -79,7 +80,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
-	private List<String> assertionFailures = new ArrayList<String>();
+	private List<String> assertionFailures = new ArrayList<>();
 	private String assignedAuthor;
 	private String reviewer;
 	boolean isModified = false; //indicates if has been modified in current processing run
@@ -105,11 +106,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	private Set<RefsetMember> otherRefsetMembers;
 
 	public void reset() {
-		assertionFailures = new ArrayList<String>();
+		assertionFailures = new ArrayList<>();
 		statedRelationshipGroups = null;
 		inferredRelationshipGroups = null;
-		descriptions = new ArrayList<Description>();
-		relationships = new HashSet<Relationship>();
+		descriptions = new ArrayList<>();
+		relationships = new HashSet<>();
 		statedParents.clear();
 		inferredParents.clear();
 		if (statedChildren != null) {
@@ -172,7 +173,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		c.setActive(true);
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		String fsnStr = parts[1];
-		String[] fsnParts = SnomedUtils.deconstructFSN(fsnStr);
+		String[] fsnParts = SnomedUtilsBase.deconstructFSN(fsnStr);
 		Description fsn = Description.withDefaults(fsnStr, DescriptionType.FSN, Acceptability.PREFERRED);
 		Description pt = Description.withDefaults(fsnParts[0], DescriptionType.SYNONYM, Acceptability.PREFERRED);
 		c.addDescription(fsn);
@@ -184,9 +185,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return effectiveTime != null && !effectiveTime.isEmpty();
 	}
 
+	@Override
 	public void setActive(boolean newActiveState) {
 		super.setActive(newActiveState);
-		if (newActiveState == false) {
+		if (!newActiveState) {
 			//If the concept has been made active, then set DefnStatus
 			setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			
@@ -273,7 +275,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Description getPreferredSynonym(String refsetId) throws TermServerScriptException {
 		List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-		return pts.size() == 0 ? null : pts.iterator().next();
+		return pts.isEmpty() ? null : pts.iterator().next();
 	}
 	
 	public List<Description> getPreferredSynonyms() throws TermServerScriptException {
@@ -284,7 +286,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		String debug = "";
 		try {
 			List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-			return pts.size() == 0 ? null : pts.iterator().next();
+			return pts.isEmpty() ? null : pts.iterator().next();
 		} catch (Exception e) {
 			LOGGER.error("Exception encountered",e);
 			debug = e.getMessage();
@@ -309,7 +311,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState activeState, String effectiveTime) {
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : relationships) {
 			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
 				if (characteristicType.equals(CharacteristicType.ALL) || r.getCharacteristicType().equals(characteristicType)) {
@@ -342,7 +344,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Relationship getRelationship(RelationshipTemplate r, int groupId) {
 		Set<Relationship> rels = getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), groupId, ActiveState.ACTIVE);
-		if (rels == null || rels.size() == 0) {
+		if (rels == null || rels.isEmpty()) {
 			return null;
 		} else if (groupId != NOT_SET && rels.size() > 1) {
 			throw new IllegalArgumentException(this + " group " + groupId + " contained > 1 " + r);
@@ -360,7 +362,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (type == null || r.getType().equals(type)) {
 				matches.add(r);
@@ -379,7 +381,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (target == null || r.getTarget().equals(target)) {
 				matches.add(r);
@@ -390,7 +392,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ConcreteValue concreteValue, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (concreteValue == null || r.getConcreteValue().equals(concreteValue)) {
 				matches.add(r);
@@ -401,7 +403,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, int groupId, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, target, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -412,7 +414,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ConcreteValue concreteValue, int groupId, ActiveState activeState) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, concreteValue, activeState);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -423,7 +425,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, int groupId) {
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, ActiveState.ACTIVE);
-		Set<Relationship> matches = new HashSet<Relationship>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -512,9 +514,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public boolean isLeaf (CharacteristicType c) {
 		if (c.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-			return getStatedChildren().size() == 0;
+			return getStatedChildren().isEmpty();
 		} else {
-			return getInferredChildren().size() == 0;
+			return getInferredChildren().isEmpty();
 		}
 	}
 
@@ -538,7 +540,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public String toStringWithIndicator() {
-		return (isActive()?"":"*") + conceptId + " |" + getFsn() + "|";
+		return (isActiveSafely()?"":"*") + conceptId + " |" + getFsn() + "|";
 	}
 
 
@@ -620,11 +622,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			//Before considering inactive rels, check we don't already have this relationship
 			Set<Relationship> activeRels = getRelationships(r);
 			if (activeRels.size() > 0) {
-				System.out.println ("Ignoring relationship add in " + this + ", triple + group already present and active " + activeRels.iterator().next());
+				LOGGER.warn("Ignoring relationship add in {}, triple + group already present and active {}", this, activeRels.iterator().next());
 				return NO_CHANGES_MADE;
 			}
 			for (Relationship match : getRelationships(r, ActiveState.INACTIVE)) {
-				System.out.println ("Reactivating " + match + " in " + this);
+				LOGGER.warn("Reactivating {} in {}", match, this);
 				match.setActive(true);
 				return CHANGE_MADE;
 			}
@@ -699,7 +701,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public Set<Concept> getAncestors(int depth, CharacteristicType characteristicType, boolean includeSelf) throws TermServerScriptException {
-		Set<Concept> allAncestors = new HashSet<Concept>();
+		Set<Concept> allAncestors = new HashSet<>();
 		this.populateAllAncestors(allAncestors, depth, characteristicType);
 		if (includeSelf) {
 			allAncestors.add(this);
@@ -729,7 +731,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
 	//then it must not also be preferred in the other dialect
 	public List<Description> getDescriptions(Acceptability acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
-		List<Description> matchingDescriptions = new ArrayList<Description>();
+		List<Description> matchingDescriptions = new ArrayList<>();
 		for (Description thisDescription : getDescriptions(activeState)) {
 			//Is this description of the right type?
 			if (descriptionType == null || thisDescription.getType().equals(descriptionType)) {
@@ -776,7 +778,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public List<Description> getDescriptions(String langRefsetId, Acceptability targetAcceptability, DescriptionType descriptionType, ActiveState active) throws TermServerScriptException {
 		//Get the matching terms, and then pick the ones that have the appropriate Acceptability for the specified Refset
-		List<Description> matchingDescriptions = new ArrayList<Description>();
+		List<Description> matchingDescriptions = new ArrayList<>();
 		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
 			//We might have this acceptability either from a Map (JSON) or Langrefset entry (RF2)
 			if (SnomedUtils.hasAcceptabilityInDialect(d, langRefsetId, targetAcceptability)) {
@@ -804,7 +806,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public List<Description> getDescriptions(ActiveState a, List<DescriptionType> types) {
-		List<Description> results = new ArrayList<Description>();
+		List<Description> results = new ArrayList<>();
 		for (Description d : descriptions) {
 			if (SnomedUtils.descriptionHasActiveState(d, a) &&
 					types.contains(d.getType())) {
@@ -820,7 +822,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			if (d.getTerm().equals(term)) {
 				//In the case of both active states, return the active one by preference
 				if (a.equals(ActiveState.BOTH)) {
-					if (d.isActive() || bestMatch == null) {
+					if (d.isActiveSafely() || bestMatch == null) {
 						bestMatch = d;
 					} 
 				} else {
@@ -853,9 +855,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		
 		descriptions.add(d);
 		if (d.getType().equals(DescriptionType.FSN)) {
-			if (d.isActive() && (getFsn() == null || d.getLang().equals("en"))) {
+			if (d.isActiveSafely() && (getFsn() == null || d.getLang().equals("en"))) {
 				this.setFsn(d.getTerm());
-			} else if (!d.isActive() && (getFsn() == null || d.getLang().equals("en"))) {
+			} else if (!d.isActiveSafely() && (getFsn() == null || d.getLang().equals("en"))) {
 				List<Description> fsns = getDescriptions(ActiveState.ACTIVE, Collections.singletonList(DescriptionType.FSN));
 				if (fsns.size() == 1) {
 					this.setFsn(fsns.get(0).getTerm());
@@ -886,7 +888,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			default: throw new IllegalArgumentException("Cannot have " + characteristicType + " parents.");
 		}
 		
-		if (parents == null || parents.size() == 0) {
+		if (parents == null || parents.isEmpty()) {
 			if (parents == null) {
 				parents = new HashSet<>();
 				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
@@ -956,7 +958,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			throw new IllegalArgumentException(err);
 		}
 		for (Description d : descriptions) {
-			if (d.isActive() 
+			if (d.isActiveSafely() 
 					&& d.getType().equals(DescriptionType.FSN)
 					&& d.getLang().equals(lang)) {
 				return d;
@@ -965,10 +967,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return null;
 	}
 	
-	public List<Description> getSynonyms(Acceptability Acceptability) {
-		List<Description> synonyms = new ArrayList<Description>();
+	public List<Description> getSynonyms(Acceptability acceptability) {
+		List<Description> synonyms = new ArrayList<>();
 		for (Description d : descriptions) {
-			if (d.isActive() && d.getAcceptabilityMap().values().contains(Acceptability) && d.getType().equals(DescriptionType.SYNONYM)) {
+			if (d.isActiveSafely() && d.getAcceptabilityMap().values().contains(acceptability) && d.getType().equals(DescriptionType.SYNONYM)) {
 				synonyms.add(d);
 			}
 		}
@@ -1054,7 +1056,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries() {
 		if (inactivationIndicatorEntries == null) {
-			inactivationIndicatorEntries = new ArrayList<InactivationIndicatorEntry>();
+			inactivationIndicatorEntries = new ArrayList<>();
 		}
 		return inactivationIndicatorEntries;
 	}
@@ -1064,9 +1066,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			return getInactivationIndicatorEntries();
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
-			List<InactivationIndicatorEntry> selectedInactivationIndicatortEntries = new ArrayList<InactivationIndicatorEntry>();
+			List<InactivationIndicatorEntry> selectedInactivationIndicatortEntries = new ArrayList<>();
 			for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
-				if (i.isActive() == isActive) {
+				if (i.isActiveSafely() == isActive) {
 					selectedInactivationIndicatortEntries.add(i);
 				}
 			}
@@ -1076,7 +1078,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public List<AssociationEntry> getAssociationEntries() {
 		if (associationEntries == null) {
-			associationEntries = new ArrayList<AssociationEntry>();
+			associationEntries = new ArrayList<>();
 		}
 		return associationEntries;
 	}
@@ -1102,7 +1104,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public List<AxiomEntry> getAxiomEntries() {
 		if (axiomEntries == null) {
-			axiomEntries = new ArrayList<AxiomEntry>();
+			axiomEntries = new ArrayList<>();
 		}
 		return axiomEntries;
 	}
@@ -1115,11 +1117,11 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		switch (activeState) {
 			case BOTH: return getAxiomEntries();
 			case ACTIVE: return getAxiomEntries().stream()
-					.filter(a -> a.isActive())
+					.filter(a -> a.isActiveSafely())
 					.filter(a -> includeGCIs || !a.isGCI())
 					.collect(Collectors.toList());
 			case INACTIVE: return getAxiomEntries().stream()
-					.filter(a -> !a.isActive())
+					.filter(a -> !a.isActiveSafely())
 					.filter(a -> includeGCIs || !a.isGCI())
 					.collect(Collectors.toList());
 			default: throw new IllegalStateException("Unknown state " + activeState);
@@ -1181,7 +1183,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public List<Concept> getSiblings(CharacteristicType cType) {
-		List<Concept> siblings = new ArrayList<Concept>();
+		List<Concept> siblings = new ArrayList<>();
 		//Get all the immediate children of the immediate parents
 		for (Concept thisParent : getParents(cType)) {
 			siblings.addAll(thisParent.getChildren(cType));
@@ -1194,6 +1196,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		conceptId = id;
 	}
 
+	@Override
 	public String getId() {
 		if (id == null && conceptId != null) {
 			super.setId(conceptId);
@@ -1215,7 +1218,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		//Remove inactivation indicator first incase we're replacing it
 		getInactivationIndicatorEntries().remove(i);
 		getInactivationIndicatorEntries().add(i);
-		if (i.isActive()) {
+		if (i.isActiveSafely()) {
 			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));
 		}
 	}
@@ -1535,7 +1538,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				//which throws this calculation out
 				if (!r.getType().equals(PLAYS_ROLE) && !r.getType().equals(IS_A)) {
 					if (r.isConcrete()) {
-						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getConcreteValue().getValue().toString());
+						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getConcreteValue().getValue());
 					} else {
 						statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getTarget().getId());
 					}
@@ -1547,10 +1550,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public Axiom getFirstActiveClassAxiom() {
 		if (classAxioms == null) {
-			classAxioms = new ArrayList<Axiom>();
+			classAxioms = new ArrayList<>();
 		}
 		for (Axiom axiom : classAxioms) {
-			if (axiom.isActive()) {
+			if (axiom.isActiveSafely()) {
 				return axiom;
 			}
 		}
@@ -1590,12 +1593,12 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public List<Description> findDescriptionsContaining(List<String> words, boolean onlyPref) {
-		if (words == null || words.size() == 0) {
+		if (words == null || words.isEmpty()) {
 			return new ArrayList<>();
 		}
 		
 		return descriptions.stream()
-				.filter(d -> d.isActive())
+				.filter(d -> d.isActiveSafely())
 				.filter(d -> onlyPref == false || d.isPreferred())
 				.filter(d -> words.stream()
 						.anyMatch(w -> StringUtils.containsIgnoreCase(d.getTerm(), w)))
@@ -1654,8 +1657,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		List<Relationship> fromAxiom = new ArrayList<>();
 		for (Relationship r : relationships) {
 			if (activeState.equals(ActiveState.BOTH) || 
-					(activeState.equals(ActiveState.ACTIVE) && r.isActive()) ||
-					(activeState.equals(ActiveState.INACTIVE) && !r.isActive())) {
+					(activeState.equals(ActiveState.ACTIVE) && r.isActiveSafely()) ||
+					(activeState.equals(ActiveState.INACTIVE) && !r.isActiveSafely())) {
 				if (r.getAxiom() != null && r.getAxiom().getId().equals(axiomId)) {
 					fromAxiom.add(r);
 				} else if (r.getAxiomEntry() != null && r.getAxiomEntry().getId().equals(axiomId)) {
@@ -1674,7 +1677,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		
 		if (!SnomedUtils.isEmpty(fsn)) {
-			String[] parts = SnomedUtils.deconstructFSN(fsn.toString());
+			String[] parts = SnomedUtilsBase.deconstructFSN(fsn.toString());
 			if (!StringUtils.isEmpty(parts[1])) {
 				semTag = parts[1];
 				return semTag;
@@ -1748,24 +1751,24 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	private void removeInactiveComponents() {
-		descriptions.removeIf(c -> !c.isActive());
-		relationships.removeIf(c -> !c.isActive());
+		descriptions.removeIf(c -> !c.isActiveSafely());
+		relationships.removeIf(c -> !c.isActiveSafely());
 		if (inactivationIndicatorEntries != null) {
-			inactivationIndicatorEntries.removeIf(c -> !c.isActive());
+			inactivationIndicatorEntries.removeIf(c -> !c.isActiveSafely());
 		}
 		
 		if (associationEntries != null) {
-			associationEntries.removeIf(c -> !c.isActive());
+			associationEntries.removeIf(c -> !c.isActiveSafely());
 		}
 		
 		if (axiomEntries != null) {
-			axiomEntries.removeIf(c -> !c.isActive());
+			axiomEntries.removeIf(c -> !c.isActiveSafely());
 		}
 		
 		for (Description d : descriptions) {
-			d.getLangRefsetEntries().removeIf(c -> !c.isActive());
-			d.getInactivationIndicatorEntries().removeIf(c -> !c.isActive());
-			d.getAssociationEntries().removeIf(c -> !c.isActive());
+			d.getLangRefsetEntries().removeIf(c -> !c.isActiveSafely());
+			d.getInactivationIndicatorEntries().removeIf(c -> !c.isActiveSafely());
+			d.getAssociationEntries().removeIf(c -> !c.isActiveSafely());
 		}
 	}
 
@@ -1794,7 +1797,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 	public void addAlternateIdentifier(String id, String schemeId) {
 		if (alternateIdentifiers == null) {
-			alternateIdentifiers = new HashSet<AlternateIdentifier>();
+			alternateIdentifiers = new HashSet<>();
 		}
 		AlternateIdentifier altId = new AlternateIdentifier();
 		altId.setReferencedComponentId(this.getId());

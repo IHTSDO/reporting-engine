@@ -240,9 +240,9 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	/**
 	 * 2 points for preferred, 1 point for acceptable
 	 */
-	public static int accetabilityScore (Map<String, Acceptability> AcceptabilityMap) {
+	public static int accetabilityScore (Map<String, Acceptability> acceptabilityMap) {
 		int score = 0;
-		for (Acceptability a : AcceptabilityMap.values()) {
+		for (Acceptability a : acceptabilityMap.values()) {
 			if (a.equals(Acceptability.PREFERRED)) {
 				score += 2;
 			} else if (a.equals(Acceptability.ACCEPTABLE)) {
@@ -363,8 +363,8 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static boolean conceptHasActiveState(Concept c, ActiveState a) {
 		boolean hasActiveState = false;
 		if (a.equals(ActiveState.BOTH) ||
-			(a.equals(ActiveState.ACTIVE) && c.isActive()) ||
-			(a.equals(ActiveState.INACTIVE) && !c.isActive())) {
+			(a.equals(ActiveState.ACTIVE) && c.isActiveSafely()) ||
+			(a.equals(ActiveState.INACTIVE) && !c.isActiveSafely())) {
 			hasActiveState = true;
 		}
 		return hasActiveState;
@@ -373,8 +373,8 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static boolean descriptionHasActiveState(Description d, ActiveState a) {
 		boolean hasActiveState = false;
 		if (a.equals(ActiveState.BOTH) ||
-			(a.equals(ActiveState.ACTIVE) && d.isActive()) ||
-			(a.equals(ActiveState.INACTIVE) && !d.isActive())) {
+			(a.equals(ActiveState.ACTIVE) && d.isActiveSafely()) ||
+			(a.equals(ActiveState.INACTIVE) && !d.isActiveSafely())) {
 			hasActiveState = true;
 		}
 		return hasActiveState;
@@ -558,7 +558,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 				changeStatus = ChangeStatus.CHANGE_MADE;
 				break;
 			} else {
-				if (!thisDialectEntry.isActive()) {
+				if (!thisDialectEntry.isActiveSafely()) {
 					thisDialectEntry.setEffectiveTime(null);
 					thisDialectEntry.setActive(true);
 					changeStatus = ChangeStatus.CHANGE_MADE;
@@ -755,7 +755,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		String associations = "";
 		boolean isFirst = true;
 		for (AssociationEntry assoc : d.getAssociationEntries())  {
-			if (assoc.isActive()) {
+			if (assoc.isActiveSafely()) {
 				if (!isFirst) {
 					associations += "\n";
 				} else {
@@ -799,7 +799,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		if (c.getFsn() == null) {
 			determineConceptTypeFromAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
 		} else {
-			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 			boolean isOnly = isOnly(c);
 			switch (semTag) {
 				case DrugUtils.MP : c.setConceptType(isOnly ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
@@ -1372,11 +1372,11 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static void removeRedundancies(Set<Concept> concepts) throws TermServerScriptException {
 		Set<Concept> redundant = new HashSet<>();
 		DescendantsCache cache = GraphLoader.getGraphLoader().getDescendantsCache();
-		//For each concept, it is redundant if any of it's descendants are also present
+		//For each concept, it is redundant if any of its descendants are also present
 		for (Concept concept : concepts) {
 			Set<Concept> descendants = new HashSet<>(cache.getDescendants(concept));
 			descendants.retainAll(concepts);
-			if (descendants.size() > 0) {
+			if (!descendants.isEmpty()) {
 				redundant.add(concept);
 			}
 		}
@@ -1400,9 +1400,9 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		//Can we have this acceptablity in ANY langRefSet?
 		if (langRefsetId == null) {
 			Collection<Acceptability> acceptabilities = d.getAcceptabilities();
-			if (acceptabilities.size() == 0) {
+			if (acceptabilities.isEmpty()) {
 				return targetAcceptability.equals(Acceptability.NONE);
-			} else if (targetAcceptability.equals(Acceptability.BOTH) && acceptabilities.size() > 0) {
+			} else if (targetAcceptability.equals(Acceptability.BOTH) && !acceptabilities.isEmpty()) {
 				return true;
 			} else {
 				for (Acceptability acceptability : acceptabilities) {
@@ -1453,7 +1453,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static Concept getHistoricalParent(Concept c) throws TermServerScriptException {
-		if (c.isActive()) {
+		if (c.isActiveSafely()) {
 			throw new TermServerScriptException("Attempted to find historical parent of an active concept: " + c);
 		}
 		//TODO Sort the parent relationships by time so we get the one most recently inactivated
@@ -1464,7 +1464,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		
 		//Return the first one that is still active
 		for (Concept parent : parents) {
-			if (parent.isActive()) {
+			if (parent.isActiveSafely()) {
 				return parent;
 			}
 		}
@@ -1556,7 +1556,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static String getDescriptionsToString(Concept c, boolean includeInactiveDescriptions) {
 		List<Description> descriptions = includeInactiveDescriptions ? c.getDescriptions() : c.getDescriptions(ActiveState.ACTIVE);
 		return prioritise(descriptions).stream()
-				.map(d -> d.toString()).collect(Collectors.joining(",\n"));
+				.map(Object::toString).collect(Collectors.joining(",\n"));
 	}
 	
 	public static String getDescriptions(Concept c, boolean includeDefinitions) {
@@ -1707,7 +1707,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		//If there's no attribute value specified, we'll match on just the target type
 		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendantsOrSelf(targetAttribute.getTarget());
 		return c.getRelationships().stream()
-				.filter(r -> r.isActive())
+				.filter(r -> r.isActiveSafely())
 				.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
 				.filter(r -> types.contains(r.getType()))
 				.filter(r -> {
@@ -1801,7 +1801,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	 */
 	public static void addHistoricalAssociationInTsForm(Concept c, AssociationEntry histAssoc) {
 		//The TS form can only store active associations
-		if (histAssoc.isActive()) {
+		if (histAssoc.isActiveSafely()) {
 			AssociationTargets targets = c.getAssociationTargets();
 			String target = histAssoc.getTargetComponentId();
 			switch (histAssoc.getRefsetId()) {
@@ -1931,7 +1931,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		if (descA == null || descB == null) {
 			return true;
 		}
-		return descA.isActive() != descB.isActive();
+		return descA.isActiveSafely() != descB.isActiveSafely();
 	}
 	
 	public static String shortestTerm(Concept c) {
@@ -1969,29 +1969,29 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static List<Concept> sort(Collection<Concept> superSet) {
 		//We're going to sort on top level hierarchy, then alphabetically
 		return superSet.stream()
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.sorted(SnomedUtils::compareSemTagFSN)
 		.collect(Collectors.toList());
 	}
 	
 	public static List<Concept> sortActive(Collection<Concept> superSet) {
 		//We're going to sort on top level hierarchy, then alphabetically
 		return superSet.stream()
-		.filter(c -> c.isActive())
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.filter(c -> c.isActiveSafely())
+		.sorted(SnomedUtils::compareSemTagFSN)
 		.collect(Collectors.toList());
 	}
 	
 	public static List<Concept> sortInactive(Collection<Concept> superSet) {
 		//We're going to sort on top level hierarchy, then alphabetically
 		return superSet.stream()
-		.filter(c -> !c.isActive())
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.filter(c -> !c.isActiveSafely())
+		.sorted(SnomedUtils::compareSemTagFSN)
 		.collect(Collectors.toList());
 	}
 	
 	public static int compareSemTagFSN(Concept c1, Concept c2) {
-		String[] fsnSemTag1 = SnomedUtils.deconstructFSN(c1.getFsn());
-		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
+		String[] fsnSemTag1 = SnomedUtilsBase.deconstructFSN(c1.getFsn());
+		String[] fsnSemTag2 = SnomedUtilsBase.deconstructFSN(c2.getFsn());
 		
 		if (fsnSemTag1[1] == null) {
 			if (!missingFsnReport.contains(c1.getId())) {
@@ -2304,7 +2304,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			return c;
 		}
 
-		if (!c.isActive() || c.getDepth() == NOT_SET) {
+		if (!c.isActiveSafely() || c.getDepth() == NOT_SET) {
 			if (c.getDepth() == NOT_SET) {
 				LOGGER.warn("Depth of " + c + " not set.  Is that expected?");
 			}
@@ -2387,7 +2387,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		semanticTagHierarchyMap = new HashMap<>();
 		allKnowActiveSemanticTags = new HashSet<>();
 		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive()) {
+			if (!c.isActiveSafely()) {
 				continue;
 			}
 			String semTag = deconstructFSN(c.getFsn())[1];
@@ -2476,14 +2476,14 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		String differences = "";
 		for (Relationship lhsR : lhs.getRelationships(charType, ActiveState.ACTIVE)) {
 			//Do we have this relationship on the RHS?
-			if (rhs.getRelationships(charType, lhsR.getType(), lhsR.getTarget(), ActiveState.ACTIVE).size() == 0) {
+			if (rhs.getRelationships(charType, lhsR.getType(), lhsR.getTarget(), ActiveState.ACTIVE).isEmpty()) {
 				differences += lineFeed(differences) + "Missing: " + lhsR.toShortPrettyString();
 			}
 		}
 		//Now do we have any on the other side that are considered 'extra'?
 		for (Relationship rhsR : rhs.getRelationships(charType, ActiveState.ACTIVE)) {
 			//Do we have this relationship on the RHS?
-			if (lhs.getRelationships(charType, rhsR.getType(), rhsR.getTarget(), ActiveState.ACTIVE).size() == 0) {
+			if (lhs.getRelationships(charType, rhsR.getType(), rhsR.getTarget(), ActiveState.ACTIVE).isEmpty()) {
 				differences += lineFeed(differences) + "Additional: " + rhsR.toShortPrettyString();
 			}
 		}
@@ -2506,7 +2506,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			expression += group.getRelationships().stream()
 					.filter(r -> r.getType().equals(IS_A))
 					.map(r -> r.getTarget())
-					.map(p -> p.toString())
+					.map(Object::toString)
 					.collect(Collectors.joining (" + \n"));
 		}
 
@@ -2526,7 +2526,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			expression += group.isGrouped() ? "{" : "";
 			expression += group.getRelationships().stream()
 					.filter(r -> !r.getType().equals(IS_A))
-					.map(p -> "  " + p.toString())
+					.map(p -> "  " + p)
 					.collect(Collectors.joining (",\n"));
 			expression += group.isGrouped() ? " }" : "";
 		}
@@ -2695,11 +2695,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static String translateActiveStateToRF2(Component c) {
-		String activeStr = "0";
-		if (c.isActive() != null && c.isActive().equals(true)) {
-			activeStr = "1";
-		}
-		return activeStr;
+		return c.isActiveSafely() ? "1" : "0";
 	}
 
 	public static List<String> extractSCTIDs(String input) {
@@ -2719,11 +2715,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static String translateActiveState(Component c) {
-		String activeStr = "N";
-		if (c.isActive() != null && c.isActive().equals(true)) {
-			activeStr = "Y";
-		}
-		return activeStr;
+		return c.isActiveSafely() ? "Y" : "N";
 	}
 
 	public static boolean isTargetDescriptionType(List<String> targetTypes, Description d) {
@@ -2740,6 +2732,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 
 		return d.getType().equals(DescriptionType.TEXT_DEFINITION) && targetTypes.contains("DEFN");
+	}
+
+	public static void setAllComponentsDirty(Concept c, boolean includeStatedRels) {
+		getAllComponents(c, includeStatedRels).stream().forEach(Component::setDirty);
 	}
 	
 }
