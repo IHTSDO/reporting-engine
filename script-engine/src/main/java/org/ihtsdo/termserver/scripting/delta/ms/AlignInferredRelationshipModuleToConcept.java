@@ -12,7 +12,6 @@ public class AlignInferredRelationshipModuleToConcept extends DeltaGenerator {
 		delta.standardExecution(args);
 	}
 
-	@Override
 	public void process() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (!inScope(c)) {
