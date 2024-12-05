@@ -1223,7 +1223,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					concepts.remove(c);
 				}
 				for (Concept c : concepts) {
-					LOGGER.warn("Duplicate concept received from ECL: " + c);
+					LOGGER.warn("Duplicate concept received from ECL: {}", c);
 				}
 				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
 			}
@@ -1231,53 +1231,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		return concepts; 
 	}
-	
-	/*protected Set<Concept> findConceptsByCriteria(String eclType, String criteria, String branch, boolean useLocalCopies) throws TermServerScriptException {
-		Set<Concept> allConcepts = new HashSet<>();
-		boolean allRecovered = false;
-		String searchAfter = null;
-		int totalRecovered = 0;
-		while (!allRecovered) {
-			try {
-					ConceptCollection collection = tsClient.getConceptsMatchingCriteria(eclType, criteria, branch, searchAfter, PAGING_LIMIT);
-					totalRecovered += collection.getItems().size();
-					if (searchAfter == null) {
-						//First time round, report how many we're receiving.
-						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts on " + branch + " matching criteria: '" + criteria +"'");
-					}
-					
-					if (useLocalCopies) {
-						//Recover our locally held copy of these concepts so that we have the full hierarchy populated
-						List<Concept> localCopies = collection.getItems().stream()
-								.map(c -> gl.getConceptSafely(c.getId()))
-								.collect(Collectors.toList());
-						allConcepts.addAll(localCopies);
-					} else {
-						allConcepts.addAll(collection.getItems());
-					}
-					
-					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
-					//add to the set
-					if (totalRecovered > allConcepts.size()) {
-						TermServerScript.warn ("Duplicates detected");
-					}
-					
-					//Did we get all the concepts that there are?
-					if (totalRecovered < collection.getTotal()) {
-						searchAfter = collection.getSearchAfter();
-						if (searchAfter == null) {
-							throw new TermServerScriptException("More concepts to recover, but TS did not populate the searchAfter field");
-						}
-					} else {
-						allRecovered = true;
-					}
-			} catch (Exception e) {
-				throw new TermServerScriptException("Failed to recover concepts matching criteria '" + criteria + "' due to " + e.getMessage(),e);
-			}
-		}
-		return allConcepts;
-	}
-*/
+
 	protected List<Component> processFile() throws TermServerScriptException {
 		if (getInputFile() == null) {
 			throw new TermServerScriptException("Unable to process file as no file specified!  Check -f parameter has been supplied, or alternatively, an ECL selection.");
@@ -1287,7 +1241,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected List<Component> processFile(File file) throws TermServerScriptException {
 		Set<Component> allComponents= new LinkedHashSet<>();
-		LOGGER.debug("Loading input file " + file.getAbsolutePath());
+		LOGGER.debug("Loading input file {}", file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
 			lines = StringUtils.removeBlankLines(lines);
@@ -1310,7 +1264,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					try{
 						components = loadLine(lineItems);
 
-						if (components != null && components.size() > 0) {
+						if (components != null && !components.isEmpty()) {
 							allComponents.addAll(components);
 						} else {
 							if (!expectNullConcepts) {
@@ -1321,7 +1275,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						throw new TermServerScriptException("Failed to load line " + lineNum + ": '" + lines.get(lineNum) + "' due to ",e);
 					}
 				} else {
-					LOGGER.debug("Skipping blank line " + lineNum);
+					LOGGER.debug("Skipping blank line {}", lineNum);
 				}
 			}
 			addSummaryInformation(CONCEPTS_IN_FILE, allComponents);
@@ -1331,7 +1285,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		} catch (IOException e) {
 			throw new TermServerScriptException("Error while reading input file " + file.getAbsolutePath(), e);
 		}
-		return new ArrayList<Component>(allComponents);
+		return new ArrayList<>(allComponents);
 	}
 	
 	/*

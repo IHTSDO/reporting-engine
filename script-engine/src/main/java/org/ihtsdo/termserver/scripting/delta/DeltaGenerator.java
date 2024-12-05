@@ -605,12 +605,19 @@ public abstract class DeltaGenerator extends TermServerScript {
 		throw new UnsupportedOperationException("Override process() in your DeltaGenerator");
 	}
 
-	protected void standardExecution(String[] args) throws TermServerScriptException{
+	protected void standardExecutionWithIds(String[] args) throws TermServerScriptException {
+		standardExecution(args, true);
+	}
+
+	protected void standardExecution(String[] args) throws TermServerScriptException {
+		standardExecution(args, false);
+	}
+
+	protected void standardExecution(String[] args, boolean newIdsRequired) throws TermServerScriptException{
 		try {
 			getArchiveManager().setPopulateReleasedFlag(true);
 			runStandAlone = false;
-			inputFileHasHeaderRow = true;
-			newIdsRequired = false; // We'll only be inactivating existing relationships
+			this.newIdsRequired = newIdsRequired;
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
