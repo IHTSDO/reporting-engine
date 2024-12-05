@@ -113,7 +113,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
-					throw new RuntimeException(e);
 				}
 			}
 			finish();
@@ -154,8 +153,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("101752-4")) {
-			LOGGER.debug("Check 'DIVISOR' in FSN");
+		if (externalIdentifier.equals("100091-8")) {
+			LOGGER.debug("Check specimen in FSN");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -223,7 +222,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		//Sort so that subsequent spreadsheets are somewhat comparable
 		List<TemplatedConcept> sortedModelled = successfullyModelled.stream()
 				.sorted(Comparator.comparing(TemplatedConcept::getExternalIdentifier))
-				.collect(Collectors.toList());
+				.toList();
 		
 		for (TemplatedConcept tc : sortedModelled) {
 			determineChanges(tc, externalIdentifiersProcessed);
@@ -423,9 +422,15 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 							.forEach(a -> a.setActive(false));
 					break;
 				case DESCRIPTION:
-					Description desc = (Description)existingComponent;
 					Description newDesc = (Description)newlyModelledComponent;
 					newDesc.setConceptId(tc.getExistingConcept().getId());
+					newDesc.getLangRefsetEntries().stream()
+							.forEach(l -> l.setReferencedComponentId(tc.getExistingConcept().getId()));
+					break;
+				case LANGREFSET:
+					LangRefsetEntry lre = (LangRefsetEntry)existingComponent;
+					LangRefsetEntry newLre = (LangRefsetEntry)newlyModelledComponent;
+					newLre.setReferencedComponentId(lre.getReferencedComponentId());
 					break;
 				default:
 					break;
@@ -449,7 +454,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			existingConcept = gl.getConcept(existingConceptSCTID, false, false);
 			if (existingConcept == null) {
 				String msg = "Alternate identifier " + tc.getExternalIdentifier() + " --> " + existingConceptSCTID + " but existing concept not found.  Did it get deleted?  Reusing ID.";
-				//throw new TermServerScriptException(");
 				addFinalWords(msg);
 				tc.getConcept().setId(existingConceptSCTID);
 				tc.setIterationIndicator(TemplatedConcept.IterationIndicator.RESURRECTED);
@@ -468,7 +472,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			conceptCreator.copyStatedRelsToInferred(concept);
 			changesMade = true;
 		} else {
-			//TODO TEMPORARY CODE
+			//TODO TEMPORARY CODE.   We can remove this after our first publication
 			//For existing concepts we're going to group inferred relationships if required
 			for (Relationship r : existingConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (r.getGroupId() > 1) {
@@ -486,7 +490,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		List<String> differencesList = new ArrayList<>();
 		//To inactivate a concept we need to inactivate the concept itself and the OWL axiom.
 		//The descriptions remain active, and we'll let classification sort out the inferred relationships
-		if (c.isActive()) {
+		if (c.isActiveSafely()) {
 			c.setActive(false);  //This will inactivate the concept and all relationships
 			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c, SCTID_INACT_OUTDATED);
 			ii.setModuleId(externalContentModule);
@@ -661,7 +665,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				proposedConcept != null ? proposedConcept.getId() : existingConceptId,
 				tc.getIterationIndicator(),
 				tc.getClass().getSimpleName(),
-				tc.getDifferencesFromExistingConcept(),
+				tc.getDifferencesFromExistingConceptWithMultiples(),
 				proposedDescriptionsStr,
 				previousDescriptionsStr,
 				proposedSCG, 
