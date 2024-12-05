@@ -2741,5 +2741,9 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 		return d.getType().equals(DescriptionType.TEXT_DEFINITION) && targetTypes.contains("DEFN");
 	}
+
+	public static void setAllComponentsDirty(Concept c) {
+		getAllComponents(c).stream().forEach(Component::setDirty);
+	}
 	
 }
