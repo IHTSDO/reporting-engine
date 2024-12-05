@@ -168,7 +168,7 @@ public class Axiom extends Expressable implements ScriptConstants {
 	}
 
 	@Override
-	public String getMutableFields() {
+	public String[] getMutableFields() {
 		throw new NotImplementedException("Expecting getMutableFields to be called on AxiomEntry rather than Axiom");
 	}
 

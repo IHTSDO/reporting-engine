@@ -25,8 +25,6 @@ AlternateIdentifier extends Component implements ScriptConstants {
 	@Expose
 	protected String referencedComponentId;
 	
-	public AlternateIdentifier() {}
-	
 	public String getAlternateIdentifier() {
 		return alternateIdentifier;
 	}
@@ -34,11 +32,13 @@ AlternateIdentifier extends Component implements ScriptConstants {
 	public void setAlternateIdentifier(String alternateIdentifier) {
 		this.alternateIdentifier = alternateIdentifier;
 	}
-	
+
+	@Override
 	public String getId() {
 		return alternateIdentifier;
 	}
 
+	@Override
 	public void setId(String alternateIdentifier) {
 		this.alternateIdentifier = alternateIdentifier;
 	}
@@ -80,14 +80,14 @@ AlternateIdentifier extends Component implements ScriptConstants {
 		int col = 0;
 		row[col++] = getId();
 		row[col++] = effectiveTime==null?"":effectiveTime;
-		row[col++] = active?"1":"0";
+		row[col++] = isActiveSafely()?"1":"0";
 		row[col++] = moduleId;
 		row[col++] = identifierSchemeId;
-		row[col++] = referencedComponentId;
+		row[col] = referencedComponentId;
 		return row;
 	}
 	
-	public static void populatefromRf2(AlternateIdentifier m, String[] lineItems, String[] additionalFieldNames) throws TermServerScriptException {
+	public static void populatefromRf2(AlternateIdentifier m, String[] lineItems)  {
 		m.setAlternateIdentifier(lineItems[REF_IDX_ID]);
 		m.setEffectiveTime(lineItems[REF_IDX_EFFECTIVETIME]);
 		m.setActive(lineItems[REF_IDX_ACTIVE].equals("1"));
@@ -98,31 +98,36 @@ AlternateIdentifier extends Component implements ScriptConstants {
 
 	@Override 
 	public boolean equals(Object o) {
-		if (o instanceof AlternateIdentifier) {
-			return this.getId().equals(((AlternateIdentifier)o).getId());
-		}
-		return false;
+		return (o instanceof AlternateIdentifier otherAltId)  && this.getId().equals(otherAltId.getId());
 	}
 	
 	public String toString() {
-		String activeIndicator = isActive()?"":"*";
+		String activeIndicator = isActiveSafely()?"":"*";
 		return  activeIndicator + alternateIdentifier + "(" + identifierSchemeId + ") --> " + referencedComponentId;
 	}
 
 	@Override
-	public String getMutableFields() {
-		String mutableFields = super.getMutableFields() + "," + this.referencedComponentId;
+	public String[] getMutableFields() {
+		String[] mutableFields = super.getMutableFields();
+		int idx = super.getMutableFieldCount();
+		mutableFields[idx] = this.identifierSchemeId;
+		mutableFields[++idx] = this.referencedComponentId;
 		return mutableFields;
 	}
-	
+
+	@Override
+	public int getMutableFieldCount() {
+		return super.getMutableFieldCount() + 3;
+	}
+
+	@Override
 	public String toStringWithId() {
 		return getId() + ": " + toString();
 	}
 
 	@Override
 	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotImplementedException("TODO");
 	}
 
 	@Override

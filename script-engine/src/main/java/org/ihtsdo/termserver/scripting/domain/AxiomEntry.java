@@ -10,19 +10,13 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
 public class AxiomEntry extends RefsetMember implements ScriptConstants {
 
-	private String owlExpression;
+	public static final String OWL_EXPRESSION = "owlExpression";
+	private static final String[] additionalFieldNames = new String[] {OWL_EXPRESSION};
 	private boolean isGCI = false;
 	
 	public AxiomEntry clone(String newComponentSctId, boolean keepIds) {
 		AxiomEntry clone = new AxiomEntry();
-		clone.id = keepIds ? this.id : UUID.randomUUID().toString();
-		clone.effectiveTime = keepIds ? this.effectiveTime :null;
-		clone.moduleId = this.moduleId;
-		clone.active = this.active;
-		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = keepIds ? this.referencedComponentId : newComponentSctId;
-		clone.owlExpression = this.owlExpression;
-		clone.isDirty = true; //New components need to be written to any delta
+		populateClone(clone, newComponentSctId, keepIds);
 		clone.isGCI = this.isGCI;
 		return clone;
 	}
@@ -33,33 +27,36 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 		axiom.active = true;
 		axiom.refsetId = SCTID_OWL_AXIOM_REFSET;
 		axiom.referencedComponentId = c.getConceptId();
-		axiom.owlExpression = expression;
+		axiom.setField(OWL_EXPRESSION, expression);
 		return axiom;
 	}
-	
-	public String toString() {
-		String activeIndicator = isActive()?"":"*";
-		return "[" + activeIndicator + "OWL]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + owlExpression;
+
+	public String getOwlExpression() {
+		return getField(OWL_EXPRESSION);
 	}
-	
+
+	@Override
+	public String toString() {
+		String activeIndicator = isActiveSafely()?"":"*";
+		return "[" + activeIndicator + "OWL]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + getOwlExpression();
+	}
+
+	@Override
 	public String[] toRF2() {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
-				(active?"1":"0"),
+				(isActiveSafely()?"1":"0"),
 				moduleId, refsetId,
 				referencedComponentId,
-				owlExpression
+				getOwlExpression()
 		};
 	}
 	
-	public String getOwlExpression() {
-		return owlExpression;
-	}
 	public void setOwlExpression(String owlExpression) {
-		if (this.owlExpression != null && !this.owlExpression.equals(owlExpression)) {
+		if (getOwlExpression() != null && !getOwlExpression().equals(owlExpression)) {
 			setDirty();
 		}
-		this.owlExpression = owlExpression;
+		setField(OWL_EXPRESSION, owlExpression);
 	}
 	
 	public static AxiomEntry fromRf2(String[] lineItems) {
@@ -91,8 +88,8 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 	
 	@Override 
 	public boolean equals(Object o) {
-		if (o instanceof AxiomEntry) {
-			return this.getId().equals(((AxiomEntry)o).getId());
+		if (o instanceof AxiomEntry otherAxiom) {
+			return this.getId().equals(otherAxiom.getId());
 		}
 		return false;
 	}
@@ -129,7 +126,13 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 	@Override
 	public boolean matchesMutableFields(Component other) {
 		AxiomEntry otherAE = (AxiomEntry)other;
-		return this.owlExpression.equals(otherAE.owlExpression);
+		return this.getOwlExpression().equals(otherAE.getOwlExpression());
 	}
+
+	@Override
+	public String[] getAdditionalFieldNames() {
+		return additionalFieldNames;
+	}
+
 	
 }

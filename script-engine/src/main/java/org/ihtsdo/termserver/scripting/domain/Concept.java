@@ -1704,8 +1704,15 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	@Override
-	public String getMutableFields() {
-		return super.getMutableFields() + this.definitionStatus;
+	public String[] getMutableFields() {
+		String[] mutableFields = super.getMutableFields();
+		mutableFields[getMutableFieldCount() - 1] = this.definitionStatus.toString();
+		return mutableFields;
+	}
+
+	@Override
+	public int getMutableFieldCount() {
+		return super.getMutableFieldCount() + 1;
 	}
 
 	//Return any relationship groups that contain an attribute with the targetType
