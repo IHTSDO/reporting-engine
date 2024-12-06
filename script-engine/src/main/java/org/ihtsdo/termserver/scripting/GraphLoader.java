@@ -1496,7 +1496,7 @@ public class GraphLoader implements ScriptConstants {
 		return axiomService;
 	}
 
-	public void populatePreviousTransativeClosure() throws TermServerScriptException {
+	public void populatePreviousTransativeClosure() {
 		LOGGER.info("Populating PREVIOUS transitive closure");
 		previousTransitiveClosure = generateTransativeClosure();
 		LOGGER.info("PREVIOUS transitive closure complete");
