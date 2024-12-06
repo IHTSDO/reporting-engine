@@ -568,7 +568,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					"2965-2","5811-5","50562-8","53326-5","66746-9","3097-3","44734-2");
 
 	public static final Map<String, String> MANUALLY_MAINTAINED_ITEMS = Map.of(
-			"925-8", "580271010000105 |Blood product disposition [Type] (observable entity)|",
 			"8251-1", "580221010000109 |Service comment (observable entity)|",
 			"49024-3", "580231010000107 |Differential cell count method - Blood (observable entity)|",
 			"49541-6", "580241010000104 |Fasting status - Reported (observable entity)|",
