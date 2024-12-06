@@ -76,7 +76,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected boolean batchDelimitersDetected = false;
 	protected int archivesCreated = 0;
-	
+
+	@Override
 	protected void init (String[] args) throws TermServerScriptException {
 		//We definitely need to finish saving a snapshot to disk before we start making changes
 		//Otherwise if we run multiple times, we'll pick up changes from a previous run.
@@ -144,9 +145,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		outputDirName = outputDir.getName();
 		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
 		packageDir = packageRoot + today + File.separator;
-		LOGGER.info ("Outputting data to " + packageDir);
+		LOGGER.info ("Outputting data to {}", packageDir);
 	}
 
+	@Override
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		super.checkSettingsWithUser(jobRun);
 
@@ -242,7 +244,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				choice = STDIN.nextLine().trim();
 			}
 
-			if (choice.toUpperCase().equals("Y")) {
+			if (choice.equalsIgnoreCase("Y")) {
 				print("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
 				String response = STDIN.nextLine().trim();
 				if (!response.isEmpty()) {
@@ -253,14 +255,15 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 
-
+	@Override
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		super.postInit(tabNames, columnHeadings, false);
 		if (!dryRun) {
 			initialiseFileHeaders();
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"SCTID, FSN, SemTag, Severity, Action, Details," + additionalReportColumns
@@ -271,7 +274,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 		};
 		postInit(tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void finish() {
 		try {
 			super.finish();
@@ -468,7 +472,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected boolean outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
 		boolean conceptComponentOutput = false;
-		//TODO: Keep note of concepts output and augement with axioms if changed without concept
 		if (c.isDirty()) {
 			writeToRF2File(conDeltaFilename, c.toRF2());
 			conceptComponentOutput = true;
@@ -617,7 +620,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 
 	protected void standardExecution(String[] args, boolean newIdsRequired) throws TermServerScriptException{
 		try {
-			getArchiveManager().setPopulateReleasedFlag(true);
 			runStandAlone = false;
 			this.newIdsRequired = newIdsRequired;
 			init(args);

@@ -1438,14 +1438,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
-		if (StringUtils.isEmpty(fileName)) {
-			throw new TermServerScriptException("Request to write to RF2 file with no filename specified");
+		if (StringUtils.isEmpty(fileName) || fileName.startsWith("null")) {
+			throw new TermServerScriptException("Request to write to RF2 file with no / invalid filename specified: '" + fileName + "'");
 		}
-		//if (dryRun) {
-		//	debug("Dry run. Live run would write to " + fileName + " : " + columns);
-		//} else {
-			getRF2Manager().writeToRF2File(fileName, columns);
-		//}
+		getRF2Manager().writeToRF2File(fileName, columns);
 	}
 	
 	protected void writeToRF2File(String fileName, String line) throws TermServerScriptException {
