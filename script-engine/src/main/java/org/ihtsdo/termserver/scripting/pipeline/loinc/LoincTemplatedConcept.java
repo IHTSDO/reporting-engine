@@ -143,6 +143,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			String useAsAdditionalAcceptableTerm = d.getTerm();
 			//LOINC will use their long common name as the PT
 			d.setTerm(getLoincTerm().getLongCommonName());
+			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 			//And we'll use the FSN minus the semantic tag as another acceptable term
 			Description additionalAcceptableDesc = Description.withDefaults(useAsAdditionalAcceptableTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			getConcept().addDescription(additionalAcceptableDesc);
