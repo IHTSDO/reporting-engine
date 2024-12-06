@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -10,14 +12,15 @@ import java.util.*;
  */
 public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 
+	private static Logger LOGGER = LoggerFactory.getLogger(ModuleDifferentFromSourceConcept.class);
+
 	enum Mode { RELATIONSHIP, AXIOM, BOTH }
 	private Mode mode = Mode.RELATIONSHIP;
 	private int updatedAxioms = 0;
 	private int updatedRelationships = 0;
 	
 	public static void main(String[] args) throws Exception {
-		ModuleDifferentFromSourceConcept app = new ModuleDifferentFromSourceConcept();
-		app.standardExecution(args);
+		new ModuleDifferentFromSourceConcept().standardExecution(args);
 	}
 
 	@Override
@@ -29,7 +32,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 		};
 
 		String[] tabNames = new String[]{
-				"Stated",
+				"Stated Axioms",
 				"Inferred",
 				"Summary"
 		};
@@ -40,6 +43,9 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 	protected void process() throws TermServerScriptException {
 		// Process concepts
 		for (Concept concept : gl.getAllConcepts()) {
+			if (concept.getId().equals("1029931000202109")) {
+				LOGGER.debug("Debug here");
+			}
 			if (!concept.isActiveSafely() || !inScope(concept)) {
 				continue;
 			}
@@ -72,7 +78,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 
 				// Report change
 				report(0, concept.getId(), concept.getFsn(), axiomEntry.getId(), axiomEntry.isActive(), message);
-				updatedAxioms = updatedAxioms + 1;
+				updatedAxioms++;
 			}
 		}
 	}
@@ -82,9 +88,9 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 		String conceptModuleId = concept.getModuleId();
 		Set<Relationship> relationships = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 		for (Relationship relationship : relationships) {
-			String message = String.format("Relationship's moduleId from %s to %s", relationship.getModuleId(), conceptModuleId);
 			boolean sameModuleId = Objects.equals(relationship.getModuleId(), conceptModuleId);
 			if (!sameModuleId) {
+				String message = String.format("Relationship's moduleId from %s to %s", relationship.getModuleId(), conceptModuleId);
 				// Write change to RF2
 				relationship.setModuleId(conceptModuleId);
 				relationship.setEffectiveTime(null);
@@ -92,7 +98,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 
 				// Report change
 				report(1, concept.getId(), concept.getFsn(), relationship.getId(), relationship.isActive(), message);
-				updatedRelationships = updatedRelationships + 1;
+				updatedRelationships++;
 			}
 		}
 	}
