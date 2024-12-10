@@ -203,10 +203,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	 * AND ACCEPTABLE overrides not acceptable.
 	 */
 	public static Map<String, Acceptability> mergeAcceptabilityMap (Map<String, Acceptability> left, Map<String, Acceptability> right) {
-		Set<String> dialects = new HashSet<String>();
+		Set<String> dialects = new HashSet<>();
 		dialects.addAll(left.keySet());
 		dialects.addAll(right.keySet());
-		Map<String, Acceptability> merged = new HashMap<String, Acceptability>();
+		Map<String, Acceptability> merged = new HashMap<>();
 		
 		for (String thisDialect : dialects) {
 			if (!left.containsKey(thisDialect) && right.containsKey(thisDialect)) {
@@ -216,7 +216,8 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 				merged.put(thisDialect, left.get(thisDialect));
 			} 
 			if (left.containsKey(thisDialect) && right.containsKey(thisDialect)) {
-				if (left.get(thisDialect).equals(Acceptability.PREFERRED) || right.get(thisDialect).equals(Acceptability.PREFERRED)) {
+				if (left.get(thisDialect).equals(Acceptability.PREFERRED)
+						|| right.get(thisDialect).equals(Acceptability.PREFERRED)) {
 					merged.put(thisDialect, Acceptability.PREFERRED);
 				} else {
 					merged.put(thisDialect, Acceptability.ACCEPTABLE);
@@ -916,7 +917,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 	
 	public static Map<String, Acceptability> createAcceptabilityMap(AcceptabilityMode acceptabilityMode) {
-		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		Map<String, Acceptability> aMap = new HashMap<>();
 		//Note that when a term is preferred in one dialect, we'll make it acceptable in the other
 		switch (acceptabilityMode) {
 			case PREFERRED_BOTH :
@@ -1892,6 +1893,22 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return hasUsSpecific && hasGbSpecific;
 	}
 
+	public static boolean hasUsGbVariance(Description d) {
+		if (d.isAcceptable(US_ENG_LANG_REFSET) && !d.isAcceptable(GB_ENG_LANG_REFSET)) {
+			return true;
+		}
+		if (d.isPreferred(US_ENG_LANG_REFSET) && !d.isPreferred(GB_ENG_LANG_REFSET)) {
+			return true;
+		}
+		if (d.isAcceptable(GB_ENG_LANG_REFSET) && !d.isAcceptable(US_ENG_LANG_REFSET)) {
+			return true;
+		}
+		if (d.isPreferred(GB_ENG_LANG_REFSET) && !d.isPreferred(US_ENG_LANG_REFSET)) {
+			return true;
+		}
+		return false;
+	}
+
 	public static boolean hasLangRefsetDifference(String descId, Concept a, Concept b) {
 		//Check that we have this description in both concepts (eg local and extension branch)
 		Description descA = a.getDescription(descId);
@@ -2745,5 +2762,17 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static void setAllComponentsDirty(Concept c) {
 		getAllComponents(c).stream().forEach(Component::setDirty);
 	}
-	
+
+	/**
+	 * Works with Acceptability maps
+	 * If a term is preferred in one dialect, make it preferred in the other.
+	 * If it's acceptable, make it acceptable in the other.
+	 */
+	public static void levelUpAcceptability(Description d) {
+		if (d.isPreferred()) {
+			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		} else {
+			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+		}
+	}
 }
