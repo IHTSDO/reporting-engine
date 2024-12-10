@@ -12,10 +12,10 @@ import java.util.*;
  */
 public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(ModuleDifferentFromSourceConcept.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ModuleDifferentFromSourceConcept.class);
 
 	enum Mode { RELATIONSHIP, AXIOM, BOTH }
-	private Mode mode = Mode.RELATIONSHIP;
+	private static final Mode mode = Mode.RELATIONSHIP;
 	private int updatedAxioms = 0;
 	private int updatedRelationships = 0;
 	
