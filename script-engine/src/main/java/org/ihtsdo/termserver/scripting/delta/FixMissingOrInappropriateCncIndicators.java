@@ -44,21 +44,25 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 		for (Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
 				if (inScope(d)) {
-					if (d.isActiveSafely()) {
-						if (!c.isActiveSafely() && d.getInactivationIndicator() == null && inScope(d)) {
-							d.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
-							InactivationIndicatorEntry iie = d.getFirstActiveInactivationIndicatorEntry();
-							report(c, Severity.LOW, ReportActionType.INACT_IND_ADDED, d, iie);
-							incrementSummaryInformation("Inactivation indicators added");
-						} else if (c.isActiveSafely()) {
-							checkForCncInidicatorAndInactivate(c, d, "active");
-						}
-					} else if (!d.isActiveSafely()) {
-						checkForCncInidicatorAndInactivate(c, d, "inactive");
-					}
+					processDescription(c, d);
 				}
 			}
 			outputRF2(c);
+		}
+	}
+
+	private void processDescription(Concept c, Description d) throws TermServerScriptException {
+		if (d.isActiveSafely()) {
+			if (!c.isActiveSafely() && d.getInactivationIndicator() == null && inScope(d)) {
+				d.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
+				InactivationIndicatorEntry iie = d.getFirstActiveInactivationIndicatorEntry();
+				report(c, Severity.LOW, ReportActionType.INACT_IND_ADDED, d, iie);
+				incrementSummaryInformation("Inactivation indicators added");
+			} else if (c.isActiveSafely()) {
+				checkForCncInidicatorAndInactivate(c, d, "active");
+			}
+		} else if (!d.isActiveSafely()) {
+			checkForCncInidicatorAndInactivate(c, d, "inactive");
 		}
 	}
 

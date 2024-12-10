@@ -15,6 +15,8 @@ import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.batchImport.BatchImport;
+import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
+import org.ihtsdo.termserver.scripting.util.DialectChecker;
 import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobParameters;
@@ -57,7 +59,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
 	protected boolean correctRoundedSCTIDs = false;
-	public static String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
+	public static final String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
 	public String taskPrefix = null;
 	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
@@ -413,6 +415,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 
+	@Override
 	protected void init(JobRun jobRun) throws TermServerScriptException {
 		super.init(jobRun);
 		if (jobRun.getParamValue(DRY_RUN) != null) {
@@ -508,6 +511,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
 	}
 
+	@Override
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		super.checkSettingsWithUser(jobRun);
 
@@ -585,8 +589,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
 			if (!descendants.contains(value)) {
-				Severity severity = thisAttribute.isActive() ? Severity.CRITICAL : Severity.LOW;
-				String activeStr = thisAttribute.isActive() ? "" : "inactive ";
+				Severity severity = thisAttribute.isActiveSafely() ? Severity.CRITICAL : Severity.LOW;
+				String activeStr = thisAttribute.isActiveSafely() ? "" : "inactive ";
 				String relType = thisAttribute.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP) ? "stated " : "inferred ";
 				String msg = "Attribute has " + activeStr + relType + "target which is not a descendant of: " + descendantsOfValue;
 				report(task, concept, severity, ReportActionType.VALIDATION_ERROR, msg);
@@ -825,7 +829,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected Description addDescription(Task t, Concept c, Description d, boolean alertIfAlreadyPresent) throws TermServerScriptException {
 		Description reuseMe = c.findTerm(d.getTerm());
 		if (reuseMe != null) {
-			if (reuseMe.isActive()) {
+			if (reuseMe.isActiveSafely()) {
 				if (alertIfAlreadyPresent) {
 					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + reuseMe);
 				}
@@ -875,13 +879,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		Concept origConcept = gl.getConcept(c.getId());
 
 		if (reuseMe != null) {
-			if (reuseMe.isActive()) {
-				//If d is preferred then if we're demoting the PT then just swap the acceptability
+			if (reuseMe.isActiveSafely()) {
 				if (d.isPreferred()) {
-					Map<String, Acceptability> ptAcceptMap = d.getAcceptabilityMap();
-					d.setAcceptabilityMap(reuseMe.getAcceptabilityMap());
-					reuseMe.setAcceptabilityMap(ptAcceptMap);
-					report(t, origConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe, info);
+					promoteExistingTermToPT(t, origConcept, d, reuseMe, info);
 					if (demotePT) {
 						return reuseMe;
 					}
@@ -905,6 +905,12 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			if (cs != null) {
 				replacement.setCaseSignificance(cs);
 			}
+			//Now if the description we're replacing has us/gb variance but the replacement does not have us/gb specific
+			//words, then we can level up the acceptability.
+			DialectChecker dialectChecker = DialectChecker.create();
+			if (SnomedUtils.hasUsGbVariance(d) && !dialectChecker.containsUSGBSpecificTerm(newTerm)) {
+				SnomedUtils.levelUpAcceptability(replacement);
+			}
 			replacement.setTerm(newTerm);
 			c.addDescription(replacement);
 			report(t, origConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement, info);
@@ -920,6 +926,25 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 		}
 		return replacement == null ? reuseMe : replacement;  //WATCH THAT THE CALLING CODE IS RESPONSIBLE FOR CHECKING THE CASE SIGNIFICANCE - copied from original
+	}
+
+	private void promoteExistingTermToPT(Task t, Concept c, Description d, Description reuseMe, String info) throws TermServerScriptException {
+		//If d is preferred then if we're demoting the PT then just swap the acceptability
+		//However, if we're moving to a us+gb term and the old PT is us or gb specific, then
+		//we need to keep P + P and for the old term turn just P to A
+		if (SnomedUtils.hasUsGbVariance(d) && !SnomedUtils.hasUsGbVariance(reuseMe)) {
+			if (!reuseMe.isPreferred()) {
+				reuseMe.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, promoting", reuseMe, info);
+			}
+			SnomedUtils.demoteAcceptabilityMap(d);
+			report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, existing term demoted", d, info);
+		} else {
+			Map<String, Acceptability> ptAcceptMap = d.getAcceptabilityMap();
+			d.setAcceptabilityMap(reuseMe.getAcceptabilityMap());
+			reuseMe.setAcceptabilityMap(ptAcceptMap);
+			report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, swapping acceptability", reuseMe, info);
+		}
 	}
 
 	protected void removeDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
@@ -1109,10 +1134,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	private JSONObject convertToSavedListJson(Concept concept) throws JSONException, TermServerScriptException {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("term", concept.getPreferredSynonym());
-		jsonObj.put("active", concept.isActive() ? "true" : "false");
+		jsonObj.put("active", concept.isActiveSafely() ? "true" : "false");
 		JSONObject conceptObj = new JSONObject();
 		jsonObj.put("concept", conceptObj);
-		conceptObj.put("active", concept.isActive() ? "true" : "false");
+		conceptObj.put("active", concept.isActiveSafely() ? "true" : "false");
 		conceptObj.put("conceptId", concept.getConceptId());
 		conceptObj.put("fsn", concept.getFsn());
 		conceptObj.put("moduleId", concept.getModuleId());
@@ -1185,24 +1210,28 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		List<AssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivateMe);
 		if (histAssocs != null && histAssocs.size() > 0) {
 			if (replacing != null && replacing.size() > 1) {
-				throw new IllegalArgumentException("No code support for replacing multiple historical assocaitions");
+				throw new IllegalArgumentException("No code support for replacing multiple historical associations");
 			}
-			Concept replacement = replacing.get(0);
-
+			
+			Concept replacement = replacing == null ? null : replacing.get(0);
 			for (AssociationEntry histAssoc : histAssocs) {
-				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
-				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
-				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
-				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty() ? " prospective release" : histAssoc.getEffectiveTime()) + ")";
-				if (replacing == null) {
-					//In this case we must load the source of this incoming assertion, remove this concept as a target and 
-					//if there are no associations left, set the inactivation reason to NCEP
-					unpickHistoricalAssociation(t, source, inactivateMe);
-				} else {
-					report(t, inactivateMe, Severity.HIGH, ReportActionType.INFO, thisDetail);
-					replaceHistoricalAssociation(t, source, inactivateMe, replacement, i);
-				}
+				replaceHistoricalAssociation(t, histAssoc, inactivateMe, replacement, i);
 			}
+		}
+	}
+
+	private void replaceHistoricalAssociation(Task t, AssociationEntry histAssoc, Concept inactivateMe, Concept replacement, InactivationIndicator i) throws TermServerScriptException {
+		Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
+		String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
+		String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
+		thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty() ? " prospective release" : histAssoc.getEffectiveTime()) + ")";
+		if (replacement == null) {
+			//In this case we must load the source of this incoming assertion, remove this concept as a target and
+			//if there are no associations left, set the inactivation reason to NCEP
+			unpickHistoricalAssociation(t, source, inactivateMe);
+		} else {
+			report(t, inactivateMe, Severity.HIGH, ReportActionType.INFO, thisDetail);
+			replaceHistoricalAssociation(t, source, inactivateMe, replacement, i);
 		}
 	}
 
@@ -1231,7 +1260,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		ReportActionType reportAction = ReportActionType.CONCEPT_INACTIVATED;
 
 		//If concept is already inactivated, then we'll be modifying it's inactivation reason or hist assoc
-		if (!c.isActive()) {
+		if (!c.isActiveSafely()) {
 			//Only if the concept was inactivated as Outdated will we update the inactivation indicator
 			//This will need to become a list of acceptable existing inactivation indicators
 			if (c.getInactivationIndicator().equals(InactivationIndicator.OUTDATED)) {
@@ -1284,7 +1313,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		//Need to also remove any unpublished relationships
 		Set<Relationship> allRelationships = new HashSet<>(c.getRelationships());
 		for (Relationship r : allRelationships) {
-			if (r.isActive() && (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty())) {
+			if (r.isActiveSafely() && (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty())) {
 				c.removeRelationship(r);
 			}
 		}
@@ -1354,7 +1383,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		List<Concept> ppps = determineProximalPrimitiveParents(c);
 		if (ppps.size() != 1) {
 			String pppsStr = ppps.stream()
-					.map(p -> p.toString())
+					.map(Object::toString)
 					.collect(Collectors.joining(",\n"));
 			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP, pppsStr);
 		} else {
@@ -1496,7 +1525,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), t.getBranchPath());
 		String assocType = "Unknown";
 		incomingConcept.setInactivationIndicator(reason);
-		if ((replacements == null || replacements.size() == 0) &&
+		if ((replacements == null || replacements.isEmpty()) &&
 				!reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
 			throw new ValidationFailure(t, inactivatingConcept, "Hist Assoc rewiring attempted wtih no replacement offered.");
 		}
@@ -1555,11 +1584,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected void rewireRelationshipsUsingTargetValue(Task t, Concept removing, Concept replacement) throws TermServerScriptException {
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive() && !c.equals(replacement)) {
+			if (c.isActiveSafely() && !c.equals(replacement)) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (r.getTarget().equals(removing)) {
 						Concept loadedConcept = loadConcept(c, t.getBranchPath());
-						if (loadedConcept.isActive()) {
+						if (loadedConcept.isActiveSafely()) {
 							for (Relationship rLoaded : loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 								rLoaded.setTarget(replacement);
 								report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, r, rLoaded);

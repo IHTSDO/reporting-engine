@@ -20,7 +20,7 @@ public class RetermConcepts extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RetermConcepts.class);
 	
-	private String identifyingText = null;
+	private List<String> identifyingTexts = null;
 	private String excludeText = null;
 	private Map<String, String> replacementMap = new HashMap<>();
 	private String prefix = null;
@@ -29,7 +29,7 @@ public class RetermConcepts extends BatchFix {
 	private Collection<Concept> requiredAttributeValue = null;
 	Map<String, Concept> currentFSNs = new HashMap<>();
 	List<DescriptionType> typesOfInterest = List.of(DescriptionType.FSN, DescriptionType.SYNONYM);
-	
+
 	protected RetermConcepts(BatchFix clone) {
 		super(clone);
 	}
@@ -54,11 +54,13 @@ public class RetermConcepts extends BatchFix {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_UPDATES);
-		subsetECL = "<< " + CLINICAL_FINDING.getConceptId();
+		subsetECL = "<< " + DISEASE.getConceptId();
 
 		//text should be lower case.
 		replacementMap.put("tumor", "neoplasm");
 		replacementMap.put("tumour", "neoplasm");
+
+		identifyingTexts = List.of("malignant tumor of", "benign tumor of");
 		
 		requiredAttributeValue = null;
 
@@ -66,6 +68,7 @@ public class RetermConcepts extends BatchFix {
 		currentFSNs = gl.getAllConcepts().stream()
 				.collect(Collectors.toMap(Concept::getFsn, Function.identity(), (existing, replacement) -> existing));
 		super.postInit();
+
 	}
 
 	@Override
@@ -137,15 +140,6 @@ public class RetermConcepts extends BatchFix {
 	private String determineReplacementTerm(Description d, String find, String replace) {
 		String replacement = d.getTerm().replaceAll(find, replace);
 
-		if (identifyingText != null && d.getTerm().toLowerCase().contains(identifyingText)) {
-			if (d.getTerm().toLowerCase().startsWith(identifyingText)) {
-				replacement = prefix + " " + StringUtils.decapitalizeFirstLetter(d.getTerm());
-			} else {
-				replacement = d.getTerm().replaceAll(identifyingText, prefix.toLowerCase() + " " + identifyingText);
-			}
-		}
-
-
 		//If the term is unchanged, try an upper case replacement
 		if (replacement.equals(d.getTerm())) {
 			replacement = d.getTerm().replaceAll(StringUtils.capitalizeFirstLetter(find), StringUtils.capitalizeFirstLetter(replace));
@@ -175,10 +169,14 @@ public class RetermConcepts extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> toProcess = new ArrayList<>();
 		for (Concept c : SnomedUtils.sort(findConcepts(subsetECL, true, true))) {
+			if (c.getId().equalsIgnoreCase("363518003")) {
+				LOGGER.info("Debug here");
+			}
+
 			if (!containsRequiredAttributeValue(c)) {
 				continue;
 			}
-			//Flag up any descriptions that have both the find AND the replace in the same term.
+			//Flag up any descriptions that have both the find AND the replace text in the same term.
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (checkDescriptionForInclusion(c, d, toProcess)) {
 					break;
@@ -189,16 +187,9 @@ public class RetermConcepts extends BatchFix {
 	}
 
 	private boolean checkDescriptionForInclusion(Concept c, Description d, List<Component> toProcess) throws TermServerScriptException {
-		if (d.getType().equals(DescriptionType.TEXT_DEFINITION) || !d.isPreferred()) {
-			return false;
-		}
-
 		String termLower = d.getTerm().toLowerCase();
-		if (identifyingText != null && termLower.contains(identifyingText)
-				&& (excludeText == null  || !termLower.contains(excludeText))
-				&& !termLower.contains(prefix.toLowerCase())) {
-			toProcess.add(c);
-			return true;
+		if (!matchesInclusionCriteria(d, termLower)) {
+			return false;
 		}
 
 		for (Map.Entry<String,String> entry : replacementMap.entrySet()) {
@@ -216,12 +207,29 @@ public class RetermConcepts extends BatchFix {
 		return false;
 	}
 
+	private boolean matchesInclusionCriteria(Description d, String termLower) {
+		if (d.getType().equals(DescriptionType.TEXT_DEFINITION) || !d.isPreferred()) {
+			return false;
+		}
+
+		if (identifyingTexts != null) {
+			for (String identifyingText : identifyingTexts) {
+				if (termLower.contains(identifyingText)
+						&& (excludeText == null || !termLower.contains(excludeText))
+						&& (prefix == null || !termLower.contains(prefix.toLowerCase()))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private boolean containsRequiredAttributeValue(Concept c) {
 		if (requiredAttributeValue == null) {
 			return true;
 		}
 		return c.getRelationships().stream()
-				.filter(r -> r.isActiveSafely())
+				.filter(Component::isActiveSafely)
 				.filter(r -> !r.getType().equals(IS_A))
 				.filter(r -> !r.isConcrete())
 				.map(Relationship::getTarget)
