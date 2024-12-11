@@ -38,6 +38,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> noMoveRequired = new ArrayList<>();
 	private boolean includeDependencies = true;
 	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
+	private boolean copyInferredParentRelsToStated = false;
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
@@ -80,10 +81,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//delta.sourceModuleIds = Set.of("731000124108");  //US Module
 			//delta.sourceModuleIds = "332351000009108"; //Vet Extension
 
-			delta.newIdsRequired = true;
-			delta.getArchiveManager().setRunIntegrityChecks(true);  //Ensure this is checked in as 'true'.
 			delta.init(args);
 			SnapshotGenerator.setSkipSave(true);
+			if (delta.getProject().getKey().contains("uk_sct2")) {
+				LOGGER.warn("UK Edition detected, will not check for OWL axiom / stated relationships");
+				delta.getArchiveManager().setRunIntegrityChecks(false);
+				delta.copyInferredParentRelsToStated = true;
+			}
 			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -233,10 +237,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		LOGGER.info("Batches Formed:");
 		int batchNo = 0;
 		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
+			++batchNo;
 			List<Component> thisBatch = new ArrayList<>();
 			thisBatch.add(batchParent);
 			thisBatch.addAll(parentChildMap.get(batchParent));
-			LOGGER.info(++batchNo + ": " + batchParent + " - " +  thisBatch.size());
+			LOGGER.info("{}: {} - {}", batchNo, batchParent, thisBatch.size());
 			archiveBatches.add(thisBatch);
 		}
 		
@@ -317,9 +322,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//We need the parents to be imported before any children, so rework any set as one that maintains the order input
 		Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendants(c, true);
 		descendantsToImport.retainAll(componentsOfInterest);
-		if (descendantsToImport.size() > 0) {
+		if (!descendantsToImport.isEmpty()) {
 			alsoImportingDescendants = true;
-			LOGGER.info(c + " has " + descendantsToImport.size() + " descendants to import");
+			LOGGER.info("{} has {} descendants to import", c, descendantsToImport.size());
 			if (descendantsToImport.size() >= conceptsPerArchive) {
 				//We'll need to load this concept in its own import and promote to the project
 				//so it's available as a parent for subsequent loads
@@ -424,8 +429,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	protected void extractComponent(Component thisComponent, List<Component> componentsToProcess, boolean doAdditionalProcessing) throws TermServerScriptException {
 		Concept thisConcept = (Concept)thisComponent;
 
+		if (thisConcept.getId().equals("21371411000001106")) {
+			LOGGER.debug("Check missing relationships");
+		}
+
 		if (copyInferredRelationshipsToStatedWhereMissing) {
-			restateInferredRelationships(thisConcept);
+			restateInferredRelationships(thisConcept, copyInferredParentRelsToStated);
 		}
 
 		//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
@@ -434,7 +443,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			return;
 		}
 
-		if (!thisConcept.isActive()) {
+		if (!thisConcept.isActiveSafely()) {
 			report(thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 			return;
 		}
@@ -559,11 +568,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 
 			//Rel may already be in the target module, but be missing from the target server
-			if (conceptOnTS.getRelationships(r).size() > 0) {
+			if (!conceptOnTS.getRelationships(r).isEmpty()) {
 				relationshipAlreadyMoved = true;
 			} else {
-				if (r.isActive() && !r.fromAxiom()) {
-					LOGGER.info ("Unexpected active stated relationship not from axiom: "+ r);
+				if (r.isActiveSafely() && !r.fromAxiom()) {
+					LOGGER.info("Unexpected active stated relationship not from axiom: {}", r);
 				}
 				if (moveRelationshipToTargetModule(r, conceptOnTS, componentsToProcess)) {
 					subComponentsMoved = true;
@@ -662,7 +671,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
 					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
 				//However, don't move inactive descriptions if they don't already exist at the target location
-				if (!d.isActive() && conceptOnTS.getDescription(d.getId()) == null) {
+				if (!d.isActiveSafely() && conceptOnTS.getDescription(d.getId()) == null) {
 					LOGGER.info("Skipping inactive description, not existing in target location: {}", d);
 					continue;
 				}
@@ -870,7 +879,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					}
 				}
 			} else {
-				LOGGER.warn ("No Axiom Representation found for : " + c + " : " + a.getOwlExpression());
+				LOGGER.warn ("No Axiom Representation found for {} : {}", c, a.getOwlExpression());
 			}
 		} catch (ConversionException e) {
 			throw new TermServerScriptException("Failed to convert axiom for " + c , e);
@@ -878,10 +887,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		//Check if there are axioms inactivated locally that need to be inactivated at the target
 		for (AxiomEntry entry : c.getAxiomEntries()) {
-			if (!entry.isActive()) {
+			if (!entry.isActiveSafely()) {
 				if (!conceptOnTS.equals(NULL_CONCEPT)) {
 					Axiom axiomOnTS = conceptOnTS.getClassAxiom(entry.getId());
-					if (axiomOnTS != null && axiomOnTS.isActive()) {
+					if (axiomOnTS != null && axiomOnTS.isActiveSafely()) {
 						entry.setDirty();
 					}
 				}
@@ -949,7 +958,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					Concept loadedTarget = loadConcept(target);
 					//If this target is inactive, find an alternative target and create a replacement relationship
 					//TODO in the stated form, we'll need to re-write the axiom if we see this!
-					if (!loadedTarget.isActive()) {
+					if (!loadedTarget.isActiveSafely()) {
 						String reason = loadedTarget.getInactivationIndicator().toString();
 						Concept replacement = knownReplacements.get(loadedTarget);
 						if (replacement == null) {
@@ -1028,7 +1037,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			descriptionOnTS = findMatchingDescription(d, conceptOnTS);
 			if (descriptionOnTS != null 
-					&& d.isActive() == descriptionOnTS.isActive()
+					&& d.isActiveSafely() == descriptionOnTS.isActiveSafely()
 					&& d.getTerm().equals(descriptionOnTS.getTerm())) {
 				//Is it just down to a difference in langrefset entries?
 				if (SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)) {
@@ -1076,7 +1085,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 
 		//If Desc has been made inactive, take over the inactivation indicators
-		if(!d.isActive()) {
+		if(!d.isActiveSafely()) {
 			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 				if (StringUtils.isEmpty(i.getEffectiveTime())) {
 					i.setModuleId(targetModuleId);
@@ -1128,7 +1137,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				d.addLangRefsetEntry(gbEntry);
 			} else {
 				//Otherwise, clone the US entry to use as GB
-				LOGGER.debug("Adding gb entry cloned from US " + d.getDescriptionId());
+				LOGGER.debug("Adding gb entry cloned from US {}", d.getDescriptionId());
 				d.setAcceptability(GB_ENG_LANG_REFSET, SnomedUtils.translateAcceptability(usEntry.getAcceptabilityId()));
 			}
 		}
