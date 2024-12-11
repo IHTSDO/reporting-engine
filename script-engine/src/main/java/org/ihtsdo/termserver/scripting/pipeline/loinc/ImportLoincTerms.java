@@ -148,7 +148,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			     "Osmol", "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr", "Visc" ->
 					LoincTemplatedConceptWithComponent.create(externalConcept);
 			case "Aper", "Color", "Rden", "Source","SpGrav","Temp" ->
-					LoincTemplatedConceptWithDirectSite.create(externalConcept);
+					LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
 			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
 			case "Anat", "DistWidth", "EntMCnc", "EntMeanVol", "ID", "Morph",
 			     "Prid", "Type", "Vol" -> LoincTemplatedConceptWithInheres.create(externalConcept);

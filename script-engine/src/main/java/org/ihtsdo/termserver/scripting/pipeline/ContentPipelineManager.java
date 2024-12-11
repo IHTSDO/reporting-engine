@@ -153,8 +153,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("100091-8")) {
-			LOGGER.debug("Check specimen in FSN");
+		if (externalIdentifier.equals("98411-2")) {
+			LOGGER.debug("Check capitalization in FSN");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
