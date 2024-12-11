@@ -8,15 +8,16 @@ import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LoincTemplatedConceptWithDirectSite extends LoincTemplatedConcept {
+public class LoincTemplatedConceptWithInheresNoComponent extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptWithDirectSite(ExternalConcept externalConcept) {
+	private LoincTemplatedConceptWithInheresNoComponent(ExternalConcept externalConcept) {
 		super(externalConcept);
 	}
 	
 	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
-		LoincTemplatedConceptWithDirectSite templatedConcept = new LoincTemplatedConceptWithDirectSite(externalConcept);
+		LoincTemplatedConceptWithInheresNoComponent templatedConcept = new LoincTemplatedConceptWithInheresNoComponent(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704319004 |Inheres in (attribute)|"));
 		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
