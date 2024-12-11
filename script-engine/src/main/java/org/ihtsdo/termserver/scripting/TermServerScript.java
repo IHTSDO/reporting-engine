@@ -1999,14 +1999,19 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public void addFinalWords(String msg) {
+
 		finalWords.add(msg);
 	}
 
 	public void restateInferredRelationships(Concept c) throws TermServerScriptException {
+		restateInferredRelationships(c, false);
+	}
+
+	public void restateInferredRelationships(Concept c, boolean includeISA) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		List<RelationshipGroup> toBeStated = new ArrayList<>();
-		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
-		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, includeISA);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, includeISA);
 
 		nextInferredGroup:
 		for (RelationshipGroup inferredGroup : inferredGroups) {
