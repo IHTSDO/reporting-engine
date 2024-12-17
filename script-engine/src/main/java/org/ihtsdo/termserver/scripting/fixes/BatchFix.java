@@ -11,6 +11,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
@@ -60,7 +61,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected int priorityBatchSize = 10;
 	protected boolean correctRoundedSCTIDs = false;
 	public static final String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
-	public String taskPrefix = null;
+	protected String taskPrefix = null;
 	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	private Batch currentBatch;
@@ -68,7 +69,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	protected BatchFix(BatchFix clone) {
 		if (clone != null) {
-			this.inputFiles.add(0, clone.getInputFile());
+			if (clone.hasInputFile()) {
+				this.inputFiles.add(0, clone.getInputFile());
+			}
 			setReportManager(clone.getReportManager());
 			this.project = clone.project;
 			this.tsClient = clone.tsClient;
@@ -108,7 +111,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask(getNextAuthor(), getNextReviewer());
 		//Do we need to prioritize some components?
-		if (priorityComponents.size() > 0) {
+		if (!priorityComponents.isEmpty()) {
 			List<Component> unprioritized = new ArrayList<>(allComponents);
 			unprioritized.removeAll(priorityComponents);
 			allComponents = priorityComponents;
@@ -123,7 +126,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 					.collect(Collectors.toList());
 		}
 
-		if (allComponents.size() > 0) {
+		if (!allComponents.isEmpty()) {
 			String lastIssue = allComponents.get(0).getIssues();
 			int currentPosition = 0;
 			for (Component thisComponent : allComponents) {
@@ -176,12 +179,12 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return sameIssueCount <= remainingSpace;
 	}
 
-	protected Batch formIntoGroupedBatch(List<List<Component>> allComponentList) throws TermServerScriptException {
+	protected Batch formIntoGroupedBatch(List<List<Component>> allComponentList) {
 		Batch batch = new Batch(getScriptName());
 		int componentsToProcess = 0;
 		for (List<Component> thisSet : allComponentList) {
 			Task task = batch.addNewTask(getNextAuthor(), getNextReviewer());
-			if (thisSet.size() > 0) {
+			if (!thisSet.isEmpty()) {
 				String lastIssue = thisSet.get(0).getIssues();
 				for (Component thisComponent : thisSet) {
 					if (task.size() >= taskSize ||
@@ -291,7 +294,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 			task.setBranchPath(this.getProject().getBranchPath());
 			task.setPreExistingTask(true);
-			LOGGER.info((dryRun ? "Dry Run " : " ") + " pre-existing task specified: " + task.getBranchPath());
+			String dryRunStr = (dryRun ? "Dry Run, p" : "P");
+			LOGGER.info("{}re-existing task specified: {}", dryRunStr, task.getBranchPath());
 		} else {
 			//Create a task for this batch of concepts
 			taskHelper.createTask(task);
@@ -304,11 +308,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	private boolean taskShouldBeSkipped(Task task, int currentTaskNum) {
 		//If we don't have any concepts in this task eg this is 100% ME file, then skip
 		if (task.size() == 0) {
-			LOGGER.info("Skipping Task " + task.getSummary() + " - no concepts to process");
+			LOGGER.info("Skipping Task {} - no concepts to process", task.getSummary());
 			return true;
 		} else if (selfDetermining && restartPosition > 1 && currentTaskNum < restartPosition) {
 			//For self determining projects we'll restart based on a task count, rather than the line number in the input file
-			LOGGER.info("Skipping Task {} - restarting from task {}", task.getSummary(), restartPosition);
+			LOGGER.info("Skipping Task {} - restarting from position {}", task.getSummary(), restartPosition);
 			return true;
 		} else if (restartFromTask != NOT_SET && currentTaskNum < restartFromTask) {
 			//For file driven batches, we'll use the r2 restartFromTask setting
@@ -327,7 +331,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	private void processComponent(Task task, Component component, int conceptInTask, String xOfY) throws TermServerScriptException {
 		try {
 			if (!dryRun && task.getComponents().indexOf(component) != 0) {
-				Thread.sleep(conceptThrottle * 1000);
+				Thread.sleep(conceptThrottle * 1000L);
 			}
 			String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getComponents().size() + ")";
 
@@ -401,8 +405,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 
 	//Override if working with Refsets or Descriptions directly
-	protected int doFix(Task task, Component component, String info) throws TermServerScriptException, ValidationFailure {
-		return 0;
+	protected int doFix(Task task, Component component, String info) throws TermServerScriptException {
+		throw new NotImplementedException("Override doFix in the Concrete Class - use components when working with refset members and descriptions directly.");
 	}
 
 	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) throws TermServerScriptException {
@@ -430,6 +434,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		authors = List.of(jobRun.getUser());
 	}
 
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		if (args.length < 3) {
 			print("Usage: java <FixClass> [-a author][-a2 reviewer ][-n <taskSize>] [-r <restart position in file>] [-r2 <restart from task #>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
@@ -505,7 +510,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 
 		if (!selfDetermining) {
-			LOGGER.info("Reading file from line " + restartPosition + " - " + getInputFile().getName());
+			LOGGER.info("Reading file from line {} - {}", restartPosition, getInputFile().getName());
 		}
 
 		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
@@ -549,7 +554,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			}
 		}
 
-		LOGGER.info("\nBatching " + taskSize + " concepts per task");
+		LOGGER.info("Batching {} concepts per task", taskSize);
 	}
 
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) throws TermServerScriptException {
@@ -616,7 +621,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 
 		//If we have no stated attributes of the expected type, attempt to pull from the inferred ones
-		if (attributes.size() == 0) {
+		if (attributes.isEmpty()) {
 			changesMade = transferInferredRelationshipsToStated(task, concept, attributeType, cardinality);
 		}
 
@@ -632,7 +637,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 													  Concept concept, Concept attributeType, CardinalityExpressions cardinality) throws TermServerScriptException {
 		Set<Relationship> replacements = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int changesMade = 0;
-		if (replacements.size() == 0) {
+		if (replacements.isEmpty()) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
 			report(task, concept, Severity.HIGH, ReportActionType.INFO, msg);
 		} else if (cardinality.equals(CardinalityExpressions.EXACTLY_ONE) && replacements.size() > 1) {
@@ -769,15 +774,15 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		Set<Relationship> matchingRels = c.getRelationships(removeMe, ActiveState.ACTIVE);
 		if (matchingRels.size() > 1) {
 			throw new IllegalStateException(c + " has multiple parent relationships to " + removeMe.getTarget());
-		} else if (matchingRels.size() == 0) {
+		} else if (matchingRels.isEmpty()) {
 			return NO_CHANGES_MADE;
 		}
 		Relationship r = matchingRels.iterator().next();
 
 		//Are we inactivating or deleting this relationship?
 		String msg;
-		ReportActionType action = ReportActionType.UNKNOWN;
-		if (!r.isReleased()) {
+		ReportActionType action;
+		if (!r.isReleasedSafely()) {
 			c.removeRelationship(r);
 			msg = "Deleted parent relationship: " + r.getTarget();
 			action = ReportActionType.RELATIONSHIP_DELETED;
@@ -811,7 +816,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	protected void removeDescription(Task t, Concept c, Description d, InactivationIndicator i) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
-		if (!d.isReleased()) {
+		if (!d.isReleasedSafely()) {
 			c.removeDescription(d);
 			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_DELETED, d);
 		} else {
@@ -1012,7 +1017,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 
 		for (Relationship r : originalRels) {
-			if (inactiveRels.size() > 0) {
+			if (!inactiveRels.isEmpty()) {
 				//We'll reuse and reactivate this row, rather than create a new one
 				//Do we have one with the same group, if not, use any
 				Relationship bestReactivation = getBestReactivation(inactiveRels, r.getGroupId());
@@ -1073,10 +1078,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		//Check that the FSN with the semantic tags stripped off is
 		//equal to the preferred terms
 		List<Description> preferredTerms = concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
+		String trimmedFSN = SnomedUtilsBase.deconstructFSN(concept.getFsn())[0];
 		//Special handling for acetaminophen
 		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN) || trimmedFSN.toLowerCase().contains(PARACETAMOL)) {
-			LOGGER.info("Doing ACETAMINOPHEN processing for " + concept);
+			LOGGER.info("Doing ACETAMINOPHEN processing for {}", concept);
 		} else {
 			for (Description pref : preferredTerms) {
 				if (!pref.getTerm().equals(trimmedFSN)) {
@@ -1094,6 +1099,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		props.put("mail.smtp.port", emailDetails[2]);
 		props.put("mail.smtp.auth", "true");
 		Authenticator authenticator = new Authenticator() {
+			@Override
 			protected PasswordAuthentication getPasswordAuthentication() {
 				return new PasswordAuthentication(emailDetails[3], emailDetails[4]);
 			}
@@ -1117,11 +1123,11 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			mp.addBodyPart(attachment);
 			Transport.send(msg);
 		} catch (MessagingException | FileNotFoundException | UnsupportedEncodingException e) {
-			LOGGER.info("Failed to send email " + e.getMessage());
+			LOGGER.info("Failed to send email {}", e.getMessage());
 		}
 	}
 
-	private JSONObject convertToSavedListJson(Task task) throws JSONException, TermServerScriptException {
+	private JSONObject convertToSavedListJson(Task task) throws JSONException {
 		JSONObject savedList = new JSONObject();
 		JSONArray items = new JSONArray();
 		savedList.put("items", items);
@@ -1131,7 +1137,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return savedList;
 	}
 
-	private JSONObject convertToSavedListJson(Concept concept) throws JSONException, TermServerScriptException {
+	private JSONObject convertToSavedListJson(Concept concept) throws JSONException {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("term", concept.getPreferredSynonym());
 		jsonObj.put("active", concept.isActiveSafely() ? "true" : "false");
@@ -1171,7 +1177,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				t.addAfter(child, original);
 				incrementSummaryInformation("Total children repointed to cloned concepts");
 			} else {
-				LOGGER.warn("Locally loaded ontology thought " + concept + " had stated child " + child + " but TS disagreed.");
+				LOGGER.warn("Locally loaded ontology thought {} had stated child {} but TS disagreed.", concept, child);
 			}
 		}
 
@@ -1208,7 +1214,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivateMe, List<Concept> replacing, InactivationIndicator i) throws TermServerScriptException {
 		List<AssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivateMe);
-		if (histAssocs != null && histAssocs.size() > 0) {
+		if (histAssocs != null && !histAssocs.isEmpty()) {
 			if (replacing != null && replacing.size() > 1) {
 				throw new IllegalArgumentException("No code support for replacing multiple historical associations");
 			}
@@ -1496,6 +1502,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 
+	@Override
 	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		//Default implementation is to take the first column and try that as an SCTID
@@ -1569,7 +1576,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		} else {
 			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
 		}
-		Severity severity = replacements.size() == 0 ? Severity.CRITICAL : Severity.MEDIUM;
+		Severity severity = replacements.isEmpty() ? Severity.CRITICAL : Severity.MEDIUM;
 		for (Concept replacement : replacements) {
 			report(t, originalTarget, severity, ReportActionType.ASSOCIATION_CHANGED, "Historical incoming association from " + incomingConcept, " rewired as " + assocType, replacement);
 		}

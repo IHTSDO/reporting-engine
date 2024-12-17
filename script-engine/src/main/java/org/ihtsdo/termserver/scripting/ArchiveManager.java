@@ -325,12 +325,12 @@ public class ArchiveManager implements ScriptConstants {
 				//We might already have this project in memory
 				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject()) && 
 						(populateReleasedFlag == false || (populateReleasedFlag && releasedFlagPopulated))) {
-					LOGGER.info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
+					LOGGER.info("{} already held in memory, no need to reload.  Resetting any issues held against components...", ts.getProject());
 					gl.makeReady();
 				} else {
 					if (currentlyHeldInMemory != null) {
 						//Make sure the Graph Loader is clean if we're loading a different project
-						LOGGER.info(currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
+						LOGGER.info("{} being wiped to make room for {}", currentlyHeldInMemory.getKey(), ts.getProject());
 						gl.reset();
 						System.gc();
 						releasedFlagPopulated = false;
@@ -357,7 +357,7 @@ public class ArchiveManager implements ScriptConstants {
 						} catch (Exception e) {
 							LOGGER.error("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
 							if (!snapshot.getName().startsWith("releases/")) {
-								LOGGER.info("Deleting " + snapshot);
+								LOGGER.info("Deleting {}", snapshot);
 								try {
 									if (snapshot.isFile()) {
 										snapshot.delete();
@@ -601,7 +601,7 @@ public class ArchiveManager implements ScriptConstants {
 		if (!previous.exists()) {
 			getArchiveDataLoader().download(previous);
 		}
-		LOGGER.info("Building snapshot release based on previous: " + previous);
+		LOGGER.info("Building snapshot release based on previous: {}", previous);
 		return previous;
 	}
 
