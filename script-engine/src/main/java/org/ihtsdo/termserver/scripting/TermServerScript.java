@@ -100,12 +100,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	public Scanner STDIN = new Scanner(System.in);
 	
-	public static String CONCEPTS_IN_FILE = "Concepts in file";
-	public static String CONCEPTS_TO_PROCESS = "Concepts to process";
-	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
-	public static String ISSUE_COUNT = "Issue count";
-	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
-	public static String WHITE_LISTED_COUNT = "White Listed Count";
+	public static final String CONCEPTS_IN_FILE = "Concepts in file";
+	public static final String CONCEPTS_TO_PROCESS = "Concepts to process";
+	public static final String REPORTED_NOT_PROCESSED = "Reported not processed";
+	public static final String ISSUE_COUNT = "Issue count";
+	public static final String CRITICAL_ISSUE = "CRITICAL ISSUE";
+	public static final String WHITE_LISTED_COUNT = "White Listed Count";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	public static final String EXPECTED_PROTOCOL = "https://";
@@ -1339,14 +1339,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private void finaliseSummaryText(Date endTime) {
-		List<String> reportLast = new ArrayList<>(Arrays.asList("Issue count", "Report lines written"));
+		List<String> reportLast = new ArrayList<>(Arrays.asList(ISSUE_COUNT, "Report lines written"));
 		List<String> criticalIssues = new ArrayList<>();
 		outputAllSummaryText(reportLast, criticalIssues);
 
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
-			if (summaryDetails.get(CONCEPTS_TO_PROCESS) != null &&  summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
-				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
-				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
+			if (summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
+				double c = ((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
+				double t = ((Integer)summaryDetails.get("Tasks created"));
 				double avg = Math.round((c/t) * 10) / 10.0;
 				outputSummaryText("Concepts per task: " + avg);
 			}
@@ -1385,7 +1385,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private void outputCriticalIssues(List<String> criticalIssues) {
-		if (criticalIssues.size() > 0) {
+		if (!criticalIssues.isEmpty()) {
 			outputSummaryText("\nCritical Issues Encountered (" + criticalIssues.size() + ")\n========================");
 			for (String thisCriticalIssue : criticalIssues) {
 				outputSummaryText(thisCriticalIssue);
