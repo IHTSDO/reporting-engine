@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -9,36 +10,31 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
  * ISP-36 Simple list of concepts based on ECL
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SimpleConceptList extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SimpleConceptList.class);
-
-	public static String LANG_REFSETS = "LangRefsets";
+	public static final String LANG_REFSETS = "LangRefsets";
 	public List<Concept> langRefsets = new ArrayList<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<105590001 |Substance (substance)|");
 		params.put(LANG_REFSETS, "900000000000509007, 900000000000508004");
-		TermServerReport.run(SimpleConceptList.class, args, params);
+		TermServerScript.run(SimpleConceptList.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		additionalReportColumns = "FSN,SemTag,DefStatus,EffectiveTime";
 		for (String langRefsetStr : getJobRun().getParamValue(LANG_REFSETS).split(",")) {
@@ -67,13 +63,15 @@ public class SimpleConceptList extends TermServerReport implements ReportClass {
 				.withTag(MS)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subsetECL));
 		subset.sort(Comparator.comparing(Concept::getFsnSafely));
 		for (Concept c : subset) {
 			String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			report(c, defStatus, c.getEffectiveTime(), getPTs(c));
+			countIssue(c);
 		}
 	}
 

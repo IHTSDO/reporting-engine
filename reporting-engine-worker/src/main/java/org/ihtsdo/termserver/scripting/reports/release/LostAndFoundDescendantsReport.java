@@ -41,7 +41,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		Map<String, String> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		params.put(COUNT_NEW_AS_GAINED, "N");
-		params.put(ECL, "<< 443961001 |Malignant adenomatous neoplasm (disorder)|" );
+		params.put(ECL, "*" );
 		TermServerScript.run(LostAndFoundDescendantsReport.class, args, params);
 	}
 	
@@ -67,7 +67,6 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		cache = gl.getAncestorsCache();
 		ptc = gl.getPreviousTC();
 		tc = gl.getTransitiveClosure();
-		
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -121,7 +120,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		Set<Long> gainedDescendants = getGainedDescendants(c);
 		Set<Long> lostDescendants = getLostDescendants(c);
 		//Now if this concept is in scope eg Dutch, then we're interested if it's gained/lost ANY concepts
-		//But it's it's International, we're only interested if in scope concepts have been lost
+		//But if it's International, we're only interested if in scope concepts have been lost
 		if (isTopLevelConcept(c,conceptsOfInterest)
 				|| (inScope(c) && hasGainedOrLostDescendants(c))
 				|| !inScope(c) && hasGainedOrLostDescendantsInScope(c)) {

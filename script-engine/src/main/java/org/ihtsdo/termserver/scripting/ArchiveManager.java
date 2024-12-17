@@ -82,7 +82,8 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
-			LOGGER.info("Archive manager under first or new ownership: {}", ts.getClass().getSimpleName());
+			String ownershipIndicator = singleton.ts == null ? "first" : "new";
+			LOGGER.info("Archive manager under {} ownership: {}", ownershipIndicator, ts.getClass().getSimpleName());
 			if (forceReuse && !isBrandNew) {
 				LOGGER.info("Re-use request denied due to change in ownership.");
 				forceReuse = false;
@@ -95,6 +96,8 @@ public class ArchiveManager implements ScriptConstants {
 		if (!isBrandNew) {
 			if (!forceReuse) {
 				LOGGER.info("Resetting Archive Manager load flags");
+				String stackTrace = ExceptionUtils.getStackTrace(new Exception());
+				LOGGER.info("Temporary stack trace so we can see _why_ we're being reset: {}", stackTrace);
 				//Don't assume that just because we're being reused, we're loading the same files
 				singleton.loadEditionArchive = false;
 				singleton.loadDependencyPlusExtensionArchive = false;
