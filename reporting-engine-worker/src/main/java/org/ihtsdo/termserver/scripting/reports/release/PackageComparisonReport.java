@@ -29,7 +29,15 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final int TIMEOUT_MINUTES = 30;
 	private static final int FILE_COMPARISON_TAB = MAX_REPORT_TABS;
 
-	private static final String ASSOCIATION_FILENAME = "der2_cRefset_Association";
+	private static final String CONCEPT_FILENAME = "sct2_Concept_";
+	private static final String DESCRIPTION_FILENAME = "sct2_Description_";
+	private static final String TEXT_DEFINITION_FILENAME = "sct2_TextDefinition_";
+	private static final String RELATIONSHIP_FILENAME = "sct2_Relationship_";
+	private static final String RELATIONSHIP_CONCRETE_VALUES_FILENAME = "sct2_RelationshipConcreteValues_";
+	private static final String OWL_EXPRESSION_FILENAME = "sct2_sRefset_OWLExpression";
+	private static final String LANGUAGE_REFSET_FILENAME = "der2_cRefset_Language";
+	private static final String ASSOCIATION_REFSET_FILENAME = "der2_cRefset_Association";
+	private static final String ATTRIBUTE_VALUE_REFSET_FILENAME = "der2_cRefset_AttributeValue";
 
 	public static final String SCTID_SE_REFSETID = "734138000";
 	public static final String SCTID_SP_REFSETID = "734139008";
@@ -71,80 +79,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		// International
-		/*params.put(PREV_RELEASE, "international/international_edition_releases/previous/SnomedCT_InternationalRF2_PRODUCTION_20231201T120000Z.zip");
-		params.put(THIS_RELEASE, "international/international_edition_releases/current/SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");*/
-		/*params.put(THIS_RELEASE, "international/international_edition_releases/current/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version3.zip");
-		params.put(PREV_RELEASE, "international/international_edition_releases/previous/xSnomedCT_InternationalRF2_PREPRODUCTION_20240601T120000Z_version2.zip");*/
-
-		// US Edition
-		/*params.put(THIS_RELEASE, "us/us_edition_releases/current/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20240301T120000Z.zip");
-		params.put(PREV_RELEASE, "us/us_edition_releases/previous/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20230901T120000Z.zip");
-		//params.put(MODULES, "731000124108,5991000124107,449080006");*/
-
-		// NL Edition
-		/*params.put(PREV_RELEASE, "nlfix/snomed_ct_netherlands_release_sept_22_only/2022-09-22T14:00:19/output-files/SnomedCT_ManagedServiceNL_PRODUCTION_NL1000146_20220930T120000Z.zip");
-		params.put(THIS_RELEASE, "nl/snomed_ct_netherlands_releases/2023-03-07T02:35:31/output-files/xSnomedCT_ManagedServiceNL_PREPRODUCTION_NL1000146_20230331T120000Z.zip");
-		params.put(MODULES, "11000146104");*/
-
-		// ES Extension
-		/*params.put(PREV_RELEASE, "ee/estonia_extension_releases/2022-11-15T15:50:50/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20221130T120000Z.zip");
-		params.put(THIS_RELEASE, "ee/estonia_extension_releases/2023-05-23T08:35:57/output-files/SnomedCT_ManagedServiceEE_PRODUCTION_EE1000181_20230530T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220831T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(MODULES, "11000181102");*/
-
-		// SE Extension
-		/*params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-11-22T17:15:10/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20231130T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230731T120000Z.zip");
-		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/2023-05-19T07:39:38/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20230531T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
-		params.put(MODULES, "45991000052106");*/
-		params.put(THIS_RELEASE, "se/snomed_ct_sweden_extension_releases/current/xSnomedCT_ManagedServiceSE_PREPRODUCTION_SE1000052_20240531T120000Z_version2.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
-		params.put(PREV_RELEASE, "se/snomed_ct_sweden_extension_releases/previous/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20231130T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230731T120000Z.zip");
-		params.put(MODULES, "45991000052106");
-
-		// DK Extension
-		/*params.put(PREV_RELEASE, "dk/snomed_ct_denmark_extension_releases/2022-09-23T12:02:14/output-files/SnomedCT_ManagedServiceDK_PRODUCTION_DK1000005_20220930T120000Z.zip");
-		params.put(THIS_RELEASE, "dk/snomed_ct_denmark_extension_releases/2023-03-18T21:23:11/output-files/xSnomedCT_ManagedServiceDK_PREPRODUCTION_DK1000005_20230331T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220630T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(MODULES, "554471000005108");*/
-
-		// BE Extension
-		/*params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/2021-09-10T15:10:46/output-files/SnomedCT_BelgiumExtensionRF2_PRODUCTION_20210915T120000Z.zip");
-		params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/2022-03-01T17:54:15/output-files/xSnomedCT_BelgiumExtensionRF2_PREPRODUCTION_20220315T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		params.put(MODULES, "11000172109");*/
-		/*params.put(THIS_RELEASE, "be/snomed_ct_belgium_extension_releases/current/xSnomedCT_ManagedServiceBE_PREPRODUCTION_BE1000172_20240515T120000Z_version4.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
-		params.put(PREV_RELEASE, "be/snomed_ct_belgium_extension_releases/previous/SnomedCT_ManagedServiceBE_PRODUCTION_BE1000172_20231115T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
-		params.put(MODULES, "11000172109");*/
-
-		// NZ Extension
-		/*params.put(PREV_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2022-09-28T15:24:25/output-files/SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20221001T000000Z.zip");
-		params.put(THIS_RELEASE, "nz/snomed_ct_new_zealand_extension_releases/2023-04-21T07:24:12/output-files/xSnomedCT_ManagedServiceNZ_PREPRODUCTION_NZ1000210_20230401T000000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230131T120000Z.zip");
-		params.put(MODULES, "11000210104,21000210109");*/
-
-		// IE Extension
-		/*params.put(PREV_RELEASE, "ie/snomed_ct_ireland_extension_releases/2022-10-19T16:18:12/output-files/SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20221021T120000Z.zip");
-		params.put(THIS_RELEASE, "ie/snomed_ct_ireland_extension_releases/2023-04-12T17:05:21/output-files/xSnomedCT_ManagedServiceIE_PREPRODUCTION_IE1000220_20230421T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230228T120000Z.zip");
-		params.put(MODULES, "11000220105");*/
-
-		// CH Extension
-		/*params.put(THIS_RELEASE, "ch/snomed_ct_switzerland_releases/2023-12-05T08:16:33/output-files/SnomedCT_ManagedServiceCH_PRODUCTION_CH1000195_20231207T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20231101T120000Z.zip");
-		params.put(PREV_RELEASE, "ch/snomed_ct_switzerland_releases/2023-05-25T10:27:16/output-files/SnomedCT_ManagedServiceCH_PRODUCTION_CH1000195_20230607T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20230430T120000Z.zip");
-		params.put(MODULES, "2011000195101");*/
+        // AU Extension
+		params.put(THIS_RELEASE, "au/snomed_ct_australia_releases/2024-11-21T14:59:25/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20241130T120000Z.zip");
+		params.put(PREV_RELEASE, "au/snomed_ct_australia_releases/2024-10-25T07:54:34/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20241031T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");
+		params.put(MODULES, "32506021000036107,351000168100");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -379,7 +319,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		boolean isDescription = false;
 		boolean isTextDefinition = false;
 		boolean isLanguageRefset = false;
-		boolean isAssociation = false;
+		boolean isAssociationRefset = false;
 
 		Map<String, Map<TotalsIndex, Integer>> fileTotalsWithoutComparison = new TreeMap<>();
 
@@ -387,63 +327,63 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			String filename = entry.getKey();
 			Map<TotalsIndex, Integer> fileTotalsEntry = entry.getValue();
 
-			if (filename.contains("sct2_Description_")) {
-				isDescription = true;
-				report(filename, fileTotalsEntry, null);
-				for (TotalsIndex index : TotalsIndex.values()) {
-					descriptionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
-				}
-			} else if (filename.contains("sct2_TextDefinition_")) {
-				isTextDefinition = true;
-				report(filename, fileTotalsEntry, null);
-				for (TotalsIndex index : TotalsIndex.values()) {
-					textDefinitionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
-				}
-			} else if (filename.contains("der2_cRefset_Language")) {
-				isLanguageRefset = true;
-				report(filename, fileTotalsEntry, null);
-				for (TotalsIndex index : TotalsIndex.values()) {
-					languageRefsetTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
-				}
-			} else if (filename.contains("sct2_Concept_")) {
-				report(filename, fileTotalsEntry, totals[TAB_CONCEPTS]);
-			} else if (filename.contains("sct2_Relationship_")) {
-				report(filename, fileTotalsEntry, totals[TAB_RELS]);
-			} else if (filename.contains("sct2_RelationshipConcreteValues_")) {
-				report(filename, fileTotalsEntry, totals[TAB_CD]);
-			} else if (filename.contains("sct2_sRefset_OWLExpression")) {
-				report(filename, fileTotalsEntry, totals[TAB_AXIOMS]);
-			} else if (filename.contains("der2_cRefset_AttributeValue")) {
-				report(filename, fileTotalsEntry, sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
-			} else if (filename.contains(ASSOCIATION_FILENAME)) {
-				isAssociation = true;
-				report(filename, fileTotalsEntry, null);
-			} else {
-				fileTotalsWithoutComparison.put(filename, fileTotalsEntry);
-			}
-
 			// Output descriptions totals
-			if (isDescription && !filename.contains("sct2_Description_")) {
+			if (isDescription && !filename.contains(DESCRIPTION_FILENAME)) {
 				report("Total Descriptions:", descriptionTotals, totals[TAB_DESCS]);
 				isDescription = false;
 			}
 
 			// Output text definitions totals
-			if (isTextDefinition && !filename.contains("sct2_TextDefinition_")) {
+			if (isTextDefinition && !filename.contains(TEXT_DEFINITION_FILENAME)) {
 				report("Total Text Definitions:", textDefinitionTotals, totals[TAB_TEXT_DEFN]);
 				isTextDefinition = false;
 			}
 
 			// Output language refsets totals
-			if (isLanguageRefset && !filename.contains("der2_cRefset_Language")) {
+			if (isLanguageRefset && !filename.contains(LANGUAGE_REFSET_FILENAME)) {
 				report("Total Language Refsets:", languageRefsetTotals, totals[TAB_LANG]);
 				isLanguageRefset = false;
 			}
 
 			// Output associations totals
-			if (isAssociation && !filename.contains(ASSOCIATION_FILENAME)) {
+			if (isAssociationRefset && !filename.contains(ASSOCIATION_REFSET_FILENAME)) {
 				report(sumOfTabs(TAB_HIST, TAB_DESC_HIST));
-				isAssociation = false;
+				isAssociationRefset = false;
+			}
+
+			if (filename.contains(DESCRIPTION_FILENAME)) {
+				isDescription = true;
+				report(filename, fileTotalsEntry, null);
+				for (TotalsIndex index : TotalsIndex.values()) {
+					descriptionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
+				}
+			} else if (filename.contains(TEXT_DEFINITION_FILENAME)) {
+				isTextDefinition = true;
+				report(filename, fileTotalsEntry, null);
+				for (TotalsIndex index : TotalsIndex.values()) {
+					textDefinitionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
+				}
+			} else if (filename.contains(LANGUAGE_REFSET_FILENAME)) {
+				isLanguageRefset = true;
+				report(filename, fileTotalsEntry, null);
+				for (TotalsIndex index : TotalsIndex.values()) {
+					languageRefsetTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
+				}
+			} else if (filename.contains(ASSOCIATION_REFSET_FILENAME)) {
+				isAssociationRefset = true;
+				report(filename, fileTotalsEntry, null);
+			} else if (filename.contains(CONCEPT_FILENAME)) {
+				report(filename, fileTotalsEntry, totals[TAB_CONCEPTS]);
+			} else if (filename.contains(RELATIONSHIP_FILENAME)) {
+				report(filename, fileTotalsEntry, totals[TAB_RELS]);
+			} else if (filename.contains(RELATIONSHIP_CONCRETE_VALUES_FILENAME)) {
+				report(filename, fileTotalsEntry, totals[TAB_CD]);
+			} else if (filename.contains(OWL_EXPRESSION_FILENAME)) {
+				report(filename, fileTotalsEntry, totals[TAB_AXIOMS]);
+			} else if (filename.contains(ATTRIBUTE_VALUE_REFSET_FILENAME)) {
+				report(filename, fileTotalsEntry, sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
+			} else {
+				fileTotalsWithoutComparison.put(filename, fileTotalsEntry);
 			}
 		}
 
@@ -474,6 +414,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		for (TotalsIndex index : TotalsIndex.values()) {
 			fileDetails[index.ordinal() + 1] = fileTotals.get(index);
 		}
+
 		report(FILE_COMPARISON_TAB, fileDetails);
 	}
 
@@ -593,7 +534,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private void process(Path path, String filename) {
-		if (filename.contains(ASSOCIATION_FILENAME)) {
+		if (filename.contains(ASSOCIATION_REFSET_FILENAME)) {
 			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
 		} else if (filename.contains("sct2_Concept_")) {
