@@ -537,7 +537,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		if (filename.contains(ASSOCIATION_REFSET_FILENAME)) {
 			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
-		} else if (filename.contains("sct2_Concept_")) {
+		} else if (filename.contains(CONCEPT_FILENAME)) {
 			processConceptFile(path, filename);
  		} else {
 			processFile(path, filename);
