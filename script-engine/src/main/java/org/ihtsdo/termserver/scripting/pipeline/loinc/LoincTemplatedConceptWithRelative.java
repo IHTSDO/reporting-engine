@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
@@ -69,6 +70,11 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 			d.setTerm(d.getTerm().replace(SEPARATOR, ""));
 		} else if (d.getType().equals(DescriptionType.FSN)) {
 			d.setTerm(d.getTerm().replace(SEPARATOR, " to "));
+			//And we also want ANOTHER copy of this term (minus the semtag) because
+			//the existing PT is being transformed (next line) into the slash separated form
+			String fsnMinusSemtag = SnomedUtilsBase.deconstructFSN(d.getTerm())[0];
+			Description additionalAcceptableDesc = Description.withDefaults(fsnMinusSemtag, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			getConcept().addDescription(additionalAcceptableDesc);
 		} else {
 			d.setTerm(d.getTerm().replace(SEPARATOR, "/"));
 		}
