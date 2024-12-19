@@ -70,11 +70,13 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 			d.setTerm(d.getTerm().replace(SEPARATOR, ""));
 		} else if (d.getType().equals(DescriptionType.FSN)) {
 			d.setTerm(d.getTerm().replace(SEPARATOR, " to "));
-			//And we also want ANOTHER copy of this term (minus the semtag) because
-			//the existing PT is being transformed (next line) into the slash separated form
-			String fsnMinusSemtag = SnomedUtilsBase.deconstructFSN(d.getTerm())[0];
-			Description additionalAcceptableDesc = Description.withDefaults(fsnMinusSemtag, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-			getConcept().addDescription(additionalAcceptableDesc);
+			if (this instanceof LoincTemplatedConceptWithRatio) {
+				//And we also want ANOTHER copy of this term (minus the semtag) because
+				//the existing PT is being transformed (next line) into the slash separated form
+				String fsnMinusSemtag = SnomedUtilsBase.deconstructFSN(d.getTerm())[0];
+				Description additionalAcceptableDesc = Description.withDefaults(fsnMinusSemtag, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+				getConcept().addDescription(additionalAcceptableDesc);
+			}
 		} else {
 			d.setTerm(d.getTerm().replace(SEPARATOR, "/"));
 		}
