@@ -9,7 +9,9 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import java.util.List;
 import java.util.UUID;
 
 
@@ -37,11 +39,6 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 	@Override
 	protected String getCodeSystemSctId() {
 		return SCTID_NUVA_SCHEMA;
-	}
-
-	@Override
-	protected void applyTemplateSpecificTermingRules(Description pt) {
-		//Do we need to apply any specific rules to the description?
 	}
 
 	public static TemplatedConcept create(ExternalConcept externalConcept) {
@@ -85,13 +82,19 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 	}
 
 	@Override
-	public void populateTerms() throws TermServerScriptException {
-		super.populateTerms();
+	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
+		//For the NUVA PT, we'll keep that as acceptable, and use the brand name as the PT
+		if (d.getType().equals(DescriptionType.SYNONYM)) {
+			List<String> synonyms = getNuvaVaccine().getSynonyms();
+			if (!synonyms.isEmpty()) {
+				SnomedUtils.demoteAcceptabilityMap(d);
+				if (synonyms.size() > 1) {
+					throw new IllegalArgumentException("Vaccine has more than one synonym: " + getNuvaVaccine().getExternalIdentifier());
+				}
 
-		//Add acceptable synonyms
-		for (String synonym : getNuvaVaccine().getSynonyms()) {
-			Description d = Description.withDefaults(synonym, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-			concept.addDescription(d);
+				Description newPT = Description.withDefaults(synonyms.get(0), DescriptionType.SYNONYM, Acceptability.PREFERRED);
+				concept.addDescription(newPT);
+			}
 		}
 	}
 	
