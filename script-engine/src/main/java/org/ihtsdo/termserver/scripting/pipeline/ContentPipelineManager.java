@@ -23,6 +23,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String CONTENT_COUNT = "Content counts";
 	public static final String REFSET_COUNT = "Refset counts";
 	public static final String FAILED_TO_LOAD = "Failed to load ";
+	public static final String LANG_REFSET_REMOVAL = "Lang Refset Removal";
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
 
@@ -30,11 +31,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private static final String ALL_CAPS_SLOT_REGEX = "\\[([A-Z]+)\\]";
 	private static final Pattern allCapsSlotPattern = Pattern.compile(ALL_CAPS_SLOT_REGEX);
 
-	public void recordSuccesfulModelling(TemplatedConcept tc) {
+	public void recordSuccessfulModelling(TemplatedConcept tc) {
 		successfullyModelled.add(tc);
 	}
 
-	enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
+	private enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ContentPipelineManager.class);
 	
@@ -87,6 +88,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
 			loadSupportingInformation();
 			importPartMap();
+			preModelling();
 			doModeling();
 			checkSpecificConcepts();
 			TemplatedConcept.reportStats(getTab(TAB_SUMMARY));
@@ -122,6 +124,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 	}
 
+	protected void preModelling() throws TermServerScriptException {
+		//Override this method in base class to do some setup prior to modeling
+	}
+
 	protected void postModelling() throws TermServerScriptException {
 		//Override this method in base class to do some final work with the sucessfully modelled concepts
 		//and also those being inactivated eg sorting out the ORD/OBS Refset Members in LOINC
@@ -146,14 +152,14 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (String externalIdentifier : getExternalConceptMap().keySet()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(externalIdentifier);
 			if (conceptSufficientlyModeled(getContentType(), externalIdentifier, templatedConcept)) {
-				recordSuccesfulModelling(templatedConcept);
+				recordSuccessfulModelling(templatedConcept);
 			}
 		}
 
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("13397-5")) {
+		if (externalIdentifier.equals("20644-1")) {
 			LOGGER.debug("Check capitalization in FSN");
 		}
 
@@ -212,9 +218,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 		conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 	}
-	
 
-	private void determineChangeSet() throws TermServerScriptException {
+	protected void determineChangeSet() throws TermServerScriptException {
 		LOGGER.info("Determining change set for {} successfully modelled concepts", successfullyModelled.size());
 
 		Set<String> externalIdentifiersProcessed = new HashSet<>();
