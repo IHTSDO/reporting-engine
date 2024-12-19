@@ -47,7 +47,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 				valenceTemplate.getConcept().addIssue(e.getMessage());
 			}
 		}
-		cpm.recordSuccesfulModelling(valenceTemplate);
+		cpm.recordSuccessfulModelling(valenceTemplate);
 		return valenceTemplate;
 	}
 
