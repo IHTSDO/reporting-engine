@@ -15,7 +15,7 @@ import java.util.*;
 public class NuvaTemplatedValenceConcept extends TemplatedConcept implements ContentPipeLineConstants {
 
 	private static final Map<String, NuvaTemplatedValenceConcept> modelledValences = new HashMap<>();
-	protected static Concept disposition;
+	private static Concept valenceGrouper;
 
 	@Override
 	public String getSemTag() {
@@ -24,7 +24,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
 		TemplatedConcept.cpm = cpm;
-		disposition = cpm.getGraphLoader().getConcept("726711005 |Disposition (disposition)|");
+		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103|Valence (disposition)|");
 	}
 
 	private NuvaValence getNuvaValence() {
@@ -76,7 +76,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 		//Did the valence report any parent valences?
 		NuvaValence valence = (NuvaValence) externalConcept;
 		if (valence.getParentValenceIds().isEmpty()) {
-			concept.addRelationship(IS_A, disposition);
+			concept.addRelationship(IS_A, valenceGrouper);
 		} else {
 			for (NuvaValence parentValence : valence.getParentValences()) {
 				TemplatedConcept parentValenceTemplate = NuvaTemplatedValenceConcept.getOrModel(parentValence);
