@@ -53,6 +53,14 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			}
 		}
 
+		//Rule 9 for Prid Observations
+		if (getExternalConcept().getProperty().equals("Prid")
+				&& detailPresent(COMPNUM_PN)
+				&& getLoincDetailOrThrow(COMPNUM_PN).getPartNumber().equals("LP442509-8")) {
+			slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation");
+			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "finding");
+		}
+
 		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
 	}
