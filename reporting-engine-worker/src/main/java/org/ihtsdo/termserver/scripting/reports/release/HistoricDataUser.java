@@ -85,8 +85,8 @@ public class HistoricDataUser extends TermServerReport {
 			statsGenerator.runJob();
 			mgr.reset();
 			getJobRun().setTask(task);
-		} catch (TermServerScriptException e) {
-			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Historic Data Generation (from previous release) failed due to " + e.getMessage(), e);
 		}
 		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
