@@ -183,10 +183,16 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				&& hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT)) {
 			//We're not expecting a component, so set a debug point if do have one
 			if (!concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeMap.get(templateItem), ActiveState.ACTIVE).isEmpty()) {
-				LOGGER.debug("Check here - wasn't expecting to have a component");
+				LOGGER.debug("Check here - wasn't expecting to have a component: {}", this);
 			}
-			ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
-					.replace(" in ", "");
+
+			//We might have specified a slot for the component anyway eg as per rule 9 for Prid Observations
+			if (slotTermMap.containsKey(templateItem)) {
+				ptTemplateStr = ptTemplateStr.replaceAll(regex, slotTermMap.get(templateItem));
+			} else {
+				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
+						.replace(" in ", "");
+			}
 		} else if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = slotTermMap.get(templateItem);
 			if (!CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
