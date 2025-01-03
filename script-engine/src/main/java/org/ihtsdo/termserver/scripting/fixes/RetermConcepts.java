@@ -20,12 +20,14 @@ public class RetermConcepts extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RetermConcepts.class);
 	
+	private boolean useXpattern = true;
 	private List<String> identifyingTexts = null;
+	private boolean identifyingTextsStartsWith = true;
 	private String excludeText = null;
 	private Map<String, String> replacementMap = new HashMap<>();
 	private String prefix = null;
 	private static final boolean NORMALIZE_PT = true;  //
-	private boolean forcePTAlignment = false;
+	private boolean forcePTAlignment = true;
 	private Collection<Concept> requiredAttributeValue = null;
 	Map<String, Concept> currentFSNs = new HashMap<>();
 	List<DescriptionType> typesOfInterest = List.of(DescriptionType.FSN, DescriptionType.SYNONYM);
@@ -54,13 +56,12 @@ public class RetermConcepts extends BatchFix {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_UPDATES);
-		subsetECL = "<< " + DISEASE.getConceptId();
+		subsetECL = "<<41769001 |Disease suspected (situation)| ";
 
-		//text should be lower case.
-		replacementMap.put("tumor", "neoplasm");
-		replacementMap.put("tumour", "neoplasm");
+		//text should be in lower case.
+		//replacementMap.put("tumor", "neoplasm")
 
-		identifyingTexts = List.of("malignant tumor of", "benign tumor of");
+		identifyingTexts = List.of("suspected");
 		
 		requiredAttributeValue = null;
 
@@ -93,16 +94,35 @@ public class RetermConcepts extends BatchFix {
 
 	private int reterm(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		for (Map.Entry<String,String> entry : replacementMap.entrySet()) {
-			String find = entry.getKey();
-			String replace = entry.getValue();
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
-				if (d.isPreferred()) {
-					changesMade += retermDescriptionIfRequired(t, c, d, find, replace);
+		if (useXpattern) {
+			changesMade += retermDescriptionUsingXPattern(t, c);
+		} else {
+			for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
+				String find = entry.getKey();
+				String replace = entry.getValue();
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
+					if (d.isPreferred()) {
+						changesMade += retermDescriptionIfRequired(t, c, d, find, replace);
+					}
 				}
 			}
 		}
 		return changesMade;
+	}
+
+	private int retermDescriptionUsingXPattern(Task t, Concept c) throws TermServerScriptException {
+		Description fsn = c.getFSNDescription();
+		String fsnTerm = fsn.getTerm();
+		String[] fsnParts = SnomedUtilsBase.deconstructFSN(fsnTerm);
+		String identifyingText = identifyingTexts.get(0);
+		String identifyingTextCapitalized = StringUtils.capitalizeFirstLetter(identifyingText);
+		if (!fsnTerm.startsWith(identifyingTextCapitalized)) {
+			return NO_CHANGES_MADE;
+		}
+		String newTerm = fsnParts[0].replaceFirst(identifyingTextCapitalized + " ", "") + " " + identifyingText + " " + fsnParts[1];
+		newTerm = StringUtils.capitalizeFirstLetter(newTerm);
+		replaceDescription(t, c, fsn, newTerm, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, NORMALIZE_PT, "", null);
+		return CHANGE_MADE;
 	}
 
 	private int retermDescriptionIfRequired(Task t, Concept c, Description d, String find, String replace) throws TermServerScriptException {
@@ -178,7 +198,8 @@ public class RetermConcepts extends BatchFix {
 			}
 			//Flag up any descriptions that have both the find AND the replace text in the same term.
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (checkDescriptionForInclusion(c, d, toProcess)) {
+				if (checkDescriptionForInclusion(c, d)) {
+					toProcess.add(c);
 					break;
 				}
 			}
@@ -186,22 +207,25 @@ public class RetermConcepts extends BatchFix {
 		return toProcess;
 	}
 
-	private boolean checkDescriptionForInclusion(Concept c, Description d, List<Component> toProcess) throws TermServerScriptException {
+	private boolean checkDescriptionForInclusion(Concept c, Description d) throws TermServerScriptException {
 		String termLower = d.getTerm().toLowerCase();
 		if (!matchesInclusionCriteria(d, termLower)) {
 			return false;
 		}
 
-		for (Map.Entry<String,String> entry : replacementMap.entrySet()) {
-			String find = entry.getKey();
-			if (termLower.contains(find)) {
-				toProcess.add(c);
-				String replace = entry.getValue();
-				if (termLower.contains(replace)) {
-					report((Task) null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Term contains both '" + find + "' and '" + replace + "'", d);
-					return false;
+		if (replacementMap.isEmpty()) {
+			return true;
+		} else {
+			for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
+				String find = entry.getKey();
+				if (termLower.contains(find)) {
+					String replace = entry.getValue();
+					if (termLower.contains(replace)) {
+						report((Task) null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Term contains both '" + find + "' and '" + replace + "'", d);
+						return false;
+					}
+					return true;
 				}
-				return true;
 			}
 		}
 		return false;
@@ -214,7 +238,8 @@ public class RetermConcepts extends BatchFix {
 
 		if (identifyingTexts != null) {
 			for (String identifyingText : identifyingTexts) {
-				if (termLower.contains(identifyingText)
+				if ( (identifyingTextsStartsWith && termLower.startsWith(identifyingText) ||
+						(!identifyingTextsStartsWith && termLower.contains(identifyingText)))
 						&& (excludeText == null || !termLower.contains(excludeText))
 						&& (prefix == null || !termLower.contains(prefix.toLowerCase()))) {
 					return true;

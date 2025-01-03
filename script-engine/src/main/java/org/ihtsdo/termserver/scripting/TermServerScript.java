@@ -1429,8 +1429,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				} catch (Exception e) {
 					LOGGER.error("Failed to write summary info to summary tab {} ", msg, e);
 				}
-			} else {
-				LOGGER.info("Summary: {}", msg);
 			}
 		} else {
 			LOGGER.info("Unable to report due to missing report manager: {} ", msg);
