@@ -18,9 +18,9 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincAttributePartMapManager.class);
 
 	private static final int IDX_PART_NUM = 0;
-	private static final int IDX_STATUS = 8;
-	private static final int IDX_NO_MAP = 7;
-	private static final int IDX_TARGET = 3;
+	private static final int IDX_STATUS = 7;
+	private static final int IDX_NO_MAP = 6;
+	private static final int IDX_TARGET = 2;
 
 	private final LoincScript ls;
 	
