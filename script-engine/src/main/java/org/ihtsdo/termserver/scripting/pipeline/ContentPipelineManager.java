@@ -703,11 +703,19 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected void validateTemplatedConcept(String externalIdentifier, TemplatedConcept templatedConcept) throws TermServerScriptException {
 
 		if (templatedConcept == null || templatedConcept.getConcept() == null) {
-			report(getTab(TAB_MODELING_ISSUES),
-					externalIdentifier,
-					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
-					externalConceptMap.get(externalIdentifier).getLongDisplayName(),
-					"Concept not created");
+			if (externalConceptMap.get(externalIdentifier) == null) {
+				report(getTab(TAB_MODELING_ISSUES),
+						externalIdentifier,
+						ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
+						"N/A",
+						"Critical: External identifier not found in external concept map");
+			} else {
+				report(getTab(TAB_MODELING_ISSUES),
+						externalIdentifier,
+						ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
+						externalConceptMap.get(externalIdentifier).getLongDisplayName(),
+						"Concept not created");
+			}
 			return;
 		}
 
