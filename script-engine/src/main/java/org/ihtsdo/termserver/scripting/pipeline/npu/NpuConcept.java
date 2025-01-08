@@ -2,6 +2,10 @@ package org.ihtsdo.termserver.scripting.pipeline.npu;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
+
+import java.util.Collection;
+import java.util.List;
 
 public class NpuConcept extends ExternalConcept {
 	
@@ -358,4 +362,13 @@ public class NpuConcept extends ExternalConcept {
 		return new String[] {shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType,  active};
 	}
 
+	public Collection<? extends Part> getParts() {
+		return List.of(
+			new Part(system, "System"),
+			new Part(component, "Component"),
+			new Part(kindOfProperty, "Kind of Property"),
+			new Part(proc, "Proc"),
+			new Part(unit, "Unit")
+		);
+	}
 }
