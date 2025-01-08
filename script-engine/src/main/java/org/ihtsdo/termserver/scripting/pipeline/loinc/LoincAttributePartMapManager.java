@@ -82,8 +82,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		String[] items = line.split("\t");
 		String partNum = items[IDX_PART_NUM];
 		//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
-		if (items[IDX_STATUS].equals("UNMAPPED") ||
-				(items[IDX_STATUS].equals("DRAFT") && items[IDX_TARGET].isEmpty())) {
+		if (items[IDX_STATUS].equals("UNMAPPED") || items[IDX_STATUS].equals("DRAFT")) {
 			//Skip this one
 		} else if (items[IDX_NO_MAP].equals("true")) {
 			//And we can have items that report being mapped, but with 'no map' - warn about those.
