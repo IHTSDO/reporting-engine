@@ -1555,12 +1555,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		report(t, c, v.severity, v.reportActionType, v.getMessage());
 	}
 
-	public void reportLoud(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
-		setQuiet(false);
-		report(task, component, severity, actionType, details);
-		setQuiet(true);
-	}
-	
 	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		if (quiet) {
 			return;
@@ -1635,36 +1629,39 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public boolean report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
-		if (quiet) {
+		if (quiet || isWhiteListed(c, details)) {
 			return false;
 		}
 
+		String[] conceptFields = new String[3];
+		if (reportNullConcept || c != null) {
+			conceptFields[0] = c == null?"": QUOTE + c.getConceptId() + QUOTE;
+			conceptFields[1] = c == null?"":c.getFsn();
+
+			if (c != null && !StringUtils.isEmpty(c.getFsn())) {
+				conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				if (conceptFields[2] == null) {
+					conceptFields[2] = " ";
+				}
+			} else {
+				conceptFields[2] = "";
+			}
+		}
+		report(reportIdx, conceptFields, details);
+		return true;
+	}
+
+	private boolean isWhiteListed(Concept c, Object[] details) {
 		//Have we whiteListed this concept?
 		if (!ignoreWhiteList && c != null && whiteListedConceptIds.contains(c.getId())) {
 			String detailsStr = writeToString(details);
-			LOGGER.warn("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
+			LOGGER.warn("Ignoring whiteListed concept: {} : {}", c, detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
-			return false;
-		} else {
-			String[] conceptFields = new String[3];
-			if (reportNullConcept || c != null) {
-				conceptFields[0] = c == null?"": QUOTE + c.getConceptId() + QUOTE;
-				conceptFields[1] = c == null?"":c.getFsn();
-				
-				if (c != null && !StringUtils.isEmpty(c.getFsn())) {
-					conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
-					if (conceptFields[2] == null) {
-						conceptFields[2] = " ";
-					}
-				} else {
-					conceptFields[2] = "";
-				}
-			}
-			report(reportIdx, conceptFields, details);
+			return true;
 		}
-		return true;
+		return false;
 	}
-	
+
 	protected void countIssue(Concept c) {
 		countIssue(c, 1);
 	}
@@ -1700,6 +1697,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public void setQuiet(boolean quiet) {
+		LOGGER.info("Quiet mode set to {}", quiet);
 		this.quiet = quiet;
 	}
 
