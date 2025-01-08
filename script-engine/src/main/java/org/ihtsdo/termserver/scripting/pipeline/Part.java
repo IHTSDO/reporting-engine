@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.pipeline;
 
-public class Part {
+import org.jetbrains.annotations.NotNull;
+
+public class Part implements Comparable<Part> {
 
 	public enum PartStatus {ACTIVE, DEPRECATED};
 
@@ -8,11 +10,17 @@ public class Part {
 	private String partTypeName;
 	private String partName;
 	private PartStatus partStatus;
+	private String partCategory;
 	
 	public Part(String partNumber, String partTypeName, String partName) {
 		this.partNumber = partNumber;
 		this.partTypeName = partTypeName;
 		this.partName = partName;
+	}
+
+	public Part(String partNumber, String partCategory) {
+		this.partNumber = partNumber;
+		this.partCategory = partCategory;
 	}
 	
 	public String getPartNumber() {
@@ -62,5 +70,23 @@ public class Part {
 			return getPartNumber().equals(part.getPartNumber());
 		}
 		return false;
+	}
+
+
+	public String getPartCategory() {
+		return partCategory;
+	}
+
+	public void setPartCategory(String partCategory) {
+		this.partCategory = partCategory;
+	}
+
+	private String getNumberCategoryCombo() {
+		return getPartCategory() + "|" + getPartNumber();
+	}
+
+	@Override
+	public int compareTo(@NotNull Part o) {
+		return this.getNumberCategoryCombo().compareTo(o.getNumberCategoryCombo());
 	}
 }
