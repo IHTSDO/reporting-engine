@@ -160,7 +160,7 @@ public abstract class TermServerReport extends TermServerScript {
 
 	private boolean containsFdConcept(Collection<Concept> concepts) {
 		for (Concept c : concepts) {
-			if (c.isActive() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			if (c.isActiveSafely() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				return true;
 			}
 		}

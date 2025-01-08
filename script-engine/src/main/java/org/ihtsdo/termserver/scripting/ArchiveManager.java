@@ -261,7 +261,7 @@ public class ArchiveManager implements ScriptConstants {
 			//If the project specifies its a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
-				LOGGER.info("Project key ('" + ts.getProject().getKey() + "') identified as zip archive, loading Edition Archive");
+				LOGGER.info("Project key ('{}') identified as zip archive, loading Edition Archive", ts.getProject().getKey());
 				loadEditionArchive = true;
 			}
 

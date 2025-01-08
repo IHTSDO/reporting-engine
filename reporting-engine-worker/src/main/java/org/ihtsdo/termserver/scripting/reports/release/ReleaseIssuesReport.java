@@ -17,6 +17,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -113,28 +114,29 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 	
-	public static String SCTID_CF_MOD = "11000241103";   //Common French Module
-	public static String SCTID_CH_MOD = "2011000195101"; //Swiss Module
+	public static final String SCTID_CF_MOD = "11000241103";   //Common French Module
+	public static final String SCTID_CH_MOD = "2011000195101"; //Swiss Module
 
-	private static int MUT_IDX_ACTIVE = 0;
-	private static int MUT_IDX_MODULEID = 1;
+	private static final int MUT_IDX_ACTIVE = 0;
+	private static final int MUT_IDX_MODULEID = 1;
 	
 	private List<String> expectedExtensionModules = null;
 
 	private static final int MAX_DESC_LENGTH = 255;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
 		//params.put(UNPROMOTED_CHANGES_ONLY, "Y");
 		/*params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
 		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		params.put(REPORT_TYPE, ReportConfiguration.ReportType.USER.toString());*/
-		TermServerReport.run(ReleaseIssuesReport.class, args, params);
+		TermServerScript.run(ReleaseIssuesReport.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release Validation
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
 		this.ignoreInputFileForReportName = true;
 		super.init(run);
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
@@ -151,8 +153,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		inputFiles.add(2, new File("resources/repeated-word-exceptions.txt"));
 		loadPrepositionsAndExceptions();
 		loadRepeatedWordExceptions();
-		//ignoreWhiteList = true;
-		
+
 		stopWords.add("of");
 		stopWords.add("Product");
 		stopWords.add("the");
@@ -240,7 +241,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 		LOGGER.info ("Complete");
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 				"Issue, Count"};
@@ -289,16 +291,18 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
-		LOGGER.info("Checking " + gl.getAllConcepts().size() + " concepts...");
+		LOGGER.info("Checking {} concepts...", gl.getAllConcepts().size());
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConceptsSorted = allConceptsSorted.stream()
 				.filter(c -> c.isActiveSafely())
 				.collect(Collectors.toList());
-		LOGGER.info("Sorted " + allConceptsSorted.size() + " concepts");
+		LOGGER.info("Sorted {} concepts", allConceptsSorted.size());
 		LOGGER.info("Detecting recently touched concepts");
 		populateRecentlyTouched();
-		
+
+		LOGGER.info("Checking: ");
 		LOGGER.info("...modules are appropriate (~10 seconds)");
 		parentsInSameModule();
 		if (isMS()) {
@@ -395,8 +399,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					logger.debug("here");
 				}*/
 				
-				//Did it change in the current delta?
-				if (StringUtils.isEmpty(c.getIssues())) {
+				//Did it change in the current delta?  Don't bother checking if not
+				if (c.getPreviousState() == null) {
 					continue;
 				}
 				
@@ -446,7 +450,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					//module without their parent object - concept or description
 					Component owningObject = SnomedUtils.getParentComponent(c, gl);
 					if (owningObject == null) {
-						LOGGER.warn("Could not determine owner of " + c);
+						LOGGER.warn("Could not determine owner of {}", c);
 					} else if (!hasChangedModule(owningObject)) {
 						if (owningObject.getModuleId().equals(SCTID_CF_MOD) && 
 								isExpectedModuleJumpException(c, previousState, currentState)) {
@@ -493,13 +497,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		return prevModule.equals(currModule);
 	}
 
-	private void populateSummaryTab() throws TermServerScriptException {
+	private void populateSummaryTab() {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 
 		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
+				.map(Map.Entry::getValue)
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
@@ -557,15 +561,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void unexpectedComponentModulesMS() throws TermServerScriptException {
 		String issueStr ="Unexpected extension component module";
 		initialiseSummary(issueStr);
-		LOGGER.info("Checking " + allConceptsSorted.size() + " for unexpected component modules");
+		LOGGER.info("Checking {} for unexpected component modules", allConceptsSorted.size());
 		for (Concept c : allConceptsSorted) {
-			/*if (c.getId().equals("52792009")) {
-				LOGGER.debug("here");
-			}*/
 			for (Component comp: SnomedUtils.getAllComponents(c)) {
-				/*if (comp.getId().equals("80983393-ed14-4223-aa15-815e439bac62")) {
-					LOGGER.debug("here");
-				}*/
 				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
 					String msg = "Default module " + defaultModule + " vs component module " + comp.getModuleId();
 					reportAndIncrementSummary(c, isLegacySimple(comp), issueStr, getLegacyIndicator(comp), isActive(c,comp), msg, comp);
@@ -628,7 +626,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ) {
 						boolean reported = report(c, issue2Str,"N", "Y");
 						if (reported) {
-							// TODO: Should report Legacy and Fresh issues separately.
 							incrementSummaryInformation("Fresh Issues Reported");
 						}
 					}
@@ -893,24 +890,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
-	/*private void suspectedProperNameCaseInsensitive() throws TermServerScriptException {
-		String issueStr = "Possible proper name set as case insensitive";
-		initialiseSummary(issueStr);
-		for (Concept c : gl.getAllConcepts()) {
-			if (inScope(c)) {
-				nextDescription:
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					String firstWord = d.getTerm().split(" ")[0];
-					if ((firstWord.endsWith("s'") || firstWord.endsWith("'s"))
-							&& d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
-							boolean reported = report(c, issueStr, isLegacySimple(d), isActive(c, d), "", d);
-							continue nextDescription;
-					}
-				}
-			}
-		}
-	}*/
-	
 	private void multipleLangRef() throws TermServerScriptException {
 		String issueStr = "Multiple LangRef for a given refset";
 		initialiseSummary(issueStr);
@@ -943,25 +922,29 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		Map<String, String> refsetLangCodeMap = generateRefsetLangCodeMap();
 		for (Concept c : allConceptsSorted) {
-			for (Description d : c.getDescriptions()) {
-				//It's OK - for example - to have an English term in the Dutch LangRefset
-				//So skip 'en' terms, unless it's the FSN
-				if (d.getType().equals(DescriptionType.FSN) || !d.getLang().equals("en")) {
-					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-						String expectedLangCode = refsetLangCodeMap.get(l.getRefsetId());
-						if (expectedLangCode == null) {
-							throw new TermServerScriptException("Unable to determine appropriate langCode for Langrefset: " + gl.getConcept(l.getRefsetId()));
-						}
-						if (!d.getLang().equals(expectedLangCode)) {
-							String detailStr = "Expected '" + expectedLangCode + "'";
-							report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d, l);
-						}
+			checkUnexpectedLangCode(c, issueStr, refsetLangCodeMap);
+		}
+	}
+
+	private void checkUnexpectedLangCode(Concept c, String issueStr, Map<String, String> refsetLangCodeMap) throws TermServerScriptException {
+		for (Description d : c.getDescriptions()) {
+			//It's OK - for example - to have an English term in the Dutch LangRefset
+			//So skip 'en' terms, unless it's the FSN
+			if (d.getType().equals(DescriptionType.FSN) || !d.getLang().equals("en")) {
+				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+					String expectedLangCode = refsetLangCodeMap.get(l.getRefsetId());
+					if (expectedLangCode == null) {
+						throw new TermServerScriptException("Unable to determine appropriate langCode for Langrefset: " + gl.getConcept(l.getRefsetId()));
+					}
+					if (!d.getLang().equals(expectedLangCode)) {
+						String detailStr = "Expected '" + expectedLangCode + "'";
+						report(c, issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d, l);
 					}
 				}
 			}
 		}
 	}
-	
+
 	private Map<String, String> generateRefsetLangCodeMap() {
 		Map<String, String> refsetLangCodeMap = new HashMap<>();
 		//First populate en-gb and en-us since we always know about those
@@ -1406,7 +1389,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 			String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 			if (semTag.equals("(finding)")) {
-				checkForAncestorSemTag(c, "(disorder)", issueStr);
+				checkForAncestorSemTag(c, issueStr);
 			} else if (semTag.equals("(disorder)") && !diseases.contains(c)) {
 				String legacy = getLegacyIndicator(c);
 				report(c, issue2Str, legacy, isActive(c,null));
@@ -1414,7 +1397,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
-	private void checkForAncestorSemTag(Concept c, String string, String issueStr) throws TermServerScriptException {
+	private void checkForAncestorSemTag(Concept c, String issueStr) throws TermServerScriptException {
 		Set<Concept> ancestors = c.getAncestors(NOT_SET);
 		for (Concept ancestor : ancestors) {
 			String semTag = SnomedUtilsBase.deconstructFSN(ancestor.getFsn())[1];
@@ -1536,7 +1519,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					return true;
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
-				if (brackets.size() == 0) {
+				if (brackets.isEmpty()) {
 					report (c,"Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c,d), d);
 				} else {
 					brackets.pop();
