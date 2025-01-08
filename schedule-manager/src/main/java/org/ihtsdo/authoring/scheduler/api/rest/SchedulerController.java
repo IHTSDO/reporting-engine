@@ -47,6 +47,10 @@ public class SchedulerController {
 	@Value("${schedule.manager.terminology.server.uri}")
 	String terminologyServerUrl;
 
+	private Map<String, List<JobCategory>> jobCache = new HashMap<>();
+	private Date lastCacheUpdate = new Date(0);
+	private static final long CACHE_TIMEOUT = 1000L * 60 * 30; // 30 minutes
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerController.class);
 
 	private static final String X_AUTH_TOK = "X-AUTH-token";
@@ -91,11 +95,24 @@ public class SchedulerController {
 	@Operation(summary="List job type categories")
 	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs/{typeName}")
-	public List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
-		return scheduleService.listJobTypeCategories(typeName).stream()
+	public synchronized List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
+		//Do we need to refresh the cache?
+		if (new Date().getTime() - lastCacheUpdate.getTime() > CACHE_TIMEOUT) {
+			jobCache.clear();
+			lastCacheUpdate = new Date();
+		}
+
+		//Do we have the data cached?
+		if (jobCache.containsKey(typeName)) {
+			return jobCache.get(typeName);
+		}
+		LOGGER.info("Populating cache of known jobs for type: {}.  Refresh scheduled for 30mins.", typeName);
+		List<JobCategory> jobCategories = scheduleService.listJobTypeCategories(typeName).stream()
 				.filter(jc -> !jc.getJobs().isEmpty())
 				.map(this::reverseParameterOptions)
 				.toList();
+		jobCache.put(typeName, jobCategories);
+		return jobCategories;
 	}
 
 	private JobCategory reverseParameterOptions(JobCategory jobCategory) {
@@ -264,6 +281,7 @@ public class SchedulerController {
 	@GetMapping(value="/jobs/clear-all-caches")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
 	public void clearCaches() {
+		jobCache.clear();
 		accessControlService.clearAllCaches();
 	}
 
