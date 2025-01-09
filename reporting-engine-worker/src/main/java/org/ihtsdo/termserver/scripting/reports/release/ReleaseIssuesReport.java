@@ -127,10 +127,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
-		//params.put(UNPROMOTED_CHANGES_ONLY, "Y");
-		/*params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
-		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
-		params.put(REPORT_TYPE, ReportConfiguration.ReportType.USER.toString());*/
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		TermServerScript.run(ReleaseIssuesReport.class, args, params);
 	}
 
@@ -206,7 +203,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			try {
 				LOGGER.info("Sleeping for 10 seconds - has the server just started?");
 				Thread.sleep(10000);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 
 			if (!getInputFile().canRead()) {
 				throw new TermServerScriptException(CANNOT_READ + getInputFile());
@@ -297,7 +296,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConceptsSorted = allConceptsSorted.stream()
 				.filter(c -> c.isActiveSafely())
-				.collect(Collectors.toList());
+				.toList();
 		LOGGER.info("Sorted {} concepts", allConceptsSorted.size());
 		LOGGER.info("Detecting recently touched concepts");
 		populateRecentlyTouched();
@@ -330,7 +329,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		multipleLangRef();
 		multiplePTs();
 		multipleFSNs();
-		//suspectedProperNameCaseInsensitive();
 		if (isMS()) {
 			unexpectedLangCodeMS();
 		} else {
@@ -374,9 +372,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		checkMRCMAttributeDomains();
 		checkMRCMModuleScope();
 
-		LOGGER.info("...Concept Non-Current inactivation indicator check");
-		checkConceptNonCurrentIndicators();
-
 		LOGGER.info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -390,15 +385,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr2);
 		LOGGER.info("Started inappropriateModuleJumping check");
 		for (Concept concept : allConceptsSorted) {
-			/*if (concept.getId().equals("434701000124101")) {
-				logger.debug("here");
-			}*/
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				/*if (c.getId().equals("1e684afa-9319-4b24-9489-40caef554e13")) {
-					logger.debug("here");
-				}*/
-				
 				//Did it change in the current delta?  Don't bother checking if not
 				if (c.getPreviousState() == null) {
 					continue;
@@ -1179,7 +1167,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			{ SOFT_HYPHEN , "Soft hyphen" }
 		};
 		
-		for (String unwantedChar[] : unwantedChars) {
+		for (String[] unwantedChar : unwantedChars) {
 			String issueStr = "Unexpected character(s) - " + unwantedChar[1];
 			initialiseSummary(issueStr);
 			
@@ -1673,36 +1661,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				Concept c = gl.getConcept(rm.getReferencedComponentId());
 				for (String additionalField : rm.getAdditionalFieldNames()) {
 					validateTermsInField(partName, c, rm, additionalField);
-				}
-			}
-		}
-	}
-
-	private void checkConceptNonCurrentIndicators() throws TermServerScriptException{
-		String issueStr = "Inactive description of an inactive concept has an active Concept Non-Current inactivation indicator.";
-		String issueStr2 = "Description of an active concept has an active Concept Non-Current inactivation indicator.";
-
-		initialiseSummary(issueStr);
-		initialiseSummary(issueStr2);
-
-		for (Concept concept : allConceptsSorted) {
-			if (Boolean.FALSE.equals(concept.isActiveSafely())) {
-				checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(ActiveState.INACTIVE), issueStr);
-			} else {
-				checkDescriptionsForConceptNonCurrentIndicators(concept, concept.getDescriptions(), issueStr2);
-			}
-		}
-	}
-
-	private void checkDescriptionsForConceptNonCurrentIndicators(Concept concept, List<Description> descriptions, String issueStr) throws TermServerScriptException {
-		for (Description description : descriptions) {
-			if (inScope(description)) {
-				for (InactivationIndicatorEntry entry : description.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-					boolean isLegacy = isLegacySimple(entry);
-					if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT) &&
-							(includeLegacyIssues || !isLegacy)) {
-						report(concept, issueStr, getLegacyIndicator(entry), isActive(concept, description), description);
-					}
 				}
 			}
 		}
