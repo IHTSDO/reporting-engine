@@ -27,6 +27,7 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 			delta.newIdsRequired = false;
 			delta.init(args);
 			delta.getGraphLoader().setRecordPreviousState(true);
+			delta.getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true);
 			delta.loadProjectSnapshot();
 			delta.additionalReportColumns = "Description ET, Details";
 			delta.postInit();
@@ -76,10 +77,12 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 			if (previousState != null && previousState[MUT_IDX_ACTIVE].equals("0")) {
 				iie.setInactivationReasonId(previousState[MUT_IDX_VALUE]);
 				report(c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, "Inactivation indicator reset to previous inactive value", iie);
+				incrementSummaryInformation("Inactivation indicators reset to previous state for "+ activeStateStr + " description");
+			} else {
+				report(c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, d, iie);
+				incrementSummaryInformation("Inactivation indicators inactivated for "+ activeStateStr + " description");
 			}
 			iie.setDirty();
-			report(c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, d, iie);
-			incrementSummaryInformation("Inactivation indicators inactivated for "+ activeStateStr + " description");
 		}
 	}
 
