@@ -130,6 +130,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	public void postInit() throws TermServerScriptException {
 		knownReplacements.put(gl.getConcept("261231004|Local flap|"), gl.getConcept("256683004|Flap|"));
 		knownReplacements.put(gl.getConcept("367651003 |Malignant neoplasm of p, s, or u origin|"), gl.getConcept("1240414004 |Malignant neoplasm|"));
+		initialiseSummaryInformation("Unexpected dependencies included");
 		super.postInit();
 	}
 	
@@ -417,8 +418,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	private List<Component> process(List<Component> componentsToProcess) throws TermServerScriptException {
-		addSummaryInformation("Concepts specified", componentsToProcess.size());
-		initialiseSummaryInformation("Unexpected dependencies included");
+		incrementSummaryInformation("Concepts specified", componentsToProcess.size());
 		LOGGER.info ("Extracting specified concepts");
 		for (Component thisComponent : componentsToProcess) {
 			extractComponent(thisComponent, componentsToProcess, true);
@@ -428,10 +428,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	protected void extractComponent(Component thisComponent, List<Component> componentsToProcess, boolean doAdditionalProcessing) throws TermServerScriptException {
 		Concept thisConcept = (Concept)thisComponent;
-
-		if (thisConcept.getId().equals("21371411000001106")) {
-			LOGGER.debug("Check missing relationships");
-		}
 
 		if (copyInferredRelationshipsToStatedWhereMissing) {
 			restateInferredRelationships(thisConcept, copyInferredParentRelsToStated);
