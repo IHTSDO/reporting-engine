@@ -53,7 +53,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			runStandAlone = false;
 			getGraphLoader().setExcludedModules(new HashSet<>());
 			getArchiveManager().setRunIntegrityChecks(false);
-			getArchiveManager().setPopulateReleasedFlag(true);  //Needed for working out if we're deleteing or inactivating
+			getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);  //Needed for working out if we're deleteing or inactivating
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();

@@ -58,7 +58,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	@Override
 	public void init(String[] args) throws TermServerScriptException {
 		ArchiveManager mgr = getArchiveManager();
-		mgr.setPopulateReleasedFlag(true);
+		mgr.setEnsureSnapshotPlusDeltaLoad(true);
 		SnapshotGenerator.setSkipSave(true); //No need to save to disk if we need a fresh copy every time. 
 		//mgr.setRunIntegrityChecks(false);  //MSSP-1087
 		super.init(args);

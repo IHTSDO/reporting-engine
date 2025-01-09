@@ -55,7 +55,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean loadDependencyPlusExtensionArchive = false;
 	private boolean loadEditionArchive = false;
 	private boolean populateHierarchyDepth = true;  //Term contains X needs this
-	private boolean populateReleasedFlag = false;
+	private boolean ensureSnapshotPlusDeltaLoad = false;
 	private boolean populatePreviousTransativeClosure = false;
 	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
 	private boolean releasedFlagPopulated = false;
@@ -102,7 +102,7 @@ public class ArchiveManager implements ScriptConstants {
 				singleton.loadEditionArchive = false;
 				singleton.loadDependencyPlusExtensionArchive = false;
 				singleton.populatePreviousTransativeClosure = false;
-				singleton.populateReleasedFlag = false;
+				singleton.ensureSnapshotPlusDeltaLoad = false;
 				singleton.loadOtherReferenceSets = false;
 			} else {
 				LOGGER.info("Archive Manager load flags retained - reuse forced.");
@@ -258,7 +258,7 @@ public class ArchiveManager implements ScriptConstants {
 				}
 			}
 
-			//If the project specifies its a .zip file, that's another way to know we're loading an edition
+			//If the project specifies it's a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
 				LOGGER.info("Project key ('{}') identified as zip archive, loading Edition Archive", ts.getProject().getKey());
@@ -309,13 +309,13 @@ public class ArchiveManager implements ScriptConstants {
 
 			if (!snapshot.exists() ||
 					(isStale && !allowStaleData) || 
-					(populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) ||
+					(ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) ||
 					(populatePreviousTransativeClosure && gl.getPreviousTC() == null)) {
 				
-				if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
-					LOGGER.info("Generating fresh snapshot because 'released' flag must be populated");
+				if (ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) {
+					LOGGER.info("Generating fresh snapshot because 'ensureSnapshotPlusDeltaLoad' flag must be populated");
 				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
-					LOGGER.info("Generating fresh snapshot because previous transative closure must be populated");
+					LOGGER.info("Generating fresh snapshot because previous transitive closure must be populated");
 				}
 				generateSnapshot(ts.getProject());
 				releasedFlagPopulated = true;
@@ -324,7 +324,7 @@ public class ArchiveManager implements ScriptConstants {
 			} else {
 				//We might already have this project in memory
 				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject()) && 
-						(populateReleasedFlag == false || (populateReleasedFlag && releasedFlagPopulated))) {
+						(ensureSnapshotPlusDeltaLoad == false || (ensureSnapshotPlusDeltaLoad && releasedFlagPopulated))) {
 					LOGGER.info("{} already held in memory, no need to reload.  Resetting any issues held against components...", ts.getProject());
 					gl.makeReady();
 				} else {
@@ -337,7 +337,7 @@ public class ArchiveManager implements ScriptConstants {
 					}
 					//Do we also need a fresh snapshot here so we can have the 'released' flag?
 					//If we're loading an edition archive then that is - by definition all released.
-					if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
+					if (ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) {
 						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
 						generateSnapshot(ts.getProject());
@@ -894,7 +894,7 @@ public class ArchiveManager implements ScriptConstants {
 
 				//If we're loading all terms, load the language refset as well
 				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
-					LOGGER.info("Loading " + fileType + " Language Reference Set File - " + fileName);
+					LOGGER.info("Loading {} Language Reference Set File - {}", fileType, fileName);
 					gl.loadLanguageFile(is, isReleased);
 				} else if (loadTheReferenceSet) {
 					gl.loadReferenceSets(is, fileName, isReleased);
@@ -937,12 +937,12 @@ public class ArchiveManager implements ScriptConstants {
 		this.populateHierarchyDepth = populateHierarchyDepth;
 	}
 
-	public boolean isPopulateReleasedFlag() {
-		return populateReleasedFlag;
+	public boolean isEnsureSnapshotPlusDeltaLoad() {
+		return ensureSnapshotPlusDeltaLoad;
 	}
 
-	public void setPopulateReleasedFlag(boolean populateReleasedFlag) {
-		this.populateReleasedFlag = populateReleasedFlag;
+	public void setEnsureSnapshotPlusDeltaLoad(boolean ensureSnapshotPlusDeltaLoad) {
+		this.ensureSnapshotPlusDeltaLoad = ensureSnapshotPlusDeltaLoad;
 	}
 
 	public boolean isPopulatePreviousTransativeClosure() {

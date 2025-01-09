@@ -36,7 +36,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);

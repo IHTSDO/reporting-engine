@@ -43,7 +43,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			fix.selfDetermining = true;
 			//fix.runStandAlone = true;
 			fix.subsetECL = "< 415229000 |Racial group (racial group)|";
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
 			fix.postInit();

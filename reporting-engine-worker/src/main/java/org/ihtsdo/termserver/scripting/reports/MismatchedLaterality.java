@@ -40,7 +40,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		super.init(run);
 	}
 	

@@ -638,7 +638,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		getArchiveManager(true).loadSnapshot(fsnOnly);
+		ArchiveManager mgr = getArchiveManager(true);
+		//Run a quick check here that if the GraphLoader has been told to record previous state, then obviously
+		//it can only do that if we're forcing a fresh build of Snapshot + Delta, as it's the published snapshot
+		//that we use to obtain the previous state.
+		if (gl.isRecordPreviousState() && !mgr.isEnsureSnapshotPlusDeltaLoad()) {
+			throw new TermServerScriptException("GraphLoader has been configured to record previous state, but we've not specified a fresh build of Snapshot + Delta");
+		}
+		mgr.loadSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}

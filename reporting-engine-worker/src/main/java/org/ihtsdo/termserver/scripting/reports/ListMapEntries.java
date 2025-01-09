@@ -44,7 +44,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager(true).setLoadOtherReferenceSets(true);
-		getArchiveManager(true).setPopulateReleasedFlag(true); //This forces a delta import - needed because we don't yet save 'Other' refset members to disk.
+		getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true); //This forces a delta import - needed because we don't yet save 'Other' refset members to disk.
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		super.init(run);
 	}

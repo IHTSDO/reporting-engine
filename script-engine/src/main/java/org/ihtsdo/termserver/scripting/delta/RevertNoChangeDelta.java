@@ -27,7 +27,7 @@ public class RevertNoChangeDelta extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RevertNoChangeDelta app = new RevertNoChangeDelta();
 		try {
-			app.getArchiveManager().setPopulateReleasedFlag(true);
+			app.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			app.newIdsRequired = false;
 			app.runStandAlone = true;
 			app.additionalReportColumns="ComponentType, ComponentId, Info, Data";

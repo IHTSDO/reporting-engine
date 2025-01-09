@@ -101,7 +101,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 	
 	@Override
 	protected void preInit() throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		selfDetermining = true;

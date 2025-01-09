@@ -29,7 +29,7 @@ public class WhitelistBornInactiveComponents extends TermServerScript {
 		WhitelistBornInactiveComponents fix = new WhitelistBornInactiveComponents();
 		try {
 			fix.runStandAlone = false;
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.additionalReportColumns = "Active, Details, Details, Details";
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
