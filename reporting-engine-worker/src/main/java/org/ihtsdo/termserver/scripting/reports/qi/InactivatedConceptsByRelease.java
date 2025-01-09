@@ -43,7 +43,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; //QI / Misc Analysis
 		super.init(run);
 	}

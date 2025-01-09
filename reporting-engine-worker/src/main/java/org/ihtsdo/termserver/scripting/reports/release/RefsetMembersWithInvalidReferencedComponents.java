@@ -116,7 +116,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		getArchiveManager().setLoadOtherReferenceSets(true);
 		//We need a new import each time incase the previous run did not load the other refsets
 		//TODO We could set another flag to track if 'otherRefsets' are in memory or not
-		getArchiveManager(true).setPopulateReleasedFlag(true);
+		getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true);
 	}
 
 	public void postInit() throws TermServerScriptException {

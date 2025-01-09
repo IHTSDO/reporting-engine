@@ -32,7 +32,7 @@ public class SEP_Laterality_RefsetUpdates extends TermServerReport implements Re
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);

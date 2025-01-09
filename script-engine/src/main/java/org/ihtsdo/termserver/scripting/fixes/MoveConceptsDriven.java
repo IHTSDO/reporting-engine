@@ -42,7 +42,7 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 			fix.selfDetermining = true;
 			fix.populateTaskDescription = false;
 			fix.maxFailures = Integer.MAX_VALUE;
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
 			fix.postInit();

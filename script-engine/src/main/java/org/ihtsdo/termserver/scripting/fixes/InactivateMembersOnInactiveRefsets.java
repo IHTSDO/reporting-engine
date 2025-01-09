@@ -28,7 +28,7 @@ public class InactivateMembersOnInactiveRefsets extends BatchFix {
 			fix.populateEditPanel = false;
 			fix.runStandAlone = false;  //Need to look up the project for MS extensions
 			fix.getArchiveManager().setLoadOtherReferenceSets(true);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(false);  //Load all descriptions
 			fix.postInit();

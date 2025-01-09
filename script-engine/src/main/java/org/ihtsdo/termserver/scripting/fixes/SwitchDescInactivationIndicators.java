@@ -44,7 +44,7 @@ public class SwitchDescInactivationIndicators extends BatchFix {
 	@Override
 	public void init(String[] args) throws TermServerScriptException {
 		ArchiveManager mgr = getArchiveManager();
-		mgr.setPopulateReleasedFlag(true);
+		mgr.setEnsureSnapshotPlusDeltaLoad(true);
 		//mgr.setRunIntegrityChecks(false);  //MSSP-1087
 		super.init(args);
 	}

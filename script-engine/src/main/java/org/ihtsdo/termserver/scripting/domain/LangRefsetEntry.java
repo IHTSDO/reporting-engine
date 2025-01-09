@@ -11,6 +11,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 
 	public static String ACCEPTABILITY_ID = "acceptabilityId";
+
+	public static String[] additionalFieldNames = new String[] {ACCEPTABILITY_ID};
 	
 	public LangRefsetEntry clone(String descriptionSctId, boolean keepIds) {
 		LangRefsetEntry clone = new LangRefsetEntry();
@@ -153,7 +155,13 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	}
 
 	public String toStringWithModule() {
-		return "[" + moduleId + "] : " + toString();
+		return "[" + moduleId + "] : " + this;
+	}
+
+	//Note that because Java does not support polymorphism of variables, only methods,
+	//we need to call this method to pick up the field names of subtypes of RefsetMember
+	public String[] getAdditionalFieldNames() {
+		return additionalFieldNames;
 	}
 
 }

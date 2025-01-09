@@ -28,7 +28,7 @@ public class DeleteLangRefsetsOnInactiveDescs extends BatchFix {
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
 			fix.runStandAlone = false;  //Need to look up the project for MS extensions
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(false);  //Load all descriptions
 			fix.postInit();

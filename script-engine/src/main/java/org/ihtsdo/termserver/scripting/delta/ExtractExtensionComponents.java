@@ -66,7 +66,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		try {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 
 			//delta.sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.

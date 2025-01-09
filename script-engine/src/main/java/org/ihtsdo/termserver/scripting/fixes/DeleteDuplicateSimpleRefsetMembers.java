@@ -26,7 +26,7 @@ public class DeleteDuplicateSimpleRefsetMembers extends BatchFix implements Scri
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
 			fix.runStandAlone = false;
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.getArchiveManager().setLoadOtherReferenceSets(true);
 			fix.init(args);
 			fix.additionalReportColumns = "Active, Details";

@@ -52,7 +52,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		super.init(run);
 

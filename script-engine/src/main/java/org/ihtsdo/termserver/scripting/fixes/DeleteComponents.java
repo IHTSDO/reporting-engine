@@ -33,7 +33,7 @@ public class DeleteComponents extends BatchFix implements ScriptConstants {
 			fix.selfDetermining = true;
 			fix.runStandAlone = false;
 			fix.worksWithConcepts = false; //Ensures doFix is called with Component
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();

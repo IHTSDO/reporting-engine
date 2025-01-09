@@ -68,7 +68,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.maxFailures = Integer.MAX_VALUE;
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			//fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.loadProjectSnapshot(true);

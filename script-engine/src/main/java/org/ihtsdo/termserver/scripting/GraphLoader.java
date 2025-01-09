@@ -369,11 +369,6 @@ public class GraphLoader implements ScriptConstants {
 							c.mergeObjectPropertyAxiomRepresentation(axiomService.asObjectPropertyAxiom(lineItems[REF_IDX_AXIOM_STR]));
 						}
 					}
-
-					/*if (conceptId == 241834008) {
-						LOGGER.debug("Here");
-					}*/
-
 				} catch (ConversionException e) {
 					throw new TermServerScriptException("Failed to load axiom: " + line, e);
 				}
@@ -854,20 +849,20 @@ public class GraphLoader implements ScriptConstants {
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
-					
+
 					if (isRecordPreviousState() && original != null && !isReleased) {
 						langRefsetEntry.setPreviousState(original.getMutableFields());
 					}
-					
+
 					//If we've already received a newer version of this component, say
 					//by loading INT first and a published MS 2nd, then skip
-					if (!StringUtils.isEmpty(original.getEffectiveTime()) 
+					if (!StringUtils.isEmpty(original.getEffectiveTime())
 							&& (isReleased != null && isReleased)
 							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 						//Skipping incoming published langrefset row, older than that held
 						continue;
 					}
-					
+
 					//Set Released Flag if our existing entry has it
 					if (original.isReleasedSafely()) {
 						langRefsetEntry.setReleased(true);
@@ -887,16 +882,16 @@ public class GraphLoader implements ScriptConstants {
 					}
 					d.getLangRefsetEntries().remove(original);
 				}
-				
+
 				if (langRefsetEntry.isReleased() == null) {
 					langRefsetEntry.setReleased(isReleased);
 				}
-				
+
 				//Complexity here that we've historically had language refset entries
 				//for the same description which attempt to cancel each other out using
 				//different UUIDs.  Therefore if we get a later entry inactivating a given
 				//dialect, then allow that to overwrte an earlier value with a different UUUID
-				
+
 				//Do we have an existing entry for this description & dialect that is later and inactive?
 				boolean clearToAdd = true;
 				List<LangRefsetEntry> allExisting = d.getLangRefsetEntries(ActiveState.BOTH, langRefsetEntry.getRefsetId());
@@ -906,7 +901,7 @@ public class GraphLoader implements ScriptConstants {
 					if (isReleased != null && !isReleased) {
 						checkForActiveDuplication(d, existing, langRefsetEntry);
 					}
-					
+
 					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) <= 1) {
 						clearToAdd = false;
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
@@ -929,11 +924,11 @@ public class GraphLoader implements ScriptConstants {
 						}
 					}
 				}
-				
+
 				//INFRA-5274 We're going to add the entry in all cases so we can detect duplicates,
 				//but we'll only set the acceptability on the description if the above code decided it was safe
 				d.getLangRefsetEntries().add(langRefsetEntry);
-				
+
 				if (clearToAdd) {
 					if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
 						Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
@@ -951,7 +946,7 @@ public class GraphLoader implements ScriptConstants {
 		}
 	}
 
-	
+
 	private void checkForActiveDuplication(Description d, LangRefsetEntry l1, LangRefsetEntry l2) throws TermServerScriptException {
 		if (l1.isActive() && l2.isActive()) {
 			Set<DuplicatePair> duplicates = getLangRefsetDuplicates(d);

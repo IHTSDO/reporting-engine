@@ -33,7 +33,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 		GroupSelfGroupedAttributesTargeted delta = new GroupSelfGroupedAttributesTargeted();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager(true).setPopulateReleasedFlag(true);
+			delta.getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true);
 			delta.getArchiveManager(true).setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);

@@ -57,7 +57,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 
 		if (!StringUtils.isEmpty(run.getParamValue(CONCEPT_IDS))) {
 			getConceptsOfInterest(run.getMandatoryParamValue(CONCEPT_IDS));

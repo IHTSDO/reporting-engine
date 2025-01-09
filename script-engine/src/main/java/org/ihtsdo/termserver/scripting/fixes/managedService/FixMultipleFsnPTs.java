@@ -40,7 +40,7 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 			ReportSheetManager.targetFolderId = "1u6YLvJWX2GwAVJazFqJeKcVTwBbw96cc";  //MS Ad-Hoc Batch fixes
 			//fix.runStandAlone = false;  //Was causing issues with historical associations not being set
 			fix.selfDetermining = true;
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); //Just 

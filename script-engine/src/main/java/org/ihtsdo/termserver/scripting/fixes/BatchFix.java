@@ -491,7 +491,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 		//For batch fixes we generally need to know if the components we're modifying have been
 		//released or not, so set this by default
-		getArchiveManager(true).setPopulateReleasedFlag(true);
+		getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true);
 
 		try {
 			super.init(args);

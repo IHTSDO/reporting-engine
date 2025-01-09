@@ -37,7 +37,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		try {
 			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
 			app.init(args);
-			app.getArchiveManager().setPopulateReleasedFlag(true);
+			app.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
 			app.processFile();

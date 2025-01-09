@@ -52,7 +52,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.maxFailures = Integer.MAX_VALUE;
 			fix.expectNullConcepts = true;
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.postInit();

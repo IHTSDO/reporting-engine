@@ -51,7 +51,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		ArchiveManager mgr = getArchiveManager();
-		mgr.setPopulateReleasedFlag(true);
+		mgr.setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
 			mgr.setPopulatePreviousTransativeClosure(true);
 		}
