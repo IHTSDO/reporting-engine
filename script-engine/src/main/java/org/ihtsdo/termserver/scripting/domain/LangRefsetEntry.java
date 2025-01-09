@@ -13,7 +13,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	public static String ACCEPTABILITY_ID = "acceptabilityId";
 
 	protected static final String[] additionalFieldNames = new String[] {ACCEPTABILITY_ID};
-	
+
 	public LangRefsetEntry clone(String descriptionSctId, boolean keepIds) {
 		LangRefsetEntry clone = new LangRefsetEntry();
 		clone.id = keepIds ? this.id : UUID.randomUUID().toString();
