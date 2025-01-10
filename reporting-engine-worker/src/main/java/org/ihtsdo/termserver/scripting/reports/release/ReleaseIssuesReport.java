@@ -105,7 +105,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	DescendantsCache cache;
 	private Set<Concept> deprecatedHierarchies;
-	private String defaultModule = SCTID_CORE_MODULE;
 	private List<Concept> allActiveConceptsSorted;
 	private Set<Concept> recentlyTouched;
 	private List<String> prepositions;
@@ -254,7 +253,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
 	
 		if (isMS()) {
-			defaultModule = project.getMetadata().getDefaultModuleId();
+			String defaultModule = project.getMetadata().getDefaultModuleId();
 			expectedExtensionModules = project.getMetadata().getExpectedExtensionModules();
 			if (expectedExtensionModules == null) {
 				report(null, "expectedExtensionModules metadata not populated, using defaultModuleId instead.");
@@ -565,13 +564,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	 * belong to the default module
 	 */
 	private void unexpectedComponentModulesMS() throws TermServerScriptException {
-		String issueStr ="Unexpected extension component module";
+		String issueStr ="Unexpected module for modified component";
 		initialiseSummary(issueStr);
-		LOGGER.info("Checking {} for unexpected component modules", allConceptsSorted.size());
+		LOGGER.info("Checking {} for unexpected component modules in modified components", allConceptsSorted.size());
 		for (Concept c : allConceptsSorted) {
 			for (Component comp: SnomedUtils.getAllComponents(c)) {
 				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
-					String msg = "Default module " + defaultModule + " vs component module " + comp.getModuleId();
+					String msg = "Modified component module " + comp.getModuleId() + " is not expected in this extension";
 					reportAndIncrementSummary(c, isLegacySimple(comp), issueStr, getLegacyIndicator(comp), isActive(c,comp), msg, comp);
 				}
 			}
