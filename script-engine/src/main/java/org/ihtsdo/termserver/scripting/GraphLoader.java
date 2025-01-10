@@ -1361,6 +1361,11 @@ public class GraphLoader implements ScriptConstants {
 				allComponents.put(a.getId(), a);
 				componentOwnerMap.put(a, c);
 			}
+
+			for (ComponentAnnotationEntry ae : c.getComponentAnnotationEntries()) {
+				allComponents.put(ae.getId(), ae);
+				componentOwnerMap.put(ae, c);
+			}
 		}
 		LOGGER.info("Component owner map complete with {} entries.", componentOwnerMap.size());
 	}
