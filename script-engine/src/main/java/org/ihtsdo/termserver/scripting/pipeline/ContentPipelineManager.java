@@ -63,7 +63,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
 
 	protected Set<ComponentType> skipForComparison = Set.of(
-			ComponentType.INFERRED_RELATIONSHIP);
+			ComponentType.INFERRED_RELATIONSHIP,
+			ComponentType.LANGREFSET);
 
 	protected List<TemplatedConcept.IterationIndicator> activeIndicators = List.of(
 			TemplatedConcept.IterationIndicator.NEW,
@@ -159,8 +160,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("32188-5")) {
-			LOGGER.debug("Check rule 9");
+		if (externalIdentifier.equals("3274-8")) {
+			LOGGER.debug("Check langrefset reconcilliation");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -361,13 +362,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	/**
 	 * @return true if changes are detected
-	 * @throws TermServerScriptException
 	 */
-	private boolean determineChangesWithExistingConcept(TemplatedConcept tc) throws TermServerScriptException {
-		if (tc.getExistingConcept().getId().equals("89711010000103")) {
-			LOGGER.debug("Here");
-		}
-		boolean changesDetected = false;
+	private void determineChangesWithExistingConcept(TemplatedConcept tc) throws TermServerScriptException {
 		SnomedUtils.getAllComponents(tc.getConcept()).forEach(c -> {
 			c.setClean();
 			//Normalise module
@@ -377,7 +373,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		//We need to populate the concept SCTID before we can create axiom entries
 		tc.getConcept().setId(tc.getExistingConcept().getId());
 		//And we can apply that to the alternate identifiers early on so they don't show up as a change
-		tc.getConcept().getAlternateIdentifiers().stream()
+		tc.getConcept().getAlternateIdentifiers()
 				.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
 		//Copy the axiom entry from the existing concept so relationship changes can be applied there
 		tc.getConcept().setAxiomEntries(tc.getExistingConcept().getAxiomEntries(ActiveState.ACTIVE, false));
@@ -387,7 +383,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(tc.getExistingConcept(), tc.getConcept(), skipForComparison);
 		if (ComponentComparisonResult.hasChanges(componentComparisonResults)) {
 			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MODIFIED);
-			changesDetected = true;
 		} else {
 			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.UNCHANGED);
 			tc.addDifferenceFromExistingConcept("All Unchanged");
@@ -396,7 +391,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (ComponentComparisonResult componentComparisonResult : componentComparisonResults) {
 			processComponentComparison(tc, componentComparisonResult);
 		}
-		return changesDetected;
 	}
 
 	private void processComponentComparison(TemplatedConcept tc, ComponentComparisonResult componentComparisonResult) throws TermServerScriptException {
@@ -419,7 +413,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Any component specific actions?
 			switch (existingComponent.getComponentType()) {
 				case CONCEPT:
-					tc.getConcept().getAlternateIdentifiers().stream()
+					tc.getConcept().getAlternateIdentifiers()
 							.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
 					//temporarily, remove any alternate identifiers that are for the wrong scheme id
 					tc.getExistingConcept().getAlternateIdentifiers().stream()
@@ -429,19 +423,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				case DESCRIPTION:
 					Description newDesc = (Description)newlyModelledComponent;
 					newDesc.setConceptId(tc.getExistingConcept().getId());
-					newDesc.getLangRefsetEntries().stream()
-							.forEach(l -> l.setReferencedComponentId(tc.getExistingConcept().getId()));
-					break;
-				case LANGREFSET:
-					LangRefsetEntry lre = (LangRefsetEntry)existingComponent;
-					LangRefsetEntry newLre = (LangRefsetEntry)newlyModelledComponent;
-					newLre.setReferencedComponentId(lre.getReferencedComponentId());
+					alignLangRefsetEntries(newDesc, (Description)existingComponent);
 					break;
 				default:
 					break;
 			}
 		} else if (existingComponent != null && newlyModelledComponent == null) {
-			//If we have an existing component and it has no newly Modelled counterpart, then inactivate it
+			//If we have an existing component, and it has no newly Modelled counterpart, then inactivate it
 			existingComponent.setActive(false);
 			existingComponent.setDirty();
 			tc.setExistingConceptHasInactivations(true);
@@ -450,6 +438,27 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//and prepare to output
 			conceptCreator.populateComponentId(tc.getExistingConcept(), newlyModelledComponent, externalContentModule);
 			newlyModelledComponent.setDirty();
+		}
+	}
+
+	private void alignLangRefsetEntries(Description newDesc, Description oldDesc) {
+		//For each refsetId, pinch the ID from the existing description and apply it to the new one
+		for (LangRefsetEntry lre : oldDesc.getLangRefsetEntries(ActiveState.ACTIVE)) {
+			List<LangRefsetEntry> newLres = newDesc.getLangRefsetEntries(ActiveState.ACTIVE, lre.getRefsetId());
+			//The new description might not have an entry for this refsetId, eg if we've removed en-gb
+			if (newLres.isEmpty()) {
+				//If we've removed the en-gb lang refset or similar, then we need to inactivate the existing one
+				lre.setActive(false);
+				lre.setDirty();
+			} else {
+				LangRefsetEntry newLre = newLres.get(0);
+				newLre.setId(lre.getId());
+				newLre.setReferencedComponentId(oldDesc.getId());
+				//But, has the acceptability changed?  If so, we need to output this as a change
+				if (!newLre.getAcceptabilityId().equals(lre.getAcceptabilityId())) {
+					newLre.setDirty();
+				}
+			}
 		}
 	}
 
