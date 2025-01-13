@@ -47,6 +47,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private static final String dataDir = "historic-data/";
 	private static int ACTIVE = 1;
 	private static int INACTIVE = 0;
+
+	private static int OUT_OF_SCOPE = 2;
 	private Map<String, String> semTagHierarchyMap;
 	private List<String> moduleFilter;
 	
@@ -114,8 +116,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 				String hierarchy = getHierarchy(tc, c, new Stack<Concept>());
 				String IP = IPs.contains(c) ? "Y" : "N";
+				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
 				String sdDescendant = hasSdDescendant(tc, c);
 				String sdAncestor = hasSdAncestor(tc, c);
+				String histAssocTargets = getHistAssocTargets(c);
 				String[] relIds = getRelIds(c);
 				String[] descIds = getDescIds(c);
 				String[] axiomIds = getAxiomIds(c);
@@ -124,14 +128,15 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String[] descInactivationIds = getDescInactivationIds(c);
 				String[] histAssocIds = getHistAssocIds(c);
 				String[] descHistAssocIds = getDescHistAssocIds(c);
-				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
-				String histAssocTargets = getHistAssocTargets(c);
-				ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
-						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
-						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
-						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
-						c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE],
-						descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], histAssocTargets);
+				ouput(fw, c.getConceptId(), c.getFsn(), c.getModuleId(), active, defStatus, hierarchy, IP, hasAttributes, sdDescendant, sdAncestor,	histAssocTargets,
+						relIds[ACTIVE], relIds[INACTIVE], relIds[OUT_OF_SCOPE],
+						descIds[ACTIVE], descIds[INACTIVE], descIds[OUT_OF_SCOPE],
+						axiomIds[ACTIVE], axiomIds[INACTIVE], axiomIds[OUT_OF_SCOPE],
+						langRefSetIds[ACTIVE], langRefSetIds[INACTIVE], langRefSetIds[OUT_OF_SCOPE],
+						inactivationIds[ACTIVE], inactivationIds[INACTIVE], inactivationIds[OUT_OF_SCOPE],
+						histAssocIds[ACTIVE], histAssocIds[INACTIVE], histAssocIds[OUT_OF_SCOPE],
+						descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE], descHistAssocIds[OUT_OF_SCOPE],
+						descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], descInactivationIds[OUT_OF_SCOPE]);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -171,7 +176,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	}
 
 	private String[] getRelIds(Concept c) {
-		String[] results = new String[2];
+		String[] results = new String[3];
 		
 		results[ACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
 		.stream()
@@ -184,11 +189,18 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.filter(r -> inScope(r))
 		.map(r -> r.getId())
 		.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
+				.stream()
+				.filter(r -> !inScope(r))
+				.map(r -> r.getId())
+				.collect(Collectors.joining(","));
+
 		return results;
 	}
 	
 	private String[] getDescIds(Concept c) {
-		String[] results = new String[2];
+		String[] results = new String[3];
 		
 		results[ACTIVE] = c.getDescriptions(ActiveState.ACTIVE)
 		.stream()
@@ -201,12 +213,18 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			.filter(d -> inScope(d))
 			.map(d -> d.getId())
 			.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = c.getDescriptions()
+				.stream()
+				.filter(d -> !inScope(d))
+				.map(d -> d.getId())
+				.collect(Collectors.joining(","));
 		
 		return results;
 	}
 	
 	private String[] getAxiomIds(Concept c) {
-		String[] results = new String[2];
+		String[] results = new String[3];
 		
 		results[ACTIVE] = c.getAxiomEntries().stream()
 		.filter(a -> a.isActive())
@@ -219,64 +237,65 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.filter(a -> inScope(a))
 		.map(a -> a.getId())
 		.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = c.getAxiomEntries().stream()
+				.filter(a -> !inScope(a))
+				.map(a -> a.getId())
+				.collect(Collectors.joining(","));
 		
 		return results;
 	}
 	
 	private String[] getLangRefsetIds(Concept c) {
-		String[] results = new String[2];
-		
-		List<String> langRefsetIds = new ArrayList<>();
-		for (Description d : c.getDescriptions()) {
-			//An international scope description might have langrefset entries in another module
-			//Check the scope of the refset entry rather than the description.
-			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-				if (inScope(l)) {
-					langRefsetIds.add(l.getId());
-				}
-			}
-		}
-		results[ACTIVE] = String.join(",", langRefsetIds);
-		
-		langRefsetIds.clear();
-		for (Description d : c.getDescriptions()) {
-			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.INACTIVE)) {
-				if (inScope(l)) {
-					langRefsetIds.add(l.getId());
-				}
-			}
-		}
-		results[INACTIVE] = String.join(",", langRefsetIds);
+		String[] results = new String[3];
+
+		results[ACTIVE] = getLangRefsetEntries(c, ActiveState.ACTIVE)
+				.stream()
+				.filter(l -> inScope(l))
+				.map(l -> l.getId())
+				.collect(Collectors.joining(","));
+
+		results[INACTIVE] = getLangRefsetEntries(c, ActiveState.INACTIVE)
+				.stream()
+				.filter(l -> inScope(l))
+				.map(l -> l.getId())
+				.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = getLangRefsetEntries(c, ActiveState.BOTH)
+				.stream()
+				.filter(l -> !inScope(l))
+				.map(l -> l.getId())
+				.collect(Collectors.joining(","));
+
 		return results;
 	}
 	
 	private String[] getDescHistAssocIds(Concept c) {
-		String[] results = new String[2];
-		
-		List<String> histAssocIds = new ArrayList<>();
-		for (Description d : c.getDescriptions()) {
-			for (AssociationEntry a : d.getAssociationEntries(ActiveState.ACTIVE)) {
-				if (inScope(a)) {
-					histAssocIds.add(a.getId());
-				}
-			}
-		}
-		results[ACTIVE] = String.join(",", histAssocIds);
-		
-		histAssocIds.clear();
-		for (Description d : c.getDescriptions()) {
-			for (AssociationEntry a : d.getAssociationEntries(ActiveState.INACTIVE)) {
-				if (inScope(a)) {
-					histAssocIds.add(a.getId());
-				}
-			}
-		}
-		results[INACTIVE] = String.join(",", histAssocIds);
+		String[] results = new String[3];
+
+		results[ACTIVE] = getAssociationEntries(c, ActiveState.ACTIVE)
+				.stream()
+				.filter(a -> inScope(a))
+				.map(a -> a.getId())
+				.collect(Collectors.joining(","));
+
+		results[INACTIVE] = getAssociationEntries(c, ActiveState.INACTIVE)
+				.stream()
+				.filter(a -> inScope(a))
+				.map(a -> a.getId())
+				.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = getAssociationEntries(c, ActiveState.BOTH)
+				.stream()
+				.filter(a -> !inScope(a))
+				.map(a -> a.getId())
+				.collect(Collectors.joining(","));
+
 		return results;
 	}
 	
 	private String[] getInactivationIds(Concept c) {
-		String[] results = new String[2];
+		String[] results = new String[3];
 		
 		results[ACTIVE] = c.getInactivationIndicatorEntries(ActiveState.ACTIVE)
 		.stream()
@@ -289,12 +308,18 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.filter(i -> inScope(i))
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = c.getInactivationIndicatorEntries()
+				.stream()
+				.filter(i -> !inScope(i))
+				.map(i -> i.getId())
+				.collect(Collectors.joining(","));
 		
 		return results;
 	}
 	
 	private String[] getDescInactivationIds(Concept c) {
-		String[] results = new String[2];
+		String[] results = new String[3];
 		
 		results[ACTIVE] = getDescriptionInactivationIndicatorEntries(c, ActiveState.ACTIVE)
 		.stream()
@@ -307,6 +332,12 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.filter(i -> inScope(i))
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = getDescriptionInactivationIndicatorEntries(c, ActiveState.BOTH)
+				.stream()
+				.filter(i -> !inScope(i))
+				.map(i -> i.getId())
+				.collect(Collectors.joining(","));
 		
 		return results;
 	}
@@ -319,8 +350,24 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		return indicators;
 	}
 
+	private Collection<AssociationEntry> getAssociationEntries(Concept c, ActiveState activeState) {
+		List<AssociationEntry> entries = new ArrayList<>();
+		for (Description d : c.getDescriptions()) {
+			entries.addAll(d.getAssociationEntries(activeState));
+		}
+		return entries;
+	}
+
+	private Collection<LangRefsetEntry> getLangRefsetEntries(Concept c, ActiveState activeState) {
+		List<LangRefsetEntry> entries = new ArrayList<>();
+		for (Description d : c.getDescriptions()) {
+			entries.addAll(d.getLangRefsetEntries(activeState));
+		}
+		return entries;
+	}
+
 	private String[] getHistAssocIds(Concept c) {
-		String[] results = new String[2];
+		String[] results = new String[3];
 		
 		results[ACTIVE] = c.getAssociationEntries(ActiveState.ACTIVE)
 		.stream()
@@ -333,6 +380,12 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.filter(h -> inScope(h))
 		.map(h -> h.getId())
 		.collect(Collectors.joining(","));
+
+		results[OUT_OF_SCOPE] = c.getAssociationEntries()
+				.stream()
+				.filter(h -> !inScope(h))
+				.map(h -> h.getId())
+				.collect(Collectors.joining(","));
 		
 		return results;
 	}
