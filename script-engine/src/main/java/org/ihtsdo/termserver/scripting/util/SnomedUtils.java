@@ -1507,7 +1507,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	public static String getDescriptionsFull(Concept c) {
 		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
-				.map(d -> d.toString()).collect(Collectors.joining(",\n"));
+				.map(Description::toString).collect(Collectors.joining(",\n"));
 	}
 
 	public static String getDescriptionsToString(Concept c) {
@@ -1523,7 +1523,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static String getDescriptions(Concept c, boolean includeDefinitions) {
 		return prioritise(c.getDescriptions(ActiveState.ACTIVE)).stream()
 				.filter(d -> includeDefinitions || !d.getType().equals(DescriptionType.TEXT_DEFINITION))
-				.map(d -> d.getTerm())
+				.map(Description::getTerm)
 				.collect(Collectors.joining(",\n"));
 	}
 	
@@ -2607,27 +2607,36 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	//changed or not present on the right, and visa versa.
 	public static List<ComponentComparisonResult> compareComponents(Concept left, Concept right, Set<ComponentType> skipForComparison) {
 		List<ComponentComparisonResult> changeSet = new ArrayList<>();
-		//Find a match for every component, or list it.
+		//Find a match for every component, or list it.  Left is existing concept, right is the new one
+		//There's no point in comparing Langrefset components just yet, because the new concept doesn't know the IDs
+		//for the descriptions, so there's no way to match them up.
 		//TODO work out the "best match" that we can say has been modified
 		Collection<Component> leftComponents = SnomedUtils.getAllComponents(left)
 				.stream()
 				.filter(lc -> !skipForComparison.contains(lc.getComponentType()))
-				.collect(Collectors.toList());
+				.toList();
 		Collection<Component> rightComponents = SnomedUtils.getAllComponents(right).stream()
 				.filter(rc -> !skipForComparison.contains(rc.getComponentType()))
-				.collect(Collectors.toList());
-		
+				.toList();
+
+		//Once we've matched with a component, we don't need to keep checking it again.
+		Set<Component> beenMatchedRight = new HashSet<>();
+
 		nextLeftComponent:
 		for (Component leftComponent : leftComponents) {
 			for (Component rightComponent : rightComponents) {
-				if (leftComponent.getClass().equals(rightComponent.getClass())) {
+				if (!beenMatchedRight.contains(rightComponent) && leftComponent.getClass().equals(rightComponent.getClass())) {
 					if (leftComponent.matchesMutableFields(rightComponent)) {
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).matches());
+						beenMatchedRight.add(rightComponent);
 						continue nextLeftComponent;
-					} else if (hasSingleType(leftComponent)) {
+					} else if (hasSingleType(leftComponent)
+						|| areRefsetMembersForSameReferencedComponent(leftComponent, rightComponent)) {
 						//A modified OWL axiom will not match on mutable fields, but we'll consider them 'the same object' on the assumption that there will be only one
-						//Similarly a concept may change from primitive to defined, but we'll consider them the same object
+						//Similarly a concept may change from primitive to defined, but we'll consider them the same object.
+						//We can also say this for two refset members that are for the same referenced component + same refset
 						changeSet.add(new ComponentComparisonResult(leftComponent, rightComponent).differs());
+						beenMatchedRight.add(rightComponent);
 						continue nextLeftComponent;
 					}
 				}
@@ -2636,12 +2645,17 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			//has a matching component in the latest version and should be removed
 			changeSet.add(new ComponentComparisonResult(leftComponent, null));
 		}
-		
+
 		nextRightComponent:
 		for (Component rightComponent : rightComponents) {
+			if (beenMatchedRight.contains(rightComponent)) {
+				continue;
+			}
 			for (Component leftComponent : leftComponents) {
 				if (rightComponent.getClass().equals(leftComponent.getClass())) {
-					if (rightComponent.matchesMutableFields(leftComponent) || hasSingleType(rightComponent)) {
+					if (rightComponent.matchesMutableFields(leftComponent)
+							|| hasSingleType(rightComponent)
+							|| areRefsetMembersForSameReferencedComponent(leftComponent, rightComponent)) {
 						//We don't need to store this, since we'll already have a left -> right 
 						//comparison that matched.
 						continue nextRightComponent;
@@ -2653,6 +2667,14 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			changeSet.add(new ComponentComparisonResult(null, rightComponent));
 		}
 		return changeSet;
+	}
+
+	private static boolean areRefsetMembersForSameReferencedComponent(Component leftComponent, Component rightComponent) {
+		//If these two components are refset members, and they are for the same referenced component, then they are considered the same
+		//basic refset member, although the values contained may differ
+		return (leftComponent instanceof RefsetMember leftRM && rightComponent instanceof RefsetMember rightRM
+			&& leftRM.getRefsetId().equals(rightRM.getRefsetId())
+			&& leftRM.getReferencedComponentId().equals(rightRM.getReferencedComponentId()));
 	}
 
 	private static boolean hasSingleType(Component c) {
