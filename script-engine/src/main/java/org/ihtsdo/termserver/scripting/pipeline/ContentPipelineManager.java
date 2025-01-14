@@ -160,8 +160,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("3274-8")) {
-			LOGGER.debug("Check langrefset reconcilliation");
+		if (externalIdentifier.equals("50553-7")) {
+			LOGGER.debug("Check FSN construction");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
