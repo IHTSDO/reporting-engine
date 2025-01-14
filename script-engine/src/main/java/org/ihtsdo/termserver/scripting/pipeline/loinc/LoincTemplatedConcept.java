@@ -20,6 +20,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 
+	private static final Concept AUTOMATED_TECHNIQUE = new Concept("570101010000100", "Automated technique (qualifier value)");
+
 	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList(
 			LOINC_PART_TYPE_PROPERTY,
 			LOINC_PART_TYPE_COMPONENT,
@@ -187,11 +189,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 
 			//We might have specified a slot for the component anyway eg as per rule 9 for Prid Observations
-			if (slotTermMap.containsKey(templateItem)) {
-				ptTemplateStr = ptTemplateStr.replaceAll(regex, slotTermMap.get(templateItem));
-			} else {
+			String replacement = slotTermMap.get(templateItem);
+			if (StringUtils.isEmpty(replacement)) {
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
 						.replace(" in ", "");
+			} else {
+				ptTemplateStr = ptTemplateStr.replaceAll(regex, replacement);
 			}
 		} else if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = slotTermMap.get(templateItem);
@@ -293,6 +296,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			for (String removal : typeValueTermRemovalMap.get(r.getType())) {
 				//Rule 2a. We sometimes allow 'specimen' to be used, for certain loinc parts
 				if (removal.equals("specimen") && hasProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN)) {
+					continue;
+				}
+
+				//Rule 2.h.iii.2 We leave in 'technique' for automated techniques
+				if (removal.equals("technique") && hasProcessingFlag(ProcessingFlag.ALLOW_TECHNIQUE)) {
 					continue;
 				}
 				String removalWithSpaces = " " + removal + " ";
@@ -435,31 +443,35 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
 			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
 		} else {
-			LoincDetail denom = getLoincDetailForColNameIfPresent(COMPDENOM_PN);
-			if (denom != null) {
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
-
-				//Check for percentage, unless this is a ratio
-				if (denom.getPartName().contains("100") && !(this instanceof LoincTemplatedConceptWithRatio)) {
-					attributes.add(percentAttribute);
-					slotTermMap.put("PROPERTY", "percentage");
-				}
-			}
-
-			if (detailPresent(COMPSUBPART2_PN)) {
-				if(attributes.isEmpty()) {
-					addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
-				}
-				if (!addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib)) {
-					//Did we not find a map for the challenge?  Then we're going to mark this as primitive
-					addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
-				}
-			}
+			determineComponentAttributesWithSubParts(attributes, componentAttrib, challengeAttrib);
 		}
 
 		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
+	}
+
+	private void determineComponentAttributesWithSubParts(List<RelationshipTemplate> attributes, Concept componentAttrib, Concept challengeAttrib) throws TermServerScriptException {
+		LoincDetail denom = getLoincDetailForColNameIfPresent(COMPDENOM_PN);
+		if (denom != null) {
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
+
+			//Check for percentage, unless this is a ratio
+			if (denom.getPartName().contains("100") && !(this instanceof LoincTemplatedConceptWithRatio)) {
+				attributes.add(percentAttribute);
+				slotTermMap.put("PROPERTY", "percentage");
+			}
+		}
+
+		if (detailPresent(COMPSUBPART2_PN)) {
+			if(attributes.isEmpty()) {
+				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+			}
+			if (!addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib)) {
+				//Did we not find a map for the challenge?  Then we're going to mark this as primitive
+				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			}
+		}
 	}
 
 	protected LoincTerm getLoincTerm() {
@@ -532,33 +544,19 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, LoincDetail loincDetail, Concept attributeType) throws TermServerScriptException {
 		try {
-			String loincNum = getExternalIdentifier();
-			String loincPartNum = loincDetail.getPartNumber();
-
 			if ((loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber()))
 				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals("LP442509-8"))) {
 				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
 			}
 
-			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
-
-			if (additionalAttributes.isEmpty()) {
-				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
-					//Rule xi if we have a time, then we don't need to populate that field
-					slotTermMap.put(loincDetail.getPartTypeName(), "");
-				} else if (loincDetail.getPartNumber().equals(LoincScript.LOINC_OBSERVATION_PART)) {
-					//Rule 2d We're going to allow the COMPONENT to be blank
-					addProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT);
-					slotTermMap.put(loincDetail.getPartTypeName(), "");
-				} else if (!skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
-					//Rule 2.c  If we don't have a part mapping, use what we do get in the FSN
-					slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
-				} else {
-					throw new TermServerScriptException("Unable to find appropriate attribute mapping for " + loincNum + " / " + loincPartNum + " (" + loincDetail.getLDTColumnName() + ") - " + loincDetail.getPartName());
-				}
-			}
+			List<RelationshipTemplate> additionalAttributes = getAdditionalAttributes(loincDetail, attributeType);
 
 			attributes.addAll(additionalAttributes);
+
+			if (containsValue(AUTOMATED_TECHNIQUE, attributes)) {
+				addProcessingFlag(ProcessingFlag.ALLOW_TECHNIQUE);
+			}
+
 			for (RelationshipTemplate rt : additionalAttributes) {
 				applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 			}
@@ -574,6 +572,34 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		}
 		return false;
+	}
+
+	private List<RelationshipTemplate> getAdditionalAttributes(LoincDetail loincDetail, Concept attributeType) throws TermServerScriptException {
+		String loincNum = getExternalIdentifier();
+		String loincPartNum = loincDetail.getPartNumber();
+		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
+
+		if (additionalAttributes.isEmpty()) {
+			if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
+				//Rule xi if we have a time, then we don't need to populate that field
+				slotTermMap.put(loincDetail.getPartTypeName(), "");
+			} else if (loincDetail.getPartNumber().equals(LoincScript.LOINC_OBSERVATION_PART)) {
+				//Rule 2d We're going to allow the COMPONENT to be blank
+				addProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT);
+				slotTermMap.put(loincDetail.getPartTypeName(), "");
+			} else if (!skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
+				//Rule 2.c  If we don't have a part mapping, use what we do get in the FSN
+				slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+			} else {
+				throw new TermServerScriptException("Unable to find appropriate attribute mapping for " + loincNum + " / " + loincPartNum + " (" + loincDetail.getLDTColumnName() + ") - " + loincDetail.getPartName());
+			}
+		}
+		return additionalAttributes;
+	}
+
+	private boolean containsValue(Concept c, List<RelationshipTemplate> attributes) {
+		return attributes.stream()
+				.anyMatch(rt -> rt.getTarget().equals(c));
 	}
 
 	public String toString() {
