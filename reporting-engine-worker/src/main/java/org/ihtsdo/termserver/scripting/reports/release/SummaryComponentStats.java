@@ -257,15 +257,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			int[][] summaryData = summaryDataMap.computeIfAbsent(topLevel, k -> new int[MAX_REPORT_TABS][DATA_WIDTH]);
 			boolean isNewConcept = datum == null;
 
-			//If the concept is no longer in the target module, we'll count that and ignore the rest
-			if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
-				//Was it in the target module last time?
-				if (datum != null && moduleFilter.contains(datum.getModuleId())) {
-					summaryData[TAB_CONCEPTS][IDX_PROMOTED]++;
-				}
-			} else {
-				analyzeConcept(c, topLevel, datum, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
-			}
+			analyzeConcept(c, topLevel, datum, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 
 			analyzeDescriptions(c, datum, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT], summaryData[TAB_DESC_CNC]);
 
@@ -295,26 +287,25 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) {
-		if (c.isActiveSafely()) {
-			incrementActiveConceptCounts(c, datum, counts);
-		} else {
-			if (datum == null) {
-				//If it's inactive and we DIDN'T see it before, then we've got a born inactive or "New Inactive" concept
-				counts[IDX_NEW_INACTIVE]++;
-			} else if (datum.isActive()) {
-				//If we had it last time active, then it's been inactivated in this release
-				counts[IDX_INACTIVATED]++;
-			} else if (!datum.isActive() && isChangedSinceLastRelease(c)) {
-				//If it's inactive, was inactive last time and yet has still changed, then it's changed inactive
-				counts[IDX_CHANGED_INACTIVE]++;
+		// Concept is no longer in the target module
+		if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
+			// Was it in the target module last time?
+			if (datum != null && moduleFilter.contains(datum.getModuleId())) {
+				counts[IDX_PROMOTED]++;
 			}
-		}
-		counts[IDX_TOTAL]++;
+		} else {
+			counts[IDX_TOTAL]++;
+			if (c.isActiveSafely()) {
+				incrementActiveConceptCounts(c, datum, counts);
+			} else {
+				incrementInactiveConceptCounts(c, datum, counts);
+			}
 
-		//Check state change for QI tab
-		//Are we in scope for QI?
-		if (inQIScope(topLevel)) {
-			incrementQIScopeCounts(c, datum, qiCounts);
+			//Check state change for QI tab
+			//Are we in scope for QI?
+			if (inQIScope(topLevel)) {
+				incrementQIScopeCounts(c, datum, qiCounts);
+			}
 		}
 	}
 
@@ -329,18 +320,38 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 			counts[IDX_NEW]++;
 			counts[IDX_NEW_NEW]++;
-		} else if (!datum.isActive()) {
-			//Were we inactive in the last release?  Reactivated if so
-			counts[IDX_REACTIVATED]++;
-		} else if (datum.isActive()&& isChangedSinceLastRelease(c)) {
-			counts[IDX_CHANGED]++;
-		}
-		//Has the concept remained active, but moved into this module?
-		if (datum != null && !datum.getModuleId().equals(c.getModuleId())) {
+		} else if (datum.getModuleId().equals(c.getModuleId())) {
+			if (!datum.isActive()) {
+				// Was inactive in the last release, but active now
+				counts[IDX_REACTIVATED]++;
+			} else if (isChangedSinceLastRelease(c)) {
+				// Remains active and changed since last release
+				counts[IDX_CHANGED]++;
+			}
+		} else {
+			// Was in a different module but has now moved into this module
 			counts[IDX_MOVED_MODULE]++;
 		}
 	}
-	
+
+	private void incrementInactiveConceptCounts(Concept c, HistoricData datum, int[] counts) {
+		if (datum == null) {
+			// No previous data and inactive, so this is a new inactive concept
+			counts[IDX_NEW_INACTIVE]++;
+		} else if (datum.getModuleId().equals(c.getModuleId())) {
+			if (datum.isActive()) {
+				// Was active in the last release, but inactive now
+				counts[IDX_INACTIVATED]++;
+			} else if (isChangedSinceLastRelease(c)) {
+				// Remains inactive and changed since last release
+				counts[IDX_CHANGED_INACTIVE]++;
+			}
+		} else {
+			// Was in a different module but has now moved into this module
+			counts[IDX_MOVED_MODULE]++;
+		}
+	}
+
 	private void incrementQIScopeCounts(Concept c, HistoricData datum, int[] qiCounts) {
 		//Does it have a model?
 		boolean hasModel = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0;
