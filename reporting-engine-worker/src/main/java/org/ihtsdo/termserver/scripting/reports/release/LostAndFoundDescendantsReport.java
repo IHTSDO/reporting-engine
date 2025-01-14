@@ -39,8 +39,8 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
-		params.put(COUNT_NEW_AS_GAINED, "N");
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
+		params.put(COUNT_NEW_AS_GAINED, "Y");
 		params.put(ECL, "*" );
 		TermServerScript.run(LostAndFoundDescendantsReport.class, args, params);
 	}
