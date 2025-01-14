@@ -67,8 +67,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-			//delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
-
 			//delta.sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
 			//delta.sourceModuleIds = "32506021000036107"; //AU Module
 			//delta.sourceModuleIds = "11000181102"; //Estonia
@@ -87,6 +85,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				LOGGER.warn("UK Edition detected, will not check for OWL axiom / stated relationships");
 				delta.getArchiveManager().setRunIntegrityChecks(false);
 				delta.copyInferredParentRelsToStated = true;
+				delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
 			}
 			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts

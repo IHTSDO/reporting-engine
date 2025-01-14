@@ -649,11 +649,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
-	
-	protected void loadArchive(TermServerScript parentProcess, File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException  {
-		parentProcess.getArchiveManager(true).loadArchive(archive, fsnOnly, fileType, isReleased);
-	}
-	
+
 	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
 		if (dryRun) {
 			//In a dry run situation, the task branch is not created so use the Project instead
@@ -1442,7 +1438,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 	
-	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
+	public void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
 		if (StringUtils.isEmpty(fileName) || fileName.startsWith("null")) {
 			throw new TermServerScriptException("Request to write to RF2 file with no / invalid filename specified: '" + fileName + "'");
 		}

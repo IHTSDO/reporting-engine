@@ -577,11 +577,8 @@ public class ArchiveManager implements ScriptConstants {
 		
 		//Now we need a recent delta to add to it
 		File delta = generateDelta(project);
-		snapshotGenerator = new SnapshotGenerator();
-		snapshotGenerator.setProject(ts.getProject());
-		snapshotGenerator.leaveArchiveUncompressed();
-		snapshotGenerator.setOutputDirName(snapshot.getPath());
-		snapshotGenerator.generateSnapshot(ts, dependency, previous, delta, snapshot);
+		snapshotGenerator = new SnapshotGenerator(ts);
+		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
 	}
 
 	private File determineDependencyIfRequired(Project project) throws TermServerScriptException {
@@ -701,7 +698,7 @@ public class ArchiveManager implements ScriptConstants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
+	public void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?

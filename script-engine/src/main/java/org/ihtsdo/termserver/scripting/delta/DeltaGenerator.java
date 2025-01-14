@@ -57,16 +57,16 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",   //GB
 															"900000000000509007" }; //US
 
-	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
-	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
-	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
-	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
-	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
-	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
-	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
-	protected String[] altIdHeader = new String[] {"alternateIdentifier","effectiveTime","active","moduleId","identifierSchemeId","referencedComponentId"};
-	protected String[] compAnnotHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","languageDialectCode","typeId","value"};
-	protected String[] simpleMapHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","mapTarget"};
+	protected String[] conHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,"definitionStatusId"};
+	protected String[] descHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,"conceptId","languageCode",COL_TYPE_ID,"term","caseSignificanceId"};
+	protected String[] relHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,"sourceId","destinationId","relationshipGroup",COL_TYPE_ID,"characteristicTypeId","modifierId"};
+	protected String[] langHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"acceptabilityId"};
+	protected String[] attribValHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"valueId"};
+	protected String[] assocHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"targetComponentId"};
+	protected String[] owlHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"owlExpression"};
+	protected String[] altIdHeader = new String[] {"alternateIdentifier",COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,"identifierSchemeId",COL_REFERENCED_COMPONENT_ID};
+	protected String[] compAnnotHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"languageDialectCode",COL_TYPE_ID,"value"};
+	protected String[] simpleMapHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"mapTarget"};
 
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;
