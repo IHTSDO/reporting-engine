@@ -329,66 +329,66 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 			// Output descriptions totals
 			if (isDescription && !filename.contains(DESCRIPTION_FILENAME)) {
-				report("Total Descriptions:", descriptionTotals, totals[TAB_DESCS]);
+				report("Total Descriptions:", descriptionTotals, "Descriptions", totals[TAB_DESCS]);
 				isDescription = false;
 			}
 
 			// Output text definitions totals
 			if (isTextDefinition && !filename.contains(TEXT_DEFINITION_FILENAME)) {
-				report("Total Text Definitions:", textDefinitionTotals, totals[TAB_TEXT_DEFN]);
+				report("Total Text Definitions:", textDefinitionTotals, "Text Definitions", totals[TAB_TEXT_DEFN]);
 				isTextDefinition = false;
 			}
 
 			// Output language refsets totals
 			if (isLanguageRefset && !filename.contains(LANGUAGE_REFSET_FILENAME)) {
-				report("Total Language Refsets:", languageRefsetTotals, totals[TAB_LANG]);
+				report("Total Language Refsets:", languageRefsetTotals, "Language Refsets", totals[TAB_LANG]);
 				isLanguageRefset = false;
 			}
 
 			// Output associations totals
 			if (isAssociationRefset && !filename.contains(ASSOCIATION_REFSET_FILENAME)) {
-				report(sumOfTabs(TAB_HIST, TAB_DESC_HIST));
+				report("Associations", sumOfTabs(TAB_HIST, TAB_DESC_HIST));
 				isAssociationRefset = false;
 			}
 
 			if (filename.contains(DESCRIPTION_FILENAME)) {
 				isDescription = true;
-				report(filename, fileTotalsEntry, null);
+				report(filename, fileTotalsEntry, null, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
 					descriptionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
 			} else if (filename.contains(TEXT_DEFINITION_FILENAME)) {
 				isTextDefinition = true;
-				report(filename, fileTotalsEntry, null);
+				report(filename, fileTotalsEntry, null, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
 					textDefinitionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
 			} else if (filename.contains(LANGUAGE_REFSET_FILENAME)) {
 				isLanguageRefset = true;
-				report(filename, fileTotalsEntry, null);
+				report(filename, fileTotalsEntry, null, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
 					languageRefsetTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
 			} else if (filename.contains(ASSOCIATION_REFSET_FILENAME)) {
 				isAssociationRefset = true;
-				report(filename, fileTotalsEntry, null);
+				report(filename, fileTotalsEntry, null, null);
 			} else if (filename.contains(CONCEPT_FILENAME)) {
-				report(filename, fileTotalsEntry, totals[TAB_CONCEPTS]);
+				report(filename, fileTotalsEntry, "Concepts", totals[TAB_CONCEPTS]);
 			} else if (filename.contains(RELATIONSHIP_FILENAME)) {
-				report(filename, fileTotalsEntry, totals[TAB_RELS]);
+				report(filename, fileTotalsEntry, "Relationships", totals[TAB_RELS]);
 			} else if (filename.contains(RELATIONSHIP_CONCRETE_VALUES_FILENAME)) {
-				report(filename, fileTotalsEntry, totals[TAB_CD]);
+				report(filename, fileTotalsEntry, "Concrete Values", totals[TAB_CD]);
 			} else if (filename.contains(OWL_EXPRESSION_FILENAME)) {
-				report(filename, fileTotalsEntry, totals[TAB_AXIOMS]);
+				report(filename, fileTotalsEntry, "Axioms", totals[TAB_AXIOMS]);
 			} else if (filename.contains(ATTRIBUTE_VALUE_REFSET_FILENAME)) {
-				report(filename, fileTotalsEntry, sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
+				report(filename, fileTotalsEntry, "Attribute Values", sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
 			} else {
 				fileTotalsWithoutComparison.put(filename, fileTotalsEntry);
 			}
 		}
 
 		for (Map.Entry<String, Map<TotalsIndex, Integer>> entry : fileTotalsWithoutComparison.entrySet()) {
-			report(entry.getKey(), entry.getValue(), null);
+			report(entry.getKey(), entry.getValue(), null, null);
 		}
 	}
 
@@ -402,9 +402,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return result;
 	}
 
-	private void report(String filename, Map<TotalsIndex, Integer> fileTotals, int[] scsTotals) throws TermServerScriptException {
+	private void report(String filename, Map<TotalsIndex, Integer> fileTotals, String scsName, int[] scsTotals) throws TermServerScriptException {
 		report(filename, fileTotals);
-		report(scsTotals);
+		report(scsName, scsTotals);
 	}
 
 	private void report(String filename, Map<TotalsIndex, Integer> fileTotals) throws TermServerScriptException {
@@ -418,11 +418,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		report(FILE_COMPARISON_TAB, fileDetails);
 	}
 
-	private void report(int[] scsTotals) throws TermServerScriptException {
+	private void report(String scsName, int[] scsTotals) throws TermServerScriptException {
 		if (scsTotals != null) {
 			Object[] scsDetails = new Object[TotalsIndex.values().length + 1];
 
-			scsDetails[0] = "-- Summary Component Stats --";
+			scsDetails[0] = "-- Summary Component Stats: " + scsName + " --";
 			scsDetails[TotalsIndex.NEW.ordinal() + 1] = scsTotals[IDX_NEW];
 			scsDetails[TotalsIndex.CHANGED.ordinal() + 1] = scsTotals[IDX_CHANGED];
 			scsDetails[TotalsIndex.INACTIVATED.ordinal() + 1] = scsTotals[IDX_INACTIVATED];
@@ -572,11 +572,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[IDX_ID];
 				String moduleId = data[IDX_MODULEID];
+				String effectiveTime = data[IDX_EFFECTIVETIME];
 
 				switch (ch) {
 					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
 					case LINE_DELETED_INDICATOR:
-						if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+						if (inScope(moduleId)) {
 							// Previous release entry
 							deleted.put(key, data);
 						}
@@ -586,25 +587,22 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						if (deleted.containsKey(key)) {
 							String[] oldValue = deleted.remove(key);
 
-							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							if (inScope(moduleId)) {
 								ValuePair valuePair = new ValuePair(oldValue, data);
-								if (valuePair.isActive()) {
-									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
-										count(totals, TotalsIndex.CHANGED);
-									}
-								} else if (valuePair.isInactive()) {
-									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
-										count(totals, TotalsIndex.CHANGED_INACTIVE);
-									}
-								} else if (valuePair.isInactivated()) {
+
+								if (valuePair.isInactivated()) {
 									count(totals, TotalsIndex.INACTIVATED);
 								} else if (valuePair.isReactivated()) {
 									count(totals, TotalsIndex.REACTIVATED);
+								} else if (isChanged(effectiveTime)) {
+									if (valuePair.isActive()) {
+										count(totals, TotalsIndex.CHANGED);
+									} else if (valuePair.isInactive()) {
+										count(totals, TotalsIndex.CHANGED_INACTIVE);
+									}
 								}
-							} else {
-								//count(totals, TotalsIndex.PROMOTED);
 							}
-						} else if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+						} else if (inScope(moduleId)) {
 							created.put(key, data);
 						}
 						break;
@@ -656,6 +654,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[ASSOC_IDX_ID];
 				String moduleId = data[ASSOC_IDX_MODULID];
+				String effectiveTime = data[ASSOC_IDX_EFFECTIVETIME];
 
 				if (refsetIds != null && !refsetIds.contains(data[ASSOC_IDX_REFSETID])) {
 					continue;
@@ -665,7 +664,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
 					case LINE_DELETED_INDICATOR:
 						// Previous release entry
-						if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+						if (inScope(moduleId)) {
 							deleted.put(key, data);
 						}
 						break;
@@ -674,27 +673,22 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						if (deleted.containsKey(key)) {
 							String[] oldValue = deleted.remove(key);
 
-							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							if (inScope(moduleId)) {
 								ValuePair valuePair = new ValuePair(oldValue, data);
-								if (valuePair.isActive()) {
-									// Changed since last release
-									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
-										count(totals, TotalsIndex.CHANGED);
-									}
-								} else if (valuePair.isInactive()) {
-									// Changed since last release
-									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
-										count(totals, TotalsIndex.CHANGED_INACTIVE);
-									}
-								} else if (valuePair.isInactivated()) {
+
+								if (valuePair.isInactivated()) {
 									count(totals, TotalsIndex.INACTIVATED);
 								} else if (valuePair.isReactivated()) {
 									count(totals, TotalsIndex.REACTIVATED);
+								} else if (isChanged(effectiveTime)) {
+									if (valuePair.isActive()) {
+										count(totals, TotalsIndex.CHANGED);
+									} else if (valuePair.isInactive()) {
+										count(totals, TotalsIndex.CHANGED_INACTIVE);
+									}
 								}
-							} else {
-								//count(totals, TotalsIndex.PROMOTED);
 							}
-						} else if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+						} else if (inScope(moduleId)) {
 							created.put(key, data);
 						}
 						break;
@@ -745,51 +739,43 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				// 4 - definitionStatusId
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[CON_IDX_ID];
-				String moduleId = data[CON_IDX_MODULID];
+				String effectiveTime = data[CON_IDX_EFFECTIVETIME];
 
 				switch (ch) {
 					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
 					case LINE_DELETED_INDICATOR:
-						if (moduleFilter == null || moduleFilter.contains(moduleId)) {
-							// Previous release entry
-							deleted.put(key, data);
-						}
+						// Previous release entry
+						deleted.put(key, data);
 						break;
 					case LINE_CREATED_INDICATOR:
 						// Current release entry
 						if (deleted.containsKey(key)) {
 							String[] oldValue = deleted.remove(key);
 
-							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
+							if (inScope(data[IDX_MODULEID])) {
 								ValuePair valuePair = new ValuePair(oldValue, data);
-								if (valuePair.isActive()) {
-									// Remains active and changed since last release
-									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
-										count(totals, TotalsIndex.CHANGED);
-									}
-								} else if (valuePair.isInactive()) {
-									// Remains inactive and changed since last release
-									if (valuePair.isChanged(thisEffectiveTime, previousEffectiveTime)) {
-										count(totals, TotalsIndex.CHANGED_INACTIVE);
-									}
-								} else if (valuePair.isInactivated()) {
-									// Inactivated
-									count(totals, TotalsIndex.INACTIVATED);
-								} else if (valuePair.isReactivated()) {
-									// Reactivated
-									count(totals, TotalsIndex.REACTIVATED);
-								}
-								// Active and changed module since last release
-								if (valuePair.isActiveMovedModule()) {
+
+								if (valuePair.isMovedModule()) {
+									// Moved into this module
 									count(totals, TotalsIndex.MOVED_MODULE);
+								} else {
+									if (valuePair.isInactivated()) {
+										count(totals, TotalsIndex.INACTIVATED);
+									} else if (valuePair.isReactivated()) {
+										count(totals, TotalsIndex.REACTIVATED);
+									} else if (isChanged(effectiveTime)) {
+										if (valuePair.isActive()) {
+											count(totals, TotalsIndex.CHANGED);
+										} else if (valuePair.isInactive()) {
+											count(totals, TotalsIndex.CHANGED_INACTIVE);
+										}
+									}
 								}
-							} else {
+							} else if (moduleFilter.contains(oldValue[IDX_MODULEID])) {
 								count(totals, TotalsIndex.PROMOTED);
 							}
-						} else {
-							if (moduleFilter == null || moduleFilter.contains(moduleId)) {
-								created.put(key, data);
-							}
+						} else if (inScope(data[IDX_MODULEID])) {
+							created.put(key, data);
 						}
 						break;
 				}
@@ -815,7 +801,15 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		totals.compute(index, (k, v) -> v + 1);
 	}
 
-	static class ValuePair {
+	private boolean isChanged(String effectiveTime) {
+		return thisEffectiveTime.equals(previousEffectiveTime) || effectiveTime.compareTo(previousEffectiveTime) > 0;
+	}
+
+	private boolean inScope(String moduleId) {
+		return moduleFilter == null || moduleFilter.contains(moduleId);
+	}
+
+	class ValuePair {
 		// Previous value in the pair contains a line marked "<"
 		// Current value contains a matching line marked ">"
 
@@ -827,12 +821,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			this.currentValue = currentValue;
 		}
 
-		boolean isChanged(String thisEffectiveTime, String previousEffectiveTime) {
-			return thisEffectiveTime.equals(previousEffectiveTime) || currentValue[IDX_EFFECTIVETIME].compareTo(previousEffectiveTime) > 0;
+		boolean isChanged() {
+			return StringUtils.isEmpty(currentValue[IDX_EFFECTIVETIME]) || currentValue[IDX_EFFECTIVETIME].compareTo(previousValue[IDX_EFFECTIVETIME]) > 0;
 		}
 
-		boolean isActiveMovedModule() {
-			return ACTIVE_FLAG.equals(currentValue[IDX_ACTIVE]) && !currentValue[IDX_MODULEID].equals(previousValue[IDX_MODULEID]);
+		boolean isMovedModule() {
+			return !currentValue[IDX_MODULEID].equals(previousValue[IDX_MODULEID]);
 		}
 
 		boolean isActive() {
