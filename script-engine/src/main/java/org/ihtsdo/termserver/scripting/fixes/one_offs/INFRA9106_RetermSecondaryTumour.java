@@ -69,7 +69,7 @@ public class INFRA9106_RetermSecondaryTumour extends BatchFix {
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();
@@ -155,7 +155,7 @@ public class INFRA9106_RetermSecondaryTumour extends BatchFix {
 		for (Concept c : SnomedUtils.sort(findConcepts(ecl))) {
 			if (isExcluded(c)) {
 				if (c.getFsn().startsWith("Secondary")) {
-					reportLoud((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
+					report((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
 				}
 			} else {
 				try {

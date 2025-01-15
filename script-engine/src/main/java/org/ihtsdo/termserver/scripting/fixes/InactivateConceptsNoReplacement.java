@@ -70,7 +70,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 			fix.maxFailures = Integer.MAX_VALUE;
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
-			//fix.getArchiveManager().setPopulateReleasedFlag(true);
+			//fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(true);
 			fix.postInit();
 			fix.processFile();

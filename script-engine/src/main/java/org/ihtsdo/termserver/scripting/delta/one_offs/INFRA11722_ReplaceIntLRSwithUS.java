@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.delta.one_offs;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.delta.DeltaGenerator;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -43,7 +42,7 @@ public class INFRA11722_ReplaceIntLRSwithUS extends DeltaGenerator implements Sc
 		INFRA11722_ReplaceIntLRSwithUS delta = new INFRA11722_ReplaceIntLRSwithUS();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.targetModuleId = US_MODULE;
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);

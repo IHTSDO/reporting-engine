@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports.one_offs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -16,18 +16,20 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class ListAcronymDescriptions extends TermServerReport implements ReportClass {
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
-		TermServerReport.run(ListAcronymDescriptions.class, params, args);
+		TermServerScript.run(ListAcronymDescriptions.class, params, args);
 	}
 	
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
-		ReportSheetManager.targetFolderId = "1bHVd-cWbcafa3alwf5nmSOVREHYbpOMP"; //MS AdHoc Reports
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		ReportSheetManager.setTargetFolderId("1bHVd-cWbcafa3alwf5nmSOVREHYbpOMP"); //MS AdHoc Reports
 		super.init(run);
 	}
 	
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag, Acryonym",
 				"SCTID, FSN, SemTag, Acronym",

@@ -23,7 +23,7 @@ public class INFRA13577_AJCCDefintionToAttribution extends DeltaGenerator implem
 		INFRA13577_AJCCDefintionToAttribution delta = new INFRA13577_AJCCDefintionToAttribution();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.newIdsRequired = false;
 			delta.init(args);
 			delta.inputFileHasHeaderRow = true;

@@ -73,7 +73,7 @@ public class INFRA9604_RetermMeasurementFindings extends BatchFix {
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.nounHelper = CaseSensitivityUtils.get();
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();
@@ -135,7 +135,7 @@ public class INFRA9604_RetermMeasurementFindings extends BatchFix {
 		} else if (patternOfX.equals(Pattern.NO_CHANGE_REQUIRED)) {
 			return NO_CHANGES_MADE;
 		} else if (patternOfX.equals(Pattern.SKIP_AND_REPORT)) {
-			reportLoud(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Pattern Y with X requires manual intervention");
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Pattern Y with X requires manual intervention");
 			return NO_CHANGES_MADE;
 		}
 		List<Description> originalDescriptions = new ArrayList<>(c.getDescriptions(ActiveState.ACTIVE));
