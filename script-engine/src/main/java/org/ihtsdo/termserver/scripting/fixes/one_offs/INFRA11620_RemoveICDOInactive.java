@@ -29,8 +29,8 @@ public class INFRA11620_RemoveICDOInactive extends BatchFix {
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.runStandAlone = true;
-			fix.getArchiveManager(true).setLoadOtherReferenceSets(true);
-			fix.getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true);
+			fix.getArchiveManager().setLoadOtherReferenceSets(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.populateTaskDescription = false;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);
