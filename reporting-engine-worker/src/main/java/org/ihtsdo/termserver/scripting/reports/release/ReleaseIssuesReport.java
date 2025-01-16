@@ -403,7 +403,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (previousState.length != currentState.length) {
 					throw new TermServerScriptException("Investigate: component's state has changed length! " + c.getIssues() + " vs " + c);
 				}
-				
+				//We're not expecting any fields to be null, log message if so
+				if (nullCheck("Previous", previousState, c) || nullCheck("Current", currentState, c)) {
+					continue;
+				}
+
 				//If the module has not changed, then we've nothing to worry about.
 				if (previousState[MUT_IDX_MODULEID].equals(currentState[MUT_IDX_MODULEID])) {
 					continue;
@@ -452,6 +456,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		LOGGER.info("Completed inappropriateModuleJumping check");
+	}
+
+	private boolean nullCheck(String view, String[] viewState, Component c) {
+		for (int i=0; i < viewState.length; i++) {
+			if (viewState[i] == null) {
+				LOGGER.error("Null value at idx {} in {} state of {}", i, view, c);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean isExpectedModuleJumpException(Component c, String[] previousState, String[] currentState) {
