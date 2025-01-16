@@ -116,6 +116,7 @@ public class GraphLoader implements ScriptConstants {
 		componentOwnerMap = null;
 		fsnMap = null;
 		orphanetConceptIds = null;
+		recordPreviousState = false;
 		descendantsCache.reset();
 		statedDescendantsCache.reset();
 		ancestorsCache.reset();

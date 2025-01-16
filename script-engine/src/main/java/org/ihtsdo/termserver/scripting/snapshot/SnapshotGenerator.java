@@ -46,14 +46,14 @@ public class SnapshotGenerator implements RF2Constants{
 		init(newLocation);
 		if (dependencySnapshot != null) {
 			LOGGER.info("Loading dependency snapshot {}", dependencySnapshot);
-			ts.getArchiveManager(true).loadArchive(dependencySnapshot, false, "Snapshot", true);
+			ts.getArchiveManager().loadArchive(dependencySnapshot, false, "Snapshot", true);
 		}
 		
 		LOGGER.info("Loading previous snapshot {}", previousSnapshot);
-		ts.getArchiveManager(true).loadArchive(previousSnapshot, false, "Snapshot", true);
+		ts.getArchiveManager().loadArchive(previousSnapshot, false, "Snapshot", true);
 		
 		LOGGER.info("Loading delta {}", delta);
-		ts.getArchiveManager(true).loadArchive(delta, false, "Delta", false);
+		ts.getArchiveManager().loadArchive(delta, false, "Delta", false);
 		ts.getGraphLoader().finalizeMRCM();
 		ts.setQuiet(false);
 	}

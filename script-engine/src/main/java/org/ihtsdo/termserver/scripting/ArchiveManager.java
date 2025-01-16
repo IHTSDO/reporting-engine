@@ -70,11 +70,8 @@ public class ArchiveManager implements ScriptConstants {
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 
 	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
-		return getArchiveManager(ts, appContext, false);
-	}
-	
-	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext, boolean forceReuse) {
 		boolean isBrandNew = false;
+		boolean underChangedOwnership = false;
 		if (singleton == null) {
 			singleton = new ArchiveManager();
 			singleton.appContext = appContext;
@@ -83,31 +80,30 @@ public class ArchiveManager implements ScriptConstants {
 		
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
 			String ownershipIndicator = singleton.ts == null ? "first" : "new";
-			LOGGER.info("Archive manager under {} ownership: {}", ownershipIndicator, ts.getClass().getSimpleName());
-			if (forceReuse && !isBrandNew) {
-				LOGGER.info("Re-use request denied due to change in ownership.");
-				forceReuse = false;
+			if (!isBrandNew) {
+				ownershipIndicator = "changed";
+				underChangedOwnership = true;
 			}
+			LOGGER.info("Archive manager under {} ownership: {}", ownershipIndicator, ts.getClass().getSimpleName());
 			singleton.gl = ts.getGraphLoader();
 		} else {
 			LOGGER.info("Archive manager being reused in: {}", ts.getClass().getSimpleName());
 		}
 
-		if (!isBrandNew) {
-			if (!forceReuse) {
-				LOGGER.info("Resetting Archive Manager load flags");
-				String stackTrace = ExceptionUtils.getStackTrace(new Exception());
-				LOGGER.info("Temporary stack trace so we can see _why_ we're being reset: {}", stackTrace);
-				//Don't assume that just because we're being reused, we're loading the same files
-				singleton.loadEditionArchive = false;
-				singleton.loadDependencyPlusExtensionArchive = false;
-				singleton.populatePreviousTransativeClosure = false;
-				singleton.ensureSnapshotPlusDeltaLoad = false;
-				singleton.loadOtherReferenceSets = false;
-			} else {
-				LOGGER.info("Archive Manager load flags retained - reuse forced.");
-			}
+		if (underChangedOwnership) {
+			LOGGER.info("Resetting Archive Manager load flags");
+			String stackTrace = ExceptionUtils.getStackTrace(new Exception());
+			LOGGER.info("Temporary stack trace so we can see _why_ we're being reset: {}", stackTrace);
+			//Don't assume that just because we're being reused, we're loading the same files
+			singleton.loadEditionArchive = false;
+			singleton.loadDependencyPlusExtensionArchive = false;
+			singleton.populatePreviousTransativeClosure = false;
+			singleton.ensureSnapshotPlusDeltaLoad = false;
+			singleton.loadOtherReferenceSets = false;
+		} else if (!isBrandNew){
+			LOGGER.info("Archive Manager load flags retained - reusing.");
 		}
+
 		singleton.ts = ts;
 		return singleton;
 	}
