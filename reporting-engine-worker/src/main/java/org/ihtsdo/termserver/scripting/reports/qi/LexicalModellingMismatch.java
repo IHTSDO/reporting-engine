@@ -56,13 +56,17 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		subsetECL = run.getMandatoryParamValue(ECL);
 		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
 		if (attribStr != null && !attribStr.isEmpty()) {
-			targetAttribute.setType(gl.getConcept(attribStr));
+			//Ensure this type is valid before proceeding
+			Concept attribType = gl.getConcept(attribStr, false, true);
+			targetAttribute.setType(attribType);
 		}
 		
 		attribStr = run.getParamValue(ATTRIBUTE_VALUE);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			try {
-				targetAttribute.setTarget(gl.getConcept(attribStr));
+				//Ensure this target attribute is valid before proceeding
+				Concept attribValue = gl.getConcept(attribStr, false, true);
+				targetAttribute.setTarget(attribValue);
 			} catch (final IllegalArgumentException e) {
 				//Presumed to be concrete value.
 				targetAttribute.setConcreteValue(new ConcreteValue(attribStr));
