@@ -28,8 +28,8 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			//It might be that we need component from an upgraded international edition
 			//so we might have very bad integrity.  Doesn't matter in this case, we just
 			//need the rows from the RF2
-			delta.getArchiveManager(true).setPopulateHierarchyDepth(false);
-			delta.getArchiveManager(true).setRunIntegrityChecks(false);
+			delta.getArchiveManager().setPopulateHierarchyDepth(false);
+			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.loadProjectSnapshot(false);
 			delta.postInit();
 			delta.process();
