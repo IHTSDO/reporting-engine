@@ -40,7 +40,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			fix.groupByIssue = false;
 			fix.reportNoChange = false;
 			fix.selfDetermining = true;
-			fix.subsetECL = "< 415229000 |Racial group (racial group)|";
+			fix.subsetECL = "<< 363743006 |Navigational concept (navigational concept)|";
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -51,24 +51,13 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		}
 	}
 
-	@Override
-	public void postInit() throws TermServerScriptException {
-		super.postInit();
-		exceptions.add(gl.getConcept("413464008 |African race (racial group)|"));
-		exceptions.add(gl.getConcept("413773004 |Caucasian (racial group)|"));
-		exceptions.add(gl.getConcept("413582008 |Asian race (racial group)|"));
-		exceptions.add(gl.getConcept("413491005 |American Indian race (racial group)|"));
-		exceptions.add(gl.getConcept("414752008 |Mixed racial group (racial group)|"));
-		exceptions.add(gl.getConcept("415794004 |Unknown racial group (racial group)|"));
-		exceptions.add(gl.getConcept("1336109002 |Pacific islander (racial group)|"));
-	}
 
 	@Override
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = 0;
 		if (loadedConcept == null || !loadedConcept.isActive()) {
-			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
+			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
 		} else if (loadedConcept.isReleasedSafely()) {
 			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
@@ -351,10 +340,10 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		if (!c.isActiveSafely()) {
 			report((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Concept is already inactive.");
 			incrementSummaryInformation("Skipped, already inactivated");
-			return null;
+			return Collections.emptyList();
 		}
 		
-		/*
+		
 		int idxReplacement = 1;
 		if (lineItems.length > 2) {
 			idxReplacement = 2;
@@ -367,7 +356,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			} else if (strInact.contains("Ambiguous")) {
 				inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
 			} else {
-				warn ("Failed to identify inactivation indicator for: " + c);
+				LOGGER.warn("Failed to identify inactivation indicator for: {}", c);
 			}
 		}
 		
@@ -379,18 +368,11 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 					replacement = gl.getConcept(lineItems[idxReplacement]);
 				} catch (Exception e) {
 					if (expectReplacements) {
-						warn ("Failed to identify replacement concept: " + lineItems[idxReplacement]);
+						LOGGER.warn("Failed to identify replacement concept: {}", lineItems[idxReplacement]);
 					}
 				}
 			}
-		}*/
-		
-		//Specific to IHTSDO-175
-		//inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
-		//replacement = gl.getConcept(" 782902008 |Implantation procedure (procedure)|");
-		//inactivationIndicators.put(c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-		inactivationIndicators.put(c, InactivationIndicator.OUTDATED);
-		replacement = gl.getConcept("399097000 |Administration of anesthesia (procedure)|");
+		}
 
 		//Give C an issue of one of its parents to try to batch sibling concepts together
 		c.addIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
@@ -401,6 +383,6 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		} else if (!expectReplacements){
 			return Collections.singletonList(c);
 		}
-		return null;
+		return Collections.emptyList();
 	}
 }

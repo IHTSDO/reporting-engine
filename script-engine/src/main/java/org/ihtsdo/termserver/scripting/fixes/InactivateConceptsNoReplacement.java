@@ -1,17 +1,16 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /*
@@ -29,7 +28,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateConceptsNoReplacement.class);
 
-	//InactivationIndicator inactivationIndicator = InactivationIndicator.AMBIGUOUS;
 	InactivationIndicator inactivationIndicator = InactivationIndicator.MOVED_ELSEWHERE;
 	
 	Set<String> searchTerms = new HashSet<>();
@@ -37,7 +35,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 	Map<Concept, Set<Concept>> incomingHistAssocReplacements;
 	Set<Concept> unsafeToProcess = new HashSet<>();
 	Map<Concept, Task> processed = new HashMap<>();
-	HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	
 	//This is tricky to explain.  I will attempt:
 	//When we inactivate a concept, it might be the target of an existing incoming historical association.
@@ -45,12 +42,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 	//However, the source of that association might also point to some OTHER concept that we're
 	//inactivating, in which case we need to leave that rewiring in place ie for a single given concept
 	//we can't just wipe out all existing historical associations.  We need to maintain a new set of them.
-	
-	//It got trickier.  If we add historical associations in one task and then need to do it AGAIN in 
-	//another task, they get new UUIDs and when we come to promote to the project we end up with the same
-	//associations having different UUIDs being merged and appearing to be duplicates.   So we'll wipe this
-	//map after every task.
-	Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	
 	protected InactivateConceptsNoReplacement(BatchFix clone) {
 		super(clone);
@@ -70,7 +61,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 			fix.maxFailures = Integer.MAX_VALUE;
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
-			//fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.loadProjectSnapshot(true);
 			fix.postInit();
 			fix.processFile();
@@ -79,6 +69,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		}
 	}
 	
+	@Override
 	public void postInit() throws TermServerScriptException {
 		//INFRA-4865
 		searchTerms.add("on examination");
@@ -104,7 +95,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
@@ -123,7 +114,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 						Concept conceptFromDesc = gl.findConcept(replacementSCTID);
 						if (conceptFromDesc != null) {
 							replacementSCTID = conceptFromDesc.getConceptId();
-							LOGGER.warn("Looked up replacement " + conceptFromDesc);
+							LOGGER.warn("Looked up replacement {}", conceptFromDesc);
 						} else {
 							report((Task)null, inactivatedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "FSN of replacement doesn't exist in current environment. ", replacementSCTID);
 							continue;
@@ -152,7 +143,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		int changesMade = 0;
 		if (loadedConcept == null || !loadedConcept.isActive()) {
 			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
-		} else if (loadedConcept.isReleased()) {
+		} else if (loadedConcept.isReleasedSafely()) {
 			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
 				updateConcept(t, loadedConcept, info);
@@ -214,14 +205,10 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		c.setEffectiveTime(null);
 		c.setInactivationIndicator(inactivationIndicator);
 		
-		//c.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
 		c.setAssociationTargets(AssociationTargets.movedTo(replacement));
 		
-		//String histAssocType = " possibly equiv to ";
-		//for (Concept replacement : replacements) {
 		String histAssocType = " moved to ";
 		report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + (replacement.equals(NULL_CONCEPT)?"":replacement));
-		//}
 		return CHANGE_MADE;
 	}
 
@@ -230,7 +217,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 	private Set<Concept> getIncomingAttributeSources(Concept c) {
 		Set<Concept> incomingAttributeSources = new HashSet<>();
 		for (Concept source : gl.getAllConcepts()) {
-			if (source.isActive()) {
+			if (source.isActiveSafely()) {
 				for (Relationship r : source.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (!r.getType().equals(IS_A) && r.getTarget().equals(c)) {
 						incomingAttributeSources.add(source);
@@ -241,6 +228,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		return incomingAttributeSources;
 	}
 
+	@Override
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
 		checkAndInactivatateIncomingAssociations(t, c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, null);
@@ -253,7 +241,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 			return;
 		}
 		
-		//throw new TermServerScriptException (c + " is the target of incoming association(s) from: " + gl.usedAsHistoricalAssociationTarget(c) );
 		
 		for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
 			Concept incoming = gl.getConcept(assoc.getReferencedComponentId());
@@ -284,12 +271,12 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 				addComponentsToProcess(c, processMe);
 			}
 		}
-		LOGGER.info("Identified " + processMe.size() + " concepts to process");
-		return new ArrayList<Component>(processMe);
+		LOGGER.info("Identified {} concepts to process", processMe.size());
+		return new ArrayList<>(processMe);
 	}
 	
 	private void addComponentsToProcess(Concept c, Set<Concept> processMe) throws TermServerScriptException {
-		if (c.isActive() && containsSearchTerm(c)) {
+		if (c.isActiveSafely() && containsSearchTerm(c)) {
 			if (!isSafeToInactivate(c)) {
 				report((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has incoming historical association and no replacement.");
 				unsafeToProcess.add(c);
@@ -308,7 +295,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 					return;
 				}
 				
-				if (!isSafeToInactivate(c, child)) {
+				if (!isChildSafeToInactivate(child)) {
 					report((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has child not being inactived due to incoming historical assocation without replacement. Process manually.", child);
 					unsafeToProcess.add(child);
 					return;
@@ -321,7 +308,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		
 	}
 
-	private boolean isSafeToInactivate(Concept parent, Concept child) throws TermServerScriptException {
+	private boolean isChildSafeToInactivate(Concept child) throws TermServerScriptException {
 		//Do we already know this concept is unsafe to process?
 		if (unsafeToProcess.contains(child)) {
 			report((Task) null, child, Severity.HIGH, ReportActionType.NO_CHANGE, "Concept previously identified as unsafe to process via another ancestory");
@@ -330,7 +317,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 		
 		//If we have further children, we have to check all of them as well
 		for (Concept grandchild : child.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (!isSafeToInactivate(child, grandchild)) {
+			if (!isChildSafeToInactivate(grandchild)) {
 				report((Task) null, child, Severity.HIGH, ReportActionType.NO_CHANGE, "Descendant concept is not safe to inactivate", grandchild);
 				return false;
 			}
@@ -349,15 +336,8 @@ public class InactivateConceptsNoReplacement extends BatchFix implements ScriptC
 	private boolean isSafeToInactivate(Concept c) {
 		//To be safe this concept has to have a replacement for incoming historical associations,
 		//or no incoming historical associations
-		if (incomingHistAssocReplacements.containsKey(c)) {
-			return true;
-		}
-		
-		if (gl.usedAsHistoricalAssociationTarget(c).size() == 0) {
-			return true;
-		}
-		
-		return false;
+		return incomingHistAssocReplacements.containsKey(c) || gl.usedAsHistoricalAssociationTarget(c).isEmpty();
+
 	}
 
 	private boolean containsSearchTerm(Concept c) {
