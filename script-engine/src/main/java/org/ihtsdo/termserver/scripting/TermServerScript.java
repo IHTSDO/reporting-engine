@@ -151,7 +151,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public String detectReleaseBranch() {
-		return getArchiveManager(true).detectReleaseBranch(project.getKey());
+		return getArchiveManager().detectReleaseBranch(project.getKey());
 	}
 
 	public String getScriptName() {
@@ -638,7 +638,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		ArchiveManager mgr = getArchiveManager(true);
+		ArchiveManager mgr = getArchiveManager();
 		//Run a quick check here that if the GraphLoader has been told to record previous state, then obviously
 		//it can only do that if we're forcing a fresh build of Snapshot + Delta, as it's the published snapshot
 		//that we use to obtain the previous state.
@@ -759,7 +759,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected RefsetMember loadPreviousRefsetMember(String uuid) throws TermServerScriptException {
 		if (project.getPreviousBranchPath() == null) {
-			String previousBranchPath = getArchiveManager(true).getPreviousBranch(project);
+			String previousBranchPath = getArchiveManager().getPreviousBranch(project);
 			project.setPreviousBranchPath(previousBranchPath);
 		}
 		LOGGER.debug("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
@@ -1723,11 +1723,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public ArchiveManager getArchiveManager() {
 		return ArchiveManager.getArchiveManager(this, appContext);
 	}
-	
-	public ArchiveManager getArchiveManager(boolean forceReuse) {
-		return ArchiveManager.getArchiveManager(this, appContext, forceReuse);
-	}
-	
+
 	public boolean hasInputFile() {
 		return hasInputFile(0);
 	}
@@ -1884,7 +1880,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected void setDependencyArchive(String dependencyArchive) {
 		this.dependencyArchive = dependencyArchive;
 		if (dependencyArchive != null) {
-			getArchiveManager(true).setLoadDependencyPlusExtensionArchive(true);
+			getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
 		}
 	}
 

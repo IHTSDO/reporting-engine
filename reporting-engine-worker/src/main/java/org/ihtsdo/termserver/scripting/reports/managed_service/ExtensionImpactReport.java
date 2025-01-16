@@ -83,7 +83,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 
 		if (!RUN_INTEGRITY_CHECKS) {
-			getArchiveManager(true).setRunIntegrityChecks(false);
+			getArchiveManager().setRunIntegrityChecks(false);
 		}
 	}
 	
@@ -92,7 +92,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		boolean compareTwoSnapshots = false; 
 		previousTransitiveClosureNeeded = false;
 		LOGGER.info("International Release data being imported, wiping Graph Loader for safety.");
-		getArchiveManager(true).reset(false);
+		getArchiveManager().reset(false);
 		Project previousProject = project.clone();
 		SnapshotGenerator.setSkipSave(true); //This takes a copy of the graph in memory, so avoid for this expensive report.
 
@@ -111,7 +111,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 		try {
 			incomingDataKey = project.getKey();
-			ArchiveManager mgr = getArchiveManager(true);
+			ArchiveManager mgr = getArchiveManager();
 			mgr.loadSnapshot(fsnOnly);
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.runJob();

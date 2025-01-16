@@ -30,8 +30,8 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 		FixSelfGroupedCrossovers delta = new FixSelfGroupedCrossovers();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager(true).setEnsureSnapshotPlusDeltaLoad(true);
-			delta.getArchiveManager(true).setRunIntegrityChecks(false);
+			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);
 			delta.loadProjectSnapshot();

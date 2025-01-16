@@ -16,7 +16,7 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
 			delta.init(args);
-			delta.getArchiveManager(true).setLoadOtherReferenceSets(true);
+			delta.getArchiveManager().setLoadOtherReferenceSets(true);
 			delta.loadProjectSnapshot();
 			delta.postInit();
 			delta.process();
