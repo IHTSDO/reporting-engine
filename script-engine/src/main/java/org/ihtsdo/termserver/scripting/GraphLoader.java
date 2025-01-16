@@ -633,7 +633,7 @@ public class GraphLoader implements ScriptConstants {
 				c = new Concept(sctId);
 				concepts.put(sctId, c);
 			} else if (validateExists) {
-				throw new TermServerScriptException("Expected Concept '" + sctId + "' has not been loaded from archive");
+				throw new TermServerScriptException("Requested concept '" + identifier + "' is not known to currently loaded snapshot.");
 			}
 		}
 		return c;
