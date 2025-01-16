@@ -21,13 +21,13 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 
 	public static void main(String[] args) throws TermServerScriptException{
 		Map<String, String> params = new HashMap<>();
-		
+
 		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20220401T000000Z.zip");
 		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		
+
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20211001T121212Z.zip");
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
-		
+
 		params.put(MODULES, "21000210109");  //NZ Module
 		params.put(REPORT_OUTPUT_TYPES, "S3");
 		params.put(REPORT_FORMAT_TYPE, "JSON");
@@ -102,7 +102,6 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 			moduleFilter = Collections.singletonList(defaultModule);
 		}
 
-		ensurePrevIsEarlierThanThis(thisDependency, prevDependency);
 		super.loadProjectSnapshot(fsnOnly);
 	}
 

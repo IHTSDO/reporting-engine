@@ -23,15 +23,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 
-/**
- * RP-288 
- * */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-
+/**
+ * RP-288
+ * */
 public class SummaryComponentStats extends HistoricDataUser implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStats.class);
@@ -124,19 +122,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			OBSERVABLE_ENTITY, EVENT, 
 			PHARM_DOSE_FORM};
 	
-	public static final EnumSet<ComponentType> typesToDebugToFile = EnumSet.of(ComponentType.CONCEPT);
+	protected static final EnumSet<ComponentType> typesToDebugToFile = EnumSet.of(ComponentType.CONCEPT);
 	
-	public static Set<String> refsetsToDebugToFile = new HashSet<>();
+	protected static Set<String> refsetsToDebugToFile = new HashSet<>();
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z.zip");
-		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20210901T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230901T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20231001T120000Z.zip");
-		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");
-		//params.put(MODULES, "731000124108");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20241201T120000Z.zip");
+		// REPORT_OUTPUT_TYPES, "S3" REPORT_FORMAT_TYPE, "JSON"
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -178,7 +172,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
-		LOGGER.info(String.format("Running report with runIntegrityChecks set to %b", runIntegrityChecks));
+		LOGGER.info("Running report with runIntegrityChecks set to {}", runIntegrityChecks);
 		getArchiveManager().setRunIntegrityChecks(runIntegrityChecks);
 		super.init(run);
 	}
@@ -400,9 +394,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	private void analyzeDescriptions(Concept c, HistoricData datum, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
-			/*if (d.getId().equals("3770564011")) {
-				LOGGER.debug("here");
-			}*/
 			//If the description is not in the target module, skip it.
 			//TODO We can count promoted descriptions also
 			if (moduleFilter != null && !moduleFilter.contains(d.getModuleId())) {
@@ -504,10 +495,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		boolean conceptAffected = false;
 
 		for (Component component : components) {
-			/*if (component.getId().equals("8f7a882f-b4e7-43d1-81e8-d2cfae503000") ||
-					component.getId().equals("b6507605-25fa-4a0b-88d1-26327247da86")) {
-				LOGGER.debug("here");
-			}*/
 			if (moduleFilter != null && !moduleFilter.contains(component.getModuleId())) {
 				continue;
 			}
@@ -735,28 +722,28 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
-		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
-		});
+		Stream.of(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).forEach(index ->
+			sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)))
+		);
 		
-		Arrays.asList(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET, TAB_DESC_BY_LANG).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
-		});
+		Stream.of(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET, TAB_DESC_BY_LANG).forEach(index ->
+			sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)))
+		);
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
 				IDX_INACT_NOT_EQUIVALENT, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED)));
 
-		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED))));
-		});
+		Stream.of(TAB_LANG, TAB_HIST).forEach(index ->
+			sheetFieldsByIndex.put(index, new LinkedList<>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED))))
+		);
 		
-		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACTIVATED, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_QI, new LinkedList<>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACTIVATED, IDX_TOTAL_ACTIVE)));
 
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 
 		return sheetFieldsByIndex;
 	}
@@ -877,7 +864,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// i.e. SnomedCT_InternationalRF2_PRODUCTION_20220731T120000Z => SnomedCT_InternationalRF2_PRODUCTION_20220731
 			return input.replaceAll(dateBefore, dateAfter);
 		} catch (ParseException e) {
-			LOGGER.warn(String.format("Cannot remove time code from %s", input));
+			LOGGER.warn("Cannot remove time code from {}", input);
 		}
 
 		// Return original as default

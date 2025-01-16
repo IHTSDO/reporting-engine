@@ -27,6 +27,9 @@ public class HistoricDataUser extends TermServerReport {
 		DATE_EXTRACTOR_PATTERN = Pattern.compile("\\d{8}(?=T)");
 	}
 
+	protected static final String RELEASE = "release";
+	protected static final String DEPENDENCY = "dependency";
+
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
 
@@ -121,7 +124,15 @@ public class HistoricDataUser extends TermServerReport {
 		}
 
 		if (isPublishedReleaseAnalysis) {
-			ensurePrevIsEarlierThanThis(projectKey, prevRelease);
+			ensurePrevIsEarlierThanThis(projectKey, prevRelease, RELEASE, RELEASE);
+			if (thisDependency != null) {
+				ensurePrevIsEarlierThanThis(projectKey, thisDependency, RELEASE, DEPENDENCY);
+			}
+		}
+
+		if (prevRelease != null) {
+			ensurePrevIsEarlierThanThis(prevRelease, prevDependency, RELEASE, DEPENDENCY);
+			ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
 		}
 
 		getProject().setKey(prevRelease);
@@ -224,10 +235,10 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 
-	protected void ensurePrevIsEarlierThanThis(String now, String earlier) {
+	protected void ensurePrevIsEarlierThanThis(String now, String earlier, String item1, String item2) throws TermServerScriptException {
 		try {
 			if (getET(earlier).compareTo(getET(now)) > 0) {
-				throw new IllegalArgumentException("Previous " + earlier + " is later than this release " + now);
+				throw new TermServerScriptException("Previous " + item2 + " " + earlier + " is later than " + item1 + " " + now);
 			}
 		} catch (IllegalArgumentException e) {
 			LOGGER.warn("Unable to determine dates for correct ordering of releases between {} and (earlier) {}.  Proceeding anyway.", now, earlier);
