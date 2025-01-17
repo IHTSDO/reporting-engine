@@ -769,7 +769,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 						}
 					}
 				} else {
-					LOGGER.warn(thisDescription + " is active with no Acceptability map or Language Refset entries (since " + thisDescription.getEffectiveTime() + ").");
+					LOGGER.warn("{} is active with no Acceptability map or Language Refset entries (since {}).", thisDescription, thisDescription.getEffectiveTime());
 				}
 			}
 		}
