@@ -1486,12 +1486,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return sb.toString();
 	}
 	
-	public static final Comparator<Description> decriptionPrioritiser = new Comparator<Description>() {
-		@Override
-		public int compare(Description d1, Description d2) {
-		return priority(d2).compareTo(priority(d1));
-		}
-	};
+	public static final Comparator<Description> decriptionPrioritiser = (d1, d2) -> priority(d2).compareTo(priority(d1));
 
 	/**
 	 * @return the list ordered so that FSN is returned first, then PT, then acceptable synonyms
@@ -1685,7 +1680,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		//If there's no attribute value specified, we'll match on just the target type
 		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendantsOrSelf(targetAttribute.getTarget());
 		return !c.getRelationships().stream()
-				.filter(r -> r.isActiveSafely())
+				.filter(Component::isActiveSafely)
 				.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
 				.filter(r -> types.contains(r.getType()))
 				.filter(r -> {
@@ -1695,7 +1690,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 						return r.getConcreteValue().equals(targetAttribute.getConcreteValue());
 					}
 				})
-				.collect(Collectors.toList()).isEmpty();
+				.toList().isEmpty();
 	}
 
 	public static boolean startsWithSCTID(String str) {
