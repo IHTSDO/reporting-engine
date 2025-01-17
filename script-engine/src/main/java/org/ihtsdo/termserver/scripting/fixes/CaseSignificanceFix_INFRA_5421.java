@@ -68,7 +68,7 @@ public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements ScriptCo
 		//Now, which term needs to be shifted?
 		CaseSignificance fsnCaseSig = c.getFSNDescription().getCaseSignificance();
 		//Is FSN correct?  What would an algorithm recommend?
-		CaseSignificance fsnRecommendedCaseSig = csUtils.suggestCorrectCaseSignficance(c.getFSNDescription());
+		CaseSignificance fsnRecommendedCaseSig = csUtils.suggestCorrectCaseSignficance(c, c.getFSNDescription());
 		
 		if (fsnCaseSig.equals(fsnRecommendedCaseSig)) {
 			String after = SnomedUtils.translateCaseSignificanceFromEnum(fsnRecommendedCaseSig);

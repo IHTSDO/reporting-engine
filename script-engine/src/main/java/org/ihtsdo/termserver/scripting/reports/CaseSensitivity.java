@@ -69,8 +69,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		}
 	}
 
-
-
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
@@ -229,8 +227,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 		//Or if one of our sources of truth?
 		String firstWord = d.getTerm().split(" ")[0];
-		if (csUtils.getSourcesOfTruth().containsKey(firstWord)) {
-			report(c, d, preferred, caseSig, "Case insensitive term should be CS as per " + csUtils.getSourcesOfTruth().get(firstWord));
+		if (csUtils.startsWithKnownCsWordInContext(c, firstWord, null)) {
+			report(c, d, preferred, caseSig, "Case insensitive term should be CS as per " +  csUtils.explainCsWordInContext(c, firstWord));
 			countIssue(c);
 			return true;
 		}
@@ -240,7 +238,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private boolean checkCaseSignicanceOfCaseSensitiveTerm(Concept c, Description d, String chopped, String preferred, String caseSig, String term) throws TermServerScriptException {
 		if (chopped.equals(chopped.toLowerCase()) &&
 				!csUtils.singleLetterCombo(term) &&
-				!csUtils.startsWithProperNounPhrase(term) &&
+				!csUtils.startsWithProperNounPhrase(c, term) &&
 				!csUtils.containsKnownLowerCaseWord(term)) {
 			if (caseSig.equals(CS) && csUtils.startsWithSingleLetter(d.getTerm())) {
 				//Probably OK

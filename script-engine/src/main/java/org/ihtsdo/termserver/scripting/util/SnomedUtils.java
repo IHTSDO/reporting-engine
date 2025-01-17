@@ -1005,7 +1005,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		for (Concept type : types) {
 			Set<Relationship> rels = g.getRelationshipsWithType(type);
 			if (rels.size() > 1) {
-				LOGGER.warn(g + " has multiple " + type);
+				LOGGER.warn("{} has multiple {}", g, type);
 			} else if (rels.size() == 1) {
 				if (allowNewConcepts) {
 					return rels.iterator().next().getTarget();
@@ -1022,7 +1022,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
-				LOGGER.warn(c + " has multiple " + type + " in group " + groupId);
+				LOGGER.warn("{} has multiple {} in group {}", c, type, groupId);
 			} else if (rels.size() == 1) {
 				Relationship r = rels.iterator().next();
 				if (!r.isConcrete()) {
@@ -1043,6 +1043,13 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return targets;
 	}
 	
+	public static Set<Concept> getTargets(Concept c) {
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+				.filter(Relationship::isNotConcrete)
+				.map(Relationship::getTarget)
+				.collect(Collectors.toSet());
+	}
+	
 	public static Integer getConcreteIntValue(Concept c, Concept type, CharacteristicType charType, int groupId) throws TermServerScriptException {
 		Integer value = null;
 		Set<Relationship> rels = c.getRelationships(charType, type, groupId);
@@ -1061,36 +1068,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 		return value;
 	}
-	
-	/*public static String getModel(Expressable c, CharacteristicType charType) {
-		return getModel(c, charType, false);
-	}
-	
-	public static String getModel(Expressable c, CharacteristicType charType, boolean includeParents) {
-		String model = "";
-		
-		if (includeParents) {
-			model = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
-			String parentStr = c.getParents(charType).stream()
-					.map(p -> p.getFsn())
-					.collect(Collectors.joining(" + "));
-			model += parentStr;
-			if (SnomedUtils.countAttributes(c, charType) > 0) {
-				model +=" : ";
-			}
-			model += "\n";
-		}
-		boolean isFirst = true;
-		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
-			if (!isFirst) {
-				model += ", \n";
-			} else isFirst = false;
-			model += g;
-		}
-		//Split into separate lines so we can see better
-		model = model.replaceAll ("\\{", "\\{  ").replaceAll("\\,", "\\,\n   ");
-		return model;
-	}*/
 	
 	public static Integer countAttributes(Expressable c, CharacteristicType charType) {
 		int attributeCount = 0;
@@ -1188,7 +1165,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 												.filter(br -> cache.getAncestorsOrSelfSafely(r.getTarget()).contains(br.getTarget()))
 												.collect(Collectors.toSet());
 			//If there are no matching rels, then these concept models are disjoint
-			if (matchingRels.size() == 0) {
+			if (matchingRels.isEmpty()) {
 				return false;
 			}
 			//If we have an exact match, move on to the next relationship.  Otherwise, we've
@@ -1471,7 +1448,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 		
 		//Otherwise, find the parent's parent and see if that's 
-		//TODO This could be done as a breadth first recursive search
+		//This could be done as a breadth first recursive search
 		for (Concept parent : parents) {
 			Concept grandParent = getHistoricalParent(parent);
 			if (grandParent != null) {
@@ -1504,12 +1481,12 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		m.appendTail(sb);
 		
 		if (sb.length() < origLength) {
-			LOGGER.warn("Populating FSNs has reduced overall length - check: '" + sb + "'");
+			LOGGER.warn("Populating FSNs has reduced overall length - check: '{}'", sb);
 		}
 		return sb.toString();
 	}
 	
-	public static Comparator<Description> decriptionPrioritiser = new Comparator<Description>() {
+	public static final Comparator<Description> decriptionPrioritiser = new Comparator<Description>() {
 		@Override
 		public int compare(Description d1, Description d2) {
 		return priority(d2).compareTo(priority(d1));
@@ -1707,7 +1684,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		Set<Concept> types = cache.getDescendantsOrSelf(targetAttribute.getType());
 		//If there's no attribute value specified, we'll match on just the target type
 		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendantsOrSelf(targetAttribute.getTarget());
-		return c.getRelationships().stream()
+		return !c.getRelationships().stream()
 				.filter(r -> r.isActiveSafely())
 				.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
 				.filter(r -> types.contains(r.getType()))
@@ -1718,7 +1695,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 						return r.getConcreteValue().equals(targetAttribute.getConcreteValue());
 					}
 				})
-				.collect(Collectors.toList()).size() > 0;
+				.collect(Collectors.toList()).isEmpty();
 	}
 
 	public static boolean startsWithSCTID(String str) {

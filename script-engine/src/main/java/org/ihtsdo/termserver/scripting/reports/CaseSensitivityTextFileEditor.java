@@ -11,7 +11,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
@@ -40,15 +39,12 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	String lastWildcardWritten = "";
 	public static final String WILDCARD = "*";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		CaseSensitivityTextFileEditor report = new CaseSensitivityTextFileEditor();
 		try {
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d"; //Substances
 			report.additionalReportColumns = "Phrase, Action, Data, Additional Info";
 			report.init(args);
-			//report.getReportManager().setWriteToFile(true);
-			//report.getReportManager().setWriteToSheet(false);
-			//report.getArchiveManager().allowStaleData = true;
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
 			LOGGER.info ("Modifying CS Words file...");
@@ -58,6 +54,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 		}
 	}
 	
+	@Override
 	public void postInit() throws TermServerScriptException {
 		LOGGER.info("Collecting organism terms...");
 		for (Concept c : ORGANISM.getDescendants(NOT_SET)) {
@@ -75,7 +72,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 		
 		LOGGER.info("Collecting all words currently in use....");
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					String[] words = d.getTerm().toLowerCase().split(SPACE);
 					for (String word : words) {
@@ -90,14 +87,14 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	}
 
 	private void processCSWordsFile() throws IOException, TermServerScriptException {
-		LOGGER.info ("Processing " + getInputFile());
+		LOGGER.info ("Processing {}", getInputFile());
 		String timeStamp = df.format(new Date());
 		String outputFileName = getInputFile().getAbsolutePath().replace(".txt", "_" + timeStamp + ".txt");
 		File outputFile = new File(outputFileName);
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
-		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+		List<String> lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 		int linesWritten = 0;
 		String lastLineWritten = "";
 		for (int i=1; i<lines.size() - 1; i++) {
@@ -109,9 +106,9 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 				linesWritten++;
 			}
 		}
-		LOGGER.info ("Lines read: " + lines.size());
-		LOGGER.info ("Lines written: " + linesWritten);
-		LOGGER.info ("Output file: " + outputFileName);
+		LOGGER.info ("Lines read: {}", lines.size());
+		LOGGER.info ("Lines written: {}", linesWritten);
+		LOGGER.info ("Output file: {}", outputFileName);
 	}
 
 	private boolean processLine(String line, String lastLineWritten, String nextLine, File outputFile) throws TermServerScriptException, IOException {
@@ -162,7 +159,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 		}
 		
 		Description[] usedIn = new Description[1];
-		if (isCurrentlyUsed(phrase, words, usedIn)) {
+		if (isCurrentlyUsed(words, usedIn)) {
 			//If the next first word is contained in this word, then we can save a wildcard variant.  But only if it's 4 letters long
 			//And not if it's an exact match
 			if (!words[0].equals(nextWords[0]) && words[0].length() > 4 && nextWords[0].startsWith(words[0])) {
@@ -188,7 +185,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 		return true;
 	}
 
-	private boolean isCurrentlyUsed(String phrase, String[] words, Description[] usedIn) throws TermServerScriptException {
+	private boolean isCurrentlyUsed(String[] words, Description[] usedIn) throws TermServerScriptException {
 		//Are any of the component words used somewhere in active SNOMED?
 		for (String word : words) {
 			word = word.toLowerCase();
