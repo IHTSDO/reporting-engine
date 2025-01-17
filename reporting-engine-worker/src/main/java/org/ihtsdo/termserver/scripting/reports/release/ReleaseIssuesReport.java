@@ -347,9 +347,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		LOGGER.info("...Disease semantic tag rule");
 		diseaseIntegrity();
-		
-		LOGGER.info("...Text definition dialect checks");
+
 		if (!isMS()) {
+			LOGGER.info("...FSN dialect checks");
+			descriptionDialectChecks();
+
+			LOGGER.info("...Text definition dialect checks");
 			textDefinitionDialectChecks();
 		}
 		
@@ -1407,6 +1410,22 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				String legacy = getLegacyIndicator(c);
 				report(c, issueStr, legacy, isActive(c,null), ancestor);
 				return;
+			}
+		}
+	}
+
+	// RP-704
+	private void descriptionDialectChecks() throws TermServerScriptException {
+		String issueStr = "FSN contains GB specific spelling";
+		initialiseSummary(issueStr);
+
+		DialectChecker dialectChecker = DialectChecker.create();
+
+		for (Concept c : allActiveConceptsSorted) {
+			Description fsn = c.getFSNDescription(LANG_EN);
+			if (dialectChecker.containsGBSpecificTerm(fsn.getTerm())) {
+				String legacy = getLegacyIndicator(c);
+				report(c, issueStr, legacy, isActive(c, null), fsn);
 			}
 		}
 	}
