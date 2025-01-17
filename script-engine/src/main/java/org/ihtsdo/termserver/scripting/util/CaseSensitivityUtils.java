@@ -8,6 +8,7 @@ import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import com.google.common.io.Files;
@@ -36,6 +37,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private final Map<Concept, List<String>> csInContext = new HashMap<>();
 	private final List<String> properNouns = new ArrayList<>();
+	private final Map<String, Concept> knownNames = new HashMap<>();
 	private final Map<String, List<String>> properNounPhrases = new HashMap<>();
 	private final List<String> knownLowerCase = new ArrayList<>();
 	private final Pattern numberLetter = Pattern.compile("\\d[a-z]");
@@ -72,7 +74,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	public void init() throws TermServerScriptException {
 		loadCSWords();
-
+		determineKnownNames();
 		if (substancesAndOrganismsAreSourcesOfTruth) {
 			sourceOfTruthHierarchies = List.of(SUBSTANCE, ORGANISM);
 			for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
@@ -81,6 +83,21 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		} else {
 			sourceOfTruthHierarchies = new ArrayList<>();
 		}
+	}
+
+	private void determineKnownNames() {
+		//Words that contain X's indicate someone's name
+		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				for (String word : d.getTerm().split(" ")) {
+					if (word.endsWith("'s")) {
+						String wordWithoutApostrophe = word.substring(0, word.length() - 2);
+						knownNames.put(wordWithoutApostrophe, c);
+					}
+				}
+			}
+		}
+		
 	}
 
 	public boolean isProperNoun(String word) {
@@ -272,7 +289,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		String[] words = term.split(" ");
 		String firstWord = words[0];
 		
-		if (properNouns.contains(firstWord)) {
+		if (properNouns.contains(firstWord) || knownNames.containsKey(firstWord)) {
 			return true;
 		}
 
@@ -407,6 +424,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		
 		for (String word : wildcardWords) {
 			populateKnowledgeSource(everything, word, "Wildcard Word", CS_WORDS_FILE);
+		}
+		
+		for (Map.Entry<String, Concept> entry : knownNames.entrySet()) {
+			String word = entry.getKey();
+			if (word.startsWith("(")) {
+				word = word.substring(1, word.length());
+			}
+			populateKnowledgeSource(everything, word, "Name via X's", findCsDescriptionFeaturingWord(entry.getValue(), word));
 		}
 		
 		for (Map.Entry<Concept, List<String>> entry : csInContext.entrySet()) {
