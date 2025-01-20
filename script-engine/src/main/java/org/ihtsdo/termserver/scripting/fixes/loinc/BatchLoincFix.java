@@ -135,7 +135,7 @@ public abstract class BatchLoincFix extends BatchFix {
 		String origLoincNum = fsnBestLoincMap.get(fsn);
 		String origStatus = get(loincFileMap, origLoincNum, LoincCol.STATUS.ordinal());
 		
-		//Is the this version newer than what we stored
+		//Is this version newer than what we stored
 		//Version doesn't matter as much as which LoincNum is still active
 		if (thisStatus.equals(DEPRECATED) && (origStatus.equals(ACTIVE) || origStatus.equals(DISCOURAGED))) {
 			//We can leave our current 'best' loincNum in place
