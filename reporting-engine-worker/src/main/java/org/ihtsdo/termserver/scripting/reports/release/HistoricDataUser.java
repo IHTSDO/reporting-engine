@@ -132,7 +132,9 @@ public class HistoricDataUser extends TermServerReport {
 
 		if (prevRelease != null) {
 			ensurePrevIsEarlierThanThis(prevRelease, prevDependency, RELEASE, DEPENDENCY);
-			ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
+			if (thisDependency != null) {
+				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
+			}
 		}
 
 		getProject().setKey(prevRelease);
@@ -145,6 +147,8 @@ public class HistoricDataUser extends TermServerReport {
 		if (compareTwoSnapshots) {
 			mgr.setLoadEditionArchive(true);
 			if (!StringUtils.isEmpty(thisDependency)) {
+				ensurePrevIsEarlierThanThis(projectKey, thisDependency, RELEASE, DEPENDENCY);
+				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
 				mgr.setLoadDependencyPlusExtensionArchive(true);
 			}
 			setProject(new Project(projectKey));
