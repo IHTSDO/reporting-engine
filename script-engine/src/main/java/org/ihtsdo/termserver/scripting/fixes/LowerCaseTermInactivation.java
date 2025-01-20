@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -22,7 +21,7 @@ public class LowerCaseTermInactivation extends BatchFix implements ScriptConstan
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		LowerCaseTermInactivation fix = new LowerCaseTermInactivation(null);
 		try {
 			fix.selfDetermining = true;

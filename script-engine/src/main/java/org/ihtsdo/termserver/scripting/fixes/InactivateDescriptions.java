@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -26,7 +25,7 @@ public class InactivateDescriptions extends BatchFix implements ScriptConstants 
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateDescriptions fix = new InactivateDescriptions(null);
 		try {
 			fix.expectNullConcepts = true;
@@ -64,7 +63,7 @@ public class InactivateDescriptions extends BatchFix implements ScriptConstants 
 						removeDescription(t, c, d, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 						changesMade++;
 					} else {
-						report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Description already inactive: " + d);
+						report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Description already inactive: " + d);
 					}
 				}
 			}

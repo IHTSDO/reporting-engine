@@ -35,10 +35,10 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MoveConceptsDriven fix = new MoveConceptsDriven(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.populateTaskDescription = false;
 			fix.maxFailures = Integer.MAX_VALUE;
@@ -70,7 +70,7 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = 0;
 		if (loadedConcept == null || !loadedConcept.isActive()) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
 		} else if (loadedConcept.isReleased()) {
 			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
@@ -116,12 +116,12 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		Set<Concept> processMe = new LinkedHashSet<>();  //Order is important because descendants must be added first
 		for (String sctId : moveList) {
 			addComponentsToProcess(gl.getConcept(sctId), processMe);
 		}
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return new ArrayList<Component>(processMe);
 	}
 	
@@ -137,12 +137,12 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 				//before any parents.
 				addComponentsToProcess(child, processMe);
 				if (!moveList.contains(child.getId())) {
-					report ((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has unexpected descendant adding to list", child);
+					report((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has unexpected descendant adding to list", child);
 				}
 				
 				Set<Concept> sources = getIncomingAttributeSources(c);
 				if (sources.size() > 0) {
-					report ((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept is used as target of another concept", sources.iterator().next());
+					report((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept is used as target of another concept", sources.iterator().next());
 					unsafeToProcess.add(c);
 					return;
 				}
@@ -150,7 +150,7 @@ public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 			}
 			processMe.add(c);
 		} else {
-			report ((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept to move is inactive");
+			report((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept to move is inactive");
 		}
 	}
 

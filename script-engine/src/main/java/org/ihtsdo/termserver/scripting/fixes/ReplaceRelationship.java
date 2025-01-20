@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -31,7 +30,7 @@ public class ReplaceRelationship extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceRelationship fix = new ReplaceRelationship(null);
 		try {
 			fix.selfDetermining = true;
@@ -51,7 +50,7 @@ public class ReplaceRelationship extends BatchFix implements ScriptConstants{
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+		ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 		//Populate our attributes of interest
 		findAttribute = gl.getConcept("23583003 |Inflammation (morphologic abnormality)|");  
 		replaceAttribute = gl.getConcept("409774005 |Inflammatory morphology (morphologic abnormality)|"); 
@@ -101,7 +100,7 @@ public class ReplaceRelationship extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		LOGGER.info ("Detected " + allAffected.size() + " concepts to modify");
+		LOGGER.info("Detected " + allAffected.size() + " concepts to modify");
 		return new ArrayList<Component>(allAffected);
 	}
 

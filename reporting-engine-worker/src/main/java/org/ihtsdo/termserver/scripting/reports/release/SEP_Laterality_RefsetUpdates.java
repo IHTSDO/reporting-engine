@@ -1,11 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -14,30 +14,26 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * FRI-353 List changes made in the current authoring cycle to SEP and Laterality Refsets
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SEP_Laterality_RefsetUpdates extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(SEP_Laterality_RefsetUpdates.class);
 
 	public static final String SCTID_SE_REFSETID = "734138000";
 	public static final String SCTID_SP_REFSETID = "734139008";
 	public static final String SCTID_LAT_REFSETID = "723264001";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(SEP_Laterality_RefsetUpdates.class, args, params);
+		TermServerScript.run(SEP_Laterality_RefsetUpdates.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Item, Count",
@@ -62,7 +58,8 @@ public class SEP_Laterality_RefsetUpdates extends TermServerReport implements Re
 				.withExpectedDuration(40)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		reportRefsetUpdates(SECONDARY_REPORT, SCTID_SE_REFSETID, "SE Refset");
 		reportRefsetUpdates(SECONDARY_REPORT, SCTID_SP_REFSETID, "SP Refset");

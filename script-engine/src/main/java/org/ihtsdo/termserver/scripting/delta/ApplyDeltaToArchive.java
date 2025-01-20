@@ -33,7 +33,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 	String newEffectiveTime;
 	String filenameModule = "CH1000195";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ApplyDeltaToArchive app = new ApplyDeltaToArchive();
 		try {
 			app.newIdsRequired = false;
@@ -67,12 +67,12 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 								String fileNameShort = getFileNameShort(fileName, "Delta");
 								ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 								if (componentType != null && !fileName.startsWith("._")) {
-									LOGGER.info ("Processing " + fileName);
+									LOGGER.info("Processing " + fileName);
 									Map<String, String> fileMap = processFixDeltaFile(zis, componentType);
 									deltaArchiveMap.put(fileNameShort, fileMap);
 									originalFileNames.put(fileNameShort, fileName);
 								} else {
-									LOGGER.info ("Skipping unrecognised file: " + fileName);
+									LOGGER.info("Skipping unrecognised file: " + fileName);
 								}
 							}
 						}
@@ -142,7 +142,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 							} else if (fileName.contains("Snapshot")) {
 								processSnapshot(fileName, zis);
 							} else {
-								LOGGER.info ("Skipping unrecognised file: " + fileName);
+								LOGGER.info("Skipping unrecognised file: " + fileName);
 							}
 						}
 					ze = zis.getNextEntry();

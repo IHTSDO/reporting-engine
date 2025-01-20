@@ -21,7 +21,7 @@ public class LostRelationships extends TermServerScript{
 	Set<Concept> descendantOfProductRole;
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		LostRelationships report = new LostRelationships();
 		try {
 			report.additionalReportColumns = "Active, Not Replaced Relationship, ValueIsProdRoleDesc";
@@ -54,7 +54,7 @@ public class LostRelationships extends TermServerScript{
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				LOGGER.warn(msg);
 			} else if (!thisConcept.getFsn().contains("(product)")) {
-				LOGGER.debug ("Skipping " + thisConcept);
+				LOGGER.debug("Skipping " + thisConcept);
 				continue;
 			}
 			//Only looking at relationships that have changed in this release, so pass current effective time
@@ -65,18 +65,18 @@ public class LostRelationships extends TermServerScript{
 					if (!thisConcept.isActive()) {
 						msg += " but is inactive.";
 						LOGGER.debug (msg);
-						report (thisConcept, thisRel);
+						report(thisConcept, thisRel);
 						continue nextConcept;
 					}
 					LOGGER.warn (msg);
-					report (thisConcept, thisRel);
+					report(thisConcept, thisRel);
 				}
 			}
 		}
 		
 	}
 	
-	protected void report (Concept c, Relationship r) throws TermServerScriptException {
+	protected void report(Concept c, Relationship r) throws TermServerScriptException {
 		//Adding a column to indicate if the relationship value is a descendant of Product Role
 		boolean isProdRoleDesc = descendantOfProductRole.contains(r.getTarget());
 		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE_COMMA + isProdRoleDesc;

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
@@ -34,7 +33,7 @@ public class QI26_AddComplication extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		QI26_AddComplication fix = new QI26_AddComplication(null);
 		try {
 			fix.populateEditPanel = false;
@@ -77,7 +76,7 @@ public class QI26_AddComplication extends BatchFix {
 		//Find all descendants of 404684003 |Clinical finding (finding)| 
 		for (Concept c : CLINICAL_FINDING.getDescendants(NOT_SET)) {
 			/*if (c.getConceptId().equals("238794007")) {
-				LOGGER.debug ("Check 238794007 |Ischemic foot ulcer (disorder)|");
+				LOGGER.debug("Check 238794007 |Ischemic foot ulcer (disorder)|");
 			}*/
 			//which have Due To = Clinical Finding
 			if (SnomedUtils.getSubsumedRelationships(c, DUE_TO, CLINICAL_FINDING, CharacteristicType.INFERRED_RELATIONSHIP, gl.getAncestorsCache()).size() > 0) {

@@ -35,7 +35,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RestateInferredAsStated fix = new RestateInferredAsStated(null);
 		try {
 			fix.selfDetermining = true;
@@ -58,7 +58,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 		
 		try {
 			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-			LOGGER.info ("Loading concepts agreed for change from " + getInputFile());
+			LOGGER.info("Loading concepts agreed for change from " + getInputFile());
 			for (String line : lines) {
 				conceptsAgreedToChange.add(gl.getConcept(line.trim()));
 			}
@@ -146,7 +146,7 @@ public class RestateInferredAsStated extends BatchFix implements ScriptConstants
 		for (Relationship inferred : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (attributesOfInterest.contains(inferred.getType())) {
 				if (inferred.getGroupId() != 0) {
-					LOGGER.info ("Relationship being compared is not group 0: " + inferred);
+					LOGGER.info("Relationship being compared is not group 0: " + inferred);
 				}
 				boolean statedMatchFound = false;
 				for (Relationship stated : thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {

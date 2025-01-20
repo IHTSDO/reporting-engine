@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -26,7 +25,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceLowerCaseTerms fix = new ReplaceLowerCaseTerms(null);
 		try {
 			fix.selfDetermining = true;

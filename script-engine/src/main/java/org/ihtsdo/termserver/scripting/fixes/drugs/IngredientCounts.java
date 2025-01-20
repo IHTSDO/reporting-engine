@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -15,19 +14,14 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 For DRUGS-482
 Add ingredient counts where required.  Algorithm described in DRUGS-476.
 */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class IngredientCounts extends DrugBatchFix implements ScriptConstants{
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(IngredientCounts.class);
 
 	protected IngredientCounts(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		IngredientCounts fix = new IngredientCounts(null);
 		try {
 			fix.selfDetermining = true;

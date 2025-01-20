@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -19,7 +18,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements ScriptCons
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ProximatePrimitiveRemodeller fix = new ProximatePrimitiveRemodeller(null);
 		try {
 			fix.selfDetermining = true;

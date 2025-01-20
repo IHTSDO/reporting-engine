@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,7 +24,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 	String targetAttributeStr = "127489000"; // |Has active ingredient (attribute)|
 	String matchText = "+"; 
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RepeatedAttributeValueReport report = new RepeatedAttributeValueReport();
 		try {
 			report.init(args);
@@ -41,7 +40,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 
 	private void runRepeatedAttributeValueReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
-		LOGGER.info ("Validating all relationships");
+		LOGGER.info("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
 			if (c.isActive()) {
@@ -70,7 +69,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 		return issues;
 	}
 
-	protected void report (Concept c, String issue) throws TermServerScriptException {
+	protected void report(Concept c, String issue) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						issue + QUOTE;

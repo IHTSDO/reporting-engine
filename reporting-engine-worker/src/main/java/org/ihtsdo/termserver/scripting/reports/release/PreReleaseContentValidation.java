@@ -1,15 +1,14 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -27,16 +26,18 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidation.class);
 
+	private static final String STD_HEADER = "SCTID, FSN, SemTag";
+
 	private List<Concept> allActiveConceptsSorted;
 	private List<Concept> allInactiveConceptsSorted;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
 
-		TermServerReport.run(PreReleaseContentValidation.class, args, params);
+		TermServerScript.run(PreReleaseContentValidation.class, args, params);
 	}
 
 	@Override
@@ -58,8 +59,9 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				.build();
 	}
 
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 
 		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
 
@@ -71,13 +73,14 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
 					.map(String::trim)
-					.collect(Collectors.toList());
+					.toList();
 		}
 
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		//Need to set the original project back, otherwise it'll get filtered
 		//out by the security of which projects a user can see
@@ -88,12 +91,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 				"SCTID, FSN, SemTag, New Hierarchy, Old Hierarchy",
 				"SCTID, FSN, SemTag, Old FSN, Difference",
-				"SCTID, FSN, SemTag",
-				"SCTID, FSN, SemTag",
+				STD_HEADER,
+				STD_HEADER,
 				"SCTID, FSN, SemTag, Defn Status Change",
-				"SCTID, FSN, SemTag",
+				STD_HEADER,
 				"SCTID, FSN, SemTag, Text Definition",
-				"SCTID, FSN, SemTag"};
+				STD_HEADER};
 		String[] tabNames = new String[] {	"Summary Counts",
 				"Hierarchy Switches",
 				"FSN Changes",
@@ -106,21 +109,22 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 
 		allActiveConceptsSorted = gl.getAllConcepts().stream()
-				.filter(c -> c.isActive())
-				.filter(c -> inScope(c))
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-				.collect(Collectors.toList());
+				.filter(Component::isActiveSafely)
+				.filter(this::inScope)
+				.sorted(SnomedUtils::compareSemTagFSN)
+				.toList();
 
 		allInactiveConceptsSorted =gl.getAllConcepts().stream()
-				.filter(c -> !c.isActive())
-				.filter(c -> inScope(c))
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-				.collect(Collectors.toList());
+				.filter(c -> !c.isActiveSafely())
+				.filter(this::inScope)
+				.sorted(SnomedUtils::compareSemTagFSN)
+				.toList();
 
-		LOGGER.info ("Loading Previous Data");
+		LOGGER.info("Loading Previous Data");
 		loadData(prevRelease);
 
 		LOGGER.info("Reporting Top Level Hierarchy Switch");
@@ -161,12 +165,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				if (prevDatum != null) {
 					Concept topLevel = SnomedUtils.getHierarchy(gl, c);
 					if (!prevDatum.getHierarchy().equals(topLevel.getId())) {
-						report (SECONDARY_REPORT, c, topLevel.toStringPref(), gl.getConcept(prevDatum.getHierarchy()).toStringPref());
+						report(SECONDARY_REPORT, c, topLevel.toStringPref(), gl.getConcept(prevDatum.getHierarchy()).toStringPref());
 						incrementSummaryInformation(summaryItem);
 					}
 				}
 			} catch (Exception e) {
-				report (SECONDARY_REPORT, c, "Error recovering hierarchy: " + ExceptionUtils.getExceptionCause("", e));
+				report(SECONDARY_REPORT, c, "Error recovering hierarchy: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -180,12 +184,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
 					if (!prevDatum.getFsn().equals(c.getFsn())) {
-						report (TERTIARY_REPORT, c, prevDatum.getFsn(), StringUtils.difference(c.getFsn(), prevDatum.getFsn()));
+						report(TERTIARY_REPORT, c, prevDatum.getFsn(), StringUtils.difference(c.getFsn(), prevDatum.getFsn()));
 						incrementSummaryInformation(summaryItem);
 					}
 				}
 			} catch (Exception e) {
-				report (TERTIARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(TERTIARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -199,12 +203,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
 					if (prevDatum.isActive()) {
-						report (QUATERNARY_REPORT, c);
+						report(QUATERNARY_REPORT, c);
 						incrementSummaryInformation(summaryItem);
 					}
 				}
 			} catch (Exception e) {
-				report (QUATERNARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(QUATERNARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -218,12 +222,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum != null) {
 					if (!prevDatum.isActive()) {
-						report (QUINARY_REPORT, c);
+						report(QUINARY_REPORT, c);
 						incrementSummaryInformation(summaryItem);
 					}
 				}
 			} catch (Exception e) {
-				report (QUINARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(QUINARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -241,12 +245,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				if (prevDatum != null) {
 					//If what was SD is now P, or visa versa, report
 					if (prevDatum.isSD() == c.isPrimitive()) {
-						report (SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
+						report(SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
 						incrementSummaryInformation(c.isPrimitive()?summaryItem1:summaryItem2);
 					}
 				}
 			} catch (Exception e) {
-				report (SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -260,11 +264,11 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				//Was this concept in the previous release and if so, has it switched?
 				HistoricData prevDatum = prevData.get(c.getId());
 				if (prevDatum == null || !prevDatum.getDescIds().contains(fsn.getId())) {
-					report (SEPTENARY_REPORT, c);
+					report(SEPTENARY_REPORT, c);
 					incrementSummaryInformation(summaryItem);
 				}
 			} catch (Exception e) {
-				report (SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -278,26 +282,26 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 					//Is this text definition in the delta?  Check null or current effective time
 					if (StringUtils.isEmpty(textDefn.getEffectiveTime()) ||
 							(thisEffectiveTime != null && textDefn.getEffectiveTime().equals(thisEffectiveTime))) {
-						report (OCTONARY_REPORT, c, textDefn);
+						report(OCTONARY_REPORT, c, textDefn);
 						incrementSummaryInformation(summaryItem);
 					}
 				}
 
 			} catch (Exception e) {
-				report (OCTONARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(OCTONARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
 
 	private void checkForICDOChanges() throws TermServerScriptException {
-		report (NONARY_REPORT, "ICDO Refset Members not available");
+		report(NONARY_REPORT, "ICDO Refset Members not available");
 	}
 
 	private void compileSummaryCounts() {
 		String msg = "Active concepts with active historical associations";
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.getAssociationEntries(ActiveState.ACTIVE, true).size() > 0) {
+			if (!c.getAssociationEntries(ActiveState.ACTIVE, true).isEmpty()) {
 				incrementSummaryInformation(projectKey);
 			}
 		}
@@ -305,7 +309,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		msg = "Active concepts with active inactivation reason";
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
-			if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
+			if (!c.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
 				incrementSummaryInformation(projectKey);
 			}
 		}

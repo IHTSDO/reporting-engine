@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -18,7 +17,7 @@ public class PrimitiveLoinc extends TermServerScript {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PrimitiveLoinc.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		PrimitiveLoinc report = new PrimitiveLoinc();
 		try {
 			report.runStandAlone = false;
@@ -41,7 +40,7 @@ public class PrimitiveLoinc extends TermServerScript {
 			} else if (c.isActive() && 
 					c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE) &&
 					c.isPrimitive()) {
-				report (c, 
+				report(c,
 						c.getPreferredSynonym(),
 						LoincUtils.getLoincNumFromDescription(c),
 						LoincUtils.getCorrelation(c),

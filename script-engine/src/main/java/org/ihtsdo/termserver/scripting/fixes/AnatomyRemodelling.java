@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -9,8 +8,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-
 
 /*
 	Makes modifications to anatomy relationships, driven by an input CSV file
@@ -18,14 +15,14 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 */
 public class AnatomyRemodelling extends BatchFix implements ScriptConstants{
 	
-	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();
-	Set<Integer> reportedItems = new HashSet<Integer>();
+	Map<String, ConceptChange> conceptsToProcess = new HashMap<>();
+	Set<Integer> reportedItems = new HashSet<>();
 	
 	protected AnatomyRemodelling(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AnatomyRemodelling fix = new AnatomyRemodelling(null);
 		try {
 			fix.init(args);
@@ -42,7 +39,7 @@ public class AnatomyRemodelling extends BatchFix implements ScriptConstants{
 	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
 		int changesMade = 0;
-		if (loadedConcept.isActive() == false) {
+		if (!loadedConcept.isActiveSafely()) {
 			report(t, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
 		} else {
 			changesMade = remodelRelationships(t, concept, loadedConcept, false);
@@ -179,7 +176,7 @@ public class AnatomyRemodelling extends BatchFix implements ScriptConstants{
 		return r;
 	}
 
-	public void report (Task task, Component concept, Severity severity, ReportActionType actionType, String... details) throws TermServerScriptException {
+	public void report(Task task, Component concept, Severity severity, ReportActionType actionType, String... details) throws TermServerScriptException {
 		//Keep a running list of items reported, which we might otherwise repeat due to the trial run
 		String taskStr = (task == null)?"Null":task.toString();
 		String concatonatedLine = taskStr + concept + severity + actionType + details[0];

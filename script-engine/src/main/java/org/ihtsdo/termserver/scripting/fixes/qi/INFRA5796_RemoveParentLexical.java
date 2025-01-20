@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,13 +19,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class INFRA5796_RemoveParentLexical extends BatchFix {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA5796_RemoveParentLexical.class);
-
 	String ecl = "<< 12456005 |Iatrogenic disorder (disorder)| ";
 	String searchTerm = "iatrogenic";
 	
@@ -34,7 +27,7 @@ public class INFRA5796_RemoveParentLexical extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		INFRA5796_RemoveParentLexical fix = new INFRA5796_RemoveParentLexical(null);
 		try {
 			fix.selfDetermining = true;
@@ -75,7 +68,7 @@ public class INFRA5796_RemoveParentLexical extends BatchFix {
 		int changesMade = 0;
 		//How many parents do we have?
 		if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attempted to orphan child" , c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next());
+			report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attempted to orphan child" , c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next());
 			return NO_CHANGES_MADE;
 		}
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {

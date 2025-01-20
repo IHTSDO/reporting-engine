@@ -27,9 +27,8 @@ public class MultiReportRunner extends TermServerReport {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiReportRunner.class);
 
 	ReportClass report; 
-	JiraHelper jira;
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		MultiReportRunner report = new MultiReportRunner();
 		try {
 			report.init(args);

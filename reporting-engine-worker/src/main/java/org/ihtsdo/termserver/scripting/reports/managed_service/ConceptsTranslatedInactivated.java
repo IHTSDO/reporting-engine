@@ -1,11 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.managed_service;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -14,25 +14,20 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.apache.commons.lang.StringUtils;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ConceptsTranslatedInactivated extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsTranslatedInactivated.class);
 
 	private String intEffectiveTime;
 	boolean includeLegacyIssues = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
-		TermServerReport.run(ConceptsTranslatedInactivated.class, args, params);
+		TermServerScript.run(ConceptsTranslatedInactivated.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA Reports
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
@@ -40,7 +35,8 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 			throw new TermServerScriptException("Inactivated Translated Concepts report cannot be run against MAIN");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		
 		if (project.getMetadata() != null && project.getMetadata().getDependencyRelease() != null) {
@@ -73,7 +69,8 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
@@ -93,12 +90,12 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 				if (StringUtils.isEmpty(assocTranslations)) {
 					countIssue(c);
 				}
-				report (c, translations, i, assocType, assocValue, assocTranslations);
+				report(c, translations, i, assocType, assocValue, assocTranslations);
 				reported = true;
 				
 			}
 			if (!reported) {
-				report (c, i , "N/A");
+				report(c, i , "N/A");
 			}
 			
 		}
@@ -118,8 +115,8 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 
 	private String getTranslations(Concept c) {
 		return c.getDescriptions(ActiveState.ACTIVE).stream()
-			.filter(d -> inScope(d))
-			.map(d -> d.getTerm())
+			.filter(this::inScope)
+			.map(Description::getTerm)
 			.collect(Collectors.joining(", \n"));
 	}
 
@@ -127,8 +124,8 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 		//We're going to sort on top level hierarchy, then alphabetically
 		//filter for appropriate scope at the same time - avoids problems with FSNs without semtags
 		return superSet.stream()
-		.filter (c -> inScope(c))
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.filter (this::inScope)
+		.sorted(SnomedUtils::compareSemTagFSN)
 		.collect(Collectors.toList());
 	}
 	

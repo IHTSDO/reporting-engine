@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,7 +23,7 @@ public class CrossHierarchyLeakage extends TermServerReport {
 
 	Concept subHierarchy;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CrossHierarchyLeakage report = new CrossHierarchyLeakage();
 		try {
 			//report.additionalReportColumns = "FSN in Target Hierarchy, Parent in other hierarchy, Parent in Target Hierarchy";
@@ -62,7 +61,7 @@ public class CrossHierarchyLeakage extends TermServerReport {
 			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				boolean leakingParentFound = false;
 				if (!gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy).contains(parent)) {
-					report (c, parent, parentInHierarchy);
+					report(c, parent, parentInHierarchy);
 					leakingParentFound = true;
 				}
 				if (leakingParentFound) {
@@ -78,7 +77,7 @@ public class CrossHierarchyLeakage extends TermServerReport {
 			parents.addAll(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP));
 			if (parents.size() > 1) {
 				String parentsStr = parents.stream().map(p -> p.toString()).collect(Collectors.joining(", \n"));
-				report (c, parentsStr);
+				report(c, parentsStr);
 				incrementSummaryInformation("Concept with multiple parents identified");
 			}
 		}

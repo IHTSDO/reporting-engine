@@ -24,7 +24,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 	public static void main(String[] args) throws TermServerScriptException {
 		InactivateConceptsDriven delta = new InactivateConceptsDriven();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.targetModuleId = "57101000202106";  //NO
 			delta.newIdsRequired = false; 
 			delta.init(args);

@@ -169,7 +169,7 @@ public class EclCache implements ScriptConstants {
 			expansionCache.put(ecl, cached);
 		}
 		if (!quiet) {
-			LOGGER.debug ("Recovering cached {} concepts matching '{}'", cached.size(), ecl);
+			LOGGER.debug("Recovering cached {} concepts matching '{}'", cached.size(), ecl);
 		}
 		return cached;
 	}

@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -28,10 +27,10 @@ public class NormaliseConceptsDriven extends BatchFix {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormaliseConceptsDriven app = new NormaliseConceptsDriven(null);
 		try {
-			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
+			ReportSheetManager.setTargetFolderId("1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl");  // QI/Normalization
 			app.classifyTasks = false;
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -114,7 +113,7 @@ public class NormaliseConceptsDriven extends BatchFix {
 		}
 		changesMade += stateRelationshipGroups(t, c, toBeStated);
 		if (changesMade == 0) {
-			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
+			report(t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
 		}
 		return changesMade;
 	}

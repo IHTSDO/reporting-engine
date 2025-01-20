@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +41,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MoveConcepts fix = new MoveConcepts(null);
 		try {
 			fix.inputFileHasHeaderRow = true;
@@ -85,7 +84,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 	private void moveLocation(Task t, Concept c, List<Concept> modifiedConcepts) throws TermServerScriptException {
 		//Make sure we're working with a Primitive Concept
 		/*if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-			report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
+			report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
 		}*/
 		//if we're not reassigning orphans, then no need to move a concept it it's parent is already being moved
 		if (!reassignOrphans) {
@@ -93,11 +92,11 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 			Concept localConcept = gl.getConcept(c.getConceptId());
 			Set<Concept> ancestors = localConcept.getAncestors(NOT_SET);
 			if (!Collections.disjoint(allComponentsToProcess, ancestors)) {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has a parent already being moved. Skipping");
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has a parent already being moved. Skipping");
 				//If we have multiple parents, it won't be a clean move!
 				if (localConcept.getParents(CharacteristicType.STATED_RELATIONSHIP).size() > 1) {
 					String parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP).stream().map(p -> p.toString()).collect(Collectors.joining(" + "));
-					report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Skipped child concept not a clean move due to multiple stated parents: " + parents);
+					report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Skipped child concept not a clean move due to multiple stated parents: " + parents);
 				}
 				return;
 			}
@@ -117,7 +116,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 				extraDetail = ingredientCount + " ingredients but ";
 			}
 			String parents = parentRels.stream().map(r -> r.getTarget().getFsn()).collect(Collectors.joining(" + "));
-			report (t, c, severity, ReportActionType.VALIDATION_CHECK, "Concept has " + extraDetail + parentRels.size() + " stated parents to remove: " + parents);
+			report(t, c, severity, ReportActionType.VALIDATION_CHECK, "Concept has " + extraDetail + parentRels.size() + " stated parents to remove: " + parents);
 		}
 		for (Relationship parentRel : parentRels) {
 			remove (t, parentRel, c, newParentRel.getTarget().toString(), true);
@@ -136,7 +135,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 		if (statedChildCount > 0 || inferredChildCount > 0) {
 			severity = Severity.HIGH;
 		}
-		report (t, c, severity, 
+		report(t, c, severity, 
 				ReportActionType.INFO, 
 				"",
 				c.getDefinitionStatus().toString(), 
@@ -187,7 +186,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 		
 		//Check to see if this child is also going to be processed separately and skip if so.
 		if (allComponentsToProcess.contains(child)) {
-			report (task, child, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Child concept of " + parent + " already identified as a grouper.  Skipping..." );
+			report(task, child, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Child concept of " + parent + " already identified as a grouper.  Skipping..." );
 			return;
 		}
 		
@@ -205,10 +204,10 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 		if (makeFullyDefined) {
 			if (child.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 				child.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
-				report (task, child, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined" );
+				report(task, child, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined" );
 			}
 		} else {
-			report (task, child, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Unreconstructed concept, skipping attempt to make fully defined" );
+			report(task, child, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Unreconstructed concept, skipping attempt to make fully defined" );
 		}
 		
 		Concept loadedConcept = loadConcept(child, task.getBranchPath());
@@ -221,12 +220,12 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 		
 		//Warn if we have more than one parent or no attributes
 		if (parentRels.size() > 1) {
-			report (task, child, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Child concept has more than one parent. Removing all." );
+			report(task, child, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Child concept has more than one parent. Removing all." );
 		}
 		
 		Set<Relationship> allRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		if (allRels.size() - parentRels.size() == 0) {
-			report (task, child, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Child concept has no attributes!" );
+			report(task, child, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Child concept has no attributes!" );
 		}
 		
 		boolean replacementRequired = true;
@@ -235,7 +234,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 				remove (task, parentRel, loadedConcept, newChildRel.getTarget().toString(), false);
 			} else {
 				replacementRequired = false;
-				report (task, child, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Child concept already has target parent, no new parent to be added." );
+				report(task, child, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Child concept already has target parent, no new parent to be added." );
 			}
 		}
 		
@@ -245,7 +244,7 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 			for (Relationship thisInactiveRel : inactiveRels) {
 				if (thisInactiveRel.getTarget().getConceptId().equals(childNewLocation)) {
 					thisInactiveRel.setActive(true);
-					report (task, child, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Child concept already has target parent as inactive relationship.  Reactivated." );
+					report(task, child, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Child concept already has target parent as inactive relationship.  Reactivated." );
 					replacementRequired = false;
 				}
 			}
@@ -282,12 +281,12 @@ public class MoveConcepts extends BatchFix implements ScriptConstants{
 		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
 			c.removeRelationship(rel);
 			String msg = "Deleted " + msgQualifier + " relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
+			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
 		} else {
 			rel.setEffectiveTime(null);
 			rel.setActive(false);
 			String msg = "Inactivated " + msgQualifier + " relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
+			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
 		}
 	}
 

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -17,7 +16,7 @@ public class DeleteBornInactiveDescriptions extends BatchFix implements ScriptCo
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DeleteBornInactiveDescriptions fix = new DeleteBornInactiveDescriptions(null);
 		try {
 			fix.reportNoChange = false;  //Might just be langrefset which we'll modify directly

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -26,7 +25,6 @@ public class NormaliseConcepts extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
 
-	Concept ppp;
 	Boolean useStatedECL = false;
 	//private String ecl = "<< 66191007 |Transient arthropathy (disorder)|";
 	//private String ecl = "<! 267038008 |Edema (finding)|";
@@ -46,10 +44,10 @@ public class NormaliseConcepts extends BatchFix {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormaliseConcepts app = new NormaliseConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
+			ReportSheetManager.setTargetFolderId("1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl");  // QI/Normalization
 			app.classifyTasks = false;
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -138,7 +136,7 @@ public class NormaliseConcepts extends BatchFix {
 		}
 		changesMade += stateRelationshipGroups(t, c, toBeStated);
 		if (changesMade == 0) {
-			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
+			report(t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
 		}
 		return changesMade;
 	}

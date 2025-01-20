@@ -172,7 +172,7 @@ public class HistAssocUtils implements ScriptConstants {
 	}
 	
 	public void report(Task t, Component c, Severity s, ReportActionType a, RefsetMember r, Object... details) throws TermServerScriptException {
-		ts.report (t, c, s, a, 
+		ts.report(t, c, s, a, 
 				r == null ? "" : r.getId().subSequence(0, 7), 
 				r == null ? "" :r.getEffectiveTime(), 
 						details);

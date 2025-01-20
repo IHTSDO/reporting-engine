@@ -1,14 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 
 /**
@@ -28,7 +25,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 	int maxModifications = 0;
 	int maxDispositions = 0;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ListSubstancesWithModificationsAndDispositions report = new ListSubstancesWithModificationsAndDispositions();
 		try {
 			report.additionalReportColumns = "FSN, Used in Product, Some Direct Stated Children Flattened, All Direct Stated Children Flattened, Some Direct Inferred Children Flattened, All Direct Inferred Children Flattened, Parents, Modifications, Dispositions";
@@ -36,8 +33,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 			report.loadProjectSnapshot(true);  
 			report.findBaseWithModifications();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report",e);
 		} finally {
 			report.finish();
 		}
@@ -100,7 +96,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 			
 			//Is this substance used in a product?
 			String usedInProduct = substancesUsedInProducts.contains(c) ? "Y":"N";
-			report (c, usedInProduct, someDirectStatedChildrenFlattened, allDirectStatedChildrenFlattened, 
+			report(c, usedInProduct, someDirectStatedChildrenFlattened, allDirectStatedChildrenFlattened,
 					someDirectInferredChildrenFlattened, allDirectInferredChildrenFlattened, 
 					statedParents.stream().map(p->p.toString()).collect(Collectors.joining(",\n")),
 					modifications.stream().map(m->m.toString()).collect(Collectors.joining(",\n")),

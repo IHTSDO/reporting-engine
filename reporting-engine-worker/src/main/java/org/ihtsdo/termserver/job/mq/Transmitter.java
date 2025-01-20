@@ -82,7 +82,7 @@ public class Transmitter {
 	public void send (JobMetadata metadata) {
 		LOGGER.info("Transmitting metadata for " + metadata.getJobTypes().size() + " job types:");
 		for (JobType type : metadata.getJobTypes()) {
-			LOGGER.info ("  {}:", type.getName());
+			LOGGER.info("  {}:", type.getName());
 			for (JobCategory category : type.getCategories()) {
 				LOGGER.info("\t{} : {} jobs", category.getName(), category.getJobs().size());
 			}

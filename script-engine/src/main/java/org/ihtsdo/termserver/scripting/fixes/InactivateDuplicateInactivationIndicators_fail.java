@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -24,7 +23,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateDuplicateInactivationIndicators_fail fix = new InactivateDuplicateInactivationIndicators_fail(null);
 		try {
 			fix.selfDetermining = true;

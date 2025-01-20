@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -9,7 +8,6 @@ import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
@@ -23,10 +21,10 @@ public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		TouchConceptsInTask fix = new TouchConceptsInTask(null);
 		try {
-			ReportSheetManager.targetFolderId="1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
@@ -52,7 +50,7 @@ public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 			Description fsn = loadedConcept.getFSNDescription();
 			if (fsn == null) {
 				//Concept not found?
-				report (t, c , Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept was specified to touch, but not found in task", targetTaskPath);
+				report(t, c , Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept was specified to touch, but not found in task", targetTaskPath);
 				continue;
 			}
 			CaseSignificance orig = fsn.getCaseSignificance();
@@ -62,9 +60,9 @@ public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 				updateConcept(t, loadedConcept, "");
 				fsn.setCaseSignificance(orig);
 				updateConcept(t, loadedConcept, "");
-				report (t, c , Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, "Flipped case sign on FSN");
+				report(t, c , Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, "Flipped case sign on FSN");
 			} catch (Exception e) {
-				report (t, c , Severity.CRITICAL, ReportActionType.API_ERROR, "Some issue saving concept", org.ihtsdo.otf.utils.ExceptionUtils.getExceptionCause(e.getMessage(), e));
+				report(t, c , Severity.CRITICAL, ReportActionType.API_ERROR, "Some issue saving concept", org.ihtsdo.otf.utils.ExceptionUtils.getExceptionCause(e.getMessage(), e));
 			}
 		}
 		return NO_CHANGES_MADE;

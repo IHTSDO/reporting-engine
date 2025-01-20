@@ -94,8 +94,8 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 			LOGGER.info (t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		
-		LOGGER.info ("\n\n" + BREAK);
-		LOGGER.info ("Large Dispositions are: ");
+		LOGGER.info("\n\n" + BREAK);
+		LOGGER.info("Large Dispositions are: ");
 		for (String bucketId : dispositionBuckets.keySet()) {
 			Collection<Concept> thisBucket = dispositionBuckets.get(bucketId);
 			if (thisBucket.size() > taskSize) {
@@ -106,7 +106,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 		filterBatch(batch);
 		
 		for (Task t : batch.getTasks()) {
-			LOGGER.info ("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+			LOGGER.info("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		return batch;
 	}
@@ -138,7 +138,7 @@ public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 			//Now see how many other concepts we'll add if we include it's ancestor's descendants
 			//This recursive function will keep calling until the task is full
 			addAncestorContribution(currentFocus, task, remainingConceptsToGroup);
-			LOGGER.info ("Batch of " + initialSize + " split into " + task.getComponents().size());
+			LOGGER.info("Batch of " + initialSize + " split into " + task.getComponents().size());
 		}
 	}
 

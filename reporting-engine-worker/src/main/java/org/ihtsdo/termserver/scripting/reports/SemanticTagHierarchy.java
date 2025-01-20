@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobCategory;
@@ -26,14 +26,14 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 
 	Map<String, Map<String, Concept>> semanticTagHierarchy = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
-		TermServerReport.run(SemanticTagHierarchy.class, args);
+		TermServerScript.run(SemanticTagHierarchy.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		headers="SemTag, As used by";
 		additionalReportColumns = "";
 		super.init(run);
@@ -57,10 +57,10 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 
 	public void runJob() throws TermServerScriptException {
 		//Work out the path of semantic tags with examples
-		LOGGER.info ("Generating Semantic Tag Hierarchy report");
+		LOGGER.info("Generating Semantic Tag Hierarchy report");
 		Set<Concept> concepts = gl.getDescendantsCache().getDescendantsOrSelf(subHierarchy);
 		
-		LOGGER.info ("Examining all concepts to determine tag hierarchy");
+		LOGGER.info("Examining all concepts to determine tag hierarchy");
 		for (Concept c : concepts) {
 			if (whiteListedConceptIds.contains(c.getId())) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
@@ -95,7 +95,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			}
 		}
 		
-		LOGGER.info ("Encountered: " + semanticTagHierarchy.size() + " child tags across " + concepts.size() + " concepts");
+		LOGGER.info("Encountered: " + semanticTagHierarchy.size() + " child tags across " + concepts.size() + " concepts");
 		
 		//Start with the top level hierarchy and go from there
 		outputHierarchialStructure(SnomedUtilsBase.deconstructFSN(subHierarchy.getFsn())[1], 0);

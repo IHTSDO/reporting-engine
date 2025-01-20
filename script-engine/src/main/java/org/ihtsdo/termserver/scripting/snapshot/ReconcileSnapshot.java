@@ -17,6 +17,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -46,14 +47,14 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	private int totalToCheck = 0;
 	private String[] modulesOfInterest = new String[] { SCTID_CORE_MODULE, SCTID_MODEL_MODULE };
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(ReconcileSnapshot.class, args, params);
+		TermServerScript.run(ReconcileSnapshot.class, args, params);
 	}
 	
 	@Override
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release Validation
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
 		String[] tabNames = new String[] {	"Concept", "Desc", "Stated", 
 				"Inferred", "Lang", "InactInd", "HistAssoc",
 				"TDefn", "Axioms"};
@@ -76,14 +77,15 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		File exportedSnapshot = getInputFile();
 		if (exportedSnapshot == null) {
-			LOGGER.info ("Exporting Snapshot...");
+			LOGGER.info("Exporting Snapshot...");
 			exportedSnapshot = getSnapshot();
 		} else {
-			LOGGER.info ("Loading snapshot " + exportedSnapshot);
+			LOGGER.info("Loading snapshot {}", exportedSnapshot);
 		}
 		
 		LOGGER.info("Generating local map of components");
@@ -95,16 +97,11 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		validateArchiveZip(exportedSnapshot);
 		reportRemainder();
 	}
-	
-	/*private File getSnapshot() {
-		return new File ("/var/folders/qz/8vj68s7s1t76ghztwp9p4cym0000gn/T/snapshot_export-17928967159967084931.zip");
-	}*/
-	
+
 	private File getSnapshot() throws TermServerScriptException {
 		File snapshot = null;
 		try {
 			snapshot = File.createTempFile("snapshot_export-", ".zip");
-			//snapshot.deleteOnExit();
 			LOGGER.warn("Downloading Snapshot to: " + snapshot.getCanonicalPath());
 			getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.SNAPSHOT, snapshot, false);
 		} catch (TermServerScriptException |IOException e) {
@@ -129,7 +126,9 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 				try{
 					zis.closeEntry();
 					zis.close();
-				} catch (Exception e){} //Well, we tried.
+				} catch (Exception e){
+					//Well, we tried.
+				}
 			}
 		}catch (IOException e) {
 			throw new TermServerScriptException("Unable to load " + archive,e);
@@ -142,11 +141,8 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			String fileName = path.getFileName().toString();
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Concept_" )) {
-					LOGGER.info("Validating Concept " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Concept {} file: {}", fileType, fileName);
 					validateComponentFile(is, ComponentType.CONCEPT);
-/*				} else if (fileName.contains("StatedRelationship_" )) {
-					LOGGER.info("Validating " + fileName);
-					validateComponentFile(is, ComponentType.STATED_RELATIONSHIP);*/
 				} else if (fileName.contains("Relationship_" )) {
 					LOGGER.info("Validating " + fileName);
 					validateComponentFile(is, ComponentType.INFERRED_RELATIONSHIP);
@@ -155,19 +151,19 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 					LOGGER.info("Validating Axiom " + fileType + " refset file: " + fileName);
 					validateComponentFile(is, ComponentType.AXIOM);
 				} else if (fileName.contains("sct2_Description_" )) {
-					LOGGER.info("Validating Description " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Description {} file: {}", fileType, fileName);
 					validateComponentFile(is, ComponentType.DESCRIPTION);
 				} else if (fileName.contains("sct2_TextDefinition_" )) {
-					LOGGER.info("Validating Text Definition " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Text Definition {} file: {}", fileType, fileName);
 					validateComponentFile(is, ComponentType.TEXT_DEFINITION);
 				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-					LOGGER.info("Validating Concept Inactivation Indicator " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Concept Inactivation Indicator {} file: {}", fileType, fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-					LOGGER.info("Validating Description Inactivation Indicator " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Description Inactivation Indicator {} file: {}", fileType, fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					LOGGER.info("Validating Concept/Description Inactivation Indicators " + fileType + " file: " + fileName);
+					LOGGER.info("Validating Concept/Description Inactivation Indicators {} file: {}", fileType, fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
 					LOGGER.info("Validating Historical Association File: " + fileName);
@@ -213,7 +209,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			//What does our generated snapshot hold for this component?
 			Component other = gl.getComponent(c.getId());
 			if (other == null) {
-				if (!c.isActive() && 
+				if (!c.isActiveSafely() &&
 						(c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP) ||
 						c.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP))) {
 					remainingComponents.remove(c.getId());
@@ -222,7 +218,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 					return NO_CHANGES_MADE;
 				}
 				Concept owner = gl.getComponentOwner(c.getId());	
-				report (reportTabIdx, owner, c.getId(), c.isActive(), c.getComponentType() + " from export not present in generated snapshot", c);
+				report(reportTabIdx, owner, c.getId(), c.isActive(), c.getComponentType() + " from export not present in generated snapshot", c);
 				countIssue(null);
 				return 1;
 			}
@@ -230,7 +226,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			Concept owner = gl.getComponentOwner(c.getId());
 			for (String issue : issues) {
 				countIssue(owner);
-				report (reportTabIdx, owner, c.getId(), c.isActive(), issue);
+				report(reportTabIdx, owner, c.getId(), c.isActive(), issue);
 			}
 		}
 		remainingComponents.remove(c.getId());
@@ -246,7 +242,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			}
 			Concept owner = gl.getComponentOwner(c.getId());
 			int reportTabIdx = entry.getValue().getComponentType().ordinal();
-			report (reportTabIdx, owner, entry.getKey(), c.isActive()?"Y":"N", "Component from generated snapshot not present in export", c);
+			report(reportTabIdx, owner, entry.getKey(), c.isActive()?"Y":"N", "Component from generated snapshot not present in export", c);
 		}
 	}
 
@@ -291,7 +287,8 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		return r;
 	}
-	
+
+	@Override
 	protected boolean inScope (Component c) {
 		return inScope(c.getModuleId());
 	}

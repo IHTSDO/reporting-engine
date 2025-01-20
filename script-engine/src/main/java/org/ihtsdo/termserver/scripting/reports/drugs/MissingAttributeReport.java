@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 
@@ -25,7 +24,7 @@ public class MissingAttributeReport extends TermServerReport {
 	List<Component> concepts;
 	Concept attributeType;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MissingAttributeReport report = new MissingAttributeReport();
 		try {
 			report.init(args);
@@ -49,10 +48,10 @@ public class MissingAttributeReport extends TermServerReport {
 		for (Concept c : concepts) {
 			//If we don't have the FSN then project doesn't yet know about this concept
 			if (c.getFsn() == null || c.getFsn().isEmpty()) {
-				report (c, "Not yet available in project - status unknown");
+				report(c, "Not yet available in project - status unknown");
 				incrementSummaryInformation("Concepts unavailable in project");
 			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).size()==0) {
-				report (c, "Missing " + attributeType);
+				report(c, "Missing " + attributeType);
 				incrementSummaryInformation("Issues encountered");
 			}
 		}

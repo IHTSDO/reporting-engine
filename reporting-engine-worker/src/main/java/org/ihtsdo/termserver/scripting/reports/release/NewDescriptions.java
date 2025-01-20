@@ -36,7 +36,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		getArchiveManager().setRunIntegrityChecks(false);
 
-		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 	}

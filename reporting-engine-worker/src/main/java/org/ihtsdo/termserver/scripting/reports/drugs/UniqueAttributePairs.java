@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
@@ -18,13 +18,7 @@ import com.google.common.util.concurrent.AtomicLongMap;
 /**
  * RP-200 
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class UniqueAttributePairs extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(UniqueAttributePairs.class);
 
 	private AtomicLongMap<String> presFormUnit = AtomicLongMap.create();
 	private AtomicLongMap<String> concFormUnit = AtomicLongMap.create();
@@ -35,15 +29,17 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 	
 	Map<String, Concept> examples = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		TermServerReport.run(UniqueAttributePairs.class, args, new HashMap<>());
+	public static void main(String[] args) throws TermServerScriptException {
+		TermServerScript.run(UniqueAttributePairs.class, args, new HashMap<>());
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3"; //Drugs Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3"); //Drugs Validation
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"SCTID, Dose Form, SCTID, Denom Unit, SCTID,Unit Pres, Count, Example",
@@ -74,7 +70,8 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			analyzeConcept(c);
@@ -156,7 +153,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 
 	private void reportData(int tabIdx, AtomicLongMap<String> data) throws TermServerScriptException {
 		for (Map.Entry<String, Long> entry : data.asMap().entrySet()) {
-			report (tabIdx, splitEntry(entry.getKey()), entry.getValue(), examples.get(entry.getKey()));
+			report(tabIdx, splitEntry(entry.getKey()), entry.getValue(), examples.get(entry.getKey()));
 			countIssue(null);
 		}
 	}

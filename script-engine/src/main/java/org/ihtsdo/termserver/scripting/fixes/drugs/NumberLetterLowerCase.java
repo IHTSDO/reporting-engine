@@ -139,7 +139,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 			c = c.cloneWithIds();
 			//if (c.getConceptId().equals("86884000")) {
 			if (c.getConceptId().equals("18344000")) {
-				LOGGER.debug ("Here");
+				LOGGER.debug("Here");
 			}
 			
 			if (normaliseCase(null, c) > 0) {

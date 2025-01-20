@@ -33,7 +33,7 @@ public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstan
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, InterruptedException, IOException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		AlignLangRefsetToDescLang fix = new AlignLangRefsetToDescLang(null);
 		try {
 			fix.selfDetermining = true;
@@ -129,7 +129,7 @@ public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstan
 					//Does this description have language refset entries in the wrong refset?
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						if (!allRefsets.containsKey(l.getRefsetId())) {
-							LOGGER.debug ("Unexpected language refset: " + gl.getConcept(l.getRefsetId()));
+							LOGGER.debug("Unexpected language refset: " + gl.getConcept(l.getRefsetId()));
 						}
 						if (!allRefsets.get(l.getRefsetId()).equals(d.getLang())) {
 							conceptsToProcess.add(c);

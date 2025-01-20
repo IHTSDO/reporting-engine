@@ -1,21 +1,14 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class AddAttributeIfRequiredDelta extends DeltaGenerator {
@@ -26,10 +19,10 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 	private final int BatchSize = 271;
 	private int lastBatchSize = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AddAttributeIfRequiredDelta delta = new AddAttributeIfRequiredDelta();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			delta.runStandAlone = true;
 			delta.additionalReportColumns = "Action Detail";
 			delta.newIdsRequired = false;

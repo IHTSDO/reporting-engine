@@ -62,9 +62,9 @@ public class Rf2Player extends BatchFix {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			loadProjectSnapshot(false);
 			startTimer();
-			LOGGER.info ("Processing delta");
+			LOGGER.info("Processing delta");
 			processDelta();
-			LOGGER.info ("Grouping changes into tasks");
+			LOGGER.info("Grouping changes into tasks");
 			processFile();
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to play Rf2Archive", e);
@@ -86,7 +86,7 @@ public class Rf2Player extends BatchFix {
 						if (rf2File != null) {
 							processRf2Delta(zis, rf2File, fileName);
 						} else {
-							LOGGER.info ("Skipping unrecognised file: " + fileName);
+							LOGGER.info("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();
@@ -114,7 +114,7 @@ public class Rf2Player extends BatchFix {
 
 	private void processRf2Delta(InputStream is, ComponentType rf2File, String fileName) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
-		LOGGER.info ("Processing " + fileName);
+		LOGGER.info("Processing " + fileName);
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeader = true;
@@ -241,7 +241,7 @@ public class Rf2Player extends BatchFix {
 		try{
 			loadedConcept = loadConcept(concept, t.getBranchPath());
 			if (hasUnpublishedRelationships(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
-				report (t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Recent stated relationship edits detected on this concept");
+				report(t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Recent stated relationship edits detected on this concept");
 				if (!allowRecentChanges) {
 					return 0;
 				}
@@ -252,7 +252,7 @@ public class Rf2Player extends BatchFix {
 				loadedConcept.setActive(conceptChanges.isActive());
 				loadedConcept.setEffectiveTime(null);
 				loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
-				report (t, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
+				report(t, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
 			}
 			fixDescriptions(t, loadedConcept, conceptChanges.getDescriptions());
 			fixRelationships(t, loadedConcept, conceptChanges.getRelationships());
@@ -289,17 +289,17 @@ public class Rf2Player extends BatchFix {
 				d.setDescriptionId(null);
 				d.setEffectiveTime(null);
 				loadedConcept.addDescription(d);
-				report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d.toString());
+				report(task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d.toString());
 			} else {
 				Description loadedDescription = loadedConcept.getDescription(d.getDescriptionId());
 				InactivationIndicator i = d.getInactivationIndicator();
 				if (d.getInactivationIndicator() == null) {
-					report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Description inactivation indicator not specifed.  Using Non-conformance");
+					report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Description inactivation indicator not specifed.  Using Non-conformance");
 					i = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 				}
 				loadedDescription.setInactivationIndicator(i);
 				loadedDescription.setActive(false);
-				report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, loadedDescription.toString());
+				report(task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, loadedDescription.toString());
 			}
 		}
 	}
@@ -314,14 +314,14 @@ public class Rf2Player extends BatchFix {
 				r.setRelationshipId(null);
 				r.setEffectiveTime(null);
 				loadedConcept.addRelationship(r);
-				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r.toString());
+				report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r.toString());
 			} else {
 				Relationship loadedRelationship = loadedConcept.getRelationship(r.getRelationshipId());
 				if (loadedRelationship == null) {
-					report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Relationship " + r.getRelationshipId() + " did not exist in TS to inactivate");
+					report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Relationship " + r.getRelationshipId() + " did not exist in TS to inactivate");
 				} else {
 					loadedRelationship.setActive(false);
-					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, loadedRelationship.toString());
+					report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, loadedRelationship.toString());
 				}
 			}
 		}

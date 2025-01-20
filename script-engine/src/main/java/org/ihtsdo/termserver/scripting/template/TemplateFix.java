@@ -1,13 +1,13 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.EclCache;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -73,18 +73,18 @@ abstract public class TemplateFix extends BatchFix {
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		initTemplatesAndExclusions();
 		super.postInit(tabNames, columnHeadings, csvOutput);
-		LOGGER.info ("Post initialisation complete, with multiple tabs");
+		LOGGER.info("Post initialisation complete, with multiple tabs");
 	}
 	
 	private void importExplicitExclusions() throws TermServerScriptException {
 		explicitExclusions = new HashSet<>();
-		print("Loading Explicit Exclusions " + getInputFile() + "...");
+		LOGGER.info("Loading Explicit Exclusions {}", getInputFile());
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException("Cannot read: " + getInputFile());
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
@@ -100,7 +100,7 @@ abstract public class TemplateFix extends BatchFix {
 	public void postInit() throws TermServerScriptException {
 		initTemplatesAndExclusions();
 		super.postInit();
-		LOGGER.info ("Post initialisation complete");
+		LOGGER.info("Post initialisation complete");
 	}
 	
 	private void initTemplatesAndExclusions() throws TermServerScriptException {
@@ -115,7 +115,7 @@ abstract public class TemplateFix extends BatchFix {
 				Template t = loadLocalTemplate(id, templateNames[x]);
 				validateTemplate(t);
 				templates.add(t);
-				LOGGER.info ("Loaded template: " + t);
+				LOGGER.info("Loaded template: " + t);
 				
 				if (StringUtils.isEmpty(subsetECL)) {
 					subsetECL = t.getDomain();
@@ -240,7 +240,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Set<Concept> misalignedConcepts, Integer exclusionReport, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		LOGGER.info ("Examining " + concepts.size() + " concepts against template " + t);
+		LOGGER.info("Examining " + concepts.size() + " concepts against template " + t);
 		int conceptsExamined = 0;
 		for (Concept c : concepts) {
 			if (!c.isActive()) {
@@ -300,7 +300,7 @@ abstract public class TemplateFix extends BatchFix {
 						//So we're now on our 2nd one
 						if (exclusionReport != null) {
 							incrementSummaryInformation("Concepts excluded due to SD with multiple substantial role groups");
-							report (exclusionReport, c, "Multi-RG exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+							report(exclusionReport, c, "Multi-RG exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 						}
 						return true;
 					} else {
@@ -313,7 +313,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (!includeOrphanet && gl.isOrphanetConcept(c)) {
 			if (exclusionReport != null) {
 				incrementSummaryInformation("Orphanet concepts excluded");
-				report (exclusionReport, c, "Orphanet exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				report(exclusionReport, c, "Orphanet exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
@@ -321,7 +321,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (StringUtils.isEmpty(c.getFsn())) {
 			if (exclusionReport != null) {
 				LOGGER.warn("Skipping concept with no FSN: " + c.getConceptId());
-				report (exclusionReport, c, "No FSN", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				report(exclusionReport, c, "No FSN", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
@@ -334,7 +334,7 @@ abstract public class TemplateFix extends BatchFix {
 				if (exclusionReport != null) {
 					incrementSummaryInformation("Concepts excluded due to lexical match ");
 					incrementSummaryInformation("Concepts excluded due to lexical match (" + word + ")");
-					report (exclusionReport, c, "Lexical exclusion", word, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(exclusionReport, c, "Lexical exclusion", word, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
 				return true;
 			}
@@ -342,7 +342,7 @@ abstract public class TemplateFix extends BatchFix {
 		
 		if (inclusionWords.size() > 0 && !containsInclusionWord(c)) {
 			incrementSummaryInformation("Concepts excluded due to lexical match failure");
-			report (exclusionReport, c, "Lexical inclusion failure", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+			report(exclusionReport, c, "Lexical inclusion failure", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			return true;
 		}
 		
@@ -350,7 +350,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (!includeComplexTemplates && isComplex(c)) {
 			if (exclusionReport != null) {
 				incrementSummaryInformation("Concepts excluded due to complexity");
-				report (exclusionReport, c, "Complex templates excluded", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				report(exclusionReport, c, "Complex templates excluded", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
@@ -375,13 +375,13 @@ abstract public class TemplateFix extends BatchFix {
 	}
 
 	@Override
-	public void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
+	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		Concept c = (Concept)component;
 		char relevantTemplate = ' ';
 		if (conceptToTemplateMap != null && conceptToTemplateMap.containsKey(c)) {
 			relevantTemplate = conceptToTemplateMap.get(c).getId();
 		}
-		super.report (task, component, severity, actionType, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), relevantTemplate, details);
+		super.report(task, component, severity, actionType, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), relevantTemplate, details);
 	}
 	
 	

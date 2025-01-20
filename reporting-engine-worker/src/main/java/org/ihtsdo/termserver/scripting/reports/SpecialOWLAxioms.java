@@ -1,15 +1,13 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -20,18 +18,17 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  */
 public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 	
-	Logger logger = LoggerFactory.getLogger(this.getClass());
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(SpecialOWLAxioms.class, args, params);
+		TermServerScript.run(SpecialOWLAxioms.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		headers = "SCTID, FSN, Semtag, Axiom Type, Axiom";
 		additionalReportColumns="";
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		super.init(run);
 	}
 	
@@ -47,7 +44,8 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 				.withTag(MS)
 				.build();
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 
 		String[] columnHeadings = new String[] {"Concept, FSN, SemTag, ConceptActive, isTransitive, isReflexive, isRoleChain, OWL",
@@ -59,7 +57,8 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 				"GCIs"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
 			if (!c.isActive()) {
@@ -68,7 +67,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 			
 			if (c.getObjectPropertyAxiomRepresentation() != null) {
 				ObjectPropertyAxiomRepresentation axiom = c.getObjectPropertyAxiomRepresentation();
-				report (PRIMARY_REPORT, c,
+				report(PRIMARY_REPORT, c,
 						c.isActive(),
 						axiom.isTransitive(),
 						axiom.isReflexive(),
@@ -77,15 +76,11 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 				countIssue(c);
 				continue;
 			}
-			
-			/*if (c.getId().equals("1148749005")) {
-				LOGGER.debug("Here");
-			}*/
 			String defnStat = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			
 			for (Axiom a : c.getAdditionalAxioms()) {
 				if (inScope(a) && a.isActive()) {
-					report (SECONDARY_REPORT, c, defnStat, a);
+					report(SECONDARY_REPORT, c, defnStat, a);
 					countIssue(c);
 				}
 			}
@@ -102,14 +97,14 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 					expressions += SnomedUtils.toExpression(getDefinitionStatus(groups), groups);
 					isFirst = false;
 				}
-				report (SECONDARY_REPORT, c, defnStat, expressions, axiomIds);
+				report(SECONDARY_REPORT, c, defnStat, expressions, axiomIds);
 				countIssue(c);
 			}
 			
 			
 			for (Axiom a : c.getGciAxioms()) {
 				if (inScope(a) && a.isActive()) {
-					report (TERTIARY_REPORT, c, defnStat, a, a.getId());
+					report(TERTIARY_REPORT, c, defnStat, a, a.getId());
 					countIssue(c);
 				}
 			}
@@ -119,7 +114,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 	
 	private boolean hasInScopeAxiom(List<AxiomEntry> axioms) {
 		return axioms.stream()
-				.anyMatch(a -> inScope(a));
+				.anyMatch(this::inScope);
 	}
 
 	private DefinitionStatus getDefinitionStatus(List<RelationshipGroup> groups) {

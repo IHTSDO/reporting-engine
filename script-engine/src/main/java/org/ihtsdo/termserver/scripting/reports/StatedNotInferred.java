@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -22,7 +21,7 @@ public class StatedNotInferred extends TermServerReport {
 	Concept subHierarchy = SUBSTANCE;
 	Concept attributeType = HAS_DISPOSITION;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		StatedNotInferred report = new StatedNotInferred();
 		try {
 			report.additionalReportColumns = "FSN, Redundant Disposition";
@@ -39,14 +38,14 @@ public class StatedNotInferred extends TermServerReport {
 
 	private void runStatedNotInferredReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendants(NOT_SET);
-		LOGGER.info ("Finding redundant relationships");
+		LOGGER.info("Finding redundant relationships");
 		for (Concept c : subHierarchy) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				//How many of these do we have?
 				int match = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size();
 				if (match == 0) {
 					incrementSummaryInformation("Issues Encountered");
-					report (c, r.getTarget());
+					report(c, r.getTarget());
 				}
 			}
 		}

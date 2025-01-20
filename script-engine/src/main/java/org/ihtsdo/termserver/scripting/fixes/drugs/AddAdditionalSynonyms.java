@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -28,7 +27,7 @@ public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AddAdditionalSynonyms fix = new AddAdditionalSynonyms(null);
 		try {
 			fix.additionalReportColumns = "term, hasPT_US_GB_Variance";
@@ -63,7 +62,7 @@ public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 				
 				//Firstly, this should only be acceptable in US english
 				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_US));
-				report (task, c, Severity.LOW, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, d, hasExistingVariance);
+				report(task, c, Severity.LOW, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, d, hasExistingVariance);
 				changesMade++;
 				
 				//Now create a 2nd acceptable description containing litre
@@ -71,11 +70,11 @@ public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 				additionalDesc.setTerm(additionalDesc.getTerm().replaceAll("liter", "litre"));
 				additionalDesc.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_GB));
 				if (!c.hasTerm(additionalDesc.getTerm(), "en")) {
-					report (task, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, additionalDesc, hasExistingVariance);
+					report(task, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, additionalDesc, hasExistingVariance);
 					c.addDescription(additionalDesc);
 					changesMade++;
 				} else {
-					report (task, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Additional term already present", additionalDesc);
+					report(task, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Additional term already present", additionalDesc);
 				}
 			}
 		}
@@ -93,7 +92,7 @@ public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug("Identified " + processMe.size() + " concepts to process");
 		this.setQuiet(false);
 		return processMe;
 	}

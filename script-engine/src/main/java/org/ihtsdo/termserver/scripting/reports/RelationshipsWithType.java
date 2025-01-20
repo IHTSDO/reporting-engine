@@ -1,13 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -16,7 +10,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,14 +17,13 @@ public class RelationshipsWithType extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipsWithType.class);
 
-	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	Set<Concept> filterOnType = new HashSet<Concept>();
+	Set<Concept> filterOnType = new HashSet<>();
 	boolean reverse = false;
 	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RelationshipsWithType report = new RelationshipsWithType();
 		try {
 			report.additionalReportColumns = " SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
@@ -40,8 +32,7 @@ public class RelationshipsWithType extends TermServerScript{
 			report.init2(); //Setup needed after data loaded
 			report.reportRelationshipsWithType();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Changed Relationship Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -61,7 +52,7 @@ public class RelationshipsWithType extends TermServerScript{
 			for(Relationship thisRel : allConceptRelationships) {
 				if ((filterOnType.contains(thisRel.getType()) && !reverse) || 
 					(!filterOnType.contains(thisRel.getType()) && reverse)){
-					report (thisConcept, thisRel);
+					report(thisConcept, thisRel);
 					reportedRelationships++;
 				}
 			}
@@ -70,7 +61,7 @@ public class RelationshipsWithType extends TermServerScript{
 		LOGGER.info("Graph loader log: \n" + gl.log);
 	}
 	
-	protected void report (Concept c, Relationship r) throws TermServerScriptException {
+	protected void report(Concept c, Relationship r) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE +
 						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA +
@@ -131,7 +122,7 @@ public class RelationshipsWithType extends TermServerScript{
 	
 	public void init2() throws TermServerScriptException {
 		String response = null;
-		LOGGER.info ("Filter type example: 106237007 |Linkage concept (linkage concept)|");
+		LOGGER.info("Filter type example: 106237007 |Linkage concept (linkage concept)|");
 				
 		while (response == null) {
 			print ("Filter for attribute type descendant or self of: ");
@@ -141,7 +132,7 @@ public class RelationshipsWithType extends TermServerScript{
 				Set<Concept> filteringTargets = hierarchy.getDescendants(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
 				filterOnType.addAll(filteringTargets); //descendant
 				filterOnType.add(hierarchy);  //and self
-				LOGGER.info ("\nFiltering for type descendants of " + hierarchy + " - " + filteringTargets.size());
+				LOGGER.info("\nFiltering for type descendants of " + hierarchy + " - " + filteringTargets.size());
 				response = null;
 			}
 		}

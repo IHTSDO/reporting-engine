@@ -1,16 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /**
@@ -25,14 +20,12 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(HierarchyConceptsNotInFileReport.class);
 
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
 	String file2;
 	String file2Purpose = "UsedToDefineConcepts";
 	String hierarchy = "49062001"; // |Device (physical object)|
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		HierarchyConceptsNotInFileReport report = new HierarchyConceptsNotInFileReport();
 		try {
 			report.init(args);
@@ -44,8 +37,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 			}
 			report.inHierarchyAndNotFile(conceptsInFile, conceptsInFile2);
 		} catch (Exception e) {
-			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -56,11 +48,11 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		//also in the supplied file
 		Concept sourceHierarchy = gl.getConcept(hierarchy);
 		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendants(NOT_SET));
-		LOGGER.info ("Active source concepts number " + sourceConcepts.size());
+		LOGGER.info("Active source concepts number " + sourceConcepts.size());
 		
 		for (Concept c : sourceConcepts) {
 			if (!conceptsInFile.contains(c)) {
-				report (c, conceptsInFile2.contains(c));
+				report(c, conceptsInFile2.contains(c));
 			}
 		}
 	}
@@ -77,7 +69,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 	}
 
 
-	protected void report (Concept c, boolean inFile2) throws TermServerScriptException {
+	protected void report(Concept c, boolean inFile2) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +

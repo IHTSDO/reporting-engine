@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -14,15 +13,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * @author Peter
  *
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class RecreateComponent extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RecreateComponent.class);
-
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RecreateComponent delta = new RecreateComponent();
 		try {
 			delta.runStandAlone=true;

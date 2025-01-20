@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +34,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	List<Concept> organisingPrinciples;
 	Set<String> crossCutting = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GnarlyFactorCalculation report = new GnarlyFactorCalculation();
 		try {
 			report.additionalReportColumns = "FSN, Depth, Descendants Stated/Inferred, IntermediatePrimitives, FDs under IPs, Mismatched Groups, RepeatedAttributes";
@@ -46,12 +44,11 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			report.subHierarchies = report.identifyGroupersByAttribute(report.processFile());
 			report.run();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 			for (String crossCutting : report.crossCutting) {
-				LOGGER.info ("Possible cross cutting: " + crossCutting);
+				LOGGER.info("Possible cross cutting: " + crossCutting);
 			}
 		}
 	}
@@ -73,7 +70,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 				LOGGER.warn (c + " appears to be no longer active");
 				continue;
 			} else if (!c.getFsn().contains("(finding)") && !c.getFsn().contains("(disorder)")) {
-				LOGGER.debug ("Skipping: " + c);
+				LOGGER.debug("Skipping: " + c);
 				incrementSummaryInformation("Skipped non Clinicial Finding / disorder");
 				continue;
 			}
@@ -118,7 +115,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			if (c == null) {
 				continue;
 			} else if (!c.getFsn().contains("(finding)") && !c.getFsn().contains("(disorder)")) {
-				LOGGER.debug ("Skipping: " + c);
+				LOGGER.debug("Skipping: " + c);
 				incrementSummaryInformation("Skipped non Clinicial Finding / disorder");
 				continue;
 			}
@@ -135,13 +132,13 @@ public class GnarlyFactorCalculation extends TermServerReport {
 					optimal = findOptimalGrouper(c, 0);
 				}
 				if (bestOrganisingPrinciple != null && optimal == null) {
-					LOGGER.debug ("Failed to find optimal grouper for " + c + " using organising principle " + bestOrganisingPrinciple);
+					LOGGER.debug("Failed to find optimal grouper for " + c + " using organising principle " + bestOrganisingPrinciple);
 					crossCutting.add(bestOrganisingPrinciple + " -> " + SnomedUtils.getTargets(c, new Concept[] {bestOrganisingPrinciple}, CharacteristicType.INFERRED_RELATIONSHIP));
 					optimal = findOptimalGrouper(c, 0);
 				} 
 				
 				if (optimal == null) {
-					LOGGER.debug ("Failed to find optimal grouper for " + c);
+					LOGGER.debug("Failed to find optimal grouper for " + c);
 				} else {
 					//Is the concept already included in our list of groupers?
 					if (groupers.contains(optimal) || isDescendantOf(optimal, groupers)) {
@@ -267,7 +264,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	}
 
 	private void run() throws TermServerScriptException {
-		LOGGER.info ("Calculating Gnarly Factor in " + subHierarchies.size() + " sub-hierarchies");
+		LOGGER.info("Calculating Gnarly Factor in " + subHierarchies.size() + " sub-hierarchies");
 		startTimer();
 		int x = 0;
 		for (Concept subHierarchy : subHierarchies) {
@@ -282,7 +279,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			int groupDiff = inferredGroupsNotStatedReport.runCheckForInferredGroupsNotStated();
 			int repeatedAttributes = splitRoleGroupsWithRepeatedAttributes.identifyComponentsToProcess().size();
 			
-			report (subHierarchy, 
+			report(subHierarchy, 
 					Integer.toString(subHierarchy.getDepth()),
 					size, 
 					Integer.toString(intermediatePrimitivesReport.intermediatePrimitives.size()),

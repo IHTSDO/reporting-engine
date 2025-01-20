@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,13 +15,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * INFRA-5204 Add "Contrast" to FSN and attribute 
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class INFRA5204_AddContrastAttributeAndFsn extends BatchFix {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA5204_AddContrastAttributeAndFsn.class);
 
 	private Set<String> exclusionTexts;
 	private RelationshipTemplate addTemplate;
@@ -32,10 +25,10 @@ public class INFRA5204_AddContrastAttributeAndFsn extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		INFRA5204_AddContrastAttributeAndFsn fix = new INFRA5204_AddContrastAttributeAndFsn(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;

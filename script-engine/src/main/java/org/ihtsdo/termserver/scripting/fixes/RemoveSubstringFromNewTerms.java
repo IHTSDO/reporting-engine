@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -29,7 +28,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConst
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemoveSubstringFromNewTerms fix = new RemoveSubstringFromNewTerms(null);
 		try {
 			fix.selfDetermining = true;
@@ -97,7 +96,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConst
 				}
 			}
 		}
-		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 

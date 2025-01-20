@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -33,7 +32,7 @@ public class SwitchAttributeTypeWithValueInRange extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SwitchAttributeTypeWithValueInRange fix = new SwitchAttributeTypeWithValueInRange(null);
 		try {
 			fix.populateEditPanel = true;
@@ -93,7 +92,7 @@ public class SwitchAttributeTypeWithValueInRange extends BatchFix {
 			if (switchType(null, c.clone(null), true) > 0) {
 				processMe.add(c);
 			} else {
-				report ((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept in expected subset did not update", c.toExpression(CharacteristicType.STATED_RELATIONSHIP), c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				report((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept in expected subset did not update", c.toExpression(CharacteristicType.STATED_RELATIONSHIP), c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 		}
 		return processMe;

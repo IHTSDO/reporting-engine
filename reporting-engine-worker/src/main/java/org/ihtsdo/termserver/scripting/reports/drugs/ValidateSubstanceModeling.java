@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -8,6 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -24,19 +24,20 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateSubstanceModeling.class);
 
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(ValidateSubstanceModeling.class, args, params);
+		TermServerScript.run(ValidateSubstanceModeling.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";  //Substances
+		ReportSheetManager.setTargetFolderId("1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d");  //Substances
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Detail",
 				"Issue, Count"};
@@ -55,20 +56,21 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateSubstancesModeling();
 		populateSummaryTab();
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
-	private void populateSummaryTab() throws TermServerScriptException {
+	private void populateSummaryTab() {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 		
 		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
+				.map(Map.Entry::getValue)
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
@@ -80,7 +82,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 			validateDisposition(concept);
 			checkForBadWords(concept);  //DRUGS-93
 		}
-		LOGGER.info ("Substances validation complete.");
+		LOGGER.info("Substances validation complete.");
 	}
 	
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
@@ -88,7 +90,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
 
 		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
-		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).size() > 0) {
+		if (!concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).isEmpty()) {
 			validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
 			checkForOddlyInferredParent(concept, HAS_DISPOSITION, true);
 		}
@@ -103,7 +105,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
 		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
 			if (findRelationship(concept, r, toCharType, false) == null) {
-				report (concept, issueStr, r.toString());
+				report(concept, issueStr, r.toString());
 			}
 		}
 	}
@@ -123,7 +125,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				//Does our original concept have that attribute?  Report if not.
 				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP, allowMoreSpecific)) {
-					report (concept, issueStr, parentAttribute.toString());
+					report(concept, issueStr, parentAttribute.toString());
 					//Reporting one issue per concept is sufficient
 					return;
 				}
@@ -173,7 +175,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 						if (badWord.equals("+") && isPlusException(term)) {
 							continue;
 						}
-						report (concept, issueStr, d.toString());
+						report(concept, issueStr, d.toString());
 						return;
 					}
 				}
@@ -185,7 +187,6 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		//Various rules that allow a + to exist next to other characters
 		if (term.contains("^+") ||
 			term.contains("+)") ||
-			term.contains("+)") ||
 			term.contains("+]") ||
 			term.contains("(+")) {
 			return true;
@@ -193,15 +194,12 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		return false;
 	}
 
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	@Override
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 	
 }

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -24,7 +23,7 @@ public class ReplaceParentsDriven extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceParentsDriven fix = new ReplaceParentsDriven(null);
 		try {
 			fix.reportNoChange = true;
@@ -57,9 +56,9 @@ public class ReplaceParentsDriven extends BatchFix implements ScriptConstants{
 			if (countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP) > 0) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changesMade++;
-				report (t, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
+				report(t, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
+				report(t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
 			}
 		}
 		
@@ -105,7 +104,7 @@ public class ReplaceParentsDriven extends BatchFix implements ScriptConstants{
 			loadedConcept.addRelationship(thisNewParentRel);
 			changesMade++;
 			String msg = "Single parent set to " + newParent;
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 		}
 		return changesMade;
 	}

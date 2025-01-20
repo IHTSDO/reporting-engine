@@ -46,7 +46,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	public static void main(String[] args) throws TermServerScriptException {
 		UpdateHistoricalAssociationsDriven delta = new UpdateHistoricalAssociationsDriven();
 		try {
-			ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
+			ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist
 			delta.newIdsRequired = false; 
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
@@ -741,7 +741,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	@Override
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details, getCathyNotes(c));
 	}
 

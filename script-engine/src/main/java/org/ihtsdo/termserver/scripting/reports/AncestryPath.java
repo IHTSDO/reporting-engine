@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-
-import java.io.IOException;
 import java.io.PrintStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -22,7 +20,7 @@ public class AncestryPath extends TermServerReport {
 	Concept subHierarchy;
 	Concept conceptOfInterest;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AncestryPath report = new AncestryPath();
 		try {
 			report.additionalReportColumns = "FSN";
@@ -57,7 +55,7 @@ public class AncestryPath extends TermServerReport {
 				//Does this parent lead to the top of the subhierarchy?
 				if (pathWalk(parent)) {
 					LOGGER.info (parent.toString());
-					report (parent);
+					report(parent);
 					return true;
 				}
 			}

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -41,7 +40,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		QI75_HerniaRemodel fix = new QI75_HerniaRemodel(null);
 		try {
 			fix.populateEditPanel = true;

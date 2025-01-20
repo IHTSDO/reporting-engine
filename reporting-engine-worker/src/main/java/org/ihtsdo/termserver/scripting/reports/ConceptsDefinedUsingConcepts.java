@@ -3,28 +3,23 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ConceptsDefinedUsingConcepts extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsDefinedUsingConcepts.class);
 	public static final String DEFINING_CONCEPTS = "Defining Concepts";
 
 	private List<String> definingConcepts = new ArrayList<>();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(DEFINING_CONCEPTS, "418920007,259105007,419343004,419665005,418215000,64896002" +
 				"372633005,373265006,373266007,372794006,387424000,373249005" +
@@ -71,11 +66,11 @@ public class ConceptsDefinedUsingConcepts extends TermServerReport implements Re
 				"373253007,372590004,372758007,372787008,870406003,418681006" +
 				"438501000124103,438511000124100,438521000124108,438531000124106,438541000124101,438551000124104" +
 				"438561000124102,438431000124107,35079003,255677008,419098001,106181007");
-		TermServerReport.run(ConceptsDefinedUsingConcepts.class, params, args);
+		TermServerScript.run(ConceptsDefinedUsingConcepts.class, params, args);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		additionalReportColumns = "FSN, SemTag, Def Status, Type, Target";
 		super.init(run);
 
@@ -105,7 +100,8 @@ public class ConceptsDefinedUsingConcepts extends TermServerReport implements Re
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest = new ArrayList<>(gl.getAllConcepts());
 		if (subsetECL != null && !subsetECL.isEmpty()) {
@@ -121,7 +117,7 @@ public class ConceptsDefinedUsingConcepts extends TermServerReport implements Re
 
 				if (definingConcepts.contains(r.getType().getConceptId())
 					|| (!r.isConcrete() && definingConcepts.contains(r.getTarget().getConceptId()))) {
-					report (c, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), r.getType(), r.getTarget());
+					report(c, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), r.getType(), r.getTarget());
 					countIssue(c);
 				}
 			}

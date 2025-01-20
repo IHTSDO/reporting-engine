@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -13,31 +13,31 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 
-/**
- * RP-462 Report to find unrelated attribute values
- */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * RP-462 Report to find unrelated attribute values
+ */
 public class UnrelatedAttributeValues extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UnrelatedAttributeValues.class);
 
-	private static String ATTRIBUTE_TYPE = "Attribute Type";
+	private static final String ATTRIBUTE_TYPE = "Attribute Type";
 	private AtomicLongMap<Concept> grandParentLeagueChart = AtomicLongMap.create();
 	private Concept targetAttributeType;
 	private double sufficentRelationships;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<< 64572001 |Disease (disorder)|");
 		params.put(ATTRIBUTE_TYPE, "363713009 |Has interpretation (attribute)|");
-		TermServerReport.run(UnrelatedAttributeValues.class, args, params);
+		TermServerScript.run(UnrelatedAttributeValues.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		runStandAlone = false; //We need a proper path lookup for MS projects
 		super.init(run);
 	}
@@ -70,13 +70,14 @@ public class UnrelatedAttributeValues extends TermServerReport implements Report
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		analyseSubset();
 		reportMostPopularGrandParents();
 		long totalRelationships = grandParentLeagueChart.sum();
 		sufficentRelationships = (int)(totalRelationships * 0.05d);
-		LOGGER.info ("Lower limit of popularity would be " + sufficentRelationships + " out of total available: " + totalRelationships);
+		LOGGER.info("Lower limit of popularity would be {} out of total available: {}", sufficentRelationships, totalRelationships);
 		reportOutliers();
 	}
 
@@ -117,7 +118,7 @@ public class UnrelatedAttributeValues extends TermServerReport implements Report
 					}
 					
 					if (grandParentLeagueChart.get(mostPopularGrandParent) < sufficentRelationships) {
-						report (SECONDARY_REPORT, c, targetAttributeType, value, grandParent, connections);
+						report(SECONDARY_REPORT, c, targetAttributeType, value, grandParent, connections);
 						countIssue(c);
 					}
 				}
@@ -135,6 +136,5 @@ public class UnrelatedAttributeValues extends TermServerReport implements Report
 		}
 		return grandParents;
 	}
-
 
 }

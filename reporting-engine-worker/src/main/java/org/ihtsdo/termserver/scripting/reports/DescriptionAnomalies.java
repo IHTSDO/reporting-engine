@@ -122,10 +122,10 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 	}
 
 	@Override
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		descriptionIssueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (SECONDARY_REPORT, c, details);
+		return super.report(SECONDARY_REPORT, c, details);
 	}
 }

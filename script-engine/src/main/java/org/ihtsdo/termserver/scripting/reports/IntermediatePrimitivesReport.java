@@ -1,13 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -26,9 +19,8 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 
 	List<Concept> topLevelHierarchies;
 	CharacteristicType targetCharType = CharacteristicType.STATED_RELATIONSHIP;
-	//CharacteristicType targetCharType = CharacteristicType.INFERRED_RELATIONSHIP;
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		IntermediatePrimitivesReport report = new IntermediatePrimitivesReport();
 		try {
 			report.additionalReportColumns = "semanticTag, hasImmediateSDParent, hasImmediateSDChild, hasAllParentsSD, hasAllSDChildren";
@@ -37,8 +29,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 			report.getTopLevelHierarchies();
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -58,7 +49,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 
 	private void reportIntermediatePrimitives() throws TermServerScriptException {
 		int rowsReported = 0;
-		LOGGER.info ("Scanning all concepts...");
+		LOGGER.info("Scanning all concepts...");
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept thisHierarchy : topLevelHierarchies) {
 			int hierarchyIpCount = 0;
@@ -85,7 +76,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 			boolean hasImmediateSDChild = containsFdConcept(c.getChildren(targetCharType));
 			boolean hasAllParentsSD = hasAllParentsSD(c);
 			boolean hasAllSDChildren = hasAllSDChildren(c);
-			report (c, SnomedUtils.deconstructFSN(c.getFsn())[1],
+			report(c, SnomedUtils.deconstructFSN(c.getFsn())[1],
 					(hasImmediateSDParent?"Yes":"No"),
 					(hasImmediateSDChild?"Yes":"No"),
 					(hasAllParentsSD?"Yes":"No"),

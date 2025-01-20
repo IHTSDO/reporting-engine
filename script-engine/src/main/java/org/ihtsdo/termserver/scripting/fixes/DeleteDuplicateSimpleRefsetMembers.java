@@ -7,7 +7,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,7 +18,7 @@ public class DeleteDuplicateSimpleRefsetMembers extends BatchFix implements Scri
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DeleteDuplicateSimpleRefsetMembers fix = new DeleteDuplicateSimpleRefsetMembers(null);
 		try {
 			fix.populateEditPanel = false;

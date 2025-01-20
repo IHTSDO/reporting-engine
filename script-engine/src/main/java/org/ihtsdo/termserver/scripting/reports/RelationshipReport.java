@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -11,7 +10,6 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,13 +17,12 @@ public class RelationshipReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipReport.class);
 
-	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	Concept filterOnType = null; 
 	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RelationshipReport report = new RelationshipReport();
 		try {
 			report.additionalReportColumns = "Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
@@ -53,7 +50,7 @@ public class RelationshipReport extends TermServerScript{
 			
 			for(Relationship thisRel : allConceptRelationships) {
 				if (filterOnType == null || thisRel.getType().equals(filterOnType)){
-					report (thisConcept, thisRel);
+					report(thisConcept, thisRel);
 					reportedRelationships++;
 				}
 			}
@@ -62,7 +59,7 @@ public class RelationshipReport extends TermServerScript{
 		LOGGER.info("Graph loader log: \n" + gl.log);
 	}
 	
-	protected void report (Concept c, Relationship r) throws TermServerScriptException {
+	protected void report(Concept c, Relationship r) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.isActive() + COMMA + 

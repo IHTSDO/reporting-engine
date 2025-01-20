@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -8,7 +7,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /* INFRA-2791 Delete relationships marked as inactive that were 
@@ -31,7 +29,7 @@ public class DeleteBornInactiveStatedRelationships extends BatchFix implements S
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DeleteBornInactiveStatedRelationships fix = new DeleteBornInactiveStatedRelationships(null);
 		try {
 			ReportSheetManager.targetFolderId="15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA
@@ -68,13 +66,13 @@ public class DeleteBornInactiveStatedRelationships extends BatchFix implements S
 		for (Relationship rLoaded : inactiveRels) {
 			if (rLoaded.getId().equals(r.getId()) && !rLoaded.isActive() && !rLoaded.isReleased()) {
 				loadedConcept.removeRelationship(rLoaded);
-				report (t, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, rLoaded);
+				report(t, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, rLoaded);
 				updateConcept(t, loadedConcept, info);
 				return CHANGE_MADE;
 			}
 		}
 		String msg = "Unable to find relationship in valid state to delete: " + r.getId();
-		report (t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
+		report(t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 		return NO_CHANGES_MADE;
 	}
 

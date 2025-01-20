@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,15 +14,8 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * NUTRITION-56 Batch change of Modified substance diet 
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class NUTRITION56_ReplaceAttribute extends BatchFix {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(NUTRITION56_ReplaceAttribute.class);
-
-	//private RelationshipTemplate addTemplate;
 	private RelationshipTemplate matchTemplate;
 	private RelationshipTemplate replaceTemplate;
 	private List<RelationshipTemplate> groupWith;
@@ -32,10 +24,10 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NUTRITION56_ReplaceAttribute fix = new NUTRITION56_ReplaceAttribute(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = true;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
@@ -107,7 +99,7 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 			Set<Relationship> matches = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, potentialGroupWith);
 			if (matches.size() > 0) {
 				if (matches.size() > 1) {
-					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Please check - multiple potential groups for new attribute");
+					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Please check - multiple potential groups for new attribute");
 				}
 				return matches.iterator().next().getGroupId();
 			}

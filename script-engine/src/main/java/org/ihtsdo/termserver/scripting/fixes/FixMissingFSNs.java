@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -8,7 +7,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.*;
-
 
 /*
 INFRA-4924 I'm running into issues where I can't fix historical associations because Drools is objecting
@@ -26,7 +24,7 @@ public class FixMissingFSNs extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FixMissingFSNs fix = new FixMissingFSNs(null);
 		try {
 			fix.reportNoChange = true;

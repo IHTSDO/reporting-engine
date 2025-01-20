@@ -2,22 +2,18 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.UnknownComponent;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.service.MultiDetailTraceabilityService;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,15 +25,15 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 	TraceabilityService traceabilityService;
 	List<String> conceptIdsOfInterest;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(CONCEPT_IDS,
-				"32001000087107");
-		TermServerReport.run(ListConceptComponents.class, args, params);
+				"821000172102");
+		TermServerScript.run(ListConceptComponents.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		
 		if (!StringUtils.isEmpty(run.getParamValue(CONCEPT_IDS))) {
 			conceptIdsOfInterest = Arrays.stream(run.getMandatoryParamValue(CONCEPT_IDS).split(",",-1))
@@ -47,7 +43,8 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 		
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] tabNames = new String[] {
 				"Concept Componentns",
@@ -71,7 +68,8 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (conceptIdsOfInterest == null || conceptIdsOfInterest.isEmpty()) {
 			throw new TermServerScriptException("Please specify concept ids to process.");
@@ -86,7 +84,7 @@ public class ListConceptComponents extends TermServerReport implements ReportCla
 				countIssue(c);
 			}
 		}
-		LOGGER.info ("Job complete");
+		LOGGER.info("Job complete");
 	}
 
 	private void reportComponents(Concept c) throws TermServerScriptException {

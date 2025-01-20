@@ -97,7 +97,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		referenceSets = findConcepts(REFSET_ECL);
 		importDerivativeLocations();
 		removeEmptyNoScopeAndDerivativeRefsets();
-		LOGGER.info ("Recovered {} simple reference sets and maps", referenceSets.size());
+		LOGGER.info("Recovered {} simple reference sets and maps", referenceSets.size());
 
 		if (isECL) {
 			//With ECL selection we don't need to worry about the concept already being inactive
@@ -113,7 +113,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 					inactivatingConceptIds.add(inactivatingConceptId);
 					inactivatingConcepts.add(c);
 				} else {
-					report (c, " is already inactive");
+					report(c, " is already inactive");
 				}
 			}
 		}
@@ -193,7 +193,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//If we're not also inactivating the child, that could be a problem
 				if (!inactivatingConcepts.contains(child)) {
-					report (c, "has child not scheduled for inactivation", child);
+					report(c, "has child not scheduled for inactivation", child);
 				}
 			}
 		}
@@ -223,13 +223,13 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private void checkHistoricalAssociations() throws TermServerScriptException {
 		for (Concept c : inactivatingConcepts) {
 			for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
-				report (c, "used as target of historical association", gl.getConcept(assoc.getReferencedComponentId()), assoc);
+				report(c, "used as target of historical association", gl.getConcept(assoc.getReferencedComponentId()), assoc);
 			}
 		}
 	}
 
 	private void checkRefsetUsageEnumerated() throws TermServerScriptException {
-		LOGGER.debug ("Checking {} inactivating concepts against {} refsets", inactivatingConceptIds.size(),referenceSets.size());
+		LOGGER.debug("Checking {} inactivating concepts against {} refsets", inactivatingConceptIds.size(),referenceSets.size());
 		for (Concept refset : referenceSets) {
 			EclCache eclCache = getDefaultEclCache();
 			reportRefsetInactivationsAgainstEnumeratedList(refset, eclCache);
@@ -252,7 +252,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		String ecl = "^" + refset.getId() + " AND ( " + selectionCriteria + " )";
 		String detail = "As per branch " + eclCache.getBranch() + " on " + eclCache.getServer();
 		for (Concept c : eclCache.findConcepts(ecl)) {
-			report (c, "active in refset", refset.getPreferredSynonym(), detail);
+			report(c, "active in refset", refset.getPreferredSynonym(), detail);
 		}
 	}
 
@@ -339,15 +339,15 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	}
 
 	private void checkHighVolumeUsage() throws TermServerScriptException {
-		LOGGER.debug ("Checking {} inactivating concepts against High Usage SCTIDs", inactivatingConceptIds.size());
+		LOGGER.debug("Checking {} inactivating concepts against High Usage SCTIDs", inactivatingConceptIds.size());
 		String fileName = "resources/HighVolumeSCTIDs.txt";
-		LOGGER.debug ("Loading {}", fileName );
+		LOGGER.debug("Loading {}", fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
 			for (String line : lines) {
 				String id = line.split(TAB)[0];
 				if (inactivatingConceptIds.contains(id)) {
-					report (gl.getConcept(id), "High Volume Usage (UK)");
+					report(gl.getConcept(id), "High Volume Usage (UK)");
 				}
 			}
 		} catch (IOException e) {
@@ -405,21 +405,21 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private void checkTemplates() throws TermServerScriptException {
 		for (Concept c : inactivatingConcepts) {
 			for (Template t : listTemplatesUsingConcept(c)) {
-				report (c, "used in template ", t.getName());
+				report(c, "used in template ", t.getName());
 			}
 		}
 	}
 
 	@Override
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 
 	private void importDerivativeLocations() throws TermServerScriptException {
 		derivativeLocationMap = new HashMap<>();
 		String fileName = "resources/derivative-locations.tsv";
-		LOGGER.debug ("Loading {}", fileName );
+		LOGGER.debug("Loading {}", fileName );
 
 		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
 			String line;

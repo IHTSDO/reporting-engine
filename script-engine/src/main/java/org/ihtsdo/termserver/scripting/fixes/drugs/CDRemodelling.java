@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,7 +35,6 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CDRemodelling.class);
 
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
-	Map<Description, Concept> substanceMap = new HashMap<>();
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	TermVerifier termVerifier;
 	Set<Concept> blackListedConcepts = new HashSet<>();
@@ -54,10 +52,10 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CDRemodelling app = new CDRemodelling(null);
 		try {
-			ReportSheetManager.targetFolderId = "1gNnY3XAuopxi5yybh3Kv9P3V2vMMULB0";  // Drugs / Remodeling
+			ReportSheetManager.setTargetFolderId("1gNnY3XAuopxi5yybh3Kv9P3V2vMMULB0");  // Drugs / Remodeling
 			app.expectNullConcepts = true;
 			app.inputFileHasHeaderRow = true;
 			app.runStandAlone = true;
@@ -99,7 +97,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		
 		if (blackListedConcepts.contains(concept)) {
-			report (task, concept, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient failed validation");
+			report(task, concept, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient failed validation");
 			return NO_CHANGES_MADE;
 		}
 		
@@ -125,7 +123,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		try {
 			changesMade += assignIngredientCounts(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		} catch (Exception e) {
-			report (task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to assign ingredient count due to: " + e.getMessage());
+			report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to assign ingredient count due to: " + e.getMessage());
 		}
 		if (changesMade > 0) {
 			if (cloneThisConcept) {
@@ -146,9 +144,9 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		//and if not, we'll throw an error at the time.
 		if (ingredientRels.size() > ingredients.size()) {
 			if (allowIngredientCountChange.contains(c)) {
-				report (t,c,Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Permissable change in ingredient count " + ingredients.size() + " from current " + ingredientRels.size() + " ingredients");
+				report(t,c,Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Permissable change in ingredient count " + ingredients.size() + " from current " + ingredientRels.size() + " ingredients");
 			} else {
-				report (t,c,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Count mismatch in modelled (" + ingredients.size() + ") vs current (" + ingredientRels.size() + ") ingredients");
+				report(t,c,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Count mismatch in modelled (" + ingredients.size() + ") vs current (" + ingredientRels.size() + ") ingredients");
 				return 0;
 			}
 		}
@@ -183,7 +181,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	private int remodel(Task t, Concept c, Ingredient modelIngredient, boolean isMultiIngredient) throws TermServerScriptException {
 		int changesMade = 0;
 		int targetGroupId = SnomedUtils.getFirstFreeGroup(c);
-		report (t, c, Severity.NONE, ReportActionType.INFO, "BoSSes: " + c.getIssues(" + "));
+		report(t, c, Severity.NONE, ReportActionType.INFO, "BoSSes: " + c.getIssues(" + "));
 		//Find this ingredient.  If it's in group 0, we need to move it to a new group
 		Relationship substanceRel = getSubstanceRel(t, c, modelIngredient.substance, modelIngredient.boss);
 
@@ -193,7 +191,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		
 		if (substanceRel == null) {
 			//We'll need to create one!
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No existing ingredient found.  Adding new relationship.");
+			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No existing ingredient found.  Adding new relationship.");
 			substanceRel = new Relationship (c, HAS_PRECISE_INGRED, modelIngredient.substance, targetGroupId);
 		} else {
 			//If we've found an active ingredient, inactivate it and replace with a PRECISE active ingredient
@@ -218,7 +216,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		
 		//Have we added a new precise ingredient?
 		if (!c.getRelationships().contains(substanceRel)) {
-			report (t,c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, substanceRel);
+			report(t,c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, substanceRel);
 			c.addRelationship(substanceRel);
 			changesMade++;
 		}
@@ -286,7 +284,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		
 		if (matchingRels.size()!=1) {
 			if (matchingRels.size() > 1) {
-				report (t,c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to uniquely identify ingredient: " + targetSubstance + ". Found " + matchingRels.size());
+				report(t,c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to uniquely identify ingredient: " + targetSubstance + ". Found " + matchingRels.size());
 			}
 			return null;
 		}
@@ -315,7 +313,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		
 		//Have we seen an ingredient for this concept already and black listed it?
 		if (blackListedConcepts.contains(c)) {
-			report ((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient encountered on previously failed concept");
+			report((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient encountered on previously failed concept");
 			return null;
 		}
 		List<Ingredient> ingredients = spreadsheet.get(c);
@@ -326,13 +324,13 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 			ingredient.substance = DrugUtils.findSubstance(items[5]);
 			
 			if (ingredient.boss == null) {
-				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "BOSS not identified - " + items[4]);
+				report((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "BOSS not identified - " + items[4]);
 				blackListedConcepts.add(c);
 				return null;
 			}
 			
 			if (ingredient.substance == null) {
-				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Substance not identified - " + items[5]);
+				report((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Substance not identified - " + items[5]);
 				blackListedConcepts.add(c);
 				return null;
 			}
@@ -340,7 +338,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 			boolean usesConcentration = items[10].contains("concentration");
 			boolean usesPresentation = items[10].contains("presentation");
 			if (usesConcentration == false && usesPresentation == false) {
-				report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to determine conc / pres");
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to determine conc / pres");
 				return null;
 			}
 			
@@ -376,7 +374,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 			//Set the issue on the concept to ensure they're kept together by BoSS
 			c.addIssue(getBossStr(c));
 		} catch (Exception e) {
-			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
+			report((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
 			blackListedConcepts.add(c);
 			return null;
 		}
@@ -426,7 +424,7 @@ public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 		Concept alternative = gl.getConcept(assocs.get(0).getTargetComponentId());
 		alternative.setConceptType(c.getConceptType());
 		String msg = "Working on " + alternative + " instead of inactive original " + c + " due to " + refset;
-		report (t, c, Severity.MEDIUM, ReportActionType.INFO, msg);
+		report(t, c, Severity.MEDIUM, ReportActionType.INFO, msg);
 		return alternative;
 	}
 }

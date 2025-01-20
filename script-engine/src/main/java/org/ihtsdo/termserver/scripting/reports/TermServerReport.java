@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -38,7 +37,8 @@ public abstract class TermServerReport extends TermServerScript {
 			}
 		}
 	}
-	
+
+	@Override
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (unpromotedChangesOnly) {
 			unpromotedChangesHelper = new UnpromotedChangesHelper(this);
@@ -60,18 +60,16 @@ public abstract class TermServerReport extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(field));
 	}
 	
-	protected void report (int reportIdx, Component c, Object...details) throws TermServerScriptException {
+	protected void report(int reportIdx, Component c, Object...details) throws TermServerScriptException {
 		String line = "";
 		boolean isFirst = true;
 		if (c != null) {
-			if (c instanceof Concept) {
-				Concept concept = (Concept) c;
-				line = concept.getConceptId() + COMMA_QUOTE + 
+			if (c instanceof Concept concept) {
+				line = concept.getConceptId() + COMMA_QUOTE +
 						 concept.getFsn() + QUOTE;
-			} else if (c instanceof Relationship) {
-				Relationship r = (Relationship) c;
-				line = r.getSourceId() + COMMA_QUOTE + 
-						r.toString() + QUOTE;
+			} else if (c instanceof Relationship r) {
+				line = r.getSourceId() + COMMA_QUOTE +
+						r + QUOTE;
 			}
 			isFirst = false;
 		}
@@ -79,8 +77,8 @@ public abstract class TermServerReport extends TermServerScript {
 		for (Object detail : details) {
 			if (detail == null) {
 				line += (isFirst?"":COMMA);
-			} else if (detail instanceof String[]) {
-				for (Object subDetail : (String[])detail) {
+			} else if (detail instanceof String[] detailArray) {
+				for (Object subDetail : detailArray) {
 					String item = subDetail.toString();
 					if (StringUtils.isNumeric(item)) {
 						line += (isFirst?"":COMMA) + item;
@@ -88,8 +86,8 @@ public abstract class TermServerReport extends TermServerScript {
 						line += (isFirst?QUOTE:COMMA_QUOTE) + item + QUOTE;
 					}
 				}
-			} else if (detail instanceof int[]) {
-				for (int subDetail : (int[])detail) {
+			} else if (detail instanceof int[] detailIntArray) {
+				for (int subDetail : detailIntArray) {
 						line += COMMA + subDetail;
 				}
 			} else if (detail instanceof Collection) {
@@ -111,14 +109,14 @@ public abstract class TermServerReport extends TermServerScript {
 	
 	protected void reportSafely (int reportIdx, Component c, Object... details) {
 		try {
-			report (reportIdx, c, details);
+			report(reportIdx, c, details);
 		} catch (TermServerScriptException e) {
 			throw new IllegalStateException("Failed to write to report", e);
 		}
 	}
 	
-	protected void report (Component c, Object... details) throws TermServerScriptException {
-		report (0, c, details);
+	protected void report(Component c, Object... details) throws TermServerScriptException {
+		report(0, c, details);
 	}
 
 	@Override
@@ -141,12 +139,12 @@ public abstract class TermServerReport extends TermServerScript {
 		AncestorsCache cache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getAncestorsCache() : gl.getStatedAncestorsCache();
 		for (Concept c : concepts) {
 			//We're only interested in fully defined (QI project includes leaf concepts)
-			if (c.isActive() &&
+			if (c.isActiveSafely() &&
 				c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				//Get a list of all my primitive ancestors
 				List<Concept> proxPrimParents = cache.getAncestors(c).stream()
 						.filter(a -> a.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
-						.collect(Collectors.toList());
+						.toList();
 				//Do those ancestors themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
 					if (containsFdConcept(cache.getAncestors(thisPPP))) {

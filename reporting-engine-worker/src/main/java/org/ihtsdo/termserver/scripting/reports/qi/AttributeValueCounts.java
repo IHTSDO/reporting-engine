@@ -5,6 +5,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -14,14 +15,9 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-
-/**
- * INFRA-
- */
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,15 +43,16 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	String recentEffectiveTime;
 	DecimalFormat df = new DecimalFormat("0.0");
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<< 373873005 |Pharmaceutical / biologic product (product)|");
 		params.put(ATTRIBUTE_TYPE, "127489000 |Has active ingredient|");
-		TermServerReport.run(AttributeValueCounts.class, args, params);
+		TermServerScript.run(AttributeValueCounts.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; // QI / Misc Analysis
+		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); // QI / Misc Analysis
 		additionalReportColumns = "FSN, SemTag, Depth, Total Concept Count, Filtered Concept Count, Not-Including Descendants, Filtered Not-Including Descendants, Parents, GrandParents, Seen Together With, Recent Activity";
 		getArchiveManager().setPopulateHierarchyDepth(true);
 		super.init(run);
@@ -101,12 +98,13 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Concept[] types = new Concept[] {targetAttributeType};
 		ancestorCache = gl.getAncestorsCache();
 		descendantCache = gl.getDescendantsCache();
-		LOGGER.info ("Analyzing " + subsetECL);
+		LOGGER.info("Analyzing " + subsetECL);
 		ignoreConcepts = StringUtils.isEmpty(ignoreConceptsECL)? new HashSet<>() : new HashSet<>(findConcepts(ignoreConceptsECL));
 		for (Concept c : findConcepts(subsetECL)) {
 			//Find all the target values for the specified attribute type
@@ -137,7 +135,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 			}
 		}
 		
-		LOGGER.info ("Outputting counts");
+		LOGGER.info("Outputting counts");
 		Set<Concept> targets = new HashSet<>(valueCounts.asMap().keySet());
 		if (!targets.isEmpty()) {
 			//Now work through the list, from top to bottom

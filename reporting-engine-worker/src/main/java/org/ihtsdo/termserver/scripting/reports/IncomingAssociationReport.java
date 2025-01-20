@@ -75,13 +75,13 @@ public class IncomingAssociationReport extends TermServerReport implements Repor
 
 	@Override
 	public void runJob() throws TermServerScriptException {
-		LOGGER.info ("Scanning concepts...");
+		LOGGER.info("Scanning concepts...");
 		for (Concept c : findConcepts(subsetECL)) {
 			if (inScope(c)) {
 				for (AssociationEntry entry : gl.usedAsHistoricalAssociationTarget(c)) {
 					Concept source = gl.getConcept(entry.getReferencedComponentId());
 					String assocType = SnomedUtils.getAssociationType(entry);
-					report (source, source.getEffectiveTime(), assocType, c, entry);
+					report(source, source.getEffectiveTime(), assocType, c, entry);
 					countIssue(c);
 				}
 			}

@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta.ms;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
@@ -28,7 +27,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 	private List<Component> knownEntireTermCaseSensitive;
 	private int skippedDueToNotStartingWithLetter = 0;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CaseSignificanceFixForLanguage delta = new CaseSignificanceFixForLanguage();
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\

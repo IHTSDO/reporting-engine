@@ -1,13 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -33,7 +26,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 	static final String acid = "acid";
 	static final String ate = "ate";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SubstanceAcidWithBase report = new SubstanceAcidWithBase();
 		try {
 			report.additionalReportColumns = " SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
@@ -72,7 +65,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 				}
 				
 				if (isAcid && isBase) {
-					report (c, c, "Confusion");
+					report(c, c, "Confusion");
 				} else {
 					if (isAcid) {
 						findPartner(c, false);
@@ -98,7 +91,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		downstream = !findAcid;
 		foundPartnerInChildren = findPartner( c, children, downstream, findAcid);
 		if (!foundPartnerInParents && !foundPartnerInChildren) {
-			report (findAcid?null:c, findAcid?c:null, "Unmatched");
+			report(findAcid?null:c, findAcid?c:null, "Unmatched");
 		}
 	}
 
@@ -112,13 +105,13 @@ public class SubstanceAcidWithBase extends TermServerScript{
 				String[] parts = term.split(SPACE);
 				for (String part : parts) {
 					if (part.equals(acid) && findAcid) {
-						report (c,matchMe, isDownstream?"Downstream":"Upstream");
+						report(c,matchMe, isDownstream?"Downstream":"Upstream");
 						markReported(c);
 						found = true;
 						break finished;
 					}
 					if (part.endsWith(ate) && !findAcid) {
-						report (matchMe, c, isDownstream?"Downstream":"Upstream");
+						report(matchMe, c, isDownstream?"Downstream":"Upstream");
 						markReported(c);
 						found = true;
 						break finished;
@@ -132,7 +125,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 	private void markReported(Concept c) throws TermServerScriptException {
 		reported.add(c);
 		if (c.getFsn().contains(acid) && c.getFsn().contains(ate)) {
-			report (c, c, "Confusion");
+			report(c, c, "Confusion");
 		}
 	}
 
@@ -154,7 +147,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		return matchList;
 	}
 
-	protected void report (Concept acid, Concept base, String notes) throws TermServerScriptException {
+	protected void report(Concept acid, Concept base, String notes) throws TermServerScriptException {
 		String line =	(acid==null?"":acid.getConceptId()) + COMMA_QUOTE + 
 						(acid==null?"":acid.getFsn()) + QUOTE_COMMA + 
 						(base==null?"":base.getConceptId()) + COMMA_QUOTE + 

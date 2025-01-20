@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -36,7 +35,7 @@ public class CDUpdate extends DrugBatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CDUpdate fix = new CDUpdate(null);
 		try {
 			fix.selfDetermining = true;
@@ -144,7 +143,7 @@ public class CDUpdate extends DrugBatchFix implements ScriptConstants {
 			c.addRelationship(thisNewParentRel);
 			changesMade++;
 			String msg = "Single parent set to " + parent;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
+			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
 		}
 		return changesMade;
 	}

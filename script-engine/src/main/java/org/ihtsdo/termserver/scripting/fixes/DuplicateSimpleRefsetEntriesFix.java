@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -26,10 +25,10 @@ public class DuplicateSimpleRefsetEntriesFix extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DuplicateSimpleRefsetEntriesFix fix = new DuplicateSimpleRefsetEntriesFix(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
 			fix.runStandAlone = false;  //Need to look up the project for MS extensions
@@ -52,11 +51,11 @@ public class DuplicateSimpleRefsetEntriesFix extends BatchFix {
 				RefsetMember retained = conceptsSeen.get(c);
 				if (!rm.isReleased()) {
 					changesMade += deleteRefsetMember(t, rm.getId());
-					report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_DELETED, rm.getId(), "Retained", retained.getId());
+					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_DELETED, rm.getId(), "Retained", retained.getId());
 				} else {
 					rm.setActive(false);
 					changesMade += updateRefsetMember(t, rm, info);
-					report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_INACTIVATED, rm.toString());
+					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_INACTIVATED, rm.toString());
 				}
 			}
 		} catch (Exception e) {
@@ -67,7 +66,7 @@ public class DuplicateSimpleRefsetEntriesFix extends BatchFix {
 	
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		//We're only recovering Refset Members with no effective time
 		//So this class won't work with new members duplicating with historic ones.
 		for (RefsetMember rm : tsClient.findRefsetMembers(project.getBranchPath(), simpleRefsetId, true)) {

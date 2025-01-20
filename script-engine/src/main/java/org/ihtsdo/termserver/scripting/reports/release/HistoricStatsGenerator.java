@@ -57,9 +57,9 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		project = ts.getProject();
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(HistoricStatsGenerator.class, args, params);
+		TermServerScript.run(HistoricStatsGenerator.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -102,10 +102,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
-			LOGGER.debug ("Determining all IPs");
+			LOGGER.debug("Determining all IPs");
 			Set<Concept> IPs = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
 		
-			LOGGER.debug ("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug("Outputting Data to " + f.getAbsolutePath());
 			for (Concept c : gl.getAllConcepts()) {
 				/*if (c.getId().equals("16711071000119107")) {
 					LOGGER.debug("here");

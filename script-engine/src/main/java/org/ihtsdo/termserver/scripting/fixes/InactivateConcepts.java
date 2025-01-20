@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -32,16 +31,15 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateConcepts fix = new InactivateConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.inputFileHasHeaderRow = false;
 			fix.expectNullConcepts = false;
 			fix.groupByIssue = false;
 			fix.reportNoChange = false;
 			fix.selfDetermining = true;
-			//fix.runStandAlone = true;
 			fix.subsetECL = "< 415229000 |Racial group (racial group)|";
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
@@ -53,6 +51,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		exceptions.add(gl.getConcept("413464008 |African race (racial group)|"));
@@ -69,8 +68,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = 0;
 		if (loadedConcept == null || !loadedConcept.isActive()) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
-		} else if (loadedConcept.isReleased()) {
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
+		} else if (loadedConcept.isReleasedSafely()) {
 			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
 				updateConcept(t, loadedConcept, info);
@@ -79,7 +78,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			if (!exceptions.contains(c)) {
 				changesMade = deleteConcept(t, loadedConcept);
 			} else {
-				report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept saved from deletion by exception list");
+				report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept saved from deletion by exception list");
 			}
 		}
 		return changesMade;
@@ -94,8 +93,6 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//Is this concept an exception, that we're not going to inactivate?
 		//We're still going to inactivate its children if so
 		boolean isException = exceptions.contains(c);
-		
-		Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 		
 		//Have we already inactivated this concept?
 		if (inactivations.containsKey(c)) {
@@ -121,88 +118,101 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		//Use locally held concept when traversing transitive closure
 		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendants(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 		descendants.removeAll(allComponentsToProcess);
-		if (descendants.size() > 0) {
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
+		if (!descendants.isEmpty()) {
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
 		}
 		
-		//Check for any stated children and remove this concept as a parent
-		for (Concept child : gl.getConcept(c.getConceptId()).getDescendants(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
-			if (exceptions.contains(child)) {
-				LOGGER.warn("Child " + child + " is an exception to inactivation, but parent being inactivated.  Needs rewired to grandparent or higher?");
-				continue;
-			}
-			//Have we already inactivated this child
-			if (!inactivations.containsKey(child)) {
-				t.remove(child);
-				t.addAfter(child, c);
-				removeFromLaterTasks(t, child);
-				//Is this a concept we have to inactivate?  Go through whole process if so
-				if (replacements.containsKey(child) || autoInactivateChildren || allComponentsToProcess.contains(child)) {
-					String extraInfo = " as per selection";
-					Severity severity = Severity.LOW;
-					if (!replacements.containsKey(child) && !allComponentsToProcess.contains(child)) {
-						//In this case, we should inactivate the child with the same details as the parent
-						inactivationIndicators.put(child, inactivationIndicator);
-						replacements.put(child, replacement);
-						extraInfo = " NOT SPECIFIED FOR INACTIVATION";
-						severity = Severity.HIGH;
-					}
-					report(t, child, severity, ReportActionType.INFO, "Inactivating child of " + c + extraInfo + ", prior to parent inactivation");
-					doFix(t, child, " as descendant of " + c);
-				} else {
-					if (rewireChildrenToGrandparents) {
-						rewireChildToGrandparents(t, child, c, parents);
-					} else {
-						//Otherwise, just remove the concept as a child of the parent
-						removeParent(t, child, c);
-					}
-				}
-			}
-		}
+		processChildren(t, c, inactivationIndicator, replacement);
 
 		if (!isException) {
-			c.setActive(false);
-			c.setEffectiveTime(null);
-
-			String histAssocType = "Unknown Historical Association";
-			if ((replacement == null || replacement.equals(NULL_CONCEPT)) && !inactivationIndicator.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-				if (inactivationIndicator != null) {
-					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "File specified " + inactivationIndicator + " inactivation but no HistAssoc found. Switching to NCEP");
-				}
-				c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-				c.setAssociationTargets(new AssociationTargets());
-				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
-			} else {
-				c.setInactivationIndicator(inactivationIndicator);
-				switch (inactivationIndicator) {
-					case OUTDATED:
-						c.setAssociationTargets(AssociationTargets.replacedBy(replacement));
-						histAssocType = " replaced by ";
-						break;
-					case AMBIGUOUS:
-						c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
-						histAssocType = " possibly equiv to ";
-						break;
-					case NONCONFORMANCE_TO_EDITORIAL_POLICY:
-						c.setAssociationTargets(new AssociationTargets());
-						histAssocType = "";
-						break;
-					default:
-						throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
-				}
-
-				if (replacement != null && !replacement.equals(NULL_CONCEPT)) {
-					report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + replacement);
-				} else {
-					report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator);
-				}
-			}
-			inactivations.put(c, t);
+			doConceptInactivation(t, c, inactivationIndicator, replacement);
 		} else {
 			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept saved from inactivation by exception list");
 		}
 
 		return CHANGE_MADE;
+	}
+
+	private void doConceptInactivation(Task t, Concept c, InactivationIndicator inactivationIndicator,
+			Concept replacement) throws TermServerScriptException {
+		c.setActive(false);
+		c.setEffectiveTime(null);
+
+		String histAssocType;
+		if ((replacement == null || replacement.equals(NULL_CONCEPT)) && !inactivationIndicator.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "File specified " + inactivationIndicator + " inactivation but no HistAssoc found. Switching to NCEP");
+			c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			c.setAssociationTargets(new AssociationTargets());
+			report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
+		} else {
+			c.setInactivationIndicator(inactivationIndicator);
+			switch (inactivationIndicator) {
+				case OUTDATED:
+					c.setAssociationTargets(AssociationTargets.replacedBy(replacement));
+					histAssocType = " replaced by ";
+					break;
+				case AMBIGUOUS:
+					c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+					histAssocType = " possibly equiv to ";
+					break;
+				case NONCONFORMANCE_TO_EDITORIAL_POLICY:
+					c.setAssociationTargets(new AssociationTargets());
+					histAssocType = "";
+					break;
+				default:
+					throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
+			}
+
+			if (replacement != null && !replacement.equals(NULL_CONCEPT)) {
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + replacement);
+			} else {
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator);
+			}
+		}
+		inactivations.put(c, t);
+	}
+
+	private void processChildren(Task t, Concept c, InactivationIndicator inactivationIndicator, Concept replacement) throws TermServerScriptException {
+		Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		//Check for any stated children and remove this concept as a parent
+		for (Concept child : gl.getConcept(c.getConceptId()).getDescendants(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
+			if (exceptions.contains(child)) {
+				LOGGER.warn("Child {} is an exception to inactivation, but parent being inactivated.  Needs rewired to grandparent or higher?", child);
+				continue;
+			}
+			//Have we already inactivated this child?
+			if (!inactivations.containsKey(child)) {
+				t.remove(child);
+				t.addAfter(child, c);
+				removeFromLaterTasks(t, child);
+				inactivateChild(t, child, c, inactivationIndicator, replacement, parents);
+			}
+		}
+	}
+
+	private void inactivateChild(Task t, Concept child, Concept c, InactivationIndicator inactivationIndicator,
+			Concept replacement, Set<Concept> parents) throws TermServerScriptException {
+		//Is this a concept we have to inactivate?  Go through whole process if so
+		if (replacements.containsKey(child) || autoInactivateChildren || allComponentsToProcess.contains(child)) {
+			String extraInfo = " as per selection";
+			Severity severity = Severity.LOW;
+			if (!replacements.containsKey(child) && !allComponentsToProcess.contains(child)) {
+				//In this case, we should inactivate the child with the same details as the parent
+				inactivationIndicators.put(child, inactivationIndicator);
+				replacements.put(child, replacement);
+				extraInfo = " NOT SPECIFIED FOR INACTIVATION";
+				severity = Severity.HIGH;
+			}
+			report(t, child, severity, ReportActionType.INFO, "Inactivating child of " + c + extraInfo + ", prior to parent inactivation");
+			doFix(t, child, " as descendant of " + c);
+		} else {
+			if (rewireChildrenToGrandparents) {
+				rewireChildToGrandparents(t, child, c, parents);
+			} else {
+				//Otherwise, just remove the concept as a child of the parent
+				removeParent(t, child, c);
+			}
+		}
 	}
 
 	private void rewireChildToGrandparents(Task t, Concept child, Concept parent, Set<Concept> grandParents) throws TermServerScriptException {
@@ -229,7 +239,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			updateConcept(t, child, "");
 			t.addAfter(child, parent);
 		} else {
-			report (t, child, Severity.CRITICAL, ReportActionType.API_ERROR, "Did not rewire " + child + " as child of " + parent + ".  Please investigate.");
+			report(t, child, Severity.CRITICAL, ReportActionType.API_ERROR, "Did not rewire " + child + " as child of " + parent + ".  Please investigate.");
 		}
 	}
 
@@ -253,14 +263,15 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			updateConcept(task, child, "");
 			task.addAfter(child, parent);
 		} else {
-			report (task, child, Severity.HIGH, ReportActionType.API_ERROR, "Did not remove " + parent + " as parent of " + child);
+			report(task, child, Severity.HIGH, ReportActionType.API_ERROR, "Did not remove " + parent + " as parent of " + child);
 		}
 	}
 	
+	@Override
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
 		checkAndInactivatateIncomingAssociations(t, c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, null);
-		report (t, c, Severity.MEDIUM, ReportActionType.CONCEPT_DELETED);
+		report(t, c, Severity.MEDIUM, ReportActionType.CONCEPT_DELETED);
 		return super.deleteConcept(t, c);
 	}
 
@@ -298,7 +309,7 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			}
 
 			//In this case the replacement is expected to be null and we will just inactivate that historical association
-			if (assoc.isReleased()) {
+			if (assoc.isReleasedSafely()) {
 				assoc.setActive(false);
 				updateRefsetMember(task, assoc, "");
 				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, "Historical association to " + originalTarget + " inactivated with no replacement");
@@ -337,8 +348,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			c = gl.findConcept(lineItems[0]);
 		}
 		
-		if (!c.isActive()) {
-			report ((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Concept is already inactive.");
+		if (!c.isActiveSafely()) {
+			report((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Concept is already inactive.");
 			incrementSummaryInformation("Skipped, already inactivated");
 			return null;
 		}

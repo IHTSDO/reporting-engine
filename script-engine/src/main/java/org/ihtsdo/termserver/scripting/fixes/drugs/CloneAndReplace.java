@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -17,13 +16,7 @@ Driven by a text file of concepts, clone concepts - adjusting FSN and attributes
 then inactivate original and add a historical association to the clone
 Edit: Added column to specify inactivation reason on a per concept basis
 */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class CloneAndReplace extends BatchFix implements ScriptConstants{
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(CloneAndReplace.class);
 
 	Set<Concept> allStatedTargets = new HashSet<>();
 	Set<Concept> allInferredTargets = new HashSet<>();
@@ -38,7 +31,7 @@ public class CloneAndReplace extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CloneAndReplace fix = new CloneAndReplace(null);
 		try {
 			//fix.runStandAlone = true;
@@ -105,13 +98,13 @@ public class CloneAndReplace extends BatchFix implements ScriptConstants{
 		if (c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0 ||
 			c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
 			msg += "It has descendants";
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			return false;
 		}
 		
 		if (allStatedTargets.contains(c) || allInferredTargets.contains(c)) {
 			msg += "It is used as the target of a relationship";
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			return false;
 		}
 		
@@ -139,11 +132,11 @@ public class CloneAndReplace extends BatchFix implements ScriptConstants{
 		
 		//Save clone to TS
 		clone = createConcept(task, clone, " cloned from " + loadedConcept);
-		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
+		report(task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 		
 		//If the save of the clone didn't throw an exception, we can inactivate the original
 		inactivateConcept(task, loadedConcept, clone, inactivationReasons.get(loadedConcept));
-		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
+		report(task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
 		
 		return CHANGE_MADE;
 	}
@@ -179,9 +172,9 @@ public class CloneAndReplace extends BatchFix implements ScriptConstants{
 			//If we didn't replace a relationship, we need to add a new one
 			Relationship newDoseForm = new Relationship(clone, hasDoseForm, newDoseForms.get(original), 0);
 			clone.addRelationship(newDoseForm);
-			report (t, clone, Severity.HIGH, ReportActionType.RELATIONSHIP_ADDED, "Original had no stated dose form.  Added " + newDoseForm  );
+			report(t, clone, Severity.HIGH, ReportActionType.RELATIONSHIP_ADDED, "Original had no stated dose form.  Added " + newDoseForm  );
 		} else if (doseFormsReplaced > 1) {
-			report (t, clone, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, doseFormsReplaced + " dose form attributes replaced!?" );
+			report(t, clone, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, doseFormsReplaced + " dose form attributes replaced!?" );
 		}
 	}
 

@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -10,26 +9,24 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TemplateCompliance extends TemplateFix implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateCompliance.class);
@@ -41,7 +38,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 
 	List<Concept> alreadyReportAligned = new ArrayList<>();
 	List<Concept> alreadyReportedExcluded = new ArrayList<>();
-	
+
 	public TemplateCompliance() {
 		super(null);
 	}
@@ -49,8 +46,8 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 	protected TemplateCompliance(BatchFix clone) {
 		super(clone);
 	}
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<<1285534001 |Procedure on gingiva and supporting structure of tooth (procedure)|");
 		//params.put(TEMPLATE, "71388002 |Procedure (procedure)| : [[~1..* @roleGroup]] { [[~0..1]] 260686004 |Method (attribute)| = [[ +id ( < 129264002 |Action (qualifier value)| ) @procedure ]], [[~1..1]] [[ +id (<< 363704007 |Procedure site (attribute)| ) @Proceduresite ]] = [[ +id ( << 54308001 |Structure of gum and supporting structure of tooth (body structure)| ) @PeriodontalStructure ]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[ +id (<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363701004 |Direct substance (attribute)| = [[+id (<< 105590001 |Substance (substance)| ) @Directsubstance]], [[~0..1]] 363699004 |Direct device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Directdevice]], [[~0..1]] 424226004 |Using device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Usingdevice]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 105590001 |Substance (substance)| ) @Usingsubstance]] }, [[~0..1 @roleGroup2]] {[[~0..1]] 363702006 |Has focus (attribute)| = [[ +id ( << 105995000 |Disorder of teeth AND/OR supporting structures (disorder)| ) @Hasfocus ]]}, [[~0..* @roleGroup3]] { [[~0..1]] 260686004 |Method (attribute)| = [[ +id ( < 129264002 |Action (qualifier value)| ) @procedure2 ]], [[~0..1]] [[ +id (<< 363704007 |Procedure site (attribute)| ) @Proceduresite ]] = [[ +id ( < 442083009 |Anatomical or acquired body structure (body structure)| ) @PeriodontalStructure2 ]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[ +id (<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology2 ]], [[~0..1]] 363701004 |Direct substance (attribute)| = [[+id (<< 105590001 |Substance (substance)| ) @Directsubstance2]], [[~0..1]] 363699004 |Direct device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Directdevice2]], [[~0..1]] 424226004 |Using device (attribute)| = [[+id(<< 49062001 |Device (physical object)| ) @Usingdevice2]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 105590001 |Substance (substance)| ) @Usingsubstance2]] }");
@@ -64,7 +61,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 
 		params.put(INCLUDE_COMPLEX, "false");
 		params.put(INCLUDE_ORPHANET, "false");
-		TermServerReport.run(TemplateCompliance.class, args, params);
+		TermServerScript.run(TemplateCompliance.class, args, params);
 	}
 	
 	@Override
@@ -102,12 +99,12 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				.withTag(INT).withTag(MS)
 				.build();
 	}
-	
+
+	@Override
 	protected void init(JobRun jobRun) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
+		ReportSheetManager.setTargetFolderId("1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"); // QI / Misaligned Concepts
 		selfDetermining = true;
 		reportNoChange = false;
-		//runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		summaryTabIdx = SECONDARY_REPORT;
@@ -121,7 +118,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		
 		super.init(jobRun);
 
-		String templateServerUrl = "Server not specified";
+		String templateServerUrl;
 
 		//Have we been called via the reporting platform or are we running standalone?
 		if (appContext == null) {
@@ -170,10 +167,6 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 					loadUserSpecifiedTemplate(template2);
 				}
 			}
-			
-			//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
-			//TODO Now that we're working with morphologies this is getting expensive.
-			//Query just for the count if 0 concepts resurfaces as an issue.
 		}
 	}
 
@@ -187,7 +180,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				logicalTemplate = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				templateName = template;
 			} else if (template.startsWith("{") || template.startsWith("[")) {
-				ConceptTemplate ct = tsc.loadLocalConceptTemplate("User Defined Template",IOUtils.toInputStream(template, "UTF-8"));
+				ConceptTemplate ct = tsc.loadLocalConceptTemplate("User Defined Template",IOUtils.toInputStream(template, StandardCharsets.UTF_8));
 				logicalTemplate = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				templateName = "User supplied json block";
 			} else {
@@ -204,7 +197,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
 		}
-		LOGGER.info ("Loaded user specified template: " + template);
+		LOGGER.info("Loaded user specified template: " + template);
 	}
 
 	protected void localRunInit() throws TermServerScriptException {
@@ -424,7 +417,8 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		*/
 		super.init((String[])null);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
@@ -445,7 +439,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 	}
 	
 	@Override
-	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		report(task, concept);
 		return CHANGE_MADE;
 	}
@@ -456,9 +450,10 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		if (conceptDiagnosticsInferred.get(c) != null) {
 			diagnosticStr = String.join("\n", conceptDiagnosticsInferred.get(c));
 		}
-		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
+		report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
 	}
-	
+
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 	
 		List<Component> inferredMisaligned = identifyComponentsToProcess(CharacteristicType.INFERRED_RELATIONSHIP);
@@ -481,7 +476,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 			if (conceptDiagnostics.get(c) != null) {
 				diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
 			}
-			report (tabIdx, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
+			report(tabIdx, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
 		}
 	}
 
@@ -490,14 +485,12 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		//This will be so much quicker for MS once we can filter on Module Id first, rather than post-process
 		Collection<Concept> potentiallyMisaligned = findConcepts(subsetECL).stream()
-				.filter(c -> inModuleScope(c))
+				.filter(this::inModuleScope)
 				.collect(Collectors.toList());
 		
-		if (potentiallyMisaligned == null || potentiallyMisaligned.size() == 0) {
+		if (potentiallyMisaligned == null || potentiallyMisaligned.isEmpty()) {
 			throw new TermServerScriptException("Failed to find any concepts matching ECL: '" + subsetECL + "' (in target module)");
 		}
-		
-		//potentiallyMisaligned = Collections.singleton(gl.getConcept("70542004"));
 		
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
@@ -505,7 +498,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		for (Concept c : potentiallyMisaligned) {
 			if (whiteListedConceptIds.contains(c.getId()) && !alreadyReportedExcluded.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
-				report (QUINARY_REPORT, c, "White listed");
+				report(QUINARY_REPORT, c, "White listed");
 				ignoredConcepts.add(c);
 				alreadyReportedExcluded.add(c);
 				continue;
@@ -524,7 +517,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 				if (!alreadyReportAligned.contains(match)) {
 					//Which template did we match?
 					char templateId = conceptToTemplateMap.get(match).getId();
-					report (SENARY_REPORT, match, templateId);
+					report(SENARY_REPORT, match, templateId);
 					alreadyReportAligned.add(match);
 				}
 			}
@@ -537,7 +530,7 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		
 		//Record diagnostics for all concepts that failed to align to a template
 		for (Concept c : potentiallyMisaligned) {
-			List<String> diagnostics = new ArrayList<String>();
+			List<String> diagnostics = new ArrayList<>();
 			conceptDiagnostics.put(c, diagnostics);
 			String msg = "Cardinality mismatch: " +  (StringUtils.isEmpty(c.getIssues())?" N/A" : c.getIssues());
 			diagnostics.add(msg);

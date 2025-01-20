@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -37,10 +36,10 @@ public class QI138_IncisionalHerniaRemodel extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		QI138_IncisionalHerniaRemodel fix = new QI138_IncisionalHerniaRemodel(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = true;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
@@ -140,7 +139,7 @@ public class QI138_IncisionalHerniaRemodel extends BatchFix {
 			}
 		}
 		
-		LOGGER.info ("Counts for simple/obstruct/gangrene/both: " + groupOne.size() + "/" + groupTwo.size() + "/" + groupThree.size() + "/" + groupFour.size());
+		LOGGER.info("Counts for simple/obstruct/gangrene/both: " + groupOne.size() + "/" + groupTwo.size() + "/" + groupThree.size() + "/" + groupFour.size());
 		return formIntoGroupedBatch(buckets);
 	}
 

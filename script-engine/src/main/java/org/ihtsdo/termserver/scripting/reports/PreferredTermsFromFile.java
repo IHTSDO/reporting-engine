@@ -1,8 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,10 +25,9 @@ public class PreferredTermsFromFile extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PreferredTermsFromFile.class);
 
-	String matchText = "+";
 	List<Concept> conceptFilter;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		PreferredTermsFromFile report = new PreferredTermsFromFile();
 		try {
 			report.additionalReportColumns = "Desc_SCTID, Term, USPref, GBPref";
@@ -38,8 +35,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportPreferredTerms();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -50,13 +46,13 @@ public class PreferredTermsFromFile extends TermServerScript{
 			for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isPreferred() && !d.getType().equals(DescriptionType.FSN)) {
 					String[] acceptabilities = SnomedUtils.translateLangRefset(d);
-					report (concept, d, acceptabilities[0], acceptabilities[1] );
+					report(concept, d, acceptabilities[0], acceptabilities[1] );
 				}
 			}
 		}
 	}
 
-	protected void report (Concept c, Description pt, String usPref, String gbPref) throws TermServerScriptException {
+	protected void report(Concept c, Description pt, String usPref, String gbPref) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						pt.getDescriptionId() + QUOTE_COMMA_QUOTE +
@@ -77,7 +73,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		}
 		
 		if (!fileLoaded) {
-			LOGGER.info ("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
+			LOGGER.info("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 	}
@@ -86,7 +82,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		try {
 			File nationalTerms = new File(fileName);
 			List<String> lines = Files.readLines(nationalTerms, Charsets.UTF_8);
-			LOGGER.info ("Loading selected Concepts from " + fileName);
+			LOGGER.info("Loading selected Concepts from " + fileName);
 			conceptFilter = new ArrayList<Concept>();
 			for (String line : lines) {
 				conceptFilter.add(gl.getConcept(line));

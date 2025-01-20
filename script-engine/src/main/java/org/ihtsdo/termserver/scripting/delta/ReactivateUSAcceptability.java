@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -22,7 +21,7 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptC
 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReactivateUSAcceptability delta = new ReactivateUSAcceptability();
 		try {
 			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries
@@ -40,7 +39,7 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptC
 
 	@Override
 	protected void process() throws TermServerScriptException {
-		LOGGER.info ("Processing concepts to find issues with US acceptability.");
+		LOGGER.info("Processing concepts to find issues with US acceptability.");
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			fixFsnAcceptability(concept);
 			if (concept.isModified()) {

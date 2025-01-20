@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -24,7 +23,7 @@ public class RecentSpecimenChanges extends TermServerScript {
 	Collection<Concept> targetAttributes = null;
 	String sinceEffectiveDate = "20180131";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RecentSpecimenChanges report = new RecentSpecimenChanges();
 		try {
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
@@ -46,7 +45,7 @@ public class RecentSpecimenChanges extends TermServerScript {
 			} else if (c.isActive() && 
 					c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE) &&
 					hasRecentlyModifiedTargetAttribute(c)) {
-				report (c, 
+				report(c, 
 						c.getPreferredSynonym(),
 						LoincUtils.getLoincNumFromDescription(c),
 						LoincUtils.getCorrelation(c),

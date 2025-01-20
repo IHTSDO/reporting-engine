@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -8,7 +7,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
@@ -27,10 +25,10 @@ public class AddRoleGroupWithParents extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AddRoleGroupWithParents fix = new AddRoleGroupWithParents(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
@@ -48,7 +46,6 @@ public class AddRoleGroupWithParents extends BatchFix {
 
 	private void postLoadInit() throws TermServerScriptException {
 		//INFRA-9382
-		//ppp = gl.getConcept("110359009 |Intellectual disability (disorder)|");
 		subsetECL = "<< 110359009 |Intellectual disability (disorder)| : * =  308490002 |Pathological developmental process (qualifier value)| ";
 		
 		RelationshipGroupTemplate groupToAdd1 = new RelationshipGroupTemplate();
@@ -92,7 +89,7 @@ public class AddRoleGroupWithParents extends BatchFix {
 			if (changesMade > 0) {
 				String expression = loadedConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 				updateConcept(task, loadedConcept, info);
-				report (task, loadedConcept, Severity.NONE, ReportActionType.INFO, expression);
+				report(task, loadedConcept, Severity.NONE, ReportActionType.INFO, expression);
 			}
 		} catch (ValidationFailure v) {
 			report(task, concept, v);

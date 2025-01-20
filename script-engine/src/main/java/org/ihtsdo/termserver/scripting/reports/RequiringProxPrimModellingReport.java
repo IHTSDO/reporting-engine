@@ -1,16 +1,13 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -27,10 +24,9 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String publishedArchive;
-	//String[] hierarchies = {"404684003", "71388002", "243796009"};
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RequiringProxPrimModellingReport report = new RequiringProxPrimModellingReport();
 		try {
 			report.init(args);
@@ -87,11 +83,11 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 					ok++;
 				}
 			}
-			LOGGER.info ("\tHas FD Parent: " + fdParentCount);
-			LOGGER.info ("\tHas no differentia: " + noDifferentiaCount);
-			LOGGER.info ("\tHas multiple parents: " + multipleParentsCount);
-			LOGGER.info ("\tRequires remodelling: " + requireProxPrimModellingCount);
-			LOGGER.info ("\tIs OK: " + ok);
+			LOGGER.info("\tHas FD Parent: " + fdParentCount);
+			LOGGER.info("\tHas no differentia: " + noDifferentiaCount);
+			LOGGER.info("\tHas multiple parents: " + multipleParentsCount);
+			LOGGER.info("\tRequires remodelling: " + requireProxPrimModellingCount);
+			LOGGER.info("\tIs OK: " + ok);
 		}
 		
 	}
@@ -106,7 +102,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag, boolean hasFDParent, boolean noDifferentia, boolean multipleParents) throws TermServerScriptException {
+	protected void report(Concept c, String semtag, boolean hasFDParent, boolean noDifferentia, boolean multipleParents) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						semtag + QUOTE_COMMA +

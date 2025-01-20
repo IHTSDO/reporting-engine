@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,7 +39,7 @@ public class SubstanceDispositions extends DrugBatchFix implements ScriptConstan
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SubstanceDispositions fix = new SubstanceDispositions(null);
 		try {
 			fix.groupByIssue = true;
@@ -97,7 +96,7 @@ public class SubstanceDispositions extends DrugBatchFix implements ScriptConstan
 			//Just add the disposition and make sufficiently defined so everything else with this disposition falls into line
 			if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 				c.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
-				report (t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Made sufficiently defined");
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Made sufficiently defined");
 				changes++;
 			}
 		} 

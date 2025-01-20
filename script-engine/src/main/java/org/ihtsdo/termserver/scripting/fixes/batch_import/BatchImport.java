@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.batchImport;
+package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import org.apache.commons.csv.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -41,7 +41,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		TermServerScript.run(BatchImport.class, args, params);
 	}
@@ -61,7 +61,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	}
 	
 	protected void init(JobRun jobRun) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; // Batch Import
+		ReportSheetManager.setTargetFolderId("1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"); // Batch Import
 		selfDetermining = true;
 		populateEditPanel = true;
 		populateTaskDescription = true;
@@ -166,7 +166,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		//Do we already have a concept with this FSN?
 		Concept alreadyExists = gl.findConcept(concept.getFsn());
 		if (alreadyExists != null) {
-			report ((Task)null, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept with this FSN already exists ", alreadyExists);
+			report((Task)null, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept with this FSN already exists ", alreadyExists);
 			return false;
 		}
 		
@@ -202,7 +202,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			if (format.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
 				origRef = concept.get(format.getIndex(BatchImportFormat.FIELD.ORIG_REF));
 			}
-			report (t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, origRef, statedForm);
+			report(t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, origRef, statedForm);
 			conceptsLoaded.put(createdConcept.getId(), createdConcept);
 			c.setId(createdConcept.getId());
 			countIssue(createdConcept);

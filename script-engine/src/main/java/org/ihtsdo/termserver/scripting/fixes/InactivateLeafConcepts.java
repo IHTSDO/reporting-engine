@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class InactivateLeafConcepts extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateLeafConcepts fix = new InactivateLeafConcepts(null);
 		try {
 			fix.runStandAlone = true;

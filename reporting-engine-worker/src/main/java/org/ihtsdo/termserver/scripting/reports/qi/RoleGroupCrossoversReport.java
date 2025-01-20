@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils;
@@ -24,19 +24,21 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RoleGroupCrossoversReport.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "< 404684003 |Clinical finding|");
-		TermServerReport.run(RoleGroupCrossoversReport.class, args, params);
+		TermServerScript.run(RoleGroupCrossoversReport.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; //QI / Misc Analysis
+		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); //QI / Misc Analysis
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Groups"};
 		String[] tabNames = new String[] {	"Issues"};
@@ -94,7 +96,7 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 							case ROLEGROUPS_CROSSOVER :
 							case ROLES_CROSSOVER:
 									String issueStr = "Crossover between group " + left.getGroupId() + " and " + right.getGroupId();
-									report (c, issueStr, left + "\n" + right);
+									report(c, issueStr, left + "\n" + right);
 									countIssue(c);
 									break;
 							default:

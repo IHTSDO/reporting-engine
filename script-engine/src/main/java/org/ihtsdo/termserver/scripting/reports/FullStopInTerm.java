@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Set;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -26,7 +24,7 @@ public class FullStopInTerm extends TermServerReport {
 	boolean reportConceptOnceOnly = true;
 	final static String FULL_STOP = ".";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FullStopInTerm report = new FullStopInTerm();
 		try {
 			report.additionalReportColumns = "FSN, MatchedIn, Case, SubHierarchy, SubSubHierarchy";
@@ -34,8 +32,7 @@ public class FullStopInTerm extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportDescriptionContainsX();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}

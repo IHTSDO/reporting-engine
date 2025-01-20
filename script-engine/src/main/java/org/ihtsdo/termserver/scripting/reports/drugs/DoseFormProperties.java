@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -22,22 +22,17 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * Has dose form release characteristic (id, PT), 
  * Has dose form transformation (id, PT)
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class DoseFormProperties extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(DoseFormProperties.class);
 
 	public static final String THIS_RELEASE = "This Release";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		TermServerReport.run(DoseFormProperties.class, args, new HashMap<>());
+	public static void main(String[] args) throws TermServerScriptException {
+		TermServerScript.run(DoseFormProperties.class, args, new HashMap<>());
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1H7T_dqmvQ-zaaRtfrd-T3QCUMD7_K8st"; //Drugs Analysis
+		ReportSheetManager.setTargetFolderId("1H7T_dqmvQ-zaaRtfrd-T3QCUMD7_K8st"); //Drugs Analysis
 		additionalReportColumns = "Dose Form FSN,SemTag,Dose Form PT,ParentIds,Parents,Used in Int,DefnStat,BDFID, Basic Dose Form, AMID, Administration Method, ISID, Intended Site, RCID, Release Characteristic, TransId, Transformation";
 		super.init(run);
 	}
@@ -58,6 +53,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Concept pharmDoseForm = gl.getConcept("736542009 |Pharmaceutical dose form (dose form)|");
 		List<Concept> pharmDoseForms = new ArrayList<>(pharmDoseForm.getDescendants(NOT_SET));
@@ -65,7 +61,7 @@ public class DoseFormProperties extends TermServerReport implements ReportClass 
 		Set<Concept> usedInInternationalEdition = findDoseFormsUsed();
 		for (Concept c : pharmDoseForms) {
 			countIssue(c);
-			report (c, 
+			report(c, 
 					c.getPreferredSynonym(),
 					reportValue(c, IS_A),
 					usedInInternationalEdition.contains(c) ? "Y" : "N",

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -28,10 +27,10 @@ public class SetProximalPrimitiveParent extends BatchFix {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SetProximalPrimitiveParent app = new SetProximalPrimitiveParent(null);
 		try {
-			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
+			ReportSheetManager.setTargetFolderId("1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl");  // QI/Normalization
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -43,7 +42,8 @@ public class SetProximalPrimitiveParent extends BatchFix {
 			app.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		reportNoChange = false;
 		selfDetermining = true;
@@ -51,7 +51,8 @@ public class SetProximalPrimitiveParent extends BatchFix {
 		summaryTabIdx = SECONDARY_REPORT;
 		super.init(args);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail"};
 		String[] tabNames = new String[] {"Setting PPP"};

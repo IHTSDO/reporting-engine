@@ -58,7 +58,7 @@ public class InScopeForTemplatesPerHierarchy extends TermServerReport {
 	}
 	
 	private Set<Concept> calculateInScopeConcepts() throws TermServerScriptException {
-		LOGGER.info ("Obtaining concepts that are 'in scope'");
+		LOGGER.info("Obtaining concepts that are 'in scope'");
 		Set<Concept> inScopeConcepts = new HashSet<>();
 		Concept[] inScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
 											PHARM_BIO_PRODUCT, PROCEDURE,

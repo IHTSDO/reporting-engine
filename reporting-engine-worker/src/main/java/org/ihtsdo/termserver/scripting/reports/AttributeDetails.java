@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -11,11 +12,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * RP-285
@@ -29,16 +26,16 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 		String includeWord;
 		String excludeWord;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "< 404684003 |Clinical finding| : { 363698007 |Finding site| = << 39057004 |Pulmonary valve structure| , 116676008 |Associated morphology| = << 415582006 |Stenosis| }");
 		params.put(COMPACT, "true");
 		params.put(INCLUDE_WORD, "Pulmonic");
-		TermServerReport.run(AttributeDetails.class, args, params);
+		TermServerScript.run(AttributeDetails.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(ECL);
 		compactReport = run.getParameters().getMandatoryBoolean(COMPACT);
 		includeWord = run.getParamValue(INCLUDE_WORD);
@@ -91,7 +88,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 			//Are we working in verbose or compact mode?
 			if (compactReport) {
 				String expression = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
-				report (c, defStatus, expression);
+				report(c, defStatus, expression);
 				countIssue(c);
 			} else {
 				String characteristicStr = "";
@@ -103,7 +100,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 					if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() > 0) {
 						characteristicStr += " + S";
 					}
-					report (c, r, defStatus, characteristicStr);
+					report(c, r, defStatus, characteristicStr);
 				}
 				//Are there any relationships which are only stated?
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -111,7 +108,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 						continue;
 					}
 					if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
-						report (c, r, defStatus, "S");
+						report(c, r, defStatus, "S");
 					}
 				}
 			}

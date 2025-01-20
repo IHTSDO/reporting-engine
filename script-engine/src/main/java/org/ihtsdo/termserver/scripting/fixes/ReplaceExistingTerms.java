@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -34,7 +33,7 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceExistingTerms fix = new ReplaceExistingTerms(null);
 		try {
 			fix.selfDetermining = true;
@@ -93,7 +92,7 @@ public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		LOGGER.info ("Identified {} concepts to process", allAffected.size());
+		LOGGER.info("Identified {} concepts to process", allAffected.size());
 		return new ArrayList<>(allAffected);
 	}
 }

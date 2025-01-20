@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
@@ -54,7 +53,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			TAB_IOI,
 			TAB_STATS};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		new ImportLoincTerms().ingestExternalContent(args);
 	}
 

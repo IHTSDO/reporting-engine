@@ -4,25 +4,15 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
-/**
- */
 public class RetermIllegalCharacters extends BatchFix {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RetermIllegalCharacters.class);
 	private static final String EN_DASH = "\u2013";
 	private static final String EM_DASH = "\u2014";
 
@@ -33,15 +23,14 @@ public class RetermIllegalCharacters extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RetermIllegalCharacters fix = new RetermIllegalCharacters(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
-			//fix.runStandAlone = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -20,7 +19,7 @@ public class ConceptsUsingAttribute extends TermServerReport {
 
 	Concept attributeType;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ConceptsUsingAttribute report = new ConceptsUsingAttribute();
 		try {
 			report.additionalReportColumns = "Semtag, DefinitionStatus, Stated, Inferred";
@@ -50,7 +49,7 @@ public class ConceptsUsingAttribute extends TermServerReport {
 				int inferred = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE).size();
 				if (stated > 0 || inferred > 0) {
 					String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-					report (c, semTag, c.getDefinitionStatus(), Integer.toString(stated), Integer.toString(inferred));
+					report(c, semTag, c.getDefinitionStatus(), Integer.toString(stated), Integer.toString(inferred));
 					incrementSummaryInformation(c.getDefinitionStatus().toString());
 					incrementSummaryInformation(semTag);
 					if (stated > 0) {

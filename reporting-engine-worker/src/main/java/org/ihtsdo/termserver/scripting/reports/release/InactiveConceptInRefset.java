@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
@@ -44,16 +45,17 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	private boolean extensionRefsetOnly = false;
 	public static final int CLAUSE_LIMIT = 100;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_LAST_RELEASE, "true");
 		params.put(EXT_REF_ONLY, "false");
-		TermServerReport.run(InactiveConceptInRefset.class, args, params);
+		TermServerScript.run(InactiveConceptInRefset.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		super.init(run);
 
 		//Doesn't make sense to include the last release if we're also working with unpromoted changes
@@ -62,6 +64,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		if (getJobRun().getParameters().getMandatoryBoolean(INCLUDE_LAST_RELEASE)) {
 			lastReleaseEffectiveTime = project.getMetadata().getDependencyRelease();
@@ -70,7 +73,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		referenceSets = findConcepts(REFSET_ECL);
 		removeEmptyAndNoScopeRefsets();
-		LOGGER.info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
+		LOGGER.info("Recovered {} simple reference sets and maps", referenceSets.size());
 
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Count",
@@ -121,7 +124,8 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				.withExpectedDuration(40)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		//If we are including the last release then all concepts are in scope and
 		//inactivations from the previous international release are included
@@ -129,29 +133,29 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		if (lastReleaseEffectiveTime == null) {
 			//We're looking for concepts which are inactive and have no effective time
 			inactivatedConcepts = gl.getAllConcepts().stream()
-					.filter(c -> !c.isActive())
-					.filter(c -> inScope(c))
+					.filter(c -> !c.isActiveSafely())
+					.filter(this::inScope)
 					.filter(c -> (!unpromotedChangesOnly || unpromotedChangesHelper.hasUnpromotedChange(c)))
 					.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
-					.collect(Collectors.toList());
+					.toList();
 		} else {
 			inactivatedConcepts = gl.getAllConcepts().stream()
-					.filter(c -> !c.isActive())
+					.filter(c -> !c.isActiveSafely())
 					.filter(c -> (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(lastReleaseEffectiveTime)))
-					.collect(Collectors.toList());
+					.toList();
 		}
 		
 		if (!extensionRefsetOnly) {
-			LOGGER.debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against High Usage SCTIDs");
+			LOGGER.debug("Checking {} inactivated concepts against High Usage SCTIDs", inactivatedConcepts.size());
 			List<String> inactivatedConceptIds = inactivatedConcepts.stream().
-					map(c -> c.getId())
-					.collect(Collectors.toList());
+					map(Concept::getId)
+					.toList();
 			checkHighVolumeUsage(inactivatedConceptIds);
 		}
 		
-		LOGGER.debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
+		LOGGER.debug("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
 		String viableRefsetECL = referenceSets.stream()
-				.map(r -> r.getId())
+				.map(Concept::getId)
 				.collect(Collectors.joining(" OR "));
 		
 		int count = 0;
@@ -168,18 +172,20 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				}
 				
 				if (referenceSets.contains(refset)) {
-					report (TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId());
+					report(TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId());
 					refsetSummary.getAndIncrement(refset);
 					moduleSummary.getAndIncrement(module);
 					countIssue(c);
 				}
 			}
 			try {
-				Thread.sleep(1 * 200);
-			} catch (Exception e) {}
+				Thread.sleep(200L);
+			} catch (Exception e) {
+				Thread.currentThread().interrupt();
+			}
 			
 			count += inactiveConceptsSegment.size();
-			LOGGER.debug ("Checked " + count + " inactive concepts");
+			LOGGER.debug("Checked " + count + " inactive concepts");
 		}
 		
 		//Output summary counts
@@ -207,14 +213,14 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		String fileName = "resources/HighVolumeSCTIDs.txt";
 		Concept hvu = new Concept("0","High Volume Usage (UK)");
 		hvu.setModuleId(SCTID_CORE_MODULE);
-		LOGGER.debug ("Loading " + fileName );
+		LOGGER.debug("Loading {}", fileName);
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			for (String line : lines) {
 				String id = line.split(TAB)[0];
 				if (inactivatedIds.contains(id)) {
 					Concept concept = gl.getConcept(id);
-					report (TERTIARY_REPORT, concept, "High Volume Usage", concept.getModuleId(), "N/A");
+					report(TERTIARY_REPORT, concept, "High Volume Usage", concept.getModuleId(), "N/A");
 					refsetSummary.getAndIncrement(hvu);
 				}
 			}

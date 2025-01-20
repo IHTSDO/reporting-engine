@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -14,7 +14,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,30 +28,27 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
-	//private List<Concept> bannedMpParents;
 	private Set<BaseMDF> reportedBaseMDFCombos = new HashSet<>();
 	
 	private boolean isRecentlyTouchedConceptsOnly = false;
 	private Set<Concept> recentlyTouchedConcepts;
 	
-	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
-	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
-	
 	Set<Concept> presAttributes = new HashSet<>();
 	Set<Concept> concAttributes = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
-		TermServerReport.run(BoSS_PAI_Check.class, args, params);
+		TermServerScript.run(BoSS_PAI_Check.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
@@ -96,7 +92,8 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 				.withParameters(params)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		populateSummaryTab();
@@ -131,7 +128,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 				checkForPaiGroupers(c);
 			}
 		}
-		LOGGER.info ("Drugs validation complete");
+		LOGGER.info("Drugs validation complete");
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -177,7 +174,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr);
 		for (Concept boss : SnomedUtils.getTargets(c, new Concept[] {HAS_BOSS}, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (grouperSubstanceUsage.containsKey(boss)) {
-				report (c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
+				report(c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
 			}
 		}
 	}
@@ -187,7 +184,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr);
 		for (Concept pai : SnomedUtils.getTargets(c, new Concept[] {HAS_PRECISE_INGRED}, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (grouperSubstanceUsage.containsKey(pai)) {
-				report (c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
+				report(c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
 			}
 		}
 	}
@@ -227,7 +224,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 						matchFound = true;
 						if (isSubType) {
 							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
-							report (concept, issueStr, ingred, boSS);
+							report(concept, issueStr, ingred, boSS);
 						} else if (isModificationOf) {
 							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
 						} else if (isSelf) {
@@ -237,7 +234,7 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 				}
 			}
 			if (!matchFound) {
-				report (concept, issue2Str, boSS);
+				report(concept, issue2Str, boSS);
 			}
 		}
 	}
@@ -339,11 +336,11 @@ public class BoSS_PAI_Check extends TermServerReport implements ReportClass {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 		
 	private boolean isCD(Concept concept) {

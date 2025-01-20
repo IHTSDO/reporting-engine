@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
 
@@ -25,7 +24,7 @@ public class FdParentsReport extends TermServerReport {
 
 	String subHierarchy = "105590001"; // |Substance (substance)|
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FdParentsReport report = new FdParentsReport();
 		try {
 			report.additionalReportColumns = "SemanticTag, DefinitionStatus, FdParent";

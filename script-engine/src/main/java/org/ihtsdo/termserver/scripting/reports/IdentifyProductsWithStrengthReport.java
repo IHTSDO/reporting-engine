@@ -1,20 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
@@ -32,10 +23,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(IdentifyProductsWithStrengthReport.class);
 
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	
-	String[] strengthUnitStrs = { "mg/mL", "mg","%","ml", "mL","g","mgi", "milligram","micrograms/mL", 
+	String[] strengthUnitStrs = { "mg/mL", "mg","%","ml", "mL","g","mgi", "milligram","micrograms/mL",
 								"micrograms","microgram","units/mL", "units","unit/mL","unit",
 								"iu/mL","iu","mcg","million units", 
 								"mL", "u/mL", "MBq/mL", "MBq", "gm", "million iu", "million/iu", "unt/g","unt", "nanograms",
@@ -48,7 +36,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	
 	Multiset<String> strengthUnitCombos = HashMultiset.create();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		IdentifyProductsWithStrengthReport report = new IdentifyProductsWithStrengthReport();
 		try {
 			report.additionalReportColumns = "EffectiveTime, Definition_Status,lexicalMatch, authorIdentified";
@@ -58,8 +46,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			List<Component> authorIdentified = report.processFile();
 			report.identifyProductsWithStrength(authorIdentified);
 		} catch (Exception e) {
-			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -71,7 +58,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		//use a number of criteria to determine if concept is a product with strength.
 		Set<Concept> products = gl.getConcept("373873005").getDescendants(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);  //|Pharmaceutical / biologic product (product)|
 		Set<Component> remainingFromList = new HashSet<Component> (authorIdentifiedList);
-		LOGGER.info ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
+		LOGGER.info("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
 		int bothIdentified = 0;
 		int lexOnly = 0;
 		int authorOnly = 0;
@@ -80,7 +67,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			boolean lexicalMatch = termIndicatesStrength(c.getFsn());
 			boolean authorIdentified = authorIdentifiedList.contains(c);
 			if (lexicalMatch || authorIdentified) {
-				report (c, lexicalMatch, authorIdentified);
+				report(c, lexicalMatch, authorIdentified);
 				remainingFromList.remove(c);
 				if (lexicalMatch && authorIdentified) {
 					bothIdentified++;
@@ -95,19 +82,19 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			}
 		}
 		
-		LOGGER.info ("\n\nMatching Counts\n===============");
-		LOGGER.info ("Both agree: " + bothIdentified);
-		LOGGER.info ("Lexical only: " + lexOnly);
-		LOGGER.info ("Author only: " + authorOnly);
+		LOGGER.info("\n\nMatching Counts\n===============");
+		LOGGER.info("Both agree: " + bothIdentified);
+		LOGGER.info("Lexical only: " + lexOnly);
+		LOGGER.info("Author only: " + authorOnly);
 		
 		LOGGER.info("\nOn list but not active in hierarchy (" + remainingFromList.size() + ") : ");
 		for (Component lostConcept : remainingFromList) {
-			LOGGER.info ("  " + lostConcept);
+			LOGGER.info("  " + lostConcept);
 		}
 		
 		LOGGER.info("\n Strength/Unit combinations: " + strengthUnitCombos.elementSet().size());
 		for (String strengthUnit : strengthUnitCombos.elementSet()) {
-			LOGGER.info ("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
+			LOGGER.info("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
 		}
 	}
 
@@ -166,7 +153,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		return correctlyParsed;
 	}
 
-	protected void report (Concept c, boolean lexicalMatch, boolean authorIdentified) throws TermServerScriptException {
+	protected void report(Concept c, boolean lexicalMatch, boolean authorIdentified) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +

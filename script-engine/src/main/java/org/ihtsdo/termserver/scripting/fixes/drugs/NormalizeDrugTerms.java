@@ -1,12 +1,10 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-//import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
@@ -33,16 +31,14 @@ public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NormalizeDrugTerms.class);
 
 	String subHierarchyStr = MEDICINAL_PRODUCT.getConceptId();
-	//static Map<String, String> replacementMap = new HashMap<String, String>();
 	private List<String> exceptions = new ArrayList<>();
-	//CaseSignificanceFixAll csFixer;
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected NormalizeDrugTerms(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormalizeDrugTerms fix = new NormalizeDrugTerms(null);
 		try {
 			ReportSheetManager.targetFolderId="1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs/Normalize Terming
@@ -126,7 +122,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants 
 				|| c.getConceptType().equals(ConceptType.DISPOSITION_GROUPER)
 				|| c.getConceptType().equals(ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER)) { */
 				if (exceptions.contains(c.getId())) {
-					report ((Task)null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
+					report((Task)null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 				} else {
 					//See if the modifying the term makes any changes
 					//if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP) > 0) {
@@ -136,7 +132,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants 
 				}
 			}
 		}
-		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		termGenerator.setQuiet(false);
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);

@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.aag;
 
-import java.io.IOException;
-
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -14,18 +12,12 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Exceptionally, we're going to allow components that look like they're born inactive
  * because they'd previously existed in another module which the RVF is not aware of.
 */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class WhitelistBornInactiveComponents extends TermServerScript {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(WhitelistBornInactiveComponents.class);
 
 	public static String assertionId = "2b193a88-8dab-4d19-b995-b556ed59398d";
 	//public static String assertionText = "New inactive states follow active states in the DESCRIPTION snapshot.";
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		WhitelistBornInactiveComponents fix = new WhitelistBornInactiveComponents();
 		try {
 			fix.runStandAlone = false;
@@ -44,7 +36,6 @@ public class WhitelistBornInactiveComponents extends TermServerScript {
 	public void doFix() throws TermServerScriptException {
 		AuthoringAcceptanceGatewayClient client = new AuthoringAcceptanceGatewayClient(url, authenticatedCookie);
 		int failures = 0;
-		//for (Concept concept : Collections.singletonList(gl.getConcept("722197004"))) {
 		for (Concept concept : gl.getAllConcepts()) {
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
 				try {

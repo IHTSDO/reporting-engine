@@ -1,12 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -30,17 +29,18 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	boolean newIssuesOnly = true;
 	boolean ptOnly = true;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(NEW_ISSUES_ONLY, "N");
 		params.put(PT_ONLY, "N");
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
-		TermServerReport.run(DuplicateTermsInSubhierarchy.class, args, params);
+		TermServerScript.run(DuplicateTermsInSubhierarchy.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, SemTag, Legacy, Description, Matched Description, Matched Concept";
 		
@@ -71,6 +71,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		ptOnly = jobRun.getParameters().getMandatoryBoolean(PT_ONLY);
 		newIssuesOnly = jobRun.getParameters().getMandatoryBoolean(NEW_ISSUES_ONLY);
@@ -78,7 +79,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		//Am I working through multiple subHierarchies, or targeting one?
 		if (subHierarchy == null || subHierarchy.equals(ROOT_CONCEPT)) {
 			for (Concept majorHierarchy : ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD)) {
-				LOGGER.info ("Reporting " + majorHierarchy);
+				LOGGER.info("Reporting {}", majorHierarchy);
 				reportDuplicateDescriptions(majorHierarchy);
 			}
 		} else {
@@ -100,8 +101,8 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 			
 			List<Description> descriptions = c.getDescriptions(acceptability, DescriptionType.SYNONYM, ActiveState.ACTIVE)
 					.stream()
-					.filter(d -> inScope(d))
-					.collect(Collectors.toList());
+					.filter(this::inScope)
+					.toList();
 			
 			for (Description d : descriptions) {
 				//Do we already know about this term?
@@ -129,7 +130,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 						incrementSummaryInformation("Fresh Issues Reported");
 					}
 					Concept alreadyKnownConcept = gl.getConcept(alreadyKnown.getConceptId());
-					report (c, legacyIssue, d, alreadyKnown, alreadyKnownConcept);
+					report(c, legacyIssue, d, alreadyKnown, alreadyKnownConcept);
 					countIssue(c); 
 				} else {
 					knownTerms.put(d.getTerm(), d);

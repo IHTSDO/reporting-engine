@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -8,6 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -27,14 +27,14 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 	
 	private boolean includeInt = false;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_INT, "true");
-		TermServerReport.run(ListSemanticTagsByHierarchy.class, args, params);
+		TermServerScript.run(ListSemanticTagsByHierarchy.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		super.init(run);
 		headers="Hieararchy, SemTag, Language, Count";
 		additionalReportColumns="";
@@ -63,7 +63,7 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept topLevel : ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD)) {
 			Set<Concept> descendants = topLevel.getDescendants(NOT_SET);
-			report (PRIMARY_REPORT, (Component)null, topLevel.toString(), "", descendants.size());
+			report(PRIMARY_REPORT, (Component)null, topLevel.toString(), "", descendants.size());
 			Map<String, Multiset<String>> languageMap = new HashMap<>();
 			for (Concept c : descendants) {
 				for (Description d : c.getDescriptions()) {
@@ -87,7 +87,7 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 				String language = entry.getKey();
 				Multiset<String> tags = entry.getValue();
 				for (String tag : tags.elementSet()) {
-					report (PRIMARY_REPORT, (Component)null, "", tag, language, tags.count(tag));
+					report(PRIMARY_REPORT, (Component)null, "", tag, language, tags.count(tag));
 				}
 			}
 		}

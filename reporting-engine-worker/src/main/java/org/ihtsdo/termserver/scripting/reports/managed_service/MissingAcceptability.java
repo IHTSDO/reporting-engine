@@ -1,12 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.managed_service;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -14,13 +13,13 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
-/**
- * RP-565
- */
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * RP-565
+ */
 public class MissingAcceptability extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MissingAcceptability.class);
@@ -32,15 +31,16 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 	private boolean includeInactiveConcepts = false;
 	private String trackDialect = null;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_INACTIVE_CONCEPTS, "false");
 		params.put(TRACK_DIALECT, "GB");
-		TermServerReport.run(MissingAcceptability.class, args, params);
+		TermServerScript.run(MissingAcceptability.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+		ReportSheetManager.setTargetFolderId("1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"); //Managed Service
 		subsetECL = run.getParamValue(ECL);
 		includeInactiveConcepts = run.getParamBoolean(INCLUDE_INACTIVE_CONCEPTS);
 		
@@ -60,7 +60,8 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 			throw new TermServerScriptException("Missing Acceptability Report cannot be run against MAIN");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		try {
 			defaultLangRefset = project.getMetadata().getDefaultLangRefset();
@@ -91,7 +92,8 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 				.withExpectedDuration(30)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
@@ -114,8 +116,8 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 				}
 			}
 			
-			if (descriptionsToReport.length() > 0) {
-				report (c, descriptionsToReport);
+			if (!descriptionsToReport.isEmpty()) {
+				report(c, descriptionsToReport);
 				countIssue(c);
 			}
 		}
@@ -123,9 +125,9 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 	
 	private List<Concept> scopeAndSort(Collection<Concept> superSet) {
 		return superSet.stream()
-		.filter (c -> inScope(c))
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-		.collect(Collectors.toList());
+		.filter(this::inScope)
+		.sorted(SnomedUtils::compareSemTagFSN)
+		.toList();
 	}
 	
 	private boolean inScope(Concept c) {

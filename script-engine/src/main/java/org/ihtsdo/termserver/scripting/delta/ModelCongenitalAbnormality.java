@@ -96,7 +96,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 			//If the concept has no modelling, or no we'll skip it.
 			if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, associatedMorphology, ActiveState.ACTIVE).isEmpty()) {
 				String msg = "Concept has no stated associated morphology, skipping";
-				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.NO_CHANGE, msg);
+				report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.NO_CHANGE, msg);
 			} else {
 				int changesMade = 0;
 				int firstFreeGroup = SnomedUtils.getFirstFreeGroup(concept);
@@ -133,7 +133,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 				concept.addRelationship(movedRel);
 				r.setActive(false);
 				String msg = "Recreated group 0 attribute of type " + type + " in group " + movedRel.getGroupId();
-				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg);
+				report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg);
 				changesMade++;
 			}
 		}
@@ -150,7 +150,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 					Relationship r = addMe.createRelationship(concept, f.getGroupId(), relIdGenerator.getSCTID());
 					concept.addRelationship(r);
 					String msg = "Ensuring finding site grouped with " + r;
-					report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+					report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
 					changesMade++;
 				}
 			}
@@ -170,7 +170,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 				if (findRel.equalsTypeAndTargetValue(rel)) {
 					if (groupsAffected.contains(rel.getGroupId())) {
 						String msg = "Concept has two matching relationships in same group: " + rel.getGroupId();
-						report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
+						report(concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 						return changesMade;
 					} else {
 						matchedRelationships.add(rel);
@@ -183,7 +183,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		for (Relationship thisMatch : matchedRelationships) {
 			if (thisMatch.getGroupId() == 0) {
 				String msg = "Relationship matched is in group 0: " + thisMatch;
-				report (concept, concept.getFSNDescription(), Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+				report(concept, concept.getFSNDescription(), Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
 				//TODO If this comes up, move the relationships into a free group
 				//and remove "else"
 			} else {
@@ -231,7 +231,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 				addMe.setRelationshipId(relIdGenerator.getSCTID());
 				addMe.setDirty();
 				concept.addRelationship(addMe);
-				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, addMe.toString());
+				report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, addMe.toString());
 				changesMade++;
 			}
 		}
@@ -258,7 +258,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 				source.addRelationship(replacement);
 				changesMade++;
 				String msg = (firstReplacement ?"Replaced " + replaceMe :"Also") + " with " + replacement;
-				report (source, source.getFSNDescription(), Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
+				report(source, source.getFSNDescription(), Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
 				firstReplacement = false;
 			}
 		}
@@ -274,7 +274,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 				source.addRelationship(addition);
 				changesMade++;
 				String msg = "Added " + addition + " due to presence of " + addToMe;
-				report (source, source.getFSNDescription(), Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
+				report(source, source.getFSNDescription(), Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
 			}
 		}
 		return changesMade;
@@ -284,7 +284,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 			RelationshipTemplate rt, long group) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			if (r.getGroupId() == group && rt.equalsTypeAndTargetValue(r)) {
-				report (c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Replacement relationship already exists as " + r);
+				report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Replacement relationship already exists as " + r);
 				return true;
 			}
 		}

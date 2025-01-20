@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,10 +25,9 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 	InferredGroupsNotStated inferredGroupsNotStatedReport;
 	SplitRoleGroupsWithRepeatedAttributes splitRoleGroupsWithRepeatedAttributes;
 	int lowerLimit = 250;
-	int upperLimit = 1000;
 	Map<Relationship, Set<Concept>> expansionMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GnarlyFactorCalculationECL report = new GnarlyFactorCalculationECL();
 		try {
 			report.inputFileHasHeaderRow = false;
@@ -41,8 +38,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 			report.identifyGroupersByAttribute(report.processFile());
 			report.run();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -115,7 +111,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 				modified.setTarget(parent);
 				//Do we already have this ECL mapped?  No need to request again if so.
 				if (expansionMap.containsKey(modified)) {
-					LOGGER.info ("Have already recovered " + modified);
+					LOGGER.info("Have already recovered " + modified);
 					return modified;
 				}
 				Relationship thisAncestorRel = findOptimalECL(modified, hopCount + 1);
@@ -146,7 +142,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 	}
 
 	private void run() throws TermServerScriptException {
-		LOGGER.info ("Calculating Gnarly Factor in " + expansionMap.size() + " ECLs");
+		LOGGER.info("Calculating Gnarly Factor in " + expansionMap.size() + " ECLs");
 		int x = 0;
 		for (Relationship ecl : expansionMap.keySet()) {
 			Set<Concept> eclConcepts = new HashSet<>(expansionMap.get(ecl));
@@ -161,7 +157,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 			int groupDiff = inferredGroupsNotStatedReport.runCheckForInferredGroupsNotStated();
 			int repeatedAttributes = splitRoleGroupsWithRepeatedAttributes.identifyComponentsToProcess().size();
 			
-			report ((Relationship)ecl, 
+			report((Relationship)ecl, 
 					"N/A",
 					concepts.size(), 
 					Integer.toString(intermediatePrimitivesReport.intermediatePrimitives.size()),

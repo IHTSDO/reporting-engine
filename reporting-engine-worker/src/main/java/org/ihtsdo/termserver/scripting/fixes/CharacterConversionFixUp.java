@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -14,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 public class CharacterConversionFixUp extends BatchFix implements ScriptConstants, ReportClass {
 
@@ -35,7 +33,7 @@ public class CharacterConversionFixUp extends BatchFix implements ScriptConstant
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CharacterConversionFixUp fix = new CharacterConversionFixUp(null);
 		try {
 			fix.selfDetermining = true;

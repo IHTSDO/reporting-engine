@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.batchImport;
+package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import java.util.*;
 
@@ -7,13 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class BatchImportConcept extends Concept {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportConcept.class);
 
 	private CSVRecord row;
 	private BatchImportExpression expression;

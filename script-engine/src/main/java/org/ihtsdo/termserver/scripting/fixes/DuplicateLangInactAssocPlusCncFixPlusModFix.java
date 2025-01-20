@@ -41,7 +41,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		final DuplicateLangInactAssocPlusCncFixPlusModFix fix = new DuplicateLangInactAssocPlusCncFixPlusModFix(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.runStandAlone = false;  //We need to look up the project path for MS projects
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
@@ -98,7 +98,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		int changesMade = 0;
 		
 		/*if (c.getId().equals("359592009")) {
-			LOGGER.debug ("here");
+			LOGGER.debug("here");
 		}*/
 		
 		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());

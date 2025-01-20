@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -47,30 +46,29 @@ public class GroupRemodel extends TemplateFix {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GroupRemodel app = new GroupRemodel(null);
 		try {
-			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
+			ReportSheetManager.setTargetFolderId("15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"); //QI  / Group One Remodel
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			LOGGER.info("Failed to Group Remodel due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to Group Remodel", e);
 		} finally {
 			app.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		selfDetermining = true;
 		classifyTasks = true;
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
-		//includeComplexTemplates = true;
-		
+
 		formNewGroupAround.add(FINDING_SITE);
 		formNewGroupAround.add(CAUSE_AGENT);
 		formNewGroupAround.add(ASSOC_MORPH);
@@ -197,7 +195,8 @@ public class GroupRemodel extends TemplateFix {
 			throw new TermServerScriptException(subsetECL + " returned 0 rows");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		
@@ -231,7 +230,7 @@ public class GroupRemodel extends TemplateFix {
 			}
 		}
 
-		if (!loadedConcept.isActive()) {
+		if (!loadedConcept.isActiveSafely()) {
 			report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Attempt to remodel an inactive concept");
 			return NO_CHANGES_MADE;
 		}
@@ -241,7 +240,7 @@ public class GroupRemodel extends TemplateFix {
 			if (focusConceptIds.size() == 1) {
 				checkAndSetProximalPrimitiveParent(task, loadedConcept, gl.getConcept(focusConceptIds.get(0)));
 			} else {
-				report (task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
+				report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
 			}
 			
 			try {
@@ -291,7 +290,7 @@ public class GroupRemodel extends TemplateFix {
 		groups = shuffleDown(groups);
 		
 		if (groups.size() < 2) {
-			LOGGER.debug ("Debug Here!");
+			LOGGER.debug("Debug Here!");
 		}
 		
 		//Now if we have multiple template groups, align those to any existing attributes
@@ -340,7 +339,7 @@ public class GroupRemodel extends TemplateFix {
 				for (Relationship r : new ArrayList<>(group.getRelationships())) {
 					if (r.equalsTypeAndTargetValue(removeRel)) {
 						group.removeRelationship(r);
-						report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Removed unwanted: " + r);
+						report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Removed unwanted: " + r);
 					}
 				}
 			}
@@ -353,7 +352,7 @@ public class GroupRemodel extends TemplateFix {
 			if (r.getGroupId() != UNGROUPED && ungroupedAttributeTypes.contains(r.getType())) {
 				int originalGroup = r.getGroupId();
 				r.setGroupId(UNGROUPED);
-				report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved out of group " + originalGroup +": " + r);
+				report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved out of group " + originalGroup +": " + r);
 				changesMade++;
 			}
 		}
@@ -382,7 +381,7 @@ public class GroupRemodel extends TemplateFix {
 			if (modifiedForm.equals(statedForm)) {
 				throw new ValidationFailure(c, "Stated modelling unchanged");
 			}
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
+			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
 		}
 		return changesMade;
 	}
@@ -556,10 +555,10 @@ public class GroupRemodel extends TemplateFix {
 					groups.get(UNGROUPED).removeRelationship(ungroupedConstant);
 					ungroupedConstant.setGroupId(group.getGroupId());
 					group.addRelationship(ungroupedConstant);
-					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant, moved from group 0: " + ungroupedConstant);
+					report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant, moved from group 0: " + ungroupedConstant);
 				} else {
 					group.addRelationship(constantRel);
-					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant: " + constantRel);
+					report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant: " + constantRel);
 				}
 				removeRedundancies(constantRel, group);
 				return CHANGE_MADE;
@@ -579,13 +578,13 @@ public class GroupRemodel extends TemplateFix {
 		for (Relationship removeRel : removeRelationships) {
 			if (removeRel.getType().equals(type)) {
 				values.remove(removeRel.getTarget());
-				LOGGER.debug("Removed potential relationship " + removeRel);
+				LOGGER.debug("Removed potential relationship {}", removeRel);
 			}
 		}
 		
 		//Do we have a single value, or should we consider creating an additional grouping?
 		boolean additionNeeded = true;
-		if (values.size() == 0) {
+		if (values.isEmpty()) {
 			return NO_CHANGES_MADE;
 		} else if (values.size() == 1) {
 			//If we're pulling from stated rels, move any group 0 instances to the new group id
@@ -601,7 +600,7 @@ public class GroupRemodel extends TemplateFix {
 					ungroupedRel = ungroupedRel.clone(ungroupedRel.getId());
 					ungroupedRel.setGroupId(group.getGroupId());  //We want to retain the SCTID
 					group.addRelationship(ungroupedRel); 
-					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved to group " + group.getGroupId() + ": " + ungroupedRel);
+					report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved to group " + group.getGroupId() + ": " + ungroupedRel);
 					return CHANGE_MADE;
 				} else if (ungroupedRels.size() > 1) {
 					LOGGER.warn ("Consider this case");
@@ -642,7 +641,7 @@ public class GroupRemodel extends TemplateFix {
 		//Actually, we could just skip them in the first place.
 		/*if (type.equals(FINDING_SITE) && (( c.getRelationships(charType, type, disjointAttributeValues.get(0), UNGROUPED, ActiveState.ACTIVE).size() > 0) ||
 				c.getRelationships(charType, type, disjointAttributeValues.get(1), UNGROUPED, ActiveState.ACTIVE).size() > 0 )) {
-			LOGGER.debug ("Finding site in group 0, not forming 2nd group: " + c );
+			LOGGER.debug("Finding site in group 0, not forming 2nd group: " + c );
 			return NO_CHANGES_MADE;
 		}*/
 		
@@ -822,16 +821,13 @@ public class GroupRemodel extends TemplateFix {
 			} catch (Exception e) {
 				throw new TermServerScriptException("Unable to read already processed concepts from " + alreadyProcessedFile, e);
 			}
-			LOGGER.info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
+			LOGGER.info("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
 		}
 		
 		for (Concept c : findConcepts(subsetECL)) {
-		//for (Concept c : Collections.singleton(gl.getConcept("231937002"))) {
-			if (inclusionWords.size() > 0) {
-				if (!containsInclusionWord(c)) {
-					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
-					continue;
-				}
+			if (!inclusionWords.isEmpty() && !containsInclusionWord(c)) {
+				incrementSummaryInformation("Skipped as doesn't contain inclusion word");
+				continue;
 			}
 			if (alreadyProcessed.contains(c)) {
 				incrementSummaryInformation("Skipped as already processed");
@@ -840,7 +836,7 @@ public class GroupRemodel extends TemplateFix {
 			//At THIS point in the evolution of the code, attempt to remodel any concept
 			//where the stated attribute do not match the inferred OR where the concept
 			//is not aligned to the template
-			if (!isExcluded(c, false)) {
+			if (!isExcluded(c)) {
 				if (!SnomedUtils.inferredMatchesStated(c)) {
 					processMe.add(c);
 				} else {
@@ -864,16 +860,14 @@ public class GroupRemodel extends TemplateFix {
 			}
 		}
 		processMe.sort(Comparator.comparing(Concept::getFsn));
-		List<Component> firstPassComplete = firstPassRemodel(processMe);
-		return firstPassComplete;
+		return firstPassRemodel(processMe);
 	}
 	
-	protected boolean isExcluded(Concept c, boolean quiet) throws TermServerScriptException {
-		if (skipMultipleUngroupedFindingSites) {
-			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {
-				LOGGER.warn("Excluding due to multiple ungrouped finding sites: " + c);
-				return true;
-			}
+	protected boolean isExcluded(Concept c) throws TermServerScriptException {
+		if (skipMultipleUngroupedFindingSites 
+				&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {
+			LOGGER.warn("Excluding due to multiple ungrouped finding sites: {}", c);
+			return true;
 		}
 		return super.isExcluded(c, null);
 	}
@@ -898,10 +892,10 @@ public class GroupRemodel extends TemplateFix {
 		}
 		setQuiet(false);
 		for (ValidationFailure failure : failures) {
-			report (failure);
+			report(failure);
 		}
 		for (Concept unchanged : noChangesMade) {
-			report ((Task)null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
+			report((Task)null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
 		}
 		LOGGER.info("First pass attempt at remodel complete, " + firstPassComplete.size() + " concepts identified to change from an initial " + processMe.size() + ". " + noChangesMade.size() + " had no changes.");
 		return firstPassComplete;

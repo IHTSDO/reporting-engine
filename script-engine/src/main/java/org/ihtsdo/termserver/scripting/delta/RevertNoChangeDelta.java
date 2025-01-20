@@ -24,7 +24,7 @@ public class RevertNoChangeDelta extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNoChangeDelta.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RevertNoChangeDelta app = new RevertNoChangeDelta();
 		try {
 			app.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
@@ -47,43 +47,43 @@ public class RevertNoChangeDelta extends DeltaGenerator {
 	private void reportRevertedComponents() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isDirty()) {
-				report (c, "Concept", null, null);
+				report(c, "Concept", null, null);
 			}
 			
 			for (Description d : c.getDescriptions()) {
 				if (d.isDirty()) {
-					report (c, "Description", d, null);
+					report(c, "Description", d, null);
 				}
 				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 					if (i.isDirty()) {
-						report (c, "D_Inactivator", d, i);
+						report(c, "D_Inactivator", d, i);
 					}
 				}
 				for (AssociationEntry a : d.getAssociationEntries()) {
 					if (a.isDirty()) {
-						report (c, "D_Association", d, a);
+						report(c, "D_Association", d, a);
 					}
 				}
 			}
 			
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
 				if (i.isDirty()) {
-					report (c, "C_Inactivator", null, i);
+					report(c, "C_Inactivator", null, i);
 				}
 			}
 			for (AssociationEntry a : c.getAssociationEntries()) {
 				if (a.isDirty()) {
-					report (c, "C_Association", null, a);
+					report(c, "C_Association", null, a);
 				}
 			}
 			for (Relationship r : c.getRelationships()) {
 				if (r.isDirty() && !r.fromAxiom()) {
-					report (c, "Relationship", null, r);
+					report(c, "Relationship", null, r);
 				}
 			}
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (a.isDirty()) {
-					report (c, "Axiom", null, a);
+					report(c, "Axiom", null, a);
 				}
 			}
 		}

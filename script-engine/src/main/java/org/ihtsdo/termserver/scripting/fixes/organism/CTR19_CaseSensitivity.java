@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.organism;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
@@ -10,7 +9,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
 
 /*
 CTR-19
@@ -70,7 +68,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 		try {
 			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "foo desc", null, null);
 		} catch (Exception e) {
-			LOGGER.debug ("Exception " + e);
+			LOGGER.debug("Exception " + e);
 		}
 		
 		try {
@@ -78,7 +76,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 			//testClient = testClient.clone();
 			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "bar desc", null, null);
 		} catch (Exception e) {
-			LOGGER.debug ("Exception " + e);
+			LOGGER.debug("Exception " + e);
 		}
 	}
 
@@ -100,7 +98,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 		int changesMade = 0;
 		
 		if (c.getConceptId().equals("106783002")) {
-			//LOGGER.debug ("Debug Me!");
+			//LOGGER.debug("Debug Me!");
 		}
 		//First given that FSN is <Taxon> X, what is X?
 		String X = findX(c.getFsn());
@@ -112,7 +110,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 				if (d.getTerm().toLowerCase().startsWith(matchText.toLowerCase() + " ")) {
 					if (!d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-						report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d);
+						report(t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d);
 						changesMade++;
 					}
 					continue nextDesc;
@@ -122,13 +120,13 @@ public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 			if (d.getTerm().toLowerCase().startsWith(X.toLowerCase())) {
 				if (!d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 					d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-					report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d);
+					report(t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d);
 					changesMade++;
 				}
 				continue nextDesc;
 			}
 			
-			report (t,c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, d);
+			report(t,c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, d);
 		}
 		return changesMade;
 	}

@@ -428,7 +428,7 @@ public class TermServerClient {
 	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation, boolean unpromotedChangesOnly)
 			throws TermServerScriptException {
 		Map<String, Object> exportRequest = prepareExportRequest(branchPath, effectiveDate, exportType, extractType, unpromotedChangesOnly);
-		LOGGER.info ("Initiating export with {}", exportRequest);
+		LOGGER.info("Initiating export with {}", exportRequest);
 		String exportLocationURL = initiateExport(exportRequest);
 		//INFRA-1489 Workaround
 		if (!exportLocationURL.startsWith("https://")) {
@@ -517,7 +517,7 @@ public class TermServerClient {
 		Map<String, Object> importRequest = new HashMap<>();
 		importRequest.put("type", importType);
 		importRequest.put("branchPath", branchPath);
-		LOGGER.info ("Creating import job with {}", importRequest);
+		LOGGER.info("Creating import job with {}", importRequest);
 		String importJobLocation = initiateImport(importRequest);
 		try {
 			importArchive(importJobLocation, archive);

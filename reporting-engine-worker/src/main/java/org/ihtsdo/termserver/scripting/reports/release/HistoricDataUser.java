@@ -140,7 +140,7 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		LOGGER.info ("Previous Data Generated, now loading 'current' position");
+		LOGGER.info("Previous Data Generated, now loading 'current' position");
 		ArchiveManager mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
 			mgr.setLoadEditionArchive(true);
@@ -150,7 +150,7 @@ public class HistoricDataUser extends TermServerReport {
 			setProject(new Project(projectKey));
 			mgr.loadSnapshot(false);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			LOGGER.info ("Detected this effective time as {}", thisEffectiveTime);
+			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot

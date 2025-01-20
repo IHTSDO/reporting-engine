@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,10 +39,10 @@ public class InactivateConceptsAssocParent extends BatchFix implements ScriptCon
 		historicallyRewiredPossEquivTo.clear();
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateConceptsAssocParent fix = new InactivateConceptsAssocParent(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			//Cannot run stand alone as we need to know if the concept is published or not
 			fix.runStandAlone = false;
@@ -81,7 +80,7 @@ public class InactivateConceptsAssocParent extends BatchFix implements ScriptCon
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = 0;
 		if (loadedConcept == null || !loadedConcept.isActive()) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
 		} else if (loadedConcept.isReleased()) {
 			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
@@ -167,11 +166,11 @@ public class InactivateConceptsAssocParent extends BatchFix implements ScriptCon
 		if (potentialReplacements.size() == 0) {
 			if (fallbackReplacements.size() == 1) {
 				Concept replacement = fallbackReplacements.iterator().next();
-				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Used grandparents to find suitable replacement", replacement);
+				report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Used grandparents to find suitable replacement", replacement);
 				return replacement;
 			} else if (fallbackReplacements.size() == 1) {
 				String details = potentialReplacements.stream().map(p->p.getFsn()).collect(Collectors.joining(",\n"));
-				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Grandparents did not provide a single alternative", details);
+				report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Grandparents did not provide a single alternative", details);
 			}
 			throw new TermServerScriptException("Unable to find association replacement for " + c);
 		} else if (potentialReplacements.size() > 1) {
@@ -203,7 +202,7 @@ public class InactivateConceptsAssocParent extends BatchFix implements ScriptCon
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
 		Set<Concept> replacements = Collections.singleton(replacement);
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacements);
-		report (t, c, Severity.MEDIUM, ReportActionType.CONCEPT_DELETED);
+		report(t, c, Severity.MEDIUM, ReportActionType.CONCEPT_DELETED);
 		return super.deleteConcept(t, c);
 	}
 
@@ -224,7 +223,7 @@ public class InactivateConceptsAssocParent extends BatchFix implements ScriptCon
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		return new ArrayList<Component>(findConcepts(eclSubset));
 	}
 	
