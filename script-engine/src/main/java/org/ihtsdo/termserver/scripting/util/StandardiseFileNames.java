@@ -50,7 +50,7 @@ public class StandardiseFileNames extends TermServerReport {
 	public static void main(String[] args) throws ScriptException, IOException {
 		StandardiseFileNames curator = new StandardiseFileNames();
 		try {
-			ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
+			ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist
 			curator.init(args);
 			curator.postInit(
 					new String[]{
