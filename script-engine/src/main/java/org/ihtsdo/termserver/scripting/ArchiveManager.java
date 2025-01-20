@@ -133,7 +133,7 @@ public class ArchiveManager implements ScriptConstants {
 		String branchPath = project.getBranchPath();
 		String server = "unknown";
 		try {
-			LOGGER.debug ("Checking TS branch metadata: {}", branchPath);
+			LOGGER.debug("Checking TS branch metadata: {}", branchPath);
 			server = ts.getTSClient().getServerUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//If metadata is empty, or missing previous release, recover parent
