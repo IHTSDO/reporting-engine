@@ -36,7 +36,7 @@ public class LoincFileAnalysis extends LoincScript {
 	}
 
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
+		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC Folder
 		super.postInit(new String[]{"Analysis"}, new String[]{"Property, Count, In Preview"}, false);
 	}
 
@@ -45,7 +45,7 @@ public class LoincFileAnalysis extends LoincScript {
 		loadAltIdFile(getInputFile(FILE_IDX_ALT_ID));
 		int unknownLoincNums = 0;
 		try {
-			LOGGER.info ("Analysing " + getInputFile(fileIdx));
+			LOGGER.info("Analysing " + getInputFile(fileIdx));
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(fileIdx)))) {
 				String line;
@@ -106,7 +106,7 @@ public class LoincFileAnalysis extends LoincScript {
 	}
 
 	private void loadAltIdFile(File altFile) throws IOException {
-			LOGGER.info ("Loading " + altFile);
+			LOGGER.info("Loading {}",  altFile);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(altFile))) {
 				String line;

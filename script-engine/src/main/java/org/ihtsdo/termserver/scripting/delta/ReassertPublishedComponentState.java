@@ -66,7 +66,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 				report((Concept)null, componentId, "Not found in " + project.getKey());
 			} else {
 				Concept owningConcept = gl.getComponentOwner(component.getId());
-				report (owningConcept, component.getModuleId(), component);
+				report(owningConcept, component.getModuleId(), component);
 				component.setDirty();
 				outputRF2(owningConcept, true);  //Will only output dirty fields.
 				component.setClean();  //Revert this in case we output other components for this concept.

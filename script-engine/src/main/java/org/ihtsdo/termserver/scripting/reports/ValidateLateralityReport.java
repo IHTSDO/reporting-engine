@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -21,7 +20,7 @@ public class ValidateLateralityReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateLateralityReport.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ValidateLateralityReport report = new ValidateLateralityReport();
 		try {
 			report.additionalReportColumns = "EffectiveTime, Definition_Status,SemanticTag";
@@ -47,14 +46,14 @@ public class ValidateLateralityReport extends TermServerScript{
 				Set<Relationship> lateralized = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,  laterality, ActiveState.ACTIVE);
 				if (lateralized.size() > 0 && lateralized.iterator().next().getTarget().equals(side)) {
 					if (!lateralizable.contains(c)) {
-						report (c);
+						report(c);
 					}
 				}
 			}
 		}
 	}
 
-	protected void report (Concept c) throws TermServerScriptException {
+	protected void report(Concept c) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +

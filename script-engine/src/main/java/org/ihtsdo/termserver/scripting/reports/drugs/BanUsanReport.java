@@ -1,17 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -31,11 +24,9 @@ public class BanUsanReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BanUsanReport.class);
 
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	String matchText = "+";
 	List<NationalTermRule> nationalTermRules;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		BanUsanReport report = new BanUsanReport();
 		try {
 			report.additionalReportColumns="Desc_SCTID, Term, Issue";
@@ -43,8 +34,7 @@ public class BanUsanReport extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportUnMatchedNationalTerms();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -121,7 +111,7 @@ public class BanUsanReport extends TermServerScript{
 		}
 	}
 
-	protected void report (Concept c, Description d, String issue) throws TermServerScriptException {
+	protected void report(Concept c, Description d, String issue) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						d.getDescriptionId() + QUOTE_COMMA_QUOTE +
@@ -141,7 +131,7 @@ public class BanUsanReport extends TermServerScript{
 		}
 		
 		if (!fileLoaded) {
-			LOGGER.info ("Failed to find Ban/Usan file to load.  Specify path with 'z' command line parameter");
+			LOGGER.info("Failed to find Ban/Usan file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 	}
@@ -150,7 +140,7 @@ public class BanUsanReport extends TermServerScript{
 		try {
 			File nationalTerms = new File(fileName);
 			List<String> lines = Files.readLines(nationalTerms, Charsets.UTF_8);
-			LOGGER.info ("Loading National Terms from " + fileName);
+			LOGGER.info("Loading National Terms from " + fileName);
 			nationalTermRules = new ArrayList<NationalTermRule>();
 			for (String line : lines) {
 				NationalTermRule newRule = importNationalTermRule(line);

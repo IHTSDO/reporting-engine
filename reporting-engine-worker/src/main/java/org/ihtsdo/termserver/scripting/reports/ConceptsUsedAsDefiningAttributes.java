@@ -3,12 +3,12 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,7 +40,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 	Collection<Concept> startingSet;  //We don't want to check our concepts in their own hierarchy
 	Collection<Concept> outOfScope = new ArrayList<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SELECT_CONCEPTS_ECL, "<< 105590001 |Substance (substance)|");
 		params.put(OUT_OF_SCOPE_ECL, "<< 373873005 |Pharmaceutical / biologic product (product)|");
@@ -48,11 +48,11 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 		params.put(FILTER_CONCEPTS_REGEX, "(and|or|and\\/or).*?(derivative|compound)");
 		params.put(INCLUDE_DESCENDANTS, "true");
 		params.put(STATED_VIEW_ONLY, "false");
-		TermServerReport.run(ConceptsUsedAsDefiningAttributes.class, args, params);
+		TermServerScript.run(ConceptsUsedAsDefiningAttributes.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(SELECT_CONCEPTS_ECL);
 		outOfScopeECL = run.getParamValue(OUT_OF_SCOPE_ECL);
 		includeDescendants = run.getParameters().getMandatoryBoolean(INCLUDE_DESCENDANTS);
@@ -130,10 +130,10 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 				Concept target = r.getTarget();
 				if (!reported.contains(target) && attributeValuesOfInterest.contains(target)) {
 					if (statedViewOnly) {
-						report (c, r.getType(), target);
+						report(c, r.getType(), target);
 					} else {
 						boolean inferredOnly = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0;
-						report (c, inferredOnly?"Y":"N", r.getType(), target);
+						report(c, inferredOnly?"Y":"N", r.getType(), target);
 					}
 					reported.add(target);
 				}
@@ -153,7 +153,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 		
 		//Lets list these in tab 2.  We'll add as we go along, so copy the initial list
 		for (Concept c : new ArrayList<>(conceptsOfInterest)) {
-			report (SECONDARY_REPORT, c);
+			report(SECONDARY_REPORT, c);
 			//Are we including descendants?
 			if (includeDescendants) {
 				List<Concept> descendants = c.getDescendants(NOT_SET).stream()
@@ -161,7 +161,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 						.sorted(Comparator.comparing(Concept::getFsn))
 						.collect(Collectors.toList());
 				for (Concept descendant : descendants) {
-					report (SECONDARY_REPORT, descendant, c);
+					report(SECONDARY_REPORT, descendant, c);
 					conceptsOfInterest.add(descendant);
 				}
 			}

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -15,7 +14,6 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 /**
  * QI-6 Force a concept to align to a template
  * @author Peter
- *
  */
 
 import org.slf4j.Logger;
@@ -25,12 +23,11 @@ public class AlignToTemplate extends TemplateFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AlignToTemplate.class);
 
-
 	protected AlignToTemplate(BatchFix clone) {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AlignToTemplate app = new AlignToTemplate(null);
 		try {
 			app.subHierarchyStr = "128294001"; // |Chronic inflammatory disorder (disorder)|
@@ -118,7 +115,7 @@ public class AlignToTemplate extends TemplateFix {
 																ActiveState.ACTIVE);
 			for (Relationship r : specialRels) {
 				if (gl.getDescendantsCache().getDescendants(chronicInflammation).contains(r.getTarget())) {
-					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Existing morphology a descendant of " + chronicInflammation + " : " + r.getTarget());
+					report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Existing morphology a descendant of " + chronicInflammation + " : " + r.getTarget());
 					return true;
 				}
 			}

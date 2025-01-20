@@ -2,13 +2,13 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -30,17 +30,18 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
 	private static final String RIGHT = "24028007";
 	private static final String RIGHT_AND_LEFT = "51440002";
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(CURRENT_CYCLE, "true");
 		params.put(NOT_YET_MEMBERS, "true");
 		params.put(ALREADY_MEMBERS, "true");
-		TermServerReport.run(MissingLateralisedCounterparts.class, args, params);
+		TermServerScript.run(MissingLateralisedCounterparts.class, args, params);
 	}
 
+	@Override
 	public void init(JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		super.init(run);
 	}
 
@@ -62,6 +63,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
 				.build();
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] tabNames = new String[]{
 				"Result",
@@ -72,6 +74,7 @@ public class MissingLateralisedCounterparts extends TermServerReport implements 
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (jobRun.getParamBoolean(NOT_YET_MEMBERS)) {
 			// Process lateralisable Concepts not yet added to 723264001 |Lateralisable body structure reference set|.

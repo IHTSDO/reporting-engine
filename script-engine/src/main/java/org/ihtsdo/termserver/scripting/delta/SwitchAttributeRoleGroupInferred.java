@@ -19,7 +19,7 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException {
 		SwitchAttributeRoleGroupInferred delta = new SwitchAttributeRoleGroupInferred();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			delta.runStandAlone = true;
 			delta.additionalReportColumns = "Action Detail";
 			delta.newIdsRequired = false;

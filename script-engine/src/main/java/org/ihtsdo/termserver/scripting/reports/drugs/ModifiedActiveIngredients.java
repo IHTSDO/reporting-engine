@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -20,9 +18,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModifiedActiveIngredients.class);
 
-	Concept subHierarchy;
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ModifiedActiveIngredients report = new ModifiedActiveIngredients();
 		try {
 			report.additionalReportColumns = "Ingredient, ModificationOf";
@@ -31,8 +27,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 			report.postLoadInit();
 			report.runModifiedActiveIngredientsReport();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report ", e);
 		} finally {
 			report.finish();
 		}
@@ -46,7 +41,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : subHierarchyConcepts) {
 			//We're only interested in Medicinal Products 
-			if (c.isActive() && c.getFsn().contains("(medicinal product)")) {
+			if (c.isActiveSafely() && c.getFsn().contains("(medicinal product)")) {
 				//Get all active ingredients and check them for having "Is Modification Of"
 				Set<Relationship> ingredRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 				for (Relationship ingredRel : ingredRels) {
@@ -54,7 +49,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 					//Does that ingredient declare that it's a modification of something?
 					Set<Relationship> modRels = ingred.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
 					for (Relationship modRel : modRels) {
-						report (c, modRel.getSource().toString(), modRel.getTarget().toString());
+						report(c, modRel.getSource().toString(), modRel.getTarget().toString());
 						incrementSummaryInformation("Modifications");
 					}
 				}

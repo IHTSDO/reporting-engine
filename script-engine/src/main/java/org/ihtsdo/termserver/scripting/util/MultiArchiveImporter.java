@@ -37,7 +37,7 @@ public class MultiArchiveImporter extends BatchFix {
 	public static void main(String[] args) throws TermServerScriptException {
 		MultiArchiveImporter importer = new MultiArchiveImporter(null);
 		try {
-			ReportSheetManager.targetFolderId = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; //Batch Import
+			ReportSheetManager.setTargetFolderId("1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"); //Batch Import
 			importer.classifyTasks = true;
 			importer.allowDirectoryInputFile = true;
 			importer.init(args);

@@ -84,7 +84,7 @@ public class NuvaScript extends TermServerScript {
 		return getObject(stmt).equalsIgnoreCase(obj.toString());
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NuvaScript report = new NuvaScript();
 		try {
 			report.summaryTabIdx = PRIMARY_REPORT;
@@ -113,8 +113,9 @@ public class NuvaScript extends TermServerScript {
 		throw new TermServerScriptException("Tab '" + tabName + "' not recognised");
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO";  //NUVA
+		ReportSheetManager.setTargetFolderId("19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO");  //NUVA
 		String[] columnHeadings = new String[] {
 				"Summary Item, Count",
 				"Code, Is Abstract, Translation Count, Valences, Equivalent SCT, HiddenLabels, Created, Other Exact Matches",
@@ -127,7 +128,7 @@ public class NuvaScript extends TermServerScript {
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
-	private void runReport() throws TermServerScriptException, InterruptedException {
+	private void runReport() throws TermServerScriptException {
 		dataModel = loadNuva(FILE_IDX_NUVA_DATA_RDF);
 		metaModel = loadNuva(FILE_IDX_NUVA_METADATA_RDF);
 		exploreModel(dataModel, TAB_NUVA_DATA, "Data-");
@@ -355,7 +356,7 @@ public class NuvaScript extends TermServerScript {
 
 	protected Model loadNuva(int fileIdx) {
 		File inputFile = getInputFile(fileIdx);
-		LOGGER.info ("Loading NUVA file: " + inputFile);
+		LOGGER.info("Loading NUVA file: " + inputFile);
 		// create an empty model
 		Model model = ModelFactory.createDefaultModel();
 

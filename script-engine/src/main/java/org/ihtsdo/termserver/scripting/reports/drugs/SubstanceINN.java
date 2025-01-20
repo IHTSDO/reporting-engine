@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,11 +21,9 @@ public class SubstanceINN extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SubstanceINN.class);
 
-	//Map<String, INNSet> innMap = new HashMap<>();
 	List<INNSet> allINN = new ArrayList<>();
-	Description BLANK = new Description (null);
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		SubstanceINN report = new SubstanceINN();
 		try {
 			report.additionalReportColumns = "SemTag, Description, Affected, Issue, Spreadsheet Term";
@@ -55,7 +52,7 @@ public class SubstanceINN extends TermServerReport {
 			INNSet innSet = findINNSetMatch(subst);
 			if (innSet != null) {
 				if (subst.getConceptId().equals("58202007")) {
-					LOGGER.debug ("Debug Here");
+					LOGGER.debug("Debug Here");
 				}
 				validateAgainstInnSet(subst, innSet);
 			} else {
@@ -90,28 +87,28 @@ public class SubstanceINN extends TermServerReport {
 	
 	private void validateAgainstInnSet(Concept subst, INNSet innSet) throws TermServerScriptException {
 		if (!SnomedUtils.deconstructFSN(subst.getFsn())[0].toLowerCase().equals(innSet.fsn)) {
-			report (subst, subst.getFSNDescription(), "FSN", "Mismatched", innSet.fsn);
+			report(subst, subst.getFSNDescription(), "FSN", "Mismatched", innSet.fsn);
 		}
 		Description usPT = subst.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description gbPT = subst.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		boolean usGbAligned = usPT.equals(gbPT);
 		
 		if (!usPT.getTerm().toLowerCase().equals(innSet.usPt)) {
-			report (subst, usPT, "US_PT", "Mismatched", innSet.usPt);
+			report(subst, usPT, "US_PT", "Mismatched", innSet.usPt);
 		}
 		
 		if (!gbPT.getTerm().toLowerCase().equals(innSet.gbPt)) {
-			report (subst, gbPT, "GB_PT", "Mismatched", innSet.gbPt);
+			report(subst, gbPT, "GB_PT", "Mismatched", innSet.gbPt);
 		}
 		
 		//If we have different us/gb terms then they should be acceptable in the other dialect
 		if (!usGbAligned) {
 			if (!usPT.hasAcceptability(Acceptability.ACCEPTABLE, GB_ENG_LANG_REFSET)) {
-				report (subst, usPT, "US_PT", "Unexpected GB Acceptability", innSet.usPt);
+				report(subst, usPT, "US_PT", "Unexpected GB Acceptability", innSet.usPt);
 			}
 			
 			if (!gbPT.hasAcceptability(Acceptability.ACCEPTABLE, US_ENG_LANG_REFSET)) {
-				report (subst, gbPT, "GB_PT", "Unexpected US Acceptability", innSet.gbPt);
+				report(subst, gbPT, "GB_PT", "Unexpected US Acceptability", innSet.gbPt);
 			}
 		}
 		
@@ -119,31 +116,31 @@ public class SubstanceINN extends TermServerReport {
 		if (innSet.gbSyn != null && !innSet.gbSyn.isEmpty()) {
 			Description syn = subst.findTerm(innSet.gbSyn, null, true, false); //No language, Yes case insensitive, no don't include inactive terms
 			if (syn == null) {
-				report (subst, subst.getFsn(), "GB_SYN", "Expected SYN missing", innSet.gbSyn);
+				report(subst, subst.getFsn(), "GB_SYN", "Expected SYN missing", innSet.gbSyn);
 			} else if (syn.hasAcceptability(Acceptability.BOTH, US_ENG_LANG_REFSET)) {
-				report (subst, syn, "GB_SYN", "Unexpected US Acceptability", innSet.gbSyn);
+				report(subst, syn, "GB_SYN", "Unexpected US Acceptability", innSet.gbSyn);
 			}
 		}
 		
 		if (innSet.usSyn != null && !innSet.usSyn.isEmpty()) {
 			Description syn = subst.findTerm(innSet.usSyn, null, true, false);
 			if (syn == null) {
-				report (subst, subst.getFsn(), "US_SYN", "Expected SYN missing", innSet.usSyn);
+				report(subst, subst.getFsn(), "US_SYN", "Expected SYN missing", innSet.usSyn);
 			} else if (syn.hasAcceptability(Acceptability.BOTH, GB_ENG_LANG_REFSET)) {
-				report (subst, syn, "GB_SYN", "Unexpected GB Acceptability", innSet.usSyn);
+				report(subst, syn, "GB_SYN", "Unexpected GB Acceptability", innSet.usSyn);
 			}
 		}
 		
 		for (String synStr : innSet.bothSyn) {
 			Description syn = subst.findTerm(synStr, null, true, false);  //No language, Yes case insensitive, no don't include inactive terms
 			if (syn == null) {
-				report (subst, subst.getFsn(), "SYN", "Expected SYN missing", synStr);
+				report(subst, subst.getFsn(), "SYN", "Expected SYN missing", synStr);
 			} else {
 				if (!syn.hasAcceptability(Acceptability.ACCEPTABLE, GB_ENG_LANG_REFSET)) {
-					report (subst, syn, "SYN", "Unexpected GB Acceptability", synStr);
+					report(subst, syn, "SYN", "Unexpected GB Acceptability", synStr);
 				}
 				if (!syn.hasAcceptability(Acceptability.ACCEPTABLE, US_ENG_LANG_REFSET)) {
-					report (subst, syn, "SYN", "Unexpected US Acceptability", synStr);
+					report(subst, syn, "SYN", "Unexpected US Acceptability", synStr);
 				}
 			}
 		}
@@ -153,9 +150,9 @@ public class SubstanceINN extends TermServerReport {
 			if (syn != null) {
 				//We're saying "ph" is an acceptably not allowed
 				if (notAllowed.contains("ph")) {	
-					report (subst, syn, "Sort of ALLOWED", "Sort of allowed term present", notAllowed);
+					report(subst, syn, "Sort of ALLOWED", "Sort of allowed term present", notAllowed);
 				} else {
-					report (subst, syn, "NOT ALLOWED", "Not allowed term present", notAllowed);
+					report(subst, syn, "NOT ALLOWED", "Not allowed term present", notAllowed);
 				}
 			}
 		}
@@ -166,14 +163,14 @@ public class SubstanceINN extends TermServerReport {
 		//It is acceptable to have Sulphur form in GB, but never in US
 		for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 			if (d.getTerm().contains("ulph")) {
-				report (c, d, "PREF", "Not allowed as preferred term");
+				report(c, d, "PREF", "Not allowed as preferred term");
 				return;
 			}
 		}
 		
 		for (Description d : c.getDescriptions(Acceptability.ACCEPTABLE, null, ActiveState.ACTIVE)) {
 			if (d.getTerm().contains("ulph") && d.isAcceptable(US_ENG_LANG_REFSET)) {
-				report (c, d, "US_A", "Not allowed at all - 'ulph'");
+				report(c, d, "US_A", "Not allowed at all - 'ulph'");
 				return;
 			}
 		}

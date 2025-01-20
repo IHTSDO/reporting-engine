@@ -21,16 +21,16 @@ public class OverlappingIPs extends TermServerReport {
 	InitialAnalysis intermediatePrimitivesReport;
 	Set<Concept> allIPs = new HashSet<>();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		OverlappingIPs report = new OverlappingIPs();
 		try {
-			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50"; //Team Drive: Content Reporting Artefacts / QI / Initial Analysis
+			ReportSheetManager.setTargetFolderId("1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50"; //Team Drive: Content Reporting Artefacts / QI / Initial Analysis
 			report.init(args);
 			report.loadProjectSnapshot(false);  //just FSNs
 			report.postLoadInit();
 			report.run();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
+			LOGGER.error("Failed to produce report", e);
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -74,10 +74,10 @@ public class OverlappingIPs extends TermServerReport {
 
 
 	private void run() throws TermServerScriptException {
-		LOGGER.info ("Calculating IP Overlap in " + subHierarchies.size() + " sub-hierarchies");
+		LOGGER.info("Calculating IP Overlap in " + subHierarchies.size() + " sub-hierarchies");
 		startTimer();
 		for (Concept subHierarchy : subHierarchies) {
-			LOGGER.info ("Identifying IPs in " + subHierarchy);
+			LOGGER.info("Identifying IPs in " + subHierarchy);
 			intermediatePrimitivesReport.setSubHierarchy(subHierarchy.getConceptId());
 			intermediatePrimitivesReport.reportConceptsAffectedByIntermediatePrimitives();
 			List<Concept> ips = new ArrayList<>(intermediatePrimitivesReport.intermediatePrimitives.keySet());
@@ -97,7 +97,7 @@ public class OverlappingIPs extends TermServerReport {
 				}
 			}
 			if (overlapCnt > 1) {
-				report (ip, overlapStr);
+				report(ip, overlapStr);
 			}
 		}
 	}

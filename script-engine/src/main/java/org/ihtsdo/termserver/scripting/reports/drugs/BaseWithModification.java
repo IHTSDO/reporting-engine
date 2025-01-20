@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -23,15 +21,14 @@ public class BaseWithModification extends TermServerReport {
 
 	Concept[] type = new Concept[] {IS_MODIFICATION_OF};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		BaseWithModification report = new BaseWithModification();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(true);  
 			report.findBaseWithModifications();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report",e);
 		} finally {
 			report.finish();
 		}
@@ -45,7 +42,7 @@ public class BaseWithModification extends TermServerReport {
 				//Are we a modification of a base which is also an ingredient?
 				Concept base = SnomedUtils.getTarget(ingredient, type, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
 				if (ingredients.contains(base)) {
-					report (c, ingredient, base);
+					report(c, ingredient, base);
 					incrementSummaryInformation("Base with modification found");
 				}
 			}

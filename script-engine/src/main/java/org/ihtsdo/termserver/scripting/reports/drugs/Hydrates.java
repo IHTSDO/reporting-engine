@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,18 +33,16 @@ public class Hydrates extends TermServerReport {
 	String matchText = "hydrate" ;
 	Concept subHierarchy = SUBSTANCE;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Hydrates report = new Hydrates();
 		try {
-			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
-			//TODO Set this via setter, and move report only once successfully complete
+			ReportSheetManager.setTargetFolderId("1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d");
 			report.additionalReportColumns = "FSN, Descriptions, Modifications";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportDescriptionContainsX();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}

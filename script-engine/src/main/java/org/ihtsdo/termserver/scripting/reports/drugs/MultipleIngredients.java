@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.io.PrintStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -26,7 +25,7 @@ public class MultipleIngredients extends TermServerReport {
 	ConceptType[] validTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 	String[] falsePositives = new String[] { "gastro-resistant and prolonged-release" };
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MultipleIngredients report = new MultipleIngredients();
 		try {
 			report.additionalReportColumns = "Ingredient Count";
@@ -54,7 +53,7 @@ public class MultipleIngredients extends TermServerReport {
 				int fsnCount = fsn.split(" and ").length;
 				if (fsnCount != ingredientCount) {
 					incrementSummaryInformation("Issues found");
-					report (c, ingredientCount);
+					report(c, ingredientCount);
 				}
 			}
 		}

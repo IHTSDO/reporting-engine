@@ -1,13 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -16,7 +10,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,13 +17,12 @@ public class RelationshipsWithTarget extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipsWithTarget.class);
 
-	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	Set<Concept> filterOnTarget = new HashSet<Concept>();
+	Set<Concept> filterOnTarget = new HashSet<>();
 	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RelationshipsWithTarget report = new RelationshipsWithTarget();
 		try {
 			report.additionalReportColumns = "SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
@@ -39,8 +31,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 			report.init2(); //Setup needed after data loaded
 			report.reportRelationshipsWithTarget();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Changed Relationship Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -48,7 +39,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 	
 	private void reportRelationshipsWithTarget() throws TermServerScriptException {
 		Collection<Concept> allConcepts =  gl.getAllConcepts();
-		LOGGER.info("Examining " + allConcepts.size() + " concepts");
+		LOGGER.info("Examining {} concepts", allConcepts.size());
 		int reportedRelationships = 0;
 		for (Concept thisConcept : allConcepts) {
 			if (thisConcept.getFsn() == null) {
@@ -59,7 +50,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 			Set<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			for(Relationship thisRel : allConceptRelationships) {
 				if (filterOnTarget.contains(thisRel.getTarget())) {
-					report (thisConcept, thisRel);
+					report(thisConcept, thisRel);
 					reportedRelationships++;
 				}
 			}
@@ -68,7 +59,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 		LOGGER.info("Graph loader log: \n" + gl.log);
 	}
 	
-	protected void report (Concept c, Relationship r) throws TermServerScriptException {
+	protected void report(Concept c, Relationship r) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE +
 						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA +
@@ -129,8 +120,8 @@ public class RelationshipsWithTarget extends TermServerScript{
 	
 	public void init2() throws TermServerScriptException {
 		String response = null;
-		LOGGER.info ("Filter target example: 105590001 |Substance (substance)|");
-		LOGGER.info ("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
+		LOGGER.info("Filter target example: 105590001 |Substance (substance)|");
+		LOGGER.info("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
 				
 		while (response == null) {
 			print ("Filter for attribute target descendant or self of: ");
@@ -140,7 +131,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 				Set<Concept> filteringTargets = hierarchy.getDescendants(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
 				filterOnTarget.addAll(filteringTargets); //descendant
 				filterOnTarget.add(hierarchy);  //and self
-				LOGGER.info ("\nFiltering for target descendants of " + hierarchy + " - " + filteringTargets.size());
+				LOGGER.info("\nFiltering for target descendants of " + hierarchy + " - " + filteringTargets.size());
 				response = null;
 			}
 		}

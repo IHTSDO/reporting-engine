@@ -32,7 +32,7 @@ public class AntigenTermGenerator extends TermGenerator {
 				changesMade += ensureTermConforms(t, c, X, d, charType);
 			} catch (Exception e) {
 				String stack = ExceptionUtils.getStackTrace(e);
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to conform description " + d, stack);
+				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to conform description " + d, stack);
 			}
 		}
 		//Now that the FSN is resolved, remove any redundant terms
@@ -85,7 +85,7 @@ public class AntigenTermGenerator extends TermGenerator {
 				legacyCounterpart.setCaseSignificance(d.getCaseSignificance());
 				int changeMade = addTerm(t, c, legacyCounterpart);
 				if (changeMade > 0) {
-					report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Added old FSN as acceptable synonym", originalCounterpart );
+					report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Added old FSN as acceptable synonym", originalCounterpart );
 					changesMade += changeMade;
 				}
 				nonRedundantTerms.add(legacyCounterpart.getTerm());

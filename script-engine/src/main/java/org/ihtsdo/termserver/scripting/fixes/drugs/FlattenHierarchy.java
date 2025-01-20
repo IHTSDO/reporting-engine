@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,7 +42,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FlattenHierarchy fix = new FlattenHierarchy(null);
 		try {
 			fix.inputFileHasHeaderRow = true;
@@ -70,8 +69,8 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
-		if (!loadedConcept.isActive()) {
-			report (t, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
+		if (!loadedConcept.isActiveSafely()) {
+			report(t, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
 			return 0;
 		}
 		loadedConcept.setConceptType(ConceptType.SUBSTANCE);
@@ -88,7 +87,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 
 	private void flattenHierarchy(Task task, Concept loadedConcept, Concept expectedTarget, List<Concept> modifiedConcepts, Set<Relationship> potentialGrandParentRels, List<Concept> dispositions) throws TermServerScriptException {
 		
-		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
@@ -109,18 +108,18 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		}
 		
 		//If we have more than one parent, or the parent is not as expected, then warn
-		if (parentRels.size() == 0) {
+		if (parentRels.isEmpty()) {
 			String msg = "No parents detected - concept inactive?";
-			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
+			report(task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 			return;
 		} else if (parentRels.size() > 1) {
 			String msg = parentRels.size() + " parents encountered";
-			report (task, loadedConcept, Severity.LOW, ReportActionType.VALIDATION_CHECK, msg);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.VALIDATION_CHECK, msg);
 		} else {
 			Concept actualTarget = parentRels.iterator().next().getTarget();
 			if (!actualTarget.equals(expectedTarget)) {
 				String msg = "Expected target " + expectedTarget + " did not match actual: " + actualTarget;
-				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
+				report(task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 			}
 		}
 		
@@ -128,7 +127,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		//to use as new parents (ie not redundant)
 		if (potentialGrandParentRels == null) {
 			//We'll take the grand parents (via expectedTarget) as the new parents...unless they're redundant due to the ancestors of any other parents.
-			potentialGrandParentRels = new HashSet<Relationship> (expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+			potentialGrandParentRels = new HashSet<> (expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																				IS_A,
 																				ActiveState.ACTIVE));
 		}
@@ -138,11 +137,11 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		String grandParentsDesc;
 		if (ancestorRels.size() > 1) {
 			String msg = "Multiple grandparents reassigned as parents: " + ancestorRels.size();
-			report (task, loadedConcept, Severity.LOW, ReportActionType.INFO, msg);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.INFO, msg);
 			grandParentsDesc = ancestorRels.size() + " grandparents";
-		} else if (ancestorRels.size() == 0) {
+		} else if (ancestorRels.isEmpty()) {
 			String msg = "All grandparents already represented through existing parents";
-			report (task, loadedConcept, Severity.HIGH, ReportActionType.INFO, msg);
+			report(task, loadedConcept, Severity.HIGH, ReportActionType.INFO, msg);
 			grandParentsDesc = "N/A";
 		} else {
 			grandParentsDesc = ancestorRels.iterator().next().getTarget().toString();
@@ -158,7 +157,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		for (Relationship ancestorRel : ancestorRels) {
 			Concept ancestor = ancestorRel.getTarget();
 			String msg = "Ancestor now parent: " + ancestor.toString();
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 			Relationship newParentRel = new Relationship(loadedConcept, IS_A, ancestor, 0);
 			addOrReactivateRelationship(task, loadedConcept, newParentRel);
 		}
@@ -171,7 +170,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 				if (!relationshipExists(loadedConcept, dispRel)) {
 					String msg = "Adding disposition: " + disposition;
 					addOrReactivateRelationship(task, loadedConcept, dispRel);
-					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+					report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 				}
 			}
 		}
@@ -181,7 +180,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		if (!relationshipExists(loadedConcept, modification)) {
 			String msg = "Adding modification: " + modification;
 			addOrReactivateRelationship(task, loadedConcept, modification);
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 		}
 		//Now modify all children (recursively) using this concept as the new target
 		//Work with the local concept, not the loaded one
@@ -190,11 +189,11 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 			//If the concept has been specified specifically in the file, don't also process it as a descendant
 			if (finalCompleteSetConceptsToProcess.contains(thisChild)) {
 				String msg = "Ignoring attempt to process child " + thisChild + " of " + localConcept + " as specified originally in file.";
-				report (task, thisChild, Severity.MEDIUM, ReportActionType.INFO, msg);
+				report(task, thisChild, Severity.MEDIUM, ReportActionType.INFO, msg);
 			} else {
 				//Have we already modified this child via another concept?
 				if (allRemodeledConcepts.contains(thisChild)) {
-					report (task, thisChild, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept receiving multiple 'Is Modification Of' attributes");
+					report(task, thisChild, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept receiving multiple 'Is Modification Of' attributes");
 				} else {
 					allRemodeledConcepts.add(thisChild);
 				}
@@ -211,13 +210,13 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 	private void addOrReactivateRelationship(Task t, Concept c , Relationship newRel) throws TermServerScriptException {
 		//If it already exists active, skip it
 		if (relationshipExists(c, newRel)) {
-			report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already exists active: " + newRel);
+			report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already exists active: " + newRel);
 		} else {
 			//Does it exists but inactive?
 			for ( Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE)) {
 				if (newRel.equals(r)) {
 					r.setActive(true);
-					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, "Reactivated: " + r);
+					report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, "Reactivated: " + r);
 					return;
 				}
 			}
@@ -239,7 +238,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 					Set<Concept> ancestors = preLoadedParent.getAncestors(NOT_SET);
 					if (ancestors.contains(potentialGrandParentRel.getTarget())) {
 						String msg = "Ignoring grandParent " + potentialGrandParentRel.getTarget() + " as already represented via " + parentRel.getTarget();
-						report (task, loadedConcept, Severity.MEDIUM, ReportActionType.INFO, msg);
+						report(task, loadedConcept, Severity.MEDIUM, ReportActionType.INFO, msg);
 						isAlreadyRepresented = true;
 						break;
 					}
@@ -349,7 +348,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		}
 		
 		//Recursively check for siblings of the ancestors
-		if (ancestors.size() > 0 && task.size() < taskSize) {
+		if (!ancestors.isEmpty() && task.size() < taskSize) {
 			for (Concept ancestor : ancestors) {
 				 allocateConceptToTask(task, ancestor, unallocated);
 			}
@@ -360,8 +359,8 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 		//For each concept, see if it has a sibling (via the base substance parent)
 		//that has not been specifically specified.  Include it.
 		List<Concept> previouslySpecified = asConcepts(allConcepts);
-		for (Component c : previouslySpecified) {
-			String newTargetSctid = expectedTargetMap.get(((Concept) c).getConceptId());
+		for (Concept c : previouslySpecified) {
+			String newTargetSctid = expectedTargetMap.get(c.getConceptId());
 			Concept newTarget = gl.getConcept(newTargetSctid);
 			//We need a copy of this list because we're going to remove from it.
 			Set<Concept> siblings = new HashSet<>(newTarget.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
@@ -383,8 +382,8 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		if (!c.isActive()) {
-			report ((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
+		if (!c.isActiveSafely()) {
+			report((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
 			return null;
 		}
 		
@@ -393,7 +392,7 @@ public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 				.map(rel -> rel.getTarget().toString())
 				.collect (Collectors.joining(", "));
 		if (existing != null && !existing.isEmpty()) {
-			report ((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has existing modification(s): " + existing);
+			report((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has existing modification(s): " + existing);
 			return null;
 		}
 		Concept base = gl.getConcept(lineItems[2], false, true);

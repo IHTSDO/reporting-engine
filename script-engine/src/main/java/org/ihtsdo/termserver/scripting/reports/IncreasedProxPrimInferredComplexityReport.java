@@ -1,20 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -30,20 +21,17 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(IncreasedProxPrimInferredComplexityReport.class);
 
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		IncreasedProxPrimInferredComplexityReport report = new IncreasedProxPrimInferredComplexityReport();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIncreasedComplexity();
 		} catch (Exception e) {
-			LOGGER.info("Report failed due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -85,20 +73,21 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 	private Set<Concept> filterActiveFD(Set<Concept> fullSet) {
 		Set <Concept> activeConcepts = new HashSet<>();
 		for (Concept thisConcept : fullSet ) {
-			if (thisConcept.isActive() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			if (thisConcept.isActiveSafely() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				activeConcepts.add(thisConcept);
 			}
 		}
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag) throws TermServerScriptException {
+	protected void report(Concept c, String semtag) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						semtag + QUOTE;
 		writeToReportFile(line);
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		

@@ -1,36 +1,29 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
- */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TextDefinitionsPresentAndMissing extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(TextDefinitionsPresentAndMissing.class);
-
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(ECL, "<< 1222584008 |American Joint Committee on Cancer allowable value|");
-		TermServerReport.run(TextDefinitionsPresentAndMissing.class, params, args);
+		TermServerScript.run(TextDefinitionsPresentAndMissing.class, params, args);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 
 		String[] columnHeadings = new String[] {"Sctid, FSN, SemTag, Text Definitions",
 				"Sctid, FSN"};
@@ -55,7 +48,8 @@ public class TextDefinitionsPresentAndMissing extends TermServerReport implement
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest = gl.getAllConcepts();
 		if (subsetECL != null) {
@@ -64,7 +58,7 @@ public class TextDefinitionsPresentAndMissing extends TermServerReport implement
 		conceptsOfInterest = SnomedUtils.sortActive(conceptsOfInterest);
 		
 		for (Concept c : conceptsOfInterest) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				if (whiteListedConceptIds.contains(c.getId())) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;
@@ -72,7 +66,7 @@ public class TextDefinitionsPresentAndMissing extends TermServerReport implement
 				//Collect any active text definitions
 				String textDefinitions = c.getDescriptions(ActiveState.ACTIVE).stream()
 						.filter(d -> d.getType().equals(DescriptionType.TEXT_DEFINITION))
-						.map(d -> d.getTerm())
+						.map(Description::getTerm)
 						.collect(Collectors.joining(", \n"));
 				
 				//Did we get anything?  Send concept to 2nd tab if not

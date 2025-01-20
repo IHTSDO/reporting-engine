@@ -1,47 +1,41 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.apache.commons.lang.StringUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * INFRA-2704, INFRA-2793
  * Where a concept has duplicate inactivation indicators, list those along with the
  * historical associations (so we know which ones to delete!)
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class DuplicateInactivationAssocationReport extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateInactivationAssocationReport.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DuplicateInactivationAssocationReport report = new DuplicateInactivationAssocationReport();
 		try {
-			ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA
+			ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ");  //Release QA
 			report.additionalReportColumns = "fsn, effectiveTime, data";
 			report.init(args);
 			report.loadProjectSnapshot(false);  
 			report.reportMatchingInactivations();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
 	}
 
 	private void reportMatchingInactivations() throws TermServerScriptException {
-		LOGGER.info ("Scanning all concepts...");
+		LOGGER.info("Scanning all concepts...");
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
 		
 		/*
@@ -51,34 +45,30 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 		
 		//For a change we're interested in inactive concepts!
 		List<Concept> conceptsOfInterest = gl.getAllConcepts().stream()
-				.filter(c -> c.isActive() == false)
+				.filter(c -> !c.isActiveSafely())
 				.filter(c -> c.getInactivationIndicatorEntries(ActiveState.BOTH).size() > 1)
-				.filter(c -> hasNewInactivationIndicator(c))
-				.collect(Collectors.toList());
-		//List<Concept> conceptsOfInterest = Collections.singletonList(gl.getConcept("198308002"));
+				.filter(this::hasNewInactivationIndicator)
+				.toList();
 		for (Concept c : conceptsOfInterest) {
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.BOTH)) {
-				report (c, i.getEffectiveTime(), i);
+				report(c, i.getEffectiveTime(), i);
 			}
 			for (AssociationEntry h : c.getAssociationEntries(ActiveState.BOTH)) {
-				report (c, h.getEffectiveTime(), h);
+				report(c, h.getEffectiveTime(), h);
 			}
 			incrementSummaryInformation("Concepts reported");
 		}
-		LOGGER.info ("Now checking descriptions..");
+		LOGGER.info("Now checking descriptions..");
 		//Or possibly there's an issue with descriptions?
 		//For a change we're interested in inactive concepts!
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.getConceptId().equals("14816004")) {  
-			//	LOGGER.debug("CheckHere - Desc 1221136011");
-			}
 			List<Description> descriptionsOfInterest = c.getDescriptions().stream()
 					.filter(d -> d.getInactivationIndicatorEntries(ActiveState.BOTH).size() > 1)
-					.filter(d -> hasNewInactivationIndicator(d))
-					.collect(Collectors.toList());
+					.filter(this::hasNewInactivationIndicator)
+					.toList();
 			for (Description d : descriptionsOfInterest) {
 				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
-					report (c, i.getEffectiveTime(), d, i);
+					report(c, i.getEffectiveTime(), d, i);
 				}
 				incrementSummaryInformation("Descriptions reported.");
 			}
@@ -101,11 +91,5 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 			}
 		}
 		return false;
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
 	}
 }

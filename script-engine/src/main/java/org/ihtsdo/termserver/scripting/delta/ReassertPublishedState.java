@@ -43,7 +43,7 @@ public class ReassertPublishedState extends DeltaGenerator {
 			Concept c = gl.getConcept(sctId.trim());
 			c.setDirty();
 			for (Component component : SnomedUtils.getAllComponents(c)) {
-				report (c, component);
+				report(c, component);
 				component.setDirty();
 			}
 			outputRF2(c, true);  //Will only output dirty fields.

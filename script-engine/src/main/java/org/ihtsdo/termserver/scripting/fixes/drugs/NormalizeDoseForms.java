@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -32,7 +31,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormalizeDoseForms fix = new NormalizeDoseForms(null);
 		try {
 			fix.reportNoChange = true;
@@ -82,9 +81,9 @@ public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 			if (activeIngredientCount > 0 && doseFormCount > 0) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changes++;
-				report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
+				report(task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - insufficient attributes!");
+				report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - insufficient attributes!");
 			}
 		}
 		
@@ -100,7 +99,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 		//Not sure if this is even needed yet?
 		Set<Relationship> doseForms = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() > 1) {
-			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, doseForms.size() + " dose forms detected");
+			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, doseForms.size() + " dose forms detected");
 		}
 		for (String currentTerm : doseFormMap.keySet()) {
 			if (c.getFsn().contains(currentTerm)) {

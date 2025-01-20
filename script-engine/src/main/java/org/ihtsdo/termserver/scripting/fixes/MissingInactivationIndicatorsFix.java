@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -30,7 +29,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MissingInactivationIndicatorsFix fix = new MissingInactivationIndicatorsFix(null);
 		try {
 			fix.runStandAlone = false;  //Was causing issues with historical associations not being set
@@ -62,7 +61,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 	private int fixInactivationIndicator(Task t, Concept c) throws TermServerScriptException {
 		if (c.getInactivationIndicator() == null) {
 			c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-			report (t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "Added NCEP Indicator");
+			report(t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "Added NCEP Indicator");
 			return CHANGE_MADE;
 		}
 		
@@ -70,7 +69,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 			InactivationIndicator prev = c.getInactivationIndicator();
 			c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			String msg = "Inactivation indicator changed from " + prev + " to " + c.getInactivationIndicator();
-			report (t, c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, msg);
+			report(t, c, Severity.LOW, ReportActionType.INACT_IND_MODIFIED, msg);
 			return CHANGE_MADE;
 		}
 		
@@ -81,7 +80,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : gl.getAllConcepts()) {
 		//for (Concept c : Collections.singleton(gl.getConcept("347118002"))) {
@@ -92,7 +91,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements Script
 				}
 			}
 		}
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

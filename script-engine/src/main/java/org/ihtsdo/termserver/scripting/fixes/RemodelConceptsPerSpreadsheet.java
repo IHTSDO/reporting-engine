@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -11,7 +10,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 /*
  * DEVICES-102
@@ -46,10 +44,10 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemodelConceptsPerSpreadsheet fix = new RemodelConceptsPerSpreadsheet(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.maxFailures = Integer.MAX_VALUE;
 			fix.expectNullConcepts = true;
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
@@ -74,7 +72,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = 0;
 		if (loadedConcept == null || !loadedConcept.isActive()) {
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept inactive or not available");
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept inactive or not available");
 		} else {
 			changesMade = remodelConcept(t, loadedConcept);
 			if (changesMade > 0) {
@@ -123,7 +121,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 					removeDescription(t, c, d, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 					changesMade++;
 				} else {
-					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Failed to find description to inactivate", data[IDX_INACT_DESC]);
+					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Failed to find description to inactivate", data[IDX_INACT_DESC]);
 				}
 			}
 		}
@@ -139,7 +137,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 		if (c.getPreferredSynonym(GB_ENG_LANG_REFSET) == null) {
 			Description usPT = c.getPreferredSynonym(US_ENG_LANG_REFSET);
 			usPT.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "GB PT has been removed.  US PT being reused for now, please check", usPT);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "GB PT has been removed.  US PT being reused for now, please check", usPT);
 			changesMade++;
 		}
 		
@@ -185,7 +183,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 		if (isPopulated(data, IDX_NEW_DEF_STAT)) {
 			DefinitionStatus defStat = SnomedUtils.translateDefnStatusStr(data[IDX_NEW_DEF_STAT].trim());
 			if (!c.getDefinitionStatus().equals(defStat)) {
-				report (t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "DefStatus now: " + defStat);
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "DefStatus now: " + defStat);
 				c.setDefinitionStatus(defStat);
 				changesMade++;
 			}
@@ -198,7 +196,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 			String term = data[idx].trim().replace("-", "").replace("yes", "");
 			Concept value = gl.getConcept(term, false, false);  //Don't create, don't validates
 			if (value == null) {
-				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to assign attribute value", data[idx]);
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to assign attribute value", data[idx]);
 			}
 			return value;
 		}
@@ -213,7 +211,7 @@ public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptCon
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[IDX_SCTID], false, true);
 		if (!lineItems[IDX_STATUS].contentEquals("Upload")) {
-			report ((Task)null, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept not marked for upload", lineItems[IDX_STATUS]);
+			report((Task)null, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept not marked for upload", lineItems[IDX_STATUS]);
 			return null;
 		}
 		remodelMap.put(c,  lineItems);

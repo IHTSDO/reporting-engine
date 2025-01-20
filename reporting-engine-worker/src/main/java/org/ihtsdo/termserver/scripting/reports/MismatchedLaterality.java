@@ -99,15 +99,15 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				boolean hasLateralizedModel = hasLateralizedModel(c, 0);  //Only check 1 level downs
 				boolean hasBilaterlizedModel = hasBilateralizedModel(c, 0);
 				if (hasBilateralFSN && !hasBilaterlizedModel) {
-					report (QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (!hasBilateralFSN && hasBilaterlizedModel) {
-					report (SENARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(SENARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (hasBilateralFSN && hasBilaterlizedModel) {
 					//All good here
 				} else if (hasLateralizedFSN && !hasLateralizedModel) {
-					report (SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (!hasLateralizedFSN && hasLateralizedModel) {
-					report (TERTIARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(TERTIARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
 				
 				if (hasLateralizedFSN && !hasBilateralFSN) {
@@ -131,7 +131,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		String targetFSN = origFSN.replace(" " + current + " ", " " + siblingLaterality + " ").trim();
 		Concept sibling = fsnMap.get(targetFSN);
 		if (sibling == null) {
-			report (PRIMARY_REPORT, c, targetFSN);
+			report(PRIMARY_REPORT, c, targetFSN);
 		}
 	}
 
@@ -181,14 +181,14 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 			if (r.getTarget().equals(LEFT)) {
 				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals(SEMTAG_BODY_STRUCTURE) && !reportedSuspect.contains(c)) {
-					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
 				}
 				leftPresent = true;
 			} if (r.getTarget().equals(RIGHT)) {
 				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals(SEMTAG_BODY_STRUCTURE) && !reportedSuspect.contains(c)) {
-					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
 				}
 				rightPresent = true;

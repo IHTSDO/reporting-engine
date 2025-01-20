@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -10,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
@@ -37,14 +37,14 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 	
 	SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(InactivatedConceptsByRelease.class, args, params);
+		TermServerScript.run(InactivatedConceptsByRelease.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		ReportSheetManager.targetFolderId = "11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"; //QI / Misc Analysis
+		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); //QI / Misc Analysis
 		super.init(run);
 	}
 	

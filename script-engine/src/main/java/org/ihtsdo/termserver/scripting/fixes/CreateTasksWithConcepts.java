@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,10 +29,10 @@ public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CreateTasksWithConcepts fix = new CreateTasksWithConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId="1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
 			fix.selfDetermining = true;
@@ -58,7 +57,7 @@ public class CreateTasksWithConcepts extends BatchFix implements ScriptConstants
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		return Arrays.stream(conceptsToProcess)
 				.map(s -> gl.getConceptSafely(s))
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+				.sorted(SnomedUtils::compareSemTagFSN)
 				.collect(Collectors.toList());
 	}
 

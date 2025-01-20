@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -17,13 +17,7 @@ import org.apache.commons.lang.StringUtils;
  * semantic tag that have
  * Note that because we also work with inactive concepts, no subhierarchy is specified
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FindNewClones extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(FindNewClones.class);
 
 	public static final String TARGET_SEMTAG = "Target SemTag";
 	public static final String SOURCE_SEMTAG = "Source SemTag";
@@ -32,18 +26,19 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 	Map<String, List<Concept>> sourceMap = new HashMap<>();
 	Map<String, Concept> targetMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, CLINICAL_FINDING.getConceptId());
 		params.put(TARGET_SEMTAG, "(finding)");
 		params.put(SOURCE_SEMTAG, "(disorder)");
 		params.put(IGNORE_TEXT, "skin of ,of ");
 		params.put(ATTRIBUTE_ECL, "116676008 |Associated morphology (attribute)| = 400061001 |Abrasion (morphologic abnormality)| ");
-		TermServerReport.run(FindNewClones.class, args, params);
+		TermServerScript.run(FindNewClones.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		additionalReportColumns = "FSN, SemTag, Matched, Source Active";
 		super.init(run);
 	}
@@ -60,12 +55,10 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.getConceptId().equals("157485009") || c.getConceptId().equals("781488002")) {
-				//LOGGER.warn ("Debug Here");
-			}
 			//Do we match the ECL?
 			if (!checkEclCompliance(c, jobRun.getMandatoryParamValue(ATTRIBUTE_ECL))) {
 				continue;
@@ -89,19 +82,19 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 			if (semTag.equals(jobRun.getMandatoryParamValue(SOURCE_SEMTAG))) {
 				List<Concept> sources = sourceMap.get(term);
 				if (sources == null) {
-					sources = new ArrayList<Concept>();
+					sources = new ArrayList<>();
 					sourceMap.put(term, sources);
 				}
 				sources.add(c);
 				if (targetMap.containsKey(term)) {
-					report (targetMap.get(term), c, c.isActive()?"Y":"N");
+					report(targetMap.get(term), c, c.isActiveSafely()?"Y":"N");
 					countIssue(c);
 				}
 			} else if (semTag.equals(jobRun.getMandatoryParamValue(TARGET_SEMTAG)) && StringUtils.isEmpty(c.getEffectiveTime())) {
 				targetMap.put(term, c);
 				if (sourceMap.containsKey(term)) {
 					for (Concept source : sourceMap.get(term)) {
-						report (c, source, source.isActive()?"Y":"N");
+						report(c, source, source.isActiveSafely()?"Y":"N");
 						countIssue(c);
 					}
 				}
@@ -113,7 +106,7 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 		String[] parts = ecl.split("=");
 		Concept type = gl.getConcept(parts[0]);
 		Concept value = gl.getConcept(parts[1]);
-		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, value, ActiveState.BOTH).size() > 0;
+		return !c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, value, ActiveState.BOTH).isEmpty();
 	}
 
 }

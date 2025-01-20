@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -9,8 +8,8 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -19,15 +18,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  * Update: RP-139
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AllTemplateCompliance extends AllKnownTemplates implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AllTemplateCompliance.class);
@@ -36,28 +34,13 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 	int totalTemplateMatches = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
-		
-		/*List<String> argList = new ArrayList<>(Arrays.asList(args));
-		argList.add("-p");
-		argList.add("SnomedCT_InternationalRF2_PRODUCTION_20170731T150000Z.zip");
-		TermServerReport.run(AllTemplateCompliance.class, argList.toArray(args), params);
-		
-		argList.remove(argList.size() - 1);
-		argList.add("SnomedCT_InternationalRF2_Production_20180131T120000Z.zip");
-		TermServerReport.run(AllTemplateCompliance.class, argList.toArray(args), params);*/
-		
-		TermServerReport.run(AllTemplateCompliance.class,args, params);
+		TermServerScript.run(AllTemplateCompliance.class,args, params);
 	}
-	
-	/*public void init(JobRun run) throws TermServerScriptException {
-		commonInit(run, true);  //Single template mode
-		populateTemplateFromTS("Fracture dislocation of [body structure] (disorder) - v1.0");
-		super.init(run);
-	}*/
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Subset ECL, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered", 
 												"KPI, Count",
@@ -86,19 +69,19 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 				.build();
 	}
 
-	
+	@Override
 	public void runJob() throws TermServerScriptException {
 		
 		//Check all of our domain points are still active concepts, or we'll have trouble with them!
 		Set<String> invalidTemplateDomains = domainTemplates.keySet().stream()
-			.filter(ecl -> findConceptsSafely(ecl, toString(domainTemplates.get(ecl))).size() == 0)
+			.filter(ecl -> findConceptsSafely(ecl, toString(domainTemplates.get(ecl))).isEmpty())
 			.collect(Collectors.toSet());
 		
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
 				String msg = "Problematic domain (check for inactive concepts / invalid syntax): " + invalidTemplateDomain;
-				LOGGER.warn (msg + " in template: " + t.getName());
+				LOGGER.warn("{} in template: {}", msg, t.getName());
 				report(TERTIARY_REPORT, t.getName(), msg);
 			}
 			domainTemplates.remove(invalidTemplateDomain);
@@ -109,10 +92,10 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 			String subsetECL = entry.getKey();
 			try {
 				List<Template> templates = entry.getValue();
-				LOGGER.info ("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
+				LOGGER.info("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
 				examineSubset(subsetECL, templates);
 			} catch (Exception e) {
-				LOGGER.error ("Exception while processing domain " + subsetECL, e);
+				LOGGER.error("Exception while processing domain {}", subsetECL, e);
 			}
 		}
 		reportKPIs();
@@ -129,21 +112,21 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		long activeConcepts = gl.getAllConcepts().stream()
 							.filter(c -> c.isActive())
 							.count();
-		report (SECONDARY_REPORT, "Total number of active concepts", activeConcepts);
+		report(SECONDARY_REPORT, "Total number of active concepts", activeConcepts);
 		long inScope = calculateInScopeConcepts();
 		long outOfScope = activeConcepts - inScope;
-		report (SECONDARY_REPORT, "Out of scope (No model or non-clinical concepts, metadata, etc)", outOfScope);
-		report (SECONDARY_REPORT, "In Scope (should conform to a template)", inScope);
-		report (SECONDARY_REPORT, "Actually conform", totalTemplateMatches);
+		report(SECONDARY_REPORT, "Out of scope (No model or non-clinical concepts, metadata, etc)", outOfScope);
+		report(SECONDARY_REPORT, "In Scope (should conform to a template)", inScope);
+		report(SECONDARY_REPORT, "Actually conform", totalTemplateMatches);
 		
 		DecimalFormat df = new DecimalFormat("##.##%");
 		double percentConformance = (totalTemplateMatches / (double)inScope);
 		String formattedPercentConformance = df.format(percentConformance);
-		report (SECONDARY_REPORT, "% of 'in scope' concepts that conform to a template", formattedPercentConformance);
+		report(SECONDARY_REPORT, "% of 'in scope' concepts that conform to a template", formattedPercentConformance);
 	}
 
 	private long calculateInScopeConcepts() throws TermServerScriptException {
-		LOGGER.info ("Obtaining count of concepts that are 'in scope'");
+		LOGGER.info("Obtaining count of concepts that are 'in scope'");
 		int inScopeCount = 0;
 		Concept[] inScope = new Concept[] { CLINICAL_FINDING,
 											PHARM_BIO_PRODUCT, PROCEDURE,
@@ -156,7 +139,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 			Set<Concept> concepts = gl.getDescendantsCache()
 					.getDescendantsOrSelf(subHierarchy)
 					.stream()
-					.filter(c -> inModuleScope(c))
+					.filter(this::inModuleScope)
 					.collect(Collectors.toSet());
 			LOGGER.info(subHierarchy + " contains " + concepts.size() + " concepts (in target module).");
 			allInScopeConcepts = ImmutableSet.copyOf(Iterables.concat(allInScopeConcepts, concepts));
@@ -173,8 +156,8 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	private void examineSubset(String ecl, List<Template> templates) throws TermServerScriptException {
 		DescendantsCache cache = DescendantsCache.getDescendantsCache();
 		Collection<Concept> subset = findConcepts(ecl);
-		if (subset.size() == 0) {
-			LOGGER.warn ("No concepts found in subset defined by '" + ecl + "' skipping");
+		if (subset.isEmpty()) {
+			LOGGER.warn ("No concepts found in subset defined by '{}' skipping", ecl);
 			return;
 		}
 		int subsetSize = subset.size();
@@ -224,19 +207,10 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		String topHierarchyText = topLevelConcept.getPreferredSynonym() + " (" + topLevelHierarchySize + ")";
 		String templatesConsidered = templates.stream().map(t -> t.getName()).collect(Collectors.joining(",\n"));
 		
-		//Domain/SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
+		//Domain/SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered
 		report(PRIMARY_REPORT, ecl, topHierarchyText, subsetSize + " (" + subset.size() + " available)", noModelSize, outOfScope, countedElsewhere, templateMatches.size(), templatesConsidered);
 		totalTemplateMatches += templateMatches.size();
 	}
-	
-	/*private boolean containsTemplate(List<Template> templates, String templateName) {
-		for (Template template : templates) {
-			if (template.getName().equals(templateName)) {
-				return true;
-			}
-		}
-		return false;
-	}*/
 
 	protected boolean inModuleScope(Component c) {
 		if (project.getKey().equals("MAIN")) {

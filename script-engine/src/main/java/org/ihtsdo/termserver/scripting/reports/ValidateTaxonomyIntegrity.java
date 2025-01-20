@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -30,15 +28,14 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 	String matchText = "+"; 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ValidateTaxonomyIntegrity report = new ValidateTaxonomyIntegrity();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.validateTaxonomyIntegrity();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -46,7 +43,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 
 	private void validateTaxonomyIntegrity() throws TermServerScriptException {
 		Collection<Concept> concepts = gl.getAllConcepts();
-		LOGGER.info ("Validating all concepts");
+		LOGGER.info("Validating all concepts");
 		long issuesEncountered = 0;
 		long conceptsValidated = 0;
 		for (Concept c : concepts) {
@@ -69,7 +66,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 		List<Description> fsns = c.getDescriptions(Acceptability.BOTH, DescriptionType.FSN, ActiveState.ACTIVE);
 		if (fsns.size() != 1) {
 			String msg = "Concept has " + fsns.size() + " active fsns";
-			report (c, msg);
+			report(c, msg);
 			issues++;
 		} else {
 			String msg = "[" + fsns.get(0).getDescriptionId() + "]: ";
@@ -80,33 +77,33 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 					List<LangRefsetEntry> corelangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, refsets, SCTID_CORE_MODULE);
 					if (uslangRefEntries.size() > 1 || corelangRefEntries.size() >1) {
 						msg += "Two acceptabilities in the same module";
-						report (c, msg);
+						report(c, msg);
 						issues++;
 					} else {
 						if (!uslangRefEntries.get(0).isActive() && corelangRefEntries.get(0).isActive() ) {
 							long usET = Long.parseLong(uslangRefEntries.get(0).getEffectiveTime());
 							long coreET = Long.parseLong(corelangRefEntries.get(0).getEffectiveTime());
 							msg += "US langrefset entry inactivated " + (usET > coreET ? "after":"before") + " core row activated - " + usET;
-							report (c, msg);
+							report(c, msg);
 							issues++;
 						} else {
 							msg += "Unexpected configuration of us and core lang refset entries";
-							report (c, msg);
+							report(c, msg);
 							issues++;
 						}
 					}
 				} else {
 					msg += "FSN has " + langRefEntries.size() + " US acceptability values.";
-					report (c, msg);
+					report(c, msg);
 					issues++;
 				}
 			} else if (!langRefEntries.get(0).getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
 				msg += "FSN has an acceptability that is not Preferred.";
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			} else if (!langRefEntries.get(0).isActive()) {
 				msg += "FSN's US acceptability is inactive.";
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			}
 		}
@@ -120,31 +117,31 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 			//by the concept file
 			if (r.getSource().getDefinitionStatus() == null ) {
 				String msg = "Non-existent source (" + r.getSourceId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			} else if (!r.getSource().isActive()) {
 				String msg = "Inactive source (" + r.getSourceId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			}
 			
 			if (r.getType().getDefinitionStatus() == null) {
 				String msg = "Non-existent Type (" + r.getType().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			} else if (!r.getType().isActive()) {
 				String msg = "Inactive Type (" + r.getType().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			}
 			
 			if (r.getTarget().getDefinitionStatus() == null) {
 				String msg = "Non-existent target (" + r.getTarget().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			} else if (!r.getTarget().isActive()) {
 				String msg = "Inactive target (" + r.getTarget().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			}
 		}
@@ -154,26 +151,26 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 			//Check for an FSN to ensure Concept fully exists
 			if (r.getSource().getDefinitionStatus() == null) {
 				String msg = "Non-existent source (" + r.getSourceId() + " - " + r.getRelationshipId() + ") in inactive " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			} 
 			
 			if (r.getType().getDefinitionStatus() == null) {
 				String msg = "Non-existent Type (" + r.getType().getConceptId() + " - " + r.getRelationshipId() + ") in inactive " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			}
 			
 			if (r.getTarget().getDefinitionStatus() == null) {
 				String msg = "Non-existent target (" + r.getTarget().getConceptId() + " - " + r.getRelationshipId() + ") in inactive " + charType + " relationship: " + r;
-				report (c, msg);
+				report(c, msg);
 				issues++;
 			}
 		}
 		return issues;
 	}
 
-	protected void report (Concept c, String issue) throws TermServerScriptException {
+	protected void report(Concept c, String issue) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						issue + QUOTE;

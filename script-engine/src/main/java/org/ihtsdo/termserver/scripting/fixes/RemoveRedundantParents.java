@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -22,7 +21,7 @@ public class RemoveRedundantParents extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemoveRedundantParents fix = new RemoveRedundantParents(null);
 		try {
 			fix.reportNoChange = true;
@@ -53,7 +52,7 @@ public class RemoveRedundantParents extends BatchFix implements ScriptConstants{
 		
 		//Make sure we're working with a Primitive Concept
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-			report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
+			report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
 			return 0;
 		}
 		

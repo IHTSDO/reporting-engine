@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,7 +40,7 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CloneRemodelAndReplace fix = new CloneRemodelAndReplace(null);
 		try {
 			ReportSheetManager.targetFolderId="1NjajGe-IjjjNk0d8lT838L4iQq_6wXrw"; //Drugs/ConeAndReplace
@@ -117,13 +116,13 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 		if (c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0 ||
 			c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
 			msg += "It has descendants";
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			return false;
 		}
 		
 		if (allStatedTargets.contains(c) || allInferredTargets.contains(c)) {
 			msg += "It is used as the target of a relationship";
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			return false;
 		}
 		
@@ -147,7 +146,7 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 		if (cd == null) {
 			//Save clone to TS
 			clone = createConcept(t, clone, " cloned from " + c);
-			report (t, c, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
+			report(t, c, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 			t.addAfter(clone, c);
 			cd = clone;
 			allKnownCDs.put(clone.getFsn(), clone);
@@ -168,7 +167,7 @@ public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 				.filter(c -> c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HPSNV, ActiveState.ACTIVE).size() > 0)
 				.filter(c -> c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HCSNV, ActiveState.ACTIVE).size() > 0)
 				.collect(Collectors.toList());
-		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		
 		//We'll populate the first ingredient as the issue, and then sort on issue to ensure
 		//like concepts are batched together

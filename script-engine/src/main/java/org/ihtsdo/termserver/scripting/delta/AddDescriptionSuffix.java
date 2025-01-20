@@ -17,7 +17,7 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 	public static void main(String[] args) throws TermServerScriptException {
 		AddDescriptionSuffix delta = new AddDescriptionSuffix();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.postInit();

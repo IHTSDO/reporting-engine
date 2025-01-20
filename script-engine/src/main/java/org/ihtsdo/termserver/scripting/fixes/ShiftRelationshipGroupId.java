@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -22,13 +21,11 @@ public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstant
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ShiftRelationshipGroupId.class);
 
-	boolean unpublishedContentOnly = true;
-	
 	protected ShiftRelationshipGroupId(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ShiftRelationshipGroupId fix = new ShiftRelationshipGroupId(null);
 		try {
 			fix.selfDetermining = true;
@@ -64,9 +61,9 @@ public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstant
 				} else if (inactiveMatches.size() == 1) {
 					Relationship inactiveMatch = inactiveMatches.iterator().next();
 					//Delete the new relationship, and move/re-activate the inactive one
-					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_REACTIVATED, "Moved + Reactivated from " + inactiveMatch.getGroupId() + " to " + r.getGroupId() + ": " + r);
+					report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_REACTIVATED, "Moved + Reactivated from " + inactiveMatch.getGroupId() + " to " + r.getGroupId() + ": " + r);
 					if (inactiveMatch.getEffectiveTime() != null  && !inactiveMatch.getEffectiveTime().isEmpty()) {
-						report (t, c, Severity.HIGH, ReportActionType.INFO, "Relationship was historically inactive: " + inactiveMatch);
+						report(t, c, Severity.HIGH, ReportActionType.INFO, "Relationship was historically inactive: " + inactiveMatch);
 					}
 					c.removeRelationship(r);
 					inactiveMatch.setActive(true);

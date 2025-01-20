@@ -6,17 +6,12 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 
 public class AssignConceptsToTasks extends BatchFix {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(AssignConceptsToTasks.class);
 
 	private String subsetECL = " (<<277132007 |Therapeutic procedure (procedure)| : 363703001 |Has intent (attribute)| = <<262202000 |Therapeutic intent (qualifier value)| ) MINUS << 416608005 |Drug therapy (procedure)|";
 
@@ -24,10 +19,10 @@ public class AssignConceptsToTasks extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AssignConceptsToTasks fix = new AssignConceptsToTasks(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.taskPrefix = "TherapeuticProc_";
 			fix.taskThrottle = 0;  //No need to slow down, not taking up any time on the Terminology Server
 			fix.additionalReportColumns = "ActionDetail, Descriptions, Inferred Expression";
@@ -58,7 +53,6 @@ public class AssignConceptsToTasks extends BatchFix {
 		}
 		return changesMade;
 	}
-
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

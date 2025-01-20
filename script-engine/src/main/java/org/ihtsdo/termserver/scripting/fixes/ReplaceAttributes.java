@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -30,10 +29,10 @@ public class ReplaceAttributes extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceAttributes fix = new ReplaceAttributes(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = true;
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
@@ -120,7 +119,7 @@ public class ReplaceAttributes extends BatchFix {
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, find).size() == 0) {
-			report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept did not contain expected stated relationship");
+			report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept did not contain expected stated relationship");
 			return null;
 		}
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
@@ -139,7 +138,7 @@ public class ReplaceAttributes extends BatchFix {
 				}
 			}
 		}
-		LOGGER.info ("Identified " + allAffected.size() + " concepts to process");
+		LOGGER.info("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
 	}

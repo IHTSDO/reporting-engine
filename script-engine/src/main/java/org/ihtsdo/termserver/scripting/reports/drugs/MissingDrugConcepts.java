@@ -1,8 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,10 +41,10 @@ public class MissingDrugConcepts extends TermServerReport {
 	Concept subHierarchy;
 	Concept[] ingredientTypes = new Concept[] { HAS_ACTIVE_INGRED, HAS_PRECISE_INGRED };
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MissingDrugConcepts report = new MissingDrugConcepts();
 		try {
-			ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3"; //Drugs/Validation
+			ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3"); //Drugs/Validation
 			report.additionalReportColumns = "FSN, MP/MPF Concept using modified ingredient, Base Ingredient";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
@@ -59,13 +56,13 @@ public class MissingDrugConcepts extends TermServerReport {
 			//report.runIdentifyMissingDescendantReport(); //DRUGS-536
 			report.runIdentifyModified_MP_MPF_Report(); //DRUGS-558 DRUGS-585
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(PHARM_BIO_PRODUCT.getConceptId());
 		super.postInit();
@@ -84,7 +81,7 @@ public class MissingDrugConcepts extends TermServerReport {
 				}
 				if (!mpParentFound) {
 					incrementSummaryInformation("Issues Found");
-					report (c);
+					report(c);
 				}
 				incrementSummaryInformation("MPFs checked");
 			}
@@ -108,7 +105,7 @@ public class MissingDrugConcepts extends TermServerReport {
 					}
 					
 					if (!hasMpParent) {
-						report (c);
+						report(c);
 						incrementSummaryInformation("Issue - MPFs with no MP parent");
 					}
 				}
@@ -127,7 +124,7 @@ public class MissingDrugConcepts extends TermServerReport {
 					//...and that have an inferred parent which is MP "Only"
 					for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 						if (parent.getFsn().contains(MP) && parent.getFsn().contains(ONLY)) {
-							report (c, parent.toString());
+							report(c, parent.toString());
 							incrementSummaryInformation("Concepts reported");
 						}
 					}
@@ -147,7 +144,7 @@ public class MissingDrugConcepts extends TermServerReport {
 					//...and that have an inferred parent which is MPF "Only"
 					for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 						if (parent.getFsn().contains(MPF) && parent.getFsn().contains(ONLY)) {
-							report (c, parent.toString());
+							report(c, parent.toString());
 							incrementSummaryInformation("Concepts reported");
 						}
 					}
@@ -167,7 +164,7 @@ public class MissingDrugConcepts extends TermServerReport {
 			if (c.getFsn().contains(MP) || c.getFsn().contains(MPF)) {
 				//with no inferred children
 				if (c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() == 0) {
-					report (c);
+					report(c);
 					incrementSummaryInformation("MP/MPF Concepts reported having no inferred descendants");
 				}
 				incrementSummaryInformation("MP/MPF Concepts checked");
@@ -188,7 +185,7 @@ public class MissingDrugConcepts extends TermServerReport {
 					Set<Concept> bases = SnomedUtils.getTargets(ingredientRel.getTarget(), new Concept[] { IS_MODIFICATION_OF }, CharacteristicType.INFERRED_RELATIONSHIP);
 					if (bases.size() > 0) {
 						incrementSummaryInformation("Issues reported");
-						report (c, ingredientRel.getTarget(), bases.stream().map(b -> b.toString()).collect(Collectors.joining(" + ")));
+						report(c, ingredientRel.getTarget(), bases.stream().map(b -> b.toString()).collect(Collectors.joining(" + ")));
 					}
 				}
 				incrementSummaryInformation("MP/MPF Concepts checked");

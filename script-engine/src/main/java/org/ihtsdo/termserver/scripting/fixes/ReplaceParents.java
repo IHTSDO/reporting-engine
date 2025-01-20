@@ -129,7 +129,7 @@ public class ReplaceParents extends BatchFix implements ScriptConstants{
 					//Safe to force the removal of this relationship because it's in a axiom, so that will be modified rather than deleted.
 					c.removeRelationship(parentRel, true);
 					changesMade ++;
-					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, parentRel);
+					report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, parentRel);
 				}
 			} else {
 				changesMade += replaceParent(t, c, parentRel.getTarget(), ppps.get(0));
@@ -146,7 +146,7 @@ public class ReplaceParents extends BatchFix implements ScriptConstants{
 			} else {
 				Relationship r = new Relationship(c, IS_A, additionalParent, 0);
 				c.addRelationship(r);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
+				report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
 				return CHANGE_MADE;
 			}
 		}

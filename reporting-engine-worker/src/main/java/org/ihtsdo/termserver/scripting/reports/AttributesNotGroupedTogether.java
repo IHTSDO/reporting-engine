@@ -2,25 +2,19 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
  * INFRA-9656 Request for list of concepts where causative agent and finding site are present but not grouped together.
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AttributesNotGroupedTogether extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(AttributesNotGroupedTogether.class);
 
 	public static String ATTRIBUTE_A = "Attribute A";
 	public static String ATTRIBUTE_B = "Attribute B";
@@ -34,7 +28,7 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 	private boolean mustBothExist = false;
 	boolean selfGroupedOnly = true;
 		
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "*");
 		params.put(CHAR_TYPE, "Inferred");
@@ -42,11 +36,11 @@ public class AttributesNotGroupedTogether extends TermServerReport implements Re
 		params.put(ATTRIBUTE_B, FINDING_SITE.toString());
 		params.put(MUST_BOTH_EXIST, "TRUE");
 		params.put(SELF_GROUPED_ONLY, "TRUE");
-		TermServerReport.run(AttributesNotGroupedTogether.class, args, params);
+		TermServerScript.run(AttributesNotGroupedTogether.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
 	}

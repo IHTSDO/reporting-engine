@@ -5,20 +5,14 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 public class ReplaceRelationshipTargets extends DeltaGenerator implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceRelationshipTargets.class);
 
 	private Concept restrictToType;
 	private Concept find;
 	private Concept replace;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceRelationshipTargets delta = new ReplaceRelationshipTargets();
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships

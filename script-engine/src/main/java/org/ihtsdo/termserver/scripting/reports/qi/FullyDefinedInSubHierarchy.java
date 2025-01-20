@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.stream.Collectors;
 
@@ -22,7 +21,7 @@ public class FullyDefinedInSubHierarchy extends TermServerReport {
 
 	Concept subHierarchy;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FullyDefinedInSubHierarchy report = new FullyDefinedInSubHierarchy();
 		try {
 			report.additionalReportColumns = "FSN, Parents...";
@@ -46,7 +45,7 @@ public class FullyDefinedInSubHierarchy extends TermServerReport {
 		for (Concept c : gl.getDescendantsCache().getDescendants(subHierarchy)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				incrementSummaryInformation("FDs reported");
-				report (c, c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream().map(p -> p.toString()).collect(Collectors.joining(", \n")));
+				report(c, c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream().map(p -> p.toString()).collect(Collectors.joining(", \n")));
 			}
 		}
 	}

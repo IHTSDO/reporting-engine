@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.metadata;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
@@ -8,20 +7,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
-
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class CodeSystemMetadataPopulation extends BatchFix implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(CodeSystemMetadataPopulation.class);
 
 	protected CodeSystemMetadataPopulation(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CodeSystemMetadataPopulation fix = new CodeSystemMetadataPopulation(null);
 		try {
 			fix.headers = "CodeSystem, Severity, Action, previousDependencyPackage, dependencyRelease, dependencyPackage, previousRelease, previousPackage";
@@ -83,7 +75,7 @@ public class CodeSystemMetadataPopulation extends BatchFix implements ScriptCons
 					tsClient.updateMetadata(branch.getPath(), metaDataUpdate);
 				}
 			}
-			report (PRIMARY_REPORT, codeSystem.getShortName(), severity, reportAction, previousDependencyPackage, dependencyRelease, dependencyPackage, previousRelease, previousPackage);
+			report(PRIMARY_REPORT, codeSystem.getShortName(), severity, reportAction, previousDependencyPackage, dependencyRelease, dependencyPackage, previousRelease, previousPackage);
 		}
 	}
 

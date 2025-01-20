@@ -2,12 +2,11 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +15,7 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidationExtensions.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
 		//params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
@@ -25,7 +24,7 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
 		params.put(MODULES, "45991000052106");
 
-		TermServerReport.run(PreReleaseContentValidationExtensions.class, args, params);
+		TermServerScript.run(PreReleaseContentValidationExtensions.class, args, params);
 	}
 
 	@Override

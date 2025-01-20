@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +25,7 @@ public class JointsInFractures extends TermServerReport {
 	Set<Concept> boneStructures;
 	Set<Concept> jointStructures;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		JointsInFractures report = new JointsInFractures();
 		try {
 			report.additionalReportColumns = "FSN, Joint Structures, Joint Also Bone Structure, Bone Structures, Other things";
@@ -70,7 +69,7 @@ public class JointsInFractures extends TermServerReport {
 				
 				for (Concept joint : joints) {
 					//If the joint is also a bone structure, add an indicator
-					report (c, joint, boneStructures.contains(joint)? "Y":"N", bones, other);
+					report(c, joint, boneStructures.contains(joint)? "Y":"N", bones, other);
 					//Most interesting case would be a joint without any sort of bone
 					if (bones.isEmpty() && !boneStructures.contains(joint)) {
 						LOGGER.warn("Interesting case: " + c + " with joint: " + joint);

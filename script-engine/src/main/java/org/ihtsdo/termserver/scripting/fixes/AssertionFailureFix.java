@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -17,7 +16,7 @@ public class AssertionFailureFix extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AssertionFailureFix fix = new AssertionFailureFix(null);
 		try {
 			fix.init(args);

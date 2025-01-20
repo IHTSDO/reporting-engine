@@ -355,7 +355,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template template = new Template(id++, lt, templateName);
-			LOGGER.info ("Loading template " + templateName + " from TS to run against subset: " + ct.getDomain());
+			LOGGER.info("Loading template " + templateName + " from TS to run against subset: " + ct.getDomain());
 			
 			if (ct.getDomain() == null) {
 				LOGGER.warn("TS template " + templateName + " is not saying what domain it applies to");
@@ -376,7 +376,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	private void populateTemplates(String ecl, String... templateNames) throws TermServerScriptException {
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
-				LOGGER.info ("Loading template: " + templateNames[x]);
+				LOGGER.info("Loading template: " + templateNames[x]);
 				try {
 					ConceptTemplate ct = tsc.loadLocalConceptTemplate(templateNames[x]);
 					LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());

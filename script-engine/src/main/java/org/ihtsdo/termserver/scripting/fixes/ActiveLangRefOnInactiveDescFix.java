@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -22,10 +21,10 @@ public class ActiveLangRefOnInactiveDescFix extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ActiveLangRefOnInactiveDescFix fix = new ActiveLangRefOnInactiveDescFix(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
@@ -50,7 +49,7 @@ public class ActiveLangRefOnInactiveDescFix extends BatchFix {
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						l.setActive(false);
 						changesMade += updateRefsetMember(t, l, info);
-						report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
+						report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
 					}
 				}
 			}

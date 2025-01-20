@@ -12,6 +12,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -25,7 +26,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,18 +64,19 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	private static String INJECTION = "injection";
 	private static String INFUSION = "infusion";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
-		TermServerReport.run(DrugsModelingAndTerming.class, args, params);
+		TermServerScript.run(DrugsModelingAndTerming.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
@@ -120,7 +121,8 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				.withParameters(params)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
@@ -132,7 +134,6 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		double conceptsConsidered = 0;
-		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
 		for (Concept c : allDrugs) {
 			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
 				continue;
@@ -142,18 +143,14 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				LOGGER.info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete {}", (int)percComplete);
 			}
-			
-			/*if (c.getId().equals("714209004")) {
-				LOGGER.debug ("here");
-			}*/
-			
+
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
-			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
-				report (c, issueStr);
+				report(c, issueStr);
 				continue;
 			}
 			
@@ -219,7 +216,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				checkMissingDoseFormGrouper(c);
 			}
 		}
-		LOGGER.info ("Drugs validation complete");
+		LOGGER.info("Drugs validation complete");
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
@@ -255,7 +252,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			}
 		}
 		
-		if (inferredAttribs.size() > 0) {
+		if (!inferredAttribs.isEmpty()) {
 			report(c, issueStr, inferredAttribs.iterator().next());
 		}
 	}
@@ -290,7 +287,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		}
 	}
 	
-	private void populateBaseMDFMap() throws TermServerScriptException {
+	private void populateBaseMDFMap() {
 		baseMDFMap = new HashMap<>();
 		for (Concept c : allDrugs) {
 			DrugUtils.setConceptType(c);
@@ -304,7 +301,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 					BaseMDF baseMDF = getBaseMDF(rg, mdf);
 					Set<RelationshipGroup> groups = baseMDFMap.get(baseMDF);
 					if (groups == null) {
-						groups = new HashSet<RelationshipGroup>();
+						groups = new HashSet<>();
 						baseMDFMap.put(baseMDF, groups);
 					}
 					groups.add(rg);
@@ -314,14 +311,14 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	}
 	
 
-	private void populateSummaryTab() throws TermServerScriptException {
+	private void populateSummaryTab() {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
-				.collect(Collectors.summingInt(Integer::intValue));
+		int total = issueSummaryMap.values().stream()
+				.mapToInt(Integer::intValue)
+				.sum();
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
@@ -349,10 +346,10 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		initialiseSummary(issue6Str);
 
 		Set<Relationship> unitsOfPresentation = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
-		if (unitsOfPresentation.size() == 0) {
-			report (c, issue5Str);
+		if (unitsOfPresentation.isEmpty()) {
+			report(c, issue5Str);
 		} else if (unitsOfPresentation.size() > 1) {
-			report (c, issue6Str);
+			report(c, issue6Str);
 		}
 		
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -365,41 +362,40 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 					report(c, issueStr, g);
 					return;
 				} 
-				if (c.getFsn().toLowerCase().contains("actuation")) {
-					if (ps.size() < 1 || psdu.size() < 1) {
-						report(c, issue2Str, g);
-						return;
-					}
+				if (c.getFsn().toLowerCase().contains("actuation") && (ps.isEmpty() || psdu.isEmpty())) {
+					report(c, issue2Str, g);
+					return;
 				}
+
 				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLILITER)) {
-					report (c, issue3Str, psdu.iterator().next());
+					report(c, issue3Str, psdu.iterator().next());
 				}
 				if (csdu.size() == 1 && csdu.iterator().next().getTarget().equals(gl.getConcept("732936001|Tablet|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLIGRAM)) {
-					report (c, issue3Str, psdu.iterator().next());
+					report(c, issue3Str, psdu.iterator().next());
 				}
 				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258728009|microequivalent|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258718000|millimole|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 			}
 		}
 		
 		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
-			report (c, issue4Str, getParentsJoinedStr(c));
+			report(c, issue4Str, getParentsJoinedStr(c));
 		}
 	}
 
 	private String getParentsJoinedStr(Concept c) {
 		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
-				.map(p -> p.getFsn())
+				.map(Concept::getFsn)
 				.collect(Collectors.joining(", \n"));
 	}
 
@@ -410,10 +406,10 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		initialiseSummary(issueStr2);
 		Concept targetType = gl.getConcept("411116001 |Has manufactured dose form (attribute)|");
 		if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr2);
+			report(c, issueStr2);
 		}
 	}
 
@@ -458,7 +454,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				if (!presRatio.equals(concRatio)) {
 					issueDetected = true;
 				}
-				report (c, issueStr, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
+				report(c, issueStr, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
 			}
 		}
 	}
@@ -569,7 +565,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 						if (badWord.equals("+") && isPlusException(term)) {
 							continue;
 						}
-						report (concept, issueStr, d.toString());
+						report(concept, issueStr, d.toString());
 						return;
 					}
 				}
@@ -601,7 +597,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			Set<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
-				report (concept, issueStr, data);
+				report(concept, issueStr, data);
 			} else {
 				for (Relationship statedAttribute : statedAttributes) {
 					boolean found = false;
@@ -614,7 +610,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 					if (!found) {
 						issue2Str = "Stated " + statedAttribute.getType() + " is not present in inferred view";
 						String data = statedAttribute.toString();
-						report (concept, issue2Str, data);
+						report(concept, issue2Str, data);
 					}
 				}
 			}
@@ -665,7 +661,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
-			LOGGER.debug ("Debug here - hit a null");
+			LOGGER.debug("Debug here - hit a null");
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
@@ -682,11 +678,11 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
 			String differences = findDifferences (actual.getTerm(), expected.getTerm());
-			report (c, issueStr, expected.getTerm(), differences, actual);
+			report(c, issueStr, expected.getTerm(), differences, actual);
 		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
 			String detail = "Expected: " + SnomedUtils.translateCaseSignificanceFromEnum(expected.getCaseSignificance());
 			detail += ", Actual: " + SnomedUtils.translateCaseSignificanceFromEnum(actual.getCaseSignificance());
-			report (c, issue2Str, detail, actual);
+			report(c, issue2Str, detail, actual);
 		}
 	}
 
@@ -766,7 +762,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				}
 			}
 				String unmatchedStr = unmatched.stream().map(r -> r.toString(true)).collect(Collectors.joining(",\n"));
-				report (c, issueStr,
+				report(c, issueStr,
 						c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
 						c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP), unmatchedStr);
 		}
@@ -822,7 +818,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			int parentTagLevel = getTagLevel(p);
 			if (tagLevel < parentTagLevel) {
-				report (c, issueStr, p);
+				report(c, issueStr, p);
 			}
 		}
 		
@@ -841,12 +837,12 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				} else if (isMPOnly(parent)) {
 					hasMpOnly = true;
 				} else {
-					report (c, issueStr6, parent);
+					report(c, issueStr6, parent);
 					break;
 				}
 			}
 			if (!hasMpfNotOnly && !hasMpOnly) {
-				report (c, issueStr6, getParentsJoinedStr(c));
+				report(c, issueStr6, getParentsJoinedStr(c));
 			}
 		} 
 		
@@ -859,7 +855,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
-				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
+				report(c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
 			}
 		}
 	}
@@ -879,7 +875,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			}
 			
 			if (!semTag.equals(requiredTag)) {
-				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+				report(c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
 			}
 		}
 	}
@@ -932,7 +928,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 					}
 				}
 				if (!allowed) {
-					report (c, issueStr, r);
+					report(c, issueStr, r);
 				}
 			}
 		}
@@ -943,7 +939,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isPreferred()) {
 					if (!d.getTerm().contains("containing") && !d.getTerm().contains("only")) {
-						report (c, issueStr, d);
+						report(c, issueStr, d);
 					}
 				}
 			}
@@ -952,14 +948,14 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		issueStr =  "CD must feature 'precisely' in the FSN";
 		initialiseSummary(issueStr);
 		if (isCD(c) && !c.getFsn().contains("precisely")) { 
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		issueStr = "Precise MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		//In the case of a missing count of base, we will not have detected that this concept is MP/MPF Only
@@ -968,15 +964,15 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		initialiseSummary(issueStr);
 		if (isCD(c)) {
 			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
-				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
+				report(c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
 			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
 				if (true);
-				report (c, issueStr);
+				report(c, issueStr);
 			}
 		} else if ((isMP(c) || isMPF(c)) && 
 				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
@@ -993,7 +989,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 						if (attributeSet.contains(r.getType())) {
 							attributeSet.remove(r.getType());
 						} else {
-							report (c, issueStr, r);
+							report(c, issueStr, r);
 						}
 					}
 				}
@@ -1030,7 +1026,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		//Do we have a unit of presentation?
 		Set<Relationship> unitsOfPres = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
 		if (unitsOfPres.size() > 1) {
-			report (c, issueStr1);
+			report(c, issueStr1);
 		} else if (unitsOfPres.size() == 1) {
 			Concept unitOfPres = unitsOfPres.iterator().next().getTarget();
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
@@ -1039,9 +1035,9 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 				}
 				Set<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
 				if (presDenomUnits.size() != 1) {
-					report (c, issueStr2, g);
+					report(c, issueStr2, g);
 				} else if (!unitOfPres.equals(presDenomUnits.iterator().next().getTarget())) {
-					report (c, issueStr3, unitOfPres, g);
+					report(c, issueStr3, unitOfPres, g);
 				}
 				incrementSummaryInformation("CD groups checked for presentation unit consistency");
 			}
@@ -1081,7 +1077,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		
 		Set<Concept> doseForms = SnomedUtils.getTargets(c, doseFormTypes, CharacteristicType.STATED_RELATIONSHIP);
 		if (doseForms.size() != 1) {
-			report (c, issueStr1, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			report(c, issueStr1, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			throw new TermServerScriptException("Please fix invalid dose form modelling on " + c + " unable to continue.");
 		}
 		return doseForms.iterator().next();
@@ -1129,7 +1125,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			break;
 		}
 		if (!hasGrouperParent) {
-			report (c, issueStr, "Sibling: " + sibling);
+			report(c, issueStr, "Sibling: " + sibling);
 		}
 	}
 
@@ -1149,16 +1145,16 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug ("Loading " + fileName );
+		LOGGER.debug("Loading {}", fileName);
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			boolean isHeader = true;

@@ -1,11 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -14,19 +14,13 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * See FD#25496
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ListAllDescriptions extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ListAllDescriptions.class);
 
 	private static String DESCRIPTION_PER_LINE = "Description Per Line";
 	private Set<Concept> alreadyReported = new HashSet<>();
 	private boolean descriptionPerLine = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(SUB_HIERARCHY, "43959009 |Cataract of eye due to diabetes mellitus (disorder)|");
 		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
@@ -34,11 +28,12 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		//params.put(SUB_HIERARCHY, "19598007 |Generalized epilepsy (disorder)|");
 		//params.put(SUB_HIERARCHY, "84757009 |Epilepsy (disorder)|"); 
 		params.put(ECL, "<<84757009 |Epilepsy (disorder)|"); 
-		TermServerReport.run(ListAllDescriptions.class, args, params);
+		TermServerScript.run(ListAllDescriptions.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		additionalReportColumns="FSN, SemTag, Defn, Parents, Description";
 		
 		descriptionPerLine = run.getParamBoolean(DESCRIPTION_PER_LINE);
@@ -63,6 +58,7 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		List<Concept> concepts = SnomedUtils.sortFSN(findConcepts(subsetECL));
 		for (Concept concept : concepts) {
@@ -85,11 +81,11 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 		if (descriptionPerLine) {
 			report(c, defn, parents);
 			for (Description d : descriptions) {
-				report((Concept)null, "", "", d);
+				report(null, "", "", d);
 			}
 		} else {
 			String descriptionStr = descriptions.stream()
-					.map(d -> d.getTerm())
+					.map(Description::getTerm)
 					.collect(Collectors.joining(",\n"));
 			report(c, defn, parents, descriptionStr);
 		}
@@ -100,7 +96,7 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 
 	private String getParentsStr(Concept c) {
 		Set<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
-		return parents.stream().map(p->p.toString())
+		return parents.stream().map(Concept::toString)
 				.collect(Collectors.joining(",\n"));
 	}
 

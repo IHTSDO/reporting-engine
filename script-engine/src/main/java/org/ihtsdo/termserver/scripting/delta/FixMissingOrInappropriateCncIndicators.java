@@ -23,7 +23,7 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 	public static void main(String[] args) throws TermServerScriptException {
 		FixMissingOrInappropriateCncIndicators delta = new FixMissingOrInappropriateCncIndicators();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false;
 			delta.init(args);
 			delta.getGraphLoader().setRecordPreviousState(true);

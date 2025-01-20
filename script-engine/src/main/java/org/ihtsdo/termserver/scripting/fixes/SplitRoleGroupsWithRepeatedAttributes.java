@@ -1,10 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
@@ -14,20 +10,16 @@ import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 
-/*
-
-*/
 public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements ScriptConstants{
 	
 	Set<Concept> subHierarchy;
-	List<Concept> attributesToSplit;
 	List<Concept> attributesToIgnore;
 	
 	public SplitRoleGroupsWithRepeatedAttributes(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SplitRoleGroupsWithRepeatedAttributes fix = new SplitRoleGroupsWithRepeatedAttributes(null);
 		try {
 			fix.inputFileHasHeaderRow = true;
@@ -49,11 +41,6 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements S
 
 	public void postLoadInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("46866001").getDescendants(NOT_SET); // |Fracture of lower limb (disorder)|
-		/*attributesToSplit = new ArrayList<Concept>();
-		attributesToSplit.add(gl.getConcept("116676008")); // |Associated morphology (attribute)|"))
-		attributesToSplit.add(gl.getConcept("363698007")); // |Finding site (attribute)|
-		attributesToSplit.add(gl.getConcept("246075003")); // |Causative agent (attribute)|*/
-		
 		attributesToIgnore = new ArrayList<Concept>();
 		attributesToIgnore.add(IS_A);
 	}
@@ -105,7 +92,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements S
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		if (!loadedConcept.isActive()) {
-			report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
+			report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
 			return 0;
 		}
 		fixRepeatedAttributesInGroup(task, loadedConcept);

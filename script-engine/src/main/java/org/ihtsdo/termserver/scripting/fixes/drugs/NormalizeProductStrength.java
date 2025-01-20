@@ -88,7 +88,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements ScriptCons
 				if (DrugUtils.normalizeStrengthUnit(strengthUnit)) {
 					if (!quiet) {
 						remodelConcept (t, c, strengthRel, strengthUnit.getStrengthStr(), unitRel, strengthUnit.getUnit());
-						report (t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, strengthNumber + " " + unitRel.getTarget() + " --> " + strengthUnit, g);
+						report(t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, strengthNumber + " " + unitRel.getTarget() + " --> " + strengthUnit, g);
 					}
 					changesMade++;
 				}

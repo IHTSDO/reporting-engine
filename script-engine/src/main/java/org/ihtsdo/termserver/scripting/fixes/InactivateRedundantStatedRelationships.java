@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -20,12 +19,11 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateRedundantStatedRelationships.class);
 
-	
 	protected InactivateRedundantStatedRelationships(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InactivateRedundantStatedRelationships fix = new InactivateRedundantStatedRelationships(null);
 		try {
 			fix.selfDetermining = true;
@@ -99,7 +97,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 				}
 			}
 		}
-		LOGGER.debug ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.debug("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

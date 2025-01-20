@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,7 +19,7 @@ public class LoincMatchingAttributes extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincMatchingAttributes.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		LoincMatchingAttributes report = new LoincMatchingAttributes();
 		try {
 			report.getGraphLoader().setExcludedModules(new HashSet<>());
@@ -48,22 +47,22 @@ public class LoincMatchingAttributes extends TermServerScript{
 						report(c, r);
 						attributeTypeDetected = true;
 						if (attributeValues.contains(r.getTarget())) {
-							report (c, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							report(c, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 							continue nextConcept;
 						}
 					}
 				}
 				if (!attributeTypeDetected) {
 					noAttributeTypeDetected++;
-					report (c, "Does not feature " + targetType, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+					report(c, "Does not feature " + targetType, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 					
 				}
 			} else if (c.getModuleId().equals(SCTID_LOINC_EXTENSION_MODULE)) {
 				loincInactive++;
 			}
 		}
-		LOGGER.info ("LOINC concepts not using direct site: " + noAttributeTypeDetected);
-		LOGGER.info ("LOINC concepts inactive: " + loincInactive);
+		LOGGER.info("LOINC concepts not using direct site: " + noAttributeTypeDetected);
+		LOGGER.info("LOINC concepts inactive: " + loincInactive);
 	}
 
 }

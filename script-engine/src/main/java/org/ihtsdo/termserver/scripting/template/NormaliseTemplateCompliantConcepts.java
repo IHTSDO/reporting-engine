@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,10 +31,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormaliseTemplateCompliantConcepts app = new NormaliseTemplateCompliantConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
+			ReportSheetManager.setTargetFolderId("1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl");  // QI/Normalization
 			app.init(args);
 			app.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -484,7 +483,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	private int normaliseConceptToTemplate(Task t, Concept c, Template template) throws TermServerScriptException {
 		int changesMade = 0;
 		if (template == null) {
-			report (t, c, Severity.HIGH, ReportActionType.API_ERROR, "No template found for use with concept");
+			report(t, c, Severity.HIGH, ReportActionType.API_ERROR, "No template found for use with concept");
 			return changesMade;
 		}
 		
@@ -493,7 +492,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		if (focusConceptIds.size() == 1) {
 			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)), false, allowCompromisePPP);
 		} else {
-			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
+			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
 		}
 		
 		//Remove any redundant relationships, or they'll be missing from the inferred view
@@ -530,7 +529,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		changesMade += stateRelationshipGroups(t, c, toBeStated);
 		if (changesMade == 0) {
-			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
+			report(t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
 		}
 		return changesMade;
 	}
@@ -605,7 +604,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		//RP-242 Report the concepts that are misaligned in a new tab
 		for (Concept misaligned : misalignedConcepts) {
-			report (QUATERNARY_REPORT, misaligned);
+			report(QUATERNARY_REPORT, misaligned);
 		}
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 

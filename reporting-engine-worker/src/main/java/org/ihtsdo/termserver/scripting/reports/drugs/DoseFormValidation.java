@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -30,8 +31,6 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	private List<Concept> allDrugs;
 	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
-	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
-	
 	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
 	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
@@ -40,18 +39,19 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	private boolean isRecentlyTouchedConceptsOnly = false;
 	private Set<Concept> recentlyTouchedConcepts;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
-		TermServerReport.run(DoseFormValidation.class, args, params);
+		TermServerScript.run(DoseFormValidation.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
@@ -84,7 +84,8 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 				.withParameters(params)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		populateSummaryTab();
@@ -111,7 +112,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 				validateAcceptableDoseForm(c);
 			}
 		}
-		LOGGER.info ("Drugs validation complete");
+		LOGGER.info("Drugs validation complete");
 	}
 	
 
@@ -135,10 +136,10 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		//Is this dose form acceptable?
 		if (acceptableDoseForms.containsKey(thisDoseForm)) {
 			if (acceptableDoseForms.get(thisDoseForm).equals(Boolean.FALSE)) {
-				report (c, issueStr2, thisDoseForm);
+				report(c, issueStr2, thisDoseForm);
 			}
 		} else {
-			report (c, issueStr1, thisDoseForm);
+			report(c, issueStr1, thisDoseForm);
 		}
 	}
 
@@ -157,16 +158,16 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug ("Loading " + fileName );
+		LOGGER.debug("Loading {}", fileName);
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			boolean isHeader = true;

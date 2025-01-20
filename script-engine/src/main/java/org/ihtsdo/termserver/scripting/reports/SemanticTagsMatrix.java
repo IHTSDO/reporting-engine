@@ -1,11 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -25,7 +23,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 	List<Concept> topLevelHierarchies;
 	Map<String, int[]> tagToUsageMap;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SemanticTagsMatrix report = new SemanticTagsMatrix();
 		try {
 			report.init(args);
@@ -37,8 +35,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 			report.outputResultsYX();
 			report.outputWithoutCounts();
 		} catch (Exception e) {
-			LOGGER.info("Failed to validate laterality due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report",e);
 		} finally {
 			report.finish();
 		}
@@ -73,11 +70,11 @@ public class SemanticTagsMatrix extends TermServerReport{
 	private void checkForAnomoly(String topTag, String thisTag, Concept c) {
 		//Some hierarchies only expect to use a single semantic tag
 		if (topTag.equals("(product)") && thisTag.equals("(substance)")) {
-			LOGGER.info ("Anomaly found in " + topTag + " hierarchy: " + c);
+			LOGGER.info("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 		
 		if (topTag.equals("(substance)") && thisTag.equals("(product)")) {
-			LOGGER.info ("Anomaly found in " + topTag + " hierarchy: " + c);
+			LOGGER.info("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 	}
 

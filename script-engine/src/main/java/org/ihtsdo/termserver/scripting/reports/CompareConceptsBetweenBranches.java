@@ -1,21 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -23,21 +18,19 @@ import java.util.*;
  */
 public class CompareConceptsBetweenBranches extends TermServerReport implements ReportClass {
 	
-	private static final Logger LOGGER = LoggerFactory.getLogger(CompareConceptsBetweenBranches.class);
-
 	private final List<Concept> skipAttributeTypes = new ArrayList<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, Boolean.TRUE.toString());
 		params.put(ECL, "<< 386053000 |Evaluation procedure|");
-		//params.put(ECL, "<< 363787002 |Observable entity (observable entity)|");
-		TermServerReport.run(CompareConceptsBetweenBranches.class, args, params);
+		TermServerScript.run(CompareConceptsBetweenBranches.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 		
@@ -45,7 +38,8 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 			throw new TermServerScriptException("UnpromotedChangesOnly makes no sense when running against MAIN");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"ConceptId, FSN, SemTag, Has Stated Changes, Has Inferred Changes, Before Stated, Before Inferred, After Stated, After Inferred, Role Group Count (Ignoring skipped types), Concern"};
@@ -74,7 +68,8 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 				.withTag(MS)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
@@ -98,7 +93,7 @@ public class CompareConceptsBetweenBranches extends TermServerReport implements 
 						.count();
 				String concern = checkConceptForConcerns(c, before);
 				if (!beforeStated.equals(afterStated) || !beforeInferred.equals(afterInferred)) {
-					report (c, hasStatedChanges, hasInferredChanges, beforeStated, beforeInferred, afterStated, afterInferred, roleGroupCount, concern);
+					report(c, hasStatedChanges, hasInferredChanges, beforeStated, beforeInferred, afterStated, afterInferred, roleGroupCount, concern);
 				}
 			}
 		}

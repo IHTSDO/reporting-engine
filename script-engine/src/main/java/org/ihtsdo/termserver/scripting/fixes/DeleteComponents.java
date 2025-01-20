@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +24,7 @@ public class DeleteComponents extends BatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DeleteComponents fix = new DeleteComponents(null);
 		try {
 			fix.populateEditPanel = false;

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.loinc;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -8,6 +7,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.SingleTraceabilityService;
@@ -20,25 +20,19 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-171 List all new concepts in << 363787002 | Observable entity (observable entity)
  * and << 386053000 | Evaluation procedure (procedure)
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class LoincReport extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincReport.class);
 
 	private Set<String> semTagExclusions = new HashSet<>();
 	private TraceabilityService traceabilityService;
 	private SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		TermServerReport.run(LoincReport.class, args, new HashMap<>());
+	public static void main(String[] args) throws TermServerScriptException {
+		TermServerScript.run(LoincReport.class, args, new HashMap<>());
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
+		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"); //LOINC
 		super.init(run);
 	}
 	

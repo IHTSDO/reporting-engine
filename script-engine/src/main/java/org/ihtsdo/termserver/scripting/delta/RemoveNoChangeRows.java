@@ -33,7 +33,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 	Concept hierarchyOfInterest = BODY_STRUCTURE;
 	List<String> semTagsOfInterest; 
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemoveNoChangeRows app = new RemoveNoChangeRows();
 		try {
 			app.newIdsRequired = false;
@@ -82,10 +82,10 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 						String fileName = p.getFileName().toString();
 						ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 						if (componentType != null && !fileName.startsWith("._")) {
-							LOGGER.info ("Processing " + fileName);
+							LOGGER.info("Processing " + fileName);
 							processFixDeltaFile(zis, componentType);
 						} else {
-							LOGGER.info ("Skipping unrecognised file: " + fileName);
+							LOGGER.info("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();
@@ -126,7 +126,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		String id = lineItems[IDX_ID];
 		
 		/*if (id.equals("10011096023") || id.equals("3727472012")) {
-			LOGGER.debug ("Check released unchanged component");
+			LOGGER.debug("Check released unchanged component");
 		}*/
 		
 		//Do we know about this component in the release?
@@ -138,7 +138,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		}
 		
 		if (existingComponent == null) {
-			LOGGER.debug ("New " + componentType + ": " + id);
+			LOGGER.debug("New " + componentType + ": " + id);
 			incrementSummaryInformation("New Component - " + componentType);
 			return lineItems;
 		}

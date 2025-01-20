@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -8,6 +7,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -44,33 +44,29 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-568 Inactivation reason "Concept Moved Elsewhere" will no longer be used, neither will association "Moved To"
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateInactivationsWithAssociations.class);
 
 	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;
 	public static final String CARDINALITY_ISSUE = "Cardinality constraint breached.  Expected ";
-	
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "true");
 		params.put(UNPROMOTED_CHANGES_ONLY, "true");
-		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
+		TermServerScript.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
 		this.summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Issue, Count",
@@ -103,6 +99,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		namespaceConcepts = gl.getDescendantsCache().getDescendantsOrSelf(NAMESPACE_CONCEPT);
 		List<Concept> concepts = SnomedUtils.sort(gl.getAllConcepts());
@@ -119,7 +116,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			}
 			
 			boolean isLegacy = isLegacy(c);
-			if (!c.isActive() && inScope(c)) {
+			if (!c.isActiveSafely() && inScope(c)) {
 				//Are we only interested in concepts that have any new inactivation indicator?
 				if (!includeLegacyIssues && isLegacy) {
 					continue;
@@ -131,7 +128,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					Concept target = gl.getConcept(a.getTargetComponentId(), false, false);
 					if (target == null) {
 						incrementSummaryInformation("Inactive concept association target not a concept");
-					} else if (!target.isActive()) {
+					} else if (!target.isActiveSafely()) {
 						String targetStr = SnomedUtils.translateAssociation(a.getRefsetId()) + " " + target.toString();
 						incrementSummaryInformation("Inactive concept association target is inactive");
 						report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, targetStr, c.getInactivationIndicator().toString() + "\n" + a);
@@ -139,13 +136,13 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					}
 				}
 				
-				if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
+				if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
 					incrementSummaryInformation("Inactive concept missing inactivation indicator");
-					report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive concept missing inactivation indicator", isLegacy);
+					report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive concept missing inactivation indicator", isLegacy);
 					countIssue(c);
 				} else if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1) {
 					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
-							.map(i->i.toString())
+							.map(InactivationIndicatorEntry::toString)
 							.collect(Collectors.joining(",\n"));
 					String issue = "Concept has multiple inactivation indicators";
 					incrementSummaryInformation(issue);
@@ -231,7 +228,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					String cdLegacy = (isLegacy?"Y":"N") + "/" + (getLegacyIndicator(d));
 					//What are we looking at here?
 					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
-							.map(i->i.toString())
+							.map(InactivationIndicatorEntry::toString)
 							.collect(Collectors.joining(",\n"));
 					
 					//First check that any indicators are only in the appropriate refset
@@ -251,9 +248,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						incrementSummaryInformation(issue);
 						report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d, data);
 						countIssue(c);
-					} else if (d.isActive() && !c.isActive()) {
+					} else if (d.isActiveSafely() && !c.isActiveSafely()) {
 						//Expect a single "Concept not current" indicator
-						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
+						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
 							String issue = "Active description of inactive concept is missing 'Concept non-current' indicator";
 							incrementSummaryInformation(issue);
 							report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, cdLegacy, d);
@@ -267,7 +264,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						}
 					} else if (d.isActive() && c.isActive()) {
 						//Expect NO inactivation indicator here
-						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
+						if (!d.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
 							report(SECONDARY_REPORT, c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
 							countIssue(c);
 						}
@@ -276,7 +273,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
 							//FRI-272 Agreed with Maria that we're not going to put time into these when they're legacy
 							if (!isLegacy(d)) {
-								report (SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
+								report(SECONDARY_REPORT, c, c.getEffectiveTime(), "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
 								incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
 								countIssue(c);
 							}
@@ -297,7 +294,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	
 	private void validate(Concept c, InactivationIndicatorEntry i, List<AssociationCardinality> associationsWithCardinality, Boolean legacy) throws TermServerScriptException {
 		String data = c.getAssociationEntries(ActiveState.ACTIVE, true).stream()
-				.map(h->h.toString())
+				.map(AssociationEntry::toString)
 				.collect(Collectors.joining(",\n"));
 		
 		if (StringUtils.isEmpty(data)) {
@@ -321,16 +318,16 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		String lastIssue = "";
 		boolean onePassed = false;
 		for (AssociationCardinality associationWithCardinality : associationsWithCardinality) {
-			lastIssue = validate(c, i, associationWithCardinality.cardinality, associationWithCardinality.association, legacy, associationWithCardinality.mutuallyExclusive);
+			lastIssue = validate(c, i, associationWithCardinality.cardinality, associationWithCardinality.association, associationWithCardinality.mutuallyExclusive);
 			if (lastIssue.isEmpty()) {
 				onePassed = true;
 			}
 		}
 		if (!onePassed && !lastIssue.isEmpty()) {
 			if (lastIssue.equals(CARDINALITY_ISSUE)) {
-				String separator = associationsWithCardinality.get(0).mutuallyExclusive == true ? " OR \n" : " AND/OR \n";
+				String separator = associationsWithCardinality.get(0).mutuallyExclusive ? " OR \n" : " AND/OR \n";
 				lastIssue += associationsWithCardinality.stream()
-						.map(ac -> ac.toString())
+						.map(AssociationCardinality::toString)
 						.collect(Collectors.joining(separator));
 			}
 			incrementSummaryInformation(lastIssue);
@@ -339,7 +336,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 	}
 
-	private String validate(Concept c, InactivationIndicatorEntry i, String cardinality, String assocId, Boolean legacy, boolean mutuallyExclusive) throws TermServerScriptException {
+	private String validate(Concept c, InactivationIndicatorEntry i, String cardinality, String assocId, boolean mutuallyExclusive) throws TermServerScriptException {
 		int minAssocs = Character.getNumericValue(cardinality.charAt(0));
 		char maxStr = cardinality.charAt(cardinality.length() - 1);
 		int maxAssocs = maxStr == '*' ? Integer.MAX_VALUE : Character.getNumericValue(maxStr);
@@ -348,10 +345,6 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		
 		//Special case, we're getting limited inactivations with both SameAs and Was A attributes.  Record stats, but skip
 		if (i.getInactivationReasonId().equals(SCTID_INACT_LIMITED) || i.getInactivationReasonId().equals(SCTID_INACT_MOVED_ELSEWHERE)) {
-			String typesOfAssoc = c.getAssociationEntries(ActiveState.ACTIVE, true).stream()
-					.map(h->SnomedUtils.translateAssociation(h.getRefsetId()).toString())
-					.collect(Collectors.joining(", "));
-			typesOfAssoc = typesOfAssoc.isEmpty()? "No associations" : typesOfAssoc;
 			return "";
 		}
 		
@@ -367,10 +360,8 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 		
 		if (assocCount > maxAssocs) {
-			//return inactStr + " inactivation must have no more than " + maxStr + " historical associations of type " + reqAssocStr;
 			return CARDINALITY_ISSUE;
 		} else if (assocCount < minAssocs) {
-			//return inactStr + " inactivation must have at least " + minAssocs + " historical associations of type " + reqAssocStr;
 			return CARDINALITY_ISSUE;
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
@@ -379,8 +370,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				Concept target = gl.getConcept(h.getTargetComponentId());
 				//Only the "MovedTo" historical association should point to a Namespace Concept
 				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID) && namespaceConcepts.contains(target)) {
-					String msg = assocStr + " should not point to namespace concept: " + target;
-					return msg;
+					return assocStr + " should not point to namespace concept: " + target;
 				} else if (!h.getRefsetId().equals(assocId)) {
 					//If we found a "WAS_A" then just record the stat for that
 					String msg = inactStr + " inactivation requires " + reqAssocStr + " historical association.  Found: " + assocStr;
@@ -394,7 +384,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID)) {
 					//In fact, so much of this has occurred historically that it would be a huge
 					//undertaking to review them all.
-					//validateTargetAppropriate(c,assocStr, target, h);
+					//validateTargetAppropriate(c,assocStr, target, h)
 				}
 			}
 		}

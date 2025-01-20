@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -12,9 +11,6 @@ import org.ihtsdo.termserver.scripting.client.BrowserClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-/*
-*/
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +26,7 @@ public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemoveWAS_A fix = new RemoveWAS_A(null);
 		try {
 			fix.reportNoChange = false;
@@ -88,14 +84,14 @@ public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 		
 		String semtag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 		InactivationIndicator inactivation = c.getInactivationIndicator();
-		report (t, c, Severity.LOW, ReportActionType.INFO, inactivation, toString(intersection), "MAY BE A " + toString(was_a), toString(sameParents), toString(lexicalMatches, semtag, 5),  toString(lexicalMatchesOther, 5));
+		report(t, c, Severity.LOW, ReportActionType.INFO, inactivation, toString(intersection), "MAY BE A " + toString(was_a), toString(sameParents), toString(lexicalMatches, semtag, 5),  toString(lexicalMatchesOther, 5));
 		
 		//Intersection between these two would be superb!
 		
 		for (Concept oldParent : was_a) {
 			if (!oldParent.isActive()) {
 				//There are none of these.
-				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "WAS_A concept is now inactive", oldParent);
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "WAS_A concept is now inactive", oldParent);
 			}
 		}
 		return changesMade;
@@ -141,7 +137,7 @@ public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<>();
 		for (Concept c : gl.getAllConcepts()) {
 			//Any concepts with a historical association WAS A is of interest
@@ -152,7 +148,7 @@ public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 				processMe.add(c);
 			}
 		}
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 	

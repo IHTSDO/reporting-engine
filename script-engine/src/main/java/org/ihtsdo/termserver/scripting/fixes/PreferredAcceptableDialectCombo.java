@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
@@ -11,7 +10,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.*;
 
 /*
@@ -37,7 +35,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		PreferredAcceptableDialectCombo fix = new PreferredAcceptableDialectCombo(null);
 		try {
 			fix.populateEditPanel = false;
@@ -103,14 +101,14 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 				changesMade++;	
 			}
 			String after = d.toString();
-			report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, after, before);
+			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, after, before);
 		}
 		return changesMade;
 	}
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
 		for (Concept c : gl.getConcept(subHierarchy).getDescendants(NOT_SET)) {
@@ -128,7 +126,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptC
 				}
 			}
 		}
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

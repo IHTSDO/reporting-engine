@@ -20,13 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import java.util.HashSet;
 import java.util.Set;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class CrossoverUtils implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(CrossoverUtils.class);
 
 	 /* The Enum TEST_RESULTS.
 	 */
@@ -61,7 +55,7 @@ public class CrossoverUtils implements ScriptConstants {
 		ROLEGROUP1_EQUAL_ROLEGROUP2,
 		/** The ROLEGROUP s_ crossover. */
 		ROLEGROUPS_CROSSOVER
-	};
+	}
 	
 	/**
 	 * Subsumption concept test.
@@ -102,8 +96,7 @@ public class CrossoverUtils implements ScriptConstants {
 			case CONCEPT1_ANCESTOROF_CONCEPT2:
 				relTypeSubsum=subsumptionConceptTest( role1.getType(),role2.getType());
 				switch(relTypeSubsum){
-					case CONCEPT1_ANCESTOROF_CONCEPT2:
-					case CONCEPT1_EQUAL_CONCEPT2:
+					case CONCEPT1_ANCESTOROF_CONCEPT2, CONCEPT1_EQUAL_CONCEPT2:
 						return TEST_RESULTS.ROLE1_SUBSUM_ROLE2;
 					case CONCEPT2_ANCESTOROF_CONCEPT1:
 						return TEST_RESULTS.ROLES_CROSSOVER;
@@ -127,8 +120,7 @@ public class CrossoverUtils implements ScriptConstants {
 				switch(relTypeSubsum){
 					case CONCEPT1_ANCESTOROF_CONCEPT2:
 						return TEST_RESULTS.ROLES_CROSSOVER;
-					case CONCEPT1_EQUAL_CONCEPT2:
-					case CONCEPT2_ANCESTOROF_CONCEPT1:
+					case CONCEPT1_EQUAL_CONCEPT2, CONCEPT2_ANCESTOROF_CONCEPT1:
 						return TEST_RESULTS.ROLE2_SUBSUM_ROLE1;
 					default:
 						return TEST_RESULTS.THERE_IS_NO_SUBSUM;
@@ -170,8 +162,8 @@ public class CrossoverUtils implements ScriptConstants {
 		boolean equal=false;
 		boolean oneSubsTwo=false;
 		boolean twoSubsOne=false;
-		Set<Relationship> tupleToTestSwitch=new HashSet<Relationship>();
-		Set<Relationship> tupleTested=new HashSet<Relationship>();
+		Set<Relationship> tupleToTestSwitch=new HashSet<>();
+		Set<Relationship> tupleTested=new HashSet<>();
 		for (Relationship role1: rolegroup1.getRelationships()){
 			if (role1.isConcrete()) {
 				continue;

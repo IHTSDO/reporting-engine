@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -27,7 +26,7 @@ public class UnitConsistency extends TermServerReport {
 	CharacteristicType cType = CharacteristicType.INFERRED_RELATIONSHIP;
 	Concept[] unit_types = new Concept[] { HAS_PRES_STRENGTH_UNIT, HAS_CONC_STRENGTH_UNIT };
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		UnitConsistency report = new UnitConsistency();
 		try {
 			report.additionalReportColumns = "Using Ingredient, With Unit, Among, Compared to, instances, For Example";
@@ -118,7 +117,7 @@ public class UnitConsistency extends TermServerReport {
 				for (Concept unit : unitExamples.keySet()) {
 					if (!unit.equals(mostUsedUnit)) {
 						for (Concept example : unitExamples.get(unit)) {
-							report (example, ingredient, unit, unitExamples.get(unit).size(),  mostUsedUnit, mostUsedCount, unitExamples.get(mostUsedUnit).get(0));
+							report(example, ingredient, unit, unitExamples.get(unit).size(),  mostUsedUnit, mostUsedCount, unitExamples.get(mostUsedUnit).get(0));
 						}
 					}
 				}

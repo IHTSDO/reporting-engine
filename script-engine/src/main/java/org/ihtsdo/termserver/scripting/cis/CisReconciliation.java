@@ -37,7 +37,7 @@ public class CisReconciliation extends TermServerReport {
 	
 	private static String today = new SimpleDateFormat("yyyy-MM-dd HH:MM:ss").format(new Date());
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CisReconciliation report = new CisReconciliation();
 		try {
 			report.additionalReportColumns = "CharacteristicType, Attribute, WhatWasInferred?";
@@ -56,7 +56,7 @@ public class CisReconciliation extends TermServerReport {
 	}
 
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe";  // Technical Specialist
+		ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe");  // Technical Specialist
 		String[] columnHeadings = new String[] {	"Summary Item, Detail, ",
 													"SCTID, Effective Time, FileName",
 													"Effective Time, SCTID, Current Status, Software, JobId, Created, Modified, ,",

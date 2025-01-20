@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -14,13 +13,12 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * Class to inactivate duplicated active inactivation indicators
  * INFRA-1232
  */
-
 public class InactivateDuplicateInactivationIndicators extends DeltaGenerator implements ScriptConstants {
 
 	public static String SCTID_ERRONEOUS = "900000000000485001";
 	public static String SCTID_DUPLICATE = "900000000000482003";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		TermServerClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 		InactivateDuplicateInactivationIndicators delta = new InactivateDuplicateInactivationIndicators();
 		delta.tsRoot="MAIN/2017-01-31/SNOMEDCT-US/";

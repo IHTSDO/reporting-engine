@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -27,10 +26,10 @@ public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MoveRoleGroup fix = new MoveRoleGroup(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
 			fix.groupByIssue = true;
@@ -79,7 +78,7 @@ public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			for (Concept value : targetAttributeValues) {
@@ -89,7 +88,7 @@ public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

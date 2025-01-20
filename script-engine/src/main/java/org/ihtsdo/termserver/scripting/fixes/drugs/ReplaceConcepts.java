@@ -43,7 +43,6 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceConcepts.class);
 
 	Concept subHierarchy;
-	Set<Concept> replaceConcepts;
 	Map<Concept, List<Concept>> originalParents;
 	String orignalParentsFileName = "/Users/Peter/GDrive/017_Drugs/2018/DRUGS-522/previous_is_a.txt";
 	String replaceConceptsFileName = "/Users/Peter/GDrive/017_Drugs/2018/DRUGS-522/replace.txt";
@@ -55,10 +54,10 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceConcepts fix = new ReplaceConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "1yKJYSWaXm1_mQqEEEpK8cbYqnTk0DUer"; //Drugs/Bulk Concept Inactivations
+			ReportSheetManager.setTargetFolderId("1yKJYSWaXm1_mQqEEEpK8cbYqnTk0DUer"); //Drugs/Bulk Concept Inactivations
 			fix.selfDetermining = true;
 			fix.runStandAlone = true;
 			fix.populateEditPanel = false;
@@ -72,11 +71,12 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("770654000 |TEMPORARY parent for CDs that are not updated (product)|");
 	
 		//Load in our IS_A relationship from the before time of the long long ago
-		LOGGER.info ("Loading IS_A relationships from some previous release");
+		LOGGER.info("Loading IS_A relationships from some previous release");
 		originalParents = new HashMap<>();
 		try {
 			for (String line : FileUtils.readLines(new File(orignalParentsFileName), "UTF-8")) {
@@ -116,7 +116,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 	public int inactivateOrReplaceConcept(Task t, Concept c) throws TermServerScriptException {
 		//Are we moving or inactivating this concept?
 		if (!c.isActive()) {
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is inactive, no action being taken");
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is inactive, no action being taken");
 			return NO_CHANGES_MADE;
 		} else if (c.getIssueList().contains(MOVE)) {
 			return moveConcept(t, c);
@@ -193,7 +193,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 		int changesMade = 0;
 		//First we must - recursively - inactivate all the children, in the same task
 		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			LOGGER.info ("Adding " + child + " into task for inactivation as child of " + c);
+			LOGGER.info("Adding " + child + " into task for inactivation as child of " + c);
 			t.addAfter(child, c);
 			changesMade += inactivateConcept(t, child);
 		}

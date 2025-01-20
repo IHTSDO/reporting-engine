@@ -60,7 +60,7 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 					rExtension.setEffectiveTime(null);
 					concept.setModified();
 					String msg = "Inactivated " + rExtension + " + in module " + rExtension.getModuleId();
-					report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
+					report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
 				}
 			}
 		}

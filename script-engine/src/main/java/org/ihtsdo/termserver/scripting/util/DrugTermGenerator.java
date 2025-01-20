@@ -428,7 +428,7 @@ public class DrugTermGenerator extends TermGenerator {
 						", Presentation=" + presentationVariance +
 						", DoseForm=" + doseFormVariance + 
 						", StrengthUnits=" + strengthUnitVariance;
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
 				splitPreferredTerm(t, c, allowDuplicates);
 			}
 		} 
@@ -500,7 +500,7 @@ public class DrugTermGenerator extends TermGenerator {
 	private void splitPreferredTerm(Task t, Concept c, boolean allowDuplicates) throws TermServerScriptException {
 		List<Description> preferredTerms = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		if (preferredTerms.size() != 1) {
-			report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Unexpected number of preferred terms: " + preferredTerms.size());
+			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Unexpected number of preferred terms: " + preferredTerms.size());
 		} else {
 			Description usPT = preferredTerms.iterator().next();
 			usPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));

@@ -2,14 +2,13 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Template;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -27,19 +26,21 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateList.class);
 	
-	final static String defaultTemplateServiceUrl = "https://dev-snowstorm.ihtsdotools.org/template-service";
+	private static final String DEFAULT_TEMPLATE_SERVICE_URL = "https://dev-snowstorm.ihtsdotools.org/template-service";
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(SERVER_URL, defaultTemplateServiceUrl);
-		TermServerReport.run(TemplateList.class, args, params);
+		params.put(SERVER_URL, DEFAULT_TEMPLATE_SERVICE_URL);
+		TermServerScript.run(TemplateList.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun jobRun) throws TermServerScriptException {
 		additionalReportColumns = "Domain, SemTag, Template Name / QI Path, Source, Documentation";
 		super.init(jobRun);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Template Domain, Template Name / QI Path, Source, Documentation", 
 												"Template Name, Invalid Reason"};
@@ -66,31 +67,30 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 				.build();
 	}
 
-	
+	@Override
 	public void runJob() throws TermServerScriptException {
-		
 		//Weed out invalid templates ie where the domain no longer exists
 		for (String subSetECL : new ArrayList<>(domainTemplates.keySet())) {
 			//Does the ECL identify any concepts?
 			try {
-				if (findConcepts(subSetECL).size() == 0) {
+				if (findConcepts(subSetECL).isEmpty()) {
 					List<Template> invalidTemplates= domainTemplates.get(subSetECL);
 					for (Template t : invalidTemplates) {
-						report (SECONDARY_REPORT, t.getName(), "Template domain/subset did not identify any concepts" , t.getDomain());
+						report(SECONDARY_REPORT, t.getName(), "Template domain/subset did not identify any concepts" , t.getDomain());
 					}
 					domainTemplates.remove(subSetECL);
 				}
 			} catch (Exception e) {
 				List<Template> invalidTemplates= domainTemplates.get(subSetECL);
 				for (Template t : invalidTemplates) {
-					report (SECONDARY_REPORT, t.getName(), "Exception while recovering domain/subset: " + e.getMessage() , t.getDomain());
+					report(SECONDARY_REPORT, t.getName(), "Exception while recovering domain/subset: " + e.getMessage() , t.getDomain());
 				}
 				domainTemplates.remove(subSetECL);
 			}
 		}
 		
 		//We're going to sort by the top level domain and the domain's FSN
-		Comparator<Entry<String, List<Template>>> comparator = (e1, e2) -> compare(e1, e2);
+		Comparator<Entry<String, List<Template>>> comparator = this::compare;
 		Map<String, List<Template>> sortedDomainTemplates = domainTemplates.entrySet().stream()
 				.sorted(comparator)
 				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (k, v) -> k, LinkedHashMap::new));
@@ -101,10 +101,10 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 			for (Template template : entry.getValue()) {
 				try {
 					//Did this template come from QI or the Template Service
-					report (PRIMARY_REPORT, domainStr, template.getName(), template.getSource(), template.getDocumentation());
+					report(PRIMARY_REPORT, domainStr, template.getName(), template.getSource(), template.getDocumentation());
 				} catch (Exception e) {
 					LOGGER.error ("Exception while processing template " + domainStr, e);
-					report (SECONDARY_REPORT, template, e);
+					report(SECONDARY_REPORT, template, e);
 				}
 			}
 		}

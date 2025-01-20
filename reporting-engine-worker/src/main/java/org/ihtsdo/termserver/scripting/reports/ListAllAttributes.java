@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -11,7 +12,6 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -35,16 +35,15 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		Concept targetValueProperty = null;
 		Concept spotlightAttributeType = null;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<< 243796009 |Situation with explicit context (situation)|");
 		params.put(COMPACT, "false");
 		params.put(INCLUDE_IS_A, "false");
-		//params.put(TARGET_VALUE_PROPERTY, IS_MODIFICATION_OF.toString());
-		//params.put(SPOTLIGHT_ATTRIBUTE_TYPE, "408732007 |Subject relationship context (attribute)|");
-		TermServerReport.run(ListAllAttributes.class, args, params);
+		TermServerScript.run(ListAllAttributes.class, args, params);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String primaryColumns = "SCTID,FSN,SemTag,DefStatus,RelType,Target Value's Property is Present,Stated/Inferred,Target SCTID / Value,Target FSN,Target SemTag";
 		if (compactReport) {
@@ -57,9 +56,10 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		summaryTabIdx = SECONDARY_REPORT;
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(ECL);
 		compactReport = run.getParameters().getMandatoryBoolean(COMPACT);
 		includeIsA = run.getParameters().getMandatoryBoolean(INCLUDE_IS_A);
@@ -104,7 +104,8 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subsetECL));
 		subset.sort(Comparator.comparing(Concept::getFsnSafely));
@@ -135,7 +136,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				if (targetValueProperty != null) {
 					targetValuePropertyPresentStr = targetValuePropertyPresent?"Y":"N";
 				}
-				report (c, defStatus, expression, targetValuePropertyPresentStr, spotlightTypeValue);
+				report(c, defStatus, expression, targetValuePropertyPresentStr, spotlightTypeValue);
 				countIssue(c);
 			} else {
 				String characteristicStr = "";

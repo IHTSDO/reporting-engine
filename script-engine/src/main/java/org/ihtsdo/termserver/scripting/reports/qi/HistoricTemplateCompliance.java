@@ -3,16 +3,15 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -45,19 +44,20 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 	private static String dataFileId;
 
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
 	
 		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-		//TermServerReport.run(HistoricTemplateCompliance.class,args, params);
+		//TermServerScript.run(HistoricTemplateCompliance.class,args, params);
 		
 		//params.put(PREV_DATA, dataFileId);
 		params.put(PREV_DATA, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		params.put(THIS_RELEASE, "prod_main_2021-01-31_20201124120000.zip");
-		TermServerReport.run(HistoricTemplateCompliance.class,args, params);
+		TermServerScript.run(HistoricTemplateCompliance.class,args, params);
 	}
-	
+
+	@Override
 	public void init(JobRun run) throws TermServerScriptException {
 		projectName = run.getParamValue(THIS_RELEASE);
 		run.setProject(projectName);
@@ -65,7 +65,8 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 		comparePreviousData = !StringUtils.isEmpty(run.getParamValue(PREV_DATA));
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"SCTID, Hierarchy, Inactivated (prev align), No longer Aligns, Still Aligns, Newly Aligns", 
 												"Template Name, Change Identified, Change Aligned, Currently Aligned, Out of Possible..."};
@@ -113,7 +114,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			String subsetECL = entry.getKey();
 			try {
 				List<Template> templates = entry.getValue();
-				LOGGER.info ("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
+				LOGGER.info("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
 				examineSubset(subsetECL, templates);
 			} catch (Exception e) {
 				LOGGER.error ("Exception while processing domain " + subsetECL, e);
@@ -169,7 +170,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			//Now output per hierarchy
 			for (HierarchyData hd : hierarchyDataMap.values()) {
 				Concept h = gl.getConcept(hd.hierarchy);
-				report (PRIMARY_REPORT, hd.hierarchy, h.getPreferredSynonym(), hd.inactivatedAlignedConcept, hd.noLongerAligns, hd.continuesToAlign, hd.newAligningConcept);
+				report(PRIMARY_REPORT, hd.hierarchy, h.getPreferredSynonym(), hd.inactivatedAlignedConcept, hd.noLongerAligns, hd.continuesToAlign, hd.newAligningConcept);
 			}
 			
 		} catch (FileNotFoundException e) {
@@ -189,7 +190,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 				previousTemplates.add(prevTD.templateName);
 				int changeIdentified = currTD.conceptsIdentified - prevTD.conceptsIdentified;
 				int changeAlign = currTD.conceptsAligning - prevTD.conceptsAligning;
-				report (SECONDARY_REPORT, prevTD.templateName, changeIdentified, changeAlign, currTD.conceptsAligning, currTD.conceptsIdentified);
+				report(SECONDARY_REPORT, prevTD.templateName, changeIdentified, changeAlign, currTD.conceptsAligning, currTD.conceptsIdentified);
 			}
 			
 			//Now report new templates
@@ -224,7 +225,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			fw = new FileWriter(f);
 			
 			TransitiveClosure tc = gl.generateTransativeClosure();
-			LOGGER.debug ("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug("Outputting Data to " + f.getAbsolutePath());
 			for (AlignedConcept ac : alignedConceptMap.values()) {
 				fw.append(ac.serialize(getHierarchy(tc, ac.c)));
 			}
@@ -235,7 +236,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
-			LOGGER.debug ("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug("Outputting Data to " + f.getAbsolutePath());
 			for (TemplateData td : templateDataMap.values()) {
 				fw.append(td.serialize());
 			}

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -27,7 +26,7 @@ public class SelfGroupAttributes extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SelfGroupAttributes fix = new SelfGroupAttributes(null);
 		try {
 			fix.additionalReportColumns="Before, After";
@@ -47,7 +46,7 @@ public class SelfGroupAttributes extends BatchFix implements ScriptConstants{
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+		ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 		//Populate our attributes of interest
 		targetAttributeType = gl.getConcept("363702006 |Has focus (attribute)|");  
 		super.postInit();
@@ -96,7 +95,7 @@ public class SelfGroupAttributes extends BatchFix implements ScriptConstants{
 				}
 			}
 		}
-		LOGGER.info ("Detected " + allAffected.size() + " concepts to modify");
+		LOGGER.info("Detected " + allAffected.size() + " concepts to modify");
 		return new ArrayList<Component>(allAffected);
 	}
 

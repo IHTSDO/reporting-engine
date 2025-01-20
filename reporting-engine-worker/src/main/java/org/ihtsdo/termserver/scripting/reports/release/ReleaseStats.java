@@ -1,15 +1,14 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -35,11 +34,10 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	protected List<String> moduleFilter;
 	String origProject; //We need to save this because visibility is decided per project so zip files don't get picked up.
 
-
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-		TermServerReport.run(ReleaseStats.class, args, params);
+		TermServerScript.run(ReleaseStats.class, args, params);
 	}
 
 	@Override
@@ -59,7 +57,51 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				.build();
 	}
 
-	
+	@Override
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
+
+		origProject = run.getProject();
+		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
+			projectName = run.getParamValue(THIS_RELEASE);
+			run.setProject(projectName);
+		}
+
+		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
+			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
+					.map(String::trim)
+					.toList();
+		}
+
+		super.init(run);
+	}
+
+	@Override
+	public void postInit() throws TermServerScriptException {
+		//Need to set the original project back, otherwise it'll get filtered
+		//out by the security of which projects a user can see
+		if (getJobRun() != null) {
+			getJobRun().setProject(origProject);
+		}
+
+		String[] columnHeadings = new String[] {"Stat, count",
+				"KPI, count, of which Orphanet",
+				"SCTID, FSN, SemTag, Crossover",
+				"SCTID, FSN, SemTag, Crossover",
+				"SCTID, FSN, SemTag",
+				"SCTID, FSN, SemTag",
+				"SCTID, FSN, SemTag"};
+		String[] tabNames = new String[] {	"Summary Release Stats",
+				"Summary KPI Counts",
+				"Role group crossovers",
+				"Ungrouped crossovers",
+				"Intermediate Primitives",
+				"Stated Intermediate Primitives",
+				"IP Inferred not Stated"};
+		super.postInit(tabNames, columnHeadings, false);
+	}
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		
 		LOGGER.info("Reporting General Release Stats");
@@ -78,16 +120,14 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUINARY_REPORT);
 		
 		LOGGER.info("Calculating Fully Defined %");
-		countSD(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
+		countSD();
 	}
-
-
 
 	private void reportGeneralReleaseStats() throws TermServerScriptException {
 		int allConcepts = 0, activeConcepts = 0, sd = 0, p = 0, activeDesc = 0, activeInf = 0;
 		for (Concept c : gl.getAllConcepts()) {
 			allConcepts++;
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				activeConcepts++;
 			}
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
@@ -98,54 +138,12 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			activeDesc += c.getDescriptions(ActiveState.ACTIVE).size();
 			activeInf += c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).size();
 		}
-		report (PRIMARY_REPORT, "All Concepts", allConcepts);
-		report (PRIMARY_REPORT, "Active Concepts", activeConcepts);
-		report (PRIMARY_REPORT, "Sufficiently Defined", sd);
-		report (PRIMARY_REPORT, "Primitive", p);
-		report (PRIMARY_REPORT, "Active Descriptions + TextDefn", activeDesc);
-		report (PRIMARY_REPORT, "Active Relationships", activeInf);
-	}
-
-	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
-		
-		origProject = run.getProject();
-		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
-			projectName = run.getParamValue(THIS_RELEASE);
-			run.setProject(projectName);
-		}
-		
-		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
-			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
-					.map(String::trim)
-					.collect(Collectors.toList());
-		}
-		
-		super.init(run);
-	}
-	
-	public void postInit() throws TermServerScriptException {
-		//Need to set the original project back, otherwise it'll get filtered
-		//out by the security of which projects a user can see
-		if (getJobRun() != null) {
-			getJobRun().setProject(origProject);
-		}
-		
-		String[] columnHeadings = new String[] {"Stat, count",
-												"KPI, count, of which Orphanet", 
-												"SCTID, FSN, SemTag, Crossover",
-												"SCTID, FSN, SemTag, Crossover",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag",
-												"SCTID, FSN, SemTag"};
-		String[] tabNames = new String[] {	"Summary Release Stats",
-											"Summary KPI Counts", 
-											"Role group crossovers",
-											"Ungrouped crossovers",
-											"Intermediate Primitives",
-											"Stated Intermediate Primitives",
-											"IP Inferred not Stated"};
-		super.postInit(tabNames, columnHeadings, false);
+		report(PRIMARY_REPORT, "All Concepts", allConcepts);
+		report(PRIMARY_REPORT, "Active Concepts", activeConcepts);
+		report(PRIMARY_REPORT, "Sufficiently Defined", sd);
+		report(PRIMARY_REPORT, "Primitive", p);
+		report(PRIMARY_REPORT, "Active Descriptions + TextDefn", activeDesc);
+		report(PRIMARY_REPORT, "Active Relationships", activeInf);
 	}
 
 	private void reportRoleGroupCrossovers() throws TermServerScriptException {
@@ -155,7 +153,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			if (inScope(c)) {
 				Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
 				//We only need to worry about concepts with >1 role group
-				if (c.isActive() && groups.size() > 1) {
+				if (c.isActiveSafely() && groups.size() > 1) {
 					processedPairs.clear();
 					//Test every group against every other group
 					for (RelationshipGroup left : groups) {
@@ -175,7 +173,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 								case ROLES_CROSSOVER:	
 													roleGroupCrossOvers++;
 													String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
-													report (TERTIARY_REPORT, c, msg);
+													report(TERTIARY_REPORT, c, msg);
 													break;
 								default:
 							}
@@ -185,7 +183,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-		report (SECONDARY_REPORT, "Role group crossovers", roleGroupCrossOvers);
+		report(SECONDARY_REPORT, "Role group crossovers", roleGroupCrossOvers);
 	}
 	
 	@Override
@@ -207,7 +205,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		AncestorsCache cache = gl.getAncestorsCache();
 		for (Concept c : gl.getAllConcepts()) {
 			if (inScope(c)) {
-				if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
+				if (!c.isActiveSafely() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
 					continue;
 				}
 				Set<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
@@ -219,10 +217,10 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 						}
 						for (Relationship groupedRel : group.getRelationships()) {
 							if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
-								report (QUATERNARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
+								report(QUATERNARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
 								ungroupedCrossovers++;
 							} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
-								report (QUATERNARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
+								report(QUATERNARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
 								ungroupedCrossovers++;
 							}
 						}
@@ -230,7 +228,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-		report (SECONDARY_REPORT, "Role group ungrouped inconsistencies", ungroupedCrossovers);
+		report(SECONDARY_REPORT, "Role group ungrouped inconsistencies", ungroupedCrossovers);
 	}
 	
 	private boolean inScope (Concept c) {
@@ -266,19 +264,19 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				//Are we an IP in the inferred view but not the stated?
 				if (charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
 						!statedIntermediatePrimitives.contains(c)) {
-					report (SEPTENARY_REPORT, c);
+					report(SEPTENARY_REPORT, c);
 				}
 			}
 		}
 		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
-		report (SECONDARY_REPORT, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
+		report(SECONDARY_REPORT, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
 	}
 	
-	private void countSD(CharacteristicType statedRelationship, int quinaryReport) throws TermServerScriptException {
+	private void countSD() throws TermServerScriptException {
 		double activeConcepts = 0;
 		double sufficientlyDefinedConcepts = 0;
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				activeConcepts++;
 				if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 					sufficientlyDefinedConcepts++;
@@ -289,8 +287,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		DecimalFormat df = new DecimalFormat("##.#%");
 		double percent = (sufficientlyDefinedConcepts / activeConcepts);
 		String formattedPercent = df.format(percent);
-		report (SECONDARY_REPORT, "% Sufficiently Defined", formattedPercent);
-
+		report(SECONDARY_REPORT, "% Sufficiently Defined", formattedPercent);
 	}
 	
 	class GroupPair {
@@ -304,11 +301,9 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		}
 		
 		public boolean equals(Object other) {
-			if (other instanceof GroupPair) {
-				GroupPair otherPair = (GroupPair)other;
-				if (this.one.getGroupId() == otherPair.one.getGroupId()) {
-					return this.two.getGroupId() == otherPair.two.getGroupId();
-				}
+			if (other instanceof GroupPair otherPair
+					&& this.one.getGroupId() == otherPair.one.getGroupId()) {
+				return this.two.getGroupId() == otherPair.two.getGroupId();
 			}
 			return false;
 		}

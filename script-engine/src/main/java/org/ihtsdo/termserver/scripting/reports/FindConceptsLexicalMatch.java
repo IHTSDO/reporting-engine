@@ -9,6 +9,7 @@ import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -32,19 +33,19 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 	
 	//Map of words to descriptions
 	Map<String, Set<Concept>> conceptsUsingWord = new HashMap<>();
-	
-	
+
 	//Stop words - common words to ignore when matching
 	String[] stopWords = new String[] { "'s", " of ", " and ", " with ", " as ", "\\(as " };
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, SUBSTANCE.toString());
-		TermServerReport.run(FindConceptsLexicalMatch.class, args, params);
+		TermServerScript.run(FindConceptsLexicalMatch.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		additionalReportColumns = "Search Term, Source, ExactMatch, ExactUnorderedMatch, MatchedWith, BestEffort";
 		super.init(run);
 	}
@@ -63,10 +64,11 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		//Create various maps of terms
-		LOGGER.info ("Mapping current descriptions");
+		LOGGER.info("Mapping current descriptions");
 		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				String term = removeStopWords(d.getTerm());;
@@ -98,7 +100,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 				}
 			}
 		}
-		LOGGER.info ("Description map complete");
+		LOGGER.info("Description map complete");
 		super.postInit();
 	}
 	
@@ -146,7 +148,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		if (termMap!= null && termMap.containsKey(term)) {
 			Description d = termMap.get(term);
 			Concept c = gl.getConcept(d.getConceptId());
-			report (0, null, items[0], items[1], c, null, d);
+			report(0, null, items[0], items[1], c, null, d);
 			matchFound = true;
 			LOGGER.info (line + " - exact match");
 			incrementSummaryInformation("Exact Match");
@@ -168,7 +170,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		}
 		
 		if (!matchFound) {
-			report (0, null, items[0], items[1], null, null, null);
+			report(0, null, items[0], items[1], null, null, null);
 			LOGGER.info (line + " - no match");
 			incrementSummaryInformation("No Match");
 		}
@@ -186,7 +188,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 				Description d = termMap.get(term);
 				Concept c = gl.getConcept(d.getConceptId());
 				LOGGER.info (source[0] + " " + source[1] + " - Exact out-of-order Match: " + d);
-				report (0, null, source[0], source[1], null, c, d);
+				report(0, null, source[0], source[1], null, c, d);
 				matchFound = true;
 			}
 		}
@@ -198,7 +200,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		boolean matchFound = false;
 		List<Combination> wordCombinations = sortedCombinations(new HashSet<String>(Arrays.asList(words)));
 		if (wordCombinations.size() > 1000) {
-			LOGGER.debug ("Getting intractable here! " + source[0]);
+			LOGGER.debug("Getting intractable here! {}", source[0]);
 		}
 		
 		nextCombination:
@@ -214,23 +216,23 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 					conceptsMatching = new HashSet<>(conceptsUsingWord.get(thisWord));
 				} else {
 					Set<Concept> theseMatches = conceptsUsingWord.get(thisWord);
-					if (theseMatches == null || theseMatches.size() == 0) {
+					if (theseMatches == null || theseMatches.isEmpty()) {
 						continue nextCombination;
 					}
 					//Make sure the concepts we matched have been matched by all previous words
 					conceptsMatching.retainAll(theseMatches);
-					if (conceptsMatching.size() == 0) {
+					if (conceptsMatching.isEmpty()) {
 						continue nextCombination;
 					}
 				}
 			}
 			String matchingWords = String.join(" ", thisCombination.words);
 			String matchingConcepts = conceptsMatching.stream()
-					.map(c -> c.toString())
+					.map(Concept::toString)
 					.limit(5)
 					.collect(Collectors.joining(",\n"));
 			LOGGER.info (source[0] + " " + source[1] + " - best effort match: " + matchingConcepts);
-			report (0, null, source[0], source[1], null, null, matchingWords, matchingConcepts);
+			report(0, null, source[0], source[1], null, null, matchingWords, matchingConcepts);
 			matchFound = true;
 			break;
 		}
@@ -280,7 +282,7 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		Integer letterCount = 0;
 		Combination (Set<String> words) {
 			this.words = words;
-			words.stream().forEach(w -> letterCount += w.length());
+			words.forEach(w -> letterCount += w.length());
 		}
 		
 		@Override

@@ -1,31 +1,30 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
-**/
 public class AttributeTypeUsage extends TermServerReport implements ReportClass {
 	public static final String TARGET_ATTRIBUTE_TYPE = "Attribute Type";
 	private Concept targetAttributeType;
 	private CharacteristicType charType = CharacteristicType.STATED_RELATIONSHIP;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "*");
 		params.put(TARGET_ATTRIBUTE_TYPE, "766939001 |Plays role (attribute)|");
-		TermServerReport.run(AttributeTypeUsage.class, args, params);
+		TermServerScript.run(AttributeTypeUsage.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		additionalReportColumns="FSN, SemTag, Relationship";
 		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
@@ -53,13 +52,14 @@ public class AttributeTypeUsage extends TermServerReport implements ReportClass 
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subsetECL));
 		subset.sort(Comparator.comparing(Concept::getFsn));
 		for (Concept c : subset) {
 			for (Relationship r : c.getRelationships(charType, targetAttributeType, ActiveState.ACTIVE)) {
-				report (c, r);
+				report(c, r);
 				countIssue(c);
 			}
 		}

@@ -24,12 +24,12 @@ public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReplaceDescriptionIds.class);
 
-	Set<String> descIds = new HashSet<String>();
+	Set<String> descIds = new HashSet<>();
 	protected ReplaceDescriptionIds(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceDescriptionIds fix = new ReplaceDescriptionIds(null);
 		try {
 			fix.selfDetermining = true;
@@ -43,7 +43,8 @@ public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 			fix.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		loadDescIds();
@@ -52,7 +53,7 @@ public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 	private void loadDescIds() throws TermServerScriptException {
 		try {
 			List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-			LOGGER.info ("Loading description ids from " + getInputFile());
+			LOGGER.info("Loading description ids from " + getInputFile());
 			for (String line : lines) {
 				descIds.add(line);
 			}

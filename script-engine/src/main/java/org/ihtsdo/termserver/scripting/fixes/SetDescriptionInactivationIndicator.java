@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -10,7 +9,6 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -24,10 +22,10 @@ public class SetDescriptionInactivationIndicator extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SetDescriptionInactivationIndicator fix = new SetDescriptionInactivationIndicator(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
@@ -70,11 +68,11 @@ public class SetDescriptionInactivationIndicator extends BatchFix {
 			if (d.getInactivationIndicator()==null) {
 				d.setInactivationIndicator(inactivationIndicator);
 				changesMade++;
-				report (t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, d, inactivationIndicator);
+				report(t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, d, inactivationIndicator);
 			} else if (StringUtils.isEmpty(d.getEffectiveTime())) {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, d, "Recently inactivated as", d.getInactivationIndicator());
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, d, "Recently inactivated as", d.getInactivationIndicator());
 			} else {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, d, "Previously inactivated as", d.getInactivationIndicator());
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, d, "Previously inactivated as", d.getInactivationIndicator());
 			}
 		}
 		return changesMade;

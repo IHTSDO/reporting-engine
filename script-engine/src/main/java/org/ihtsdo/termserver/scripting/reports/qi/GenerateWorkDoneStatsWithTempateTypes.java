@@ -32,7 +32,6 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	Concept targetType = ASSOC_MORPH;
 	Map<Concept, List<Concept>> exclusionMap = new HashMap<>();
 	InitialAnalysis ipReport;
-	int modifiedSince = 20180131;
 	boolean workWithTargetValues = true;
 	
 	String [] co_occurrantWords = new String[] { " and ", " with ", " in ", " or " };
@@ -50,10 +49,10 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	"OR <<416462003 OR <<416886008 OR <<417893002 OR <<419199007 OR <<428794004 OR <<429040005 OR <<432119003 OR <<441457006 " +
 	"OR <<419199007 OR <<282100009 OR <<55342001 OR <<128462008 OR <<363346000 OR <<372087000 ";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
-			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+			ReportSheetManager.setTargetFolderId("1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"); //QI / Stats
 			report.additionalReportColumns = "FSN, SemTag, Depth, Counted elsewhere, Phase 1, Phase 2, Out of Scope, Total, Orphanet (not included)";
 			ArchiveManager.getArchiveManager(report, null).setPopulateHierarchyDepth(true);
 			report.init(args);
@@ -72,7 +71,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		subHierarchies = new ArrayList<>();
 		targetValues = new ArrayList<>();
 		
-		LOGGER.info ("Loading {}", getInputFile());
+		LOGGER.info("Loading {}", getInputFile());
 		if (!getInputFile().canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + getInputFile());
 		}
@@ -123,7 +122,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		for (Concept subsetDefn : defnList) {
 			int[] templateTypeTotal = new int[TemplateType.values().length];
 			//int[] templateTypeModified = new int[TemplateType.values().length];
-			LOGGER.debug ("Analysing subset defined via : " + subsetDefn);
+			LOGGER.debug("Analysing subset defined via : " + subsetDefn);
 			Collection<Concept> subset;
 			if (workWithTargetValues) {
 				String ecl = "<< 64572001 |Disease (disorder)| : " + targetType + " = << " + subsetDefn;
@@ -159,7 +158,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}*/
 			}
 			
-			report (subsetDefn, subsetDefn.getDepth(),
+			report(subsetDefn, subsetDefn.getDepth(),
 					countedElsewhere, 
 					templateTypeTotal[0] + templateTypeTotal[1],
 					templateTypeTotal[2] + templateTypeTotal[3],
@@ -174,7 +173,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		List<Concept> theseExclusions = exclusionMap.get(subHierarchyStart);
 		if (theseExclusions != null) {
 			for (Concept thisExclusion : theseExclusions) {
-				LOGGER.info ("For " + subHierarchyStart + " removing " + thisExclusion);
+				LOGGER.info("For " + subHierarchyStart + " removing " + thisExclusion);
 				subSet.removeAll(gl.getDescendantsCache().getDescendantsOrSelf(thisExclusion));
 			}
 		}

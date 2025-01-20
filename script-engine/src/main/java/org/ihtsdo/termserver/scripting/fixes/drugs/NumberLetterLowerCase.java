@@ -142,7 +142,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 			//Work with a clone of the concept so we don't fix the issues on the initial pass
 			c = c.cloneWithIds();
 			if (c.getConceptId().equals("18344000")) {
-				LOGGER.debug ("Here");
+				LOGGER.debug("Here");
 			}
 			
 			if (normaliseCase(null, c) > 0) {

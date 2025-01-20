@@ -1,16 +1,15 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.BrowserClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
  * QI-300
@@ -39,7 +38,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		OnExamination_or_ComplainingOf fix = new OnExamination_or_ComplainingOf(null);
 		try {
 			fix.reportNoChange = true;
@@ -55,10 +54,10 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		//The target domain is Clinical Finding Hierarchy, with the disorders removed
 		targetDomain = gl.getConcept(targetHierarchy).getDescendants(NOT_SET);
-		//Collection<Concept> exceptions = gl.getConcept(except).getDescendants(NOT_SET);
 		//targetDomain.removeAll(exceptions);
 		browserClient = new BrowserClient();
 		super.postInit();
@@ -80,11 +79,11 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 		
 		//Make sure we're working with a Primitive Concept
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-			report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
+			report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
 			return 0;
 		}
 		
-		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																				IS_A,
 																				ActiveState.ACTIVE));
 		
@@ -129,16 +128,17 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 		return Collections.singletonList(new Concept(lineItems[0]));
 	}
 	
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		Collection<Concept> checkMe = gl.getConcept(targetHierarchy).getDescendants(NOT_SET);
 		List<Component> processMe = new ArrayList<>();
 		
 		int count = 0;
 		for (Concept c : checkMe) {
 			for (String itemOfInterest : itemsOfInterest) {
-				if (c.isActive() && c.getFsn().startsWith(itemOfInterest)) {
+				if (c.isActiveSafely() && c.getFsn().startsWith(itemOfInterest)) {
 					checkForXParent(c, itemOfInterest);
 				}
 			}
@@ -146,20 +146,20 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 				print(".");
 			}
 		}
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified {} concepts to process", processMe.size());
 		return processMe;
 	}
 
 	private void checkForXParent(Concept c, String itemOfInterest) throws TermServerScriptException {
 		//What do we think X is?
-		String X = SnomedUtils.deconstructFSN(c.getFsn())[0].replace(itemOfInterest,"").trim();
+		String X = SnomedUtilsBase.deconstructFSN(c.getFsn())[0].replace(itemOfInterest,"").trim();
 		Severity severity = Severity.NONE;
 		incrementSummaryInformation("ConceptsExamined");
 		
 		//A perfect match would be Finding of X or X finding
 		Concept exactMatch = null;
 		for (Concept thisParent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			String fsnPart = SnomedUtils.deconstructFSN(thisParent.getFsn())[0];
+			String fsnPart = SnomedUtilsBase.deconstructFSN(thisParent.getFsn())[0];
 			if (fsnPart.equalsIgnoreCase(X) || fsnPart.equalsIgnoreCase("Finding of " + X) || fsnPart.equalsIgnoreCase(X + " finding")) {
 				exactMatch = thisParent;
 				incrementSummaryInformation("ExactMatch with FSN");
@@ -242,7 +242,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptCo
 			incrementSummaryInformation ("SuggestedCreation");
 		}
 		
-		report ((Task)null, c, severity, ReportActionType.INFO, 
+		report((Task)null, c, severity, ReportActionType.INFO, 
 				exactMatch == null? "" : exactMatch.toString(), 
 				closeMatch == null ? "" : closeMatch.toString(), 
 				suggestedAddition == null ? "" : suggestedAddition.toString(), 

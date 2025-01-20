@@ -3,26 +3,27 @@ package org.ihtsdo.termserver.scripting.reports;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.JobManager;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 
 public class ListAllReports extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ListAllReports.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(ListAllReports.class, args, params);
+		TermServerScript.run(ListAllReports.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		ReportSheetManager.setTargetFolderId( "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		super.init(run);
 		headers="Category, Name, Description, Production Status, Tags";
 		additionalReportColumns="";
@@ -45,6 +46,7 @@ public class ListAllReports extends TermServerReport implements ReportClass {
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		JobManager jobManager = new JobManager();
 		jobManager.init();

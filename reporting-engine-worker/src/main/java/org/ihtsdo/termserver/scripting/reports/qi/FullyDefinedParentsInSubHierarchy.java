@@ -83,7 +83,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 		String proxPrimParentsStr = proximalPrimitiveParents.stream()
 				.map(Concept::toString)
 				.collect(Collectors.joining(", \n"));
-		report (c, parentStr, parentModStr, proxPrimParentsStr);
+		report(c, parentStr, parentModStr, proxPrimParentsStr);
 		countIssue(c);
 	}
 

@@ -1,15 +1,12 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Branch;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -18,10 +15,10 @@ public class RollbackBranch extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RollbackBranch.class);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RollbackBranch importer = new RollbackBranch();
 		try {
-			ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist Kung Foo
+			ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist Kung Foo
 			importer.init(args);
 			importer.postInit(new String[] {"Actions"}, new String[] {"Branch, HeadTimestamp, BaseTimestamp, Status, Action"}, false);
 			importer.rollbackBranch();

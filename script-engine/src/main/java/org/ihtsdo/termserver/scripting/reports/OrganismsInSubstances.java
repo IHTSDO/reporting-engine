@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -21,28 +19,27 @@ public class OrganismsInSubstances extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(OrganismsInSubstances.class);
 
-	Concept subHierarchy = ROOT_CONCEPT;
 	Map<String, Description> organismNames;
 	Set<Concept> substancesUsedInProducts;
 	List<String> skipOrganisms;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		OrganismsInSubstances report = new OrganismsInSubstances();
 		try {
-			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
+			ReportSheetManager.setTargetFolderId("1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d");
 			report.additionalReportColumns = "FSN, SemanticTag, Substance Description, Organism Description, Case Significance Mismatch";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
 			report.reportOrganismsInSubstances();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		substancesUsedInProducts = DrugUtils.getSubstancesUsedInProducts();
 		skipOrganisms = new ArrayList<>();
@@ -81,7 +78,7 @@ public class OrganismsInSubstances extends TermServerReport {
 	}
 
 	private void reportOrganismsInSubstances() throws TermServerScriptException {
-		LOGGER.info ("Looking for organisms used in substances used in products");
+		LOGGER.info("Looking for organisms used in substances used in products");
 		
 		for (Concept substance : substancesUsedInProducts) {
 			//Check all preferred terms
@@ -95,7 +92,7 @@ public class OrganismsInSubstances extends TermServerReport {
 						if (d.getCaseSignificance().equals(organismEntry.getValue().getCaseSignificance())) {
 							csMismatch = "N";
 						}
-						report (substance, d, organismEntry.getValue(), csMismatch);
+						report(substance, d, organismEntry.getValue(), csMismatch);
 						reported = true;
 					}
 				}

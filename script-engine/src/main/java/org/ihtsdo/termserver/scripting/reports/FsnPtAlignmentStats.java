@@ -1,12 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -16,30 +16,26 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * RP-542 Get stats broken down by major hierarchy on what FSNs align with their PTs
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FsnPtAlignmentStats extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(FsnPtAlignmentStats.class);
 
 	DecimalFormat df = new DecimalFormat("##.#%");
 	boolean includeDetail = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<<372087000 |Primary malignant neoplasm (disorder)|");
-		TermServerReport.run(FsnPtAlignmentStats.class, args, params);
+		TermServerScript.run(FsnPtAlignmentStats.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		headers = "Hierarchy, FSN PT Aligns, FSN PT Misaligned, US/GB Variance, US Align, GB Align";
 		additionalReportColumns = "";
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag, Hierarchy, FSN PT Aligns, FSN PT Misaligned, US/GB Variance, US Align, GB Align",
 				"SCTID, FSN, SemTag, FSN, PT",};
@@ -62,7 +58,8 @@ public class FsnPtAlignmentStats extends TermServerReport implements ReportClass
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (StringUtils.isEmpty(subsetECL)) {
 			List<Concept> hierarchies = SnomedUtils.sort(ROOT_CONCEPT.getChildren(CharacteristicType.STATED_RELATIONSHIP));
@@ -109,7 +106,7 @@ public class FsnPtAlignmentStats extends TermServerReport implements ReportClass
 		String varianceStr = variance + " (" + df.format(variance/(double)total) + ")";
 		String usStr = usAlign + " (" + df.format(usAlign/(double)variance) + ")";
 		String gbStr = gbAlign + " (" + df.format(gbAlign/(double)variance) + ")";
-		report (PRIMARY_REPORT, localArea, alignStr, misalignStr, varianceStr, usStr, gbStr );
+		report(PRIMARY_REPORT, localArea, alignStr, misalignStr, varianceStr, usStr, gbStr );
 	}
 
 

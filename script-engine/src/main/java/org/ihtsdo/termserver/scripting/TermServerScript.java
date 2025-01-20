@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.dao.ReportDataBroker;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -19,6 +18,7 @@ import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
@@ -846,7 +846,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				} else if (response.getSeverity().equals(DroolsResponse.Severity.WARNING)) {
 					//Only report a particular warning text once
 					if (!warningsReported.contains(response.getMessage())) {
-						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Drools warning: " + response.getMessage());
+						report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Drools warning: " + response.getMessage());
 						warningsReported.add(response.getMessage());
 					}
 				} else {
@@ -942,93 +942,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected void convertStatedRelationshipsToAxioms(Concept c, boolean mergeExistingAxioms, boolean leaveStatedRelationships) {
 		//We might have already done this if an error condition has occurred.
 		//Skip if there are not stated relationships
-		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH).size() == 0) {
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH).isEmpty()) {
 			return;
 		}
 		
-		/*if (c.getConceptId().equals("2301000004107")) {
-			debug("Here");
-		}*/
-		
 		//In the case of an inactive concept, we'll inactivate any axioms
-		if (c.isActive()) {
-			for (Axiom a : c.getClassAxioms()) {
-				a.clearRelationships();
-			}
-			
-			//Do we have an existing axiom to use by default?
-			Axiom a = c.getFirstActiveClassAxiom();
-			a.setModuleId(c.getModuleId());
-			
-			//If we're working with local concepts, remove any Axiom Entries and pinch their UUID
-			if (a.getId() == null && c.getAxiomEntries().size() > 0) {
-				for (AxiomEntry ae : c.getAxiomEntries()) {
-					if (ae.isActive()) {
-						a.setAxiomId(ae.getId());
-					}
-				}
-			}
-			
-			if (mergeExistingAxioms) {
-				c.getAxiomEntries().clear();
-			}
-	
-			//We'll remove the stated relationships as they get converted to the axiom
-			//Unless we want to keep it so we can easily form the expression
-			Set<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
-			for (Relationship rel : rels) {
-				//Ignore inactive rels, unless they come from an inactive axiom, in which case leave them there
-				if (!rel.isActive()) {
-					//...unless it came from an axiom in which case it's no longer required
-					//and causes confusion for a validation check due to having no effective time
-					if (rel.getAxiom() != null) {
-						if (!rel.getAxiom().isActive()) {
-							rel.getAxiom().getRelationships().add(rel);
-						}
-
-						if (leaveStatedRelationships) {
-							rel.setAxiom(a);
-						} else {
-							c.removeRelationship(rel, true); //Safe to remove it even if published - will exist in axiom
-						}
-					}
-					continue;
-				}
-
-				Axiom thisAxiom  = a; 
-				if (!mergeExistingAxioms) {
-					thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
-				}
-				
-				//The definition status of the axiom needs to match that of the concept
-				thisAxiom.setDefinitionStatus(c.getDefinitionStatus());
-				
-				//Don't add an inactive relationship to an active axiom
-				if (thisAxiom.isActive() != rel.isActive()) {
-					if (!rel.isActive()) {
-						LOGGER.warn("Skipping axiomification of " + rel + " due to active axiom");
-					} else {
-						throw new IllegalStateException ("Active stated conflict between " + rel + " and " + thisAxiom);
-					}
-				}
-				thisAxiom.getRelationships().add(rel);
-				if (!rel.fromAxiom() && !rel.isActive()) {
-					//Historically inactive stated relationship, leave it be
-				} else if (!leaveStatedRelationships) {
-					c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
-				}
-			}
-			
-			for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
-				if (thisAxiom.getRelationships().size() == 0) {
-					//Has this axiom been released?  Remove if not and if it's empty
-					if (StringUtils.isEmpty(thisAxiom.getId())) {
-						c.getClassAxioms().remove(thisAxiom);
-					} else {
-						throw new IllegalStateException ("Axiom left with no relationships in " + c + ": " + thisAxiom);
-					}
-				}
-			}
+		if (c.isActiveSafely()) {
+			convertActiveConcept(c, mergeExistingAxioms, leaveStatedRelationships);
 		} else {
 			//Inactive concept, inactivate any axioms
 			for (Axiom thisAxiom : c.getClassAxioms()) {
@@ -1040,7 +960,102 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				.forEach(r -> c.removeRelationship(r, true));   //Safe to remove these if published.
 		}
 	}
-	
+
+	private void convertActiveConcept(Concept c, boolean mergeExistingAxioms, boolean leaveStatedRelationships) {
+		for (Axiom a : c.getClassAxioms()) {
+			a.clearRelationships();
+		}
+		
+		//Do we have an existing axiom to use by default?
+		Axiom a = c.getFirstActiveClassAxiom();
+		a.setModuleId(c.getModuleId());
+		
+		//If we're working with local concepts, remove any Axiom Entries and pinch their UUID
+		if (a.getId() == null && !c.getAxiomEntries().isEmpty()) {
+			for (AxiomEntry ae : c.getAxiomEntries()) {
+				if (ae.isActiveSafely()) {
+					a.setAxiomId(ae.getId());
+				}
+			}
+		}
+		
+		if (mergeExistingAxioms) {
+			c.getAxiomEntries().clear();
+		}
+
+		//We'll remove the stated relationships as they get converted to the axiom
+		//Unless we want to keep it so we can easily form the expression
+		Set<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
+		for (Relationship rel : rels) {
+			convertStatedRelationship(c, a, rel, mergeExistingAxioms, leaveStatedRelationships);
+		}
+		
+		removeEmptyAxioms(c);
+	}
+
+	private void removeEmptyAxioms(Concept c) {
+		for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
+			if (thisAxiom.getRelationships().isEmpty()) {
+				//Has this axiom been released?  Remove if not and if it's empty
+				if (StringUtils.isEmpty(thisAxiom.getId())) {
+					c.getClassAxioms().remove(thisAxiom);
+				} else {
+					throw new IllegalStateException ("Axiom left with no relationships in " + c + ": " + thisAxiom);
+				}
+			}
+		}
+		
+	}
+
+	private void convertStatedRelationship(Concept c, Axiom a, Relationship rel, boolean mergeExistingAxioms, boolean leaveStatedRelationships) {
+		if (handleInactiveRelationship(c, a, rel, leaveStatedRelationships)) {
+			return;
+		}
+
+		Axiom thisAxiom  = a; 
+		if (!mergeExistingAxioms) {
+			thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+		}
+		
+		//The definition status of the axiom needs to match that of the concept
+		thisAxiom.setDefinitionStatus(c.getDefinitionStatus());
+		
+		//Don't add an inactive relationship to an active axiom
+		if (!thisAxiom.isActive().equals(rel.isActive())) {
+			if (!rel.isActiveSafely()) {
+				LOGGER.warn("Skipping axiomification of {} due to active axiom", rel);
+			} else {
+				throw new IllegalStateException ("Active stated conflict between " + rel + " and " + thisAxiom);
+			}
+		}
+		thisAxiom.getRelationships().add(rel);
+		if (!rel.fromAxiom() && !rel.isActiveSafely()) {
+			//Historically inactive stated relationship, leave it be
+		} else if (!leaveStatedRelationships) {
+			c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
+		}
+	}
+
+	private boolean handleInactiveRelationship(Concept c, Axiom a, Relationship rel, boolean leaveStatedRelationships) {
+		//Ignore inactive rels, unless they come from an inactive axiom, in which case leave them there
+		if (!rel.isActiveSafely()) {
+			//...unless it came from an axiom in which case it's no longer required
+			//and causes confusion for a validation check due to having no effective time
+			if (rel.getAxiom() != null) {
+				if (!rel.getAxiom().isActiveSafely()) {
+					rel.getAxiom().getRelationships().add(rel);
+				}
+
+				if (leaveStatedRelationships) {
+					rel.setAxiom(a);
+				} else {
+					c.removeRelationship(rel, true); //Safe to remove it even if published - will exist in axiom
+				}
+			}
+			return true;
+		}
+		return false;
+	}
 
 	protected void selfGroupAttributes(Task t, Concept c) {
 		RelationshipGroup ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED);
@@ -1074,7 +1089,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			return CHANGE_MADE;
 		} catch (Exception e) {
-			report (t, c, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
+			report(t, c, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
 			return NO_CHANGES_MADE;
 		}
 	}
@@ -1087,7 +1102,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			return CHANGE_MADE;
 		} catch (Exception e) {
-			report (t, d, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
+			report(t, d, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
 			return NO_CHANGES_MADE;
 		}
 	}
@@ -1118,7 +1133,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			return CHANGE_MADE;
 		} catch (Exception e) {
-			report (t, null, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete refset member " + uuid + " due to " + e.getMessage());
+			report(t, null, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete refset member " + uuid + " due to " + e.getMessage());
 			return NO_CHANGES_MADE;
 		}
 	}
@@ -1554,7 +1569,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		concept.addDescription(d);
 	}
 	
-	public void report (Task t, Component c, ValidationFailure v) throws TermServerScriptException {
+	public void report(Task t, Component c, ValidationFailure v) throws TermServerScriptException {
 		report(t, c, v.severity, v.reportActionType, v.getMessage());
 	}
 
@@ -1627,11 +1642,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		incrementSummaryInformation("Report lines written");
 	}
 
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details);
 	}
 	
-	public boolean report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		if (quiet || isWhiteListed(c, details)) {
 			return false;
 		}
@@ -1843,7 +1858,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				jobRun.setParameter(entry.getKey(), entry.getValue());
 			}
 		}
-		JobClass job = null;
+		JobClass job;
 		try {
 			job = jobClazz.getDeclaredConstructor((Class<?>[])null).newInstance((Object[])null);
 		} catch ( InstantiationException |
@@ -1854,7 +1869,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				IllegalAccessException e) {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
 		} 
-		job.instantiate(jobRun, (ApplicationContext)null);
+		job.instantiate(jobRun, null);
 	}
 	
 	public static void run(Class<? extends JobClass> jobClazz, Map<String, Object> parameters, String[] args) throws TermServerScriptException {
@@ -1901,6 +1916,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	// This is used for reports that might want to return a complex name
 	// i.e say two released so r1-r2 (so we have projects/branches and now a complex name)
 	// It is only used Summary Component as we are not dealing with just a simple name (different releases)
+	@Override
 	public String getReportComplexName() {
 		// default is nothing.
 		return "";
@@ -2062,74 +2078,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, RelationshipTemplate.Mode mode, boolean reportAlreadyExisting) throws TermServerScriptException {
 		int changesMade = 0;
-		if (type == null || (value == null && concreteValue == null)) {
-			if (value == null && concreteValue == null) {
-				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept / concrete value";
-				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			} else if (type == null) {
-				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
-				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			}
-			return NO_CHANGES_MADE;
-		}
-		//Do we already have this relationship active in the target group (or at all if self grouped)?
-		Set<Relationship> rels = findExistingRelationships(c, type, value, concreteValue, groupId, ActiveState.ACTIVE);
-		if (rels.size() > 1) {
-			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
-			return NO_CHANGES_MADE;
-		} else if (rels.size() == 1) {
-			if (reportAlreadyExisting) {
-				report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
-			}
+		if (checkForNoViableRelationshipReplacement(t, c, type, value, concreteValue, groupId, reportAlreadyExisting)) {
 			return NO_CHANGES_MADE;
 		}
 
-		//Do we have it inactive?
-		rels = findExistingRelationships(c, type, value, concreteValue, groupId, ActiveState.INACTIVE);
-		if (rels.size() >= 1) {
-			Relationship rel = rels.iterator().next();
-			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
-			rel.setActive(true);
+		if (checkForRelationshipExistsInactive(t, c, type, value, concreteValue, groupId)) {
 			return CHANGE_MADE;
 		}
 
-		//Or do we need to create and add?
-		//Is this type (or type/value) unique for the concept
-		//or (new feature) do we want to replace any attributes of the same type if they exist
-		if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS ||
-				mode == RelationshipTemplate.Mode.REPLACE_TYPE_IN_THIS_GROUP) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					ActiveState.ACTIVE);
-			if (rels.size() > 0) {
-				if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS) {
-					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, type + " attribute type already exists: " + rels.iterator().next());
-					return changesMade;
-				} else {
-					//Removing existing relationships of the same type, but only in this group
-					rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-							type,
-							groupId);
-					for (Relationship remove : rels) {
-						changesMade += removeRelationship(t, c, remove);
-					}
-				}
-			}
-		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS) {
-			RelationshipTemplate rt = new RelationshipTemplate(type,value);
-			rels = c.getRelationships(rt, ActiveState.ACTIVE);
-			if (rels.size() > 0) {
-				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
-				return changesMade;
-			}
-		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP) {
-			RelationshipTemplate rt = new RelationshipTemplate(type,value);
-			RelationshipGroup g = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
-			rels = g.getRelationshipsWithType(rt.getType());
-			if (rels.size() > 0) {
-				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
-				return changesMade;
-			}
+		if (modePreventsReplacement(t, c, type, value, groupId, mode)) {
+			return NO_CHANGES_MADE;
 		}
 
 		//Add the new relationship
@@ -2144,6 +2102,93 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		c.addRelationship(newRel);
 		changesMade++;
 		return changesMade;
+	}
+
+	private boolean modePreventsReplacement(Task t, Concept c, Concept type, Concept value,
+			int groupId, Mode mode) throws TermServerScriptException {
+		Set<Relationship> rels;
+		//Or do we need to create and add?
+		//Is this type (or type/value) unique for the concept
+		//or (new feature) do we want to replace any attributes of the same type if they exist
+		if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS ||
+				mode == RelationshipTemplate.Mode.REPLACE_TYPE_IN_THIS_GROUP) {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+					type,
+					ActiveState.ACTIVE);
+			if (!rels.isEmpty()) {
+				if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_ACROSS_ALL_GROUPS) {
+					report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, type + " attribute type already exists: " + rels.iterator().next());
+					return true;
+				} else {
+					prepareToReplaceTypeInThisGroup(t, c, type, groupId);
+				}
+			}
+		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_VALUE_ACROSS_ALL_GROUPS) {
+			RelationshipTemplate rt = new RelationshipTemplate(type,value);
+			rels = c.getRelationships(rt, ActiveState.ACTIVE);
+			if (!rels.isEmpty()) {
+				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type/value already exists: " + rels.iterator().next());
+				return true;
+			}
+		} else if (mode == RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP) {
+			RelationshipTemplate rt = new RelationshipTemplate(type,value);
+			RelationshipGroup g = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
+			rels = g.getRelationshipsWithType(rt.getType());
+			if (!rels.isEmpty()) {
+				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Attribute type already exists in specified group: " + rels.iterator().next());
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void prepareToReplaceTypeInThisGroup(Task t, Concept c, Concept type, int groupId) throws TermServerScriptException {
+		//Removing existing relationships of the same type, but only in this group
+		Set<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+				type,
+				groupId);
+		for (Relationship remove : rels) {
+			removeRelationship(t, c, remove);
+		}
+	}
+
+	private boolean checkForRelationshipExistsInactive(Task t, Concept c, Concept type, Concept value,
+			ConcreteValue concreteValue, int groupId) throws TermServerScriptException {
+		//Do we have it inactive?
+		Set<Relationship> rels = findExistingRelationships(c, type, value, concreteValue, groupId, ActiveState.INACTIVE);
+		if (!rels.isEmpty()) {
+			Relationship rel = rels.iterator().next();
+			report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
+			rel.setActive(true);
+			return true;
+		}
+		return false;
+	}
+
+	private boolean checkForNoViableRelationshipReplacement(Task t, Concept c, Concept type, Concept value,
+			ConcreteValue concreteValue, int groupId, boolean reportAlreadyExisting) throws TermServerScriptException {
+		if (type == null || (value == null && concreteValue == null)) {
+			if (value == null && concreteValue == null) {
+				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept / concrete value";
+				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+			} else if (type == null) {
+				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
+				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+			}
+			return true;
+		}
+		//Do we already have this relationship active in the target group (or at all if self grouped)?
+		Set<Relationship> rels = findExistingRelationships(c, type, value, concreteValue, groupId, ActiveState.ACTIVE);
+		if (rels.size() > 1) {
+			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
+			return true;
+		} else if (rels.size() == 1) {
+			if (reportAlreadyExisting) {
+				report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
+			}
+			return true;
+		}
+		return false;
 	}
 
 	private Set<Relationship> findExistingRelationships(Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, ActiveState activeState) {
@@ -2239,7 +2284,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					} else if (bCoversA && potentialRedundancy.size() >= originalGroup.size()) {
 						groupToRemove = originalGroup;
 					} else if (bCoversA && potentialRedundancy.size() < originalGroup.size()) {
-						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Group of larger size appears redundant - check!");
+						report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Group of larger size appears redundant - check!");
 						groupToRemove = originalGroup;
 					} else {
 						LOGGER.warn ("DEBUG HERE, Redundancy in " + c);
@@ -2247,7 +2292,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 					if (groupToRemove != null && groupToRemove.size() > 0) {
 						removedGroups.add(groupToRemove);
-						report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed:", groupToRemove);
+						report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed:", groupToRemove);
 						for (Relationship r : groupToRemove.getRelationships()) {
 							changesMade += removeRelationship(t, c, r);
 						}
@@ -2258,7 +2303,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (changesMade > 0) {
 			shuffleDown(t,c);
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-				report (t, c, Severity.LOW, ReportActionType.INFO, "Post redundancy removal group", g);
+				report(t, c, Severity.LOW, ReportActionType.INFO, "Post redundancy removal group", g);
 			}
 		}
 		return changesMade;
@@ -2274,7 +2319,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//Since we're working with the true concept relationships here, this will have
 			//the effect of changing the groupId in all affected relationships
 			if (group.getGroupId() != newGroups.size()) {
-				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Shuffling stated group " + group.getGroupId() + " to " + newGroups.size());
+				report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Shuffling stated group " + group.getGroupId() + " to " + newGroups.size());
 				group.setGroupId(newGroups.size());
 				group.setDirty();
 				//If we have relationships without SCTIDs here, see if we can pinch them from inactive relationships

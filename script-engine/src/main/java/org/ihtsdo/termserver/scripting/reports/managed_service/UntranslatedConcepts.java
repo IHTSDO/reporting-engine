@@ -27,7 +27,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA Reports
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
@@ -38,7 +38,6 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		
 		if (project.getMetadata() != null && project.getMetadata().getDependencyRelease() != null) {
 			intEffectiveTime = project.getMetadata().getDependencyRelease();
 		} else {
@@ -108,7 +107,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		//For this report we're interested in International Concepts 
 		//(optionally in the last (dependency) release) which have no translations 
 		//in the target module
-		return (c.isActive()
+		return (c.isActiveSafely()
 			&& SnomedUtils.inModule(c, INTERNATIONAL_MODULES)
 			&& (c.getEffectiveTime() == null || c.getEffectiveTime().equals(intEffectiveTime) || includeLegacyIssues)
 			&& !hasTranslation(c));
@@ -129,7 +128,7 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		//We're going to sort on top level hierarchy, then alphabetically
 		//filter for appropriate scope at the same time - avoids problems with FSNs without semtags
 		return superSet.stream()
-			.filter (this::inScope)
+			.filter(this::inScope)
 			.sorted(SnomedUtils::compareSemTagFSN)
 			.toList();
 	}

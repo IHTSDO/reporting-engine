@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -23,7 +22,7 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SetAttribute fix = new SetAttribute(null);
 		try {
 			fix.reportNoChange = true;
@@ -64,10 +63,10 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 		int attributeCount = countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		if (!loadedConcept.isActive()) {
 			String msg = "Concept now inactive ";
-			report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+			report(task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else if (attributesOfType.size() > 1) {
 			String msg = "Concept stating multiple " + attributeType;
-			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+			report(task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else if (relationshipExists(loadedConcept, targetValue)) {
 			Set<Relationship> allExisting = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					attributeType,
@@ -75,14 +74,14 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 					ActiveState.BOTH);
 			if (allExisting.size() > 1) {
 				String msg = "Mix of active / inactive existing relationship with same type/value";
-				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+				report(task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 			} else {
 				Relationship existing = allExisting.iterator().next();
 				//If this rel is active, nothing to do.  Otherwise, activate
 				if (!existing.isActive()) {
 					existing.setActive(true);
 					String msg = "Reactivated " + existing;
-					report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+					report(task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 					changesMade++;
 				}
 				//Are there any other relationships here that need to be inactivated?
@@ -90,7 +89,7 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 					if (!checkMe.getTarget().equals(targetValue)) {
 						checkMe.setActive(false);
 						String msg = "Inactivated " + checkMe;
-						report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+						report(task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 						changesMade++;
 					}
 				}
@@ -100,7 +99,7 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 			Relationship r = new Relationship (loadedConcept, attributeType, targetValue, 0);
 			loadedConcept.addRelationship(r);
 			changesMade++;
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else {
 			//Case where yes we have 1 existing active relationship, but not with the correct target value
 			Relationship current = attributesOfType.iterator().next();
@@ -116,7 +115,7 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 				loadedConcept.addRelationship(r);
 				changesMade++;
 				String msg = "Replaced target " + current.getTarget() + " with " + targetValue;
-				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REPLACED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
+				report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REPLACED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 			}
 		}
 		return changesMade;
@@ -169,7 +168,7 @@ public class SetAttribute extends BatchFix implements ScriptConstants{
 		Set<Relationship> existingTypes = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		if (existingTypes.size() == 1 && existingTypes.iterator().next().getTarget().equals(targetValue)) {
 			String msg = "Concept appears to be in desired state already";
-			report ((Concept)null, c, Severity.LOW, ReportActionType.NO_CHANGE, msg, targetValue.toString());
+			report((Concept)null, c, Severity.LOW, ReportActionType.NO_CHANGE, msg, targetValue.toString());
 			c = null;
 		}
 		return Collections.singletonList(c);

@@ -5,6 +5,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -63,12 +64,12 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	 * @throws TermServerScriptException if there is an error in the TermServerScript
 	 * @throws IOException               if there is an error in the input/output
 	 */
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		LOGGER.debug("Running from main CLI");
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
-		TermServerReport.run(RefsetMembersWithInvalidReferencedComponents.class, args, params);
+		TermServerScript.run(RefsetMembersWithInvalidReferencedComponents.class, args, params);
 	}
 
 	/**
@@ -107,7 +108,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	 * @throws TermServerScriptException if there is an error initializing the report
 	 */
 	public void init(JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = RELEASE_VALIDATION_FOLDER_ID;
+		ReportSheetManager.setTargetFolderId(RELEASE_VALIDATION_FOLDER_ID);
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		if (unpromotedChangesOnly && includeLegacyIssues) {
 			throw new TermServerScriptException("Cannot include legacy issues when only checking unpromoted changes");

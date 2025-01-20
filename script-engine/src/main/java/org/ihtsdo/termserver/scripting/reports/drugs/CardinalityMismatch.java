@@ -1,12 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 /*
  * DRUGS-244 Report where the number of stated attributes of a given type does not equal
@@ -22,7 +21,7 @@ public class CardinalityMismatch extends TermServerReport {
 
 	Concept attributeType = HAS_DISPOSITION;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CardinalityMismatch report = new CardinalityMismatch();
 		try {
 			report.additionalReportColumns = "";
@@ -30,8 +29,7 @@ public class CardinalityMismatch extends TermServerReport {
 			report.loadProjectSnapshot(true);  
 			report.finMultipleModifications();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce MultipleModifications due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report",e);
 		} finally {
 			report.finish();
 		}
@@ -41,17 +39,17 @@ public class CardinalityMismatch extends TermServerReport {
 		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			List<Concept> statedDispositions = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)
 					.stream()
-					.map(rel -> rel.getTarget())
-					.collect(Collectors.toList());
+					.map(Relationship::getTarget)
+					.toList();
 			List<Concept> infDispositions = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)
 					.stream()
-					.map(rel -> rel.getTarget())
-					.collect(Collectors.toList()); 
+					.map(Relationship::getTarget)
+					.toList();
 
 			statedDispositions.removeAll(infDispositions);
-			if (statedDispositions.size() >0 ) {
+			if (!statedDispositions.isEmpty()) {
 				incrementSummaryInformation("Issues identified");
-				report (c, statedDispositions.stream().map(Concept::toString).collect(Collectors.joining(", ")));
+				report(c, statedDispositions.stream().map(Concept::toString).collect(Collectors.joining(", ")));
 			}
 		}
 	}

@@ -1,20 +1,18 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,15 +28,14 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	private String thisEffectiveTime;
 	private String semtagFilter;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
-		//params.put(SEMTAG_FILTER_PARAM, "(procedure)");
-		TermServerReport.run(InactivatedConcepts.class, args, params);
+		TermServerScript.run(InactivatedConcepts.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		semtagFilter = run.getParamValue(SEMTAG_FILTER_PARAM);
 		//Unpromoted changes only is picked up by the TermServerReport parent class as part of init
 		super.init(run);
@@ -48,7 +45,8 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 			throw new TermServerScriptException("Unpromoted changes only is not supported for use with a release package");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Reason, Assoc Type, Assoc Value"};
@@ -75,7 +73,8 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		for (Concept c : scopeAndSort(gl.getAllConcepts())) {
 			boolean reported = false;
@@ -83,11 +82,11 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 			for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
 				String assocType = SnomedUtils.getAssociationType(a);
 				Concept assocValue = gl.getConcept(a.getTargetComponentId());
-				report (c, i, assocType, assocValue);
+				report(c, i, assocType, assocValue);
 				reported = true;
 			}
 			if (!reported) {
-				report (c, i , "N/A");
+				report(c, i , "N/A");
 			}
 			countIssue(c);
 		}
@@ -98,7 +97,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 		//latest release if we're looking at a particular release package
 		//Optionally for a specific semantic tag
 		//Also optionally, unpromoted changes only
-		return !c.isActive() 
+		return !c.isActiveSafely()
 				&& hasRequiredSemTag(c)
 				&& ((thisEffectiveTime == null && StringUtils.isEmpty(c.getEffectiveTime()) ||
 					(thisEffectiveTime != null && thisEffectiveTime.equals(c.getEffectiveTime()))))
@@ -119,11 +118,11 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		prevRelease = getJobRun().getParamValue(RELEASE);
 		if (!StringUtils.isEmpty(prevRelease)) {
-			LOGGER.info ("Loading previously published package: " + prevRelease);
+			LOGGER.info("Loading previously published package: {}", prevRelease);
 			getProject().setKey(prevRelease);
 			super.loadProjectSnapshot(fsnOnly);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			LOGGER.info ("Detected this effective time as " + thisEffectiveTime);
+			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
 		} else {
 			super.loadProjectSnapshot(fsnOnly);
 		}
@@ -133,7 +132,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 		//We're going to sort on top level hierarchy, then alphabetically
 		//filter for appropriate scope at the same time - avoids problems with FSNs without semtags
 		return superSet.stream()
-		.filter (c -> inScope(c))
+		.filter (this::inScope)
 		.sorted(SnomedUtils::compareSemTagFSN)
 		.toList();
 	}

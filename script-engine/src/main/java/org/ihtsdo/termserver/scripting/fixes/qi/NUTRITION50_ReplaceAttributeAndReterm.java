@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,13 +14,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 /**
  * NUTRITION-50 Batch change of estimated/measured nutritional intake observable content
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class NUTRITION50_ReplaceAttributeAndReterm extends BatchFix {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(NUTRITION50_ReplaceAttributeAndReterm.class);
 
 	private Set<String> exclusionTexts;
 	private RelationshipTemplate addTemplate;
@@ -32,10 +25,10 @@ public class NUTRITION50_ReplaceAttributeAndReterm extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NUTRITION50_ReplaceAttributeAndReterm fix = new NUTRITION50_ReplaceAttributeAndReterm(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
@@ -97,7 +90,7 @@ public class NUTRITION50_ReplaceAttributeAndReterm extends BatchFix {
 			}*/
 			if (d.isPreferred() && !d.getTerm().contains("quantity of")) {
 				if (!d.getTerm().contains("intake")) {
-					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Preferred description did not contain target word 'intake' to which to add 'quantity of'", d);
+					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Preferred description did not contain target word 'intake' to which to add 'quantity of'", d);
 				} else {
 					String replacement = d.getTerm().replace("intake", "quantity of intake");
 					replaceDescription(t, c, d, replacement, null);

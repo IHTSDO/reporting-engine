@@ -82,7 +82,7 @@ public class MultipleModuleAxioms extends TermServerReport implements ReportClas
 			if (!coreAxioms.isEmpty() && !nonCoreAxioms.isEmpty()) {
 				AxiomEntry firstCoreAxiom = coreAxioms.get(0);
 				for (AxiomEntry a : nonCoreAxioms) {
-					report (c, c.getModuleId(), firstCoreAxiom.getId(), firstCoreAxiom.getEffectiveTime(), a.getId(), a.getEffectiveTime());
+					report(c, c.getModuleId(), firstCoreAxiom.getId(), firstCoreAxiom.getEffectiveTime(), a.getId(), a.getEffectiveTime());
 					countIssue(c);
 				}
 			}

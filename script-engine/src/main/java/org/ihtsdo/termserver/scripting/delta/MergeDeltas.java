@@ -3,8 +3,6 @@ package org.ihtsdo.termserver.scripting.delta;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +38,7 @@ public class MergeDeltas extends DeltaGenerator {
 	File fixDeltaFile;
 	Long publishedEffectiveTime = 20180131L;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MergeDeltas app = new MergeDeltas();
 		try {
 			app.newIdsRequired = false;
@@ -62,7 +60,8 @@ public class MergeDeltas extends DeltaGenerator {
 	public String getReportName() {
 		return "MergedDeltaFixes";
 	}
-	
+
+	@Override
 	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		
@@ -73,7 +72,7 @@ public class MergeDeltas extends DeltaGenerator {
 		}
 	}
 	
-	private void doMerge() throws TermServerScriptException, FileNotFoundException, IOException {
+	private void doMerge() throws TermServerScriptException {
 		//First load in the current state
 		currentDelta.loadArchive(getInputFile());
 		
@@ -93,10 +92,10 @@ public class MergeDeltas extends DeltaGenerator {
 						String fileName = p.getFileName().toString();
 						ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 						if (componentType != null && !fileName.startsWith("._")) {
-							LOGGER.info ("Processing " + fileName);
+							LOGGER.info("Processing " + fileName);
 							processFixDeltaFile(zis, componentType);
 						} else {
-							LOGGER.info ("Skipping unrecognised file: " + fileName);
+							LOGGER.info("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();
@@ -137,18 +136,18 @@ public class MergeDeltas extends DeltaGenerator {
 		//If the current delta does not know about this component, then it's not changed at all since release, so we should use the fix
 		if (currentFields==null) {
 			String msg = "Fixed component has not been changed since versioning.  Using fix version";
-			report (relevantComponent, null, Severity.LOW, ReportActionType.INFO,componentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
+			report(relevantComponent, null, Severity.LOW, ReportActionType.INFO,componentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 			return fixLineItems;			
 		}
 		String currentEffectiveTime = currentFields[IDX_EFFECTIVETIME];
 		
 		//Is this fix a reversion?  We'll either take the whole thing, or ignore the whole thing.
-		if (fixEffectiveTime != "" && Long.parseLong(fixEffectiveTime) < publishedEffectiveTime) {
+		if (!StringUtils.isEmpty(fixEffectiveTime) && Long.parseLong(fixEffectiveTime) < publishedEffectiveTime) {
 			//If the current version has not changed since we versioned, then we'll apply the fix.
 			//Otherwise, apply the current state
 			if (currentEffectiveTime == "") {
 				String msg = "Current state has changed since versioning.  Ignoring reversion.";
-				report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO, componentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
+				report(relevantComponent, null, Severity.HIGH, ReportActionType.INFO, componentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 				return null;
 			}
 		}
@@ -189,11 +188,11 @@ public class MergeDeltas extends DeltaGenerator {
 		//HOWEVER, if the ONLY field to be different to the fix is the effective date, then we actually want to reset that component back to being alpha, ie use the fix line
 		if (differsOnlyInEffectiveTime(output, fixLineItems)) {
 			String msg = "Current rows shows as unpublished, but is otherwise the same as the published fix.  Resetting to fix row to prevent no-change delta in next release.";
-			report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO,componentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
+			report(relevantComponent, null, Severity.HIGH, ReportActionType.INFO,componentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));
 			output = fixLineItems;
 		} else {
 			String msg = "Using fields " + fieldsChanged + ", modified since versioning: " + dataComparisons;
-			report (relevantComponent, null, Severity.MEDIUM, ReportActionType.INFO,componentType.toString(), id, msg);
+			report(relevantComponent, null, Severity.MEDIUM, ReportActionType.INFO,componentType.toString(), id, msg);
 		}
 		return output;
 	}

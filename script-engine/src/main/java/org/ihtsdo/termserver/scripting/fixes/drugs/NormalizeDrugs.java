@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -32,7 +31,7 @@ public class NormalizeDrugs extends DrugBatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormalizeDrugs fix = new NormalizeDrugs(null);
 		try {
 			fix.reportNoChange = true;
@@ -91,9 +90,9 @@ public class NormalizeDrugs extends DrugBatchFix implements ScriptConstants{
 			if (canFullyDefine) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changes++;
-				report (t, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
+				report(t, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - insufficient attributes!");
+				report(t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - insufficient attributes!");
 			}
 		}
 		

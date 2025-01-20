@@ -1,16 +1,12 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.AncestorsCache;
-import org.ihtsdo.termserver.scripting.ArchiveManager;
-import org.ihtsdo.termserver.scripting.TransitiveClosure;
+import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -41,14 +37,15 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	String previousPreviousRelease;
 	TransitiveClosure tc;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
-		TermServerReport.run(KPIPatternsReport.class, args, params);
+		TermServerScript.run(KPIPatternsReport.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		ArchiveManager mgr = getArchiveManager();
@@ -62,7 +59,8 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			}
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Details, Details",
 				"Issue, Count, Details, Details, Details",
@@ -89,9 +87,10 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		
-		LOGGER.info ("Checking structural integrity");
+		LOGGER.info("Checking structural integrity");
 		if (checkStructuralIntegrity()) {
 			LOGGER.info("Checking for problematic patterns...");
 			
@@ -100,7 +99,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			checkRedundantlyStatedUngroupedRoles();
 			checkRedundantlyStatedGroups();
 		
-			LOGGER.info ("Building current Transitive Closure");
+			LOGGER.info("Building current Transitive Closure");
 			tc = gl.generateTransativeClosure();
 			
 			LOGGER.info("Checking for historical patterns 11 & 21");
@@ -360,7 +359,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	public boolean report (Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
 			return false;

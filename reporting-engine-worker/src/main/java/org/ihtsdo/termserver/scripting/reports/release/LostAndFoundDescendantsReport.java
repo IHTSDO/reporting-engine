@@ -108,7 +108,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
  			
  			int percCompleted = (int)((++conceptsProcessed/(double)conceptsOfInterest.size())*100);
  			if (percCompleted >= lastPercReported + 1) {
- 				LOGGER.info ("{}% complete.", percCompleted);
+ 				LOGGER.info("{}% complete.", percCompleted);
  				lastPercReported = percCompleted;
  			}
 			

@@ -159,10 +159,6 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		
 		nextConcept:
 		for (Concept c : conceptsOfInterest) {
-			boolean atLeastOneTermMatched = false;
-			/*if (c.getId().equals("307651005")) {
-				LOGGER.debug("Here");
-			}*/
 			if (c.isActiveSafely()) {
 				if (whiteListedConceptIds.contains(c.getId())) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
@@ -205,7 +201,6 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 									(startsWith && (term.startsWith(matchText) || altTerm.startsWith(matchText)))) {
 								report(c,matchText, d);
 								reported = true;
-								atLeastOneTermMatched = true;
 								incrementSummaryInformation("Matched '" + matchText.trim() + "'");
 							}
 						}
@@ -256,7 +251,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	}
 	
 	@Override
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		String[] hiearchies = getHierarchies(c);
 		String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
 		String ds = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());

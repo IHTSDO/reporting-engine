@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -28,7 +27,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RevertInactiveAxioms fix = new RevertInactiveAxioms(null);
 		try {
 			fix.selfDetermining = true;
@@ -45,7 +44,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 	@Override
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
-		LOGGER.debug ("Processing " + c);
+		LOGGER.debug("Processing " + c);
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			if (!a.isActive() && StringUtils.isEmpty(a.getEffectiveTime())) {
 				RefsetMember currentMember = loadRefsetMember(a.getId());
@@ -66,7 +65,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 				previousMember.setActive(false);
 				//Overwrite the current RefsetMember with this one, reverting the axiom 
 				updateRefsetMember(previousMember);
-				report (t, c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, currentMember.getId(), prev, current);
+				report(t, c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, currentMember.getId(), prev, current);
 				changesMade++;
 			}
 		}
@@ -85,7 +84,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		LOGGER.info ("Checking " + toCheck + " axioms");
+		LOGGER.info("Checking " + toCheck + " axioms");
 		
 		int checked = 0;
 		for (Concept c : gl.getAllConcepts()) {
@@ -94,12 +93,12 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 					//Recover this axiom from the previous release and see if it's been changed
 					RefsetMember prevRefsetMember = loadPreviousRefsetMember(a.getId());
 					if (prevRefsetMember == null) {
-						report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactive axiom not found in previous release", a.getId());
+						report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactive axiom not found in previous release", a.getId());
 						break;
 					}
 					String previousAxiom = prevRefsetMember.getField("owlExpression");
 					if (!previousAxiom.equals(a.getOwlExpression())) {
-						LOGGER.debug ("Detected inactivated + modified axiom for " + c +  ": " + a.getId());
+						LOGGER.debug("Detected inactivated + modified axiom for " + c +  ": " + a.getId());
 						allAffected.add(c);
 						if (changeMap.containsKey(a.getId())) {
 							throw new TermServerScriptException("Duplicate UUID: " + a.getId());
@@ -107,7 +106,7 @@ public class RevertInactiveAxioms extends BatchFix implements ScriptConstants {
 						changeMap.put(a.getId(), prevRefsetMember);
 					}
 					if (++checked % 100 == 0) {
-						LOGGER.debug ("Completed " + checked + " / " + toCheck);
+						LOGGER.debug("Completed " + checked + " / " + toCheck);
 					}
 				}
 			}

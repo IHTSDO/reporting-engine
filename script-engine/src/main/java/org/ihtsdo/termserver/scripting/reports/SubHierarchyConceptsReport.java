@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,7 +19,7 @@ public class SubHierarchyConceptsReport extends TermServerReport{
 
 	Concept[] subHierarchies;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SubHierarchyConceptsReport report = new SubHierarchyConceptsReport();
 		try {
 			report.additionalReportColumns="Descriptions";
@@ -29,7 +28,7 @@ public class SubHierarchyConceptsReport extends TermServerReport{
 			report.postLoadInit();
 			report.reportConcepts();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Report due to " + e.getMessage());
+			LOGGER.error("Failed to produce report", e);
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -52,7 +51,7 @@ public class SubHierarchyConceptsReport extends TermServerReport{
 					.stream()
 					.map(desc->desc.toString())
 					.toArray(String[]::new);
-			report (c, terms);
+			report(c, terms);
 			incrementSummaryInformation("Concepts reported");
 		}
 	}

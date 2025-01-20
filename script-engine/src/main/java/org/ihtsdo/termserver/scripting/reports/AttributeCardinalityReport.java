@@ -1,13 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 
@@ -22,22 +17,18 @@ public class AttributeCardinalityReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AttributeCardinalityReport.class);
 
-	List<String> criticalErrors = new ArrayList<String>();
+	List<String> criticalErrors = new ArrayList<>();
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetAttributeStr = "411116001"; // |Has manufactured dose form (attribute)|
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	String matchText = "+"; 
-	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+
+	public static void main(String[] args) throws TermServerScriptException {
 		AttributeCardinalityReport report = new AttributeCardinalityReport();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runAttributeCardinalityReport();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce AttributeCardinalityReport Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce AttributeCardinalityReport Report due to ", e);
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
@@ -48,10 +39,10 @@ public class AttributeCardinalityReport extends TermServerScript{
 
 	private void runAttributeCardinalityReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendants(NOT_SET);
-		LOGGER.info ("Validating all relationships");
+		LOGGER.info("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				issuesEncountered += checkAttributeCardinality(c);
 			}
 		}
@@ -98,16 +89,10 @@ public class AttributeCardinalityReport extends TermServerScript{
 		return issues;
 	}
 
-	protected void report (Concept c, String issue) throws TermServerScriptException {
+	protected void report(Concept c, String issue) throws TermServerScriptException {
 		String line =	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						issue + QUOTE;
 		writeToReportFile(line);
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
 	}
 }

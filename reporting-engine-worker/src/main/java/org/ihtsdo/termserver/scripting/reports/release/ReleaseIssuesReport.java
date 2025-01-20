@@ -202,7 +202,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Now it might be that the server is still starting up.  Let's give it 10 seconds and try again
 			try {
 				LOGGER.info("Sleeping for 10 seconds - has the server just started?");
-				Thread.sleep(10000);
+				Thread.sleep(10000L);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
@@ -238,7 +238,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		} catch (IOException e) {
 			throw new TermServerScriptException(FAILURE_WHILE_READING + getInputFile(2), e);
 		}
-		LOGGER.info ("Complete");
+		LOGGER.info("Complete");
 	}
 
 	@Override
@@ -1132,7 +1132,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		
-		LOGGER.info ("Collected {} distinct semantic tags", knownSemanticTags.size());
+		LOGGER.info("Collected {} distinct semantic tags", knownSemanticTags.size());
 		
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
@@ -1477,7 +1477,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		DialectChecker dialectChecker = DialectChecker.create();
-		LOGGER.debug ("Checking {} both-dialect text definitions against {} dialect pairs", bothDialectTextDefns.size(), dialectChecker.size());
+		LOGGER.debug("Checking {} both-dialect text definitions against {} dialect pairs", bothDialectTextDefns.size(), dialectChecker.size());
 		
 		nextDescription:
 		for (Description textDefn : bothDialectTextDefns) {
@@ -1521,7 +1521,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (inScope(d)) {
 						for (Character[] bracketPair : bracketPairs) {
 							if (containsNestedBracket(c, d, bracketPair)) {
-								report (c, issueStr, getLegacyIndicator(c), isActive(c,d), d);
+								report(c, issueStr, getLegacyIndicator(c), isActive(c,d), d);
 								continue nextConcept;
 							}
 						}
@@ -1541,7 +1541,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
 				if (brackets.isEmpty()) {
-					report (c,"Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c,d), d);
+					report(c,"Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c,d), d);
 				} else {
 					brackets.pop();
 				}
@@ -1572,7 +1572,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	 */
 	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
 		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type) && !subHierarchyList.contains(c)) {
-			report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
+			report(c, issueStr, getLegacyIndicator(c), isActive(c, null));
 		}
 	}
 
@@ -1655,7 +1655,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
 			for (Concept c : deprecatedHierarchy.getDescendants(NOT_SET)) {
 				if (!c.isReleasedSafely() && inScope(c)) {
-					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
+					report(c, issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
 				}
 			}
 		}
@@ -1715,7 +1715,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field) && field.length() > 7) {
 			Concept refConcept = gl.getConcept(field, false, false);
 			if (refConcept == null || !refConcept.isActiveSafely()) {
-				report (c, issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);
+				report(c, issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);
 			}
 			return;
 		}
@@ -1726,18 +1726,18 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (matcher.groupCount() == 3) {
 				Concept refConcept = gl.getConcept(matcher.group(1), false, false);
 				if (refConcept == null || !refConcept.isActiveSafely()) {
-					report (c, issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+					report(c, issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 				} else {
 					if (refConcept.getPreferredSynonym(US_ENG_LANG_REFSET) == null) {
-						report (c, issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+						report(c, issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 					} else {
 						String fsn = matcher.group(3);
 						if (fsn == null) {
-							report (c, issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+							report(c, issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 						} else if (!refConcept.getFsn().equals(fsn)) {
 							//Sometimes we use the PT.  Check on the rules for when we use each one.
 							if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
-								report (c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
+								report(c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
 							}
 						}
 					}
@@ -1758,7 +1758,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Must the value be in, or must the value be NOT in our list of values?
 			boolean isIn = values.contains(relWithType.getTarget());
 			if (!isIn == mustBeIn) {
-				report (c, issueStr, getLegacyIndicator(relWithType), isActive(c, relWithType), relWithType);
+				report(c, issueStr, getLegacyIndicator(relWithType), isActive(c, relWithType), relWithType);
 			}
 		}
 	}
@@ -1778,7 +1778,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Concept c : allActiveConceptsSorted) {
 				if (c.isActiveSafely() && inScope(c)) {
 					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
-						report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
+						report(c, issueStr, getLegacyIndicator(c), isActive(c, null));
 					}
 				}
 			}
@@ -1815,7 +1815,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						//RP-574 But is this concept also a type of a domain that would allow this attribute?
 						Set<Concept> ancestors = c.getAncestors(NOT_SET);
 						if (!ancestors.contains(domainType[2])) {
-							report (c, issueStr, getLegacyIndicator(c), isActive(c, null));
+							report(c, issueStr, getLegacyIndicator(c), isActive(c, null));
 						}
 					}
 				}

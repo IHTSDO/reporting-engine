@@ -4,13 +4,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,24 +33,24 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	protected String excludeECL = null;
 	protected Collection<Concept> exclusions = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(MAP_CONCEPT, "447562003 |SNOMED CT to ICD-10 extended map|");
 		params.put(COMPACT, "true");
 		params.put(REVERSE_MAP, "false");
 		params.put(EXCLUDE, "<< 129125009 |Procedure with explicit context (situation)|");
-		TermServerReport.run(ListMapEntries.class, args, params);
+		TermServerScript.run(ListMapEntries.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setLoadOtherReferenceSets(true);
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true); //This forces a delta import - needed because we don't yet save 'Other' refset members to disk.
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
-		
 		mapConcept = gl.getConcept(jobRun.getMandatoryParamValue(MAP_CONCEPT));
 		compact = jobRun.getMandatoryParamBoolean(COMPACT);
 		reverseMap = jobRun.getMandatoryParamBoolean(REVERSE_MAP);
@@ -97,7 +97,8 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 				.withTag(MS)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (reverseMap) {
 			reportMapReversed();

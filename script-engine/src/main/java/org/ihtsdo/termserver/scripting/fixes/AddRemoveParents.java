@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -23,7 +22,7 @@ public class AddRemoveParents extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AddRemoveParents fix = new AddRemoveParents(null);
 		try {
 			fix.inputFileHasHeaderRow = true;
@@ -61,17 +60,17 @@ public class AddRemoveParents extends BatchFix implements ScriptConstants{
 		for (Relationship r : changeMap.get(c).getRelationships()) {
 			if (r.isActive()) {
 				if (c.getRelationships(r, ActiveState.ACTIVE).size() > 0 ) {
-					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already present: " + r);
+					report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already present: " + r);
 				} else if (c.getRelationships(r, ActiveState.INACTIVE).size() > 0 ) {
 					Relationship inactive = c.getRelationships(r, ActiveState.INACTIVE).iterator().next();
-					report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Relationship already present, but inactive: " + inactive);
+					report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Relationship already present, but inactive: " + inactive);
 					inactive.setActive(true);
-					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, inactive);
+					report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, inactive);
 					changesMade++;
 				} else {
 					changesMade++;
 					c.addRelationship(r);
-					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
+					report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
 				}
 			} else {
 				//Find this relationship to inactivate / delete
@@ -94,7 +93,7 @@ public class AddRemoveParents extends BatchFix implements ScriptConstants{
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.isActive()) {
-			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify concept - is inactive");
+			report((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify concept - is inactive");
 			return null;
 		}
 		if (lineItems[2].equals(ACTIVE_FLAG)) {
@@ -106,7 +105,7 @@ public class AddRemoveParents extends BatchFix implements ScriptConstants{
 			}
 			Concept target = gl.getConcept(lineItems[1]);
 			if (!target.isActive()) {
-				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify parent, concept is inactive: " + target);
+				report((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify parent, concept is inactive: " + target);
 				return null;
 			}
 			Relationship r = new Relationship (c, IS_A, target, UNGROUPED);

@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -17,7 +16,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 
 	Map<String, String> langToRefsetMap = new HashMap<>();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GenerateMSStarterArchive delta = new GenerateMSStarterArchive();
 		try {
 			delta.config();
@@ -64,7 +63,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 			try {
 				outputRF2(thisConcept);
 			} catch (TermServerScriptException e) {
-				report (thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report(thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 	}

@@ -1,11 +1,11 @@
 package org.ihtsdo.termserver.scripting.reports.managed_service;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -14,32 +14,27 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ConceptsMissingMultiLanguageTranslations extends TermServerReport implements ReportClass {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsMissingMultiLanguageTranslations.class);
-
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
-	//private static final String INCLUDE_UNTRANSLATED_CONCEPTS = "Include untranslated concepts";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
+
 	Set<String> expectedLanguages = new HashSet<>();
 	boolean includeIntConcepts = true;
 	boolean includeUntranslatedConcepts = false;
 	boolean includeInactiveConcepts = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(EXTENSION_CONCEPTS_ONLY, "false");
 		//params.put(INCLUDE_UNTRANSLATED_CONCEPTS, "false");
 		params.put(INCLUDE_INACTIVE_CONCEPTS, "false");
-		TermServerReport.run(ConceptsMissingMultiLanguageTranslations.class, args, params);
+		TermServerScript.run(ConceptsMissingMultiLanguageTranslations.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+		ReportSheetManager.setTargetFolderId("1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"); //Managed Service
 		getArchiveManager().setRunIntegrityChecks(false);
 		subsetECL = run.getParamValue(ECL);
 		includeIntConcepts = !run.getParamBoolean(EXTENSION_CONCEPTS_ONLY);
@@ -51,7 +46,8 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 			throw new TermServerScriptException("Concepts Missing Translations report cannot be run against MAIN");
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		if (project.getMetadata() != null && project.getMetadata().getRequiredLanguageRefsets() != null) {
 			expectedLanguages = project.getMetadata().getLangLangRefsetMapping().keySet();
@@ -94,7 +90,8 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
@@ -108,7 +105,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 			missingLanguages.removeAll(getLanguages(c, false));
 			if (missingLanguages.size() > 0) {
 				String missLangStr = String.join(", ", missingLanguages);
-				report (c, missLangStr, gl.getConcept(c.getModuleId()).toStringPref());
+				report(c, missLangStr, gl.getConcept(c.getModuleId()).toStringPref());
 				countIssue(c);
 			}
 		}

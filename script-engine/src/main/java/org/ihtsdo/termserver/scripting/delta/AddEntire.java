@@ -1,8 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,13 +19,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * - with associated Acceptability - adding the word "Entire" and
  * inactivate the existing terms.
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AddEntire extends DeltaGenerator {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(AddEntire.class);
 
 	enum MODE { FSN_PT, SYN };
 	private MODE mode = null;
@@ -40,7 +32,7 @@ public class AddEntire extends DeltaGenerator {
 	
 	static final String ENTIRE = "Entire";
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AddEntire delta = new AddEntire();
 		try {
 			delta.init(args);
@@ -76,7 +68,7 @@ public class AddEntire extends DeltaGenerator {
 		for (Component thisComponent : uniqueComponents) {
 			Concept thisConcept = (Concept)thisComponent;
 			if (!thisConcept.isActive()) {
-				report (thisConcept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
+				report(thisConcept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 				
 			}
 			try {
@@ -88,7 +80,7 @@ public class AddEntire extends DeltaGenerator {
 				}
 
 			} catch (TermServerScriptException e) {
-				report (thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report(thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return allConcepts;
@@ -119,7 +111,7 @@ public class AddEntire extends DeltaGenerator {
 
 		//We only work with active terms
 		if (d == null) {
-			report (c,d,Severity.HIGH, ReportActionType.VALIDATION_ERROR, "No active " + (isFSN?"FSN":"SYN") + " found for concept");
+			report(c,d,Severity.HIGH, ReportActionType.VALIDATION_ERROR, "No active " + (isFSN?"FSN":"SYN") + " found for concept");
 			return;
 		}
 		
@@ -132,7 +124,7 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Do we in fact need to do anything?
 		if (newTermParts[0].toLowerCase().contains(ENTIRE.toLowerCase())) {
-			report (c,d,Severity.NONE, ReportActionType.NO_CHANGE, "Term already contains 'entire'");
+			report(c,d,Severity.NONE, ReportActionType.NO_CHANGE, "Term already contains 'entire'");
 			return;
 		}
 		
@@ -159,7 +151,7 @@ public class AddEntire extends DeltaGenerator {
 		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate an already inactive description";
-			report (c,d,Severity.HIGH, ReportActionType.API_ERROR, msg);
+			report(c,d,Severity.HIGH, ReportActionType.API_ERROR, msg);
 			return;
 		}
 		
@@ -169,7 +161,7 @@ public class AddEntire extends DeltaGenerator {
 			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
 				//Have we already found a duplicate?
 				if (duplicate != null) {
-					report (c,duplicate,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Multiple matching active duplicates found!");
+					report(c,duplicate,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Multiple matching active duplicates found!");
 				}
 				duplicate = thisDesc;
 			}
@@ -180,7 +172,7 @@ public class AddEntire extends DeltaGenerator {
 				if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
 					//Have we already found a duplicate?
 					if (duplicate != null) {
-						report (c,duplicate,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Multiple matching inactivate duplicates found!");
+						report(c,duplicate,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Multiple matching inactivate duplicates found!");
 					}
 					duplicate = thisDesc;
 				}
@@ -193,7 +185,7 @@ public class AddEntire extends DeltaGenerator {
 			replacement.setTerm(newTerm);
 			replacement.setCaseSignificance(newCaseSignificance);
 			c.addDescription(replacement);
-			report (c,replacement,Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Added new Description");
+			report(c,replacement,Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Added new Description");
 			outputRF2(replacement);
 		} else {
 			Severity severity = Severity.MEDIUM;
@@ -216,11 +208,11 @@ public class AddEntire extends DeltaGenerator {
 				duplicateMsg="No changes needed to duplicate - " + duplicate;
 				action = ReportActionType.NO_CHANGE;
 			}
-			report (c,d,severity,action, duplicateMsg);
+			report(c,d,severity,action, duplicateMsg);
 			outputRF2(duplicate);
 		}
 		d.setActive(false);
-		report (c,d,Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
+		report(c,d,Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
 		outputRF2(d);
 	}
 

@@ -1,14 +1,7 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -33,7 +26,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	enum KnownTranslations { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		GenerateTranslation delta = new GenerateTranslation();
 		try {
 			delta.config();
@@ -85,7 +78,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			} catch (TermServerScriptException e) {
 				//Only catching TermServerScript exception because we want unchecked RuntimeExceptions eg
 				//NullPointer and TotalCatastrophicFailure to stop processing
-				report ((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return null;
@@ -113,7 +106,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		if (!concept.isActive()) {
 			String reason = concept.getInactivationIndicator() != null ? concept.getInactivationIndicator().toString() : "Reason unknown.";
 			String assoc = getPrettyHistoricalAssociation(concept);
-			report (concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Warning! Concept is inactive. " + reason + ", " + assoc);
+			report(concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Warning! Concept is inactive. " + reason + ", " + assoc);
 		}
 		
 		if (expectedUSTerm != null) {
@@ -124,7 +117,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				//Check if we're perhaps using the FSN (with or without the semantic tag)
 				String fsnPart = SnomedUtils.deconstructFSN(concept.getFsn())[0];
 				if (!concept.getFsn().equals(expectedUSTerm) && !fsnPart.equals(expectedUSTerm)) {
-					report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: '" + expectedUSTerm + "'");
+					report(concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: '" + expectedUSTerm + "'");
 					return;
 				}
 			}
@@ -134,7 +127,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		/*if (currentState.hasTerm(newState.getNewPreferredTerm())) {
 			Description d = currentState.findTerm(newState.getNewPreferredTerm());
 			promoteTerm (d);
-			report (currentState, d, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Promoted langrefset on existing term: " + d);
+			report(currentState, d, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Promoted langrefset on existing term: " + d);
 			outputRF2(d);
 		} else {*/
 		
@@ -173,7 +166,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		concept.addDescription(newDescription);
 		
 		String cs = " (" + newDescription.getLang() + " " +  descAccept + " - "+ SnomedUtils.translateCaseSignificanceFromEnum(newDescription.getCaseSignificance()) + ")";
-		report (concept, newDescription, severity, ReportActionType.DESCRIPTION_ADDED, msg +  cs + ": " + newDescription.getTerm());
+		report(concept, newDescription, severity, ReportActionType.DESCRIPTION_ADDED, msg +  cs + ": " + newDescription.getTerm());
 	}
 
 	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {

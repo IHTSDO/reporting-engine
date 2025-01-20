@@ -32,7 +32,7 @@ public class ContainedInSubhierarchies extends TermServerReport {
 	int contained = 0;
 	int notContained = 0;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ContainedInSubhierarchies report = new ContainedInSubhierarchies();
 		try {
 			report.additionalReportColumns = "FSN, Contained by";
@@ -91,17 +91,17 @@ public class ContainedInSubhierarchies extends TermServerReport {
 				String semtag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				incrementSummaryInformation("Not contained: " + semtag);
 				notContained++;
-				report (c, "");
+				report(c, "");
 			} else {
 				contained++;
-				report (c, isContainedIn);
+				report(c, isContainedIn);
 			}
 		}
 		
 		//Now work out our stats
 		float notClinicalFindingPerc = (notClinicalFinding * 100.0f) / conceptsOfInterest.size();
 		LOGGER.info (df.format(notClinicalFindingPerc) + "% of starter set is not clinical finding");
-		LOGGER.info ("Of the concepts that ARE clinical findings:");
+		LOGGER.info("Of the concepts that ARE clinical findings:");
 		int clinicalFindingCount = conceptsOfInterest.size() - notClinicalFinding;
 		float containedPerc =  (contained * 100.0f) / clinicalFindingCount;
 		float notContainedPerc =  (notContained * 100.0f) / clinicalFindingCount;

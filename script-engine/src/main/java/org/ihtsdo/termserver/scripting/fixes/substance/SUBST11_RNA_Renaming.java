@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.substance;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -32,10 +31,10 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		SUBST11_RNA_Renaming fix = new SUBST11_RNA_Renaming(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.populateEditPanel = true;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
@@ -95,7 +94,7 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 			//Are we being quiet?  Report this even so as it won't make the 2nd pass
 			Boolean quiet = this.quiet;
 			setQuiet(false);
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Could not determine organism", term);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Could not determine organism", term);
 			setQuiet(quiet);
 			return NO_CHANGES_MADE;
 		}
@@ -206,12 +205,12 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 			if (remodel(null, c.cloneWithIds()) > 0) {
 				conceptsToProcess.add(c);
 			} else {
-				report ((Task)null, c, Severity.NONE, ReportActionType.NO_CHANGE, "Correctly modelled", c.getPreferredSynonym());
+				report((Task)null, c, Severity.NONE, ReportActionType.NO_CHANGE, "Correctly modelled", c.getPreferredSynonym());
 			}
 				
 		}
 		setQuiet(false);
-		LOGGER.info ("Remodelling required for " + conceptsToProcess.size() + " concepts");
+		LOGGER.info("Remodelling required for " + conceptsToProcess.size() + " concepts");
 		return asComponents(conceptsToProcess);
 	}
 

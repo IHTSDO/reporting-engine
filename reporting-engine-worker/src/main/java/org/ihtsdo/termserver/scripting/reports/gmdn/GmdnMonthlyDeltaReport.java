@@ -20,9 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,7 +78,7 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
     @Override
     public void init(JobRun run) throws TermServerScriptException {
         LOGGER.info("Initialising {}", REPORT_NAME);
-        ReportSheetManager.targetFolderId = REPORT_FOLDER_ID;
+        ReportSheetManager.setTargetFolderId(REPORT_FOLDER_ID);
         currentMonthName = DateUtils.getCurrentMonthName();
 
         //Are we running in a Spring context?

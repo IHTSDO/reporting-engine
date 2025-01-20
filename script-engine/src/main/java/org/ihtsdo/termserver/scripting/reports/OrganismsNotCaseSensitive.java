@@ -2,15 +2,10 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 public class OrganismsNotCaseSensitive extends TermServerReport {
@@ -43,18 +38,17 @@ public class OrganismsNotCaseSensitive extends TermServerReport {
 			"Merozoite", "Macrogametocyte", "Elastase-producing", "Hepatitis"
 	);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		OrganismsNotCaseSensitive report = new OrganismsNotCaseSensitive();
 		try {
-			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
+			ReportSheetManager.setTargetFolderId("1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d");
 			report.additionalReportColumns = "FSN, SemanticTag, ";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
 			report.reportOrganismsInSubstances();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}

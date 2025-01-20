@@ -29,7 +29,7 @@ public class SimpleConceptList extends TermServerReport implements ReportClass {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
 	}

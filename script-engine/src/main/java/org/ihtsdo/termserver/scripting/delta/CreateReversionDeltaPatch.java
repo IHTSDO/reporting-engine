@@ -91,7 +91,7 @@ public class CreateReversionDeltaPatch extends DeltaGenerator {
 	}
 
 	private void loadComponentsToProcess() throws TermServerScriptException {
-		LOGGER.debug ("Loading {}", getInputFile() );
+		LOGGER.debug("Loading {}", getInputFile() );
 		try {
 			componentIds = Files.readLines(getInputFile(), StandardCharsets.UTF_8).toArray(new String[0]);
 		} catch (IOException e) {

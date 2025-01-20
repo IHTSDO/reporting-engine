@@ -47,7 +47,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 	int overlapTab;
 	int currentTab;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DrugSheetsAnalysis report = new DrugSheetsAnalysis();
 		try {
 			pattern = Pattern.compile(regex);
@@ -57,13 +57,13 @@ public class DrugSheetsAnalysis extends TermServerReport {
 			report.analyzeDrugSheets();
 			report.calculateOverlap();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
 	}
 
+	@Override
 	public void init(String[] args) throws TermServerScriptException {
 		drugSheets = new ArrayList<>();
 		fileLineMap = new HashMap<>();
@@ -78,9 +78,10 @@ public class DrugSheetsAnalysis extends TermServerReport {
 		}
 		super.init(args);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1H7T_dqmvQ-zaaRtfrd-T3QCUMD7_K8st";
+		ReportSheetManager.setTargetFolderId("1H7T_dqmvQ-zaaRtfrd-T3QCUMD7_K8st");
 		List<String> tabNames = new ArrayList<>();
 		List<String> columnHeadings = new ArrayList<>();
 		//How many files are we reporting on?
@@ -132,7 +133,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 							}
 						}
 						if (bestMatch != null) {
-							report (overlapTab, outer.getKey().getName(), outerLine.sourceText, bestScore.name(), bestMatch.sourceText, inner.getKey().getName());
+							report(overlapTab, outer.getKey().getName(), outerLine.sourceText, bestScore.name(), bestMatch.sourceText, inner.getKey().getName());
 						}
 					}
 				}
@@ -226,7 +227,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 			}
 		} catch (Exception e) {
 			String msg = "Failed to parse " + matchName + " in " + ingredientSource;
-			report (currentTab, drugLine.sourceText, msg);
+			report(currentTab, drugLine.sourceText, msg);
 			return;
 		}
 		
@@ -360,7 +361,7 @@ public class DrugSheetsAnalysis extends TermServerReport {
 
 	private void noteRequirement(String elementType, String conceptName, String source, File sourceFile) throws TermServerScriptException {
 		if (!requiredConcepts.contains(conceptName)) {
-			report (conceptsRequriedTab, elementType, conceptName, source, sourceFile.getName());
+			report(conceptsRequriedTab, elementType, conceptName, source, sourceFile.getName());
 			requiredConcepts.add(conceptName);
 		}
 	}

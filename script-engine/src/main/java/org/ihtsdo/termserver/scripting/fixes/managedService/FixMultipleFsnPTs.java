@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.managedService;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,17 +27,14 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FixMultipleFsnPTs.class);
 
-	Set<Description> duplicateDescriptions = new HashSet<>();
-	
 	protected FixMultipleFsnPTs(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FixMultipleFsnPTs fix = new FixMultipleFsnPTs(null);
 		try {
-			ReportSheetManager.targetFolderId = "1u6YLvJWX2GwAVJazFqJeKcVTwBbw96cc";  //MS Ad-Hoc Batch fixes
-			//fix.runStandAlone = false;  //Was causing issues with historical associations not being set
+			ReportSheetManager.setTargetFolderId("1u6YLvJWX2GwAVJazFqJeKcVTwBbw96cc");  //MS Ad-Hoc Batch fixes
 			fix.selfDetermining = true;
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.init(args);
@@ -142,7 +138,7 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		
 		nextConcept:
@@ -166,7 +162,7 @@ public class FixMultipleFsnPTs extends BatchFix implements ScriptConstants{
 			}
 		}
 		
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

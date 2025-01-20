@@ -12,7 +12,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -35,10 +34,6 @@ public class PublishSctids extends TermServerReport {
 	private Map<String, Set<String>> newSctidsByNamespace = new HashMap<>();
 	private Map<String, Set<String>> oldSctidsByNamespace = new HashMap<>();
 
-	private Set<Long> missingIds = new HashSet<>();
-	private Map<String, Set<Long>> wrongStatusMap = new HashMap<>();
-	private int correctlyRecorded = 0;
-
 	private Set<String> namespaces = new HashSet<>();
 	private String targetET = "20231130";
 	private int batchSize = 100;
@@ -47,12 +42,10 @@ public class PublishSctids extends TermServerReport {
 
 	private CisClient cisClient;
 	
-	private static String today = new SimpleDateFormat("yyyy-MM-dd HH:MM:ss").format(new Date());
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		PublishSctids report = new PublishSctids();
 		try {
-			report.summaryTabIdx = PRIMARY_REPORT;
 			report.localClientsRequired = false;
 			report.summaryTabIdx = PRIMARY_REPORT;
 			report.init(args);
@@ -79,6 +72,7 @@ public class PublishSctids extends TermServerReport {
 		}
 	}
 
+	@Override
 	public void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		String url = "https://cis.ihtsdotools.org/";
@@ -236,12 +230,12 @@ public class PublishSctids extends TermServerReport {
 				}
 			}
 		} catch (IOException e) {
-			LOGGER.error("Failed to process " + projectName);
+			LOGGER.error("Failed to process {}", projectName, e);
 		}
 	}
 
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe";  // Technical Specialist
+		ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe");  // Technical Specialist
 		String[] columnHeadings = new String[] {	"Summary Item, Detail, ",
 													"Request, JobId, Response,  , , ",
 													"SCTID, JobId, Status"};

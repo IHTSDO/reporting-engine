@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -19,17 +18,13 @@ import org.ihtsdo.termserver.scripting.util.*;
 	Makes modifications to terms, driven by an input CSV file
 	See DRUGS-291
 */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
 
 	protected DrugsReTerming(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DrugsReTerming fix = new DrugsReTerming(null);
 		try {
 			fix.init(args);

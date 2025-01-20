@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -10,8 +9,6 @@ import org.ihtsdo.termserver.scripting.GraphLoader.DuplicatePair;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +21,10 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DuplicateLangRefsetsFix fix = new DuplicateLangRefsetsFix(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
 			fix.runStandAlone = false;  //Need to look up the project for MS extensions
@@ -49,21 +46,21 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 			for (DuplicatePair dups : gl.getDuplicateLangRefsetEntriesMap().get(c)) {
 				LangRefsetEntry l1 = (LangRefsetEntry)dups.getKeep();
 				LangRefsetEntry l2 = (LangRefsetEntry)dups.getInactivate();
-				report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l2.toString(true));
+				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l2.toString(true));
 				if (StringUtils.isEmpty(l2.getEffectiveTime())) {
 					changesMade += deleteRefsetMember(t, l2.getId());
 					//What if l1 was made inactive?  Need to reactivate
 					if (!l1.isActive() && l2.isActive()) {
 						l1.setActive(true);
 						changesMade += updateRefsetMember(t, l1, info);
-						report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REACTIVATED, l1.toString(true));
+						report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REACTIVATED, l1.toString(true));
 					} else {
-						report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
+						report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
 					}
 				} else {
 					l2.setActive(false);
 					changesMade += updateRefsetMember(t, l2, info);
-					report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
+					report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
 				}
 			}
 		} catch (Exception e) {
@@ -74,7 +71,7 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 	
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		return new ArrayList<>(gl.getDuplicateLangRefsetEntriesMap().keySet());
 	}
 

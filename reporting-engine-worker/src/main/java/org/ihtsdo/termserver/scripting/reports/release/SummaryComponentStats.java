@@ -14,8 +14,8 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -126,12 +126,12 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	protected static Set<String> refsetsToDebugToFile = new HashSet<>();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20241201T120000Z.zip");
 		// REPORT_OUTPUT_TYPES, "S3" REPORT_FORMAT_TYPE, "JSON"
-		TermServerReport.run(SummaryComponentStats.class, args, params);
+		TermServerScript.run(SummaryComponentStats.class, args, params);
 	}
 
 	@Override
@@ -159,7 +159,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
+		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		//Reset this flag for Editions as we might run against the same project so not reset as expected.
 		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
 		summaryDataMap = new HashMap<>();
@@ -177,6 +177,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		super.init(run);
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
@@ -193,12 +194,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return columnHeadings;
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
-		LOGGER.info ("Loading Previous Data");
+		LOGGER.info("Loading Previous Data");
 		loadData(prevRelease);
-		LOGGER.info ("Analysing Data");
+		LOGGER.info("Analysing Data");
 		analyzeConcepts();
-		LOGGER.info ("Outputting Results");
+		LOGGER.info("Outputting Results");
 		outputResults();
 		
 		//Do we need to also produce a release summary file in S3?
@@ -209,13 +211,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				LOGGER.error("Failed to generate Release Summary File", e);
 			}
 		}
-		LOGGER.info ("Cleaning Up");
+		LOGGER.info("Cleaning Up");
 		prevData = null;
 		summaryDataMap = null;
 		refsetDataMap = null;
 		topLevelHierarchies = null;
 		System.gc();
-		LOGGER.info ("Complete");
+		LOGGER.info("Complete");
 	}
 
 	@Override
@@ -229,7 +231,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeConcepts() throws TermServerScriptException {
-		LOGGER.info ("Analysing concepts");
+		LOGGER.info("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
 			HistoricData datum = prevData.get(c.getConceptId());

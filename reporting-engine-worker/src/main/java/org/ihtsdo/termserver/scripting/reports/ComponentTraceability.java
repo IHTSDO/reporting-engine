@@ -6,13 +6,13 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.UnknownComponent;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.service.MultiDetailTraceabilityService;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,15 +28,15 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	TraceabilityService traceabilityService;
 	List<String> componentIds;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(COMPONENT_IDS,
 				"663114025,663113020,734078021,776663023");
-		TermServerReport.run(ComponentTraceability.class, args, params);
+		TermServerScript.run(ComponentTraceability.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		
 		if (!StringUtils.isEmpty(run.getParamValue(COMPONENT_IDS))) {
 			componentIds = Arrays.stream(run.getMandatoryParamValue(COMPONENT_IDS).split(",",-1))
@@ -93,7 +93,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 			countIssue(null, rowsReported);
 		}
 		traceabilityService.tidyUp();
-		LOGGER.info ("Job complete");
+		LOGGER.info("Job complete");
 	}
 	
 }

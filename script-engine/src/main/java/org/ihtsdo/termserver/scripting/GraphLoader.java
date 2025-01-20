@@ -178,7 +178,7 @@ public class GraphLoader implements ScriptConstants {
 				characteristicType = SnomedUtils.translateCharacteristicType(lineItems[REL_IDX_CHARACTERISTICTYPEID]);
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
-					LOGGER.debug ("{} relationship {} referenced a non concept identifier: {}", characteristicType, lineItems[REL_IDX_ID], lineItems[REL_IDX_SOURCEID]);
+					LOGGER.debug("{} relationship {} referenced a non concept identifier: {}", characteristicType, lineItems[REL_IDX_ID], lineItems[REL_IDX_SOURCEID]);
 				}
 				//Dutch extension has phantom concept referenced in an inactive stated relationship
 				if (lineItems[REL_IDX_DESTINATIONID].equals("39451000146106")) {
@@ -1511,7 +1511,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 	
 	public TransitiveClosure generateTransativeClosure() {
-		LOGGER.info ("Calculating transative closure...");
+		LOGGER.info("Calculating transative closure...");
 		TransitiveClosure tc = new TransitiveClosure();
 		//For all active concepts, populate their ancestors into the TC
 		getAllConcepts().parallelStream().forEach(c->{

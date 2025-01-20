@@ -1,30 +1,24 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
  * Given a number of sub-hierarchies, find the highest concepts (with a count of descendants)
  * that are not contained by those sub hierarchies
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ConceptsNotAccountedFor extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsNotAccountedFor.class);
 
 	Set<Concept> accountedForHierarchies = new HashSet<>();
 	Set<Concept> accountedForHierarchiesExpanded = new HashSet<>();
@@ -35,24 +29,26 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	Concept[] co_occurrantTypeAttrb;
 	Concept[] complexTypeAttrbs;
 	
-	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE};
+	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		TermServerReport.run(ConceptsNotAccountedFor.class, args);
+	public static void main(String[] args) throws TermServerScriptException {
+		TermServerScript.run(ConceptsNotAccountedFor.class, null, args);
 	}
-	
+
+	@Override
 	public void init(JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+		ReportSheetManager.setTargetFolderId("1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"); //QI / Stats
 		additionalReportColumns="FSN, Descendants NOC, Already accounted, SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE";
 		run.setParameter(SUB_HIERARCHY, CLINICAL_FINDING.toString());
 		super.init(run);
 		getArchiveManager().setAllowStaleData(true);
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
-		List<String> lines = null;
+		List<String> lines;
 		try {
-			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to read " + getInputFile(), e);
 		}
@@ -85,6 +81,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 				gl.getConcept("363714003")  //|Interprets (attribute)|
 			};
 	}
+
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
@@ -98,6 +95,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		
 		//Work through all concepts in the hierarchy and work out if we've covered it or not
@@ -124,8 +122,8 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 			
 			int[] buckets = countTypes(descendants);
 			
-			if (descendants.size() > 0) {
-				report (c, descendants.size(), alreadyCounted, buckets);
+			if (!descendants.isEmpty()) {
+				report(c, descendants.size(), alreadyCounted, buckets);
 			}
 			alreadyReported.addAll(descendants);
 		}
@@ -139,18 +137,6 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		}
 		return counts;
 	}
-
-/*	private Set<Concept> findTemplateType(Set<Concept> concepts, TemplateType type) {
-		return concepts.stream()
-		.filter(c -> getTemplateType(c).equals(type))
-		.collect(Collectors.toSet());
-	}
-
-	private Set<Concept> findNoModel(Set<Concept> concepts) {
-		return concepts.stream()
-		.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
-		.collect(Collectors.toSet());
-	}*/
 
 	private Set<Concept> findHighestNotAccountedFor(Concept c) throws TermServerScriptException {
 		//Is this concept already accounted for?
@@ -180,7 +166,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		SnomedUtils.removeRedundancies(highestAncestors);
 		
 		//Did we find anything higher?
-		if (highestAncestors.size() > 0) {
+		if (!highestAncestors.isEmpty()) {
 			return highestAncestors;
 		} else {
 			return new HashSet<>(Collections.singletonList(c));

@@ -9,6 +9,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
@@ -21,7 +22,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,18 +55,20 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
-		TermServerReport.run(MP_MPF_Validation.class, args, params);
+		TermServerScript.run(MP_MPF_Validation.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Expected Result, Variance, Source, Further Details",
 				"Issue, Count"};
@@ -118,7 +120,8 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 				.withParameters(params)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		populateSummaryTab();
@@ -153,7 +156,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
-				report (c, issueStr);
+				report(c, issueStr);
 				continue;
 			}
 			
@@ -188,7 +191,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			//RP-175
 			validateAttributeRules(c);
 		}
-		LOGGER.info ("Drugs validation complete");
+		LOGGER.info("Drugs validation complete");
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -249,7 +252,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 				Concept ingredient = r.getTarget();
 				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
-						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
+						report(c, issueStr, ingredient, "is modification of", ir.getTarget());
 					}
 				}
 			}
@@ -263,10 +266,10 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr2);
 		Concept targetType = gl.getConcept("411116001 |Has manufactured dose form (attribute)|");
 		if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr2);
+			report(c, issueStr2);
 		}
 	}
 
@@ -282,7 +285,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			Set<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
-				report (concept, issueStr, data);
+				report(concept, issueStr, data);
 			} else {
 				for (Relationship statedAttribute : statedAttributes) {
 					boolean found = false;
@@ -295,7 +298,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 					if (!found) {
 						issue2Str = "Stated " + statedAttribute.getType() + " is not present in inferred view";
 						String data = statedAttribute.toString();
-						report (concept, issue2Str, data);
+						report(concept, issue2Str, data);
 					}
 				}
 			}
@@ -346,7 +349,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
-			LOGGER.debug ("Debug here - hit a null");
+			LOGGER.debug("Debug here - hit a null");
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
@@ -376,7 +379,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			int parentTagLevel = getTagLevel(p);
 			if (tagLevel < parentTagLevel) {
-				report (c, issueStr, p);
+				report(c, issueStr, p);
 			}
 		}
 		
@@ -393,12 +396,12 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 				} else if (isMPOnly(parent)) {
 					hasMpOnly = true;
 				} else {
-					report (c, issueStr6, parent);
+					report(c, issueStr6, parent);
 					break;
 				}
 			}
 			if (!hasMpfNotOnly && !hasMpOnly) {
-				report (c, issueStr6, getParentsJoinedStr(c));
+				report(c, issueStr6, getParentsJoinedStr(c));
 			}
 		} 
 		
@@ -444,7 +447,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			
 			if (!semTag.equals(requiredTag)) {
 				if (!anyParentAcceptable) {
-					report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+					report(c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
 				} else {
 					failuresToReport.add(new String[] {parent.getFsn(), " expected tag", requiredTag});
 				}
@@ -455,7 +458,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		
 		if (anyParentAcceptable && !anyAcceptableParentFound) {
 			for (String[] params : failuresToReport) {
-				report (c, issueStr, "parent", params);
+				report(c, issueStr, "parent", params);
 			}
 		}
 	}
@@ -465,7 +468,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
-				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
+				report(c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
 			}
 		}
 	}
@@ -477,11 +480,11 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
 			String differences = findDifferences (actual.getTerm(), expected.getTerm());
-			report (c, issueStr, expected.getTerm(), differences, actual);
+			report(c, issueStr, expected.getTerm(), differences, actual);
 		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
 			String detail = "Expected: " + SnomedUtils.translateCaseSignificanceFromEnum(expected.getCaseSignificance());
 			detail += ", Actual: " + SnomedUtils.translateCaseSignificanceFromEnum(actual.getCaseSignificance());
-			report (c, issue2Str, detail, actual);
+			report(c, issue2Str, detail, actual);
 		}
 	}
 
@@ -570,7 +573,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 					}
 				}
 				if (!allowed) {
-					report (c, issueStr, r);
+					report(c, issueStr, r);
 				}
 			}
 		}
@@ -581,7 +584,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isPreferred()) {
 					if (!d.getTerm().contains("containing") && !d.getTerm().contains("only")) {
-						report (c, issueStr, d);
+						report(c, issueStr, d);
 					}
 				}
 			}
@@ -591,7 +594,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		//In the case of a missing count of base, we will not have detected that this concept is MP/MPF Only
@@ -601,7 +604,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		if ((isMP(c)) && 
 				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 	
 	}
@@ -618,16 +621,16 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug ("Loading " + fileName );
+		LOGGER.debug("Loading {}", fileName);
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			boolean isHeader = true;

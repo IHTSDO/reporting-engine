@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,7 +10,6 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -29,11 +24,10 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProximatePrimitiveModellingPossibleReport.class);
 
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String publishedArchive;
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ProximatePrimitiveModellingPossibleReport report = new ProximatePrimitiveModellingPossibleReport();
 		try {
 			report.additionalReportColumns = " Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive";
@@ -41,8 +35,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			LOGGER.info("Report failed due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -91,10 +84,10 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 				}
 				report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1], alreadyModelledCorrectly, fdToTop, immedPrimParent, notImmediatePrimitive);
 			}
-			LOGGER.info ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
-			LOGGER.info ("\tFully defined to subhierarchy top: " + fdToTopCount);
-			LOGGER.info ("\tHas immediate primitive parent: " + immedPrimParentCount);
-			LOGGER.info ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
+			LOGGER.info("Already modelled correctly: {}", alreadyModelledCorrectlyCount);
+			LOGGER.info("Fully defined to subhierarchy top: {}", fdToTopCount);
+			LOGGER.info("Has immediate primitive parent: {}",  immedPrimParentCount);
+			LOGGER.info("Not-immediate primitive ancestor: {}",  notImmediatePrimitiveCount);
 		}
 		
 	}
@@ -111,16 +104,16 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 	}
 
 	private Set<Concept> filterActiveFD(Set<Concept> fullSet) {
-		Set <Concept> activeConcepts = new HashSet<Concept>();
+		Set <Concept> activeConcepts = new HashSet<>();
 		for (Concept thisConcept : fullSet ) {
-			if (thisConcept.isActive() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			if (thisConcept.isActiveSafely() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				activeConcepts.add(thisConcept);
 			}
 		}
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag, boolean one, boolean two, boolean three, boolean four) throws TermServerScriptException {
+	protected void report(Concept c, String semtag, boolean one, boolean two, boolean three, boolean four) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						semtag + QUOTE_COMMA +
@@ -130,7 +123,8 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 						four;
 		writeToReportFile(line);
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		

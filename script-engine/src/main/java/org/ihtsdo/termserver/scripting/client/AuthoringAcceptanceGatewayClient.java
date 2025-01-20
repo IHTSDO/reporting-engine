@@ -5,25 +5,20 @@ import java.io.IOException;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.termserver.scripting.domain.WhitelistItem;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.*;
-
 /**
  * Client can either load a template from the template service, or from a local resource
  */
 public class AuthoringAcceptanceGatewayClient {
-	private static String AAG = "/authoring-acceptance-gateway/";
+	private static final String AAG = "/authoring-acceptance-gateway/";
 	
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
-	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
 	
 	public WhitelistItem createWhitelistItem (WhitelistItem item) throws IOException, TermServerScriptException {

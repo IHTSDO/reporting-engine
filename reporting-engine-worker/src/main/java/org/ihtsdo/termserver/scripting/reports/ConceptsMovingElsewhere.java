@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -9,6 +8,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -32,14 +32,14 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 	private String thisEffectiveTime = null;
 	private int missingIndicatorCount = 0;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_BETA_20210731T120000Z.zip");
-		TermServerReport.run(ConceptsMovingElsewhere.class, args, params);
+		TermServerScript.run(ConceptsMovingElsewhere.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release Validation
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
 		runStandAlone = false; //We need a proper path lookup for MS projects
 		
 		super.init(run);
@@ -65,7 +65,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 		knownNamespaceExtensionMap.put(gl.getConcept("370137002 |Extension Namespace {1000000}"), "UK Extension");
 		if (loadPublishedPackage) {
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
-			LOGGER.info ("Detected this effective time as " + thisEffectiveTime);
+			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
 		}
 	}
 	
@@ -83,20 +83,21 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> concepts = StringUtils.isEmpty(subsetECL) ? gl.getAllConcepts() : findConcepts(subsetECL);
 		for (Concept c : concepts) {
 			if (!c.isActive() && inScope(c)) {
 				Set<String> movedToSet = c.getAssociationTargets().getMovedTo();
 				if (movedToSet.isEmpty() || movedToSet.size() > 1) {
-					report (c, "Unexpected number of movedTo targets: " + movedToSet.size());
+					report(c, "Unexpected number of movedTo targets: " + movedToSet.size());
 					continue;
 				}
 				Concept movedTo = gl.getConcept(movedToSet.iterator().next());
 				//Do we know where we're moving to?
 				String extension = knownNamespaceExtensionMap.get(movedTo);
-				report (c, extension, movedTo);
+				report(c, extension, movedTo);
 			}
 		}
 		populateSummaryTab();
@@ -127,10 +128,10 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 	
 
 	
-	protected void report (Concept c, String namespace, Concept movedTo) throws TermServerScriptException {
+	protected void report(Concept c, String namespace, Concept movedTo) throws TermServerScriptException {
 		//2nd detail is the issue
 		moveSummaryMap.merge(movedTo, 1, Integer::sum);
 		countIssue(c);
-		super.report (SECONDARY_REPORT, c, c.getEffectiveTime(), namespace, movedTo);
+		super.report(SECONDARY_REPORT, c, c.getEffectiveTime(), namespace, movedTo);
 	}
 }

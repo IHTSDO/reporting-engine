@@ -1,27 +1,19 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 
 import org.slf4j.Logger;
@@ -32,12 +24,11 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VaccineValidation.class);
 
 	private List<Concept> allDrugs;
-	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
+	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
 	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
-	
 
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
@@ -50,18 +41,20 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	TermGenerator termGenerator = new VaccineTermGenerator(this);
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "false");
-		TermServerReport.run(VaccineValidation.class, args, params);
+		TermServerScript.run(VaccineValidation.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
@@ -99,7 +92,8 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				.withParameters(params)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
@@ -110,7 +104,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	private void validateDrugsModeling() throws TermServerScriptException {
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		double conceptsConsidered = 0;
-		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
 		for (Concept c : allDrugs) {
 			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
 				continue;
@@ -124,25 +117,21 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			
 			double percComplete = (conceptsConsidered++/allDrugs.size())*100;
 			if (conceptsConsidered%4000==0) {
-				LOGGER.info("Percentage Complete " + (int)percComplete);
+				LOGGER.info("Percentage Complete {}", (int)percComplete);
 			}
-			
-			/*if (c.getId().equals("714209004")) {
-				LOGGER.debug ("here");
-			}*/
 
 			if (isCD(c) || isMPF(c) || isMPFOnly(c)) {
 				String issueStr = "Vaccines should only exist at MP/MPO level";
 				initialiseSummaryInformation(issueStr);
-				report (c, issueStr);
+				report(c, issueStr);
 				continue;
 			}
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
-			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
-				report (c, issueStr);
+				report(c, issueStr);
 				continue;
 			}
 
@@ -185,7 +174,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			validateAttributeRules(c);
 			
 		}
-		LOGGER.info ("Drugs validation complete");
+		LOGGER.info("Drugs validation complete");
 	}
 
 	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
@@ -197,7 +186,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				Concept ingredient = r.getTarget();
 				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
-						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
+						report(c, issueStr, ingredient, "is modification of", ir.getTarget());
 					}
 				}
 			}
@@ -237,7 +226,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			}
 		}
 		
-		if (inferredAttribs.size() > 0) {
+		if (!inferredAttribs.isEmpty()) {
 			report(c, issueStr, inferredAttribs.iterator().next());
 		}
 	}
@@ -254,7 +243,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			}
 		}
 		rels.removeAll(forRemoval);
-		return forRemoval.size() > 0;
+		return !forRemoval.isEmpty();
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -279,7 +268,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 		
 		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
+				.map(Map.Entry::getValue)
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
@@ -291,10 +280,10 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr2);
 		Concept targetType = gl.getConcept("411116001 |Has manufactured dose form (attribute)|");
 		if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr2);
+			report(c, issueStr2);
 		}
 	}
 
@@ -330,7 +319,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 						if (badWord.equals("+") && isPlusException(term)) {
 							continue;
 						}
-						report (concept, issueStr, d.toString());
+						report(concept, issueStr, d.toString());
 						return;
 					}
 				}
@@ -341,7 +330,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	private boolean isPlusException(String term) {
 		//Various rules that allow a + to exist next to other characters
 		if (term.contains("^+") ||
-			term.contains("+)") ||
 			term.contains("+)") ||
 			term.contains("+]") ||
 			term.contains("(+")) {
@@ -362,7 +350,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			Set<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
-				report (concept, issueStr, data);
+				report(concept, issueStr, data);
 			} else {
 				for (Relationship statedAttribute : statedAttributes) {
 					boolean found = false;
@@ -375,19 +363,13 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 					if (!found) {
 						issue2Str = "Stated " + statedAttribute.getType() + " is not present in inferred view";
 						String data = statedAttribute.toString();
-						report (concept, issue2Str, data);
+						report(concept, issue2Str, data);
 					}
 				}
 			}
 		}
 	}
 
-
-
-	private Concept getMDF(Concept concept) {
-		return getMDF(concept, false);
-	}
-	
 	private Concept getMDF(Concept concept, boolean allowNull) {
 		RelationshipGroup ungrouped = concept.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED);
 		return ungrouped == null ? null : ungrouped.getValueForType(HAS_MANUFACTURED_DOSE_FORM, allowNull);
@@ -410,7 +392,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
-			LOGGER.debug ("Debug here - hit a null");
+			LOGGER.debug("Debug here - hit a null");
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
@@ -427,11 +409,11 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
 			String differences = findDifferences (actual.getTerm(), expected.getTerm());
-			report (c, issueStr, expected.getTerm(), differences, actual);
+			report(c, issueStr, expected.getTerm(), differences, actual);
 		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
 			String detail = "Expected: " + SnomedUtils.translateCaseSignificanceFromEnum(expected.getCaseSignificance());
 			detail += ", Actual: " + SnomedUtils.translateCaseSignificanceFromEnum(actual.getCaseSignificance());
-			report (c, issue2Str, detail, actual);
+			report(c, issue2Str, detail, actual);
 		}
 	}
 
@@ -466,7 +448,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		String issueStr = "Multiple " + charType + " instances of active ingredient";
 		initialiseSummary(issueStr);
 		
-		Set<Concept> valuesEncountered = new HashSet<Concept>();
+		Set<Concept> valuesEncountered = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, activeIngredient, ActiveState.ACTIVE)) {
 			//Have we seen this value for the target attribute type before?
 			Concept target = r.getTarget();
@@ -476,77 +458,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			valuesEncountered.add(target);
 		}
 	}
-	
-	private int checkForInferredGroupsNotStated(Concept c) throws TermServerScriptException {
-		String issueStr = "Inferred group not stated";
-		initialiseSummary(issueStr);
-		
-		RelationshipGroup unmatchedGroup = null;
-		Concept playsRole = gl.getConcept("766939001 |Plays role (attribute)|");
-		//Work through all inferred groups and see if they're subsumed by a stated group
-		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
-		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
-		
-		nextGroup:
-		for (RelationshipGroup inferredGroup : inferredGroups) {
-			//We expect "Plays Role" to be inherited, so filter those out 
-			inferredGroup = filter(playsRole, inferredGroup);
-			//Can we find a matching (or less specific but otherwise matching) stated group?
-			for (RelationshipGroup statedGroup : statedGroups) {
-				statedGroup = filter(playsRole, statedGroup);
-				if (groupMatches(inferredGroup, statedGroup)) {
-					continue nextGroup;
-				}
-			}
-			//If we get to here, then an inferred group has not been matched by a stated one
-			unmatchedGroup = inferredGroup;
-		}
-		
-		if (unmatchedGroup != null) {
-			//Which inferred relationship is not also stated?
-			Set<Relationship> unmatched = new HashSet<>();
-			for (Relationship r : unmatchedGroup.getRelationships()) {
-				if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
-					unmatched.add(r);
-				}
-			}
-				String unmatchedStr = unmatched.stream().map(r -> r.toString(true)).collect(Collectors.joining(",\n"));
-				report (c, issueStr,
-						c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
-						c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP), unmatchedStr);
-		}
-		return unmatchedGroup == null ? 0 : 1;
-	}
-	
-	private RelationshipGroup filter(Concept filterType, RelationshipGroup group) {
-		RelationshipGroup filteredGroup = new RelationshipGroup(group.getGroupId());
-		for (Relationship r : group.getRelationships()) {
-			if (!r.getType().equals(filterType)) {
-				filteredGroup.addRelationship(r);
-			}
-		}
-		return filteredGroup;
-	}
 
-	private boolean groupMatches(RelationshipGroup a, RelationshipGroup b) {
-		if (a.getRelationships().size() != b.getRelationships().size()) {
-			return false;
-		}
-		//Can we find a match for every relationship? Ignore groupId
-		nextRelationship:
-		for (Relationship relA : a.getRelationships()) {
-			for (Relationship relB : b.getRelationships()) {
-				if (relA.getType().equals(relB.getType()) && 
-					relA.equalsTargetOrValue(relB)) {
-					continue nextRelationship;
-				}
-			}
-			//If we get here then we've failed to find a match for relA
-			return false;
-		}
-		return true;
-	}
-	
 	private void checkForSemTagViolations(Concept c) throws TermServerScriptException {
 		String issueStr =  "Has higher level semantic tag than parent";
 		String issueStr2 = "Has semantic tag incompatible with that of parent";
@@ -567,7 +479,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			int parentTagLevel = getTagLevel(p);
 			if (tagLevel < parentTagLevel) {
-				report (c, issueStr, p);
+				report(c, issueStr, p);
 			}
 		}
 		
@@ -584,12 +496,12 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				} else if (isMPOnly(parent)) {
 					hasMpOnly = true;
 				} else {
-					report (c, issueStr6, parent);
+					report(c, issueStr6, parent);
 					break;
 				}
 			}
 			if (!hasMpfNotOnly && !hasMpOnly) {
-				report (c, issueStr6, getParentsJoinedStr(c));
+				report(c, issueStr6, getParentsJoinedStr(c));
 			}
 		} 
 		
@@ -606,7 +518,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 
 	private String getParentsJoinedStr(Concept c) {
 		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
-				.map(p -> p.getFsn())
+				.map(Concept::getFsn)
 				.collect(Collectors.joining(", \n"));
 	}
 
@@ -615,7 +527,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
-				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
+				report(c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
 			}
 		}
 	}
@@ -635,7 +547,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			}
 			
 			if (!semTag.equals(requiredTag)) {
-				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+				report(c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
 			}
 		}
 	}
@@ -644,7 +556,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			for (Concept bannedParent : bannedMpParents) {
 				if (parent.equals(bannedParent)) {
-					report (c, issueStr, parent);
+					report(c, issueStr, parent);
 				}
 			}
 		}
@@ -673,7 +585,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			}
 		}
 
-		
 		issueStr = "Unexpected attribute type used";
 		if (isMP(c)) {
 			Concept[] allowedAttributes = mpValidAttributes;
@@ -686,7 +597,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 					}
 				}
 				if (!allowed) {
-					report (c, issueStr, r);
+					report(c, issueStr, r);
 				}
 			}
 		}
@@ -697,7 +608,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isPreferred()) {
 					if (!d.getTerm().contains("containing") && !d.getTerm().contains("only")) {
-						report (c, issueStr, d);
+						report(c, issueStr, d);
 					}
 				}
 			}
@@ -707,7 +618,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		//In the case of a missing count of base, we will not have detected that this concept is MP/MPF Only
@@ -717,20 +628,19 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		if ((isMP(c) || isMPF(c)) &&
 				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 
 	}
 
-	private int getTagLevel(Concept c) throws TermServerScriptException {
+	private int getTagLevel(Concept c) {
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (int i=0; i < semTagHiearchy.length; i++) {
 			if (semTagHiearchy[i].equals(semTag)) {
 				return i;
 			}
 		}
-		//throw new TermServerScriptException("Unable to find semantic tag level for: " + c);
-		LOGGER.error("Unable to find semantic tag level for: " + c, (Exception)null);
+		LOGGER.error("Unable to find semantic tag level for: {}", c, (Exception)null);
 		return NOT_SET;
 	}
 	
@@ -738,14 +648,12 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 	
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
-	
-
 
 	private boolean isMP(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 

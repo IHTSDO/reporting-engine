@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -28,10 +27,10 @@ public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DuplicateDescriptions fix = new DuplicateDescriptions(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-Hoc Batch Updates
 			//fix.runStandAlone = false;  //Was causing issues with historical associations not being set
 			fix.selfDetermining = true;
 			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
@@ -69,7 +68,7 @@ public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		Set<String> termsKnown = new HashSet<>();
 		
@@ -92,7 +91,7 @@ public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 			}
 		}
 		
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Set;
 
@@ -25,7 +24,7 @@ public class AttributeValueOutsideRange extends TermServerReport {
 	Set<Concept> acceptableRange;
 	Concept subHierarchy;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		AttributeValueOutsideRange report = new AttributeValueOutsideRange();
 		try {
 			report.additionalReportColumns = "CharacteristicType, Attribute, WhatWasInferred?";
@@ -54,10 +53,10 @@ public class AttributeValueOutsideRange extends TermServerReport {
 			//If our Attribute type is present, report if the value is outside of the range
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				if (!acceptableRange.contains(r.getTarget())) {
-					report (c, "Unacceptable target value", r.toString());
+					report(c, "Unacceptable target value", r.toString());
 					incrementSummaryInformation("Issues reported");
 				} else {
-					LOGGER.debug ("Acceptable: " + r);
+					LOGGER.debug("Acceptable: " + r);
 					incrementSummaryInformation(r.getTarget().toString());
 					incrementSummaryInformation("Attributes within range");
 				}

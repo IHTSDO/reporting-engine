@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -27,7 +26,7 @@ public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemoveFSNCounterparts fix = new RemoveFSNCounterparts(null);
 		try {
 			fix.populateEditPanel = false;
@@ -65,7 +64,7 @@ public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 			c.removeDescription(counterpart);
 			isDeleted = true;
 		}
-		report (t, c , Severity.LOW, isDeleted?ReportActionType.DESCRIPTION_DELETED:ReportActionType.DESCRIPTION_INACTIVATED, counterpart);
+		report(t, c , Severity.LOW, isDeleted?ReportActionType.DESCRIPTION_DELETED:ReportActionType.DESCRIPTION_INACTIVATED, counterpart);
 		return CHANGE_MADE;
 	}
 
@@ -76,7 +75,7 @@ public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendants(NOT_SET)) {

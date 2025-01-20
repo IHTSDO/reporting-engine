@@ -1,25 +1,19 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ConceptsWithParents extends TermServerReport implements ReportClass {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsWithParents.class);
 
 	private static final String TERMS_FILTER = "Filter for terms";
 	private static final String INDENT = "Indent";
@@ -34,21 +28,23 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	int deepestLevel = NOT_SET;
 	int highestLevel = NOT_SET;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, EXAMPLE_MAIN_PARAM_ECL);
 		params.put(TERMS_FILTER, EXAMPLE_MAIN_PARAM_TERMS_FILTER);
 		params.put(INDENT, "true");
-		TermServerReport.run(ConceptsWithParents.class, args, params);
+		TermServerScript.run(ConceptsWithParents.class, args, params);
 	}
 
+	@Override
 	public void init(JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		additionalReportColumns = "";
 		super.init(run);
 		indent = run.getMandatoryParamBoolean(INDENT);
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		determineConceptsOfInterest();
 		String columnStr = "";
@@ -111,7 +107,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 			//Report top level concepts first
 			topLevelConcepts = conceptsOfInterest.stream()
 					.filter(c -> c.getDepth() == highestLevel)
-					.collect(Collectors.toList());
+					.toList();
 
 			for (Concept concept : topLevelConcepts) {
 				if (indent) {

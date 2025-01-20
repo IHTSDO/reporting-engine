@@ -79,11 +79,11 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 				c.setModified();
 				rExt.setEffectiveTime(targetEffectiveTime);
 				String msg = "Shifted " + rExt + " to module " + rExt.getModuleId();
-				report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, msg, rExt.getId());
+				report(c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, msg, rExt.getId());
 			} else if (rExt.getModuleId().equals(SCTID_CORE_MODULE) && 
 					( !rExt.getEffectiveTime().endsWith("31") && !rExt.getEffectiveTime().endsWith("30"))) {
 				String msg = "Core relationship " + rExt + " has an odd effective time: " + rExt.getEffectiveTime();
-				report (c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+				report(c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			}
 		}
 		

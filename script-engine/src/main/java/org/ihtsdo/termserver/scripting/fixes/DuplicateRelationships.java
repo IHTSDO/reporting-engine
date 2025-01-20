@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,10 +26,10 @@ public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		DuplicateRelationships fix = new DuplicateRelationships(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.runStandAlone = false;  //Was causing issues with historical associations not being set
 			fix.selfDetermining = true;
 			fix.init(args);
@@ -78,7 +77,7 @@ public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 						changesMade += removeRelationship(t, c, duplicate);
 					}
 				}
-				report (t, c, Severity.LOW, ReportActionType.INFO, "Retained: " + champion);
+				report(t, c, Severity.LOW, ReportActionType.INFO, "Retained: " + champion);
 			}
 		}
 		return changesMade;
@@ -87,7 +86,7 @@ public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find concepts with two relationships the same triple + group, but different Ids
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		
 		//Code to protect us from SCTIDs changing between released and TS files is 
@@ -125,7 +124,7 @@ public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 			}
 		}
 		*/
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

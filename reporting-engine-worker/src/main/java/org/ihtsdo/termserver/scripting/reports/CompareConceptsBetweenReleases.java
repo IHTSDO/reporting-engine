@@ -131,7 +131,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 	}
 
 	protected void loadCurrentPosition() throws TermServerScriptException {
-		LOGGER.info ("Previous Data Generated, now loading 'current' position");
+		LOGGER.info("Previous Data Generated, now loading 'current' position");
 		ArchiveManager mgr = getArchiveManager();
 		//We cannot just add in the project delta because it might be that - for an extension
 		//the international edition has also been updated.   So recreate the whole snapshot
@@ -171,7 +171,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 	@Override
 	public void runJob() throws TermServerScriptException {
 		examineConcepts();
-		LOGGER.info ("Job complete");
+		LOGGER.info("Job complete");
 	}
 	
 	public void examineConcepts() throws TermServerScriptException { 
@@ -183,7 +183,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 			report(SECONDARY_REPORT, new ConceptState(c).toReportString());
 			for (Difference difference : previousState.findDifferences(c)) {
 				countIssue(c);
-				report (TERTIARY_REPORT, c, difference.fieldName, difference.before, difference.after);
+				report(TERTIARY_REPORT, c, difference.fieldName, difference.before, difference.after);
 			}
 		}
 	}

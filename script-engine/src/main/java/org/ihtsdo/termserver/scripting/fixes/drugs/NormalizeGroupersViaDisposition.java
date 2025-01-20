@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -26,7 +25,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NormalizeGroupersViaDisposition fix = new NormalizeGroupersViaDisposition(null);
 		try {
 			fix.inputFileHasHeaderRow = true;
@@ -60,9 +59,9 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 			if (countAttributes(loadedConcept) > 0) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changes++;
-				report (t, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
+				report(t, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
+				report(t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
 			}
 		}
 		
@@ -123,12 +122,12 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 				//Otherwise, we'll activate it
 				existingRels.iterator().next().setActive(true);
 				String msg = "Reactivating inactive relationshiop - active ingredient " + target;
-				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, msg, attributeCount);
+				report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, msg, attributeCount);
 			}
 		} else {
 			loadedConcept.addRelationship(targetRel);
 			String msg = "Added new active ingredient " + target;
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, attributeCount);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, attributeCount);
 		}
 		return 1;
 	}
@@ -177,7 +176,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 			Description d = Description.withDefaults(fsnPartner, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			d.setCaseSignificance(csOfX);
 			loadedConcept.addDescription(d);
-			report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, fsnPartner);
+			report(task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, fsnPartner);
 		}
 		return 1;
  	}
@@ -188,7 +187,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 		if (!fsnDesc.getTerm().equals(fsn)) {
 			replaceTerm (t, c, fsnDesc, fsn, AcceptabilityMode.PREFERRED_BOTH, cs);
 		} else {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "No change required to FSN");
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "No change required to FSN");
 		}
 	}
 
@@ -220,7 +219,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 				replaceTerm(t, c, usPTDesc, pt, AcceptabilityMode.PREFERRED_BOTH, cs);
 				gbPTDesc.setActive(false);
 				gbPTDesc.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replaced US/GB variants with single.  Please check");
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replaced US/GB variants with single.  Please check");
 			}
 		}
 	}
@@ -228,7 +227,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 	private void replaceTerm(Task t, Concept c, Description d, String newTerm, AcceptabilityMode mode, CaseSignificance cs) throws TermServerScriptException {
 		
 		if (SnomedUtils.termAlreadyExists(c, newTerm)) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Term already exists: " + newTerm);
+			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Term already exists: " + newTerm);
 			return;
 		}
 
@@ -252,7 +251,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements Scr
 		c.addDescription(newDesc);
 		newDesc.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(mode));
 		String msg = action + d + " in favour of '" + newTerm + "' (" + mode.toString().toLowerCase() + ")";
-		report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg, "", activeAcceptableCount);
+		report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg, "", activeAcceptableCount);
 	}
 
 	private Integer countAttributes(Concept c) {

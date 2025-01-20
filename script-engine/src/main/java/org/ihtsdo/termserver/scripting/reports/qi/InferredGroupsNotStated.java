@@ -1,15 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -37,7 +30,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 	Map<Concept, Integer> instancesPerSubHierarchy = new HashMap<>();
 	public boolean includeParents = true;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		InferredGroupsNotStated report = new InferredGroupsNotStated();
 		try {
 			report.additionalReportColumns = "SemTag, DefnStatus, statedAttribs, infAttribs, UnstatedGroup, ReasonableAncestors";
@@ -62,7 +55,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 		for (Concept hierarchy : ROOT_CONCEPT.getDescendants(4)) {
 			int hierarchySize = hierarchy.getDescendants(NOT_SET).size();
 			if (hierarchySize >= LARGE) {
-				LOGGER.debug ("Large hierarchy: " + hierarchy + " - " + hierarchySize);
+				LOGGER.debug("Large hierarchy: " + hierarchy + " - " + hierarchySize);
 				largeHierarchies.add(hierarchy);
 			}
 		}
@@ -117,7 +110,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 				String reasonableLevelStr = reasonableLevel.stream()
 						.map(a -> a.toString())
 						.collect (Collectors.joining(", "));
-				report (c, semTag, 
+				report(c, semTag,
 						c.getDefinitionStatus(),
 						statedAttributes,
 						inferredAttributes,
@@ -220,7 +213,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 
 	private void consolidateList(int minSize) {
 		//Remove any items that are too small and add the amount to the parents
-		LOGGER.debug ("Before consolidation size = " + instancesPerSubHierarchy.size());
+		LOGGER.debug("Before consolidation size = " + instancesPerSubHierarchy.size());
 		boolean consolidationMade = false;
 		do {
 			consolidationMade = false;
@@ -236,7 +229,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 				}
 			}
 		} while (consolidationMade);
-		LOGGER.debug ("After consolidation size = " + instancesPerSubHierarchy.size());
+		LOGGER.debug("After consolidation size = " + instancesPerSubHierarchy.size());
 	}
 
 }

@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,11 +59,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	protected String[] componentIdsToProcess = null; //If it's just a couple, no need for a file, just specify here.
 	protected String componentsToProcessEcl = null; // (<<64572001 |Disease|:116676008 |Associated morphology|=46360000 |Abnormal curvature|) {{ C moduleId = 890108001 }}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		// ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
 		try {
-			ReportSheetManager.targetFolderId = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
+			ReportSheetManager.setTargetFolderId("12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"); //Extract and Promote
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			//delta.sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
@@ -105,9 +104,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 	}
 
+	@Override
 	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
-		LOGGER.info ("Select an environment for live secondary checking ");
+		LOGGER.info("Select an environment for live secondary checking ");
 		for (int i=0; i < environments.length; i++) {
 			println("  " + i + ": " + environments[i]);
 		}
@@ -125,7 +125,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			secondaryConnection = createTSClient(url, authenticatedCookie);
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		knownReplacements.put(gl.getConcept("261231004|Local flap|"), gl.getConcept("256683004|Flap|"));
 		knownReplacements.put(gl.getConcept("367651003 |Malignant neoplasm of p, s, or u origin|"), gl.getConcept("1240414004 |Malignant neoplasm|"));
@@ -395,7 +396,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			int batchNum = 1;
 			while (!archiveBatches.isEmpty()) {
 				batchNum++;
-				LOGGER.info ("Processing archive batch {}", batchNum);
+				LOGGER.info("Processing archive batch {}", batchNum);
 				process(archiveBatches.remove());
 				createOutputArchive();
 				gl.setAllComponentsClean();
@@ -418,7 +419,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private List<Component> process(List<Component> componentsToProcess) throws TermServerScriptException {
 		incrementSummaryInformation("Concepts specified", componentsToProcess.size());
-		LOGGER.info ("Extracting specified concepts");
+		LOGGER.info("Extracting specified concepts");
 		for (Component thisComponent : componentsToProcess) {
 			extractComponent(thisComponent, componentsToProcess, true);
 		}

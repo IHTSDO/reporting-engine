@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -33,7 +32,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RevertCoreAxioms fix = new RevertCoreAxioms(null);
 		try {
 			fix.selfDetermining = true;
@@ -50,7 +49,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 	@Override
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
-		LOGGER.debug ("Processing " + c);
+		LOGGER.debug("Processing " + c);
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			if (!a.isActive() && StringUtils.isEmpty(a.getEffectiveTime())) {
 				RefsetMember currentMember = loadRefsetMember(a.getId());
@@ -69,7 +68,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 					throw new TermServerScriptException("No changed detectded at " + c);
 				}
 				updateRefsetMember(previousMember);
-				report (t, c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, currentMember.getId(), prev, current);
+				report(t, c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, currentMember.getId(), prev, current);
 				changesMade++;
 			}
 		}
@@ -88,7 +87,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 				}
 			}
 		}
-		LOGGER.info ("Checking " + toCheck + " axioms");
+		LOGGER.info("Checking " + toCheck + " axioms");
 		
 		int checked = 0;
 		for (Concept c : gl.getAllConcepts()) {
@@ -97,7 +96,7 @@ public class RevertCoreAxioms extends BatchFix implements ScriptConstants {
 					//Recover this axiom from the previous release and see if it's been changed
 					changeMap.put(a.getId(), loadPreviousRefsetMember(a.getId()));
 					if (++checked % 100 == 0) {
-						LOGGER.debug ("Completed " + checked + " / " + toCheck);
+						LOGGER.debug("Completed " + checked + " / " + toCheck);
 					}
 				}
 			}

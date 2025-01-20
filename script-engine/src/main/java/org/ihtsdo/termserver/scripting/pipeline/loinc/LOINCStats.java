@@ -10,7 +10,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
@@ -25,21 +24,21 @@ public class LOINCStats extends TermServerReport {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LOINCStats.class);
 
 	private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
-	//private static String publishedRefsetFile = "/Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
+	//Alternatively in Unix /Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt
 	
-	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
+	private static final String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	
-	private static String ERROR = "ERROR";
+	private static final String ERROR = "ERROR";
 	
-	private static enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
+	private enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
 	
 	private Map<String, List<String>> refsetFileMap;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException, ConversionException {
+	public static void main(String[] args) throws TermServerScriptException {
 		LOINCStats app = new LOINCStats();
 		try {
-			ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC
+			ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC
 			app.getGraphLoader().setExcludedModules(new HashSet<>());
 			app.init(args);
 			app.loadProjectSnapshot(false);
@@ -63,9 +62,8 @@ public class LOINCStats extends TermServerReport {
 		super.postInit(tabNames, columnHeadings, false);
 		loadFiles();
 	}
-	
 
-	public void doReport() throws TermServerScriptException, ConversionException {
+	public void doReport() throws TermServerScriptException {
 		Map<String, Concept> currentContentMap =  gl.getAllConcepts().stream()
 				.filter(c -> c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE))
 				.collect(Collectors.toMap(c -> getLoincNumFromDescriptionSafely(c), c -> c));
@@ -199,7 +197,7 @@ public class LOINCStats extends TermServerReport {
 		refsetFileMap = new HashMap<>();
 		try {
 			//Load the Refset Expression file
-			LOGGER.info ("Loading " + publishedRefsetFile);
+			LOGGER.info("Loading {}",  publishedRefsetFile);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(publishedRefsetFile))) {
 				String line;
@@ -266,6 +264,6 @@ public class LOINCStats extends TermServerReport {
 				.filter(c -> getLoincNumFromInactiveDescription(c).equals(loincNum))
 				.findAny().orElseGet( () -> { return null; });
 		String extraDetail = foundInactiveDesc == null ? "" : "Found as inactive description on " + foundInactiveDesc;
-		report (SECONDARY_REPORT, issue, loincNum, extraDetail);
+		report(SECONDARY_REPORT, issue, loincNum, extraDetail);
 	}
 }

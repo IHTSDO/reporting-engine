@@ -1,39 +1,27 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
-/**
- */
 public class RetermIllegalCharacters extends DeltaGenerator {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RetermIllegalCharacters.class);
 	private static final String EN_DASH = "\u2013";
 	private static final String EM_DASH = "\u2014";
 
 	Map<String, String> illegalReplacementMap = new HashMap<>();
 	Map<String, String> illegalCharacterNames = new HashMap<>();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RetermIllegalCharacters fix = new RetermIllegalCharacters();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -56,7 +44,6 @@ public class RetermIllegalCharacters extends DeltaGenerator {
 	protected void retermIllegalCharacters() throws TermServerScriptException {
 		nextConcept:
 		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-		//for (Concept c : Collections.singleton(gl.getConcept("2031000221103"))) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (inScope(d, false)) {
 					for (String illegalCharacter : illegalReplacementMap.keySet()) {

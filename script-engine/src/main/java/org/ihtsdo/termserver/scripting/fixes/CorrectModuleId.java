@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
@@ -9,7 +8,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
@@ -30,10 +28,10 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		CorrectModuleId fix = new CorrectModuleId(null);
 		try {
-			ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA
+			ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ");  //Release QA
 			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.init(args);
@@ -64,7 +62,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 		int changesMade = 0;
 		for (Description d : c.getDescriptions()) {
 			if (!d.getModuleId().equals(c.getModuleId())) {
-				report (t, c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, d, d.getModuleId() + " -> " + c.getModuleId());
+				report(t, c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, d, d.getModuleId() + " -> " + c.getModuleId());
 				d.setModuleId(c.getModuleId());
 				changesMade++;
 			}
@@ -72,7 +70,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 		
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			if (!r.getModuleId().equals(c.getModuleId())) {
-				report (t, c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, r, r.getModuleId() + " -> " + c.getModuleId());
+				report(t, c, Severity.LOW, ReportActionType.MODULE_CHANGE_MADE, r, r.getModuleId() + " -> " + c.getModuleId());
 				r.setModuleId(c.getModuleId());
 				changesMade++;
 			}
@@ -84,7 +82,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<Concept>();
 		setQuiet(true);
 		for (Concept c : ROOT_CONCEPT.getDescendants(NOT_SET)) {
@@ -96,7 +94,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 			}
 		}
 		setQuiet(false);
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
 	}

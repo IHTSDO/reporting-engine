@@ -64,7 +64,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	private static final String INJECTION = "injection";
 	private static final String INFUSION = "infusion";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "false");
 		TermServerScript.run(ValidateDrugModelingLegacyReport.class, args, params);
@@ -158,7 +158,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
-				report (c, issueStr);
+				report(c, issueStr);
 				continue;
 			}
 			
@@ -251,7 +251,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				checkMissingDoseFormGrouper(c);
 			}
 		}
-		LOGGER.info ("Drugs validation complete");
+		LOGGER.info("Drugs validation complete");
 	}
 
 	private void checkForRedundantConcept(Concept c) throws TermServerScriptException {
@@ -259,7 +259,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
 		initialiseSummary(issueStr);
 		if (c.getDescendants(NOT_SET).isEmpty()) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 	}
 
@@ -359,7 +359,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		initialiseSummary(issueStr);
 		for (Concept boss : SnomedUtils.getTargets(c, new Concept[] {HAS_BOSS}, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (grouperSubstanceUsage.containsKey(boss)) {
-				report (c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
+				report(c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
 			}
 		}
 	}
@@ -369,7 +369,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		initialiseSummary(issueStr);
 		for (Concept pai : SnomedUtils.getTargets(c, new Concept[] {HAS_PRECISE_INGRED}, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (grouperSubstanceUsage.containsKey(pai)) {
-				report (c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
+				report(c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
 			}
 		}
 	}
@@ -394,10 +394,10 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		//Is this dose form acceptable?
 		if (acceptableDoseForms.containsKey(thisDoseForm)) {
 			if (acceptableDoseForms.get(thisDoseForm).equals(Boolean.FALSE)) {
-				report (c, issueStr2, thisDoseForm);
+				report(c, issueStr2, thisDoseForm);
 			}
 		} else {
-			report (c, issueStr1, thisDoseForm);
+			report(c, issueStr1, thisDoseForm);
 		}
 	}
 
@@ -435,28 +435,28 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 					return;
 				}
 				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLILITER)) {
-					report (c, issue3Str, psdu.iterator().next());
+					report(c, issue3Str, psdu.iterator().next());
 				}
 				if (csdu.size() == 1 && csdu.iterator().next().getTarget().equals(gl.getConcept("732936001|Tablet|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLIGRAM)) {
-					report (c, issue3Str, psdu.iterator().next());
+					report(c, issue3Str, psdu.iterator().next());
 				}
 				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258728009|microequivalent|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258718000|millimole|"))) {
-					report (c, issue3Str, csdu.iterator().next());
+					report(c, issue3Str, csdu.iterator().next());
 				}
 			}
 		}
 		
 		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
-			report (c, issue4Str, getParentsJoinedStr(c));
+			report(c, issue4Str, getParentsJoinedStr(c));
 		}
 	}
 
@@ -475,7 +475,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				Concept ingredient = r.getTarget();
 				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
-						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
+						report(c, issueStr, ingredient, "is modification of", ir.getTarget());
 					}
 				}
 			}
@@ -490,10 +490,10 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		initialiseSummary(issueStr2);
 		Concept targetType = gl.getConcept("411116001 |Has manufactured dose form (attribute)|");
 		if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
-			report (c, issueStr2);
+			report(c, issueStr2);
 		}
 	}
 
@@ -535,7 +535,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				if (!presRatio.equals(concRatio)) {
 					issueDetected = true;
 				}
-				report (c, issueStr, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
+				report(c, issueStr, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
 			}
 		}
 	}
@@ -646,7 +646,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 						if (badWord.equals("+") && isPlusException(term)) {
 							continue;
 						}
-						report (concept, issueStr, d.toString());
+						report(concept, issueStr, d.toString());
 						return;
 					}
 				}
@@ -677,7 +677,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			Set<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
-				report (concept, issueStr, data);
+				report(concept, issueStr, data);
 			} else {
 				for (Relationship statedAttribute : statedAttributes) {
 					boolean found = false;
@@ -690,7 +690,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 					if (!found) {
 						issue2Str = "Stated " + statedAttribute.getType() + " is not present in inferred view";
 						String data = statedAttribute.toString();
-						report (concept, issue2Str, data);
+						report(concept, issue2Str, data);
 					}
 				}
 			}
@@ -721,7 +721,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 						matchFound = true;
 						if (isSubType) {
 							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
-							report (concept, issueStr, ingred, boSS);
+							report(concept, issueStr, ingred, boSS);
 						} else if (isModificationOf) {
 							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
 						} else if (isSelf) {
@@ -731,7 +731,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				}
 			}
 			if (!matchFound) {
-				report (concept, issue2Str, boSS);
+				report(concept, issue2Str, boSS);
 			}
 		}
 	}
@@ -838,7 +838,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
-			LOGGER.debug ("Debug here - hit a null");
+			LOGGER.debug("Debug here - hit a null");
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
@@ -855,11 +855,11 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
 			String differences = findDifferences (actual.getTerm(), expected.getTerm());
-			report (c, issueStr, expected.getTerm(), differences, actual);
+			report(c, issueStr, expected.getTerm(), differences, actual);
 		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
 			String detail = "Expected: " + SnomedUtils.translateCaseSignificanceFromEnum(expected.getCaseSignificance());
 			detail += ", Actual: " + SnomedUtils.translateCaseSignificanceFromEnum(actual.getCaseSignificance());
-			report (c, issue2Str, detail, actual);
+			report(c, issue2Str, detail, actual);
 		}
 	}
 
@@ -939,7 +939,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				}
 			}
 				String unmatchedStr = unmatched.stream().map(r -> r.toString(true)).collect(Collectors.joining(",\n"));
-				report (c, issueStr,
+				report(c, issueStr,
 						c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
 						c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP), unmatchedStr);
 		}
@@ -995,7 +995,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			int parentTagLevel = getTagLevel(p);
 			if (tagLevel < parentTagLevel) {
-				report (c, issueStr, p);
+				report(c, issueStr, p);
 			}
 		}
 		
@@ -1014,12 +1014,12 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				} else if (isMPOnly(parent)) {
 					hasMpOnly = true;
 				} else {
-					report (c, issueStr6, parent);
+					report(c, issueStr6, parent);
 					break;
 				}
 			}
 			if (!hasMpfNotOnly && !hasMpOnly) {
-				report (c, issueStr6, getParentsJoinedStr(c));
+				report(c, issueStr6, getParentsJoinedStr(c));
 			}
 		} 
 		
@@ -1039,7 +1039,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
-				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
+				report(c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
 			}
 		}
 	}
@@ -1059,7 +1059,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			}
 			
 			if (!semTag.equals(requiredTag)) {
-				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+				report(c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
 			}
 		}
 	}
@@ -1068,7 +1068,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			for (Concept bannedParent : bannedMpParents) {
 				if (parent.equals(bannedParent)) {
-					report (c, issueStr, parent);
+					report(c, issueStr, parent);
 				}
 			}
 		}
@@ -1122,7 +1122,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 					}
 				}
 				if (!allowed) {
-					report (c, issueStr, r);
+					report(c, issueStr, r);
 				}
 			}
 		}
@@ -1133,7 +1133,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isPreferred()) {
 					if (!d.getTerm().contains("containing") && !d.getTerm().contains("only")) {
-						report (c, issueStr, d);
+						report(c, issueStr, d);
 					}
 				}
 			}
@@ -1142,14 +1142,14 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		issueStr =  "CD must feature 'precisely' in the FSN";
 		initialiseSummary(issueStr);
 		if (isCD(c) && !c.getFsn().contains("precisely")) { 
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		issueStr = "Precise MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		//In the case of a missing count of base, we will not have detected that this concept is MP/MPF Only
@@ -1158,14 +1158,14 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		initialiseSummary(issueStr);
 		if (isCD(c)) {
 			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
-				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
+				report(c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
 			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-				report (c, issueStr);
+				report(c, issueStr);
 			}
 		} else if ((isMP(c) || isMPF(c)) && 
 				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
-			report (c, issueStr);
+			report(c, issueStr);
 		}
 		
 		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
@@ -1182,7 +1182,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 						if (attributeSet.contains(r.getType())) {
 							attributeSet.remove(r.getType());
 						} else {
-							report (c, issueStr, r);
+							report(c, issueStr, r);
 						}
 					}
 				}
@@ -1219,7 +1219,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		//Do we have a unit of presentation?
 		Set<Relationship> unitsOfPres = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
 		if (unitsOfPres.size() > 1) {
-			report (c, issueStr1);
+			report(c, issueStr1);
 		} else if (unitsOfPres.size() == 1) {
 			Concept unitOfPres = unitsOfPres.iterator().next().getTarget();
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
@@ -1228,9 +1228,9 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				}
 				Set<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
 				if (presDenomUnits.size() != 1) {
-					report (c, issueStr2, g);
+					report(c, issueStr2, g);
 				} else if (!unitOfPres.equals(presDenomUnits.iterator().next().getTarget())) {
-					report (c, issueStr3, unitOfPres, g);
+					report(c, issueStr3, unitOfPres, g);
 				}
 				incrementSummaryInformation("CD groups checked for presentation unit consistency");
 			}
@@ -1270,7 +1270,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		
 		Set<Concept> doseForms = SnomedUtils.getTargets(c, doseFormTypes, CharacteristicType.STATED_RELATIONSHIP);
 		if (doseForms.size() != 1) {
-			report (c, issueStr1, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+			report(c, issueStr1, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			throw new TermServerScriptException("Please fix invalid dose form modelling on " + c + " unable to continue.");
 		}
 		return doseForms.iterator().next();
@@ -1318,7 +1318,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			break;
 		}
 		if (!hasGrouperParent) {
-			report (c, issueStr, "Sibling: " + sibling);
+			report(c, issueStr, "Sibling: " + sibling);
 		}
 	}
 
@@ -1334,16 +1334,16 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	}
 
 	@Override
-	protected boolean report (Concept c, Object...details) throws TermServerScriptException {
+	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
-		return super.report (PRIMARY_REPORT, c, details);
+		return super.report(PRIMARY_REPORT, c, details);
 	}
 	
 	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
 		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug ("Loading {}", fileName );
+		LOGGER.debug("Loading {}", fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
 			boolean isHeader = true;

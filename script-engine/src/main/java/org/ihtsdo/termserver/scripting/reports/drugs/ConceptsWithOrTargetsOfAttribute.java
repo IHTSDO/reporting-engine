@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,7 +39,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	Map<Concept, List<Concept>> attributeSourceMap = new HashMap<>();
 	Map<Concept, List<Concept>> attributeTargetMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ConceptsWithOrTargetsOfAttribute report = new ConceptsWithOrTargetsOfAttribute();
 		try {
 			report.getReportManager().setNumberOfDistinctReports(2);
@@ -54,8 +52,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 			report.runModifiedNotLeaf();
 			report.runModifcationTargetWithChildren();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report",e);
 		} finally {
 			report.finish();
 		}
@@ -76,12 +73,12 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 						List<Concept> targets = attributeTargetMap.get(r.getTarget());
 						
 						if (targets == null) {
-							targets = new ArrayList<Concept>();
+							targets = new ArrayList<>();
 							attributeTargetMap.put(r.getTarget(), targets);
 						}
 						
 						if (sources == null) {
-							sources = new ArrayList<Concept>();
+							sources = new ArrayList<>();
 							attributeSourceMap.put(r.getSource(), sources);
 						}
 						targets.add(r.getSource());
@@ -100,7 +97,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 				//That have a modification of attribute
 				if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE).size() > 0) {
 					incrementSummaryInformation("Non-Leaf modifications reported");
-					report (c, "Modified non-leaf concept");
+					report(c, "Modified non-leaf concept");
 				}
 			}
 		}
@@ -110,11 +107,11 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : subHierarchyConcepts) {
 			//We're only interested in active concepts with stated descendants - ie not leaf concepts
-			if (c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0) {
+			if (!c.getChildren(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 				//That are the target of a modification of attribute
 				if (attributeTargetMap.containsKey(c)) {
 					incrementSummaryInformation("Non-Leaf modification targets reported");
-					report (SECONDARY_REPORT, c, "Target of Modification, with children", attributeTargetMap.get(c).get(0));
+					report(SECONDARY_REPORT, c, "Target of Modification, with children", attributeTargetMap.get(c).get(0));
 				}
 			}
 		}

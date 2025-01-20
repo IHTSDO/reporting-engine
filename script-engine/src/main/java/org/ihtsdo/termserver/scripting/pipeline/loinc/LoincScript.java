@@ -12,7 +12,6 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +41,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh";  //LOINC Folder
+		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC Folder
 		tabForFinalWords = SECONDARY_REPORT;
 		
 		//Just temporarily, we need to create some concepts that aren't visible yet
@@ -61,7 +60,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 	
 	protected void loadLoincDetail() throws TermServerScriptException {
-		LOGGER.info ("Loading Loinc Detail: " + getInputFile(FILE_IDX_LOINC_DETAIL));
+		LOGGER.info("Loading Loinc Detail: {}", getInputFile(FILE_IDX_LOINC_DETAIL));
 		BufferedReader in = null;
 		try {
 			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_DETAIL)));
@@ -98,7 +97,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 
 	protected void loadPanels() throws TermServerScriptException {
-		LOGGER.info ("Loading Loinc Panels: {}", getInputFile(FILE_IDX_PANELS));
+		LOGGER.info("Loading Loinc Panels: {}", getInputFile(FILE_IDX_PANELS));
 		int lineCount = 0;
 		try (BufferedReader in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_PANELS)))){
 			String line = in.readLine();
@@ -116,7 +115,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 	
 	protected void loadLoincParts() throws TermServerScriptException {
-		LOGGER.info ("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
+		LOGGER.info("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_PARTS)));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
@@ -142,7 +141,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) throws TermServerScriptException {
 		additionalThreadCount++;
-		LOGGER.info ("Loading Full Loinc: " + fullLoincFile);
+		LOGGER.info("Loading Full Loinc: " + fullLoincFile);
 		loincNumToLoincTermMap = new HashMap<>();
 		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {

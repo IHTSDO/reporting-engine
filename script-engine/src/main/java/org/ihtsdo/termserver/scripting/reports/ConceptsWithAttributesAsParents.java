@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -9,16 +7,15 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * SUBST-235 A report to identify any concepts which have the same concept as both
  * a parent and the target value of some other attribute 
  * Update: Added column to say what was inferred - the parent, attribute or both
  * SUBST-260
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ConceptsWithAttributesAsParents extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsWithAttributesAsParents.class);
@@ -26,24 +23,23 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 	Concept attributeType;
 	List<Concept> ignoreTypes;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ConceptsWithAttributesAsParents report = new ConceptsWithAttributesAsParents();
 		try {
-			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
-			//TODO Set this via setter, and move report only once successfully complete
+			ReportSheetManager.setTargetFolderId("1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d");
 			report.additionalReportColumns = "FSN, Semtag, CharacteristicType, Attribute, WhatWasInferred?";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
 			report.runConceptsWithAttributesAsParentsReport();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce ConceptsWithOrTargetsOfAttribute Report", e);
 		} finally {
 			report.finish();
 		}
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("738774007"); // |Is modification of (attribute)|)
 		ignoreTypes = new ArrayList<>();
@@ -70,10 +66,10 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 				if (parents.contains(r.getTarget())) {
 					String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 					if (type.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-						report (c, semTag, type.toString(), r.toString());
+						report(c, semTag, type.toString(), r.toString());
 					} else {
 						String whatWasInferred = determineWhatWasInferred(c, r.getTarget());
-						report (c, semTag, type.toString(), r.toString(), whatWasInferred);
+						report(c, semTag, type.toString(), r.toString(), whatWasInferred);
 					}
 					incrementSummaryInformation("Issues found - " + type.toString());
 					issueFound = true;
@@ -89,7 +85,6 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		} else if (ignoreTypes.contains(type)) {
 			return false;
 		}
-		//return true;
 		return false;
 	}
 

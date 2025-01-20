@@ -1,11 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -24,12 +21,10 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MissingDispositionSubstanceGroupers.class);
 
-	List<Component> concepts;
-	Concept attributeType;
 	Map<Concept, Set<Concept>> dispositionSubstanceMap;
 	Map<Concept, Concept> dispositionGrouperMap;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MissingDispositionSubstanceGroupers report = new MissingDispositionSubstanceGroupers();
 		try {
 			report.additionalReportColumns="FSN,Used by";
@@ -38,8 +33,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 			report.postLoadInit();
 			report.runMissingDispositionsReport();
 		} catch (Exception e) {
-			LOGGER.info("Failed to produce MissingAttributeReport due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to produce report", e);
 		} finally {
 			report.finish();
 		}
@@ -61,7 +55,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 				
 				//Is this a grouper concept?
 				if (c.getFsn().contains("mechanism of action")) {
-					//LOGGER.debug ("Adding grouper " + c + " to disposition " + disposition);
+					//LOGGER.debug("Adding grouper " + c + " to disposition " + disposition);
 					if (dispositionGrouperMap.containsKey(disposition)) {
 						//Ignore the one with multiple dispositions
 						if (c.getFsn().contains(" and ")) {
@@ -93,7 +87,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 								.collect(Collectors.joining(", \n"));
 				}
 				incrementSummaryInformation("Missing groupers reported");
-				report (disposition, usedByStr);
+				report(disposition, usedByStr);
 			} else {
 				LOGGER.debug (disposition + " -> " + dispositionGrouperMap.get(disposition));
 			}

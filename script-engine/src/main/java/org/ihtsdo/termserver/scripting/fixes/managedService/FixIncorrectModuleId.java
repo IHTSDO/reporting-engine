@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -13,6 +12,8 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
 Fix takes concepts identified in the input file and ensures that the 
@@ -20,10 +21,6 @@ moduleid of the concept, descriptions and relationships all match
 the default.   Note that unlike other fixes, this does not create a 
 new task, but targets existing tasks. 
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FixIncorrectModuleId.class);
@@ -46,14 +43,14 @@ public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 			fix.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		intendedModuleId = project.getMetadata().getDefaultModuleId();
-		LOGGER.info ("Identified correct module to be " + intendedModuleId);
+		LOGGER.info("Identified correct module to be {}", intendedModuleId);
 	}
 	
-
 	public int doFix(Task t, Concept loadedConcept, String info) throws TermServerScriptException {
 		int changesMade = checkModuleId(t, loadedConcept);
 		if (changesMade > 0) {
@@ -83,13 +80,13 @@ public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 			}
 		}
 		String msg = changesMade + " module ids corrected to " + intendedModuleId;
-		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, msg);
+		report(task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, msg);
 		return changesMade;
 	}
 
 	private void loadEntriesToFix() throws IOException, TermServerScriptException {
 		List<String> lines = Files.readLines(getInputFile(), Charsets.UTF_8);
-		LOGGER.info ("Loading affected description ids from " + getInputFile());
+		LOGGER.info("Loading affected description ids from {}", getInputFile());
 		for (String line : lines) {
 			String trimmedLine = line.trim();
 			if (trimmedLine.isEmpty()) {
@@ -109,11 +106,6 @@ public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 			}
 			processMe.add(new TaskConcept(task, gl.getConcept(conceptStr)));
 		}
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		return null; // We will identify descriptions to edit from the snapshot
 	}
 
 	class TaskConcept {

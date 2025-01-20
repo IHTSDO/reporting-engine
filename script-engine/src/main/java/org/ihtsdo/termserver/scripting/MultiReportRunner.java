@@ -25,7 +25,7 @@ public class MultiReportRunner extends TermServerReport {
 
 	ReportClass report; 
 
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		MultiReportRunner report = new MultiReportRunner();
 		try {
 			report.init(args);

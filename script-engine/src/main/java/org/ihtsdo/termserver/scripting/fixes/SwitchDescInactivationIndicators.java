@@ -27,7 +27,7 @@ public class SwitchDescInactivationIndicators extends BatchFix {
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		final SwitchDescInactivationIndicators fix = new SwitchDescInactivationIndicators(null);
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			fix.runStandAlone = false;  //We need to look up the project path for MS projects
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;

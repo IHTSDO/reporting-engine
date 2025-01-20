@@ -38,7 +38,7 @@ public class FixReusedAssociations extends DeltaGenerator implements ScriptConst
 	public static void main(String[] args) throws TermServerScriptException {
 		FixReusedAssociations delta = new FixReusedAssociations();
 		try {
-			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
+			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.getArchiveManager().setAllowStaleData(true);

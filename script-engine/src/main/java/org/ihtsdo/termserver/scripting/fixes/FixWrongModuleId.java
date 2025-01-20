@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -27,7 +26,7 @@ public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FixWrongModuleId fix = new FixWrongModuleId(null);
 		try {
 			fix.reportNoChange = false;  //Might just be langrefset which we'll modify directly
@@ -69,7 +68,7 @@ public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 		
 		if (c.getModuleId().contentEquals(findModule)) {
 			c.setModuleId(replaceModule);
-			report (t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "Concept module set to " + replaceModule);
+			report(t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "Concept module set to " + replaceModule);
 			changesMade++;
 		}
 		
@@ -77,14 +76,14 @@ public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 			Description dTS = c.getDescription(d.getId());
 			if (dTS.getModuleId().contentEquals(findModule)) {
 				dTS.setModuleId(replaceModule);
-				report (t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "Description module set to " + replaceModule, dTS);
+				report(t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "Description module set to " + replaceModule, dTS);
 				changesMade++;
 			}
 			//To get the langrefset ids, we need to work with the locally loaded description
 			for (LangRefsetEntry l : d.getLangRefsetEntries()) {
 				if (l.getModuleId().contentEquals(findModule)) {
 					l.setModuleId(replaceModule);
-					report (t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "LangRefset module set to " + replaceModule, l);
+					report(t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "LangRefset module set to " + replaceModule, l);
 					updateRefsetMember(t, l, "");
 				}
 			}
@@ -93,7 +92,7 @@ public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 		for (Axiom a : c.getClassAxioms()) {
 			if (a.getModuleId().contentEquals(findModule)) {
 				a.setModuleId(replaceModule);
-				report (t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "Axiom module set to " + replaceModule, a);
+				report(t, c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, "Axiom module set to " + replaceModule, a);
 				changesMade++;
 			}
 		}

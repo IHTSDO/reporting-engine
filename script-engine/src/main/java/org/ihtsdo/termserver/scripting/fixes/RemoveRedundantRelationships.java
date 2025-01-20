@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -28,7 +27,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		RemoveRedundantRelationships fix = new RemoveRedundantRelationships(null);
 		try {
 			fix.reportNoChange = true;
@@ -65,7 +64,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 				removeRelationship(t, c, r);
 				changesMade++;
 			} else {
-				report (t, c, Severity.NONE, ReportActionType.INFO, "Retained: " + r);
+				report(t, c, Severity.NONE, ReportActionType.INFO, "Retained: " + r);
 			}
 		}
 		return changesMade;
@@ -79,7 +78,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		LOGGER.info ("Identifying concepts to process");
+		LOGGER.info("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
 		Collection<Concept> subHierarchy = gl.getConcept(this.subHierarchy.getConceptId()).getDescendants(NOT_SET);
 		for (Concept c : subHierarchy) {
@@ -93,7 +92,7 @@ public class RemoveRedundantRelationships extends BatchFix implements ScriptCons
 		}
 		addSummaryInformation("Concepts checked", subHierarchy.size());
 		processMe.sort(Comparator.comparing(Concept::getFsn));
-		LOGGER.info ("Identified " + processMe.size() + " concepts to process");
+		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		return asComponents(processMe);
 	}
 

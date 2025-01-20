@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.batchImport;
+package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import java.util.*;
 
@@ -6,13 +6,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class BatchImportExpression implements ScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportExpression.class);
 
 	public static final String FULLY_DEFINED = "===";
 	public static final String PRIMITVE = "<<<";
@@ -27,7 +21,7 @@ public class BatchImportExpression implements ScriptConstants {
 	public static final String FOCUS_CONCEPT_SEPARATOR = "\\+";
 	public static final String ATTRIBUTE_SEPARATOR = ",";
 	public static final String TYPE_SEPARATOR = "=";
-	public static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
+	protected static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
 
 	private DefinitionStatus definitionStatus;
 	private List<String> focusConcepts;

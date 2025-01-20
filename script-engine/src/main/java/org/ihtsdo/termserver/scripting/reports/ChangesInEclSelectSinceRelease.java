@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -17,7 +16,7 @@ public class ChangesInEclSelectSinceRelease extends TermServerReport {
 	private String ecl = "<< 363687006|Endoscopic procedure (procedure)|";
 	private String releaseET = "2023-03-31"; 
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		ChangesInEclSelectSinceRelease report = new ChangesInEclSelectSinceRelease();
 		try {
 			report.init(args);

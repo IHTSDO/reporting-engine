@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -23,7 +22,7 @@ public class FractureOfXTermRemodelling extends BatchFix implements ScriptConsta
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		FractureOfXTermRemodelling fix = new FractureOfXTermRemodelling(null);
 		try {
 			fix.selfDetermining = true;

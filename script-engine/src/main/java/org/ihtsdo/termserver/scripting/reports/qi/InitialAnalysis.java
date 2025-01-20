@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -43,70 +43,12 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	}
 	
 	//QI-222  Multi-ecl report runner
-	public static void main(String[] args) throws TermServerScriptException, IOException {
-		//TermServerScript.runHeadless(3);
-		/*String[] morphologies = new String[] {
-				"11889001|Abiotrophy (morphologic abnormality)|",
-				"13331008|Atrophy (morphologic abnormality)|",
-				"33359002|Degeneration (morphologic abnormality)|",
-				"32693004|Demyelination (morphologic abnormality)|",
-				"69251000|Depletion (morphologic abnormality)|",
-				"46595003|Deposition (morphologic abnormality)|",
-				"4720007|Dystrophy (morphologic abnormality)|",
-				"2218006|Endothelial degeneration (morphologic abnormality)|",
-				"47939006|Etat criblé (morphologic abnormality)|",
-				"66984008|Etat lacunaire (morphologic abnormality)|",
-				"16190006|Herring's bodies (morphologic abnormality)|",
-				"18695008|Hyaline body (morphologic abnormality)|",
-				"708529002|Lesion of degenerative abnormality (morphologic abnormality)|",
-				"107670002|Lysis AND/OR resorbed tissue (morphologic abnormality)|",
-				"35828005|Malacia (morphologic abnormality)|",
-				"15524008|Obliteration (morphologic abnormality)|",
-				"107671003|Vascular sclerosis (morphologic abnormality)|"};
-		for (String morphology : morphologies) {
-			String ecl = "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << " + morphology;
-			Map<String, String> params = new HashMap<>();
-			params.put(ECL, ecl);
-			TermServerReport.run(InitialAnalysis.class, args, params);
-		} */
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<< 11429006 |Consultation (procedure)|");
-		TermServerReport.run(InitialAnalysis.class, args, params);
+		TermServerScript.run(InitialAnalysis.class, args, params);
 	}
-	
-/*	public static void main(String[] args) throws TermServerScriptException, IOException {
-		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<< 46866001");	//       |Fracture of lower limb (disorder)|
-		//params.put(ECL, "<< 125605004");	// QI-2  |Fracture of bone (disorder)|
-		//params.put(ECL, "<< 128294001");	// QI-8  |Chronic inflammatory disorder (disorder)|
-		//params.put(ECL, "<< 126537000");	// QI-11 |Neoplasm of bone (disorder)|
-		//params.put(ECL, "<< 34014006");	// QI-12 |Viral disease
-		//params.put(ECL, "<< 87628006");	// QI-13 |Bacterial infectious disease (disorder)|
-		//params.put(ECL, "<< 95896000");	// QI-18 |Protozoan infection (disorder)|
-		//params.put(ECL, "<< 52515009");	// QI-22 |Hernia of abdominal cavity|
-		//params.put(ECL, "<< 125666000");	// QI-22 |Burn (disorder)|
-		//params.put(ECL, "<< 74627003");	// QI-38 |Diabetic complication (disorder)|
-		//params.put(ECL, "<< 283682007");	// QI-35 |Bite - wound (disorder)|
-		//params.put(ECL, "<< 8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
-		//params.put(ECL, "<< 3723001");	// QI-42 |Arthritis|
-		//params.put(ECL, "<< 276654001");	// QI-43 |Congenital malformation (disorder)| );
-		//params.put(ECL, "<< 3218000");	//QI-46 |Mycosis (disorder)|
-		//params.put(ECL, "<< 17322007");	//QI-49 |Disease caused by parasite|
-		//params.put(ECL, "<< 416462003");  //QI-50 |Wound (disorder)
-		//params.put(ECL, "<< 125643001");  //QI-51 |Open wound|
-		//params.put(ECL, "<< 416886008");  //QI-52 |Closed wound|
-		//params.put(ECL, "<< 432119003");  //QI- |Aneurysm (disorder)|
-		//params.put(ECL, "<< 399963005 |Abrasion|"); //QI-96
-		//params.put(ECL, "<< setSubHierarchy("233776003 |Tracheobronchial disorder|"); //QI-152
-		//params.put(ECL, "<< 40733004|Infectious disease|"); //QI-142
-		/* setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
-				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
-				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
-		
-		params.put(ECL, "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = 72704001 |Fracture (morphologic abnormality)|");
-		TermServerReport.run(InitialAnalysis.class, args, params);
-	}*/
-	
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
@@ -126,7 +68,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 				.build();
 	}
 
-	
+	@Override
 	public void runJob() throws TermServerScriptException {
 		
 		LOGGER.info("Reviewing concepts affected by intermediate primitives");
@@ -138,9 +80,10 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 		LOGGER.info("Reporting attribute usage counts");
 		reportAttributeUsageCounts();
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  // QI/Initial Analysis
+		ReportSheetManager.setTargetFolderId("1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50");  // QI/Initial Analysis
 		
 		subsetECL = this.jobRun.getParamValue(ECL);
 		
@@ -162,7 +105,8 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 			exclusions.addAll(exclusionStart.getDescendants(NOT_SET));
 		}
 	}
-	
+
+	@Override
 	public String getReportName() {
 		if (subsetECL == null) {
 			return "Report name not yet known";
@@ -237,7 +181,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 					}
 					
 					if (!quiet) {
-						report (c, thisPPP.toString(), 
+						report(c, thisPPP.toString(),
 								isIntermediate?"Yes":"No",
 								c.getDefinitionStatus(),
 								Integer.toString(countAttributes(c, CharacteristicType.STATED_RELATIONSHIP)),
@@ -252,7 +196,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 			incrementSummaryInformation("Concepts checked");
 		}
 		if (!quiet) {
-			report ((Concept)null, "Note that the list above only includes SD and Leaf Concepts, so total may be less than " + conceptsToAnalyse.size() + " expected.");
+			report((Concept)null, "Note that the list above only includes SD and Leaf Concepts, so total may be less than " + conceptsToAnalyse.size() + " expected.");
 		}
 	}
 
@@ -320,7 +264,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 		}
 		int aboveMe = primitivesAboveHere(intermediatePrimitive);
 		int descendants = gl.getDescendantsCache().getDescendants(intermediatePrimitive).size();
-		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
+		report(SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 		countIssue(null);
 	}
 	
