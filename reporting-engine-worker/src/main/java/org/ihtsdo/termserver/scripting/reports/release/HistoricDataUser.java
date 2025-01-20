@@ -95,23 +95,11 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	private boolean recoverReleaseConfiguration() throws TermServerScriptException {
-		boolean compareTwoSnapshots = false;
-		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
-				StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			throw new TermServerScriptException("This release must be specified if previous release is.");
-		}
+
+		boolean compareTwoSnapshots = checkReleasePresence();
 
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			compareTwoSnapshots = true;
 			projectKey = getJobRun().getParamValue(THIS_RELEASE);
-			//Have we got what looks like a zip file but someone left the .zip off?
-			if (projectKey.contains("T120000") && !projectKey.endsWith(".zip")) {
-				throw new TermServerScriptException("Suspect release '" + projectKey + "' should end with .zip");
-			}
-			//If this release has been specified, the previous must also be, explicitly
-			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
-				throw new TermServerScriptException("Previous release must be specified if current release is.");
-			}
 
 			if (projectKey.endsWith(".zip")) {
 				isPublishedReleaseAnalysis = true;
@@ -130,7 +118,7 @@ public class HistoricDataUser extends TermServerReport {
 			}
 		}
 
-		if (prevRelease != null) {
+		if (prevRelease != null && prevDependency != null) {
 			ensurePrevIsEarlierThanThis(prevRelease, prevDependency, RELEASE, DEPENDENCY);
 			if (thisDependency != null) {
 				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
@@ -139,6 +127,32 @@ public class HistoricDataUser extends TermServerReport {
 
 		getProject().setKey(prevRelease);
 		return compareTwoSnapshots;
+	}
+
+	private boolean checkReleasePresence() throws TermServerScriptException {
+		if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) && StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
+			return false;
+		} else {
+			if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) && StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
+				throw new TermServerScriptException("This release must be specified if previous release is.");
+			}
+
+			if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE)) && StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
+				throw new TermServerScriptException("Previous release must be specified if current release is.");
+			}
+
+			checkReleaseFileName(getJobRun().getParamValue(PREV_RELEASE));
+			checkReleaseFileName(getJobRun().getParamValue(THIS_RELEASE));
+
+			return true;
+		}
+	}
+
+	private void checkReleaseFileName(String releaseFileName) throws TermServerScriptException {
+		//Have we got what looks like a zip file but someone left the .zip off?
+		if (releaseFileName.contains("T120000") && !releaseFileName.endsWith(".zip")) {
+			throw new TermServerScriptException("Suspect release '" + releaseFileName + "' should end with .zip");
+		}
 	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
