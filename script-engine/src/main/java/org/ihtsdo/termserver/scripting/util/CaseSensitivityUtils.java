@@ -8,6 +8,7 @@ import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import com.google.common.io.Files;
@@ -207,20 +208,21 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 			}
 			
-			//For case-insensitive terms, we're on the look out for capital letters after the first letter
+			//For case-insensitive terms, we're on the lookout for capital letters after the first letter
 			if (!chopped.equals(chopped.toLowerCase())) {
 				return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 			}
 		}
-		
+
+		//Does term have a capital after first letter?
 		if (!chopped.equals(chopped.toLowerCase())) {
-			//If the first character is a symbol then the initial letter is not case sensitive
-			if (Character.isLetter(firstLetter.charAt(0))) {
-				//Term has a capital after first letter
+			//If the first word is a proper noun, then the entire term is case-sensitive
+			//Otherwise, and even if the first character is not a letter
+			//then we're look at initial character case-insensitive
+			if (startsWithProperNounPhrase(term)) {
 				return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-			} else {
-				return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 			}
+			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
 		
 		return CaseSignificance.CASE_INSENSITIVE;
@@ -241,6 +243,26 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			}
 		}
 		return false;
+	}
+
+	public boolean startsWithAcronym(String term) {
+		if (StringUtils.isEmpty(term)) {
+			LOGGER.warn("Check here");
+			return false;
+		}
+		String firstLetter = term.substring(0, 1);
+		String secondLetter = null;
+		boolean isOneCharacterLong = true;
+
+		//Some terms of course are only one character long!
+		if (term.length() > 1) {
+			secondLetter = term.substring(1, 2);
+			isOneCharacterLong = false;
+		}
+
+		return (!isOneCharacterLong
+				&& (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
+				&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase())));
 	}
 
 	public boolean startsWithProperNounPhrase(String term) {

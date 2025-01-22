@@ -56,7 +56,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Concept relativeTo;
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
-	protected static Set<String> skipLDTColumnNames = new HashSet<>(Arrays.asList("SYSTEMCORE_PN"));
+	protected static Set<String> skipLDTColumnNames = new HashSet<>(List.of("SYSTEMCORE_PN"));
 	protected static Set<String> columnsToCheckForUnknownIndicators = new HashSet<>(Arrays.asList(COMPNUM_PN, COMPDENOM_PN, SYSTEM_PN));
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal", "total"));
 	protected static Map<String, LoincUsage> unmappedPartUsageMap = new HashMap<>();
@@ -198,7 +198,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		} else if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = slotTermMap.get(templateItem);
-			if (!CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
+			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
+			if (!itemStr.isEmpty()
+					&& !csUtils.startsWithProperNounPhrase(itemStr)
+					&& !csUtils.startsWithAcronym(itemStr)) {
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
