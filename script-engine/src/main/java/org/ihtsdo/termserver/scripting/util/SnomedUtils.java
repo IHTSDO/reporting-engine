@@ -1943,14 +1943,14 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		//We're going to sort on top level hierarchy, then alphabetically
 		return superSet.stream()
 		.sorted((c1, c2) -> c1.getFsn().compareTo(c2.getFsn()))
-		.collect(Collectors.toList());
+		.toList();
 	}
 	
 	public static List<Concept> sort(Collection<Concept> superSet) {
 		//We're going to sort on top level hierarchy, then alphabetically
 		return superSet.stream()
 		.sorted(SnomedUtils::compareSemTagFSN)
-		.collect(Collectors.toList());
+		.toList();
 	}
 	
 	public static List<Concept> sortActive(Collection<Concept> superSet) {
@@ -1958,7 +1958,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return superSet.stream()
 		.filter(c -> c.isActiveSafely())
 		.sorted(SnomedUtils::compareSemTagFSN)
-		.collect(Collectors.toList());
+		.toList();
 	}
 	
 	public static List<Concept> sortInactive(Collection<Concept> superSet) {
@@ -1966,7 +1966,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return superSet.stream()
 		.filter(c -> !c.isActiveSafely())
 		.sorted(SnomedUtils::compareSemTagFSN)
-		.collect(Collectors.toList());
+		.toList();
 	}
 	
 	public static int compareSemTagFSN(Concept c1, Concept c2) {
@@ -1975,13 +1975,13 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		
 		if (fsnSemTag1[1] == null) {
 			if (!missingFsnReport.contains(c1.getId())) {
-				System.out.println("FSN Encountered without semtag: " + c1);
+				LOGGER.warn("FSN Encountered without semtag: {}", c1);
 				missingFsnReport.add(c1.getId());
 			}
 			return c1.getId().compareTo(c2.getId());
 		} else if (fsnSemTag2[1] == null) {
 			if (!missingFsnReport.contains(c2.getId())) {
-				System.out.println("FSN Encountered without semtag: " + c2);
+				LOGGER.warn("FSN Encountered without semtag: {}", c2);
 				missingFsnReport.add(c2.getId());
 			}
 			return c1.getId().compareTo(c2.getId());
@@ -2003,7 +2003,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static boolean hasChangesSinceIncludingSubComponents(Concept c, String fromET,  boolean inclusiveDate) {
-		if (hasChangesSince((Component)c, fromET, inclusiveDate)) {
+		if (hasChangesSince(c, fromET, inclusiveDate)) {
 			return true;
 		}
 		
@@ -2086,9 +2086,9 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		
 		if (lhsValue == null && rhsValue == null) {
 			return true;
-		} else if (lhsValue == null && rhsValue != null) {
+		} else if (lhsValue == null) {
 			return false;
-		} else if (lhsValue != null && rhsValue == null) {
+		} else if (rhsValue == null) {
 			return false;
 		}
 		return lhsValue.equals(rhsValue);
