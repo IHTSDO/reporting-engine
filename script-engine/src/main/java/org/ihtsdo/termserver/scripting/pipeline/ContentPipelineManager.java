@@ -160,8 +160,24 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("50553-7")) {
-			LOGGER.debug("Check FSN construction");
+		if (externalIdentifier.equals("56888-1")) {
+			LOGGER.debug("Missing ID, gains extra axiom");
+		}
+
+		if (externalIdentifier.equals("105069-9")) {
+			LOGGER.debug("Check terming for XXX");
+		}
+
+		if (externalIdentifier.equals("16285-9")) {
+			LOGGER.debug("FSN Incorrectly cI");
+		}
+
+		if (externalIdentifier.equals("48058-2")) {
+			LOGGER.debug("Capitalisation of LOINC part name");
+		}
+
+		if (externalIdentifier.equals("66483-9")) {
+			LOGGER.debug("Inactivation");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -170,11 +186,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			return null;
 		}
 
-		//Is this a npunum that's being maintained manually?  Return what is already there if so.
+		//Is this a transformed concept that's being maintained manually?  Return what is already there if so.
 		if (MANUALLY_MAINTAINED_ITEMS.containsKey(externalIdentifier)) {
 			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(externalConcept, SCTID_NPU_SCHEMA, "(observable entity)");
 			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(externalIdentifier)));
 			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MANUAL);
+			tc.populateAlternateIdentifier();
 			return tc;
 		}
 
@@ -183,7 +200,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		if (!(tc instanceof TemplatedConceptNull)) {
 			tc.populateTemplate();
 		} else if (externalConcept.isHighestUsage()) {
-			//This is a highest usage term which is out of scope
+			//This is a 'highest usage' term, which is out of scope
 			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
 		}
 		return tc;
@@ -250,6 +267,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	private void processInactivation(String inactivatingCode, Map<String, String> altIdentifierMap) throws TermServerScriptException {
+		if (inactivatingCode.equals("66483-9")) {
+			LOGGER.debug("Inactivation");
+		}
+
 		String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
 		Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
 		if (existingConcept != null) {
@@ -277,6 +298,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private void determineChanges(TemplatedConcept tc, Set<String> externalIdentifiersProcessed) throws TermServerScriptException {
 		Concept concept = tc.getConcept();
 		externalIdentifiersProcessed.add(tc.getExternalIdentifier());
+
+		if (tc.getExternalIdentifier().equals("56888-1")) {
+			LOGGER.debug("Missing ID, gains extra axiom");
+		}
 
 		//Do we already have this concept?  Also, it might use freshly modelled concepts internally which need to have IDs assigned
 		//before we can compare their axioms

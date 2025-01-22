@@ -152,25 +152,14 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private boolean reportedForFirstLetterInfractionOrAccepted(Concept c, Description d, String term, String caseSig, String preferred) throws TermServerScriptException {
 		String firstLetter = term.substring(0, 1);
-		//Some terms of course are only one character long!
-		String secondLetter = null;
-		boolean isOneCharacterLong = true;
-		if (term.length() > 1) {
-			secondLetter = term.substring(1, 2);
-			isOneCharacterLong = false;
-		}
-
 		if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase())) {
 			if (!caseSig.equals(CS)) {
-				//Lower case first letters must be entire term case sensitive
+				//Lower case first letters must be entire term case-sensitive
 				report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 				countIssue(c);
+				return true;
 			}
-			return true;
-		} else if (!isOneCharacterLong
-				&& (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
-				&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase()))
-				&& !caseSig.equals(CS)) {
+		} else if (csUtils.startsWithAcronym(term) && !caseSig.equals(CS)) {
 			//Terms starting with acronyms should be entire term case-sensitive
 			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
 			countIssue(c);
