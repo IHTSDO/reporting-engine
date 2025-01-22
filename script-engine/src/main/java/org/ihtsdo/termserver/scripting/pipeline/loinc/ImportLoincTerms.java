@@ -191,6 +191,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		rm.setActive(true, true);
 		rm.setRefsetId(refset.getId());
 		rm.setId(UUID.randomUUID().toString());
+		rm.setDirty();
 		incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " created");
 		conceptCreator.outputRF2(Component.ComponentType.SIMPLE_REFSET_MEMBER, rm.toRF2());
 	}
@@ -212,17 +213,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(externalConcept);
 			default -> TemplatedConceptNull.create(externalConcept);
 		};
-	}
-
-	public TemplatedConcept populateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
-		TemplatedConcept templatedConcept = getAppropriateTemplate(externalConcept);
-		if (templatedConcept != null) {
-			templatedConcept.populateTemplate();
-		} else if (externalConcept.isHighestUsage()) {
-			//This is a highest usage term which is out of scope
-			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
-		}
-		return templatedConcept;
 	}
 
 }

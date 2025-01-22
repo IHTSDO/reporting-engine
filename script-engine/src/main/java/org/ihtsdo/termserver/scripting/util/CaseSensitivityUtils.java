@@ -253,15 +253,16 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				return cs;
 			}
 		}
-		
+
+		//Does term have a capital after first letter?
 		if (!chopped.equals(chopped.toLowerCase())) {
-			//If the first character is a symbol then the initial letter is not case sensitive
-			if (Character.isLetter(firstLetter.charAt(0))) {
-				//Term has a capital after first letter
+			//If the first word is a proper noun, then the entire term is case-sensitive
+			//Otherwise, and even if the first character is not a letter
+			//then we're look at initial character case-insensitive
+			if (startsWithProperNounPhrase(term)) {
 				return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-			} else {
-				return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 			}
+			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
 		
 		return CaseSignificance.CASE_INSENSITIVE;
