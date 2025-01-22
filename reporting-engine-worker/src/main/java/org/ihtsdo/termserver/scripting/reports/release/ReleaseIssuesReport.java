@@ -142,8 +142,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
-		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
+
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 
 		inputFiles.add(0, new File("resources/prepositions.txt"));
 		inputFiles.add(1, new File("resources/preposition-exceptions.txt"));

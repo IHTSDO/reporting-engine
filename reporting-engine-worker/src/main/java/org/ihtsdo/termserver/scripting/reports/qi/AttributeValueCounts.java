@@ -104,7 +104,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		Concept[] types = new Concept[] {targetAttributeType};
 		ancestorCache = gl.getAncestorsCache();
 		descendantCache = gl.getDescendantsCache();
-		LOGGER.info("Analyzing " + subsetECL);
+		LOGGER.info("Analyzing {}", subsetECL);
 		ignoreConcepts = StringUtils.isEmpty(ignoreConceptsECL)? new HashSet<>() : new HashSet<>(findConcepts(ignoreConceptsECL));
 		for (Concept c : findConcepts(subsetECL)) {
 			//Find all the target values for the specified attribute type
@@ -139,7 +139,6 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		Set<Concept> targets = new HashSet<>(valueCounts.asMap().keySet());
 		if (!targets.isEmpty()) {
 			//Now work through the list, from top to bottom
-			//Concept top = calculateHighestConceptOrParent(targets);
 			Concept top = SnomedUtils.findCommonAncestor(targets, ancestorCache);
 			targets.add(top);
 			//Go go go recursive programming!
@@ -164,16 +163,14 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 			alreadyReported.add(c);
 		}
 
-		LOGGER.debug("Reporting {} with {} targets", c, targets.size());
-		
 		//What's the descendant count added up?
 		if (isTop || valueCounts.containsKey(c)) {
 			Set<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
-			String parentsStr = parents.stream().map(p->p.toString())
+			String parentsStr = parents.stream().map(Concept::toString)
 					.collect(Collectors.joining(",\n"));
 			String parentsParentsStr = parents.stream()
 					.flatMap(p->p.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream())
-					.map(pp->pp.toString())
+					.map(Concept::toString)
 					.collect(Collectors.joining(",\n"));
 			int count = getDescendantAndSelfCount(c, targets, false);
 			int countFiltered = getDescendantAndSelfCount(c, targets, true);
@@ -201,7 +198,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		Collections.sort(sorted, Collections.reverseOrder(Map.Entry.comparingByValue()));
 		return sorted.stream()
 			.limit(3)
-			.map(cb -> cb.toString())
+			.map(Object::toString)
 			.collect(Collectors.joining(", \n"));
 
 	}

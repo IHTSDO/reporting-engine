@@ -5,10 +5,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -25,7 +23,7 @@ import com.google.common.collect.HashBiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BatchLoincFix extends BatchFix {
+public abstract class BatchLoincFix extends BatchFix {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(BatchLoincFix.class);
 
@@ -185,20 +183,6 @@ public class BatchLoincFix extends BatchFix {
 		}
 		return row.get(idx);
 	}
-
-	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		int changesMade = 0;
-		try {
-			inactivateConcept(task, concept, null, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-		} catch (ValidationFailure v) {
-			report(task, concept, v);
-		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-		}
-		return changesMade;
-	}
-	
 
 	protected String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
 		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());

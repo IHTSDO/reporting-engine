@@ -100,6 +100,9 @@ public class ArchiveManager implements ScriptConstants {
 			singleton.populatePreviousTransativeClosure = false;
 			singleton.ensureSnapshotPlusDeltaLoad = false;
 			singleton.loadOtherReferenceSets = false;
+			//Need to also reset the need for previous state in the graphloader, because it might
+			//not get fully reset if we run another report using the same data
+			singleton.gl.setRecordPreviousState(false);
 		} else if (!isBrandNew){
 			LOGGER.info("Archive Manager load flags retained - reusing.");
 		}

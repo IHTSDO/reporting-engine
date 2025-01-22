@@ -2,18 +2,20 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
@@ -24,20 +26,17 @@ import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivity.class);
+	private static final String INCLUDE_SUB_ORG = "Include Substances and Organisms";
+	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 
-	private static String INCLUDE_SUB_ORG = "Include Substances and Organisms";
-	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
 
 	private List<Concept> targetHierarchies = new ArrayList<>();
-	private List<Concept> excludeHierarchies = new ArrayList<>();
 	private Map<String, Description> sourcesOfTruth = new HashMap<>();
 	private Set<Concept> allExclusions = new HashSet<>();
 	private Set<String> whiteList = new HashSet<>();  //Note this can be both descriptions and concept SCTIDs
-	private boolean includeSubOrg = false;
 	private boolean recentChangesOnly = true;
 	private List<String> properNouns = new ArrayList<>();
 	private Map<String, List<String>> properNounPhrases = new HashMap<>();
@@ -46,28 +45,30 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
 	private Set<String>wilcardWords = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException {
+	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		params.put(RECENT_CHANGES_ONLY, "N");
-		TermServerReport.run(CaseSensitivity.class, params, args);
+		TermServerScript.run(CaseSensitivity.class, params, args);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, Semtag, Description, isPreferred, CaseSignificance, Issue";
 		inputFiles.add(0, new File("resources/cs_words.tsv"));
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		loadCSWords();
 		LOGGER.info ("Processing exclusions");
 		targetHierarchies.add(ROOT_CONCEPT);
 		recentChangesOnly = getJob().getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);
-		includeSubOrg = getJob().getParameters().getMandatoryBoolean(INCLUDE_SUB_ORG);
+		boolean includeSubOrg = getJob().getParameters().getMandatoryBoolean(INCLUDE_SUB_ORG);
 		if (!includeSubOrg) {
 			excludeHierarchies.add(SUBSTANCE);
 			excludeHierarchies.add(ORGANISM);
@@ -84,7 +85,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 					String term = d.getTerm();
 					if (d.getType().equals(DescriptionType.FSN)) {
-						term = SnomedUtils.deconstructFSN(term)[0];
+						term = SnomedUtilsBase.deconstructFSN(term)[0];
 					}
 					sourcesOfTruth.put(term, d);
 				}
@@ -114,6 +115,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				.build();
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		initialiseSummaryInformation(ISSUE_COUNT);
 		checkCaseSignificance();
@@ -126,7 +128,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		}
 		List<String> lines;
 		try {
-			lines = Files.readLines(getInputFile(), Charsets.UTF_8);
+			lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
 		}
@@ -140,7 +142,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			if (!phrase.equals(phrase.toLowerCase())) {
 				//Does this word end in a wildcard?
 				if (phrase.endsWith("*")) {
-					String wildWord = phrase.replaceAll("\\*", "");
+					String wildWord = phrase.replace("\\*", "");
 					wilcardWords.add(wildWord);
 					continue;
 				}
@@ -166,7 +168,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendants(NOT_SET));
-			LOGGER.info ("Checking case significance in target hierarchy: " + targetHierarchy);
+			LOGGER.info("Checking case significance in target hierarchy: {}", targetHierarchy);
 			
 			int count = 0;
 			nextConcept:
@@ -179,12 +181,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					print (".");
 				}
 				
-/*				if (c.getConceptId().equals("688271000119100")) {
-					LOGGER.debug ("Temp - check here");
-				}*/
 				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
 					continue;
 				}
+
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					//Are we checking only unpromoted changes?
 					if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(d)) {
@@ -194,8 +194,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					if (whiteList.contains(d.getDescriptionId())) {
 						continue;
 					}
-					if (!recentChangesOnly || !d.isReleased()) {
-						String term = d.getTerm().replaceAll("\\-", " ");
+					if (!recentChangesOnly || !d.isReleasedSafely()) {
+						String term = d.getTerm().replace("\\-", " ");
 						String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 						String firstLetter = term.substring(0,1);
 						String secondLetter = term.substring(1,2);
@@ -253,7 +253,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				}
 			}
 			print ("\n\n");
-			LOGGER.info ("Completed hierarchy: " + targetHierarchy);
+			LOGGER.info ("Completed hierarchy: {}", targetHierarchy);
 			
 		}
 	}
@@ -261,10 +261,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private boolean startsWithSingleLetter(String term) {
 		if (Character.isLetter(term.charAt(0))) {
 			//If it's only 1 character long, then yes!
-			if (term.length() == 1 || !Character.isLetter(term.charAt(1))) {
-				return true;
-			} 
-			return false;
+			return (term.length() == 1 || !Character.isLetter(term.charAt(1)));
 		}
 		return false;
 	}
@@ -314,10 +311,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		
 		//Work the number of words up progressively to see if we get a match 
 		//eg first two words in "Influenza virus vaccine-containing product in nasal dose form" is an Organism
-		String progressive = firstWord;
+		StringBuilder progressive = new StringBuilder(firstWord);
 		for (int i=1; i<words.length; i++) {
-			progressive += " " + words[i];
-			if (sourcesOfTruth.containsKey(progressive)) {
+			progressive.append(" ").append(words[i]);
+			if (sourcesOfTruth.containsKey(progressive.toString())) {
 				return true;
 			}
 		}
@@ -327,7 +324,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private boolean singleLetterCombo(String term) {
 		//Do we have a letter following a number - optionally with a dash?
-		term = term.replaceAll("-", "");
+		term = term.replace("-", "");
 		Matcher matcher = numberLetter.matcher(term);
 		if (matcher.find()) {
 			return true;
@@ -335,21 +332,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		
 		//A letter on it's own will often be lower case eg 3715305012 [768869001] US: P, GB: P: Interferon alfa-n3-containing product [cI]
 		matcher = singleLetter.matcher(term);
-		if (matcher.find()) {
-			return true;
-		}
-		return false;
-	}
-
-	public boolean singleCapital(String term) {
-		if (Character.isUpperCase(term.charAt(0))) {
-			if (term.length() == 1) {
-				return true;
-			} else if (!Character.isLetter(term.charAt(1))) {
-				return true;
-			}
-		}
-		return false;
+		return (matcher.find());
 	}
 
 }

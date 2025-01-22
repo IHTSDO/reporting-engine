@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.IOException;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -10,7 +9,6 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.reports.CaseSensitivity;
 
 /*
 SUBST-279 Where a term starts with a number and then a capital letter follows, 
@@ -19,6 +17,7 @@ then make it small.
 Then check against case significance rules to see if it can be made "ci"
 */
 
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +25,13 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NumberLetterLowerCase.class);
 
-	CaseSensitivity csReport;
+	CaseSensitivityUtils csUtils;
 	
 	protected NumberLetterLowerCase(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException {
 		NumberLetterLowerCase fix = new NumberLetterLowerCase(null);
 		try {
 			fix.selfDetermining = true;
@@ -44,16 +43,15 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 			fix.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
-		csReport = new CaseSensitivity();
-		csReport.loadCSWords();
+		csUtils = CaseSensitivityUtils.get();
 	}
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		try {
 			int changes = normaliseCase(task, loadedConcept);
@@ -86,13 +84,13 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 				if (i == 0 || Character.isLowerCase(term.charAt(i))) {
 					return NO_CHANGES_MADE;
 				} else {
-					//OK so here we have a capital letter thats not the 
-					//first in the term.  Is it a known case sensitive word?
+					//OK so here we have a capital letter that's not the
+					//first in the term.  Is it a known case-sensitive word?
 					String subString = term.substring(i);
-					if (csReport.singleCapital(subString)) {
+					if (singleCapital(subString)) {
 						report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - single captial letter");
 						return NO_CHANGES_MADE;
-					} else if (csReport.startsWithProperNounPhrase(subString)) {
+					} else if (csUtils.startsWithProperNounPhrase(c, subString)) {
 						report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - known cs word");
 						return NO_CHANGES_MADE;
 					} else {
@@ -114,13 +112,18 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 		return NO_CHANGES_MADE;
 	}
 
+	private boolean singleCapital(String term) {
+		return (Character.isUpperCase(term.charAt(0)) &&
+			(term.length() == 1 || !Character.isLetter(term.charAt(1))));
+	}
+
 	private void setCaseSignificance(Task t, Concept c, Description d) throws TermServerScriptException {
 		if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ||
 			d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 			if (StringUtils.isCaseSensitive(d.getTerm())) {
 				report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains capital - retaining case sensitivity");
 				incrementSummaryInformation("CS retained due to capital");
-			} else if (csReport.containsKnownLowerCaseWord(d.getTerm())) {
+			} else if (csUtils.containsKnownLowerCaseWord(d.getTerm())) {
 				report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains known lower case word - retaining case sensitivity");
 				incrementSummaryInformation("CS retained due to forced lower case word");
 			} else {
@@ -131,13 +134,13 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 		}
 	}
 
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();
 		setQuiet(true);
 		for (Concept c : SUBSTANCE.getDescendants(NOT_SET)) {
 			//Work with a clone of the concept so we don't fix the issues on the initial pass
 			c = c.cloneWithIds();
-			//if (c.getConceptId().equals("86884000")) {
 			if (c.getConceptId().equals("18344000")) {
 				LOGGER.debug("Here");
 			}
@@ -149,10 +152,5 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 		setQuiet(false);
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return asComponents(processMe);
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		return null;
 	}
 }

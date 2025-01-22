@@ -25,13 +25,13 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException {
 		RevertNewInactiveStateModuleJump delta = new RevertNewInactiveStateModuleJump();
 		delta.targetModuleId = "15561000146104";
-		delta.gl.setRecordPreviousState(true);
 		delta.standardExecution(args);
 	}
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setReleasedFlagPopulated(true);
+		gl.setRecordPreviousState(true);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 	}

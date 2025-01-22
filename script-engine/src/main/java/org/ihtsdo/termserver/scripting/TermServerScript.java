@@ -477,7 +477,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		super.postInit(tabNames, columnHeadings, csvOutput);
 
-		if (gl.getIntegrityWarnings().size() > 0) {
+		if (!gl.getIntegrityWarnings().isEmpty()) {
 			report(PRIMARY_REPORT, "***********  Snapshot Integrity Warnings  ***********");
 			for (String warning : gl.getIntegrityWarnings()) {
 				report(PRIMARY_REPORT, warning);
@@ -515,48 +515,58 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			jobRun.setDebugInfo(msg);
 			LOGGER.error(msg, e);
 		} finally {
-			try {
-				if (finalWords.size() > 0) {
-					report(tabForFinalWords, "");
-					report(tabForFinalWords, "", "***********************************");
-					report(tabForFinalWords, "");
-					for (String finalMsg : finalWords) {
-						report(tabForFinalWords, finalMsg);
-					}
-				}
-				flushFiles(true);
-			} catch (Exception e) {
-				LOGGER.warn("Exception while writing final words and flushing: " + e.getMessage());
-			}
-
-			try {
-				if (!suppressOutput) {
-					if (getReportManager() != null) {
-						jobRun.setResultUrl(getReportManager().getUrl());
-					}
-					Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
-					int issueCount = 0;
-					if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
-						issueCount = Integer.parseInt(issueCountObj.toString());
-					}
-					jobRun.setIssuesReported(issueCount);
-				}
-			} catch (Exception e2) {
-				LOGGER.error("Failed to set result URL in final block", e2);
-			}
-			
-			//Are we still writing our snapshot to disk?  Don't move on to anything else while we are
-			while (asyncSnapshotCacheInProgress) {
-				LOGGER.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
-				try {
-					Thread.sleep(5 * 1000);
-				} catch (InterruptedException e) {
-					LOGGER.error(EXCEPTION_ENCOUNTERED,e);
-				}
-			}
+			doFinalTidyUp();
 		}
 	}
-	
+
+	private void doFinalTidyUp() {
+		try {
+			if (!finalWords.isEmpty()) {
+				report(tabForFinalWords, "");
+				report(tabForFinalWords, "", "***********************************");
+				report(tabForFinalWords, "");
+				for (String finalMsg : finalWords) {
+					report(tabForFinalWords, finalMsg);
+				}
+			}
+		} catch (Exception e) {
+			LOGGER.error("Exception while writing final words", e);
+		}
+
+		try {
+			if (!suppressOutput) {
+				if (getReportManager() != null) {
+					jobRun.setResultUrl(getReportManager().getUrl());
+				}
+				Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
+				int issueCount = 0;
+				if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
+					issueCount = Integer.parseInt(issueCountObj.toString());
+				}
+				jobRun.setIssuesReported(issueCount);
+			}
+		} catch (Exception e2) {
+			LOGGER.error("Failed to set result URL in final block", e2);
+		}
+
+		//Are we still writing our snapshot to disk?  Don't move on to anything else while we are
+		while (asyncSnapshotCacheInProgress) {
+			LOGGER.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
+			try {
+				Thread.sleep(5 * 1000L);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOGGER.error(EXCEPTION_ENCOUNTERED,e);
+			}
+		}
+
+		try {
+			flushFiles(true);
+		} catch (TermServerScriptException e) {
+			//We tried
+		}
+	}
+
 	protected void preInit() throws TermServerScriptException {
 		//Override this method in concrete class to set flags that affect checkSettingsWithUser
 		//like selfDetermining = true;
@@ -1960,7 +1970,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return null;
 	}
 
-	public Concept getReplacementSafely(List<String> notes, Object context, Concept inactiveConcept, boolean isIsA) {
+	public Concept getReplacementSafely(List<String> notes, Concept inactiveConcept, boolean isIsA) {
 		try {
 			return getReplacement(notes, inactiveConcept, isIsA);
 		} catch (TermServerScriptException e) {

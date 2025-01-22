@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes.loinc;
 
-import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -8,7 +7,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 
@@ -60,20 +58,5 @@ public class UpdateLOINC extends BatchLoincFix {
 		}
 		return changesMade;
 	}
-	
 
-	@Override
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		List<Component> componentsToProcess = new ArrayList<>();
-		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			if (c.isActiveSafely() && c.getModuleId().equals(SCTID_LOINC_PROJECT_MODULE)) {
-				String loincNum = getLoincNumFromDescription(c);
-				String thisStatus = get(loincFileMap, loincNum, LoincCol.STATUS.ordinal());
-				if (thisStatus.equals(DEPRECATED)) {
-					componentsToProcess.add(c);
-				}
-			}
-		}
-		return componentsToProcess;
-	}
 }

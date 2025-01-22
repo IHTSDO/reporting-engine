@@ -16,17 +16,21 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils.TEST_RESULTS.ROLES_CROSSOVER;
+import static org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils.TEST_RESULTS.ROLEGROUPS_CROSSOVER;
+
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ReleaseStats extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseStats.class);
+
+	private static final String STD_HEADER = "SCTID, FSN, SemTag";
 
 	public static final String THIS_RELEASE = "This Release";
 	public static final String MODULES = "Modules";
@@ -88,9 +92,9 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				"KPI, count, of which Orphanet",
 				"SCTID, FSN, SemTag, Crossover",
 				"SCTID, FSN, SemTag, Crossover",
-				"SCTID, FSN, SemTag",
-				"SCTID, FSN, SemTag",
-				"SCTID, FSN, SemTag"};
+				STD_HEADER,
+				STD_HEADER,
+				STD_HEADER};
 		String[] tabNames = new String[] {	"Summary Release Stats",
 				"Summary KPI Counts",
 				"Role group crossovers",
@@ -168,14 +172,13 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 							if (processedPairs.contains(new GroupPair(right, left))) {
 								continue;
 							}
-							switch (CrossoverUtils.subsumptionRoleGroupTest(left, right)) {
-								case ROLEGROUPS_CROSSOVER :
-								case ROLES_CROSSOVER:	
-													roleGroupCrossOvers++;
-													String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
-													report(TERTIARY_REPORT, c, msg);
-													break;
-								default:
+
+							CrossoverUtils.TEST_RESULTS testResult = CrossoverUtils.subsumptionRoleGroupTest(left, right);
+							if (testResult == ROLEGROUPS_CROSSOVER || testResult == ROLES_CROSSOVER) {
+								roleGroupCrossOvers++;
+								String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
+								report(TERTIARY_REPORT, c, msg);
+								break;
 							}
 							processedPairs.add(new GroupPair(left, right));
 						}

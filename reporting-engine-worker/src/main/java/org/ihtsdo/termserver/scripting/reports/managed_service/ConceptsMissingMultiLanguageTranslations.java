@@ -26,8 +26,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(EXTENSION_CONCEPTS_ONLY, "false");
-		//params.put(INCLUDE_UNTRANSLATED_CONCEPTS, "false");
+		params.put(EXTENSION_CONCEPTS_ONLY, "true");
 		params.put(INCLUDE_INACTIVE_CONCEPTS, "false");
 		TermServerScript.run(ConceptsMissingMultiLanguageTranslations.class, args, params);
 	}
@@ -38,7 +37,6 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 		getArchiveManager().setRunIntegrityChecks(false);
 		subsetECL = run.getParamValue(ECL);
 		includeIntConcepts = !run.getParamBoolean(EXTENSION_CONCEPTS_ONLY);
-		//includeUntranslatedConcepts=run.getParamBoolean(INCLUDE_UNTRANSLATED_CONCEPTS);
 		includeUntranslatedConcepts = false;
 		includeInactiveConcepts = run.getParamBoolean(INCLUDE_INACTIVE_CONCEPTS);
 		super.init(run);
@@ -68,7 +66,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 	private Set<String> getLanguagesFromDescriptions() {
 		return gl.getAllConcepts().parallelStream()
 		.flatMap(c -> c.getDescriptions().stream())
-		.map(d -> d.getLang())
+		.map(Description::getLang)
 		.collect(Collectors.toSet());
 	}
 
@@ -77,7 +75,6 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(Type.ECL)
 				.add(EXTENSION_CONCEPTS_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
-				//.add(INCLUDE_UNTRANSLATED_CONCEPTS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.add(INCLUDE_INACTIVE_CONCEPTS).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		return new Job()
@@ -103,7 +100,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 		for (Concept c : scopeAndSort(conceptsOfInterest)) {
 			Set<String> missingLanguages = new HashSet<>(expectedLanguages);
 			missingLanguages.removeAll(getLanguages(c, false));
-			if (missingLanguages.size() > 0) {
+			if (!missingLanguages.isEmpty()) {
 				String missLangStr = String.join(", ", missingLanguages);
 				report(c, missLangStr, gl.getConcept(c.getModuleId()).toStringPref());
 				countIssue(c);
@@ -113,20 +110,20 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 	
 	private List<Concept> scopeAndSort(Collection<Concept> superSet) {
 		return superSet.stream()
-		.filter (c -> inScope(c))
-		.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
+		.filter (this::inScope)
+		.sorted(SnomedUtils::compareSemTagFSN)
 		.collect(Collectors.toList());
 	}
 	
 	private boolean inScope(Concept c) {
 		return ((includeInactiveConcepts || c.isActive()) 
 			&& (includeIntConcepts || !SnomedUtils.isInternational(c))
-			&& (includeUntranslatedConcepts || getLanguages(c, false).size() > 0));
+			&& (includeUntranslatedConcepts || !getLanguages(c, false).isEmpty()));
 	}
 
 	private Set<String> getLanguages(Concept c, boolean includeEnglish) {
 		return c.getDescriptions(ActiveState.ACTIVE).stream()
-				.map(d -> d.getLang())
+				.map(Description::getLang)
 				.filter(s -> (includeEnglish || !s.equals("en")))
 				.collect(Collectors.toSet());
 	}

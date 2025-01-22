@@ -15,7 +15,7 @@ import java.util.*;
 
 public class ArchiveWriter implements Runnable, RF2Constants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveWriter.class);
-	TermServerScript ts;
+	private TermServerScript ts;
 
 	protected String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	protected String packageDir;
@@ -47,6 +47,8 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 	protected String[] owlHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"owlExpression"};
 	protected String[] altIdHeader = new String[] {"alternateIdentifier",COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,"identifierSchemeId",COL_REFERENCED_COMPONENT_ID};
 	protected String[] annotHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"languageDialectCode",COL_TYPE_ID,"value"};
+
+	private int conceptsWrittenToDisk = 0;
 
 	ArchiveWriter(TermServerScript ts, File outputDirFile) {
 		this.ts = ts;
@@ -106,6 +108,7 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 
 	public void run() {
 		LOGGER.debug("Writing RF2 Snapshot to disk{}", (leaveArchiveUncompressed ? "." : " and compressing."));
+		conceptsWrittenToDisk = 0;
 		try {
 			//Tell our parent that a child is working so it doesn't try and
 			//start processing something else.
@@ -115,7 +118,7 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 			if (!leaveArchiveUncompressed) {
 				SnomedUtils.createArchive(new File(outputDirName));
 			}
-			LOGGER.debug("Completed writing RF2 Snapshot to disk");
+			LOGGER.debug("Completed writing RF2 Snapshot ({} concepts) to disk", conceptsWrittenToDisk);
 		} catch (Exception e) {
 			LOGGER.error("Failed to write archive to disk", e);
 		} finally {
@@ -129,6 +132,7 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 		Set<Concept> allConcepts = new HashSet<>(ts.getGraphLoader().getAllConcepts());
 		for (Concept thisConcept : allConcepts) {
 			outputRF2(thisConcept);
+			conceptsWrittenToDisk++;
 		}
 
 		//Alt Identifier file is independent of individual concepts

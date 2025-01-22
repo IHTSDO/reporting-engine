@@ -26,8 +26,10 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false;
 			delta.init(args);
-			delta.getGraphLoader().setRecordPreviousState(true);
+
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+			delta.getGraphLoader().setRecordPreviousState(true);
+
 			delta.loadProjectSnapshot();
 			delta.additionalReportColumns = "Description ET, Details";
 			delta.postInit();

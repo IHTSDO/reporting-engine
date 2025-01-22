@@ -1005,7 +1005,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		for (Concept type : types) {
 			Set<Relationship> rels = g.getRelationshipsWithType(type);
 			if (rels.size() > 1) {
-				LOGGER.warn(g + " has multiple " + type);
+				LOGGER.warn("{} has multiple {}", g, type);
 			} else if (rels.size() == 1) {
 				if (allowNewConcepts) {
 					return rels.iterator().next().getTarget();
@@ -1022,7 +1022,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
-				LOGGER.warn(c + " has multiple " + type + " in group " + groupId);
+				LOGGER.warn("{} has multiple {} in group {}", c, type, groupId);
 			} else if (rels.size() == 1) {
 				Relationship r = rels.iterator().next();
 				if (!r.isConcrete()) {
@@ -1043,6 +1043,13 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return targets;
 	}
 	
+	public static Set<Concept> getTargets(Concept c) {
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+				.filter(Relationship::isNotConcrete)
+				.map(Relationship::getTarget)
+				.collect(Collectors.toSet());
+	}
+
 	public static Integer getConcreteIntValue(Concept c, Concept type, CharacteristicType charType, int groupId) throws TermServerScriptException {
 		Integer value = null;
 		Set<Relationship> rels = c.getRelationships(charType, type, groupId);
@@ -1061,37 +1068,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 		return value;
 	}
-	
-	/*public static String getModel(Expressable c, CharacteristicType charType) {
-		return getModel(c, charType, false);
-	}
-	
-	public static String getModel(Expressable c, CharacteristicType charType, boolean includeParents) {
-		String model = "";
-		
-		if (includeParents) {
-			model = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
-			String parentStr = c.getParents(charType).stream()
-					.map(p -> p.getFsn())
-					.collect(Collectors.joining(" + "));
-			model += parentStr;
-			if (SnomedUtils.countAttributes(c, charType) > 0) {
-				model +=" : ";
-			}
-			model += "\n";
-		}
-		boolean isFirst = true;
-		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
-			if (!isFirst) {
-				model += ", \n";
-			} else isFirst = false;
-			model += g;
-		}
-		//Split into separate lines so we can see better
-		model = model.replaceAll ("\\{", "\\{  ").replaceAll("\\,", "\\,\n   ");
-		return model;
-	}*/
-	
+
 	public static Integer countAttributes(Expressable c, CharacteristicType charType) {
 		int attributeCount = 0;
 		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
