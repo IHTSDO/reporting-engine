@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -11,6 +12,7 @@ import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.DialectChecker;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,17 +22,20 @@ public class RetermConcepts extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RetermConcepts.class);
 	
-	private boolean useXpattern = true;
+	private static final boolean USE_X_PATTERN = false;
+	private static final List<DescriptionType> TYPES_OF_INTEREST = List.of(DescriptionType.FSN);
+	private static final boolean NORMALIZE_PT = true;  //
+
 	private List<String> identifyingTexts = null;
 	private boolean identifyingTextsStartsWith = true;
 	private String excludeText = null;
 	private Map<String, String> replacementMap = new HashMap<>();
 	private String prefix = null;
-	private static final boolean NORMALIZE_PT = true;  //
+
 	private boolean forcePTAlignment = true;
 	private Collection<Concept> requiredAttributeValue = null;
 	Map<String, Concept> currentFSNs = new HashMap<>();
-	List<DescriptionType> typesOfInterest = List.of(DescriptionType.FSN, DescriptionType.SYNONYM);
+
 
 	protected RetermConcepts(BatchFix clone) {
 		super(clone);
@@ -56,12 +61,12 @@ public class RetermConcepts extends BatchFix {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_UPDATES);
-		subsetECL = "<<41769001 |Disease suspected (situation)| ";
+		subsetECL = "< 64572001 |Disease (disorder)|";
 
-		//text should be in lower case.
-		//replacementMap.put("tumor", "neoplasm")
+		//text should be in lower case for both replacement map and identifying texts
+		replacementMap.put("tumor of ", "neoplasm of ");
 
-		identifyingTexts = List.of("suspected");
+		identifyingTexts = List.of("tumor of");
 		
 		requiredAttributeValue = null;
 
@@ -94,13 +99,13 @@ public class RetermConcepts extends BatchFix {
 
 	private int reterm(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		if (useXpattern) {
+		if (USE_X_PATTERN) {
 			changesMade += retermDescriptionUsingXPattern(t, c);
 		} else {
 			for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
 				String find = entry.getKey();
 				String replace = entry.getValue();
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE, typesOfInterest)) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE, TYPES_OF_INTEREST)) {
 					if (d.isPreferred()) {
 						changesMade += retermDescriptionIfRequired(t, c, d, find, replace);
 					}
@@ -144,7 +149,7 @@ public class RetermConcepts extends BatchFix {
 
 		//If the replacement is a known FSN, we'll skip
 		if (currentFSNs.containsKey(replacement)) {
-			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement is a known FSN: " + replacement);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement is a known FSN: " + replacement, currentFSNs.get(replacement));
 			return NO_CHANGES_MADE;
 		}
 
@@ -172,14 +177,33 @@ public class RetermConcepts extends BatchFix {
 		String alignedPT = SnomedUtilsBase.deconstructFSN(c.getFsn())[0];
 		Description usPT = c.getPreferredSynonym(US_ENG_LANG_REFSET);
 		Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
+
+		//Now we might currently have PT variance, but does the replaced term have it?
+		//If yes, then we'll construct a new GB specific aligned PT term, but if there's
+		//NO variance then our new aligned PT will be acceptable in both US and GB
+		DialectChecker dialectUtils = DialectChecker.create();
+		boolean previousPTsShowedVariance = false;
+		boolean newFSNHasVariance = dialectUtils.containsUSSpecificTerm(alignedPT);
 		
 		if (!usPT.equals(gbPT)) {
-			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "US/GB Variance!", gbPT);
+			previousPTsShowedVariance = true;
+			if (!newFSNHasVariance) {
+				gbPT.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, "US/GB Variance. Previous GB PT set to 'A'", gbPT);
+			}
+
+		} else if (newFSNHasVariance) {
+			//We previously had no variance and now we do
+			throw new NotImplementedException("Add code to split FSN into US/GB specific terms");
 		}
 		
 		//We've already deleted the unwanted terms, so we'll demote this PT rather than inactivate
 		if (!alignedPT.equals(usPT.getTerm())) {
-			replaceDescription(t, c, usPT, alignedPT, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, true, null);
+			Description replacement = replaceDescription(t, c, usPT, alignedPT, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, true, null);
+			if (previousPTsShowedVariance && ! newFSNHasVariance) {
+				replacement.setAcceptability(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				report(t, c, Severity.MEDIUM, ReportActionType.LANG_REFSET_MODIFIED, "Prior US/GB Variance no longer applies. PT preferred in both dialects", replacement);
+			}
 			return CHANGE_MADE;
 		}
 		return NO_CHANGES_MADE;
@@ -189,7 +213,7 @@ public class RetermConcepts extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> toProcess = new ArrayList<>();
 		for (Concept c : SnomedUtils.sort(findConcepts(subsetECL, true, true))) {
-			if (c.getId().equalsIgnoreCase("363518003")) {
+			if (c.getId().equalsIgnoreCase("278697001")) {
 				LOGGER.info("Debug here");
 			}
 
@@ -197,7 +221,7 @@ public class RetermConcepts extends BatchFix {
 				continue;
 			}
 			//Flag up any descriptions that have both the find AND the replace text in the same term.
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE, TYPES_OF_INTEREST)) {
 				if (checkDescriptionForInclusion(c, d)) {
 					toProcess.add(c);
 					break;
@@ -245,6 +269,8 @@ public class RetermConcepts extends BatchFix {
 					return true;
 				}
 			}
+		} else {
+			return true;
 		}
 		return false;
 	}
