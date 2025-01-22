@@ -37,6 +37,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchFix.class);
 
+	private static final int MAX_CONCEPTS_IN_TASK_DESCRIPTION = 50;
+
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
@@ -66,6 +68,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	private Batch currentBatch;
 	protected TaskHelper taskHelper;
+
 
 	protected BatchFix(BatchFix clone) {
 		if (clone != null) {
@@ -356,6 +359,9 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			if (++failureCount >= maxFailures) {
 				throw new TermServerScriptException("Failure count exceeded " + maxFailures, e);
 			}
+			if (e instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
 		}
 	}
 
@@ -382,10 +388,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 
 	protected void updateTask(Task task, String reportName, String reportURL) throws Exception {
-		String taskDescription;
+		String taskDescription = DEFAULT_TASK_DESCRIPTION;
 		if (this instanceof BatchImport batchImport) {
 			taskDescription = batchImport.getAllNotes(task);
-		} else {
+		} else if (task.getComponents().size() <= MAX_CONCEPTS_IN_TASK_DESCRIPTION) {
 			taskDescription = populateTaskDescription ? task.getDescriptionHTML() : DEFAULT_TASK_DESCRIPTION;
 		}
 
@@ -423,7 +429,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected void init(JobRun jobRun) throws TermServerScriptException {
 		super.init(jobRun);
 		if (jobRun.getParamValue(DRY_RUN) != null) {
-			TermServerScript.dryRun = !jobRun.getParamValue(DRY_RUN).equals("N");
+			TermServerScript.setDryRun(!jobRun.getParamValue(DRY_RUN).equals("N"));
 		}
 		if (jobRun.getParamValue(CONCEPTS_PER_TASK) != null) {
 			taskSize = Integer.parseInt(jobRun.getParamValue(CONCEPTS_PER_TASK));
@@ -754,7 +760,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	protected int replaceParents(Task t, Concept c, Relationship oldParentRel, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
 		int changesMade = 0;
-		Set<Relationship> parentRels = new HashSet<Relationship>(c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+		Set<Relationship> parentRels = new HashSet<>(c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 				IS_A,
 				ActiveState.ACTIVE));
 		for (Relationship parentRel : parentRels) {
@@ -957,10 +963,10 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	}
 
 	protected void removeDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, String info) throws TermServerScriptException {
-		String change = "";
-		ReportActionType action = null;
+		String change;
+		ReportActionType action;
 		String before = d.toString();
-		if (d.isReleased()) {
+		if (d.isReleasedSafely()) {
 			d.setActive(false);
 			d.setInactivationIndicator(indicator);
 			d.setAcceptabilityMap(new HashMap<>());
@@ -1054,7 +1060,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected void removeRedundancy(Task t, Concept c, Concept type, int groupNum) throws TermServerScriptException {
 		//Remove any redundant attribute in the given group
 		List<Concept> allValues = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupNum)
-				.stream().map(rel -> rel.getTarget()).collect(Collectors.toList());
+				.stream().map(Relationship::getTarget).toList();
 		for (Concept redundantValue : detectRedundancy(allValues)) {
 			Relationship removeMe = new Relationship(c, type, redundantValue, groupNum);
 			removeRelationship(t, c, removeMe);
