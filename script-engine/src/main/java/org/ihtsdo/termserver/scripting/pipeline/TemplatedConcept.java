@@ -5,6 +5,7 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants.ProcessingFlag;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -81,8 +82,8 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		this.existingConcept = existingConcept;
 	}
 
-	public String getDifferencesFromExistingConcept() {
-		return differencesFromExistingConcept.stream().collect(Collectors.joining(",\n"));
+	public void populateAlternateIdentifier() {
+		getConcept().addAlternateIdentifier(getExternalIdentifier(), getCodeSystemSctId());
 	}
 
 	public String getDifferencesFromExistingConceptWithMultiples() {
@@ -141,6 +142,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		}
 		populateParts();
 		populateTerms();
+		reviewCaseSensitivity(concept);
 		if (detailsIndicatePrimitiveConcept() ||
 				hasProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE)) {
 			getConcept().setDefinitionStatus(DefinitionStatus.PRIMITIVE);
@@ -149,7 +151,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		if (hasProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT)) {
 			splitComponentsIntoDistinctGroups();
 		}
-		getConcept().addAlternateIdentifier(getExternalIdentifier(), getCodeSystemSctId());
+		populateAlternateIdentifier();
 	}
 
 	protected abstract String getCodeSystemSctId();
@@ -179,8 +181,17 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 			concept.addDescription(lcn);
 		}
+
+
 	}
-	
+
+	private void reviewCaseSensitivity(Concept c) throws TermServerScriptException {
+		CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
+		for (Description d : c.getDescriptions()) {
+			d.setCaseSignificance(csUtils.suggestCorrectCaseSignficance(d));
+		}
+	}
+
 	protected abstract void applyTemplateSpecificTermingRules(Description pt) throws TermServerScriptException;
 
 	protected String populateTermTemplateFromSlots(String ptTemplateStr) throws TermServerScriptException {
