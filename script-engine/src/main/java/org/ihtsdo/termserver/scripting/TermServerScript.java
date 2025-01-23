@@ -1217,7 +1217,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			
 			if (!archiveEclWarningGiven.contains(branch)) {
+<<<<<<< Updated upstream
 				LOGGER.warn("Not using {} to recover ECL. Using {} instead.", branch, historicECLBranch);
+=======
+				LOGGER.warn("Not using {} to recover ECL.  Using {} instead.", branch, historicECLBranch);
+>>>>>>> Stashed changes
 				archiveEclWarningGiven.add(branch);
 			}
 			branch = historicECLBranch;
