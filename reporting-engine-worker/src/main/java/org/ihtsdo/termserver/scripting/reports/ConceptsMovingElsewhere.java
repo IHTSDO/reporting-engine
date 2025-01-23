@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -14,19 +13,18 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
- * Lists all active descriptions that have no acceptability
- */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Lists all active descriptions that have no acceptability
+ */
 public class ConceptsMovingElsewhere extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ConceptsMovingElsewhere.class);
 
 	private Map<Concept, String> knownNamespaceExtensionMap = new HashMap<>();
-	private static String THIS_RELEASE = "This Release";
+	private static final String THIS_RELEASE = "This Release";
 	private Map<Concept, Integer> moveSummaryMap = new HashMap<>();
 	private boolean loadPublishedPackage;
 	private String thisEffectiveTime = null;
@@ -37,7 +35,8 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 		params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_BETA_20210731T120000Z.zip");
 		TermServerScript.run(ConceptsMovingElsewhere.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
 		runStandAlone = false; //We need a proper path lookup for MS projects
@@ -50,7 +49,8 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 			setProject(new Project(projectKey));
 		}
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { 
 				"NameSpace, Extension, Count",
@@ -61,8 +61,8 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 				"Concepts Moved"
 		};
 		super.postInit(tabNames, columnHeadings, false);
-		knownNamespaceExtensionMap.put(gl.getConcept("416516009 |Extension Namespace {1000009}"), "Veterinary Extension");
-		knownNamespaceExtensionMap.put(gl.getConcept("370137002 |Extension Namespace {1000000}"), "UK Extension");
+		knownNamespaceExtensionMap.put(new Concept("416516009", "Extension Namespace {1000009}"), "Veterinary Extension");
+		knownNamespaceExtensionMap.put(new Concept("370137002", "Extension Namespace {1000000}"), "UK Extension");
 		if (loadPublishedPackage) {
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
@@ -88,7 +88,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> concepts = StringUtils.isEmpty(subsetECL) ? gl.getAllConcepts() : findConcepts(subsetECL);
 		for (Concept c : concepts) {
-			if (!c.isActive() && inScope(c)) {
+			if (!c.isActiveSafely() && inScope(c)) {
 				Set<String> movedToSet = c.getAssociationTargets().getMovedTo();
 				if (movedToSet.isEmpty() || movedToSet.size() > 1) {
 					report(c, "Unexpected number of movedTo targets: " + movedToSet.size());
@@ -101,12 +101,12 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 			}
 		}
 		populateSummaryTab();
-		LOGGER.warn (missingIndicatorCount + " inactive concepts have no inactivation indicator");
+		LOGGER.warn("{} inactive concepts have no inactivation indicator", missingIndicatorCount);
 	}
 	
 	private boolean inScope(Concept c) {
 		if (c.getInactivationIndicator() == null) {
-			LOGGER.warn (c + " has no inactivation indicator");
+			LOGGER.warn("{} has no inactivation indicator", c);
 			missingIndicatorCount++;
 			return false;
 		}
@@ -115,14 +115,14 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 				(loadPublishedPackage && c.getEffectiveTime().contentEquals(thisEffectiveTime)));
 	}
 	
-	private void populateSummaryTab() throws TermServerScriptException {
+	private void populateSummaryTab() {
 		moveSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely (PRIMARY_REPORT, (Component)null, e.getKey(), knownNamespaceExtensionMap.get(e.getKey()), e.getValue()));
 		
-		int total = moveSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
-				.collect(Collectors.summingInt(Integer::intValue));
+		int total = moveSummaryMap.values().stream()
+				.mapToInt(Integer::intValue)
+				.sum();
 		reportSafely (PRIMARY_REPORT, (Component)null, "TOTAL", "", total);
 	}
 	
