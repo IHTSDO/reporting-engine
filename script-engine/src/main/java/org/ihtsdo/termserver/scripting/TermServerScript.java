@@ -106,6 +106,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String ISSUE_COUNT = "Issue count";
 	public static final String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static final String WHITE_LISTED_COUNT = "White Listed Count";
+	private static final String DELETING = "Deleting {}";
+	private static final String DRY_DELETING = "Dry run deleting {}";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	public static final String EXPECTED_PROTOCOL = "https://";
@@ -1082,7 +1084,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		try {
-			LOGGER.debug((dryRun ?"Dry run deleting {}":"Deleting {}"), c);
+			LOGGER.debug((dryRun ?DRY_DELETING:DELETING), c);
 			if (!dryRun) {
 				tsClient.deleteConcept(c.getConceptId(), t.getBranchPath());
 			}
@@ -1095,7 +1097,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected int deleteDescription(Task t, Description d) throws TermServerScriptException {
 		try {
-			LOGGER.debug((dryRun ?"Dry run deleting {}":"Deleting {}"), d);
+			LOGGER.debug((dryRun ?DRY_DELETING:DELETING), d);
 			if (!dryRun) {
 				tsClient.deleteDescription(d.getId(), t.getBranchPath());
 			}
@@ -1126,7 +1128,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected int deleteRefsetMember(Task t, String uuid, boolean force) throws TermServerScriptException {
 		try {
-			LOGGER.debug((dryRun ?"Dry run deleting {}":"Deleting {}"), uuid);
+			LOGGER.debug((dryRun ?DRY_DELETING:DELETING), uuid);
 			if (!dryRun) {
 				tsClient.deleteRefsetMember(uuid, t.getBranchPath(), force); 
 			}
