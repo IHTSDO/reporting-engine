@@ -284,12 +284,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) {
 		// Concept is no longer in the target module
-		if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
-			// Was it in the target module last time?
-			if (datum != null && moduleFilter.contains(datum.getModuleId())) {
-				counts[IDX_PROMOTED]++;
-			}
-		} else {
+		if (inScope(c.getModuleId())) {
 			counts[IDX_TOTAL]++;
 			if (c.isActiveSafely()) {
 				incrementActiveConceptCounts(c, datum, counts);
@@ -301,6 +296,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			//Are we in scope for QI?
 			if (inQIScope(topLevel)) {
 				incrementQIScopeCounts(c, datum, qiCounts);
+			}
+		} else {
+			// Was it in the target module last time?
+			if (datum != null && inScope(datum.getModuleId())) {
+				counts[IDX_PROMOTED]++;
 			}
 		}
 	}
@@ -398,90 +398,111 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		for (Description d : c.getDescriptions()) {
 			//If the description is not in the target module, skip it.
 			//TODO We can count promoted descriptions also
-			if (moduleFilter != null && !moduleFilter.contains(d.getModuleId())) {
+			if (!inScope(d.getModuleId())) {
 				continue;
 			}
-			
-			// Descriptions have historic associations if they refer to other concepts
-			for (AssociationEntry a : d.getAssociationEntries()) {
-				incrementCounts(a, counts, IDX_TOTAL);
-				if (a.isActive()) {
-					incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
-					if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
-						// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
-						incrementCounts(a, counts, IDX_NEW);
-						debugToFile(a, "New");
-					} else if (datum != null && datum.getDescHistAssocIdsInact().contains(a.getId())) {
-						// If previously inactive and now active, then it's reactivated
-						incrementCounts(a, counts, IDX_REACTIVATED);
-						debugToFile(a, "Reactivated");
-					} else if (datum != null && datum.getDescHistAssocIds().contains(a.getId())) {
-						if (isChangedSinceLastRelease(a)) {
-							// Was and is active, yet it has changed since last release, then it's changed
-							incrementCounts(a, counts, IDX_CHANGED);
-							debugToFile(a, "Changed");
-						}
-					}
-				} else {
-					if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
-						// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
-						incrementCounts(a, counts, IDX_NEW_INACTIVE);
-						debugToFile(a, "New Inactive");
-					} else if (datum != null && datum.getDescHistAssocIds().contains(a.getId())) {
-						// If previously active and now inactive, then it's inactivated
-						incrementCounts(a, counts, IDX_INACTIVATED);
-						debugToFile(a, "Inactivated");
-					} else if (datum != null && datum.getDescHistAssocIdsInact().contains(a.getId())) {
-						if (isChangedSinceLastRelease(a)) {
-							// Was and is inactive, yet it has changed since last release, then it's changed inactive
-							incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
-							debugToFile(a, "Changed Inactive");
-						}
-					}
-				}
-			}
-			
-			// Descriptions can also have inactivation indicators if their concept is inactive
-			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
-				// Are we writing our results to the default tab, or specific to CNC?
-				int[] thisInactTab = i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT) ? cncCounts: inactCounts;
-				incrementCounts(i, thisInactTab, IDX_TOTAL);
-				if (i.isActive()) {
-					incrementCounts(i, thisInactTab, IDX_TOTAL_ACTIVE);
-					if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
-						// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
-						incrementCounts(i, thisInactTab, IDX_NEW);
-						debugToFile(i, "New");
-					} else if (datum != null && datum.getDescInactivationIdsInact().contains(i.getId())) {
-						// If previously inactive and now active, then it's reactivated
-						incrementCounts(i, thisInactTab, IDX_REACTIVATED);
-						debugToFile(i, "Reactivated");
-					} else if (datum != null && datum.getDescInactivationIds().contains(i.getId())) {
-						if (isChangedSinceLastRelease(i)) {
-							// Was and is active, yet it has changed since last release, then it's changed
-							incrementCounts(i, thisInactTab, IDX_CHANGED);
-							debugToFile(i, "Changed");
-						}
-					}
-				} else {
-					if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
-						// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
-						incrementCounts(i, thisInactTab, IDX_NEW_INACTIVE);
-						debugToFile(i, "New Inactive");
-					} else if (datum != null && datum.getDescInactivationIds().contains(i.getId())) {
-						// If previously active and now inactive, then it's inactivated
-						incrementCounts(i, thisInactTab, IDX_INACTIVATED);
-						debugToFile(i, "Inactivated");
-					} else if (datum != null && datum.getDescInactivationIdsInact().contains(i.getId())) {
-						if (isChangedSinceLastRelease(i)) {
-							// Was and is inactive, yet it has changed since last release, then it's changed inactive
-							incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
-							debugToFile(i, "Changed Inactive");
-						}
-					}
-				}
-			}
+			analyzeDescriptionHistoricalAssociations(d, datum, counts);
+			analyzeDescriptionInactivationIndicators(d, datum, inactCounts, cncCounts);
 		} 
+	}
+
+	private void analyzeDescriptionHistoricalAssociations(Description d, HistoricData datum, int[] counts) throws TermServerScriptException {
+		// Descriptions have historic associations if they refer to other concepts
+		for (AssociationEntry a : d.getAssociationEntries()) {
+			if (!inScope(a.getModuleId())) {
+				continue;
+			}
+			incrementCounts(a, counts, IDX_TOTAL);
+			if (a.isActiveSafely()) {
+				incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
+				countActiveDescriptionHistoricalAssociations(a, datum, counts);
+			} else {
+				countInactiveDescriptionHistoricalAssociations(a, datum, counts);
+			}
+		}
+	}
+
+	private void countActiveDescriptionHistoricalAssociations(AssociationEntry a, HistoricData datum, int[] counts) throws TermServerScriptException {
+		incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
+		if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
+			// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
+			incrementCounts(a, counts, IDX_NEW);
+			debugToFile(a, "New");
+		} else if (datum.getDescHistAssocIdsInact().contains(a.getId())) {
+			// If previously inactive and now active, then it's reactivated
+			incrementCounts(a, counts, IDX_REACTIVATED);
+			debugToFile(a, "Reactivated");
+		} else if (datum.getDescHistAssocIds().contains(a.getId()) && isChangedSinceLastRelease(a)) {
+			// Was and is active, yet it has changed since last release, then it's changed
+			incrementCounts(a, counts, IDX_CHANGED);
+			debugToFile(a, "Changed");
+		}
+	}
+
+	private void countInactiveDescriptionHistoricalAssociations(AssociationEntry a, HistoricData datum, int[] counts) throws TermServerScriptException {
+		if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
+			// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
+			incrementCounts(a, counts, IDX_NEW_INACTIVE);
+			debugToFile(a, "New Inactive");
+		} else if (datum.getDescHistAssocIds().contains(a.getId())) {
+			// If previously active and now inactive, then it's inactivated
+			incrementCounts(a, counts, IDX_INACTIVATED);
+			debugToFile(a, "Inactivated");
+		} else if (datum.getDescHistAssocIdsInact().contains(a.getId()) && isChangedSinceLastRelease(a)) {
+			// Was and is inactive, yet it has changed since last release, then it's changed inactive
+			incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
+			debugToFile(a, "Changed Inactive");
+		}
+	}
+
+	private void analyzeDescriptionInactivationIndicators(Description d, HistoricData datum, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
+		// Descriptions can also have inactivation indicators if their concept is inactive
+		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+			if (!inScope(i.getModuleId())) {
+				continue;
+			}
+			// Are we writing our results to the default tab, or specific to CNC?
+			int[] thisInactTab = i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT) ? cncCounts: inactCounts;
+			incrementCounts(i, thisInactTab, IDX_TOTAL);
+			if (i.isActiveSafely()) {
+				countActiveDescriptionInactivationIndicators(i, datum, thisInactTab);
+			} else {
+				countInactiveDescriptionInactivationIndicators(i, datum, thisInactTab);
+			}
+		}
+	}
+
+	private void countInactiveDescriptionInactivationIndicators(InactivationIndicatorEntry i, HistoricData datum, int[] counts) throws TermServerScriptException {
+		if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
+			// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
+			incrementCounts(i, counts, IDX_NEW_INACTIVE);
+			debugToFile(i, "New Inactive");
+		} else if (datum.getDescInactivationIds().contains(i.getId())) {
+			// If previously active and now inactive, then it's inactivated
+			incrementCounts(i, counts, IDX_INACTIVATED);
+			debugToFile(i, "Inactivated");
+		} else if (datum.getDescInactivationIdsInact().contains(i.getId()) && isChangedSinceLastRelease(i)) {
+			// Was and is inactive, yet it has changed since last release, then it's changed inactive
+			incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
+			debugToFile(i, "Changed Inactive");
+		}
+	}
+
+	private void countActiveDescriptionInactivationIndicators(InactivationIndicatorEntry i, HistoricData datum, int[] counts) throws TermServerScriptException {
+		incrementCounts(i, counts, IDX_TOTAL_ACTIVE);
+		if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
+			// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
+			incrementCounts(i, counts, IDX_NEW);
+			debugToFile(i, "New");
+		} else if (datum.getDescInactivationIdsInact().contains(i.getId())) {
+			// If previously inactive and now active, then it's reactivated
+			incrementCounts(i, counts, IDX_REACTIVATED);
+			debugToFile(i, "Reactivated");
+		} else if (datum.getDescInactivationIds().contains(i.getId()) && isChangedSinceLastRelease(i)) {
+			// Was and is active, yet it has changed since last release, then it's changed
+			incrementCounts(i, counts, IDX_CHANGED);
+			debugToFile(i, "Changed");
+		}
 	}
 
 	private boolean inQIScope(Concept topLevel) {
@@ -494,10 +515,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeComponents(boolean isNewConcept, Collection<String> ids, Collection<String> idsInactive, int[] counts, Collection<? extends Component> components) throws TermServerScriptException {
-		boolean conceptAffected = false;
-
 		for (Component component : components) {
-			if (moduleFilter != null && !moduleFilter.contains(component.getModuleId())) {
+			if (!inScope(component.getModuleId())) {
 				continue;
 			}
 
@@ -505,16 +524,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			debugToFile(component, "Total");
 
 			//Was the component present in the previous data?
-			boolean previouslyExistedActive = (ids != null && ids.contains(component.getId())) ? true : false;
-			boolean previouslyExistedInactive = (idsInactive != null && idsInactive.contains(component.getId())) ? true : false;
+			boolean previouslyExistedActive = ids != null && ids.contains(component.getId());
+			boolean previouslyExistedInactive = idsInactive != null && idsInactive.contains(component.getId());
 
-			if (component.isActive()) {
+			if (component.isActiveSafely()) {
 				incrementCounts(component, counts, IDX_TOTAL_ACTIVE);
 
 				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
-					conceptAffected = true;
 
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
@@ -528,39 +546,31 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) component;
 						incrementInactivationReason(counts, inactivationIndicatorEntry.getInactivationReasonId());
 					}
+					counts[IDX_CONCEPTS_AFFECTED]++;
 				} else if (previouslyExistedInactive) {
 					incrementCounts(component, counts, IDX_REACTIVATED);
 					debugToFile(component, "Reactivated");
-					conceptAffected = true;
-				} else if (previouslyExistedActive) {
-					if (isChangedSinceLastRelease(component)) {
-						//Did it change in this release?
-						incrementCounts(component, counts, IDX_CHANGED);
-						debugToFile(component, "Changed");
-						conceptAffected = true;
-					}
+					counts[IDX_CONCEPTS_AFFECTED]++;
+				} else if (previouslyExistedActive && isChangedSinceLastRelease(component)) {
+					incrementCounts(component, counts, IDX_CHANGED);
+					debugToFile(component, "Changed");
+					counts[IDX_CONCEPTS_AFFECTED]++;
 				}
 			} else {
-				if (!previouslyExistedActive && !previouslyExistedInactive) {
+				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW_INACTIVE);
 					debugToFile(component, "New Inactive");
-					conceptAffected = true;
+					counts[IDX_CONCEPTS_AFFECTED]++;
 				} else if (previouslyExistedActive) {
-					//Existed previously active and is now inactive, mark as inactivated
 					incrementCounts(component, counts, IDX_INACTIVATED);
 					debugToFile(component, "Inactivated");
-					conceptAffected = true;
-				} else if (previouslyExistedInactive) {
-					if (isChangedSinceLastRelease(component)) {
-						incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
-						debugToFile(component, "Changed Inactive");
-						conceptAffected = true;
-					}
+					counts[IDX_CONCEPTS_AFFECTED]++;
+				} else if (previouslyExistedInactive && isChangedSinceLastRelease(component)) {
+					incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
+					debugToFile(component, "Changed Inactive");
+					counts[IDX_CONCEPTS_AFFECTED]++;
 				}
 			}
-		}
-		if (conceptAffected) {
-			counts[IDX_CONCEPTS_AFFECTED]++;
 		}
 	}
 
@@ -581,6 +591,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			Description desc = (Description) component;
 			getDescriptionByLanguageArray(desc.getType(), desc.getLang())[idx]++;
 		}
+	}
+
+	private boolean inScope(String moduleId) {
+		return moduleFilter == null || moduleFilter.contains(moduleId);
 	}
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
