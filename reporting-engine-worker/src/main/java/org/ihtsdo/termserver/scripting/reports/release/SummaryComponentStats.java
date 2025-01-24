@@ -284,7 +284,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) {
 		// Concept is no longer in the target module
-		if (inScope(c.getModuleId())) {
+		if (matchesModuleFilter(c.getModuleId())) {
 			counts[IDX_TOTAL]++;
 			if (c.isActiveSafely()) {
 				incrementActiveConceptCounts(c, datum, counts);
@@ -299,7 +299,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 		} else {
 			// Was it in the target module last time?
-			if (datum != null && inScope(datum.getModuleId())) {
+			if (datum != null && matchesModuleFilter(datum.getModuleId())) {
 				counts[IDX_PROMOTED]++;
 			}
 		}
@@ -398,7 +398,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		for (Description d : c.getDescriptions()) {
 			//If the description is not in the target module, skip it.
 			//TODO We can count promoted descriptions also
-			if (!inScope(d.getModuleId())) {
+			if (!matchesModuleFilter(d.getModuleId())) {
 				continue;
 			}
 			analyzeDescriptionHistoricalAssociations(d, datum, counts);
@@ -409,7 +409,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void analyzeDescriptionHistoricalAssociations(Description d, HistoricData datum, int[] counts) throws TermServerScriptException {
 		// Descriptions have historic associations if they refer to other concepts
 		for (AssociationEntry a : d.getAssociationEntries()) {
-			if (!inScope(a.getModuleId())) {
+			if (!matchesModuleFilter(a.getModuleId())) {
 				continue;
 			}
 			incrementCounts(a, counts, IDX_TOTAL);
@@ -458,7 +458,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void analyzeDescriptionInactivationIndicators(Description d, HistoricData datum, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		// Descriptions can also have inactivation indicators if their concept is inactive
 		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
-			if (!inScope(i.getModuleId())) {
+			if (!matchesModuleFilter(i.getModuleId())) {
 				continue;
 			}
 			// Are we writing our results to the default tab, or specific to CNC?
@@ -516,7 +516,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void analyzeComponents(boolean isNewConcept, Collection<String> ids, Collection<String> idsInactive, int[] counts, Collection<? extends Component> components) throws TermServerScriptException {
 		for (Component component : components) {
-			if (!inScope(component.getModuleId())) {
+			if (!matchesModuleFilter(component.getModuleId())) {
 				continue;
 			}
 
@@ -542,8 +542,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						debugToFile(component, "NewNew");
 					}
 
-					if (component instanceof InactivationIndicatorEntry) {
-						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) component;
+					if (component instanceof InactivationIndicatorEntry inactivationIndicatorEntry) {
 						incrementInactivationReason(counts, inactivationIndicatorEntry.getInactivationReasonId());
 					}
 					counts[IDX_CONCEPTS_AFFECTED]++;
@@ -582,18 +581,16 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void incrementCounts(Component component, int[] counts, int idx) {
 		counts[idx]++;
 		//If this component is a refset member, then also increment our refset data
-		if (component instanceof RefsetMember) {
-			RefsetMember refsetMember = (RefsetMember) component;
+		if (component instanceof RefsetMember refsetMember) {
 			getRefsetData(refsetMember.getRefsetId())[idx]++;
 		}
 		//If this component is a description, then also increment our descriptions by language summary
-		if (component instanceof Description) {
-			Description desc = (Description) component;
-			getDescriptionByLanguageArray(desc.getType(), desc.getLang())[idx]++;
+		if (component instanceof Description description) {
+			getDescriptionByLanguageArray(description.getType(), description.getLang())[idx]++;
 		}
 	}
 
-	private boolean inScope(String moduleId) {
+	private boolean matchesModuleFilter(String moduleId) {
 		return moduleFilter == null || moduleFilter.contains(moduleId);
 	}
 
