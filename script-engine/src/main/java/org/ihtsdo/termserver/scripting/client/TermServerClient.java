@@ -294,7 +294,7 @@ public class TermServerClient {
 	}
 	
 	private String getDescriptionsPath(String id, String branchPath) {
-		return serverUrl + "/" + branchPath + DESCRIPTIONS + id;
+		return serverUrl + "/" + branchPath + DESCRIPTIONS + "/" + id;
 	}
 
 	public String createBranch(String parent, String branchName) throws TermServerScriptException {
