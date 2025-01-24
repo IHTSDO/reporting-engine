@@ -248,8 +248,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				.toList();
 		
 		for (TemplatedConcept tc : sortedModelled) {
-			determineChanges(tc, externalIdentifiersProcessed);
 			incrementSummaryCount("Counts per template", tc.getClass().getSimpleName());
+			//Skip any concepts that are externally maintained
+			if (!MANUALLY_MAINTAINED_ITEMS.containsKey(tc.getExternalIdentifier())){
+				determineChanges(tc, externalIdentifiersProcessed);
+			}
 		}
 
 		determineInactivations(sortedModelled);
