@@ -178,7 +178,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			String scn = getExternalConcept().getShortDisplayName();
 			Description lcn = Description.withDefaults(scn, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			//Override the case significance for these
-			lcn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			lcn.addIssue(CaseSensitivityUtils.FORCE_CS);
 			concept.addDescription(lcn);
 		}
 

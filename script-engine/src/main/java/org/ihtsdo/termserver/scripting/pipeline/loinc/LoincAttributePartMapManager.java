@@ -222,6 +222,7 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedMappings.put("LP444405-7", List.of(gl.getConcept("580161010000105 |Sedimentation process (qualifier value)|")));
 		hardCodedMappings.put("LP443823-2", List.of(gl.getConcept("540151010000102 |Disposition (property) (qualifier value)|")));
 		hardCodedMappings.put("LP444407-3", List.of(gl.getConcept("645121010000107 |Relative velocity (property) (qualifier value)|")));
+		hardCodedMappings.put("LP65367-2", List.of(gl.getConcept("645131010000105 |Nucleated blood cell (cell)|")));
 
 	}
 
