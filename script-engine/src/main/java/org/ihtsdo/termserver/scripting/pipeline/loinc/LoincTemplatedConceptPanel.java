@@ -5,6 +5,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,15 +43,15 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 		LoincTerm loincTerm = getLoincTerm();
 		String ptStr = loincTerm.getLongCommonName();
 
-		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED)
-				.withCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		Description pt = Description.withDefaults(ptStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
+		pt.addIssue(CaseSensitivityUtils.FORCE_CS);
 
-		Description fsn = Description.withDefaults(ptStr + getSemTag(), DescriptionType.FSN, Acceptability.PREFERRED)
-				.withCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		Description fsn = Description.withDefaults(ptStr + getSemTag(), DescriptionType.FSN, Acceptability.PREFERRED);
+		fsn.addIssue(CaseSensitivityUtils.FORCE_CS);
 
 		//Add in the traditional colon form that we've previously used as the FSN
-		Description colonDesc = Description.withDefaults(loincTerm.getColonizedTerm(), DescriptionType.SYNONYM, Acceptability.ACCEPTABLE)
-				.withCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		Description colonDesc = Description.withDefaults(loincTerm.getColonizedTerm(), DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		colonDesc.addIssue(CaseSensitivityUtils.FORCE_CS);
 
 		concept.addDescription(pt);
 		concept.addDescription(fsn);

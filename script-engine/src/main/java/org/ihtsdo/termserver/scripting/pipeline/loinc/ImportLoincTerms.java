@@ -47,6 +47,45 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	@Override
+	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
+		return switch (externalConcept.getProperty()) {
+			case "ArVRat", "CRat", "MRat", "SRat", "VRat" -> LoincTemplatedConceptWithProcess.create(externalConcept);
+			case "RelTime", "Time", "Vel", "RelVel" -> LoincTemplatedConceptWithProcessNoOutput.create(externalConcept);
+			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
+			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
+			     "EntVol", "LaCnc", "Len", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
+			     "Osmol", "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr", "Visc" ->
+					LoincTemplatedConceptWithComponent.create(externalConcept);
+			case "Anat", "DistWidth", "EntMCnc", "Morph",
+			     "Prid", "Vol" -> LoincTemplatedConceptWithInheres.create(externalConcept);
+			case "Aper", "Color", "Rden", "Source","SpGrav","Temp","Disposition","ID","EntMeanVol" ->
+					LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
+			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
+			case "Type" -> createTemplateBasedOnProperties(externalConcept);
+			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(externalConcept);
+			default -> TemplatedConceptNull.create(externalConcept);
+		};
+	}
+
+	private TemplatedConcept createTemplateBasedOnProperties(ExternalConcept externalConcept) throws TermServerScriptException {
+		if (externalConcept.getExternalIdentifier().equals(ContentPipelineManager.DUMMY_EXTERNAL_IDENTIFIER)) {
+			//Pick one just to say that this type is "in scope".
+			return LoincTemplatedConceptWithInheres.create(externalConcept);
+		}
+
+		//We would normally check a detail from within the templated concept itself
+		Map<String, LoincDetail> loincDetailMap = loincDetailMapOfMaps.get(externalConcept.getExternalIdentifier());
+		if (loincDetailMap != null) {
+			if (loincDetailMap.containsKey("COMPNUM_PN")) {
+				return LoincTemplatedConceptWithInheres.create(externalConcept);
+			} else {
+				return LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
+			}
+		}
+		throw new TermServerScriptException("No detail map found for " + externalConcept.getExternalIdentifier());
+	}
+
+	@Override
 	protected String[] getTabNames() {
 		return tabNames;
 	}
@@ -194,25 +233,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		rm.setDirty();
 		incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " created");
 		conceptCreator.outputRF2(Component.ComponentType.SIMPLE_REFSET_MEMBER, rm.toRF2());
-	}
-	
-	@Override
-	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
-		return switch (externalConcept.getProperty()) {
-			case "ArVRat", "CRat", "MRat", "RelTime", "SRat", "Time", "Vel", "VRat" -> LoincTemplatedConceptWithProcess.create(externalConcept);
-			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
-			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
-			     "EntVol", "LaCnc", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
-			     "Osmol", "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr", "Visc" ->
-					LoincTemplatedConceptWithComponent.create(externalConcept);
-			case "Aper", "Color", "Rden", "Source","SpGrav","Temp","Disposition","ID","EntMeanVol" ->
-					LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
-			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
-			case "Anat", "DistWidth", "EntMCnc", "Morph",
-			     "Prid", "Type", "Vol" -> LoincTemplatedConceptWithInheres.create(externalConcept);
-			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(externalConcept);
-			default -> TemplatedConceptNull.create(externalConcept);
-		};
 	}
 
 }

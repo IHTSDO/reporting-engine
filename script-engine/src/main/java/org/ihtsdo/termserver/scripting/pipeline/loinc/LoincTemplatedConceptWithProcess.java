@@ -11,19 +11,19 @@ import java.util.List;
 
 public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
-	private LoincTemplatedConceptWithProcess(ExternalConcept externalConcept) {
+	private static Concept processOutput;
+
+	protected LoincTemplatedConceptWithProcess(ExternalConcept externalConcept) {
 		super(externalConcept);
 	}
-
-	private static Concept PROCESS_OUTPUT;
 
 	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
 		LoincTemplatedConceptWithProcess templatedConcept = new LoincTemplatedConceptWithProcess(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
-		if (PROCESS_OUTPUT == null) {
-			PROCESS_OUTPUT = gl.getConcept("704324001 |Process output (attribute)|");
+		if (processOutput == null) {
+			processOutput = gl.getConcept("704324001 |Process output (attribute)|");
 		}
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, PROCESS_OUTPUT);
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, processOutput);
 
 		//See https://confluence.ihtsdotools.org/display/SCTEMPLATES/Process+Observable+for+LOINC+%28observable+entity%29+-+v1.0
 		//[property] of [characterizes] of [process output] in [process duration] in [direct site] by [technique] using [using device] [precondition] (observable entity)
@@ -71,7 +71,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
 		//Rule vi.6.b   LP16409-2 Erythrocyte sedimentation rate
 		if (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals("LP16409-2")) {
-			swapAttributeType(attributes, PROCESS_OUTPUT, gl.getConcept("704321009 |Characterizes (attribute)|"));
+			swapAttributeType(attributes, processOutput, gl.getConcept("704321009 |Characterizes (attribute)|"));
 			RelationshipTemplate additionalAttribute = new RelationshipTemplate(
 					gl.getConcept("1003735000 |Process acts on (attribute)|"),
 					gl.getConcept("418525009 |Erythrocyte component of blood (substance)|"));
@@ -81,13 +81,15 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 		super.applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 	}
 
-	protected void applyTemplateSpecificTermingRules(Description d) {
+	@Override
+	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
 		//If the CHARACTERIZES slot is still here but we're allowing it to be empty,
 		//remove it, and its connector
 		if (hasProcessingFlag(ProcessingFlag.SUPPRESS_CHARACTERIZES_TERM)
 				&& d.getTerm().contains("[CHARACTERIZES]")) {
 			d.setTerm(d.getTerm().replace(" of [CHARACTERIZES]", ""));
 		}
+		super.applyTemplateSpecificTermingRules(d);
 	}
 
 	private void swapAttributeType(List<RelationshipTemplate> attributes, Concept find, Concept replace) {

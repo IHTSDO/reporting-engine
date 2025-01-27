@@ -24,6 +24,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String REFSET_COUNT = "Refset counts";
 	public static final String FAILED_TO_LOAD = "Failed to load ";
 	public static final String LANG_REFSET_REMOVAL = "Lang Refset Removal";
+
+	public static final String DUMMY_EXTERNAL_IDENTIFIER = "DUMMY_EXTERNAL_IDENTIFIER";
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
 
@@ -103,13 +105,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					break;
 				case INCREMENTAL_API, INCREMENTAL_DELTA:
 					determineChangeSet();
-					conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 					break;
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
 			postModelling();
 			reportSummaryCounts();
+			conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 		} finally {
 			while (additionalThreadCount > 0) {
 				try {
@@ -168,8 +170,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			LOGGER.debug("Check terming for XXX");
 		}
 
-		if (externalIdentifier.equals("16285-9")) {
-			LOGGER.debug("FSN Incorrectly cI");
+		if (externalIdentifier.equals("49776-8")) {
+			LOGGER.debug("FSN Incorrectly CS");
 		}
 
 		if (externalIdentifier.equals("48058-2")) {
@@ -252,6 +254,22 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Skip any concepts that are externally maintained
 			if (!MANUALLY_MAINTAINED_ITEMS.containsKey(tc.getExternalIdentifier())){
 				determineChanges(tc, externalIdentifiersProcessed);
+			} else {
+				//We'll minimally report the manually maintained concepts
+				Concept mmc = gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(tc.getExternalIdentifier()));
+				String scg = mmc.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+				String descStr = SnomedUtils.getDescriptionsToString(mmc);
+
+				report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
+						tc.getExternalIdentifier(),
+						tc.getConcept().getId(),
+						tc.getIterationIndicator(),
+						tc.getClass().getSimpleName(),
+						"N/A",
+						"N/A",
+						descStr,
+						"N/A",
+						scg);
 			}
 		}
 
@@ -831,7 +849,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected String inScope(String property) throws TermServerScriptException {
 		//Construct a dummy LoincNum with this property and see if it's in scope or not
-		ExternalConceptNull dummy = new ExternalConceptNull("Dummy", property);
+		ExternalConceptNull dummy = new ExternalConceptNull(DUMMY_EXTERNAL_IDENTIFIER, property);
 		return getAppropriateTemplate(dummy) == null ? "N" : "Y";
 	}
 
