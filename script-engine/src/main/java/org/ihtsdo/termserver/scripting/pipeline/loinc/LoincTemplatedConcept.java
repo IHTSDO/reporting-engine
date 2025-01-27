@@ -143,9 +143,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
 		if (!d.getType().equals(DescriptionType.FSN)) {
 			String useAsAdditionalAcceptableTerm = d.getTerm();
+
 			//LOINC will use their long common name as the PT
 			d.setTerm(getLoincTerm().getLongCommonName());
-			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			d.addIssue(CaseSensitivityUtils.FORCE_CS);
+
 			//And we'll use the FSN minus the semantic tag as another acceptable term
 			Description additionalAcceptableDesc = Description.withDefaults(useAsAdditionalAcceptableTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			getConcept().addDescription(additionalAcceptableDesc);
@@ -164,8 +166,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//Add in the traditional colon form that we've previously used as the FSN
 		String colonStr = getLoincTerm(getExternalIdentifier()).getColonizedTerm();
 		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-		colonDesc.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-
+		colonDesc.addIssue(CaseSensitivityUtils.FORCE_CS);
 		concept.addDescription(colonDesc);
 	}
 
@@ -358,7 +359,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
 					expectNullMap = true;
 				} else {
-					slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+					//We don't have a map here but we're going to allow the LOINC term to be used.
+					//Special case for XXX which we'll override as specimen.  If you get any more
+					//of these one-off rules, create a map of part name overrides
+					if (loincDetail.getPartNumber().equals("LP7735-6")) {
+						slotTermMap.put(loincDetail.getPartTypeName(), "specimen");
+					} else {
+						slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+					}
 					addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 				}
 			}

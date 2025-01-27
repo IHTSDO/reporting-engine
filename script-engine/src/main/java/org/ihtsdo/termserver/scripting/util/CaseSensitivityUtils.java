@@ -22,6 +22,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
 
+	public static final String FORCE_CS = "FORCE_CS";
+
 	private static final String[] GREEK_LETTERS_UPPER = new String[] { "Alpha", "Beta", "Delta", "Gamma", "Epsilon", "Tau" };
 	private  static final String[] GREEK_LETTERS_LOWER = new String[] { "alpha", "beta", "delta", "gamma", "epsilon", "tau" };
 
