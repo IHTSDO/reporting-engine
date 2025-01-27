@@ -24,6 +24,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String REFSET_COUNT = "Refset counts";
 	public static final String FAILED_TO_LOAD = "Failed to load ";
 	public static final String LANG_REFSET_REMOVAL = "Lang Refset Removal";
+
+	public static final String DUMMY_EXTERNAL_IDENTIFIER = "DUMMY_EXTERNAL_IDENTIFIER";
 	
 	public static final String FSN_FAILURE = "FSN indicates failure";
 
@@ -831,7 +833,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected String inScope(String property) throws TermServerScriptException {
 		//Construct a dummy LoincNum with this property and see if it's in scope or not
-		ExternalConceptNull dummy = new ExternalConceptNull("Dummy", property);
+		ExternalConceptNull dummy = new ExternalConceptNull(DUMMY_EXTERNAL_IDENTIFIER, property);
 		return getAppropriateTemplate(dummy) == null ? "N" : "Y";
 	}
 

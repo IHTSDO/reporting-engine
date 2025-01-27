@@ -20,6 +20,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
 
+	public static final String FORCE_CS = "FORCE_CS";
+
 	private static final String[] GREEK_LETTERS_UPPER = new String[] { "Alpha", "Beta", "Delta", "Gamma", "Epsilon", "Tau" };
 	private  static final String[] GREEK_LETTERS_LOWER = new String[] { "alpha", "beta", "delta", "gamma", "epsilon", "tau" };
 
@@ -174,6 +176,11 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public CaseSignificance suggestCorrectCaseSignficance(Description d) throws TermServerScriptException {
+		//Have we set a flag for override?
+		if (d.hasIssue(FORCE_CS)) {
+			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+		}
+
 		String term = d.getTerm().replace("-", " ");
 		String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 		String firstLetter = term.substring(0,1);
