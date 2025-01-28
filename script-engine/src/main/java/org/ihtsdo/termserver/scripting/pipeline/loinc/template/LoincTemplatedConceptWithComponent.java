@@ -1,23 +1,23 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.template;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
-import java.util.ArrayList;
-import java.util.List;
+public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 
-public class LoincTemplatedConceptWithInheresNoComponent extends LoincTemplatedConcept {
-
-	private LoincTemplatedConceptWithInheresNoComponent(ExternalConcept externalConcept) {
+	private LoincTemplatedConceptWithComponent(ExternalConcept externalConcept) {
 		super(externalConcept);
 	}
 	
 	public static LoincTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
-		LoincTemplatedConceptWithInheresNoComponent templatedConcept = new LoincTemplatedConceptWithInheresNoComponent(externalConcept);
+		LoincTemplatedConceptWithComponent templatedConcept = new LoincTemplatedConceptWithComponent(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
-		templatedConcept.typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704319004 |Inheres in (attribute)|"));
 		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		return templatedConcept;
 	}
@@ -44,6 +44,27 @@ public class LoincTemplatedConceptWithInheresNoComponent extends LoincTemplatedC
 
 		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
+	}
+
+	@Override
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+		//Temporary rule.  If our target is Influenza, replace that with Influenza A, B & C
+		Concept influenzaAb = gl.getConcept("259856001 |Influenza antibody (substance)|");
+		if (rt.getTarget().equals(influenzaAb)) {
+			attributes.clear();
+			List<Concept> newAntibodies = List.of(
+					gl.getConcept("120753009 |Antibody to Influenza A virus (substance)|"),
+					gl.getConcept("120843002 |Antibody to Influenza B virus (substance)"),
+					gl.getConcept("120844008 |Antibody to Influenza C virus (substance)|"));
+			newAntibodies.forEach(a -> {
+				RelationshipTemplate newRt = rt.clone();
+				newRt.setTarget(a);
+				attributes.add(newRt);
+			});
+			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "influenza antibody");
+		}
+
+		super.applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 	}
 
 }
