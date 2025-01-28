@@ -204,7 +204,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			String itemStr = slotTermMap.get(templateItem);
 			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
 			if (!itemStr.isEmpty()
-					&& !csUtils.startsWithProperNounPhrase(itemStr)
+					&& !csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
 					&& !csUtils.startsWithAcronym(itemStr)) {
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
@@ -259,7 +259,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			itemStr = applyTermTweaking(rt, itemStr);
 
 			//Can we make this lower case?
-			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithProperNounPhrase(itemStr)) {
+			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithProperNounPhrase(getConcept(), itemStr)) {
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
 			return itemStr;

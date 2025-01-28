@@ -102,7 +102,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				"Intermediate Primitives",
 				"Stated Intermediate Primitives",
 				"IP Inferred not Stated"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override
