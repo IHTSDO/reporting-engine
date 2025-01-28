@@ -93,7 +93,7 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 	}
 
 	public static void main(String[] args) throws TermServerScriptException {
-		NuvaScript report = new NuvaScript();
+		NuvaOntologyLoader report = new NuvaOntologyLoader();
 		try {
 			report.summaryTabIdx = PRIMARY_REPORT;
 			report.runStandAlone = false;
@@ -136,8 +136,8 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 	}
 
 	private void runReport() throws TermServerScriptException {
-		dataModel = loadNuva(FILE_IDX_NUVA_DATA_RDF);
-		metaModel = loadNuva(FILE_IDX_NUVA_METADATA_RDF);
+		dataModel = loadNuva(getInputFile(FILE_IDX_NUVA_DATA_RDF));
+		Model metaModel = loadNuva(getInputFile(FILE_IDX_NUVA_METADATA_RDF));
 		exploreModel(dataModel, TAB_NUVA_DATA, "Data-");
 		exploreModel(metaModel, TAB_NUVA_METADATA, "Meta-");
 	}
@@ -272,9 +272,8 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 		report(tabIdx, "");
 	}
 
-	protected Model loadNuva(int fileIdx) {
-		File inputFile = getInputFile(fileIdx);
-		LOGGER.info("Loading NUVA file: " + inputFile);
+	protected Model loadNuva(File inputFile) {
+		LOGGER.info ("Loading NUVA file: {}", inputFile);
 		// create an empty model
 		Model model = ModelFactory.createDefaultModel();
 

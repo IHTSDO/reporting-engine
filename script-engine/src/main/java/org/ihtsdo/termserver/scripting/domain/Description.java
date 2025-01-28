@@ -957,5 +957,4 @@ public class Description extends Component implements ScriptConstants, Serializa
 		}
 		return found;
 	}
-
 }

@@ -46,7 +46,7 @@ public class LoincFileAnalysis extends LoincScript {
 		loadAltIdFile(getInputFile(FILE_IDX_ALT_ID));
 		int unknownLoincNums = 0;
 		try {
-			LOGGER.info("Analysing " + getInputFile(fileIdx));
+			LOGGER.info("Analysing {}", getInputFile(fileIdx));
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(getInputFile(fileIdx)))) {
 				String line;

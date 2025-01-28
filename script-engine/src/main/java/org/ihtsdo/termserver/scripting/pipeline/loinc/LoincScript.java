@@ -11,8 +11,12 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincPart;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 public abstract class LoincScript extends ContentPipelineManager implements LoincScriptConstants {
 
@@ -34,8 +38,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		throw new IllegalStateException("Please override getTabNames() in your script");
 	}
 
-	@Override
-	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC Folder
 		tabForFinalWords = SECONDARY_REPORT;
 		
@@ -45,7 +48,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
 		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
 		
-		super.postInit(GFOLDER_LOINC, tabNames, columnHeadings, false);
+		postInit(GFOLDER_LOINC, tabNames, columnHeadings, false);
 	}
 
 	@Override
@@ -144,8 +147,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) throws TermServerScriptException {
 		additionalThreadCount++;
-		LOGGER.info("Loading Full Loinc: " + fullLoincFile);
-		loincNumToLoincTermMap = new HashMap<>();
+		LOGGER.info("Loading Full Loinc: {}", fullLoincFile);
 		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(fullLoincFile));

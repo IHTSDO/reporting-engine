@@ -36,7 +36,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 				"Inferred",
 				"Summary"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override

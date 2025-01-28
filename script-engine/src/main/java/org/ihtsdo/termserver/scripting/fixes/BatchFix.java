@@ -18,7 +18,6 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.batch_import.BatchImport;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.DialectChecker;
-import org.ihtsdo.termserver.scripting.fixes.batch_import.BatchImport;
 import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobParameters;
