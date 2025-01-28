@@ -68,6 +68,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] altIdHeader = new String[] {"alternateIdentifier",COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,"identifierSchemeId",COL_REFERENCED_COMPONENT_ID};
 	protected String[] compAnnotHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"languageDialectCode",COL_TYPE_ID,"value"};
 	protected String[] simpleMapHeader = new String[] {COL_ID,COL_EFFECTIVE_TIME,COL_ACTIVE,COL_MODULE_ID,COL_REFSET_ID,COL_REFERENCED_COMPONENT_ID,"mapTarget"};
+	protected String[] simpleRefsetHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId"};
 
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;

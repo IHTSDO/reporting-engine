@@ -461,7 +461,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"Excluded Concepts",
 				"Misaligned Concepts",
 				"Perfected Concepts"};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override

@@ -72,7 +72,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		initTemplatesAndExclusions();
-		super.postInit(tabNames, columnHeadings, csvOutput);
+		postInit(tabNames, columnHeadings,false);
 		LOGGER.info("Post initialisation complete, with multiple tabs");
 	}
 	

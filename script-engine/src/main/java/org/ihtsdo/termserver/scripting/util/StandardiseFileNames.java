@@ -64,8 +64,8 @@ public class StandardiseFileNames extends TermServerReport {
 							STANDARD_HEADER,
 							STANDARD_HEADER,
 							ISSUE_HEADER
-					},
-					false);
+					}
+			);
 			curator.process();
 		} finally {
 			curator.finish();

@@ -60,7 +60,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 				"Summary",
 				"Concepts Moved"
 		};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 		knownNamespaceExtensionMap.put(new Concept("416516009", "Extension Namespace {1000009}"), "Veterinary Extension");
 		knownNamespaceExtensionMap.put(new Concept("370137002", "Extension Namespace {1000000}"), "UK Extension");
 		if (loadPublishedPackage) {
