@@ -32,6 +32,12 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		return conceptCreator;
 	}
 
+	public void writeConceptsToRF2(int tabIdx, List<Concept> concepts) throws TermServerScriptException {
+		for (Concept concept : concepts) {
+			writeConceptToRF2(tabIdx, concept, "");
+		}
+	}
+
 	public Concept writeConceptToRF2(int tabIdx, Concept concept, String info) throws TermServerScriptException {
 		concept.setId(null);
 		populateIds(concept);
@@ -80,7 +86,8 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 				ensureRelationshipPartsHaveIds(concept, (Relationship)c, enforceModule);
 				break;
 			case STATED_RELATIONSHIP :
-				ensureRelationshipPartsHaveIds(concept, (Relationship)c, enforceModule);
+				//No need to do anything here because we'll convert
+				//stated to an axiom and we're not expecting any inferred
 				break;
 			case ALTERNATE_IDENTIFIER :
 				break;  //Has its own ID.  RefCompId will be set once concept id is known.

@@ -67,7 +67,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		h.setRefsetId(lineItems[ASSOC_IDX_REFSETID]);
 		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
 		if (lineItems.length <= ASSOC_IDX_TARGET) {
-			LOGGER.warn("HistAssoc {} missing targetComponetId", lineItems[ASSOC_IDX_ID]);
+			LOGGER.warn(" HistAssoc {} is missing targetComponentId", lineItems[ASSOC_IDX_ID]);
 		} else {
 			h.setTargetComponentId(lineItems[ASSOC_IDX_TARGET]);
 		}

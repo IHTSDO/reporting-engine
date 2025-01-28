@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.fixes.batch_import;
 
 import org.apache.commons.csv.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.BatchJobClass;
 import org.ihtsdo.termserver.scripting.GraphLoader;

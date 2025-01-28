@@ -59,7 +59,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 			outputName = outputNameBase + "_" + (++increment) ;
 		}
 		outputName = outputName + ".txt";
-		LOGGER.info("Outputting data to " + outputName);
+		LOGGER.info("Outputting data to {}", outputName);
 		initialiseFileHeaders();
 	}
 	
