@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.template;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -10,6 +10,9 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.*;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 
 
@@ -485,7 +488,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		}
 	}
 
-	protected LoincTerm getLoincTerm() {
+	public LoincTerm getLoincTerm() {
 		return (LoincTerm) getExternalConcept();
 	}
 
