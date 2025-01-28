@@ -8,6 +8,7 @@ import java.util.regex.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 
@@ -74,17 +75,9 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return singleton;
 	}
 
-	public static CaseSensitivityUtils get() throws TermServerScriptException {
-		return get(true);
-	}
-
-	public static CaseSensitivityUtils get(boolean substancesAndOrganismsAreSourcesOfTruth) throws TermServerScriptException {
-		if (singleton == null) {
-			singleton = new CaseSensitivityUtils();
-			singleton.substancesAndOrganismsAreSourcesOfTruth = substancesAndOrganismsAreSourcesOfTruth;
-			singleton.init();
-		}
-		return singleton;
+	public static boolean isciorcI(Description d) {
+		return d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) ||
+				d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 	}
 
 	public void init() throws TermServerScriptException {
@@ -109,14 +102,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 						String wordWithoutApostrophe = word.substring(0, word.length() - 2);
 						knownNames.put(wordWithoutApostrophe, c);
 					}
-					sourcesOfTruth.put(term, d);
-				}
-
-				//Now we might have a term like 107580008 |Family Fabaceae| and here we want to also match Fabaceae
-				//So we'll add those noun phrases once the taxonomy words have been removed
-				if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)
-						&& !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
-					addSourcesOfTruthWithoutTaxonomy(term, d);
 				}
 			}
 		}
@@ -172,19 +157,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 	}
 
-	private void addSourcesOfTruthWithoutTaxonomy(String term, Description d) {
-		String termWithoutTaxonomy = term;
-		for (String taxonomyWord : taxonomyWords) {
-			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord, "");
-			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord.toLowerCase(), "");
-		}
-
-		if (!termWithoutTaxonomy.equals(term)) {
-			termWithoutTaxonomy = termWithoutTaxonomy.replace("  ", " ").trim();
-			sourcesOfTruth.put(termWithoutTaxonomy, d);
-		}
-	}
-
 	public void loadCSWords() throws TermServerScriptException {
 		LOGGER.info("Loading {}...", inputFile);
 		if (!inputFile.canRead()) {
@@ -233,6 +205,11 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public CaseSignificance suggestCorrectCaseSignficance(Concept context, Description d) throws TermServerScriptException {
+		//Have we set a flag for override?
+		if (d.hasIssue(FORCE_CS)) {
+			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+		}
+
 		String term = d.getTerm().replace("-", " ");
 		String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 		String firstLetter = term.substring(0,1);
@@ -245,7 +222,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			//Lower case first letters must be entire term case-sensitive
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-			CaseSignificance cs = suggestCorrectCaseSignificanceForCaseSentitiveTerm(context, d, chopped, caseSig, term);
+			CaseSignificance cs = suggestCorrectCaseSignificanceForCaseSensitiveTerm(context, d, chopped, caseSig, term);
 			if (cs != null) {
 				return cs;
 			}
@@ -256,43 +233,36 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			}
 		}
 
-		//Does term have a capital after first letter?
 		if (!chopped.equals(chopped.toLowerCase())) {
-			//If the first word is a proper noun, then the entire term is case-sensitive
-			//Otherwise, and even if the first character is not a letter
-			//then we're look at initial character case-insensitive
-			if (startsWithProperNounPhrase(term)) {
-				return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-			}
 			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
 		
 		return CaseSignificance.CASE_INSENSITIVE;
 	}
-	
+
 	private CaseSignificance suggestCorrectCaseSignificanceForCaseInSensitiveTerm(Concept context, Description d, String chopped,
-			String term) {
+	                                                                              String term) {
 		if (startsWithProperNounPhrase(context, term)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		}
-		
+
 		//Or if one of our sources of truth?
 		String firstWord = d.getTerm().split(" ")[0];
 		if (startsWithKnownCsWordInContext(context, firstWord, null)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		}
-		
-		//For case-insensitive terms, we're on the look out for capital letters after the first letter
+
+		//For case-insensitive terms, we're on the look-out for capital letters after the first letter
 		if (!chopped.equals(chopped.toLowerCase())) {
 			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
 		return null;
 	}
 
-	private CaseSignificance suggestCorrectCaseSignificanceForCaseSentitiveTerm(Concept context, Description d, String chopped,
-			String caseSig, String term) {
-		if (chopped.equals(chopped.toLowerCase()) && 
-				!singleLetterCombo(term) && 
+	private CaseSignificance suggestCorrectCaseSignificanceForCaseSensitiveTerm(Concept context, Description d, String chopped,
+	                                                                            String caseSig, String term) {
+		if (chopped.equals(chopped.toLowerCase()) &&
+				!singleLetterCombo(term) &&
 				!startsWithProperNounPhrase(context, term) &&
 				!containsKnownLowerCaseWord(term)) {
 			if (caseSig.equals(CS) && startsWithSingleLetter(d.getTerm())){
@@ -304,7 +274,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 		return null;
 	}
-
+	
 	public boolean startsWithSingleLetter(String term) {
 		if (Character.isLetter(term.charAt(0))) {
 			//If it's only 1 character long, then yes! Otherwise, no!
@@ -320,6 +290,26 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			}
 		}
 		return false;
+	}
+
+	public boolean startsWithAcronym(String term) {
+		if (StringUtils.isEmpty(term)) {
+			LOGGER.warn("Check here");
+			return false;
+		}
+		String firstLetter = term.substring(0, 1);
+		String secondLetter = null;
+		boolean isOneCharacterLong = true;
+
+		//Some terms of course are only one character long!
+		if (term.length() > 1) {
+			secondLetter = term.substring(1, 2);
+			isOneCharacterLong = false;
+		}
+
+		return (!isOneCharacterLong
+				&& (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
+				&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase())));
 	}
 
 	public boolean startsWithProperNounPhrase(Concept context, String term) {
@@ -486,7 +476,4 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		sources.add(new KnowledgeSource(category, reference));
 	}
 
-	public Map<String, Description> getSourcesOfTruth() {
-		return sourcesOfTruth;
-	}
 }

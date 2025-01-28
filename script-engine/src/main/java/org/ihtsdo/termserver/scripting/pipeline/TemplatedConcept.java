@@ -181,14 +181,12 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			lcn.addIssue(CaseSensitivityUtils.FORCE_CS);
 			concept.addDescription(lcn);
 		}
-
-
 	}
 
 	private void reviewCaseSensitivity(Concept c) throws TermServerScriptException {
 		CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
 		for (Description d : c.getDescriptions()) {
-			d.setCaseSignificance(csUtils.suggestCorrectCaseSignficance(d));
+			d.setCaseSignificance(csUtils.suggestCorrectCaseSignficance(c, d));
 		}
 	}
 

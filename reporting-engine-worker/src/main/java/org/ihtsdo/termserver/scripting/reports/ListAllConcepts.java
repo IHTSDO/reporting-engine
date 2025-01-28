@@ -55,7 +55,7 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(NEW_CONCEPTS_ONLY).withType(Type.BOOLEAN).withDefaultValue(false)
 				.add(EXTENSION_ONLY).withType(Type.BOOLEAN).withDefaultValue(false)
-				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues("true","true","false","false")
+				.add(TERM_TYPES).withType(JobParameter.Type.CHECKBOXES).withOptions("FSN", "PT", "SYN", "DEFN").withDefaultValues(TRUE, TRUE,FALSE,FALSE)
 				.build();
 		
 		return new Job()
