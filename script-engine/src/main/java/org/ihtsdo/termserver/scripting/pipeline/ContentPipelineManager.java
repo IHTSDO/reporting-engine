@@ -174,8 +174,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			LOGGER.debug("FSN Incorrectly cI");
 		}
 
-		if (externalIdentifier.equals("48058-2")) {
-			LOGGER.debug("Capitalisation of LOINC part name");
+		if (externalIdentifier.equals("40087-9")) {
+			LOGGER.debug("Missing LOINC Term");
 		}
 
 		if (externalIdentifier.equals("66483-9")) {
@@ -254,6 +254,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Skip any concepts that are externally maintained
 			if (!MANUALLY_MAINTAINED_ITEMS.containsKey(tc.getExternalIdentifier())){
 				determineChanges(tc, externalIdentifiersProcessed);
+			} else {
+				//We'll minimally report the manually maintained items
+				report(getTab(TAB_PROPOSED_MODEL_COMPARISON),
+						tc.getExternalIdentifier(),
+						tc.getConcept().getId(),
+						tc.getIterationIndicator(),
+						tc.getClass().getSimpleName());
 			}
 		}
 
@@ -303,10 +310,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private void determineChanges(TemplatedConcept tc, Set<String> externalIdentifiersProcessed) throws TermServerScriptException {
 		Concept concept = tc.getConcept();
 		externalIdentifiersProcessed.add(tc.getExternalIdentifier());
-
-		if (tc.getExternalIdentifier().equals("56888-1")) {
-			LOGGER.debug("Missing ID, gains extra axiom");
-		}
 
 		//Do we already have this concept?  Also, it might use freshly modelled concepts internally which need to have IDs assigned
 		//before we can compare their axioms

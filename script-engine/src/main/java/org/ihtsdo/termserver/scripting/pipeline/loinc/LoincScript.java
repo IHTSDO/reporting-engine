@@ -12,6 +12,9 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 
 
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincPart;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
