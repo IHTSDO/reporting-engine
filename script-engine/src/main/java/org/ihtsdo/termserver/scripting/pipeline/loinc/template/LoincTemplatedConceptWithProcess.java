@@ -1,10 +1,11 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,7 +84,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
 	@Override
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
-		//If the CHARACTERIZES slot is still here but we're allowing it to be empty,
+		//If the CHARACTERIZES slot is still here, but we're allowing it to be empty,
 		//remove it, and its connector
 		if (hasProcessingFlag(ProcessingFlag.SUPPRESS_CHARACTERIZES_TERM)
 				&& d.getTerm().contains("[CHARACTERIZES]")) {

@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
@@ -6,6 +6,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 import java.util.List;
 import java.util.Set;

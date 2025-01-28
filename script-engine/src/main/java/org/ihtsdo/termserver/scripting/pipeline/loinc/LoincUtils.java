@@ -8,6 +8,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class LoincUtils implements RF2Constants {

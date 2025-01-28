@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

@@ -1,8 +1,9 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 
+import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScriptConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

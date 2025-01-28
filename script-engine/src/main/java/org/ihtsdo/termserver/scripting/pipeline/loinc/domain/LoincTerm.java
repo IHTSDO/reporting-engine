@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
