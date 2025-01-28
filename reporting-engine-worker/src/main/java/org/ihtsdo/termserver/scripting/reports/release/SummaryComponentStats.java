@@ -414,7 +414,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 			incrementCounts(a, counts, IDX_TOTAL);
 			if (a.isActiveSafely()) {
-				incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
 				countActiveDescriptionHistoricalAssociations(a, datum, counts);
 			} else {
 				countInactiveDescriptionHistoricalAssociations(a, datum, counts);
@@ -515,6 +514,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void analyzeComponents(boolean isNewConcept, Collection<String> ids, Collection<String> idsInactive, int[] counts, Collection<? extends Component> components) throws TermServerScriptException {
+		boolean conceptAffected = false;
+
 		for (Component component : components) {
 			if (!matchesModuleFilter(component.getModuleId())) {
 				continue;
@@ -533,43 +534,46 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
+					conceptAffected = true;
 
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
 						//so it's not been 'added' as such.  Well, we might want to count additions
 						//to existing concepts separately.
-						incrementCounts(component, counts, IDX_NEW_NEW);;
+						incrementCounts(component, counts, IDX_NEW_NEW);
 						debugToFile(component, "NewNew");
 					}
 
 					if (component instanceof InactivationIndicatorEntry inactivationIndicatorEntry) {
 						incrementInactivationReason(counts, inactivationIndicatorEntry.getInactivationReasonId());
 					}
-					counts[IDX_CONCEPTS_AFFECTED]++;
 				} else if (previouslyExistedInactive) {
 					incrementCounts(component, counts, IDX_REACTIVATED);
 					debugToFile(component, "Reactivated");
-					counts[IDX_CONCEPTS_AFFECTED]++;
+					conceptAffected = true;
 				} else if (previouslyExistedActive && isChangedSinceLastRelease(component)) {
 					incrementCounts(component, counts, IDX_CHANGED);
 					debugToFile(component, "Changed");
-					counts[IDX_CONCEPTS_AFFECTED]++;
+					conceptAffected = true;
 				}
 			} else {
 				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW_INACTIVE);
 					debugToFile(component, "New Inactive");
-					counts[IDX_CONCEPTS_AFFECTED]++;
+					conceptAffected = true;
 				} else if (previouslyExistedActive) {
 					incrementCounts(component, counts, IDX_INACTIVATED);
 					debugToFile(component, "Inactivated");
-					counts[IDX_CONCEPTS_AFFECTED]++;
+					conceptAffected = true;
 				} else if (previouslyExistedInactive && isChangedSinceLastRelease(component)) {
 					incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
 					debugToFile(component, "Changed Inactive");
-					counts[IDX_CONCEPTS_AFFECTED]++;
+					conceptAffected = true;
 				}
 			}
+		}
+		if (conceptAffected) {
+			counts[IDX_CONCEPTS_AFFECTED]++;
 		}
 	}
 
