@@ -16,6 +16,8 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivateConcepts.class);
 
+	private static final String HIST_ASSOC_TO = "Historical association to ";
+
 	private InactivationIndicator defaultInactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
@@ -280,35 +282,59 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
 
 		//Do we need to align the incoming concept's inactivation indicator?
+		boolean iiChanged = false;
 		InactivationIndicator origII = incomingConcept.getInactivationIndicator();
 		if (origII == null) {
-			throw new ValidationFailure(incomingConcept, "Incoming association from " + incomingConcept + " has no inactivation indicator");
-		}
-		boolean iiChanged = false;
-		if (!origII.equals(reason)) {
+			//If we didn't previously have an inactivation indicator, set it to NCEP - Non Conformance to Editorial Policy
+			//UNLESS we detect NOS or Other, in which case we'll use CDC - Classification Derived Component
+			boolean setCDC = checkForNOSOrOther(incomingConcept);
+			reason = setCDC ? InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT : InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 			incomingConcept.setInactivationIndicator(reason);
 			iiChanged = true;
-			report(task, incomingConcept, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, origII + " --> " + reason);
+			report(task, incomingConcept, Severity.HIGH, ReportActionType.INACT_IND_MODIFIED, "No II on incoming association.  Setting to: " + reason);
+		} else if (!origII.equals(reason)) {
+			if (origII.equals(InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT)) {
+				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.NO_CHANGE, origII + " left unchanged");
+			} else {
+				incomingConcept.setInactivationIndicator(reason);
+				iiChanged = true;
+				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, origII + " --> " + reason);
+			}
 		}
 
-		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+		boolean conceptUpdateNeeded = setIncomingHistoricalAssociationsDependingOnInactivationIndicator(task, assoc, reason, replacement, originalTarget, incomingConcept, iiChanged);
+		if (conceptUpdateNeeded) {
+			Severity severity = replacement == null ? Severity.CRITICAL : Severity.MEDIUM;
+			report(task, incomingConcept, severity, ReportActionType.CONCEPT_CHANGE_MADE, HIST_ASSOC_TO + originalTarget + " rewired to " + replacement);
+			//Add this concept into our task so we know it's been updated
+			task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
+			updateConcept(task, incomingConcept, "");
+		}
+	}
+
+	/**
+	 * @return true if the concept still needs to be saved
+	 */
+	private boolean setIncomingHistoricalAssociationsDependingOnInactivationIndicator(Task task, AssociationEntry assoc, InactivationIndicator reason, Concept replacement, Concept originalTarget, Concept incomingConcept, boolean iiChanged) throws TermServerScriptException {
+		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)
+				|| reason.equals(InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT)) {
 			//If we're modifying the refset member directly, we also need to save the concept to pick up the ii change
 			if (iiChanged) {
 				updateConcept(task, incomingConcept, "");
 			}
 
-			//In this case the replacement is expected to be null and we will just inactivate that historical association
+			//In this case the replacement is expected to be null, and we will just inactivate that historical association
 			if (assoc.isReleasedSafely()) {
 				assoc.setActive(false);
 				updateRefsetMember(task, assoc, "");
-				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, "Historical association to " + originalTarget + " inactivated with no replacement");
+				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, HIST_ASSOC_TO + originalTarget + " inactivated with no replacement");
 				task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 			} else {
 				deleteRefsetMember(task, assoc.getId());
-				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, "Historical association to " + originalTarget + " inactivated with no deleted");
+				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, HIST_ASSOC_TO + originalTarget + " inactivated with no deleted");
 				task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 			}
-			return;
+			return false;
 		} else if (reason.equals(InactivationIndicator.OUTDATED)) {
 			incomingConcept.setAssociationTargets(AssociationTargets.replacedBy(replacement));
 		} else if (reason.equals(InactivationIndicator.DUPLICATE)) {
@@ -318,19 +344,19 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 		} else {
 			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
 		}
-		Severity severity = replacement == null ? Severity.CRITICAL : Severity.MEDIUM;
-		report(task, incomingConcept, severity, ReportActionType.CONCEPT_CHANGE_MADE, "Historical association to " + originalTarget + " rewired to " + replacement);
-		//Add this concept into our task so we know it's been updated
-		task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
-		updateConcept(task, incomingConcept, "");
+		return true;
+	}
+
+	private boolean checkForNOSOrOther(Concept c) {
+		return c.getFsn().contains("NOS")
+				|| c.getFsn().contains("NEC")
+				|| c.getFsn().contains("Other");
 	}
 
 
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c;
-		Concept replacement = null;
-
 		if (StringUtils.isNumeric(lineItems[0])) {
 			c = gl.getConcept(lineItems[0]);
 		} else {
@@ -342,8 +368,11 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			incrementSummaryInformation("Skipped, already inactivated");
 			return Collections.emptyList();
 		}
-		
-		
+		return processLineForConcept(c, lineItems);
+	}
+
+	private List<Component> processLineForConcept(Concept c, String[] lineItems) {
+		Concept replacement = null;
 		int idxReplacement = 1;
 		if (lineItems.length > 2) {
 			idxReplacement = 2;
@@ -359,24 +388,14 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 				LOGGER.warn("Failed to identify inactivation indicator for: {}", c);
 			}
 		}
-		
+
 		if (lineItems.length > 1) {
-			if (lineItems[idxReplacement].toUpperCase().trim().equals("N/A")) {
-				replacement = NULL_CONCEPT;
-			} else {
-				try {
-					replacement = gl.getConcept(lineItems[idxReplacement]);
-				} catch (Exception e) {
-					if (expectReplacements) {
-						LOGGER.warn("Failed to identify replacement concept: {}", lineItems[idxReplacement]);
-					}
-				}
-			}
+			replacement = determineReplacementFromInputLine(lineItems, idxReplacement);
 		}
 
 		//Give C an issue of one of its parents to try to batch sibling concepts together
 		c.addIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
-		
+
 		if (replacement != null) {
 			replacements.put(c, replacement);
 			return Collections.singletonList(c);
@@ -384,5 +403,18 @@ public class InactivateConcepts extends BatchFix implements ScriptConstants {
 			return Collections.singletonList(c);
 		}
 		return Collections.emptyList();
+	}
+
+	private Concept determineReplacementFromInputLine(String[] lineItems, int idxReplacement) {
+		if (!lineItems[idxReplacement].toUpperCase().trim().equals("N/A")) {
+			try {
+				return gl.getConcept(lineItems[idxReplacement]);
+			} catch (Exception e) {
+				if (expectReplacements) {
+					LOGGER.warn("Failed to identify replacement concept: {}", lineItems[idxReplacement]);
+				}
+			}
+		}
+		return NULL_CONCEPT;
 	}
 }
