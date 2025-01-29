@@ -54,10 +54,12 @@ public class INFRA13577_AJCCDefintionToAttribution extends DeltaGenerator implem
 	@Override
 	protected void process() throws TermServerScriptException {
 		for (Concept c : findConcepts(ecl)) {
-			conceptsInThisBatch ++;
-			inactivateTextDefinition(c);
-			addAttribution(c);
-			outputRF2(c);
+
+			//inactivateTextDefinition(c);
+			if (addAttribution(c)) {
+				outputRF2(c);
+				conceptsInThisBatch++;
+			}
 			if (conceptsInThisBatch >= BATCH_SIZE) {
 				if (!dryRun) {
 					createOutputArchive(false, conceptsInThisBatch);
@@ -84,10 +86,18 @@ public class INFRA13577_AJCCDefintionToAttribution extends DeltaGenerator implem
 		}
 	}
 
-	private void addAttribution(Concept c) throws TermServerScriptException {
-		ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(c, annotationType, annotationStr);
-		c.addComponentAnnotationEntry(cae);
-		report(c, Severity.LOW, ReportActionType.ANNOTATION_ADDED, annotationStr);
+	private boolean addAttribution(Concept c) throws TermServerScriptException {
+		boolean attributionAdded = false;
+		//Do we need to add an annotation here?
+		if (c.getComponentAnnotationEntries().isEmpty()) {
+			ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(c, annotationType, annotationStr);
+			c.addComponentAnnotationEntry(cae);
+			attributionAdded = true;
+			report(c, Severity.LOW, ReportActionType.ANNOTATION_ADDED, annotationStr);
+		} else {
+			report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.NO_CHANGE, "Annotation already present");
+		}
+		return attributionAdded;
 	}
 
 }
