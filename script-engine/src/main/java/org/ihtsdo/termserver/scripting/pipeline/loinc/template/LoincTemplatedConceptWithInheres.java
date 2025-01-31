@@ -9,6 +9,8 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_OBSERVATION_PART;
+
 /*
 See Processing instruction document https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
  */
@@ -57,7 +59,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//Rule 9 for Prid Observations
 		if (getExternalConcept().getProperty().equals("Prid")
 				&& detailPresent(COMPNUM_PN)
-				&& getLoincDetailOrThrow(COMPNUM_PN).getPartNumber().equals("LP442509-8")) {
+				&& getLoincDetailOrThrow(COMPNUM_PN).getPartNumber().equals(LOINC_OBSERVATION_PART)) {
 			slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation");
 			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "finding");
 		}
@@ -93,7 +95,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		//Rule 9 Include “observation” in the Inheres in value slot of the descriptions when PROPERTY is Prid and
 		// LOINC Component is LP442509-8 Observation.
 		if (loincDetail.getLDTColumnName().equals(COMPNUM_PN)
-				&& loincDetail.getPartNumber().equals("LP442509-8")) {
+				&& loincDetail.getPartNumber().equals(LOINC_OBSERVATION_PART)) {
 			slotTermAppendMap.put(LOINC_PART_TYPE_COMPONENT, " observation");
 		}
 

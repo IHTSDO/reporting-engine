@@ -19,6 +19,8 @@ import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_OBSERVATION_PART;
+
 public abstract class LoincTemplatedConcept extends TemplatedConcept implements LoincScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
@@ -559,7 +561,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, LoincDetail loincDetail, Concept attributeType) throws TermServerScriptException {
 		try {
 			if ((loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber()))
-				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals("LP442509-8"))) {
+				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals(LOINC_OBSERVATION_PART))) {
 				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
 			}
 
@@ -597,7 +599,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
 				//Rule xi if we have a time, then we don't need to populate that field
 				slotTermMap.put(loincDetail.getPartTypeName(), "");
-			} else if (loincDetail.getPartNumber().equals(LoincScript.LOINC_OBSERVATION_PART)) {
+			} else if (loincDetail.getPartNumber().equals(LOINC_OBSERVATION_PART)) {
 				//Rule 2d We're going to allow the COMPONENT to be blank
 				addProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT);
 				slotTermMap.put(loincDetail.getPartTypeName(), "");
