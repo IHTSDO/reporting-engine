@@ -30,16 +30,15 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	private Set<Concept> updatedConcepts = new HashSet<>();
 	private Set<Concept> skipConcepts = new HashSet<>();
 
-	private List<String> targetPrefixes = Arrays.asList(new String[] {"OE ", "CO ", "O/E", "C/O", "Complaining of", "On examination"});
+	private List<String> targetPrefixes = Arrays.asList("OE ", "CO ", "O/E", "C/O", "Complaining of", "On examination");
 
-	private List<String> manageManually = Arrays.asList(new String[]{
+	private List<String> manageManually = Arrays.asList(
 			"163092009","163094005","163096007","164018003","275284008",
 			"271879001","164075007","162952003","164398007","164346005",
 			"141331007","141369002","141751009","140614001","140514005",
 			"140605006","140761009","141666001","141492001","141849001",
 			"141853004","141870007","141874003","141857003","141864001",
-			"141819003","140962005","163432001"
-	});
+			"141819003","140962005","163432001");
 
 	private Map<Concept, List<String>> normalisedDescriptionMap = new HashMap<>();
 	
@@ -62,7 +61,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, Cathy Notes, , ",
-				"Issue, Detail",
+				"Issue, Detail, details, details, ,",
 				"SCTID, FSN, SemTag, Notes, Replacement Mismatch, Existing Inact / HistAssoc, Sibling Lexical Match, Sibling Active, Sibling Already in Delta, Sibling HistAssoc, Cousin Lexical Match, Cousin Active, Cousin HistAssoc, Cathy Notes, ",
 				/*"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc, Mentioned in Tab 3",
 				"SCTID, FSN, SemTag, Effective Time, Existing Inact / HistAssoc",*/
@@ -330,6 +329,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 					if (cathyNotes.containsKey(c)) {
 						notes = cathyNotes.get(c) + "\n" + notes;
 					}
+					report(SECONDARY_REPORT, c, "Concept manually marked as skipped", notes);
 					cathyNotes.put(c, notes);
 			}
 		} catch (Exception e) {
@@ -770,8 +770,8 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	class UpdateAction {
-		public boolean associationTargetsUnchanged = false;
-		public boolean associationTypeUnchanged = false;
+		boolean associationTargetsUnchanged = false;
+		boolean associationTypeUnchanged = false;
 		Association type;
 		InactivationIndicator inactivationIndicator;
 		Set<Concept> replacements;
