@@ -96,11 +96,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private int fixIssues(final Task t, final Concept c, final boolean trialRun)
 			throws TermServerScriptException {
 		int changesMade = 0;
-		
-		/*if (c.getId().equals("359592009")) {
-			LOGGER.debug("here");
-		}*/
-		
+
 		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
@@ -148,30 +144,26 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		
 		//Do we need to load and save the concept?
 		Concept loaded = null;
-		if (!c.isActive() && hasMissingConceptInactiveIndicator(c)) {
+		if (!c.isActiveSafely() && hasMissingConceptInactiveIndicator(c)) {
 			loaded = loadConcept(c, t.getBranchPath());
 		}
 		
 		for (final Description d : c.getDescriptions()) {
-			/*if (d.getId().equals("2966088011")) {
-				LOGGER.debug("here");
-			}*/
-
 			//Do we have active LangRefset members on inactive descriptions? Check scope on the LRSM, not the description
 			//As we (eg Swiss) may have a description that is inactive in the International edition
-			if (!d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE).size() > 0) {
+			if (!d.isActiveSafely() && !d.getLangRefsetEntries(ActiveState.ACTIVE).isEmpty()) {
 				ReportActionType action = ReportActionType.REFSET_MEMBER_INACTIVATED;
 				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 					if (inScope(l)) {
 						if (!dryRun) {
-							if (l.isReleased()) {
+							if (l.isReleasedSafely()) {
 								l.setActive(false);
 								tsClient.updateRefsetMember(l, t.getBranchPath());
 							} else {
 								tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
 							}
 						}
-						if (!l.isReleased()) {
+						if (!l.isReleasedSafely()) {
 							action = ReportActionType.REFSET_MEMBER_DELETED;
 						}
 						report(t, c, Severity.LOW, action, "Active LRSM removed on inactive description", l);
@@ -208,11 +200,11 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				if (duplicatePair.isDeleting()) {
 					LOGGER.debug((dryRun?"Dry Run (so not) r":"R") + "emoving duplicate: " + duplicatePair.remove);
 					ReportActionType action = ReportActionType.REFSET_MEMBER_DELETED;
-					if (duplicatePair.remove.isReleased()) {
+					if (duplicatePair.remove.isReleasedSafely()) {
 						action = ReportActionType.REFSET_MEMBER_INACTIVATED;
 					}
 					if (!dryRun) {
-						if (duplicatePair.remove.isReleased()) {
+						if (duplicatePair.remove.isReleasedSafely()) {
 							duplicatePair.remove.setActive(false);
 							tsClient.updateRefsetMember(duplicatePair.remove, t.getBranchPath());
 						} else {
@@ -244,10 +236,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				continue;
 			}
 			
-			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
-				/*if (d.getId().equals("3902340014")) {
-					LOGGER.debug("here");
-				}*/
+			if (!c.isActiveSafely() && d.isActiveSafely() && isMissingConceptInactiveIndicator(d)) {
 				if (loaded == null) {
 					loaded = loadConcept(c, t.getBranchPath());
 				}
@@ -262,13 +251,14 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 					changesMade++;
 				}
 			}
-			
-			//ISRS-1257 However if the description is inactive, then we don't want any CNC indicators!
-			if (!d.isActive() && hasConceptInactiveIndicator(d)) {
+
+			//If the concept is _active_ then we don't expect to see _any_ CNC indicators on the descriptions
+			//ISRS-1257 OR if the description is inactive, then we don't want any CNC indicators!
+			if ((c.isActiveSafely() || !d.isActiveSafely()) && hasConceptInactiveIndicator(d)) {
 				for (InactivationIndicatorEntry entry : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 					if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 						//Are we inactivating or deleting?
-						if (entry.isReleased()) {
+						if (entry.isReleasedSafely()) {
 							entry.setActive(false);
 							report(t, c, Severity.LOW, ReportActionType.INACT_IND_INACTIVATED, "ConceptNonCurrent", entry);
 							if (!dryRun) {
@@ -288,7 +278,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		
 		int directRefsetChanges = 0;
 		for (RefsetMember rm : SnomedUtils.getAllRefsetMembers(c)) {
-			if (!rm.isReleased() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
+			if (!rm.isReleasedSafely() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
 				RefsetMember rmLoaded = loadRefsetMember(rm.getId(), project.getBranchPath());
 				rmLoaded.setModuleId(defaultModuleId);
 				String msg = "Module " + rm.getModuleId() + " -> " + rmLoaded.getModuleId();
@@ -307,7 +297,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private int reactivateRemainingMemberIfRequired(Concept c, RefsetMember r,
 			List<? extends RefsetMember> siblings, Task t) throws TermServerScriptException {
 		//Was the member we deleted active?
-		if (!r.isActive()) {
+		if (!r.isActiveSafely()) {
 			return NO_CHANGES_MADE;
 		}
 		
@@ -316,7 +306,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		for (RefsetMember sibling : siblings) {
 			if (!sibling.getId().equals(r.getId()) &&
 				r.duplicates(sibling) &&
-				!sibling.isActive()) {
+				!sibling.isActiveSafely()) {
 				sibling.setActive(true);
 				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Reactivating published: " + sibling);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REACTIVATED, sibling);
@@ -342,20 +332,18 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		for (final Concept c : gl.getAllConcepts()) {
  			boolean hasChanges = SnomedUtils.hasChanges(c);
 			for (Description d : c.getDescriptions()) {
-				/*if (d.getId().equals("788841000124119")) {
-						LOGGER.debug("here");
-				}*/
-				
+
 				//Too many of these in the international edition - discuss elsewhere
 				//OK we'll do them if they've been touched in this authoring cycle
 				if (project.getBranchPath().contains("SNOMEDCT-") || hasChanges) {
 					//Switch to just process those 
-					if (!c.isActive() && inScope(d) && d.isActive() && isMissingConceptInactiveIndicator(d)) {
+					if (!c.isActiveSafely() && inScope(d) && d.isActiveSafely() && isMissingConceptInactiveIndicator(d)) {
 						processMe.add(c);
 						continue nextConcept;
 					}
 				
-					if (!d.isActive() && hasConceptInactiveIndicator(d)) {
+					if ((!d.isActiveSafely() && hasConceptInactiveIndicator(d))
+					|| (c.isActiveSafely() && hasConceptInactiveIndicator(d, InactivationIndicator.CONCEPT_NON_CURRENT))) {
 						if (inScope(d)) {
 							processMe.add(c);
 							continue nextConcept;
@@ -364,17 +352,17 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				}
 
 				//Do we have active LangRefset members on inactive descriptions?
-				if (!d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE).size() > 0) {
+				if (!d.isActiveSafely() && !d.getLangRefsetEntries(ActiveState.ACTIVE).isEmpty()) {
 					processMe.add(c);
 					continue nextConcept;
 				}
 				
-				if (getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).size() > 0) {
+				if (!getDuplicateRefsetMembers(d, d.getLangRefsetEntries()).isEmpty()) {
 					processMe.add(c);
 					continue nextConcept;
 				}
 				
-				if (getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).size() > 0) {
+				if (!getDuplicateRefsetMembers(d, d.getInactivationIndicatorEntries()).isEmpty()) {
 					//Check for all published and only one active - that's as good as it gets
 					if (!asGoodAsItGets(d.getInactivationIndicatorEntries())) {
 						processMe.add(c);
@@ -389,20 +377,20 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				}
 			}
 			 
-			if (!c.isActive()) {
-				if (getDuplicateRefsetMembers(c, c.getAssociationEntries()).size() > 0) {
+			if (!c.isActiveSafely()) {
+				if (!getDuplicateRefsetMembers(c, c.getAssociationEntries()).isEmpty()) {
 					processMe.add(c);
 					continue nextConcept;
 				}
 				
-				if (getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries()).size() > 0) {
+				if (!getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries()).isEmpty()) {
 					processMe.add(c);
 					continue nextConcept;	
 				}
 				
 				//Do we have refset members newly created, but not in the default module?
 				for (RefsetMember rm : SnomedUtils.getAllRefsetMembers(c)) {
-					if (!rm.isReleased() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
+					if (!rm.isReleasedSafely() && defaultModuleId != null && SnomedUtils.isCore(rm)) {
 						processMe.add(c);
 						continue nextConcept;	
 					}
@@ -419,13 +407,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		//then we can't improve on that situation
 		boolean hasOneActive = false;
 		for (RefsetMember rm : refsetMembers) {
-			if (rm.isActive()) {
+			if (rm.isActiveSafely()) {
 				if (hasOneActive) {
 					return false;
 				}
 				hasOneActive = true;
 			}
-			if (!rm.isReleased()) {
+			if (!rm.isReleasedSafely()) {
 				return false;
 			}
 		}
@@ -456,6 +444,12 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private boolean hasConceptInactiveIndicator(Description d) {
 		return !isMissingConceptInactiveIndicator(d);
 	}
+	private boolean hasConceptInactiveIndicator(Description d, InactivationIndicator ii) {
+		String inactivationReasonId = SnomedUtils.translateInactivationIndicator(ii);
+		return d.getInactivationIndicatorEntries().stream()
+				.anyMatch(i -> i.getInactivationReasonId().equals(inactivationReasonId));
+	}
+
 
 	private List<DuplicatePair> getDuplicateRefsetMembers(final Component c, final List<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		List<DuplicatePair> duplicatePairs = new ArrayList<>();
@@ -475,19 +469,18 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				
 				if (thisEntry.duplicates(thatEntry)) {
 					//Are they both published?  If INT is active and EXT is inactive with no effective time then that's as good as we'll get
-					if (thisEntry.isReleased() && thatEntry.isReleased()) {
+					if (thisEntry.isReleasedSafely() && thatEntry.isReleasedSafely()) {
 						RefsetMember intRM = hasModule(INTERNATIONAL_MODULES, true, thisEntry, thatEntry);
 						RefsetMember extRM = hasModule(INTERNATIONAL_MODULES, false, thisEntry, thatEntry);
 						
-						if (intRM != null && extRM != null) {
-							if (intRM.isActive() && !extRM.isActive() && StringUtils.isEmpty(extRM.getEffectiveTime())) {
-								LOGGER.warn("Inactivated refsetmember in extension.  As good as it gets: " + extRM);
-							}
+						if ((intRM != null && extRM != null)
+							&& (intRM.isActiveSafely() && !extRM.isActiveSafely() && StringUtils.isEmpty(extRM.getEffectiveTime()))) {
+								LOGGER.warn("Inactivated refsetmember in extension.  As good as it gets: {}", extRM);
 						}
 						
 						// Only a problem historically if they're both active
-						if (thisEntry.isActive() && thatEntry.isActive()) {
-							LOGGER.warn("Both entries are released and active! " + thisEntry + " + " + thatEntry);
+						if (thisEntry.isActiveSafely() && thatEntry.isActiveSafely()) {
+							LOGGER.warn("Both entries are released and active! {} + {}", thisEntry, thatEntry);
 						}
 						
 						//That said, if one or both of them have a null effective time, then it LOOKS like we 
@@ -519,14 +512,14 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 							}
 							
 							//With reuse, it's possible for them both to be inactive also!
-							if (!thisEntry.isActive() && !thatEntry.isActive()) {
+							if (!thisEntry.isActiveSafely() && !thatEntry.isActiveSafely()) {
 								LOGGER.warn("Both entries are released, both inactive, but have been modified! " + thisEntry + " + " + thatEntry);
 								//In this case it doesn't matter which one we revert.  Take 'this'
 								duplicatePair = new DuplicatePair().modify(previousThis);
 							} else {
 								//First, check if BOTH members are active.   If one of them is International and the other is Extension
 								//then we'll keep the international one and inactivate the extension copy.
-								if (thisEntry.isActive() && thatEntry.isActive()) {
+								if (thisEntry.isActiveSafely() && thatEntry.isActiveSafely()) {
 									extRM  = chooseExtension(thisEntry, thatEntry);
 									if (extRM == null) {
 										throw new IllegalArgumentException("Consider here, two active members in same module.  Pick one at random?");
@@ -570,13 +563,13 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						}
 					} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
 						// Delete the unpublished one
-						if (thisEntry.isReleased() && !thatEntry.isReleased()) {
+						if (thisEntry.isReleasedSafely() && !thatEntry.isReleasedSafely()) {
 							duplicatePair = new DuplicatePair(thisEntry, thatEntry);
-						} else if (!thisEntry.isReleased() && thatEntry.isReleased()) {
+						} else if (!thisEntry.isReleasedSafely() && thatEntry.isReleasedSafely()) {
 							duplicatePair = new DuplicatePair(thatEntry,thisEntry);
-						} else if (!thisEntry.isReleased() && !thatEntry.isReleased()) {
+						} else if (!thisEntry.isReleasedSafely() && !thatEntry.isReleasedSafely()) {
 							//Neither released.   Delete the inactive one, or randomly otherwise
-							if (!thisEntry.isActive()) {
+							if (!thisEntry.isActiveSafely()) {
 								duplicatePair = new DuplicatePair(thatEntry,thisEntry);
 							} else {
 								duplicatePair = new DuplicatePair(thisEntry, thatEntry);
@@ -588,7 +581,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						duplicatePair = new DuplicatePair(thisEntry, thatEntry);
 					} else {
 						// Only a problem historically if they're both active
-						if (thisEntry.isActive() && thatEntry.isActive()) {
+						if (thisEntry.isActiveSafely() && thatEntry.isActiveSafely()) {
 							LOGGER.warn("Both entries look published and active! " + thisEntry.getEffectiveTime());
 						}
 					}
@@ -649,9 +642,9 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		} else {
 			//Don't worry if they're both released and only one is active
 			if(potentialPicks.size() == 2
-					&& potentialPicks.get(0).isReleased() && potentialPicks.get(1).isReleased()
-					&& 	(potentialPicks.get(0).isActive() || potentialPicks.get(1).isActive())
-					&& 	(!potentialPicks.get(0).isActive() || !potentialPicks.get(1).isActive())) {
+					&& potentialPicks.get(0).isReleasedSafely() && potentialPicks.get(1).isReleasedSafely()
+					&& 	(potentialPicks.get(0).isActiveSafely() || potentialPicks.get(1).isActiveSafely())
+					&& 	(!potentialPicks.get(0).isActiveSafely() || !potentialPicks.get(1).isActiveSafely())) {
 				return null;
 			}
 			LOGGER.warn("Multiple active inactivation indicators " +( match?"matching":"not matching ") + " value " + value + " found on " + ii);
@@ -660,25 +653,21 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	}
 
 	private boolean duplicationRecentlyResolved(RefsetMember thisEntry, RefsetMember thatEntry) throws TermServerScriptException {
-		if (!thisEntry.isReleased() || !thatEntry.isReleased()) {
+		if (!thisEntry.isReleasedSafely() || !thatEntry.isReleasedSafely()) {
 			throw new TermServerScriptException("Check code, expected released members");
 		}
 		//Is 'this' unchanged and 'that' recently inactivated?
-		if (thisEntry.isActive()  && 
+		if (thisEntry.isActiveSafely()  && 
 				!StringUtils.isEmpty(thisEntry.getEffectiveTime()) &&
-				!thatEntry.isActive() && 
+				!thatEntry.isActiveSafely() && 
 				StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
 			return true;
 		}
 		//Or the other way around
-		if (!thisEntry.isActive()  && 
+		return (!thisEntry.isActiveSafely()  &&
 				StringUtils.isEmpty(thisEntry.getEffectiveTime()) &&
-				thatEntry.isActive() && 
-				!StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-			return true;
-		}
-		
-		return false;
+				thatEntry.isActiveSafely() && 
+				!StringUtils.isEmpty(thatEntry.getEffectiveTime()));
 	}
 
 	private RefsetMember pickByID(String id, RefsetMember... refsetMembers) {
@@ -697,16 +686,16 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		if (lhsMatches && rhsMatches) {
 			//throw new IllegalStateException("Both refset members featured target or value " + lhs + " vs " + rhs);
 			//In this case, we should pick the one that was active in the the last release
-			if (lhs.isActive() && !rhs.isActive()) {
+			if (lhs.isActiveSafely() && !rhs.isActiveSafely()) {
 				return matching?lhs:rhs;
-			} else if (rhs.isActive() && !lhs.isActive()) {
+			} else if (rhs.isActiveSafely() && !lhs.isActiveSafely()) {
 				return matching?rhs:lhs;
 			} else {
 				throw new IllegalStateException("Both refset members featured target or value and have same state: " + lhs + " vs " + rhs);
 			}
 		}
 		if (!lhsMatches && !rhsMatches) {
-			LOGGER.warn ("Neither refset members featured target or value " + lhs + " vs " + rhs);
+			LOGGER.warn("Neither refset members featured target or value " + lhs + " vs " + rhs);
 			return null;
 		}
 		if (matching) {
@@ -716,23 +705,23 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	}
 
 	private RefsetMember chooseActive(RefsetMember thisEntry, RefsetMember thatEntry, boolean active) {
-		if ((thisEntry.isActive() && thatEntry.isActive()) ||
-			(!thisEntry.isActive() && !thatEntry.isActive())) {
-			LOGGER.warn("Unable to find one active member of pair " + thisEntry + " vs " + thatEntry);
+		if ((thisEntry.isActiveSafely() && thatEntry.isActiveSafely()) ||
+			(!thisEntry.isActiveSafely() && !thatEntry.isActiveSafely())) {
+			LOGGER.warn("Unable to find one active member of pair {} vs {}", thisEntry, thatEntry);
 			return null;
 		}
 		
 		if (active) {
-			return thisEntry.isActive() ? thisEntry : thatEntry;
+			return thisEntry.isActiveSafely() ? thisEntry : thatEntry;
 		} else {
-			return thisEntry.isActive() ? thatEntry : thisEntry;
+			return thisEntry.isActiveSafely() ? thatEntry : thisEntry;
 		}
 	}
 
 	private RefsetMember chooseInternational(RefsetMember thisEntry, RefsetMember thatEntry) {
 		if ((isInternational(thisEntry) && isInternational(thatEntry)) ||
 				(!isInternational(thisEntry) && !isInternational(thatEntry))) {
-			LOGGER.warn("Unable to find single International member of pair " + thisEntry + " vs " + thatEntry);
+			LOGGER.warn("Unable to find single International member of pair {} vs {}", thisEntry, thatEntry);
 			return null;
 		}
 		return isInternational(thisEntry) ? thisEntry : thatEntry;
@@ -741,7 +730,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	private RefsetMember chooseExtension(RefsetMember thisEntry, RefsetMember thatEntry) {
 		if ((isInternational(thisEntry) && isInternational(thatEntry)) ||
 				(!isInternational(thisEntry) && !isInternational(thatEntry))) {
-			LOGGER.warn("Unable to find single Extension member of pair " + thisEntry + " vs " + thatEntry);
+			LOGGER.warn("Unable to find single Extension member of pair {} vs {}", thisEntry, thatEntry);
 			return null;
 		}
 		return isInternational(thisEntry) ? thatEntry : thisEntry;
