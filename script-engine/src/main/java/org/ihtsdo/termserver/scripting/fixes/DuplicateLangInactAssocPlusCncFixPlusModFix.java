@@ -473,14 +473,15 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						RefsetMember intRM = hasModule(INTERNATIONAL_MODULES, true, thisEntry, thatEntry);
 						RefsetMember extRM = hasModule(INTERNATIONAL_MODULES, false, thisEntry, thatEntry);
 						
-						if ((intRM != null && extRM != null)
-							&& (intRM.isActiveSafely() && !extRM.isActiveSafely() && StringUtils.isEmpty(extRM.getEffectiveTime()))) {
-								LOGGER.warn("Inactivated refsetmember in extension.  As good as it gets: {}", extRM);
+						if (intRM != null && extRM != null) {
+							if (intRM.isActiveSafely() && !extRM.isActiveSafely() && StringUtils.isEmpty(extRM.getEffectiveTime())) {
+								LOGGER.warn("Inactivated refsetmember in extension.  As good as it gets: " + extRM);
+							}
 						}
 						
 						// Only a problem historically if they're both active
 						if (thisEntry.isActiveSafely() && thatEntry.isActiveSafely()) {
-							LOGGER.warn("Both entries are released and active! {} + {}", thisEntry, thatEntry);
+							LOGGER.warn("Both entries are released and active! " + thisEntry + " + " + thatEntry);
 						}
 						
 						//That said, if one or both of them have a null effective time, then it LOOKS like we 
@@ -664,10 +665,14 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			return true;
 		}
 		//Or the other way around
-		return (!thisEntry.isActiveSafely()  &&
+		if (!thisEntry.isActiveSafely()  && 
 				StringUtils.isEmpty(thisEntry.getEffectiveTime()) &&
 				thatEntry.isActiveSafely() && 
-				!StringUtils.isEmpty(thatEntry.getEffectiveTime()));
+				!StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
+			return true;
+		}
+		
+		return false;
 	}
 
 	private RefsetMember pickByID(String id, RefsetMember... refsetMembers) {
