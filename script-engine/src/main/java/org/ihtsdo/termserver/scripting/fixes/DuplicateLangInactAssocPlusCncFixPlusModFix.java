@@ -475,7 +475,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						
 						if ((intRM != null && extRM != null)
 							&& (intRM.isActiveSafely() && !extRM.isActiveSafely() && StringUtils.isEmpty(extRM.getEffectiveTime()))) {
-								LOGGER.warn("Inactivated refsetmember in extension.  As good as it gets: {}", extRM);
+							LOGGER.warn("Inactivated refset member in extension.  As good as it gets: {}", extRM);
 						}
 						
 						// Only a problem historically if they're both active
@@ -486,7 +486,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 						//That said, if one or both of them have a null effective time, then it LOOKS like we 
 						//created something redundant in the last authoring cycle.
 						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) || StringUtils.isEmpty(thatEntry.getEffectiveTime())) {
-							LOGGER.warn("Previously released entry(s) have lost effective time: " + thisEntry + " + " + thatEntry);
+							LOGGER.warn("Previously released entry(s) have lost effective time: {} + {}", thisEntry, thatEntry);
 							//Have we modified a previously active refset member such that it's now a duplicate with a previously inactive one?
 							//In this case we need to revert the active one back to its previous value, inactive it
 							//and resurrect the previously inactive value instead
