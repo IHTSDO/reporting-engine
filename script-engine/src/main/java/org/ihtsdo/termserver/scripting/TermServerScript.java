@@ -55,6 +55,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
 	protected static Integer headlessEnvironment = null;
+	protected static boolean reportAllDescriptions = false;
 	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
 	protected String env;
@@ -614,6 +615,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					break;
 				case "-n":
 					jobRun.setParameter(CONCEPTS_PER_TASK, parameter);
+					break;
+				case "-l":
+					//These parameters will get picked up by batch fix processing
 					break;
 				case "-m":
 					jobRun.setParameter(MODULES, parameter);
@@ -1614,6 +1618,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		String key = (task == null? "" :  task.getKey());
 		String desc = (task == null? "" :  task.getSummary());
 		String name = (component == null ? "" : component.getReportedName());
+		if (reportAllDescriptions && component instanceof Concept concept) {
+			name = SnomedUtils.getDescriptionsToString(concept);
+		}
 		String type = (component == null ? "" : component.getReportedType());
 		String id = (component == null ? "" : component.getId());
 		StringBuffer sb = new StringBuffer();
@@ -1656,6 +1663,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (reportNullConcept || c != null) {
 			conceptFields[0] = c == null?"": QUOTE + c.getConceptId() + QUOTE;
 			conceptFields[1] = c == null?"":c.getFsn();
+			if (reportAllDescriptions) {
+				conceptFields[1] = SnomedUtils.getDescriptionsToString(c);
+			}
 
 			if (c != null && !StringUtils.isEmpty(c.getFsn())) {
 				conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
