@@ -82,8 +82,8 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		this.existingConcept = existingConcept;
 	}
 
-	public void populateAlternateIdentifier() {
-		getConcept().addAlternateIdentifier(getExternalIdentifier(), getCodeSystemSctId());
+	public void populateAlternateIdentifier(String schemeId) {
+		getConcept().addAlternateIdentifier(getExternalIdentifier(), schemeId);
 	}
 
 	public String getDifferencesFromExistingConceptWithMultiples() {
@@ -151,7 +151,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		if (hasProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT)) {
 			splitComponentsIntoDistinctGroups();
 		}
-		populateAlternateIdentifier();
+		populateAlternateIdentifier(getCodeSystemSctId());
 	}
 
 	protected abstract String getCodeSystemSctId();

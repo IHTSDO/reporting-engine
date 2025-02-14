@@ -162,24 +162,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("56888-1")) {
-			LOGGER.debug("Missing ID, gains extra axiom");
-		}
-
-		if (externalIdentifier.equals("105069-9")) {
-			LOGGER.debug("Check terming for XXX");
-		}
-
-		if (externalIdentifier.equals("49776-8")) {
-			LOGGER.debug("FSN Incorrectly CS");
-		}
-
-		if (externalIdentifier.equals("40087-9")) {
-			LOGGER.debug("Missing LOINC Term");
-		}
-
-		if (externalIdentifier.equals("66483-9")) {
-			LOGGER.debug("Inactivation");
+		if (externalIdentifier.equals("788-0")) {
+			LOGGER.debug("Uses direct site rather than inheres in ");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -190,10 +174,14 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 		//Is this a transformed concept that's being maintained manually?  Return what is already there if so.
 		if (MANUALLY_MAINTAINED_ITEMS.containsKey(externalIdentifier)) {
-			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(externalConcept, SCTID_NPU_SCHEMA, "(observable entity)");
+			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(externalConcept, scheme.getId(), "(observable entity)");
 			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(externalIdentifier)));
 			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MANUAL);
-			tc.populateAlternateIdentifier();
+			tc.populateAlternateIdentifier(scheme.getId());
+			//If we don't already have this alt identifier, we'll output it now, as we don't output changes for manually maintained items
+			if (!gl.getSchemaMap(scheme).containsKey(externalIdentifier)) {
+				conceptCreator.outputAltId(tc.getConcept(), scheme.getId());
+			}
 			return tc;
 		}
 
@@ -637,27 +625,40 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	private static final String TOP_88 = "Top 88";
+	private static final String TOP_2K = "Top 2000";
 	private void checkSpecificConcepts() throws TermServerScriptException {
-		for (String loincNum : ITEMS_OF_INTEREST) {
+		reportStatusOfSpecificItemsOfInterest(TOP_88, ITEMS_OF_INTEREST);
+		//Generate set of external concepts which are of highest interest
+		List<String> top20KExternalConcepts = externalConceptMap.values().stream()
+				.filter(ExternalConcept::isHighestUsage)
+				.map(ExternalConcept::getExternalIdentifier)
+				.toList();
+		reportStatusOfSpecificItemsOfInterest(TOP_2K, top20KExternalConcepts);
+	}
+
+	private void reportStatusOfSpecificItemsOfInterest(String reportKey, List<String> itemsOfInterest) throws TermServerScriptException {
+		for (String loincNum : itemsOfInterest) {
 			boolean found = false;
 			if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
-				report(getTab(TAB_IOI),TOP_88, loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
+				report(getTab(TAB_IOI),reportKey, loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
 				continue;
 			}
 
 			for (TemplatedConcept tc : successfullyModelled) {
 				if (tc.getExternalIdentifier().equals(loincNum)) {
-					report(getTab(TAB_IOI), TOP_88, tc.getExternalIdentifier(), "Modelled",tc.getConcept());
+					report(getTab(TAB_IOI), reportKey, tc.getExternalIdentifier(), "Modelled",tc.getConcept());
 					found = true;
 					break;
 				}
 			}
 
 			if (!found) {
-				report(getTab(TAB_IOI),TOP_88, loincNum, "Not Modelled");
+				report(getTab(TAB_IOI),reportKey, loincNum, "Not Modelled");
 			}
 		}
 	}
+
+
 
 	public abstract List<String> getMappingsAllowedAbsent();
 	
