@@ -205,15 +205,24 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		} else if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = slotTermMap.get(templateItem);
 			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
-			if (!itemStr.isEmpty()
-					&& !csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
+
+			boolean isDeletion = false;
+			if (itemStr.isEmpty()){
+				isDeletion = true;
+			} else if (!csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
 					&& !csUtils.startsWithAcronym(itemStr)) {
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
+
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
-			//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
-			if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
-				ptTemplateStr = ptTemplateStr.replace(" at ", "");
+
+			if (isDeletion) {
+				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
+				if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
+					ptTemplateStr = ptTemplateStr.replace(" at ", "");
+				}
+				//Process concepts that don't have a time can result in "in  in" so tidy that up
+				ptTemplateStr = ptTemplateStr.replace(" in  in ", " in ");
 			}
 		} else {
 			ptTemplateStr = populateTermTemplateFromAttribute(regex, templateItem, ptTemplateStr);
@@ -277,6 +286,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			itemStr += " " + slotTermAppendMap.get(partTypeName);
 		}
 
+		//Need the template, the item and the attribute value here to perform this one, so it needs to be here.
+		//Special rule h.vi if we have "hours" in the TIME term, then change "at" to "in"
+		if (partTypeName.equals(LOINC_PART_TYPE_TIME) && itemStr.contains("hours")) {
+			ptStr = ptStr.replace(" at [TIME]", " in [TIME]");
+		}
+
 		ptStr = ptStr.replaceAll(templateItem, itemStr);
 		return ptStr;
 	}
@@ -297,14 +312,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				term = term.replaceAll(StringUtils.capitalizeFirstLetter(removal), "");
 			}
 		}
-		
+
 		//Are we making any removals based on the type?
 		if (typeValueTermRemovalMap.containsKey(r.getType())) {
 			//Add a space to ensure we do whole word removal
 			term = " " + term + " ";
 			for (String removal : typeValueTermRemovalMap.get(r.getType())) {
 				//Rule 2a. We sometimes allow 'specimen' to be used, for certain loinc parts
-				if (removal.equals("specimen") && hasProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN)) {
+				if ((removal.equals("specimen") || removal.equals("from")) && hasProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN)) {
 					continue;
 				}
 

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.domain.AlternateIdentifier;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -188,5 +189,14 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 
 	public String getTargetModuleId() {
 		return targetModuleId;
+	}
+
+	public void outputAltId(Concept c, String schemeId) throws TermServerScriptException {
+		for (AlternateIdentifier altId : c.getAlternateIdentifiers()) {
+			if (altId.getIdentifierSchemeId().equals(schemeId)) {
+				altId.setDirty();
+				writeToRF2File(altIdDeltaFilename, altId.toRF2());
+			}
+		}
 	}
 }
