@@ -96,11 +96,13 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	private void determineKnownNames() {
 		//Words that contain X's indicate someone's name
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				for (String word : d.getTerm().split(" ")) {
-					if (word.endsWith("'s")) {
-						String wordWithoutApostrophe = word.substring(0, word.length() - 2);
-						knownNames.put(wordWithoutApostrophe, c);
+			if (c.isActiveSafely()) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					for (String word : d.getTerm().split(" ")) {
+						if (word.endsWith("'s")) {
+							String wordWithoutApostrophe = word.substring(0, word.length() - 2);
+							knownNames.put(wordWithoutApostrophe, c);
+						}
 					}
 				}
 			}
@@ -297,19 +299,24 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			LOGGER.warn("Check here");
 			return false;
 		}
-		String firstLetter = term.substring(0, 1);
-		String secondLetter = null;
-		boolean isOneCharacterLong = true;
+		String firstWord = term.split(" ")[0];
+		//We were initially checking just the first and second characters, but also something like IgE
+		//should be class as an acronym also
+		boolean hasUpperCaseAfterFirstLetter = false;
+		boolean hasLowerCaseAfterFirstLetter = false;
 
-		//Some terms of course are only one character long!
-		if (term.length() > 1) {
-			secondLetter = term.substring(1, 2);
-			isOneCharacterLong = false;
+		for (int i = 1; i < firstWord.length(); i++) {
+			char c = firstWord.charAt(i);
+			if (Character.isUpperCase(c)) {
+				hasUpperCaseAfterFirstLetter = true;
+			} else if (Character.isLowerCase(c)) {
+				hasLowerCaseAfterFirstLetter = true;
+			}
 		}
 
-		return (!isOneCharacterLong
-				&& (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toUpperCase()))
-				&& (Character.isLetter(secondLetter.charAt(0)) && secondLetter.equals(secondLetter.toUpperCase())));
+		// An acronym must have at least one uppercase letter after the first character,
+		// ensuring it's not just a capitalized regular word.
+		return hasUpperCaseAfterFirstLetter && (hasLowerCaseAfterFirstLetter || firstWord.equals(firstWord.toUpperCase()));
 	}
 
 	public boolean startsWithProperNounPhrase(Concept context, String term) {

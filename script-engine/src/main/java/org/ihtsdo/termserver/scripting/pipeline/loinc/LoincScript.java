@@ -41,13 +41,6 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC Folder
 		tabForFinalWords = SECONDARY_REPORT;
-		
-		//Just temporarily, we need to create some concepts that aren't visible yet
-		gl.registerConcept("10021010000100 |Platelet poor plasma or whole blood specimen (specimen)|"); 
-		gl.registerConcept("10051010000107 |Plasma specimen or whole blood specimen (specimen)|");
-		gl.registerConcept("10041010000105 |Oximetry technique (qualifier value)|");
-		gl.registerConcept("10061010000109 |Screening technique (qualifier value)|");
-		
 		postInit(GFOLDER_LOINC, tabNames, columnHeadings, false);
 	}
 

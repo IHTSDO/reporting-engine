@@ -223,7 +223,13 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedMappings.put("LP443823-2", List.of(gl.getConcept("540151010000102 |Disposition (property) (qualifier value)|")));
 		hardCodedMappings.put("LP444407-3", List.of(gl.getConcept("645121010000107 |Relative velocity (property) (qualifier value)|")));
 		hardCodedMappings.put("LP65367-2", List.of(gl.getConcept("645131010000105 |Nucleated blood cell (cell)|")));
-
+		hardCodedMappings.put("LP31542-1", List.of(gl.getConcept("655141010000100 |Immature basophil (cell)|")));
+		hardCodedMappings.put("LP31543-9", List.of(gl.getConcept("655131010000108 |Immature eosinophil (cell)|")));
+		hardCodedMappings.put("LP31551-2", List.of(gl.getConcept("655151010000103 |Immature monocyte (cell)|")));
+		hardCodedMappings.put("LP446464-2", List.of(gl.getConcept("87612001 |Blood (substance)|")));
+		hardCodedMappings.put("LP446469-1", List.of(gl.getConcept("32457005 |Body fluid (substance)|")));
+		hardCodedMappings.put("LP446467-5", List.of(gl.getConcept("4635002 |Arterial blood (substance)|")));
+		hardCodedMappings.put("LP446471-7", List.of(gl.getConcept("53130003 |Venous blood (substance)|")));
 	}
 
 }
