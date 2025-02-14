@@ -52,15 +52,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			case "RelTime", "Time", "Vel", "RelVel" -> LoincTemplatedConceptWithProcessNoOutput.create(externalConcept);
 			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
 			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
-			     "EntVol", "LaCnc", "Len", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
-			     "Osmol", "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr", "Visc" ->
+				 "LaCnc", "Len", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
+				 "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr" ->
 					LoincTemplatedConceptWithComponent.create(externalConcept);
-			case "Anat", "DistWidth", "EntMCnc", "Morph",
-			     "Prid", "Vol" -> LoincTemplatedConceptWithInheres.create(externalConcept);
-			case "Aper", "Color", "Rden", "Source","SpGrav","Temp","Disposition","ID","EntMeanVol" ->
-					LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
 			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
-			case "Type" -> createTemplateBasedOnProperties(externalConcept);
+			case "Anat", "Aper", "Color", "Disposition", "DistWidth", "EntMCnc", "EntMeanVol", "EntVol",
+			     "ID", "Morph", "Osmol", "Prid", "Rden", "Source", "SpGrav", "Temp", "Type", "Visc", "Vol" ->
+					createTemplateBasedOnProperties(externalConcept);
 			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(externalConcept);
 			default -> TemplatedConceptNull.create(externalConcept);
 		};
@@ -76,9 +74,14 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		Map<String, LoincDetail> loincDetailMap = loincDetailMapOfMaps.get(externalConcept.getExternalIdentifier());
 		if (loincDetailMap != null) {
 			if (loincDetailMap.containsKey("COMPNUM_PN")) {
-				return LoincTemplatedConceptWithInheres.create(externalConcept);
+				String partNum = loincDetailMap.get("COMPNUM_PN").getPartNumber();
+				if (partNum.equals(LOINC_OBSERVATION_PART)) {
+					return LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
+				} else {
+					return LoincTemplatedConceptWithInheres.create(externalConcept);
+				}
 			} else {
-				return LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
+				throw new TermServerScriptException("No Component part found for " + externalConcept.getExternalIdentifier());
 			}
 		}
 		throw new TermServerScriptException("No detail map found for " + externalConcept.getExternalIdentifier());
@@ -104,7 +107,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				"Property, In Scope, Included, Included in Top 2K, Excluded, Excluded in Top 2K"
 		};
 
-		postInit(tabNames, columnHeadings, false);
+		postInit(tabNames, columnHeadings);
 		scheme = gl.getConcept(SCTID_LOINC_SCHEMA);
 		externalContentModule = SCTID_LOINC_EXTENSION_MODULE;
 		namespace = "1010000";
