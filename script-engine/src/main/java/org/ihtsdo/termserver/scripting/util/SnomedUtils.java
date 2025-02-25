@@ -2631,7 +2631,8 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 						beenMatchedRight.add(rightComponent);
 						continue nextLeftComponent;
 					} else if (hasSingleType(leftComponent)
-						|| areRefsetMembersForSameReferencedComponent(leftComponent, rightComponent)) {
+						|| areRefsetMembersForSameReferencedComponent(leftComponent, rightComponent)
+						|| areAltIdsForSameSchemeAndReferencedComponent(leftComponent, rightComponent)) {
 						//A modified OWL axiom will not match on mutable fields, but we'll consider them 'the same object' on the assumption that there will be only one
 						//Similarly a concept may change from primitive to defined, but we'll consider them the same object.
 						//We can also say this for two refset members that are for the same referenced component + same refset
@@ -2643,7 +2644,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			}
 			//If we're here, then our left component (prior existing), no longer
 			//has a matching component in the latest version and should be removed
-			changeSet.add(new ComponentComparisonResult(leftComponent, null));
+			//unless the existing component is already inactive
+			if (leftComponent.isActiveSafely()) {
+				changeSet.add(new ComponentComparisonResult(leftComponent, null));
+			}
 		}
 
 		nextRightComponent:
@@ -2662,8 +2666,8 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 					}
 				}
 			}
-			//If we're here, then our left component (prior existing), no longer
-			//has a matching component in the latest version and should be removed
+			//If we're here, then our right component (new) did not previously exist
+			//so will be added as new
 			changeSet.add(new ComponentComparisonResult(null, rightComponent));
 		}
 		return changeSet;
@@ -2675,6 +2679,14 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return (leftComponent instanceof RefsetMember leftRM && rightComponent instanceof RefsetMember rightRM
 			&& leftRM.getRefsetId().equals(rightRM.getRefsetId())
 			&& leftRM.getReferencedComponentId().equals(rightRM.getReferencedComponentId()));
+	}
+
+	private static boolean areAltIdsForSameSchemeAndReferencedComponent(Component leftComponent, Component rightComponent) {
+		//If these two components are refset members, and they are for the same referenced component, then they are considered the same
+		//basic refset member, although the values contained may differ
+		return (leftComponent instanceof AlternateIdentifier leftRM && rightComponent instanceof AlternateIdentifier rightRM
+				&& leftRM.getIdentifierSchemeId().equals(rightRM.getIdentifierSchemeId())
+				&& leftRM.getReferencedComponentId().equals(rightRM.getReferencedComponentId()));
 	}
 
 	private static boolean hasSingleType(Component c) {

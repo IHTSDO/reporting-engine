@@ -29,7 +29,7 @@ public class TemplatedConceptNull extends TemplatedConcept {
 	}
 
 	@Override
-	protected String getCodeSystemSctId() {
+	protected String getSchemaId() {
 		throw new IllegalArgumentException(UNEXPECTED);
 	}
 

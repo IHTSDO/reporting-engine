@@ -1870,4 +1870,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		Concept otherConcept = (Concept) other;
 		return getDefinitionStatus().equals(otherConcept.getDefinitionStatus());
 	}
+
+	public boolean hasAlternateIdentifier(String codeSystemSctId) {
+		return getAlternateIdentifiers().stream()
+				.anyMatch(a -> a.getIdentifierSchemeId().equals(codeSystemSctId));
+	}
 }
