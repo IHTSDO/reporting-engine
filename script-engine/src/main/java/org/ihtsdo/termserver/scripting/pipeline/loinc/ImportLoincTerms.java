@@ -131,6 +131,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	protected void doModeling() throws TermServerScriptException {
 		for (String loincNum : loincDetailMapOfMaps.keySet()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(loincNum);
+			if (templatedConcept != null) {
+				templatedConcept.populateAlternateIdentifier();
+			}
 			validateTemplatedConcept(loincNum, templatedConcept);
 			if (conceptSufficientlyModeled("Observable", loincNum, templatedConcept)) {
 				successfullyModelled.add(templatedConcept);
@@ -139,6 +142,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 		for (String panelLoincNum : panelLoincNums) {
 			LoincTemplatedConcept templatedConcept = doPanelModeling(panelLoincNum);
+			if (templatedConcept != null) {
+				templatedConcept.populateAlternateIdentifier();
+			}
 			validateTemplatedConcept(panelLoincNum, templatedConcept);
 			if (conceptSufficientlyModeled("Panel", panelLoincNum, templatedConcept)) {
 				successfullyModelled.add(templatedConcept);

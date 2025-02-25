@@ -82,8 +82,11 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		this.existingConcept = existingConcept;
 	}
 
-	public void populateAlternateIdentifier(String schemeId) {
-		getConcept().addAlternateIdentifier(getExternalIdentifier(), schemeId);
+	public void populateAlternateIdentifier() {
+		if (!(this instanceof TemplatedConceptNull)
+				&& !getConcept().hasAlternateIdentifier(getSchemaId())) {
+			getConcept().addAlternateIdentifier(getExternalIdentifier(), getSchemaId());
+		}
 	}
 
 	public String getDifferencesFromExistingConceptWithMultiples() {
@@ -151,10 +154,9 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		if (hasProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT)) {
 			splitComponentsIntoDistinctGroups();
 		}
-		populateAlternateIdentifier(getCodeSystemSctId());
 	}
 
-	protected abstract String getCodeSystemSctId();
+	protected abstract String getSchemaId();
 
 	protected void populateTerms() throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across

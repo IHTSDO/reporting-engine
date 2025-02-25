@@ -739,16 +739,8 @@ public class GraphLoader implements ScriptConstants {
 					String altId = lineItems[IDX_ID];
 					String sctId = lineItems[REF_IDX_REFCOMPID];
 					String schemeId = lineItems[REF_IDX_REFSETID];
-					//As a temporary measure, correct the scheme id
-					if (schemeId.equals(SCTID_LOINC_CODE_SYSTEM)) {
-						schemeId = SCTID_LOINC_SCHEMA;
-					}
 					Concept scheme = getConcept(schemeId);
-					Map<String, String> schemeMap = alternateIdentifierMap.get(scheme);
-					if (schemeMap == null) {
-						schemeMap = new HashMap<>();
-						alternateIdentifierMap.put(scheme, schemeMap);
-					}
+					Map<String, String> schemeMap = alternateIdentifierMap.computeIfAbsent(scheme, k -> new HashMap<>());
 					schemeMap.put(altId, sctId);
 				}
 			} else {

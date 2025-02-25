@@ -19,8 +19,8 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 
 	private Concept panelParent;
 
-	public static LoincTemplatedConceptPanel create(ExternalConcept externalConcep) throws TermServerScriptException {
-		LoincTemplatedConceptPanel templatedConcept = new LoincTemplatedConceptPanel(externalConcep);
+	public static LoincTemplatedConceptPanel create(ExternalConcept externalConcept) throws TermServerScriptException {
+		LoincTemplatedConceptPanel templatedConcept = new LoincTemplatedConceptPanel(externalConcept);
 		templatedConcept.createConcept();
 		templatedConcept.generateDescriptions();
 		return templatedConcept;

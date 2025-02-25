@@ -21,7 +21,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 	private static final String PROPERTY_ID_EXCEPTION = "LP6850-4"; //See instructions 2.f.ii.6.a.i.2
 	private static final String TYPE_ID_EXCEPTION = "LP6886-8"; //See instructions 2.f.ii.6.a.i.1.a.i
 
-	private LoincTemplatedConceptWithInheres(ExternalConcept externalConcept) {
+	protected LoincTemplatedConceptWithInheres(ExternalConcept externalConcept) {
 		super(externalConcept);
 	}
 
@@ -60,8 +60,13 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 		if (getExternalConcept().getProperty().equals("Prid")
 				&& detailPresent(COMPNUM_PN)
 				&& getLoincDetailOrThrow(COMPNUM_PN).getPartNumber().equals(LOINC_OBSERVATION_PART)) {
-			slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation");
-			slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "finding");
+			if (this instanceof LoincTemplatedConceptWithInheresNoComponent) {
+				slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation of finding");
+			} else {
+				slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation");
+				slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "finding");
+			}
+			setPreferredTermTemplate("[PROPERTY] in [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		}
 
 		ensureComponentMappedOrRepresentedInTerm(attributes);

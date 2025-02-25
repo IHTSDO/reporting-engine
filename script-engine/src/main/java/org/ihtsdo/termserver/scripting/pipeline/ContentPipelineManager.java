@@ -154,6 +154,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected void doModeling() throws TermServerScriptException {
 		for (String externalIdentifier : getExternalConceptMap().keySet()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(externalIdentifier);
+			templatedConcept.populateAlternateIdentifier();
 			if (conceptSufficientlyModeled(getContentType(), externalIdentifier, templatedConcept)) {
 				recordSuccessfulModelling(templatedConcept);
 			}
@@ -162,8 +163,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("788-0")) {
-			LOGGER.debug("Uses direct site rather than inheres in ");
+		if (externalIdentifier.equals("105059-0")) {
+			LOGGER.debug("Terming missing 'Microscopic Observation'");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -177,7 +178,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			TemplatedConcept tc = TemplatedConceptWithDefaultMap.create(externalConcept, scheme.getId(), "(observable entity)");
 			tc.setConcept(gl.getConcept(MANUALLY_MAINTAINED_ITEMS.get(externalIdentifier)));
 			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MANUAL);
-			tc.populateAlternateIdentifier(scheme.getId());
+			tc.populateAlternateIdentifier();
 			//If we don't already have this alt identifier, we'll output it now, as we don't output changes for manually maintained items
 			if (!gl.getSchemaMap(scheme).containsKey(externalIdentifier)) {
 				conceptCreator.outputAltId(tc.getConcept(), scheme.getId());
@@ -276,10 +277,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	private void processInactivation(String inactivatingCode, Map<String, String> altIdentifierMap) throws TermServerScriptException {
-		if (inactivatingCode.equals("66483-9")) {
-			LOGGER.debug("Inactivation");
-		}
-
 		String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
 		Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
 		if (existingConcept != null) {
@@ -447,7 +444,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 							.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
 					//temporarily, remove any alternate identifiers that are for the wrong scheme id
 					tc.getExistingConcept().getAlternateIdentifiers().stream()
-							.filter(a -> !a.getIdentifierSchemeId().equals(tc.getCodeSystemSctId()))
+							.filter(a -> !a.getIdentifierSchemeId().equals(tc.getSchemaId()))
 							.forEach(a -> a.setActive(false));
 					break;
 				case DESCRIPTION:

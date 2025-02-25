@@ -76,8 +76,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected Map<String, LoincDetail> loincDetailMap;
 
 	@Override
-	protected String getCodeSystemSctId() {
-		return SCTID_LOINC_CODE_SYSTEM;
+	protected String getSchemaId() {
+		return SCTID_LOINC_SCHEMA;
 	}
 
 	@Override

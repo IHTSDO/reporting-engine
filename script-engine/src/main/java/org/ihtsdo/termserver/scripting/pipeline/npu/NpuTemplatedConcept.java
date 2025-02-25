@@ -12,7 +12,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Co
 
 
 	@Override
-	protected String getCodeSystemSctId() {
+	protected String getSchemaId() {
 		return SCTID_NPU_SCHEMA;
 	}
 

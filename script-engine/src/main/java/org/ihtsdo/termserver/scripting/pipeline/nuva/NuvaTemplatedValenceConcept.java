@@ -56,7 +56,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	}
 
 	@Override
-	protected String getCodeSystemSctId() {
+	protected String getSchemaId() {
 		return SCTID_NUVA_SCHEMA;
 	}
 

@@ -12,7 +12,7 @@ public class TemplatedConceptWithDefaultMap extends TemplatedConcept {
 	}
 
 	@Override
-	protected String getCodeSystemSctId() {
+	protected String getSchemaId() {
 		return codeSystemSctId;
 	}
 
