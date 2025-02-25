@@ -25,8 +25,6 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 
 	private static final boolean PRODUCE_LIST_OF_PARTS = true;
 
-	private List<String> panelNpuNums;
-
 	private static final int FILE_IDX_NPU_PARTS_MAP_BASE_FILE = 1;
 
 	protected String[] tabNames = new String[] {
@@ -106,7 +104,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 				) + "\n");
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.error("Failed to write parts list", e);
 		}
 		System.exit(0);
 	}
@@ -114,20 +112,6 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	private void importNpuConcepts() throws TermServerScriptException {
 		ObjectMapper mapper = new XmlMapper();
 		TypeReference<List<NpuConcept>> listType = new TypeReference<List<NpuConcept>>(){};
-		/*report(PRIMARY_REPORT,
-		  "npu_code",
-		  "shortDefinition",
-		  "system",
-		  "component",
-		  "kindOfProperty",
-		  "proc",
-		  "unit",
-		  "specialty",
-		  "contextDependent",
-		  "group",
-		  "scaleType",
-		  "active"
-				);*/
 		try {
 			FileInputStream is = FileUtils.openInputStream(getInputFile());
 			List<NpuConcept> npuConcepts = mapper.readValue(is, listType);
@@ -140,15 +124,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 			throw new TermServerScriptException(e);
 		}
 
-		//outputNPUConceptsToSheet();
 		LOGGER.info("Loaded {} NPU Concepts", externalConceptMap.size());
-	}
-
-	private void outputNPUConceptsToSheet() throws TermServerScriptException {
-		for (Map.Entry<String, ExternalConcept> entry : externalConceptMap.entrySet()) {
-			NpuConcept npu = (NpuConcept) entry.getValue();
-			report(PRIMARY_REPORT, npu.getExternalIdentifier(), npu.getCommonColumns());
-		}
 	}
 
 	private void loadPanels() {
@@ -171,28 +147,6 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 				successfullyModelled.add(templatedConcept);
 			}
 		}
-
-		for (String panelNpuNum : panelNpuNums) {
-			NpuTemplatedConcept templatedConcept = doPanelModeling(panelNpuNum);
-			validateTemplatedConcept(panelNpuNum, templatedConcept);
-			if (conceptSufficientlyModeled("Panel", panelNpuNum, templatedConcept)) {
-				successfullyModelled.add(templatedConcept);
-			}
-		}
-	}
-
-	private NpuTemplatedConcept doPanelModeling(String panelNpuNum) throws TermServerScriptException {
-		//Don't do objectionable word check on panels - 'panel' is our only current objectionable word!
-		if (!confirmExternalIdentifierExists(panelNpuNum)) {
-			return null;
-		}
-
-		ExternalConcept panelTerm = getNpuConcept(panelNpuNum);
-		return NpuTemplatedConceptPanel.create(panelTerm);
-	}
-
-	private NpuConcept getNpuConcept(String externalIdentifier) {
-		return (NpuConcept)externalConceptMap.get(externalIdentifier);
 	}
 
 	@Override

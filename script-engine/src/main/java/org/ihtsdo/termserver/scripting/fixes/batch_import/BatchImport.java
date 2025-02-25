@@ -71,7 +71,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		selfDetermining = true;
 		populateEditPanel = true;
 		populateTaskDescription = true;
-		reportAllDescriptions = true;
+		TermServerScript.setReportAllDescriptions(true);
 		conceptsLoaded = new HashMap<>();
 		moduleId = SCTID_CORE_MODULE;
 		maxFailures = 1500;
@@ -85,10 +85,9 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		if (getInputFile() == null) {
 			throw new TermServerScriptException("Unable to identify components to process, no input file specified.");
 		}
-		
-		try {
-			Reader in = new InputStreamReader(new FileInputStream(getInputFile()));
-			//SIRS files contain duplicate headers (eg multiple Notes columns) 
+
+		try (Reader in = new InputStreamReader(new FileInputStream(getInputFile()))) {
+			//SIRS files contain duplicate headers (eg multiple Notes columns)
 			//So read 1st row as a record instead.
 			CSVFormat csvFormat = CSVFormat.EXCEL.builder().setDelimiter(DELIMITER).build();
 			CSVParser parser = csvFormat.parse(in);

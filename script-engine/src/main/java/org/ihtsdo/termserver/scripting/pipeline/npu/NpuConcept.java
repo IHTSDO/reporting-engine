@@ -126,11 +126,12 @@ public class NpuConcept extends ExternalConcept {
 	}
 
 	public String getNpuCode() {
-		return this.externalIdentifier;
+		return this.npuCode;
 	}
 
 	public void setNpuCode(String npuCode) {
 		this.externalIdentifier = npuCode;
+		this.npuCode = npuCode;
 	}
 
 	public String getShortDefinition() {
@@ -362,7 +363,7 @@ public class NpuConcept extends ExternalConcept {
 		return new String[] {shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType,  active};
 	}
 
-	public Collection<? extends Part> getParts() {
+	public Collection<Part> getParts() {
 		return List.of(
 			new Part(system, "System"),
 			new Part(component, "Component"),

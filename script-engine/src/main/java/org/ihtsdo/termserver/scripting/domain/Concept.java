@@ -76,7 +76,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	@SerializedName("alternateIdentifiers")
 	@Expose
 	private Set<AlternateIdentifier> alternateIdentifiers;
-	
+
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;

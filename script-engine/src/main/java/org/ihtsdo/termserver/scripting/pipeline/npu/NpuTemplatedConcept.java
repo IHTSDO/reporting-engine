@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.pipeline.npu;
 
 import java.util.*;
 
+import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.*;
@@ -15,7 +16,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Co
 		return SCTID_NPU_SCHEMA;
 	}
 
-	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
+	public static void initialise(ContentPipelineManager cpm) {
 		TemplatedConcept.cpm = cpm;
 	}
 
@@ -44,8 +45,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Co
 
 	@Override
 	protected void populateParts() throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		
+		throw new NotImplementedException();
 	}
 
 	@Override
