@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class Part implements Comparable<Part> {
 
-	public enum PartStatus {ACTIVE, DEPRECATED};
+	public enum PartStatus {ACTIVE, DEPRECATED}
 
 	private String partNumber;	
 	private String partTypeName;

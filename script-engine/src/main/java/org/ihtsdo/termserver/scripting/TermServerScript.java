@@ -153,6 +153,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		dryRun = b;
 	}
 
+	protected static void setReportAllDescriptions(boolean b) {
+		reportAllDescriptions = b;
+	}
+
 	public String detectReleaseBranch() {
 		return getArchiveManager().detectReleaseBranch(project.getKey());
 	}
@@ -474,6 +478,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	//Need to ensure that we don't end up calling a derivative version of this method and get into a loop
 	//Descendant classes should override the version that does not take the csvOutput
+	@Override
 	public final void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (jobRun != null && jobRun.getParamValue(SUB_HIERARCHY) != null) {
 			subHierarchy = gl.getConcept(jobRun.getMandatoryParamValue(SUB_HIERARCHY));
@@ -841,7 +846,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
 		//We need to populate new components with UUIDs for validation
 		Concept uuidClone = c.cloneWithUUIDs();
-		LOGGER.debug("Validating " + c);
+		LOGGER.debug("Validating {}", c);
 		
 		//We should not be modifying any stated relationships
 		if (!expectStatedRelationshipInactivations) {
@@ -1661,23 +1666,27 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 		String[] conceptFields = new String[3];
 		if (reportNullConcept || c != null) {
-			conceptFields[0] = c == null?"": QUOTE + c.getConceptId() + QUOTE;
-			conceptFields[1] = c == null?"":c.getFsn();
-			if (reportAllDescriptions) {
-				conceptFields[1] = SnomedUtils.getDescriptionsToString(c);
-			}
-
-			if (c != null && !StringUtils.isEmpty(c.getFsn())) {
-				conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				if (conceptFields[2] == null) {
-					conceptFields[2] = " ";
-				}
-			} else {
-				conceptFields[2] = "";
-			}
+			calculateConceptFields(c, conceptFields);
 		}
 		report(reportIdx, conceptFields, details);
 		return true;
+	}
+
+	private void calculateConceptFields(Concept c, String[] conceptFields) {
+		conceptFields[0] = c == null?"": QUOTE + c.getConceptId() + QUOTE;
+		conceptFields[1] = c == null?"":c.getFsn();
+		if (reportAllDescriptions) {
+			conceptFields[1] = SnomedUtils.getDescriptionsToString(c);
+		}
+
+		if (c != null && !StringUtils.isEmpty(c.getFsn())) {
+			conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			if (conceptFields[2] == null) {
+				conceptFields[2] = " ";
+			}
+		} else {
+			conceptFields[2] = "";
+		}
 	}
 
 	private boolean isWhiteListed(Concept c, Object[] details) {

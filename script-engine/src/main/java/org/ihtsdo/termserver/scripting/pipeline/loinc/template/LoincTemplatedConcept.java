@@ -25,6 +25,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoincTemplatedConcept.class);
 
+	private static final String SPECIMEN = "specimen";
+
 	private static final Concept AUTOMATED_TECHNIQUE = new Concept("570101010000100", "Automated technique (qualifier value)");
 
 	private static final Set<String> skipSlotTermMapPopulation = new HashSet<>(Arrays.asList(
@@ -95,7 +97,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		termTweakingMap.put("4421005", "cell"); //4421005 |Cell structure (cell structure)|
 		
 		//Populate removals into specific maps depending on how that removal will be processed.
-		List<String> removals = Arrays.asList("submitted as specimen", "specimen", "structure", "of", "at", "from");
+		List<String> removals = Arrays.asList("submitted as specimen", SPECIMEN, "structure", "of", "at", "from");
 		typeValueTermRemovalMap.put(DIRECT_SITE, removals);
 		
 		removals = Arrays.asList("technique");
@@ -319,7 +321,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			term = " " + term + " ";
 			for (String removal : typeValueTermRemovalMap.get(r.getType())) {
 				//Rule 2a. We sometimes allow 'specimen' to be used, for certain loinc parts
-				if ((removal.equals("specimen") || removal.equals("from")) && hasProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN)) {
+				if ((removal.equals(SPECIMEN) || removal.equals("from")) && hasProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN)) {
 					continue;
 				}
 
@@ -383,7 +385,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					//Special case for XXX which we'll override as specimen.  If you get any more
 					//of these one-off rules, create a map of part name overrides
 					if (loincDetail.getPartNumber().equals("LP7735-6")) {
-						slotTermMap.put(loincDetail.getPartTypeName(), "specimen");
+						slotTermMap.put(loincDetail.getPartTypeName(), SPECIMEN);
 					} else {
 						slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
 					}
