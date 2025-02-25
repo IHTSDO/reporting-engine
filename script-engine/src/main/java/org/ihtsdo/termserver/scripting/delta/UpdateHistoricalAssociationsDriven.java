@@ -23,6 +23,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHistoricalAssociationsDriven.class);
 
 	private static final String UNKNOWN = "Unknown";
+	private static final int BATCH_SIZE = 20;
 
 	private Map<Concept, UpdateAction> replacementMap = new HashMap<>();
 	private Map<Concept, String> cathyNotes = new HashMap<>();
@@ -51,7 +52,6 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 			delta.loadProjectSnapshot(false); 
 			delta.postInit();
 			delta.process();
-			delta.createOutputArchive();
 		} finally {
 			delta.finish();
 		}
@@ -87,20 +87,65 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 		populateUpdatedReplacementMap();
 		populateNormalisedDescriptionMap();
 		checkForRecentInactivations();
+		processInBatches();
+		doFinalStateTab();
+	}
 
-		for (Concept c : SnomedUtils.sort(gl.getAllConcepts())) {
-			//Is this a concept we've been told to replace the associations on?
-			if (replacementMap.containsKey(c)) {
+	private void processInBatches() throws TermServerScriptException {
+		for (List<Concept> batch : formBatches()) {
+			for (Concept c : batch) {
 				if (!c.isActiveSafely()) {
 					processConcept(c);
 				} else {
 					report(c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is active");
 				}
 			}
+			if (!dryRun) {
+				createOutputArchive(false, batch.size());
+				outputDirName = "output"; //Reset so we don't end up with _1_1_1
+				initialiseOutputDirectory();
+				initialiseFileHeaders();
+			} else {
+				LOGGER.info("Batch of {} processed", batch.size());
+			}
+			gl.setAllComponentsClean();
 		}
-		
-		doFinalStateTab();
 	}
+
+	private List<List<Concept>> formBatches() {
+		LOGGER.info("Batching {} concepts", replacementMap.size());
+		List<List<Concept>> batches = new ArrayList<>();
+		List<Concept> remainingConcepts = new ArrayList<>(SnomedUtils.sort(replacementMap.keySet()));
+		//We need a copy of this list so we can safely remove from it
+		List<Concept> conceptsToProcess = new ArrayList<>(remainingConcepts);
+		List<Concept> thisBatch = new ArrayList<>();
+		for (Concept c : conceptsToProcess) {
+			if (remainingConcepts.contains(c)) {
+				thisBatch.add(c);
+				remainingConcepts.remove(c);
+				//If we've got a sibling or cousin, add them to the batch too
+				Concept sibling = findSibling(c);
+				if (sibling != null && remainingConcepts.contains(sibling)) {
+					thisBatch.add(sibling);
+					remainingConcepts.remove(sibling);
+				}
+
+				Concept cousin = findCousin(c, true);
+				if (cousin != null && remainingConcepts.contains(cousin)) {
+					thisBatch.add(cousin);
+					remainingConcepts.remove(cousin);
+				}
+
+				if (thisBatch.size() >= BATCH_SIZE) {
+					batches.add(thisBatch);
+					thisBatch = new ArrayList<>();
+				}
+			}
+		}
+		LOGGER.info("Batched {} concepts into {} batches", replacementMap.size(), batches.size());
+		return batches;
+	}
+
 
 	private void populateNormalisedDescriptionMap() {
 		for (Concept c : gl.getAllConcepts()) {
