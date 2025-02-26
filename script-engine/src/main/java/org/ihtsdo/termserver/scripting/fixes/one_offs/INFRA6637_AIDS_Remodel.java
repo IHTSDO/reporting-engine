@@ -36,7 +36,7 @@ public class INFRA6637_AIDS_Remodel extends BatchFix {
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postLoadInit();
 			fix.processFile();
