@@ -30,7 +30,7 @@ public class INFRA13758_RetermSalmonella extends BatchFix {
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();

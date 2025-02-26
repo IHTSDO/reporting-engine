@@ -31,7 +31,7 @@ public class MSSP_1457_NL_SemTagCheck extends TermServerReport implements Report
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setPopulateReleasedFlag(true);
+		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.targetFolderId = "1bHVd-cWbcafa3alwf5nmSOVREHYbpOMP"; //MS AdHoc Reports
 		super.init(run);
 		additionalReportColumns = "FSN, Semtag, isActive, EN Description, Issue, NL Description";
