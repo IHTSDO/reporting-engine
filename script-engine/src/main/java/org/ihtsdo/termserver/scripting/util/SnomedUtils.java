@@ -2262,6 +2262,16 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return false;
 	}
 	
+	public static Concept getHierarchySafely(GraphLoader gl, Concept c) {
+		try {
+			return getHierarchy(gl, c);
+		} catch (TermServerScriptException e) {
+			LOGGER.error("Failed to determine hierarchy of " + c, e);
+		}
+		return NULL_CONCEPT;
+	}
+		
+	
 	public static Concept getHierarchy(GraphLoader gl, Concept c) throws TermServerScriptException {
 		TransitiveClosure tc = gl.getTransitiveClosure();
 		
