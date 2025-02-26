@@ -18,42 +18,40 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
- *INFRA-9607
+ *INFRA-9606
  */
-public class INFRA9607_RetermMeasurementFindings extends BatchFix {
+public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(INFRA9607_RetermMeasurementFindings.class);
+	private static Logger LOGGER = LoggerFactory.getLogger(INFRA9608_RetermMeasurementFindings.class);
 	
 	private String semTag = " (finding)";
-	private String ecl = "((< 118245000 |Measurement finding (finding)| : { 363713009 |Has interpretation (attribute)| = 281300000 |Below reference range|, 363714003 |Interprets (attribute)| = (<<122869004 |Measurement procedure (procedure)| OR 363787002 |Observable entity (observable entity)|) } )  OR < 118245000 |Measurement finding (finding)| {{ term = wild:\"*reduced*\", type = fsn }} OR < 118245000 |Measurement finding (finding)| {{ term = wild:\"*decreased*\", type = fsn }} OR < 118245000 |Measurement finding (finding)| {{ term = wild:\"*low*\", type = fsn }} OR   < 118245000 |Measurement finding (finding)| {{ term = wild:\"*below reference range*\", type = fsn }} ) MINUS < 64572001 |Disease| ";
+	private String ecl = "((< 118245000 |Measurement finding (finding)| : { 363713009 |Has interpretation (attribute)| = 394844007 |Outside reference range|, 363714003 |Interprets (attribute)| = (<<122869004 |Measurement procedure (procedure)| OR 363787002 |Observable entity (observable entity)|) } )  OR < 118245000 |Measurement finding (finding)| {{ term = wild:\"*ABNORMAL*\", type = fsn }}  OR   < 118245000 |Measurement finding (finding)| {{ term = wild:\"*outside reference range*\", type = fsn }} ) MINUS < 64572001 |Disease| ";
 
 	private InactivationIndicator inactivationIndicator = InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
 	
-	enum Pattern { LOW_X, Y_WITH_X, X_LOW, ALL, CHECK_PT_ONLY, SKIP_AND_REPORT }
+	enum Pattern { ABNORMAL_X, Y_WITH_X, X_ABNORMAL, ALL, CHECK_PT_ONLY, SKIP_AND_REPORT }
 	
-	Set<String> lowSynonyms = new HashSet<>();
+	Set<String> abnormalSynonyms = new HashSet<>();
 	{
-		lowSynonyms.add("low");
-		lowSynonyms.add("decreased");
-		lowSynonyms.add("reduced");
-		lowSynonyms.add("below reference range");
+		abnormalSynonyms.add("abnormal");
+		abnormalSynonyms.add("outside reference range");
 	}
 
 	Map<Pattern, String> toTemplateMap = new HashMap<>();
 	{
-		toTemplateMap.put(Pattern.ALL, "#x# below reference range");
+		toTemplateMap.put(Pattern.ALL, "#x# outside reference range");
 	}
 
 	Set<String> exclusions = new HashSet<>();
 
 	CaseSensitivityUtils nounHelper;
 	
-	protected INFRA9607_RetermMeasurementFindings(BatchFix clone) {
+	protected INFRA9608_RetermMeasurementFindings(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		INFRA9607_RetermMeasurementFindings fix = new INFRA9607_RetermMeasurementFindings(null);
+		INFRA9608_RetermMeasurementFindings fix = new INFRA9608_RetermMeasurementFindings(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
@@ -64,7 +62,7 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.nounHelper = CaseSensitivityUtils.get();
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();
@@ -103,7 +101,7 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) 
 					&& !StringUtils.isCaseSensitive(d.getTerm())
-					&& !nounHelper.startsWithProperNounPhrase(d.getTerm())) {
+					&& !nounHelper.startsWithKnownCaseSensitiveTerm(c, d.getTerm())) {
 				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 				report(t, c, Severity.MEDIUM, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, before + " -> ci", d);
@@ -132,7 +130,7 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 		} else if (patternOfX.equals(Pattern.CHECK_PT_ONLY)) {
 			return NO_CHANGES_MADE;
 		} else if (patternOfX.equals(Pattern.SKIP_AND_REPORT)) {
-			reportLoud(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Pattern Y with/and X, 'borderline' or 'risk' requires manual intervention");
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Pattern Y with/and X, or 'borderline' requires manual intervention");
 			return NO_CHANGES_MADE;
 		}
 		
@@ -157,7 +155,7 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 
 	private void checkPtMatchesFSN(Task t, Concept c) throws TermServerScriptException {
 		String term = SnomedUtils.deconstructFSN(c.getFsn())[0];
-		if (!c.getPreferredSynonym(US_ENG_LANG_REFSET).equals(term)) {
+		if (!c.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().equals(term)) {
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "PT / FSN variation", c.getPreferredSynonym(US_ENG_LANG_REFSET));
 		}
 	}
@@ -169,21 +167,20 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 		}
 		String termLower = term.toLowerCase();
 		
-		if (term.endsWith("below reference range")) {
+		if (term.endsWith("outside reference range")) {
 			return new PatternOfX(Pattern.CHECK_PT_ONLY, null);
 		}
 		
-		for (String synonym : lowSynonyms) {
+		for (String synonym : abnormalSynonyms) {
 			if (termLower.startsWith(synonym)) {
 				String x = term.substring(synonym.length() + 1);
-				return new PatternOfX(Pattern.LOW_X, x);
-			} else if (term.contains(" with ") || term.contains(" and ") 
-					|| term.contains("orderline") || term.contains(" risk ")) {
+				return new PatternOfX(Pattern.ABNORMAL_X, x);
+			} else if (term.contains(" with ") || term.contains(" and ") || term.contains("orderline")) {
 				return new PatternOfX(Pattern.SKIP_AND_REPORT, null);
 			} else if (termLower.endsWith(synonym)) {
 				int cut = termLower.indexOf(synonym);
 				String x = term.substring(0, cut);
-				return new PatternOfX(Pattern.X_LOW, x);
+				return new PatternOfX(Pattern.X_ABNORMAL, x);
 			}
 		}
 		
@@ -214,7 +211,7 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 		for (Concept c : SnomedUtils.sort(findConcepts(ecl))) {
 			if (isExcluded(c)) {
 				/*if (c.getFsn().startsWith("Secondary")) {
-					reportLoud((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
+					report((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
 				}*/
 			} else {
 				try {
@@ -222,7 +219,7 @@ public class INFRA9607_RetermMeasurementFindings extends BatchFix {
 						process.add(c);
 					}
 				} catch (Exception e) {
-					//reportLoud((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
+					//report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
 					LOGGER.info("{} : {}", e.getMessage(), c);
 				}
 			}

@@ -111,7 +111,7 @@ public class QI1165_AddPrimaryNeoplasmSubtypes extends BatchFix {
 			}
 			if (true);
 			//Do we need to keep that initial capital letter
-			if (nounHelper.startsWithProperNounPhrase(d.getTerm())) {
+			if (nounHelper.startsWithKnownCaseSensitiveTerm(c, d.getTerm())) {
 				d.setTerm("Primary " + d.getTerm());
 			} else {
 				d.setTerm("Primary " + StringUtils.decapitalizeFirstLetter(d.getTerm()));

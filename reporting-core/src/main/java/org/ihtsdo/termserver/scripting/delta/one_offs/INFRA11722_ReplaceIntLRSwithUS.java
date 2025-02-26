@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.delta.oneOffs;
+package org.ihtsdo.termserver.scripting.delta.one_offs;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;

@@ -74,7 +74,7 @@ QI1176_SetProximalPrimitiveParent extends BatchFix {
 			throw new ValidationFailure(t, loadedConcept, "Concept uses axioms");
 		}
 		Set<Concept> calculatedPPP = new HashSet<>();
-		int changesMade = checkAndSetProximalPrimitiveParent(t, loadedConcept, focusConcept, calculatedPPP);
+		int changesMade = checkAndSetProximalPrimitiveParent(t, loadedConcept, focusConcept);
 		
 		//Did we make a change?  If not, try the long way
 		if (changesMade == NO_CHANGES_MADE) {
