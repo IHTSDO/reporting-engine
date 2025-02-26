@@ -33,7 +33,7 @@ public class INFRA7053_Reterm_ProductsUsingSubstanceGroupers extends BatchFix {
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();

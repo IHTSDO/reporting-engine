@@ -39,7 +39,7 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 			fix.expectNullConcepts = true;
 			fix.validateConceptOnUpdate = false;
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();

@@ -90,19 +90,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 	}
 
-	public static CaseSensitivityUtils get() throws TermServerScriptException {
-		return get(true);
-	}
-
-	public static CaseSensitivityUtils get(boolean substancesAndOrganismsAreSourcesOfTruth) throws TermServerScriptException {
-		if (singleton == null) {
-			singleton = new CaseSensitivityUtils();
-			singleton.substancesAndOrganismsAreSourcesOfTruth = substancesAndOrganismsAreSourcesOfTruth;
-			singleton.init();
-		}
-		return singleton;
-	}
-
 	public void init() throws TermServerScriptException {
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		loadCSWords();
@@ -217,19 +204,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			if (!csWords.contains(term)) {
 				csWords.add(term);
 			}
-		}
-	}
-
-	private void addSourcesOfTruthWithoutTaxonomy(String term, Description d) {
-		String termWithoutTaxonomy = term;
-		for (String taxonomyWord : taxonomyWords) {
-			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord, "");
-			termWithoutTaxonomy = termWithoutTaxonomy.replace(taxonomyWord.toLowerCase(), "");
-		}
-
-		if (!termWithoutTaxonomy.equals(term)) {
-			termWithoutTaxonomy = termWithoutTaxonomy.replace("  ", " ").trim();
-			sourcesOfTruth.put(termWithoutTaxonomy, d);
 		}
 	}
 
