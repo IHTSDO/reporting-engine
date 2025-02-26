@@ -28,7 +28,7 @@ public class MSSP1750_RemoveUSLangRefsetENGB extends DeltaGenerator implements S
 		MSSP1750_RemoveUSLangRefsetENGB delta = new MSSP1750_RemoveUSLangRefsetENGB();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.targetModuleId = US_MODULE;
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);

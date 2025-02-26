@@ -52,7 +52,7 @@ public class QI1279_Reterm_RAST extends BatchFix {
 			fix.groupByIssue = true;
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();
