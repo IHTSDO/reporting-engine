@@ -62,7 +62,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 			fix.additionalReportColumns = "Action Detail, Additional Detail";
 			fix.nounHelper = CaseSensitivityUtils.get();
 			fix.init(args);
-			fix.getArchiveManager().setPopulateReleasedFlag(true);
+			fix.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
 			fix.processFile();
@@ -101,7 +101,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) 
 					&& !StringUtils.isCaseSensitive(d.getTerm())
-					&& !nounHelper.startsWithProperNounPhrase(d.getTerm())) {
+					&& !nounHelper.startsWithProperNounPhrase(c, d.getTerm())) {
 				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 				report(t, c, Severity.MEDIUM, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, before + " -> ci", d);
@@ -130,7 +130,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 		} else if (patternOfX.equals(Pattern.CHECK_PT_ONLY)) {
 			return NO_CHANGES_MADE;
 		} else if (patternOfX.equals(Pattern.SKIP_AND_REPORT)) {
-			reportLoud(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Pattern Y with/and X, or 'borderline' requires manual intervention");
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Pattern Y with/and X, or 'borderline' requires manual intervention");
 			return NO_CHANGES_MADE;
 		}
 		
@@ -211,7 +211,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 		for (Concept c : SnomedUtils.sort(findConcepts(ecl))) {
 			if (isExcluded(c)) {
 				/*if (c.getFsn().startsWith("Secondary")) {
-					reportLoud((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
+					report((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "Excluded due to lexical match");
 				}*/
 			} else {
 				try {
@@ -219,7 +219,7 @@ public class INFRA9608_RetermMeasurementFindings extends BatchFix {
 						process.add(c);
 					}
 				} catch (Exception e) {
-					//reportLoud((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
+					//report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, e);
 					LOGGER.info("{} : {}", e.getMessage(), c);
 				}
 			}

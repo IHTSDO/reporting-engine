@@ -25,7 +25,7 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 		MSSP1638_CloneAndReplaceLangRefsetDescriptions delta = new MSSP1638_CloneAndReplaceLangRefsetDescriptions();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
-			delta.getArchiveManager().setPopulateReleasedFlag(true);
+			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = true; // We'll only be inactivating existing relationships
