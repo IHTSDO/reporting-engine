@@ -116,7 +116,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 					//If we start with a small letter, single letter or a proper noun, that's fine
 					if (!firstLetter.equals(firstLetter.toLowerCase()) 
 							&& !csUtils.isProperNoun(firstWord)
-							&& !csUtils.startsWithProperNounPhrase(d.getTerm())
+							&& !csUtils.startsWithProperNounPhrase(c, d.getTerm())
 							&& !firstLetterSingle(d.getTerm())) {
 						report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
