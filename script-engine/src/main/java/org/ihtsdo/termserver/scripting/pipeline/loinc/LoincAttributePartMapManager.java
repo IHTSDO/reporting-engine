@@ -205,7 +205,6 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		hardCodedMappings.put("LP71296-5", List.of(gl.getConcept("570111010000102 |Immature neutrophil (cell)|")));
 		hardCodedMappings.put("LP69203-5", List.of(gl.getConcept("580101010000109 |Glomerular filtration rate (calculation)|")));
 		hardCodedMappings.put("LP6879-3", List.of(gl.getConcept("762636008 |Duration (property) (qualifier value)|")));
-		hardCodedMappings.put("LP21276-8", List.of(gl.getConcept("118576005 |Time ratio (property) (qualifier value)")));
 		hardCodedMappings.put("LP443431-4", List.of(gl.getConcept("580121010000101 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area and adjusted for non-African race (qualifier value)|")));
 		hardCodedMappings.put("LP443426-4", List.of(gl.getConcept("580131010000103 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area and adjusted for African race (qualifier value)|")));
 		hardCodedMappings.put("LP443418-1", List.of(gl.getConcept("580141010000106 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area (qualifier value)|")));

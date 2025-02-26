@@ -25,6 +25,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 			processOutput = gl.getConcept("704324001 |Process output (attribute)|");
 		}
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, processOutput);
+		templatedConcept.typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("704323007 |Process duration (attribute)|"));
 
 		//See https://confluence.ihtsdotools.org/display/SCTEMPLATES/Process+Observable+for+LOINC+%28observable+entity%29+-+v1.0
 		//[property] of [characterizes] of [process output] in [process duration] in [direct site] by [technique] using [using device] [precondition] (observable entity)
