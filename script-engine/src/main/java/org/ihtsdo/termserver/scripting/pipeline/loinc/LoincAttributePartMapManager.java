@@ -1,32 +1,15 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.AttributePartMapManager;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LoincAttributePartMapManager extends AttributePartMapManager implements LoincScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincAttributePartMapManager.class);
-
-	private static final int IDX_PART_NUM = 0;
-	private static final int IDX_STATUS = 7;
-	private static final int IDX_NO_MAP = 6;
-	private static final int IDX_TARGET = 2;
-
-	private final LoincScript ls;
-	
 	public LoincAttributePartMapManager (LoincScript ls, Map<String, Part> partMap, Map<String, String> partMapNotes) {
 		super(ls, partMap, partMapNotes);
-		this.ls = ls;
 	}
 
 	protected void populateKnownMappings() throws TermServerScriptException {
@@ -45,128 +28,9 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		populateHardCodedMappings();
 	}
 
-	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
-		// Output format from Snap2SNOMED is expected to be:
-		// Source code[0]   Source display  Status  PartTypeName    Target code[4]  Target display  Relationship type code  Relationship type display   No map flag[8] Status[9]
-		populateKnownMappings();
-		int lineNum = 0;
-		Set<String> partsSeen = new HashSet<>();
-		List<String> mappingNotes = new ArrayList<>();
-
-		try {
-			LOGGER.info("Loading Part / Attribute Map Base File: {}", attributeMapFile);
-			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
-				String line;
-				while ((line = br.readLine()) != null) {
-					lineNum++;
-					if (!line.isEmpty() && lineNum > 1) {
-						processPartFileLine(line, partsSeen, mappingNotes);
-					}
-				}
-			}
-			
-			LOGGER.info("Populated map of {} LOINC parts to attributes", partToAttributeMap.size());
-			int tabIdx = ls.getTab(TAB_SUMMARY);
-			ls.report(tabIdx, "");
-			ls.report(tabIdx, "successfullTypeReplacement",successfullTypeReplacement);
-			ls.report(tabIdx, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
-			ls.report(tabIdx, "successfullValueReplacement",successfullValueReplacement);
-			ls.report(tabIdx, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
-			ls.report(tabIdx, "lexicallyMatchingMapReuse",lexicallyMatchingMapReuse);
-		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to read " + attributeMapFile + " at line " + lineNum, e);
-		}
-	}
-
-	private void processPartFileLine(String line, Set<String> partsSeen, List<String> mappingNotes) throws TermServerScriptException {
-		String[] items = line.split("\t");
-		String partNum = items[IDX_PART_NUM];
-		//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
-		if (items[IDX_STATUS].equals("UNMAPPED") || items[IDX_STATUS].equals("DRAFT")) {
-			//Skip this one
-		} else if (items[IDX_NO_MAP].equals("true")) {
-			//And we can have items that report being mapped, but with 'no map' - warn about those.
-			mappingNotes.add("Map indicates part mapped to 'No Map'");
-		} else if (items[IDX_STATUS].equals("REJECTED")) {
-			//And we can have items that report being mapped, but with 'no map' - warn about those.
-			mappingNotes.add("Map indicates non-viable map - " + items[IDX_STATUS]);
-		} else if (partsSeen.contains(partNum)) {
-			//Have we seen this part before?  Map should now be unique
-			mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
-		} else {
-			partsSeen.add(partNum);
-			Concept attributeValue = gl.getConcept(items[IDX_TARGET], false, true);
-			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue);
-			if (attributeValue != null && attributeValue.isActive()) {
-				mappingNotes.add("Inactive concept");
-			}
-			partToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
-		}
-
-		if (!mappingNotes.isEmpty()) {
-			partMapNotes.put(partNum, String.join("\n", mappingNotes));
-			mappingNotes.clear();
-		}
-		
-	}
-
-	@Override
-	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue) {
-
-		if (!attributeValue.isActiveSafely()) {
-			String hardCodedIndicator = " hardcoded";
-			Concept replacementValue = knownReplacementMap.get(attributeValue);
-			if (replacementValue == null) {
-				hardCodedIndicator = "";
-				replacementValue = ls.getReplacementSafely(mappingNotes, attributeValue, false);
-			}
-			
-			String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
-			if (replacementValue == null) unsuccessfullValueReplacement++;
-			else successfullValueReplacement++;
-			String prefix = replacementValue == null ? "* " : "";
-			mappingNotes.add(prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
-
-			if (replacementValue != null) {
-				attributeValue = replacementValue;
-			}
-		}
-		return attributeValue;
-	}
-
-	@Override
-	public Concept replaceTypeIfRequired(List<String> mappingNotes, Concept attributeType) {
-		if (hardCodedTypeReplacementMap.containsKey(attributeType)) {
-			attributeType = hardCodedTypeReplacementMap.get(attributeType);
-		}
-		
-		if (!attributeType.isActiveSafely()) {
-			String hardCodedIndicator = " hardcoded";
-			Concept replacementType = knownReplacementMap.get(attributeType);
-			if (replacementType == null) {
-				hardCodedIndicator = "";
-				replacementType = ls.getReplacementSafely(mappingNotes, attributeType, false);
-			} 
-			String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
-			if (replacementType == null) unsuccessfullTypeReplacement++;
-				else successfullTypeReplacement++;
-			mappingNotes.add("Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
-
-			if (replacementType != null) {
-				attributeType = replacementType;
-			}
-		}
-		return attributeType;
-	}
-
 	@Override
 	public boolean containsMappingForLoincPartNum(String loincPartNum) {
 		return partToAttributeMap.containsKey(loincPartNum);
-	}
-
-	@Override
-	public Set<String> getAllMappedLoincPartNums() {
-		return partToAttributeMap.keySet();
 	}
 
 	protected void populateHardCodedMappings() throws TermServerScriptException {

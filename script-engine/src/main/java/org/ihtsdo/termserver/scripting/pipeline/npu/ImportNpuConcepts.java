@@ -23,7 +23,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportNpuConcepts.class);
 
-	private static final boolean PRODUCE_LIST_OF_PARTS = true;
+	private static final boolean PRODUCE_LIST_OF_PARTS = false;
 
 	private static final int FILE_IDX_NPU_PARTS_MAP_BASE_FILE = 1;
 
@@ -59,7 +59,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 		super.postInit(tabNames, columnHeadings, false);
 		scheme = gl.getConcept(SCTID_NPU_SCHEMA);
 		externalContentModule = SCTID_NPU_EXTENSION_MODULE;
-		namespace = "1010000";
+		namespace = "1003000";
 	}
 
 	@Override
@@ -75,8 +75,6 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 		if (PRODUCE_LIST_OF_PARTS) {
 			produceListOfParts();
 		}
-
-
 	}
 
 	private void produceListOfParts() {
@@ -91,6 +89,7 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 				"PartNum\tPart Display\tPart Category"
 		};
 
+		LOGGER.info("Writing parts list to parts_list.txt");
 		try (FileWriter writer = new FileWriter("parts_list.txt")) {
 			// Write column headings
 			writer.write(String.join("\t", columnHeadings) + "\n");
