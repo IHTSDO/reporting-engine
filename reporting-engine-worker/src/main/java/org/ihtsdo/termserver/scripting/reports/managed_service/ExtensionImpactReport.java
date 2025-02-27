@@ -47,7 +47,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		//INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240301T120000Z.zip
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250201T120000Z.zip");
 		TermServerScript.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -388,8 +388,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			//Only count a given replacement once
 			if (!conceptReplacementSeen.contains(histAssocTarget)) {
 				Concept targetConcept = gl.getConcept(histAssocTarget, false, false);
-				//If we don't have this concept then we'll already have counted it
-				if (targetConcept != null && !hasTranslation(targetConcept)) {
+				//If we don't have this concept then it definitely won't have a translation
+				if (targetConcept == null || !hasTranslation(targetConcept)) {
 					translationStats.translatedInactivatedCount++;
 					incrementSummaryInformation(summaryNames[3]);
 				}
