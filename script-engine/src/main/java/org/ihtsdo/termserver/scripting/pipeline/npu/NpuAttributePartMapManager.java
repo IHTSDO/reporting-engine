@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.npu;
 
-import java.io.File;
 import java.util.Map;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -22,11 +21,6 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 	@Override
 	protected void populateKnownMappings() throws TermServerScriptException {
 		LOGGER.warn("NPU has no mapping overrides");
-	}
-
-	@Override
-	public void populatePartAttributeMap(File attributeMapFile) throws TermServerScriptException {
-		LOGGER.warn("TODO.  Actually if this is coming from Snap2Snomed we could factor that code to be common");
 	}
 
 	@Override
