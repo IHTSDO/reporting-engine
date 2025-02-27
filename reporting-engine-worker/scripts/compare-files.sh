@@ -54,6 +54,13 @@ then
 			cut -f2,3,4,5,6,8,9,10 ${rightFile} | sort > ${rightFileTrim2}
 			diff ${leftFileTrim2} ${rightFileTrim2} | tee target/c/${fileName}_no_1_7_col.txt | wc -l >> ${tmpOutput}
 		fi
+
+		if [[ ${fileName} == *ModuleDependencySnapshot* ]]
+    	then
+    		echo -n "Packages modules: " >> ${tmpOutput}
+    		awk '$3 == "1" {print $4}' ${leftFile} | sort -u > target/c/left_modules.txt
+    		awk '$3 == "1" {print $4}' ${rightFile} | sort -u > target/c/right_modules.txt
+    	fi
 	fi
 	
 	echo -n "File size difference (bytes): " >> ${tmpOutput}

@@ -49,8 +49,13 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private Map<String, Integer> leftFilesLineCounts = new HashMap<>();
 	private Map<String, Integer> rightFilesLineCounts = new HashMap<>();
 	private Map<String, Integer> headersDiffCounts = new HashMap<>();
+
+	private Set<String> leftModules = new HashSet<>();
+	private Set<String> rightModules = new HashSet<>();
 	private static final String LEFT_FILES_LINE_COUNT_FILENAME = "left_files_line_counts.txt";
 	private static final String RIGHT_FILES_LINE_COUNT_FILENAME = "right_files_line_counts.txt";
+	private static final String LEFT_MODULES_FILENAME = "left_modules.txt";
+	private static final String RIGHT_MODULES_FILENAME = "right_modules.txt";
 	private static final String HEADERS_DIFF_FILENAME = "diff__headers.txt";
 	private static final String FILES_DIFF_FILENAME = "diff__files.txt";
 	
@@ -79,12 +84,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-        // AU Extension
-		params.put(THIS_RELEASE, "au/snomed_ct_australia_releases/2024-11-21T14:59:25/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20241130T120000Z.zip");
-		params.put(PREV_RELEASE, "au/snomed_ct_australia_releases/2024-10-25T07:54:34/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20241031T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240101T120000Z.zip");
-		params.put(MODULES, "32506021000036107,351000168100");
+        // AT Extension
+		params.put(THIS_RELEASE, "at/snomed_ct_at_releases/2025-02-19T14:31:46/output-files/xSnomedCT_ManagedServiceAT_PREPRODUCTION_AT1000234_20250215T120000Z.zip");
+		params.put(PREV_RELEASE, "at/snomed_ct_at_releases/2024-08-20T15:27:53/output-files/SnomedCT_ManagedServiceAT_PRODUCTION_AT1000234_20240815T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240701T120000Z.zip");
+		params.put(MODULES, "11000234105");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -249,6 +254,10 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		Path diffDir = Path.of("results", uploadFolder, "target", "c");
 
 		try {
+			// Load list of package modules
+			loadModulesFile(diffDir, LEFT_MODULES_FILENAME, leftModules);
+			loadModulesFile(diffDir, RIGHT_MODULES_FILENAME, rightModules);
+
 			// Load the files containing the line counts for the left and right files and header diff count
 			loadTabDelimitedFile(diffDir, LEFT_FILES_LINE_COUNT_FILENAME, leftFilesLineCounts);
 			loadTabDelimitedFile(diffDir, RIGHT_FILES_LINE_COUNT_FILENAME, rightFilesLineCounts);
@@ -301,8 +310,23 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				files.put(name, count);
 			}
 		} catch (Exception e) {
-			LOGGER.warn("Failed to load " + filename + " file due to " + e);
+			LOGGER.warn("Failed to load {} file due to {}", filename, e);
 		}
+	}
+
+	private void loadModulesFile(Path outputDir, String filename, Set<String> modules) {
+		try (BufferedReader br = new BufferedReader(new FileReader(outputDir + File.separator + filename, StandardCharsets.UTF_8))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				modules.add(line);
+			}
+		} catch (Exception e) {
+			LOGGER.warn("Failed to load {} file due to {}", filename, e);
+		}
+	}
+
+	private boolean isExtension() {
+		return !leftModules.contains(SCTID_CORE_MODULE) && !rightModules.contains(SCTID_CORE_MODULE);
 	}
 
 	private void outputResults() throws TermServerScriptException {
@@ -413,6 +437,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		fileDetails[0] = filename;
 		for (TotalsIndex index : TotalsIndex.values()) {
 			fileDetails[index.ordinal() + 1] = fileTotals.get(index);
+		}
+
+		// For extensions MOVED_MODULE and PROMOTED are not applicable
+		if (isExtension()) {
+			fileDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = fileDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A";
 		}
 
 		report(FILE_COMPARISON_TAB, fileDetails);
