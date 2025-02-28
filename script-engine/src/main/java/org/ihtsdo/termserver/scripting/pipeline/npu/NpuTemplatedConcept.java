@@ -5,13 +5,15 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.*;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuConcept;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuDetail;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 
 public abstract class NpuTemplatedConcept extends TemplatedConcept implements NpuScriptConstants {
 
 	@Override
-	protected String getSchemaId() {
+	public String getSchemaId() {
 		return SCTID_NPU_SCHEMA;
 	}
 

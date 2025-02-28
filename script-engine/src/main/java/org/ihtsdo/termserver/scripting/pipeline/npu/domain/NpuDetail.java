@@ -7,27 +7,27 @@ import java.util.List;
 
 public class NpuDetail implements NpuScriptConstants {
 
-	private static int IDX_NPU_CODE = 0;
-	private static int IDX_REPLACES = 1;
-	private static int IDX_REPLACED_BY = 2;
-	private static int IDX_SPECIALITY = 3;
-	private static int IDX_SCALE = 4;
-	private static int IDX_CONTEXT_DEPENDENT = 5;
-	private static int IDX_GROUPS = 6;
-	private static int IDX_SHORT_DEFINITION = 7;
-	private static int IDX_FULL_DEFINITION = 8;
-	private static int IDX_ELEMENT_CODES_FOR_SYSTEMS = 9;
-	private static int IDX_ELEMENT_CODES_FOR_COMPONENTS = 10;
-	private static int IDX_ELEMENT_CODES_FOR_PROPERTIES = 11;
-	private static int IDX_ELEMENT_CODES_FOR_UNIT = 12;
-	private static int IDX_RELEASE_CENTER = 13;
-	private static int IDX_STATUS = 14;
-	private static int IDX_UPDATED_AT = 15;
-	private static int IDX_ACTIVE_FROM = 16;
-	private static int IDX_EDITOR = 17;
-	private static int IDX_CREATED_AT = 18;
-	private static int IDX_LAST_VERSION_NOTE = 19;
-	private static int IDX_LAST_NOTE = 20;
+	private static final int IDX_NPU_CODE = 0;
+	private static final int IDX_REPLACES = 1;
+	private static final int IDX_REPLACED_BY = 2;
+	private static final int IDX_SPECIALITY = 3;
+	private static final int IDX_SCALE = 4;
+	private static final int IDX_CONTEXT_DEPENDENT = 5;
+	private static final int IDX_GROUPS = 6;
+	private static final int IDX_SHORT_DEFINITION = 7;
+	private static final int IDX_FULL_DEFINITION = 8;
+	private static final int IDX_ELEMENT_CODES_FOR_SYSTEMS = 9;
+	private static final int IDX_ELEMENT_CODES_FOR_COMPONENTS = 10;
+	private static final int IDX_ELEMENT_CODES_FOR_PROPERTIES = 11;
+	private static final int IDX_ELEMENT_CODES_FOR_UNIT = 12;
+	private static final int IDX_RELEASE_CENTER = 13;
+	private static final int IDX_STATUS = 14;
+	private static final int IDX_UPDATED_AT = 15;
+	private static final int IDX_ACTIVE_FROM = 16;
+	private static final int IDX_EDITOR = 17;
+	private static final int IDX_CREATED_AT = 18;
+	private static final int IDX_LAST_VERSION_NOTE = 19;
+	private static final int IDX_LAST_NOTE = 20;
 
 	private String npuCode;
 	private String replaces;

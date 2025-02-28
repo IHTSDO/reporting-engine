@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline;
+package org.ihtsdo.termserver.scripting.pipeline.domain;
 
 public abstract class ExternalConcept {
 
@@ -33,7 +33,7 @@ public abstract class ExternalConcept {
 
 	public abstract boolean isHighestUsage();
 	
-	protected abstract String[] getCommonColumns();
+	public abstract String[] getCommonColumns();
 
 	public abstract String getLongDisplayName();
 

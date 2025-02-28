@@ -8,9 +8,9 @@ import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.*;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
@@ -76,7 +76,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected Map<String, LoincDetail> loincDetailMap;
 
 	@Override
-	protected String getSchemaId() {
+	public String getSchemaId() {
 		return SCTID_LOINC_SCHEMA;
 	}
 
@@ -509,6 +509,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return getLoincDetailForColNameIfPresent(ldtColumnName) != null;
 	}
 
+	@Override
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, Part part, Concept attributeType) throws TermServerScriptException {
 		LoincDetail loincDetail = (LoincDetail) part;
 		try {

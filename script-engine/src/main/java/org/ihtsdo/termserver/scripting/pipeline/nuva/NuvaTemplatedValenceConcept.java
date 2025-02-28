@@ -6,8 +6,8 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 
 import java.util.*;
 
@@ -56,7 +56,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	}
 
 	@Override
-	protected String getSchemaId() {
+	public String getSchemaId() {
 		return SCTID_NUVA_SCHEMA;
 	}
 

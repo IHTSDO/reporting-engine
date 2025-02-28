@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline;
+package org.ihtsdo.termserver.scripting.pipeline.domain;
 
 public class ExternalConceptNull extends ExternalConcept {
 	
@@ -32,7 +32,7 @@ public class ExternalConceptNull extends ExternalConcept {
 	}
 
 	@Override
-	protected String[] getCommonColumns() {
+	public String[] getCommonColumns() {
 		return new String[0];
 	}
 

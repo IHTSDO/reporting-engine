@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 
 
 public class LoincTemplatedConceptWithRatio extends LoincTemplatedConceptWithRelative {

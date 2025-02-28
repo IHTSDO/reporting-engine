@@ -6,8 +6,8 @@ import java.util.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincPart;

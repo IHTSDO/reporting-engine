@@ -10,9 +10,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuConcept;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuDetail;
 import org.slf4j.Logger;
@@ -164,7 +163,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 	@Override
 	protected List<String> getExternalConceptsToModel() throws TermServerScriptException {
 		try {
-			return FileUtils.readLines(getInputFile(FILE_IDX_NPU_TECH_PREVIEW_CONCEPTS), "UTF-8");
+			return FileUtils.readLines(getInputFile(FILE_IDX_NPU_TECH_PREVIEW_CONCEPTS), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to read NPU codes from file", e);
 		}

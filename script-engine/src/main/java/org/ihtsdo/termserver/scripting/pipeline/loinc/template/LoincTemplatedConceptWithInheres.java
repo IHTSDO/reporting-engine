@@ -6,7 +6,7 @@ import java.util.List;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
@@ -63,11 +63,11 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				&& getLoincDetailOrThrow(COMPNUM_PN).getPartNumber().equals(LOINC_OBSERVATION_PART)) {
 			if (this instanceof LoincTemplatedConceptWithInheresNoComponent) {
 				slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation of finding");
+				setPreferredTermTemplate("[PROPERTY] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 			} else {
 				slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Microscopic observation");
 				slotTermMap.put(LOINC_PART_TYPE_COMPONENT, "finding");
 			}
-			setPreferredTermTemplate("[PROPERTY] in [COMPONENT] in [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		}
 
 		ensureComponentMappedOrRepresentedInTerm(attributes);

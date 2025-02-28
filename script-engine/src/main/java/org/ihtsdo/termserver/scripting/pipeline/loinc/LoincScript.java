@@ -9,7 +9,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincPart;

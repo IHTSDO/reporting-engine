@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
-import org.ihtsdo.otf.exception.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScriptConstants;
 
@@ -13,25 +11,6 @@ public class LoincDetail extends Part implements LoincScriptConstants {
 	
 	private LoincDetail() {
 		super();
-	}
-
-	public String getPartNumber() {
-		return partNumber;
-	}
-	public void setPartNumber(String partNumber) {
-		this.partNumber = partNumber;
-	}
-	public String getPartTypeName() {
-		return partTypeName;
-	}
-	public void setPartTypeName(String partTypeName) {
-		this.partTypeName = partTypeName;
-	}
-	public String getPartName() {
-		return partName;
-	}
-	public void setPartName(String partName) {
-		this.partName = partName;
 	}
 
 	public String getLoincNum() {
@@ -50,7 +29,7 @@ public class LoincDetail extends Part implements LoincScriptConstants {
 		LDTColumnName = lDTColumnName;
 	}
 
-	public static LoincDetail parse(String[] columns) throws TermServerScriptException {
+	public static LoincDetail parse(String[] columns) {
 		LoincDetail loincDetail = new LoincDetail();
 		loincDetail.setLoincNum(columns[0]);
 		loincDetail.setPartNumber(columns[1]);
@@ -59,7 +38,8 @@ public class LoincDetail extends Part implements LoincScriptConstants {
 		loincDetail.setPartTypeName(columns[5]);
 		return loincDetail;
 	}
-	
+
+	@Override
 	public String toString() {
 		return getLoincNum() + "|" + getPartNumber() + "|" + getPartName() + "|" + getPartTypeName() + " (" + getLDTColumnName() + ")";
 	}
@@ -74,8 +54,8 @@ public class LoincDetail extends Part implements LoincScriptConstants {
 	
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof LoincDetail) {
-			return hashCode() == ((LoincDetail)other).hashCode();
+		if (other instanceof LoincDetail loincDetail) {
+			return hashCode() == loincDetail.hashCode();
 		}
 		return false;
 	}

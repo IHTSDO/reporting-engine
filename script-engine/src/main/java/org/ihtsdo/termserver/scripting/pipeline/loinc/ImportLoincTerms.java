@@ -7,9 +7,12 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.pipeline.*;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.template.*;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConceptNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
