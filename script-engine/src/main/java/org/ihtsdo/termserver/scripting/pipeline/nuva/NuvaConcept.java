@@ -41,6 +41,11 @@ public abstract class NuvaConcept extends ExternalConcept {
 	}
 
 	@Override
+	public int getPriority() {
+		return 0;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof NuvaConcept other) {
 			return other.externalIdentifier.equals(this.externalIdentifier);
@@ -54,7 +59,7 @@ public abstract class NuvaConcept extends ExternalConcept {
 	}
 
 	@Override
-	protected String getLongDisplayName() {
+	public String getLongDisplayName() {
 		if (StringUtils.isEmpty(enLabel)) {
 			LOGGER.debug("Check no display name here");
 			return externalIdentifier + " - display name not specified";
@@ -63,7 +68,7 @@ public abstract class NuvaConcept extends ExternalConcept {
 	}
 
 	@Override
-	protected String getShortDisplayName() {
+	public String getShortDisplayName() {
 		return getLongDisplayName();
 	}
 

@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.pipeline.npu;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -12,6 +13,8 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuConcept;
+import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,13 +22,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
-public class ImportNpuConcepts extends ContentPipelineManager {
+public class ImportNpuConcepts extends ContentPipelineManager implements NpuScriptConstants {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportNpuConcepts.class);
 
 	private static final boolean PRODUCE_LIST_OF_PARTS = false;
 
 	private static final int FILE_IDX_NPU_PARTS_MAP_BASE_FILE = 1;
+
+	Map<String, NpuDetail> npuDetailsMap = new HashMap<>();
 
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
@@ -70,10 +75,30 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	@Override
 	protected void loadSupportingInformation() throws TermServerScriptException {
 		importNpuConcepts();
+		importNpuDetail();
 		loadPanels();
 
 		if (PRODUCE_LIST_OF_PARTS) {
 			produceListOfParts();
+		}
+	}
+
+	private void importNpuDetail() throws TermServerScriptException {
+		//Read in tab delimited FILE_IDX_NPU_DETAIL and create NpuDetail objects
+		try {
+			List<String> lines = FileUtils.readLines(getInputFile(FILE_IDX_NPU_DETAIL), StandardCharsets.UTF_8);
+			boolean isHeader = true;
+			for (String line : lines) {
+				if (isHeader) {
+					isHeader = false;
+					continue;
+				}
+				String[] columns = line.split("\t", -1);
+				NpuDetail npuDetail = NpuDetail.parse(columns);
+				npuDetailsMap.put(npuDetail.getNpuCode(), npuDetail);
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to read NPU detail file", e);
 		}
 	}
 
@@ -110,9 +135,9 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 
 	private void importNpuConcepts() throws TermServerScriptException {
 		ObjectMapper mapper = new XmlMapper();
-		TypeReference<List<NpuConcept>> listType = new TypeReference<List<NpuConcept>>(){};
+		TypeReference<List<NpuConcept>> listType = new TypeReference<>(){};
 		try {
-			FileInputStream is = FileUtils.openInputStream(getInputFile());
+			FileInputStream is = FileUtils.openInputStream(getInputFile(FILE_IDX_NPU_FULL));
 			List<NpuConcept> npuConcepts = mapper.readValue(is, listType);
 			externalConceptMap = npuConcepts.stream()
 				.collect(Collectors
@@ -122,7 +147,6 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 				} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
-
 		LOGGER.info("Loaded {} NPU Concepts", externalConceptMap.size());
 	}
 
@@ -138,13 +162,11 @@ public class ImportNpuConcepts extends ContentPipelineManager {
 	}
 
 	@Override
-	protected void doModeling() throws TermServerScriptException {
-		for (String npuNum : getExternalConceptMap().keySet()) {
-			TemplatedConcept templatedConcept = modelExternalConcept(npuNum);
-			validateTemplatedConcept(npuNum, templatedConcept);
-			if (conceptSufficientlyModeled("Observable", npuNum, templatedConcept)) {
-				successfullyModelled.add(templatedConcept);
-			}
+	protected List<String> getExternalConceptsToModel() throws TermServerScriptException {
+		try {
+			return FileUtils.readLines(getInputFile(FILE_IDX_NPU_TECH_PREVIEW_CONCEPTS), "UTF-8");
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to read NPU codes from file", e);
 		}
 	}
 

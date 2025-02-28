@@ -5,6 +5,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 import java.util.ArrayList;
@@ -53,7 +54,8 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		LoincDetail loincDetail = (LoincDetail) part;
 		//Rule v.3.4.a & b
 		//All process observables will have an agent and characterizes.
 		//But only if we're working with Urine

@@ -7,6 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_OBSERVATION_PART;
@@ -74,7 +75,8 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		LoincDetail loincDetail = (LoincDetail) part;
 		//Rule 2.f.ii.6.a.i.2
 		if (loincDetail.getPartNumber().equals(PROPERTY_ID_EXCEPTION)) {
 			//Is our COMPNUM LP19429-7	Specimen source?

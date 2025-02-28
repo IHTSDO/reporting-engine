@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuConcept;
 
 public class NpuTemplatedConceptPanel extends NpuTemplatedConcept {
 

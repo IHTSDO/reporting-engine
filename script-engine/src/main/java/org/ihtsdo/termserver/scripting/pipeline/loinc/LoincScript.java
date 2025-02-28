@@ -114,7 +114,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 	
 	protected void loadLoincParts() throws TermServerScriptException {
-		LOGGER.info("Loading Loinc Parts: " + getInputFile(FILE_IDX_LOINC_PARTS));
+		LOGGER.info("Loading Loinc Parts: {}", getInputFile(FILE_IDX_LOINC_PARTS));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(getInputFile(FILE_IDX_LOINC_PARTS)));
 			//withSkipHeaderRecord() is apparently ignored when using iterator

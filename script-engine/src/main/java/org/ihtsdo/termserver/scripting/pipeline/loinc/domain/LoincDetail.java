@@ -2,33 +2,19 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
-
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScriptConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class LoincDetail implements LoincScriptConstants {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(LoincDetail.class);
+public class LoincDetail extends Part implements LoincScriptConstants {
 
 	private String loincNum;
-	private String partNumber;	
 	private String LDTColumnName;
-	private String partName;
-	private int partType;
-	private String partTypeName;
-	
 	private Integer hashCode;
 	
 	private LoincDetail() {
+		super();
 	}
-	
-	public LoincDetail(String partNumber, String partTypeName, String partName) {
-		this.partNumber = partNumber;
-		this.partTypeName = partTypeName;
-		this.partName = partName;
-	}
-	
+
 	public String getPartNumber() {
 		return partNumber;
 	}
@@ -64,21 +50,12 @@ public class LoincDetail implements LoincScriptConstants {
 		LDTColumnName = lDTColumnName;
 	}
 
-	public int getPartType() {
-		return partType;
-	}
-
-	public void setPartType(int partType) {
-		this.partType = partType;
-	}
-	
 	public static LoincDetail parse(String[] columns) throws TermServerScriptException {
 		LoincDetail loincDetail = new LoincDetail();
 		loincDetail.setLoincNum(columns[0]);
 		loincDetail.setPartNumber(columns[1]);
 		loincDetail.setLDTColumnName(columns[2]);
 		loincDetail.setPartName(columns[3]);
-		loincDetail.setPartType(Integer.parseInt(columns[4]));
 		loincDetail.setPartTypeName(columns[5]);
 		return loincDetail;
 	}

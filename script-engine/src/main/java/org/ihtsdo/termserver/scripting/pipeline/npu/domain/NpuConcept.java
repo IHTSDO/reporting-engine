@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.npu;
+package org.ihtsdo.termserver.scripting.pipeline.npu.domain;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;

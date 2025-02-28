@@ -202,7 +202,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else if (thisArg.equals("-c")) {
 				authenticatedCookie = args[x+1];
 			} else if (thisArg.equals("-d")) {
-				dryRun = args[x+1].toUpperCase().equals("Y");
+				dryRun = args[x+1].equalsIgnoreCase("Y");
 				if (!dryRun) {
 					this.runStandAlone = false;
 				}
@@ -217,10 +217,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 				File thisFile = new File(args[x+1]);
 				setInputFile(fileIdx, thisFile);
-				if (!getInputFile().canRead()) {
-					throw new TermServerScriptException ("Unable to read input file: " + thisFile);
+				if (!getInputFile(fileIdx).canRead()) {
+					if (!getInputFile(fileIdx).getName().contains("Dummy")) {
+						throw new TermServerScriptException("Unable to read input file: " + thisFile);
+					}
+				} else {
+					LOGGER.info("Reading data (fileIdx {}) from {}", fileIdx, thisFile.getAbsolutePath());
 				}
-				LOGGER.info("Reading data (fileIdx " + fileIdx + ") from " + thisFile.getAbsolutePath());
 			} else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {

@@ -4,13 +4,19 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants.ProcessingFlag;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.ExternalConceptUsage;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class TemplatedConcept implements ScriptConstants, ConceptWrapper {
+public abstract class TemplatedConcept implements ScriptConstants, ConceptWrapper, ContentPipeLineConstants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TemplatedConcept.class);
 
 	protected TemplatedConcept(ExternalConcept externalConcept) {
 		this.externalConcept = externalConcept;
@@ -23,6 +29,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	protected static Set<String> partNumsMapped = new HashSet<>();
 	protected static Set<String> partNumsUnmapped = new HashSet<>();
+	protected static Map<String, ExternalConceptUsage> unmappedPartUsageMap = new HashMap<>();
 
 	protected Concept existingConcept = null;
 	protected boolean existingConceptHasInactivations = false;
@@ -87,6 +94,13 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 				&& !getConcept().hasAlternateIdentifier(getSchemaId())) {
 			getConcept().addAlternateIdentifier(getExternalIdentifier(), getSchemaId());
 		}
+	}
+
+	protected void prepareConceptDefaultedForModule(String moduleId) throws TermServerScriptException {
+		concept = Concept.withDefaults(null);
+		concept.setModuleId(SCTID_NPU_EXTENSION_MODULE);
+		concept.addRelationship(IS_A, getParentConceptForTemplate());
+		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 	}
 
 	public String getDifferencesFromExistingConceptWithMultiples() {
@@ -156,7 +170,60 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		}
 	}
 
+
+	protected boolean addAttributeFromDetail(List<RelationshipTemplate> attributes, Part part) throws TermServerScriptException {
+		//Now given the template that we've chosen for this LOINC Term, what attribute
+		//type would we use?
+		Concept attributeType = typeMap.get(part.getPartTypeName());
+		if (attributeType == null) {
+			cpm.report(cpm.getTab(TAB_MODELING_ISSUES),
+					getExternalIdentifier(),
+					ContentPipelineManager.getSpecialInterestIndicator(getExternalIdentifier()),
+					part.getPartNumber(),
+					"Type in context not identified - " + part.getPartTypeName() + " | " + this.getClass().getSimpleName(),
+					part.getPartName());
+			return false;
+		}
+		return addAttributeFromDetailWithType(attributes, part, attributeType);
+	}
+
+	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, Part part, Concept attributeType) throws TermServerScriptException {
+		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), getExternalIdentifier(), part.getPartNumber(), attributeType);
+		attributes.addAll(additionalAttributes);
+		return !additionalAttributes.isEmpty();
+	}
+
+	protected void addAttributesToConcept(RelationshipTemplate rt, Part part, boolean expectNullMap) {
+		if (rt != null) {
+			cpm.incrementSummaryCount("Part Mappings", "Mapped");
+			concept.addRelationship(rt, GROUP_1);
+		} else if (!expectNullMap
+				&& !cpm.getMappingsAllowedAbsent().contains(part.getPartNumber())){
+			cpm.incrementSummaryCount("Part Mappings", "Unmapped");
+			String issue = "Not Mapped - " + part.getPartTypeName() + " | " + part.getPartNumber() + "| " + part.getPartName();
+			concept.addIssue(issue);
+			concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			partNumsUnmapped.add(part.getPartNumber());
+			if (part instanceof LoincDetail loincDetail) {
+				((LoincScript) cpm).addMissingMapping(part.getPartNumber(), loincDetail.getLoincNum());
+			}
+
+			//Record the fact that we failed to find a map on a per part basis
+			partNumsMapped.add(part.getPartNumber());
+			ExternalConceptUsage usage = unmappedPartUsageMap.get(part.getPartNumber());
+			if (usage == null) {
+				usage = new ExternalConceptUsage();
+				unmappedPartUsageMap.put(part.getPartNumber(), usage);
+			}
+			usage.add(getExternalConcept());
+		}
+	}
+
 	protected abstract String getSchemaId();
+
+	protected Concept getParentConceptForTemplate() throws TermServerScriptException {
+		return OBSERVABLE_ENTITY;
+	}
 
 	protected void populateTerms() throws TermServerScriptException {
 		//Start with the template PT and swap out as many parts as we come across
@@ -282,5 +349,24 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			term = term.replaceAll(str, "");
 		}
 		return term;
+	}
+
+
+	protected void checkAndRemoveDuplicateAttributes() {
+		Set<RelationshipTemplate> relsSeen = new HashSet<>();
+		Set<Relationship> relsToRemove = new HashSet<>();
+		for (Relationship r : concept.getRelationships()) {
+			RelationshipTemplate rt = new RelationshipTemplate(r);
+			if (relsSeen.contains(rt)) {
+				relsToRemove.add(r);
+			} else {
+				relsSeen.add(rt);
+			}
+		}
+
+		for (Relationship r : relsToRemove) {
+			concept.getRelationships().remove(r);
+			LOGGER.warn("Removed a redundant {} from {}",r, this);
+		}
 	}
 }
