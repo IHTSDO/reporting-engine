@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.npu.domain;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 
 import java.util.Collection;
@@ -359,7 +359,7 @@ public class NpuConcept extends ExternalConcept {
 	}
 
 	@Override
-	protected String[] getCommonColumns() {
+	public String[] getCommonColumns() {
 		return new String[] {shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType,  active};
 	}
 

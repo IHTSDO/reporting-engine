@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
 import org.apache.commons.csv.CSVRecord;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -467,6 +467,7 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 		return !getCommonTestRank().equals("0") && Integer.parseInt(getCommonTestRank()) <= 2000;
 	}
 
+	@Override
 	public int getPriority() {
 		return LoincUtils.getLoincTermPriority(this);
 	}

@@ -1,13 +1,10 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc;
-
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
-import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
+package org.ihtsdo.termserver.scripting.pipeline.domain;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ExternalConceptUsage implements Comparable<Object> {
-	private static int MAX_EXAMPLES = 3;
+	private static final int MAX_EXAMPLES = 3;
 	boolean analysed = false;
 	int priority = 0;
 	Set<ExternalConcept> usage = new HashSet<>();
@@ -50,9 +47,22 @@ public class ExternalConceptUsage implements Comparable<Object> {
 	@Override
 	public int compareTo(Object o) {
 		ExternalConceptUsage other = (ExternalConceptUsage)o;
-		int comparison = ((Integer)other.getPriority()).compareTo((Integer)getPriority());
+		int comparison = ((Integer)other.getPriority()).compareTo(getPriority());
 		
-		return comparison == 0 ? ((Integer)other.getCount()).compareTo((Integer)getCount()) : comparison;
+		return comparison == 0 ? ((Integer)other.getCount()).compareTo(getCount()) : comparison;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof ExternalConceptUsage ecu) {
+			return ecu.getPriority() == getPriority();
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return getPriority();
 	}
 
 	public String getTopRankedLoincTermsStr() {

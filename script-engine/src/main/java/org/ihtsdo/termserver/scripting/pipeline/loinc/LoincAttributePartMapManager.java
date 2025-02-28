@@ -64,35 +64,63 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 				gl.getConcept("723206002 |Anion gap based on sodium, chloride and bicarbonate ions calculation technique (qualifier value)|")));
 		hardCodedMappings.put("LP70259-4", List.of(
 				gl.getConcept("570101010000100 |Automated technique (qualifier value)")));
-		hardCodedMappings.put("LP443406-6", List.of(gl.getConcept("580111010000107 |Distribution width (property) (qualifier value)")));
-		hardCodedMappings.put("LP105134-3", List.of(gl.getConcept("703462006 |Cockcroft-Gault formula (qualifier value)|")));
-		hardCodedMappings.put("LP71296-5", List.of(gl.getConcept("570111010000102 |Immature neutrophil (cell)|")));
-		hardCodedMappings.put("LP69203-5", List.of(gl.getConcept("580101010000109 |Glomerular filtration rate (calculation)|")));
-		hardCodedMappings.put("LP6879-3", List.of(gl.getConcept("762636008 |Duration (property) (qualifier value)|")));
-		hardCodedMappings.put("LP443431-4", List.of(gl.getConcept("580121010000101 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area and adjusted for non-African race (qualifier value)|")));
-		hardCodedMappings.put("LP443426-4", List.of(gl.getConcept("580131010000103 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area and adjusted for African race (qualifier value)|")));
-		hardCodedMappings.put("LP443418-1", List.of(gl.getConcept("580141010000106 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area (qualifier value)|")));
-		hardCodedMappings.put("LP443421-5", List.of(gl.getConcept("580151010000108 |Chronic Kidney Disease Epidemiology Collaboration creatinine calculation formula relative to 1.73 square meters body surface area (qualifier value)|")));
-		hardCodedMappings.put("LP36683-8", List.of(gl.getConcept("106202009 |Antigen in ABO blood group system (substance)|"), gl.getConcept("16951006 |Antigen in Rh blood group system (substance)")));
-		hardCodedMappings.put("LP15445-7", List.of(gl.getConcept("259498006 |Bilirubin glucuronide (substance)|"),
+		hardCodedMappings.put("LP443406-6", List.of(
+				gl.getConcept("580111010000107 |Distribution width (property) (qualifier value)")));
+		hardCodedMappings.put("LP105134-3", List.of(
+				gl.getConcept("703462006 |Cockcroft-Gault formula (qualifier value)|")));
+		hardCodedMappings.put("LP71296-5", List.of(
+				gl.getConcept("570111010000102 |Immature neutrophil (cell)|")));
+		hardCodedMappings.put("LP69203-5", List.of(
+				gl.getConcept("580101010000109 |Glomerular filtration rate (calculation)|")));
+		hardCodedMappings.put("LP6879-3", List.of(
+				gl.getConcept("762636008 |Duration (property) (qualifier value)|")));
+		hardCodedMappings.put("LP443431-4", List.of(
+				gl.getConcept("580121010000101 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area and adjusted for non-African race (qualifier value)|")));
+		hardCodedMappings.put("LP443426-4", List.of(
+				gl.getConcept("580131010000103 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area and adjusted for African race (qualifier value)|")));
+		hardCodedMappings.put("LP443418-1", List.of(
+				gl.getConcept("580141010000106 |Modification of diet in renal disease creatinine calculation formula relative to 1.73 square meters body surface area (qualifier value)|")));
+		hardCodedMappings.put("LP443421-5", List.of(
+				gl.getConcept("580151010000108 |Chronic Kidney Disease Epidemiology Collaboration creatinine calculation formula relative to 1.73 square meters body surface area (qualifier value)|")));
+		hardCodedMappings.put("LP36683-8", List.of(
+				gl.getConcept("106202009 |Antigen in ABO blood group system (substance)|"),
+				gl.getConcept("16951006 |Antigen in Rh blood group system (substance)")));
+		hardCodedMappings.put("LP15445-7", List.of(
+				gl.getConcept("259498006 |Bilirubin glucuronide (substance)|"),
 				gl.getConcept("73828001 |Bilirubin-albumin complex (substance)")));
-		hardCodedMappings.put("LP182450-9", List.of(gl.getConcept("259337002 |Calcifediol (substance"),
+		hardCodedMappings.put("LP182450-9", List.of(
+				gl.getConcept("259337002 |Calcifediol (substance"),
 				gl.getConcept("67517005 |25-hydroxyergocalciferol (substance)")));
-		hardCodedMappings.put("LP443466-0", List.of(gl.getConcept("734842000 |Source (property) (qualifier value)|")));
-		hardCodedMappings.put("LP443467-8", List.of(gl.getConcept("123038009 |Specimen (specimen)|")));
-		hardCodedMappings.put("LP281728-8", List.of(gl.getConcept("410652009 |Blood product (product)|")));
-		hardCodedMappings.put("LP63085-2", List.of(gl.getConcept("580201010000101 |Creatinine renal clearance calculation (calculation)|")));
-		hardCodedMappings.put("LP444405-7", List.of(gl.getConcept("580161010000105 |Sedimentation process (qualifier value)|")));
-		hardCodedMappings.put("LP443823-2", List.of(gl.getConcept("540151010000102 |Disposition (property) (qualifier value)|")));
-		hardCodedMappings.put("LP444407-3", List.of(gl.getConcept("645121010000107 |Relative velocity (property) (qualifier value)|")));
-		hardCodedMappings.put("LP65367-2", List.of(gl.getConcept("645131010000105 |Nucleated blood cell (cell)|")));
-		hardCodedMappings.put("LP31542-1", List.of(gl.getConcept("655141010000100 |Immature basophil (cell)|")));
-		hardCodedMappings.put("LP31543-9", List.of(gl.getConcept("655131010000108 |Immature eosinophil (cell)|")));
-		hardCodedMappings.put("LP31551-2", List.of(gl.getConcept("655151010000103 |Immature monocyte (cell)|")));
-		hardCodedMappings.put("LP446464-2", List.of(gl.getConcept("87612001 |Blood (substance)|")));
-		hardCodedMappings.put("LP446469-1", List.of(gl.getConcept("32457005 |Body fluid (substance)|")));
-		hardCodedMappings.put("LP446467-5", List.of(gl.getConcept("4635002 |Arterial blood (substance)|")));
-		hardCodedMappings.put("LP446471-7", List.of(gl.getConcept("53130003 |Venous blood (substance)|")));
+		hardCodedMappings.put("LP443466-0", List.of(
+				gl.getConcept("734842000 |Source (property) (qualifier value)|")));
+		hardCodedMappings.put("LP443467-8", List.of(
+				gl.getConcept("123038009 |Specimen (specimen)|")));
+		hardCodedMappings.put("LP281728-8", List.of(
+				gl.getConcept("410652009 |Blood product (product)|")));
+		hardCodedMappings.put("LP63085-2", List.of(
+				gl.getConcept("580201010000101 |Creatinine renal clearance calculation (calculation)|")));
+		hardCodedMappings.put("LP444405-7", List.of(
+				gl.getConcept("580161010000105 |Sedimentation process (qualifier value)|")));
+		hardCodedMappings.put("LP443823-2", List.of(
+				gl.getConcept("540151010000102 |Disposition (property) (qualifier value)|")));
+		hardCodedMappings.put("LP444407-3", List.of(
+				gl.getConcept("645121010000107 |Relative velocity (property) (qualifier value)|")));
+		hardCodedMappings.put("LP65367-2", List.of(
+				gl.getConcept("645131010000105 |Nucleated blood cell (cell)|")));
+		hardCodedMappings.put("LP31542-1", List.of(
+				gl.getConcept("655141010000100 |Immature basophil (cell)|")));
+		hardCodedMappings.put("LP31543-9", List.of(
+				gl.getConcept("655131010000108 |Immature eosinophil (cell)|")));
+		hardCodedMappings.put("LP31551-2", List.of(
+				gl.getConcept("655151010000103 |Immature monocyte (cell)|")));
+		hardCodedMappings.put("LP446464-2", List.of(
+				gl.getConcept("87612001 |Blood (substance)|")));
+		hardCodedMappings.put("LP446469-1", List.of(
+				gl.getConcept("32457005 |Body fluid (substance)|")));
+		hardCodedMappings.put("LP446467-5", List.of(
+				gl.getConcept("4635002 |Arterial blood (substance)|")));
+		hardCodedMappings.put("LP446471-7", List.of(
+				gl.getConcept("53130003 |Venous blood (substance)|")));
 	}
 
 }

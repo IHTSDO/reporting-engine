@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.pipeline.nuva;
 
 import org.apache.jena.rdf.model.Statement;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public abstract class NuvaConcept extends ExternalConcept {
 	}
 
 	@Override
-	protected String[] getCommonColumns() {
+	public String[] getCommonColumns() {
 		return new String[0];
 	}
 

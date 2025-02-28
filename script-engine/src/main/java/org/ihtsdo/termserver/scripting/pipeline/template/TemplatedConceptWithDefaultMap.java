@@ -1,7 +1,8 @@
-package org.ihtsdo.termserver.scripting.pipeline;
+package org.ihtsdo.termserver.scripting.pipeline.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 
 public class TemplatedConceptWithDefaultMap extends TemplatedConcept {
 
@@ -12,7 +13,7 @@ public class TemplatedConceptWithDefaultMap extends TemplatedConcept {
 	}
 
 	@Override
-	protected String getSchemaId() {
+	public String getSchemaId() {
 		return codeSystemSctId;
 	}
 

@@ -2,8 +2,8 @@ package org.ihtsdo.termserver.scripting.pipeline.nuva;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
-import org.ihtsdo.termserver.scripting.pipeline.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 
 import java.util.*;
 import java.util.stream.Collectors;

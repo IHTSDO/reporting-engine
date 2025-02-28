@@ -6,7 +6,7 @@ import java.util.List;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 

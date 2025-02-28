@@ -1,11 +1,14 @@
-package org.ihtsdo.termserver.scripting.pipeline;
+package org.ihtsdo.termserver.scripting.pipeline.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.pipeline.*;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ConceptWrapper;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConceptUsage;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript;
-import org.ihtsdo.termserver.scripting.pipeline.loinc.ExternalConceptUsage;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.slf4j.Logger;
@@ -98,7 +101,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	protected void prepareConceptDefaultedForModule(String moduleId) throws TermServerScriptException {
 		concept = Concept.withDefaults(null);
-		concept.setModuleId(SCTID_NPU_EXTENSION_MODULE);
+		concept.setModuleId(moduleId);
 		concept.addRelationship(IS_A, getParentConceptForTemplate());
 		concept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 	}
@@ -219,7 +222,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		}
 	}
 
-	protected abstract String getSchemaId();
+	public abstract String getSchemaId();
 
 	protected Concept getParentConceptForTemplate() throws TermServerScriptException {
 		return OBSERVABLE_ENTITY;
@@ -242,7 +245,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		concept.addDescription(pt);
 		concept.addDescription(fsn);
 
-		if (cpm.includeShortNameDescription) {
+		if (cpm.shouldIncludeShortNameDescription()) {
 			//Also add the Long Common Name as a Synonym
 			String scn = getExternalConcept().getShortDisplayName();
 			Description lcn = Description.withDefaults(scn, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);

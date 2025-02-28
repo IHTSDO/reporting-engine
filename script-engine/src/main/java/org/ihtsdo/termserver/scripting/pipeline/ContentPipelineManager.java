@@ -12,6 +12,11 @@ import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConceptNull;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConceptNull;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConceptWithDefaultMap;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +40,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	public void recordSuccessfulModelling(TemplatedConcept tc) {
 		successfullyModelled.add(tc);
+	}
+
+	public boolean shouldIncludeShortNameDescription() {
+		return includeShortNameDescription;
 	}
 
 	private enum RunMode { NEW, INCREMENTAL_DELTA, INCREMENTAL_API}
@@ -66,6 +75,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected Set<ComponentType> skipForComparison = Set.of(
 			ComponentType.INFERRED_RELATIONSHIP,
+			ComponentType.SIMPLE_REFSET_MEMBER,
 			ComponentType.LANGREFSET);
 
 	protected List<TemplatedConcept.IterationIndicator> activeIndicators = List.of(

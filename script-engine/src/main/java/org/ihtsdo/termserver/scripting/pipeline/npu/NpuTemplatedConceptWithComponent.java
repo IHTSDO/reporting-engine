@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.pipeline.npu;
 
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 
 public class NpuTemplatedConceptWithComponent extends NpuTemplatedConcept {
 

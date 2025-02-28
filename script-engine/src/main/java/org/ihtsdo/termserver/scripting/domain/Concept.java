@@ -1130,6 +1130,9 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	//id	effectiveTime	active	moduleId	definitionStatusId
 	public String[] toRF2() throws TermServerScriptException {
+		if (active == null) {
+			LOGGER.debug("Check {} for null active flag", this);
+		}
 		return new String[] {conceptId, 
 				effectiveTime, 
 				(active?"1":"0"), 

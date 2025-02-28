@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline;
+package org.ihtsdo.termserver.scripting.pipeline.domain;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 

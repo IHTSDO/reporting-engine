@@ -1,7 +1,9 @@
-package org.ihtsdo.termserver.scripting.pipeline;
+package org.ihtsdo.termserver.scripting.pipeline.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConceptNull;
 
 public class TemplatedConceptNull extends TemplatedConcept {
 
@@ -29,7 +31,7 @@ public class TemplatedConceptNull extends TemplatedConcept {
 	}
 
 	@Override
-	protected String getSchemaId() {
+	public String getSchemaId() {
 		throw new IllegalArgumentException(UNEXPECTED);
 	}
 
