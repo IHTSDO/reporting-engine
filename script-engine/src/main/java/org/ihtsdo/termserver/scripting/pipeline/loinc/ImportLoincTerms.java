@@ -217,11 +217,11 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			if (tc instanceof LoincTemplatedConcept ltc) {
 				LoincTerm loincTerm = ltc.getLoincTerm();
 				switch (loincTerm.getOrderObs()) {
-					case "Order" -> createNewRefsetMember(ltc, ORD_REFSET);
-					case "Observation" -> createNewRefsetMember(ltc, OBS_REFSET);
+					case "Order" -> createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
+					case "Observation" -> createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
 					case "Both" -> {
-						createNewRefsetMember(ltc, ORD_REFSET);
-						createNewRefsetMember(ltc, OBS_REFSET);
+						createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
+						createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
 					}
 					default -> {
 						//Do nothing
@@ -231,7 +231,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 	}
 
-	private void createNewRefsetMember(LoincTemplatedConcept ltc, Concept refset) throws TermServerScriptException {
+	private void createNewRefsetMemberIfRequired(LoincTemplatedConcept ltc, Concept refset) throws TermServerScriptException {
+		//Does this concept already appear in this refset?
+		if (ltc.getConcept().appearsInRefset(refset)) {
+			LOGGER.info("{} already appears in {}", ltc.getConcept(), refset.getFsn());
+			return;
+		}
+
 		RefsetMember rm = new RefsetMember();
 		rm.setModuleId(externalContentModule);
 		rm.setReferencedComponentId(ltc.getConcept().getId());

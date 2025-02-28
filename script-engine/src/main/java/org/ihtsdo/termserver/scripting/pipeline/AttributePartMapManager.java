@@ -80,7 +80,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 		List<String> mappingNotes = new ArrayList<>();
 
 		try {
-			LOGGER.info("Loading Part / Attribute Map Base File: {}", attributeMapFile);
+			LOGGER.info("Loading Part Attribute Map File: {}", attributeMapFile);
 			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
 				String line;
 				while ((line = br.readLine()) != null) {
@@ -91,7 +91,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 				}
 			}
 
-			LOGGER.info("Populated map of {} LOINC parts to attributes", partToAttributeMap.size());
+			LOGGER.info("Populated map of {} parts to attributes", partToAttributeMap.size());
 			int tabIdx = cpm.getTab(TAB_SUMMARY);
 			cpm.report(tabIdx, "");
 			cpm.report(tabIdx, "successfullTypeReplacement",successfullTypeReplacement);

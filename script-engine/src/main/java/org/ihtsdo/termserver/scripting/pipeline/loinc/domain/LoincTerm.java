@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> {
@@ -464,6 +465,10 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 
 	public boolean isHighestUsage() {
 		return !getCommonTestRank().equals("0") && Integer.parseInt(getCommonTestRank()) <= 2000;
+	}
+
+	public int getPriority() {
+		return LoincUtils.getLoincTermPriority(this);
 	}
 
 	public Integer getCommonTestRankNormalized() {

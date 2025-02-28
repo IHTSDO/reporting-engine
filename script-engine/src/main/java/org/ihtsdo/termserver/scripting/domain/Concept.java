@@ -1875,4 +1875,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return getAlternateIdentifiers().stream()
 				.anyMatch(a -> a.getIdentifierSchemeId().equals(codeSystemSctId));
 	}
+
+	public boolean appearsInRefset(Concept refset) {
+		return getOtherRefsetMembers().stream()
+				.filter(RefsetMember::isActiveSafely)
+				.anyMatch(m -> m.getRefsetId().equals(refset.getId()));
+	}
 }

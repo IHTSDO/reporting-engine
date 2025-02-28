@@ -7,6 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
@@ -47,7 +48,8 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		LoincDetail loincDetail = (LoincDetail) part;
 		//Temporary rule.  If our target is Influenza, replace that with Influenza A, B & C
 		Concept influenzaAb = gl.getConcept("259856001 |Influenza antibody (substance)|");
 		if (rt.getTarget().equals(influenzaAb)) {

@@ -78,6 +78,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		try {
 			runStandAlone = false;
 			getGraphLoader().setExcludedModules(new HashSet<>());
+			getArchiveManager().setLoadOtherReferenceSets(true);
 			getArchiveManager().setRunIntegrityChecks(false);
 			getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);  //Needed for working out if we're deleteing or inactivating
 			init(args);
@@ -151,15 +152,18 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected abstract void importPartMap() throws TermServerScriptException;
 
+	protected List<String> getExternalConceptsToModel() throws TermServerScriptException {
+		return new ArrayList<>(externalConceptMap.keySet());
+	}
+
 	protected void doModeling() throws TermServerScriptException {
-		for (String externalIdentifier : getExternalConceptMap().keySet()) {
+		for (String externalIdentifier : getExternalConceptsToModel()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(externalIdentifier);
 			templatedConcept.populateAlternateIdentifier();
 			if (conceptSufficientlyModeled(getContentType(), externalIdentifier, templatedConcept)) {
 				recordSuccessfulModelling(templatedConcept);
 			}
 		}
-
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {

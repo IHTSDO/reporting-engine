@@ -6,6 +6,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 import java.util.List;
@@ -31,7 +32,8 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, LoincDetail loincDetail, RelationshipTemplate rt) throws TermServerScriptException {
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		LoincDetail loincDetail = (LoincDetail) part;
 		//Rule 2.d.ii An exception is made for LOINC DIVISORs when the property is one that would require a template
 		//with Relative to, e.g., AFr, CFr, MFr, NFr, SFr, VFr, MRto, Ratio, SRto, but there is no DIVISOR LP
 		//provided in the detail file, or the DIVISOR LP is LP443411-6 Specimen Volume. In this case the

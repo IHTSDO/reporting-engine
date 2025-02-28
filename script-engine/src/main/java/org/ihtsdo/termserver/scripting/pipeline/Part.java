@@ -6,11 +6,15 @@ public class Part implements Comparable<Part> {
 
 	public enum PartStatus {ACTIVE, DEPRECATED}
 
-	private String partNumber;	
-	private String partTypeName;
-	private String partName;
-	private PartStatus partStatus;
-	private String partCategory;
+	protected String partNumber;
+	protected String partTypeName;
+	protected String partName;
+	protected PartStatus partStatus;
+	protected String partCategory;
+
+	public Part() {
+
+	}
 	
 	public Part(String partNumber, String partTypeName, String partName) {
 		this.partNumber = partNumber;
