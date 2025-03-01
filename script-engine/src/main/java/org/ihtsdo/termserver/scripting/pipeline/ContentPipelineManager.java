@@ -177,8 +177,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("105059-0")) {
-			LOGGER.debug("Terming missing 'Microscopic Observation'");
+		if (externalIdentifier.equals("10355-6")) {
+			LOGGER.debug("Re-outputs alternate identifier");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -454,12 +454,9 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//Any component specific actions?
 			switch (existingComponent.getComponentType()) {
 				case CONCEPT:
-					tc.getConcept().getAlternateIdentifiers()
-							.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
-					//temporarily, remove any alternate identifiers that are for the wrong scheme id
-					tc.getExistingConcept().getAlternateIdentifiers().stream()
-							.filter(a -> !a.getIdentifierSchemeId().equals(tc.getSchemaId()))
-							.forEach(a -> a.setActive(false));
+					alignAlternateIdentifier(tc.getConcept(), tc.getExistingConcept());
+					//Copy any simple refset members from the existing concept to the new one eg  ORD/OBS refset
+					tc.getConcept().setOtherRefsetMembers(tc.getExistingConcept().getOtherRefsetMembers());
 					break;
 				case DESCRIPTION:
 					Description newDesc = (Description)newlyModelledComponent;
@@ -479,6 +476,18 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			//and prepare to output
 			conceptCreator.populateComponentId(tc.getExistingConcept(), newlyModelledComponent, externalContentModule);
 			newlyModelledComponent.setDirty();
+		}
+	}
+
+	private void alignAlternateIdentifier(Concept cNew, Concept cExisting) {
+		//If we have the same scheme and altId, then we just need to copy over the previous memberId
+		//and then we can mark the altId as clean and no need to output it again
+		for (AlternateIdentifier altId : cNew.getAlternateIdentifiers()) {
+			AlternateIdentifier existingAltId = cExisting.getAlternateIdentifierForScheme(altId.getIdentifierSchemeId());
+			if (existingAltId != null && existingAltId.getId().equals(altId.getId())) {
+				altId.setId(existingAltId.getId());
+				altId.setClean();
+			}
 		}
 	}
 
