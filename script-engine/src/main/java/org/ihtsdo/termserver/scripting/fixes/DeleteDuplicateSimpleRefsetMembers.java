@@ -8,7 +8,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class DeleteDuplicateSimpleRefsetMembers extends BatchFix implements ScriptConstants{
 
@@ -44,10 +43,10 @@ public class DeleteDuplicateSimpleRefsetMembers extends BatchFix implements Scri
 		RefsetMember publishedRM = getOtherRefsetMember(c, true);
 		RefsetMember newRM = getOtherRefsetMember(c, false);
 
-		if (!newRM.isActive()) {
+		if (!newRM.isActiveSafely()) {
 			throw new TermServerScriptException("Unexpected data condition: new refset member is not active: " + newRM);
 		}
-		if (publishedRM.isActive()) {
+		if (publishedRM.isActiveSafely()) {
 			throw new TermServerScriptException("Unexpected data condition: published refset member is active: " + publishedRM);
 		}
 
@@ -64,16 +63,17 @@ public class DeleteDuplicateSimpleRefsetMembers extends BatchFix implements Scri
 		List<RefsetMember> members = c.getOtherRefsetMembers().stream()
 				.filter(rm -> rm.getRefsetId().equals(refsetOfInterest))
 				.filter(rm -> (isReleased == rm.isReleased()))
-				.collect(Collectors.toList());
-		if (members.size() > 1 || members.size() == 0) {
+				.toList();
+		if (members.size() > 1 || members.isEmpty()) {
 			throw new TermServerScriptException("Unexpected number of refset members (" + members.size() + ") for " + c + " isReleased=" + isReleased);
 		}
 
 		return members.get(0);
 	}
 
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
+		Set<Concept> allAffected = new TreeSet<>();  //We want to process in the same order each time, in case we restart and skip some.
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
 			boolean alreadySeen = false;
@@ -88,7 +88,7 @@ public class DeleteDuplicateSimpleRefsetMembers extends BatchFix implements Scri
 				}
 			}
 		}
-		return new ArrayList<Component>(allAffected);
+		return new ArrayList<>(allAffected);
 	}
 	
 }
