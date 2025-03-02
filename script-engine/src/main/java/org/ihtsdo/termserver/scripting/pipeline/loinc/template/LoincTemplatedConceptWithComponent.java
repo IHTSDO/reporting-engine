@@ -38,6 +38,8 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 				if (detailPresent(COMPDENOM_PN)) {
 					addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
+					//We will use the text of COMPONENT_PN to populate the term in this case eg Albumin/Creatinine
+					slotTermMap.put(LOINC_PART_TYPE_COMPONENT, getLoincDetailOrThrow(COMPONENT_PN).getPartName());
 				}
 			}
 			processSubComponents(attributes, componentAttribType);
