@@ -101,7 +101,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				}
 			}
 			if (!dryRun) {
-				createOutputArchive(false, batch.size());
+				createOutputArchive(true, batch.size());
 				outputDirName = "output"; //Reset so we don't end up with _1_1_1
 				initialiseOutputDirectory();
 				initialiseFileHeaders();
