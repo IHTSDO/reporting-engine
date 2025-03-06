@@ -997,6 +997,7 @@ public class ArchiveManager implements ScriptConstants {
 		//Do we need to reset?
 		if (this.gl.getAllConcepts().size() > 100) {
 			this.gl.reset();
+			this.gl.resetConfiguration();
 			this.currentlyHeldInMemory = null;
 		}
 		
