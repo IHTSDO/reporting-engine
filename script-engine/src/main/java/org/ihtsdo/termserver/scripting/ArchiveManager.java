@@ -444,15 +444,15 @@ public class ArchiveManager implements ScriptConstants {
 				}
 				
 				if (populateHierarchyDepth && c.isActiveSafely() && c.getDepth() == NOT_SET) {
-					if (integrityFailureMessage.length() > 0) {
+					if (!integrityFailureMessage.isEmpty()) {
 						integrityFailureMessage.append(",\n");
 					}
-					integrityFailureMessage.append(c + " failed to populate depth");
-					String ancestorStr = c.getAncestors(NOT_SET).stream().map(a -> a.toString()).collect(Collectors.joining(","));
+					integrityFailureMessage.append(c).append(" failed to populate depth");
+					String ancestorStr = c.getAncestors(NOT_SET).stream().map(Concept::toString).collect(Collectors.joining(","));
 					LOGGER.warn("{} ancestors are : {}", c, ancestorStr);
 				}
 			}
-			if (integrityFailureMessage.length() > 0) {
+			if (!integrityFailureMessage.isEmpty()) {
 				throw new UnrecoverableTermServerScriptException(integrityFailureMessage.toString());
 			}
 			LOGGER.info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");

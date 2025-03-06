@@ -619,7 +619,7 @@ public class GraphLoader implements ScriptConstants {
 		
 		//Seeing a concept appear from somewhere that fails Verhoeff.  Blow up if this happens, we
 		//need to know what file it's in and deal with it as a P1
-		if (isRunIntegrityChecks()) {
+		if (!allowIllegalSCTIDs && isRunIntegrityChecks()) {
 			SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT, true);
 		} else {
 			String msg = SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT);
@@ -765,7 +765,7 @@ public class GraphLoader implements ScriptConstants {
 				}
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 				
-				if (isRunIntegrityChecks()) {
+				if (!allowIllegalSCTIDs && isRunIntegrityChecks()) {
 					SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.DESCRIPTION, true);
 				} else {
 					String msg = SnomedUtils.isValid(lineItems[IDX_ID], PartitionIdentifier.DESCRIPTION);

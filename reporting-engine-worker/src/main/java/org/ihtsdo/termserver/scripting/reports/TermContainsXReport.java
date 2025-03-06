@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -57,8 +58,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
-		params.put(ECL, "<< 363346000 |Malignant neoplastic disease (disorder)| MINUS (<< 372087000 |Primary malignant neoplasm (disorder)| OR << 269475001 |Malignant tumor of lymphoid, hemopoietic AND/OR related tissue (disorder)|)"); 
-		params.put(WORDS, "primary");
+		params.put(ECL, "*");
+		params.put(WORDS, "sausage");
 		params.put(WITHOUT_MODE, ANY_WITHOUT);
 		params.put(WHOLE_WORD, FALSE);
 		params.put(ATTRIBUTE_TYPE, null);
@@ -68,6 +69,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		descTypes.add("SYN");
 		params.put(TERM_TYPES, descTypes);
 		params.put(EXT_ONLY, FALSE);
+		GraphLoader.getGraphLoader().setAllowIllegalSCTIDs(true);
 		TermServerScript.run(TermContainsXReport.class, params, args);
 	}
 	
