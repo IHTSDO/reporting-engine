@@ -6,7 +6,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 
@@ -29,13 +28,12 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 	public static void main(String[] args) throws TermServerScriptException {
 		FixSelfGroupedCrossovers delta = new FixSelfGroupedCrossovers();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);
 			delta.loadProjectSnapshot();
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
@@ -44,7 +42,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		Concept component;
 		hierarchies.add(gl.getConcept("386053000 |Evaluation procedure|"));
 
@@ -73,7 +71,7 @@ public class FixSelfGroupedCrossovers extends DeltaGenerator implements ScriptCo
 				"No changes required",
 				"Repeated Attribute - Illegal",
 		};
-		postInit(tabNames, columnHeadings);
+		postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

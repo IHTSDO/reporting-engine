@@ -50,7 +50,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 			delta.runStandAlone = true;
 			delta.newIdsRequired = false;
 			delta.init(args);
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
 			SnomedUtils.createArchive(new File(delta.outputDirName));
@@ -61,7 +61,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"File, Severity, Action, Details, Details, , "
 		};
@@ -69,7 +69,7 @@ public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements Scr
 		String[] tabNames = new String[]{
 			"Splicing"
 		};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

@@ -37,7 +37,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			delta.runStandAlone = false;
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.startTimer();
 			delta.process();
 			if (!dryRun) {
@@ -49,7 +49,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		}
 	}
 	
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes",
 				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes",
@@ -58,7 +58,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 				"Changed",
 				"Unchanged",
 				"Special"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 		gl.setAllComponentsClean();
 	}
 

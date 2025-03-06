@@ -48,7 +48,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 			delta.newIdsRequired = false;
 			delta.init(args);
 			delta.loadProjectSnapshot(false);
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);
 			delta.createOutputArchive(false);
@@ -66,12 +66,12 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Action, ComponentType, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

@@ -63,7 +63,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 			app.newIdsRequired = false;
 			app.packageDir = "output" + File.separator + "Delta_" + now + File.separator;
 			app.init(args);
-			app.postInit();
+			app.postInit(GFOLDER_ADHOC_UPDATES);
 			app.validateScriptArguments();
 			app.process();
 			app.flushFiles(false);
@@ -73,7 +73,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		}
 	}
 
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"Id, Type",
 				"Id, Type, Revert Reason",
@@ -86,7 +86,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 				"Components Ignored"
 		};
 
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(GFOLDER_ADHOC_UPDATES, tabNames, columnHeadings);
 	}
 
 	private void validateScriptArguments() throws TermServerScriptException {

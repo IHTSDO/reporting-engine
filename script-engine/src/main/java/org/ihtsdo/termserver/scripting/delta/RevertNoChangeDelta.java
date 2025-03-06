@@ -13,16 +13,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * 
  * INFRA-5156
  * 
- * TODO Check refset components also.
- * TODO Create a report of the "dirty" components output
+ * TO DO Check refset components also.
+ * TO DO Create a report of the "dirty" components output
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class RevertNoChangeDelta extends DeltaGenerator {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(RevertNoChangeDelta.class);
 
 	public static void main(String[] args) throws TermServerScriptException {
 		RevertNoChangeDelta app = new RevertNoChangeDelta();
@@ -34,7 +28,7 @@ public class RevertNoChangeDelta extends DeltaGenerator {
 			app.init(args);
 			app.getGraphLoader().setDetectNoChangeDelta(true);
 			app.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
-			app.postInit();
+			app.postInit(GFOLDER_ADHOC_UPDATES);
 			app.reportRevertedComponents();
 			app.outputModifiedComponents(true);
 			app.flushFiles(false); //Need to flush files before zipping

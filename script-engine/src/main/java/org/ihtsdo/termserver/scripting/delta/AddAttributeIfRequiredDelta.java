@@ -6,7 +6,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,13 +15,12 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 	private Set<String> exclusions;
 	private RelationshipTemplate relTemplate;
 
-	private final int BatchSize = 271;
+	private static final int BATCH_SIZE = 271;
 	private int lastBatchSize = 0;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		AddAttributeIfRequiredDelta delta = new AddAttributeIfRequiredDelta();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			delta.runStandAlone = true;
 			delta.additionalReportColumns = "Action Detail";
 			delta.newIdsRequired = false;
@@ -42,7 +40,7 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 		relTemplate = new RelationshipTemplate(gl.getConcept("272741003 |Laterality (attribute)|"), gl.getConcept("182353008 |Side|"));
 
 		exclusions = new HashSet<>();
-		super.postInit();
+		super.postInit(GFOLDER_ADHOC_UPDATES);
 	}
 
 	@Override
@@ -53,7 +51,7 @@ public class AddAttributeIfRequiredDelta extends DeltaGenerator {
 				if (changesMade > 0) {
 					outputRF2(c);
 					conceptsInThisBatch++;
-					if (conceptsInThisBatch >= BatchSize) {
+					if (conceptsInThisBatch >= BATCH_SIZE) {
 						createOutputArchive(false, conceptsInThisBatch);
 						gl.setAllComponentsClean();
 						outputDirName = "output"; //Reset so we don't end up with _1_1_1

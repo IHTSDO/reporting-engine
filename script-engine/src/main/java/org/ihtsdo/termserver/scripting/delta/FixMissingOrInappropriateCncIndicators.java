@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
 	Where a concept is inactive, it's active descriptions should have the inactivation indicator 
@@ -23,7 +22,6 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 	public static void main(String[] args) throws TermServerScriptException {
 		FixMissingOrInappropriateCncIndicators delta = new FixMissingOrInappropriateCncIndicators();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false;
 			delta.init(args);
 
@@ -32,7 +30,7 @@ public class FixMissingOrInappropriateCncIndicators extends DeltaGenerator imple
 
 			delta.loadProjectSnapshot();
 			delta.additionalReportColumns = "Description ET, Details";
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive(false);
 		} finally {

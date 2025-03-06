@@ -1,14 +1,11 @@
 package org.ihtsdo.termserver.scripting.delta;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.io.Files;
 
@@ -29,26 +26,13 @@ import com.google.common.io.Files;
 		and af.effectiveTime = (select max(`effectivetime`) from associationrefset_f af2 where ad.id = af2.id and effectiveTime < 20190131)
 		and ( not ad.refsetid = af.refsetid OR not ad.referencedComponentid = af.referencedComponentid OR not ad.targetComponentid = af.targetComponentid )
 */
-
 public class FixReusedAssociations extends DeltaGenerator implements ScriptConstants{
 
 	enum IDX { ORIG_ID, NEW_ACTIVE, NEW_REFSETID, NEW_SCTID, NEW_TARGET, ORIG_EFFECTIVE_TIME,
 		ORIG_ACTIVE, ORIG_REFSETID, ORIG_TARGET }
 	
 	public static void main(String[] args) throws TermServerScriptException {
-		FixReusedAssociations delta = new FixReusedAssociations();
-		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
-			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
-			delta.init(args);
-			delta.getArchiveManager().setAllowStaleData(true);
-			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
-			delta.process();
-			delta.flushFiles(false); //Need to flush files before zipping
-			SnomedUtils.createArchive(new File(delta.outputDirName));
-		} finally {
-			delta.finish();
-		}
+		new FixReusedAssociations().standardExecution(args);
 	}
 
 	@Override

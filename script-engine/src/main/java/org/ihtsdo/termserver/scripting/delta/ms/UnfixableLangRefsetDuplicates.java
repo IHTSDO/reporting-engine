@@ -38,14 +38,14 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Description, Issue, IntActive, IntEffective, IntRM, ExtActive, ExtEffective, ExtRM, , ",
 				"Id, FSN, SemTag, Description, Issue, IntActive, IntEffective, IntRM, ExtActive, ExtEffective, ExtRM, ,"};
 		String[] tabNames = new String[] {	
 				"UnfixableLangRefsetDuplicates",
 				"Historic Duplications"};
-		super.postInit(GFOLDER_RELEASE_QA, tabNames, columnHeadings, false);
+		super.postInit(googleFolder, tabNames, columnHeadings, false);
 	}
 
 	@Override

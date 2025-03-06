@@ -50,7 +50,7 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
             app.newIdsRequired = false;
             app.packageDir = "output" + File.separator + "Delta_" + now + File.separator;
             app.init(args);
-            app.postInit();
+            app.postInit(GFOLDER_ADHOC_UPDATES);
             app.validateScriptArguments();
             app.process();
             app.flushFiles(false);
@@ -61,7 +61,7 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
     }
 
     @Override
-    public void postInit() throws TermServerScriptException {
+    public void postInit(String googleFolder) throws TermServerScriptException {
         String[] columnHeadings = new String[]{
                 "Item, Count, Note",
                 "Range Id, Range Content Type, Attribute Id, Attribute Content Type, Solution",
@@ -74,7 +74,7 @@ public class FindMissingAttributeDomainRangePairs extends DeltaGenerator {
                 "Attributes without Ranges"
         };
 
-        super.postInit(tabNames, columnHeadings);
+        super.postInit(googleFolder, tabNames, columnHeadings);
     }
 
     @Override

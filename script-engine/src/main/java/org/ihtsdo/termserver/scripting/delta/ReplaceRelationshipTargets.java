@@ -18,7 +18,7 @@ public class ReplaceRelationshipTargets extends DeltaGenerator implements Script
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
 			delta.init(args);
 			delta.loadProjectSnapshot();
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive();
 		} finally {
@@ -26,11 +26,11 @@ public class ReplaceRelationshipTargets extends DeltaGenerator implements Script
 		}
 	}
 
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		restrictToType = gl.getConcept("246501002 |Technique|");
 		find = gl.getConcept("10061010000109 |Screening technique (qualifier value)|");
 		replace = gl.getConcept("1287497009 |Screening technique (qualifier value)|");
-		super.postInit();
+		super.postInit(googleFolder);
 	}
 
 	@Override

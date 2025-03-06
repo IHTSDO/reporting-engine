@@ -41,7 +41,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 			app.additionalReportColumns="ComponentType, ComponentId, Info, Data";
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
-			app.postInit();
+			app.postInit(GFOLDER_ADHOC_UPDATES);
 			app.filterNoChangeDelta();
 			app.flushFiles(false); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(app.outputDirName));

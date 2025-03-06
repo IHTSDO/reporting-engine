@@ -34,7 +34,7 @@ public class ReassertCoreModuleComponentInExtension extends DeltaGenerator {
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			GraphLoader.getGraphLoader().setRecordPreviousState(true);
 			delta.loadProjectSnapshot(false);
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
 			if (!dryRun) {
@@ -52,18 +52,18 @@ public class ReassertCoreModuleComponentInExtension extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, ModuleId, Component Reasserted, Problem State"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
 		
-		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_MS, tabNames, columnHeadings);
 	}
 
 	@Override
 	public void process() throws TermServerScriptException {
-		for (Component c : gl.getAllComponents()) {
+		for (Component c : identifyComponentsToProcess()) {
 			Concept owningConcept = gl.getComponentOwner(c.getId());
 			String problemState = c.toString();
 			if (c.hasPreviousStateDataRecorded()) {
@@ -78,5 +78,13 @@ public class ReassertCoreModuleComponentInExtension extends DeltaGenerator {
 			}
 		}
 	}
+
+	private List<Component> identifyComponentsToProcess() {
+		return gl.getAllComponents().stream()
+				.filter(c -> c.getModuleId().equals(SCTID_CORE_MODULE)
+						&& StringUtils.isEmpty(c.getEffectiveTime()))
+				.toList();
+	}
+
 
 }

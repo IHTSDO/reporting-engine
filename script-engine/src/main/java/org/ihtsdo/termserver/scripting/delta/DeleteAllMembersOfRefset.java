@@ -25,7 +25,7 @@ public class DeleteAllMembersOfRefset extends DeltaGenerator implements ScriptCo
 			fix.getArchiveManager().setLoadOtherReferenceSets(true);
 			fix.init(args);
 			fix.additionalReportColumns = "Active, Details";
-			fix.postInit();
+			fix.postInit(GFOLDER_ADHOC_UPDATES);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.deleteAllRefsetMembers();
 		} finally {

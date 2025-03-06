@@ -257,15 +257,14 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 
-	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
-		super.postInit(tabNames, columnHeadings, false);
+	public void postInit(String googleFolder, String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
+		super.postInit(googleFolder, tabNames, columnHeadings, false);
 		if (!dryRun) {
 			initialiseFileHeaders();
 		}
 	}
 
-	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"SCTID, FSN, SemTag, Severity, Action, Details," + additionalReportColumns
 		};
@@ -273,7 +272,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		String[] tabNames = new String[]{
 			"Delta Records Created"
 		};
-		postInit(tabNames, columnHeadings);
+		postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override
@@ -629,7 +628,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			this.newIdsRequired = newIdsRequired;
 			init(args);
 			loadProjectSnapshot(false);
-			postInit();
+			postInit(GFOLDER_ADHOC_UPDATES);
 			process();
 			getRF2Manager().flushFiles(true);  //Flush and Close
 			if (!dryRun) {

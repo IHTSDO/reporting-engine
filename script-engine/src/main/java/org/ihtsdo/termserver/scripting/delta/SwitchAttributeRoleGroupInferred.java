@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.delta;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 
@@ -19,7 +18,6 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException {
 		SwitchAttributeRoleGroupInferred delta = new SwitchAttributeRoleGroupInferred();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			delta.runStandAlone = true;
 			delta.additionalReportColumns = "Action Detail";
 			delta.newIdsRequired = false;
@@ -36,7 +34,7 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 	private void postLoadInit() throws TermServerScriptException {
 		relTemplate = new RelationshipTemplate(gl.getConcept("272741003 |Laterality (attribute)|"), gl.getConcept("182353008 |Side|"));
 		exclusions = new HashSet<>();
-		super.postInit();
+		super.postInit(GFOLDER_ADHOC_UPDATES);
 	}
 
 	@Override

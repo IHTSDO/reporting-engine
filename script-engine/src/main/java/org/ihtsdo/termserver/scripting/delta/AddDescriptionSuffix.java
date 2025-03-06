@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConstants{
 
@@ -17,10 +16,9 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 	public static void main(String[] args) throws TermServerScriptException {
 		AddDescriptionSuffix delta = new AddDescriptionSuffix();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive(false, delta.lastBatchSize);
 		} finally {
@@ -29,7 +27,7 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Info, detail, , ",
 				"SCTID, FSN, SemTag, Reason, detail, detail,"
@@ -39,7 +37,7 @@ public class AddDescriptionSuffix extends DeltaGenerator implements ScriptConsta
 				"Records Processed",
 				"Records Skipped"
 		};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 		startingPoint = gl.getConcept("1222584008 |American Joint Committee on Cancer allowable value (qualifier value)| ");
 	}
 

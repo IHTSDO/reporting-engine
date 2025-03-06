@@ -24,7 +24,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"Concept Id, Concept FSN, Member Id, Active, Details",
 				"Concept Id, Concept FSN, Relationship Id, Active, Details",
@@ -36,7 +36,7 @@ public class ModuleDifferentFromSourceConcept extends DeltaGenerator {
 				"Inferred",
 				"Summary"
 		};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(GFOLDER_ADHOC_UPDATES, tabNames, columnHeadings);
 	}
 
 	@Override
