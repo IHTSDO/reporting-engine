@@ -117,7 +117,7 @@ public class GraphLoader implements ScriptConstants {
 		componentOwnerMap = null;
 		fsnMap = null;
 		orphanetConceptIds = null;
-		recordPreviousState = false;
+		setRecordPreviousState(false);
 		descendantsCache.reset();
 		statedDescendantsCache.reset();
 		ancestorsCache.reset();
@@ -1281,6 +1281,13 @@ public class GraphLoader implements ScriptConstants {
 			populateAllComponents();
 		}
 		return allComponents.get(id);
+	}
+
+	public Collection<Component> getAllComponents() {
+		if (allComponents == null) {
+			populateAllComponents();
+		}
+		return allComponents.values();
 	}
 	
 	public final Map<String,Component> getComponentMap() {
