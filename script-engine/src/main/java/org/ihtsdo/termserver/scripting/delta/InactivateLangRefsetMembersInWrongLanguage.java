@@ -19,7 +19,7 @@ public class InactivateLangRefsetMembersInWrongLanguage extends DeltaGenerator i
 			TermServerClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 			delta.init(args);
 			delta.loadProjectSnapshot(false);
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.startTimer();
 			delta.process();
 			delta.createOutputArchive();

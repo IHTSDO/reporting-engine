@@ -9,7 +9,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 import org.slf4j.Logger;
@@ -24,12 +23,11 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 	public static void main(String[] args) throws TermServerScriptException {
 		InactivateConceptsDriven delta = new InactivateConceptsDriven();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.targetModuleId = "57101000202106";  //NO
 			delta.newIdsRequired = false; 
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.flushFiles(false); //Need to flush files before zipping
 			if (!dryRun) {

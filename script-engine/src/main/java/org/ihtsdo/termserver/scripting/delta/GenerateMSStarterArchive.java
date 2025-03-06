@@ -21,7 +21,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 		try {
 			delta.config();
 			delta.init(args);
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			List<Concept> newConcepts = delta.generateStarter();
 			delta.outputRF2(newConcepts);
 			delta.flushFiles(false); //Need to flush files before zipping

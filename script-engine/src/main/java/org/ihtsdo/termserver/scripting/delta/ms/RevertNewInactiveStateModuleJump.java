@@ -37,12 +37,12 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Action, ComponentType, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
-		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_MS, tabNames, columnHeadings);
 	}
 
 	@Override

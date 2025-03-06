@@ -29,7 +29,7 @@ public class ReassertPublishedState extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Component Reasserted"};
 		String[] tabNames = new String[] {	

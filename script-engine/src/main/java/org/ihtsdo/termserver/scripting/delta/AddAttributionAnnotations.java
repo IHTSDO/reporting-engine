@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,12 +27,11 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 	public static void main(String[] args) throws TermServerScriptException {
 		AddAttributionAnnotations delta = new AddAttributionAnnotations();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.inputFileHasHeaderRow = true;
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.loadConfirmationFile();
 			delta.annotationType = delta.gl.getConcept("1295448001"); // |Attribution (attribute)|
 			delta.process();

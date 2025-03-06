@@ -6,7 +6,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 
@@ -25,14 +24,13 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	public static void main(String[] args) throws TermServerScriptException {
 		GroupSelfGroupedAttributes delta = new GroupSelfGroupedAttributes();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.sourceModuleIds = Set.of("1326031000000103","83821000000107","999000011000000103","999000011000001104","999000021000000109","999000021000001108","999000031000000106","999000041000000102");
 			delta.init(args);
 			delta.loadProjectSnapshot();
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive(false, delta.conceptsInThisBatch);
 		} finally {
@@ -41,7 +39,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		eclSelections.add("<< " + OBSERVABLE_ENTITY.getConceptId());
 
 		skipAttributeTypes.add(gl.getConcept("363702006 |Has focus (attribute)|"));
@@ -76,7 +74,7 @@ public class GroupSelfGroupedAttributes extends DeltaGenerator implements Script
 				"Repeated Attribute - Illegal",
 				"Repeated Attribute - Singles"
 		};
-		postInit(tabNames, columnHeadings);
+		postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

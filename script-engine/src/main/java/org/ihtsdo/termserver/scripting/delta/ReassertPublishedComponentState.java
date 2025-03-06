@@ -31,7 +31,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			delta.getArchiveManager().setPopulateHierarchyDepth(false);
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.loadProjectSnapshot(false);
-			delta.postInit();
+			delta.postInit(GFOLDER_MS);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
 			if (!dryRun) {
@@ -49,13 +49,13 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, ModuleId, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
 		
-		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
+		super.postInit(googleFolder, tabNames, columnHeadings, false);
 	}
 
 	@Override

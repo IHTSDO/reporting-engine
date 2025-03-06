@@ -38,7 +38,6 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 	}
 
-
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		if (unpromotedChangesOnly) {
 			unpromotedChangesHelper = new UnpromotedChangesHelper(this);

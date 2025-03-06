@@ -10,7 +10,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +45,10 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	public static void main(String[] args) throws TermServerScriptException {
 		UpdateHistoricalAssociationsDriven delta = new UpdateHistoricalAssociationsDriven();
 		try {
-			ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist
-			delta.newIdsRequired = false; 
+			delta.newIdsRequired = false;
 			delta.init(args);
 			delta.loadProjectSnapshot(false); 
-			delta.postInit();
+			delta.postInit(GFOLDER_TECHNICAL_SPECIALIST);
 			delta.process();
 		} finally {
 			delta.finish();
@@ -58,7 +56,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, Action, Details, Details, Cathy Notes, , ",
 				"Issue, Detail, details, details, ,",
@@ -76,7 +74,7 @@ public class UpdateHistoricalAssociationsDriven extends DeltaGenerator implement
 				"Inactivated without indicator",*/
 				"Final State"
 		};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

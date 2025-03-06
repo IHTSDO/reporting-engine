@@ -5,7 +5,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 
@@ -21,7 +20,6 @@ public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException {
 		SwitchAttributeRoleGroupStated delta = new SwitchAttributeRoleGroupStated();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
 			delta.runStandAlone = true;
 			delta.additionalReportColumns = "Action Detail";
 			delta.newIdsRequired = false;
@@ -41,7 +39,7 @@ public class SwitchAttributeRoleGroupStated extends DeltaGenerator {
 		relTemplate = new RelationshipTemplate(gl.getConcept("272741003 |Laterality (attribute)|"), gl.getConcept("182353008 |Side|"));
 
 		exclusions = new HashSet<>();
-		super.postInit();
+		super.postInit(GFOLDER_ADHOC_UPDATES);
 	}
 
 	@Override

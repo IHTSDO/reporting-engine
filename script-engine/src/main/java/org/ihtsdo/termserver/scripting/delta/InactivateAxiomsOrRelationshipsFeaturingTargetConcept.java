@@ -18,7 +18,7 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 			delta.init(args);
 			delta.getArchiveManager().setLoadOtherReferenceSets(true);
 			delta.loadProjectSnapshot();
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive();
 		} finally {
@@ -26,10 +26,10 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 		}
 	}
 
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		eclSubset = "<< 763087004 |Medicinal product categorized by therapeutic role (product)| ";
 		restrictToType = gl.getConcept("766939001 |Plays role (attribute)| ");
-		super.postInit();
+		super.postInit(googleFolder);
 	}
 
 	@Override

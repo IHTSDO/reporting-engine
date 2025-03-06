@@ -43,7 +43,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 			delta.newIdsRequired = false; 
 			delta.init(args);
 			//delta.loadProjectSnapshot(false); //Don't need anything in memory for this
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
 			SnomedUtils.createArchive(new File(delta.outputDirName));
@@ -54,7 +54,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"File, Severity, Action, Details, Details, , "
 		};
@@ -62,7 +62,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		String[] tabNames = new String[]{
 			"Splicing"
 		};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

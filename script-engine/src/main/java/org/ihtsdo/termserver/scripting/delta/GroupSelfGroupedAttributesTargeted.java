@@ -9,7 +9,6 @@ import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 
@@ -32,13 +31,12 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 	public static void main(String[] args) throws TermServerScriptException {
 		GroupSelfGroupedAttributesTargeted delta = new GroupSelfGroupedAttributesTargeted();
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"); //Ad-Hoc Batch Updates
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			delta.getArchiveManager().setRunIntegrityChecks(false);
 			delta.newIdsRequired = false; // We'll only be modifying existing components
 			delta.init(args);
 			delta.loadProjectSnapshot();
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.createOutputArchive(false, delta.conceptsInThisBatch);
 		} finally {
@@ -47,7 +45,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		eclSelection = " << 386053000 |Evaluation procedure| : 116686009 |Has specimen (attribute)| = *";
 
 		targetSingleGroupAttributeType = gl.getConcept("116686009 |Has specimen (attribute)|");
@@ -77,7 +75,7 @@ public class GroupSelfGroupedAttributesTargeted extends DeltaGenerator implement
 				"No viable changes",
 				"Repeated Attribute - Illegal",
 		};
-		super.postInit(tabNames, columnHeadings);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

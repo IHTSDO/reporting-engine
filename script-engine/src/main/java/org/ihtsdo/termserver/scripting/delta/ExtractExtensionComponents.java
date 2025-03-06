@@ -91,7 +91,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't include the project export in our timings
 			delta.additionalReportColumns = "Defn Status, Stated Parent(s), Additional Detail, , ";
-			delta.postInit();
+			delta.postInit(GFOLDER_EXTRACT_AND_PROMOTE);
 			delta.startTimer();
 			delta.preProcessFile();
 			//delta.selectConceptsViaReview();
@@ -127,11 +127,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		knownReplacements.put(gl.getConcept("261231004|Local flap|"), gl.getConcept("256683004|Flap|"));
 		knownReplacements.put(gl.getConcept("367651003 |Malignant neoplasm of p, s, or u origin|"), gl.getConcept("1240414004 |Malignant neoplasm|"));
 		initialiseSummaryInformation("Unexpected dependencies included");
-		super.postInit();
+		super.postInit(googleFolder);
 	}
 	
 	private void selectConceptsViaReview() throws TermServerScriptException {

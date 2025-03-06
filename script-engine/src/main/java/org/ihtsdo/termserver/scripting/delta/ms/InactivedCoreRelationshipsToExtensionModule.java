@@ -40,7 +40,7 @@ public class InactivedCoreRelationshipsToExtensionModule extends DeltaGenerator 
 			delta.additionalReportColumns = "FSN,SemTag,Severity,Action,Detail,Rel Id,";
 			delta.init(args);
 			delta.loadProjectSnapshot(false);
-			delta.postInit();
+			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
 			SnomedUtils.createArchive(new File(delta.outputDirName));
