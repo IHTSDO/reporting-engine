@@ -109,15 +109,19 @@ public class GraphLoader implements ScriptConstants {
 		return concepts.values();
 	}
 	
+	public void resetConfiguration() {
+		LOGGER.info("Resetting Graph Loader - configuration reset");
+		setRecordPreviousState(false);
+	}
+
 	public void reset() {
-		LOGGER.info("Resetting Graph Loader");
+		LOGGER.info("Resetting Graph Loader - memory wipe");
 		concepts = new HashMap<>();
 		descriptions = new HashMap<>();
 		allComponents = null;
 		componentOwnerMap = null;
 		fsnMap = null;
 		orphanetConceptIds = null;
-		setRecordPreviousState(false);
 		descendantsCache.reset();
 		statedDescendantsCache.reset();
 		ancestorsCache.reset();
@@ -1334,10 +1338,10 @@ public class GraphLoader implements ScriptConstants {
 				}
 				//Have we historically swapped ID from stated to inferred
 				if (allComponents.containsKey(r.getRelationshipId())) {
-					if (r.isActive()) {
+					if (r.isActiveSafely()) {
 						Script.print("\nAll Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
 						allComponents.put(r.getRelationshipId(), r);
-					} else if (allComponents.get(r.getRelationshipId()).isActive()) {
+					} else if (allComponents.get(r.getRelationshipId()).isActiveSafely()) {
 						Script.print("\nIgnoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
 					} else {
 						Script.print("\nTwo inactive components share the same id of " + r.getId() + ": " + r + " and " + allComponents.get(r.getId()));
@@ -1368,6 +1372,7 @@ public class GraphLoader implements ScriptConstants {
 				componentOwnerMap.put(ae, c);
 			}
 		}
+		Script.print("\n");
 		LOGGER.info("Component owner map complete with {} entries.", componentOwnerMap.size());
 	}
 
@@ -1734,6 +1739,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 
 	public void setRecordPreviousState(boolean recordPreviousState) {
+		LOGGER.info("Setting record previous state to: {}", recordPreviousState);
 		this.recordPreviousState = recordPreviousState;
 	}
 
