@@ -14,8 +14,6 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
-import java.util.stream.Collectors;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,42 +22,41 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ComponentTraceability.class);
 
-	public static String COMPONENT_IDS = "Component Ids";
+	public static final String COMPONENT_IDS = "Component Ids";
 	TraceabilityService traceabilityService;
 	List<String> componentIds;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(COMPONENT_IDS,
-				"663114025,663113020,734078021,776663023");
+				"0cee5e88-0419-4167-872d-0979ac747682, 364418b8-3a7b-4195-945a-4767bb0fd3aa, 425ad645-61ec-4573-889c-4912632f804a");
 		TermServerScript.run(ComponentTraceability.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
-		
+
 		if (!StringUtils.isEmpty(run.getParamValue(COMPONENT_IDS))) {
 			componentIds = Arrays.stream(run.getMandatoryParamValue(COMPONENT_IDS).split(",",-1))
-					.map(s -> s.trim())
-					.collect(Collectors.toList());
+					.map(String::trim)
+					.toList();
 		}
 		
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] tabNames = new String[] {
 				"Component Traceability",
 		};
 		String[] columnHeadings = new String[] {
-				"Id, Type, Action, Created Date, Promoted Date, Task, Author, Highest Promoted Branch, Concept, Component",
+				"Id, Type, Action, Is Superseded, Created Date, Promoted Date, Task, Author, Highest Promoted Branch, Concept, Component",
 		};
 		postInit(tabNames, columnHeadings);
 		
 		traceabilityService = new MultiDetailTraceabilityService(jobRun, this);
-		//Do not set a search path because we want to know about all activity, not just
-		//that which has been promoted.
-		//traceabilityService.setBranchPath(project.getKey());
 	}
 	
 	@Override
@@ -76,7 +73,8 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		if (componentIds == null || componentIds.isEmpty()) {
 			throw new TermServerScriptException("Please specify component ids for which traceability should be reported.");

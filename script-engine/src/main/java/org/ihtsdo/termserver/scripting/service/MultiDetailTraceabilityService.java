@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.service;
 
 import java.util.List;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -24,7 +25,6 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 	private String onBranch = null;
 	
 	public MultiDetailTraceabilityService(JobRun jobRun, TermServerScript ts) {
-		//this.client = new TraceabilityServiceClient("http://localhost:8085/", jobRun.getAuthToken());
 		this.client = new TraceabilityServiceClient(jobRun.getTerminologyServerUrl(), jobRun.getAuthToken());
 		this.ts = ts;
 	}
@@ -44,7 +44,8 @@ public class MultiDetailTraceabilityService implements TraceabilityService {
 						if (compChange.getComponentId().equals(c.getId())) {
 							ts.report(tabIdx, c.getId(),
 									c.getComponentType(),
-									compChange.getChangeType(), 
+									compChange.getChangeType(),
+									BooleanUtils.toString(compChange.superseded(), "Y", "N", "N"),
 									activity.getCommitDate(), 
 									activity.getPromotionDate(), 
 									activity.getBranch(), 

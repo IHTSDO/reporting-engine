@@ -391,7 +391,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			nextComponent:
 			for (Component c : SnomedUtils.getAllComponents(concept)) {
 				//Did it change in the current delta?  Don't bother checking if not
-				if (c.getPreviousState() == null) {
+				if (!c.hasPreviousStateDataRecorded()) {
 					continue;
 				}
 				
