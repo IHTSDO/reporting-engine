@@ -328,7 +328,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (jobRun != null && !jobRun.getAuthToken().isEmpty()) {
 			authenticatedCookie = jobRun.getAuthToken();
 		} else if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
-			print ("Please enter your authenticated cookie for connection to " + url + " : ");
+			print("Please enter your authenticated cookie for connection to " + url + " : ");
 			authenticatedCookie = STDIN.nextLine().trim();
 		}
 		
@@ -366,7 +366,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		recoverCommonParametersFromJobRun();
 		init();
 		recoverProjectDetails();
-		LOGGER.info("Init Complete. Project Key determined: " + project.getKey() + " on " + project.getBranchPath());
+		LOGGER.info("Init Complete. Project Key determined: {} on {}", project.getKey(), project.getBranchPath());
 	}
 
 	private void recoverProjectDetails() throws TermServerScriptException {
