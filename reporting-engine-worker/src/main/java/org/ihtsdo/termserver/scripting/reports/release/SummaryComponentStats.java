@@ -4,7 +4,6 @@ import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
@@ -168,7 +167,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
 					.map(String::trim)
-					.collect(Collectors.toList());
+					.toList();
 		}
 
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
@@ -277,7 +276,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			analyzeComponents(isNewConcept, (datum==null?null:datum.getHistAssocIds()), (datum==null?null:datum.getHistAssocIdsInact()), summaryData[TAB_HIST], c.getAssociationEntries(ActiveState.BOTH, true));
 			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
 					.flatMap(d -> d.getLangRefsetEntries().stream())
-					.collect(Collectors.toList());
+					.toList();
 			analyzeComponents(isNewConcept, (datum==null?null:datum.getLangRefsetIds()), (datum==null?null:datum.getLangRefsetIdsInact()), summaryData[TAB_LANG], langRefsetEntries);
 		}
 	}
@@ -397,10 +396,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void analyzeDescriptions(Concept c, HistoricData datum, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
 		for (Description d : c.getDescriptions()) {
 			//If the description is not in the target module, skip it.
-			//TODO We can count promoted descriptions also
-			if (!matchesModuleFilter(d.getModuleId())) {
-				continue;
-			}
+			//That said, for a promoted description, we might still see dependent refset members
+			//in the extension module, so check in any event.
 			analyzeDescriptionHistoricalAssociations(d, datum, counts);
 			analyzeDescriptionInactivationIndicators(d, datum, inactCounts, cncCounts);
 		} 
@@ -472,7 +469,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	}
 
 	private void countInactiveDescriptionInactivationIndicators(InactivationIndicatorEntry i, HistoricData datum, int[] counts) throws TermServerScriptException {
-		if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
+		if (datum == null
+				|| !(datum.getDescInactivationIds().contains(i.getId())
+				|| datum.getDescInactivationIdsInact().contains(i.getId()))) {
 			// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 			incrementCounts(i, counts, IDX_NEW_INACTIVE);
 			debugToFile(i, "New Inactive");
@@ -480,7 +479,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// If previously active and now inactive, then it's inactivated
 			incrementCounts(i, counts, IDX_INACTIVATED);
 			debugToFile(i, "Inactivated");
-		} else if (datum.getDescInactivationIdsInact().contains(i.getId()) && isChangedSinceLastRelease(i)) {
+		} else if (datum.getDescInactivationIdsInact().contains(i.getId())
+				&& isChangedSinceLastRelease(i)) {
 			// Was and is inactive, yet it has changed since last release, then it's changed inactive
 			incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
 			debugToFile(i, "Changed Inactive");
@@ -489,7 +489,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void countActiveDescriptionInactivationIndicators(InactivationIndicatorEntry i, HistoricData datum, int[] counts) throws TermServerScriptException {
 		incrementCounts(i, counts, IDX_TOTAL_ACTIVE);
-		if (datum == null || !(datum.getDescInactivationIds().contains(i.getId()) || datum.getDescInactivationIdsInact().contains(i.getId()))) {
+		if (datum == null
+				|| !(datum.getDescInactivationIds().contains(i.getId())
+				|| datum.getDescInactivationIdsInact().contains(i.getId()))) {
 			// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 			incrementCounts(i, counts, IDX_NEW);
 			debugToFile(i, "New");
@@ -600,20 +602,20 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
 		// Only debug if we enable it (for testing really).
-		if (!DEBUG_TO_FILE || !typesToDebugToFile.contains(c.getComponentType())) {
+		if (!DEBUG_TO_FILE
+				|| !typesToDebugToFile.contains(c.getComponentType())) {
 			return;
 		}
 		
-		if (refsetsToDebugToFile.size() > 0 && c instanceof RefsetMember) {
-			RefsetMember rm = (RefsetMember)c;
-			if (!refsetsToDebugToFile.contains(rm.getRefsetId())) {
-				return;
-			}
+		if (!refsetsToDebugToFile.isEmpty()
+				&& c instanceof RefsetMember rm
+				&& !refsetsToDebugToFile.contains(rm.getRefsetId())) {
+			return;
 		}
 		
 		try {
 			//If this is our first write, do not append.
-			Boolean append = true;
+			boolean append = true;
 			if (debugFile == null) {
 				debugFile = new File("summary_component_debug.txt");
 				append = false;
@@ -660,6 +662,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT:
 				counts[IDX_INACT_NOT_EQUIVALENT]++;
 				break;
+			default : throw new IllegalArgumentException("Unexpected inactivation reason " + reasonId);
 		}
 	}
 

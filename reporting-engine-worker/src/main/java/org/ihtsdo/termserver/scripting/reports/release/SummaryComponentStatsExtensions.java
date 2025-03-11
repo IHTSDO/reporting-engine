@@ -22,15 +22,15 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	public static void main(String[] args) throws TermServerScriptException{
 		Map<String, String> params = new HashMap<>();
 
-		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20220401T000000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250315T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20241201T120000Z.zip");
 
-		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceNZ_PRODUCTION_NZ1000210_20211001T121212Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250215T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20241001T120000Z.zip");
 
-		params.put(MODULES, "21000210109");  //NZ Module
-		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");
+		params.put(MODULES, "57091000202101,51000202101,57101000202106");  //NZ Module
+		//REPORT_OUTPUT_TYPES, "S3"
+		//REPORT_FORMAT_TYPE, "JSON"
 		
 		TermServerScript.run(SummaryComponentStatsExtensions.class, args, params);
 	}
