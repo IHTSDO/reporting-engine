@@ -11,15 +11,14 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * RP-403 Report concepts that have laterality in their attributes but not in their
  * FSN or visa versa
  * CDI-52 Update report to successfully run against projects with concrete values.
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MismatchedLaterality.class);
@@ -50,7 +49,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Laterality Mismatch")
 				.withDescription("This report lists concepts that have laterality indicated in their attributes but not in their " + 
-						"FSN or visa versa")
+						"FSN or visa versa.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT).withTag(MS)
@@ -65,16 +64,18 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				"Lateralized Model No FSN", 
 				"Suspect Lateralization",
 				"Bilateralized FSN No Model",
-				"Bilateralized Model No FSN"};
+				"Bilateralized Model No FSN",
+				"Processing Notes"};
 		String[] columnHeadings = new String[] {
 			"Concept, FSN, SemTag, Missing Concept",
 			COMMON_HEADERS,
 			COMMON_HEADERS,
 			COMMON_HEADERS,
 			COMMON_HEADERS,
-			COMMON_HEADERS
+			COMMON_HEADERS,
+			"Concept, FSN, SemTag, Comment",
 		};
-		super.postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_GENERAL_QA, tabNames, columnHeadings, false);
 		hierarchies.add("< 71388002 |Procedure (procedure)|");
 		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
 		hierarchies.add("< 123037004 |Body structure (body structure)|");
@@ -91,6 +92,9 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 	public void runJob() throws TermServerScriptException {
 		for (String hierarchy : hierarchies) {
 			for (Concept c : findConcepts(hierarchy)) {
+				if (c.getId().equals("449537006")) {
+					LOGGER.debug("Here");
+				}
 				if (!inScope(c)) {
 					continue;
 				}
@@ -131,7 +135,11 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		String targetFSN = origFSN.replace(" " + current + " ", " " + siblingLaterality + " ").trim();
 		Concept sibling = fsnMap.get(targetFSN);
 		if (sibling == null) {
-			report(PRIMARY_REPORT, c, targetFSN);
+			if (hasUnlaterizedLeftOrRightBodyStructure(c)) {
+				report(SEPTENARY_REPORT, c, "Suggests need for counterpart \"" + targetFSN + "\" but relates to an unlateralized body structure");
+			} else {
+				report(PRIMARY_REPORT, c, targetFSN);
+			}
 		}
 	}
 
@@ -146,16 +154,33 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 	
 	private boolean hasBilateralFSN(Concept c) {
 		String fsn = " " + c.getFsn().toLowerCase();
-		return fsn.contains(" bilateral ");
+		return fsn.contains(" bilateral ") || fsn.contains(" left and right");
 	}
 
+	private boolean hasUnlaterizedLeftOrRightBodyStructure(Concept c) {
+		//Return true if this concept has been modelled with a left or right body structure which is
+		//not actually lateralizable
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			String semTag = SnomedUtilsBase.deconstructFSN(r.getTarget().getFsn())[1];
+			if (semTag.equals(SEMTAG_BODY_STRUCTURE )) {
+				Concept bodyStructure = r.getTarget();
+				//Does the body structure feature 'left' or 'right' in its FSN, but isn't actually lateralized in the sense
+				//of being symmetrical around the midsagittal plane?
+				if (!isLateralized(bodyStructure)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 	private boolean hasLateralizedModel(Concept c, int level) throws TermServerScriptException {
 		//So either a target value is a type of laterality or it is itself 
 		//lateralized - but we're only expecting that in a body structure
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if ((r.isNotConcrete()) && (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT))) {
-				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
+				String semTag = SnomedUtilsBase.deconstructFSN(
+						c.getFsn())[1];
 				if (!semTag.equals(SEMTAG_BODY_STRUCTURE) && !reportedSuspect.contains(c)) {
 					report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
@@ -208,5 +233,9 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 			}
 		}
 		return false;
+	}
+
+	private boolean isLateralized(Concept c) {
+		return hasLaterality(c, LEFT) || hasLaterality(c, RIGHT);
 	}
 }
