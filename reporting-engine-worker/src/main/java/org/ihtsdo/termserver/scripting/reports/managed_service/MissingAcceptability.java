@@ -103,26 +103,33 @@ public class MissingAcceptability extends TermServerReport implements ReportClas
 		}
 		
 		for (Concept c : scopeAndSort(conceptsOfInterest)) {
-			String descriptionsToReport = "";
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				//Are we tracking some existing English Dialect?
-				if (trackDialect == null || d.getAcceptability(trackDialect) != null) {
-					if (d.getAcceptability(defaultLangRefset) == null) {
-						if (descriptionsToReport.length() > 0) {
-							descriptionsToReport += "\n";
-						}
-						descriptionsToReport += d;
-					}
-				}
-			}
-			
-			if (!descriptionsToReport.isEmpty()) {
-				report(c, descriptionsToReport);
-				countIssue(c);
-			}
+			checkConceptForMissingAcceptability(c);
 		}
 	}
 	
+	private void checkConceptForMissingAcceptability(Concept c) throws TermServerScriptException {
+		StringBuilder descriptionsToReport = new StringBuilder();
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (!inScope(d)) {
+				continue;
+			}
+			//Are we tracking some existing English Dialect?
+			if ((trackDialect == null || d.getAcceptability(trackDialect) != null) 
+				&& d.getAcceptability(defaultLangRefset) == null) {
+				if (!descriptionsToReport.isEmpty()) {
+					descriptionsToReport.append("\n");
+				}
+				descriptionsToReport.append(d);
+			}
+		}
+		
+		if (!descriptionsToReport.isEmpty()) {
+			report(c, descriptionsToReport);
+			countIssue(c);
+		}
+		
+	}
+
 	private List<Concept> scopeAndSort(Collection<Concept> superSet) {
 		return superSet.stream()
 		.filter(this::inScope)
