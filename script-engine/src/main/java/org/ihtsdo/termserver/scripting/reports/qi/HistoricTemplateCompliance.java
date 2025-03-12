@@ -130,7 +130,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 	}
 
 	private void comparePreviousConceptData() throws TermServerScriptException {
-		TransitiveClosure tc = gl.generateTransativeClosure();
+		TransitiveClosure tc = gl.generateTransitiveClosure();
 		
 		File f = new File(dataDir + dataFileId  + "_conceptData.tsv");
 		LOGGER.info("Reading historic data file " + f);
@@ -224,7 +224,7 @@ public class HistoricTemplateCompliance extends AllKnownTemplates implements Rep
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
-			TransitiveClosure tc = gl.generateTransativeClosure();
+			TransitiveClosure tc = gl.generateTransitiveClosure();
 			LOGGER.debug("Outputting Data to " + f.getAbsolutePath());
 			for (AlignedConcept ac : alignedConceptMap.values()) {
 				fw.append(ac.serialize(getHierarchy(tc, ac.c)));

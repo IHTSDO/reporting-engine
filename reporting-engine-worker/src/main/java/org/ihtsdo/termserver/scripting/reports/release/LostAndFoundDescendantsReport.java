@@ -53,7 +53,7 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		ArchiveManager mgr = getArchiveManager();
 		mgr.setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
-			mgr.setPopulatePreviousTransativeClosure(true);
+			mgr.setPopulatePreviousTransitiveClosure(true);
 		}
 	}
 	

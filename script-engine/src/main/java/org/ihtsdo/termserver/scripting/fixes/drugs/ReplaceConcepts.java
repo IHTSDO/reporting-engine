@@ -130,7 +130,7 @@ public class ReplaceConcepts extends DrugBatchFix implements ScriptConstants{
 	private int moveConcept(Task t, Concept c) throws TermServerScriptException {
 		//What should our new parent be?
 		ParentFind parentFind = new ParentFind();
-		findReturnedParent(gl.getConcept(c.getId()),parentFind);  //use cached concept so we can walk the transative closure
+		findReturnedParent(gl.getConcept(c.getId()),parentFind);  //use cached concept so we can walk the transitive closure
 		report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, parentFind);
 		int changesMade = replaceParents(t, c, MEDICINAL_PRODUCT);
 		

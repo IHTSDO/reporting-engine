@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.tomcat.util.bcel.classfile.AnnotationEntry;
 import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -1502,21 +1501,21 @@ public class GraphLoader implements ScriptConstants {
 		return axiomService;
 	}
 
-	public void populatePreviousTransativeClosure() {
+	public void populatePreviousTransitiveClosure() {
 		LOGGER.info("Populating PREVIOUS transitive closure");
-		previousTransitiveClosure = generateTransativeClosure();
+		previousTransitiveClosure = generateTransitiveClosure();
 		LOGGER.info("PREVIOUS transitive closure complete");
 	}
 	
 	public TransitiveClosure getTransitiveClosure() {
 		if (transitiveClosure == null) {
-			transitiveClosure = generateTransativeClosure();
+			transitiveClosure = generateTransitiveClosure();
 		}
 		return transitiveClosure;
 	}
 	
-	public TransitiveClosure generateTransativeClosure() {
-		LOGGER.info("Calculating transative closure...");
+	public TransitiveClosure generateTransitiveClosure() {
+		LOGGER.info("Calculating transitive closure...");
 		TransitiveClosure tc = new TransitiveClosure();
 		//For all active concepts, populate their ancestors into the TC
 		getAllConcepts().parallelStream().forEach(c->{
@@ -1526,7 +1525,7 @@ public class GraphLoader implements ScriptConstants {
 				LOGGER.error("Exception encountered",e);
 			} 
 		});
-		LOGGER.info("Completed transative closure: {} relationships mapped", tc.size());
+		LOGGER.info("Completed transitive closure: {} relationships mapped", tc.size());
 		return tc;
 	}
 

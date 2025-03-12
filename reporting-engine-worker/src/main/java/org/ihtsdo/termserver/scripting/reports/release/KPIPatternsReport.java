@@ -51,7 +51,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		ArchiveManager mgr = getArchiveManager();
 		mgr.setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
-			mgr.setPopulatePreviousTransativeClosure(true);
+			mgr.setPopulatePreviousTransitiveClosure(true);
 			try {
 				previousPreviousRelease = mgr.getPreviousPreviousBranch(project);
 			} catch (Exception e) {
@@ -100,7 +100,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			checkRedundantlyStatedGroups();
 		
 			LOGGER.info("Building current Transitive Closure");
-			tc = gl.generateTransativeClosure();
+			tc = gl.generateTransitiveClosure();
 			
 			LOGGER.info("Checking for historical patterns 11 & 21");
 			if (previousPreviousRelease != null) {
@@ -289,7 +289,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		initialiseSummary(issueStr);
 		
 		if (gl.getPreviousTC() == null) {
-			report(null, "Previous Transative Closure is not available.  Unable to check Pattern 11");
+			report(null, "Previous Transitive Closure is not available.  Unable to check Pattern 11");
 			return;
 		}
 		

@@ -56,7 +56,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean loadEditionArchive = false;
 	private boolean populateHierarchyDepth = true;  //Term contains X needs this
 	private boolean ensureSnapshotPlusDeltaLoad = false;
-	private boolean populatePreviousTransativeClosure = false;
+	private boolean populatePreviousTransitiveClosure = false;
 	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
 	private boolean releasedFlagPopulated = false;
 	private boolean runIntegrityChecks = true;
@@ -97,7 +97,7 @@ public class ArchiveManager implements ScriptConstants {
 			//Don't assume that just because we're being reused, we're loading the same files
 			singleton.loadEditionArchive = false;
 			singleton.loadDependencyPlusExtensionArchive = false;
-			singleton.populatePreviousTransativeClosure = false;
+			singleton.populatePreviousTransitiveClosure = false;
 			singleton.ensureSnapshotPlusDeltaLoad = false;
 			singleton.loadOtherReferenceSets = false;
 			//Need to also reset the need for previous state in the graphloader, because it might
@@ -309,11 +309,11 @@ public class ArchiveManager implements ScriptConstants {
 			if (!snapshot.exists() ||
 					(isStale && !allowStaleData) || 
 					(ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) ||
-					(populatePreviousTransativeClosure && gl.getPreviousTC() == null)) {
+					(populatePreviousTransitiveClosure && gl.getPreviousTC() == null)) {
 				
 				if (ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) {
 					LOGGER.info("Generating fresh snapshot because 'ensureSnapshotPlusDeltaLoad' flag must be populated");
-				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
+				} else if (populatePreviousTransitiveClosure && gl.getPreviousTC() == null) {
 					LOGGER.info("Generating fresh snapshot because previous transitive closure must be populated");
 				}
 				generateSnapshot(ts.getProject());
@@ -708,8 +708,8 @@ public class ArchiveManager implements ScriptConstants {
 			}
 			
 			//Are we generating the transitive closure?
-			if (fileType.equals(SNAPSHOT) && populatePreviousTransativeClosure) {
-				gl.populatePreviousTransativeClosure();
+			if (fileType.equals(SNAPSHOT) && populatePreviousTransitiveClosure) {
+				gl.populatePreviousTransitiveClosure();
 			}
 			
 			if(!isDelta && gl.isPopulateOriginalModuleMap()) {
@@ -962,12 +962,12 @@ public class ArchiveManager implements ScriptConstants {
 		this.ensureSnapshotPlusDeltaLoad = ensureSnapshotPlusDeltaLoad;
 	}
 
-	public boolean isPopulatePreviousTransativeClosure() {
-		return populatePreviousTransativeClosure;
+	public boolean isPopulatePreviousTransitiveClosure() {
+		return populatePreviousTransitiveClosure;
 	}
 
-	public void setPopulatePreviousTransativeClosure(boolean populatePreviousTransativeClosure) {
-		this.populatePreviousTransativeClosure = populatePreviousTransativeClosure;
+	public void setPopulatePreviousTransitiveClosure(boolean populatePreviousTransitiveClosure) {
+		this.populatePreviousTransitiveClosure = populatePreviousTransitiveClosure;
 	}
 
 	public boolean isReleasedFlagPopulated() {
@@ -1005,7 +1005,7 @@ public class ArchiveManager implements ScriptConstants {
 			singleton.releasedFlagPopulated = false;
 			singleton.loadEditionArchive = false;
 			singleton.loadDependencyPlusExtensionArchive = false;
-			singleton.populatePreviousTransativeClosure = false;
+			singleton.populatePreviousTransitiveClosure = false;
 		}
 	}
 	
