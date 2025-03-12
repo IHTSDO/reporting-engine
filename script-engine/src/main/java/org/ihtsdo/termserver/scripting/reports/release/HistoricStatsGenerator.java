@@ -81,7 +81,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	public void runJob() throws TermServerScriptException {
 		FileWriter fw = null;
 		try {
-			TransitiveClosure tc = gl.generateTransativeClosure();
+			TransitiveClosure tc = gl.generateTransitiveClosure();
 			
 			LOGGER.info("Creating map of semantic tag hierarchies");
 			populateSemTagHierarchyMap(tc);
