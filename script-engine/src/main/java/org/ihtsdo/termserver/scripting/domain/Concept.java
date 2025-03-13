@@ -1799,7 +1799,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public Set<AlternateIdentifier> getAlternateIdentifiers() {
-		return alternateIdentifiers == null ? new HashSet<>() : alternateIdentifiers;
+		if (alternateIdentifiers == null) {
+			alternateIdentifiers = new HashSet<>();
+		}
+		return alternateIdentifiers;
 	}
 
 	public void setAlternateIdentifiers(Set<AlternateIdentifier> alternateIdentifiers) {
@@ -1807,9 +1810,6 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 
 	public void addAlternateIdentifier(String id, String schemeId) {
-		if (alternateIdentifiers == null) {
-			alternateIdentifiers = new HashSet<>();
-		}
 		AlternateIdentifier altId = new AlternateIdentifier();
 		altId.setReferencedComponentId(this.getId());
 		altId.setAlternateIdentifier(id);
@@ -1817,7 +1817,13 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		altId.setModuleId(getModuleId());
 		altId.setIdentifierSchemeId(schemeId);
 		altId.setDirty();
-		alternateIdentifiers.add(altId);
+		getAlternateIdentifiers().add(altId);
+	}
+
+	public void addAlternateIdentifier(AlternateIdentifier altId) {
+		//Remove inactivation indicator first in case we're replacing it
+		getAlternateIdentifiers().remove(altId);
+		getAlternateIdentifiers().add(altId);
 	}
 
 	public Set<RefsetMember> getOtherRefsetMembers() {

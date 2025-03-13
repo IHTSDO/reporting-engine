@@ -165,12 +165,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		summaryDataMap = new HashMap<>();
 		refsetDataMap = new HashMap<>();
 		
-		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
-			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
-					.map(String::trim)
-					.toList();
-		}
-
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
 		LOGGER.info("Running report with runIntegrityChecks set to {}", runIntegrityChecks);
 		getArchiveManager().setRunIntegrityChecks(runIntegrityChecks);
@@ -194,7 +188,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return columnHeadings;
 	}
 
-	@Override
 	public String[] getColumnWidths() {
 		String[] columnWidths = new String[MAX_REPORT_TABS];
 

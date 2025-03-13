@@ -121,7 +121,9 @@ public abstract class TermServerReport extends TermServerScript {
 	@Override
 	public void incrementSummaryInformation(String key) {
 		if (!quiet) {
+			//This is a bit silly to have two maps
 			super.incrementSummaryInformation(key);
+			issueSummaryMap.merge(key, 1, Integer::sum);
 		}
 	}
 	
@@ -174,8 +176,6 @@ public abstract class TermServerReport extends TermServerScript {
 
 		int total = issueSummaryMap.values().stream().mapToInt(Integer::intValue).sum();
 		reportSafely(tabIdx, (Component) null, "TOTAL", total);
-
-
 	}
 
 	protected void initialiseSummary(String issue) {

@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.dao.ReportDataBroker;
@@ -89,6 +90,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean allowDirectoryInputFile = false;
 	protected int tabForFinalWords = PRIMARY_REPORT;
 	private boolean loadingRelease = false;
+	protected List<String> moduleFilter;
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
@@ -444,6 +446,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			subsetECL =jobRun.getParamValue(ECL);
 		}
 
+		String modulesStr = jobRun.getParamValue(MODULES);
+		if (!StringUtils.isEmpty(modulesStr)) {
+			LOGGER.info("Filtering output to modules: {}", modulesStr);
+			moduleFilter = Stream.of(modulesStr.split(",", -1))
+					.map(String::trim)
+					.toList();
+		}
+
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			setInputFile(0,new File(inputFileName));
@@ -513,6 +523,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			this.jobRun = jobRun;
 			this.dependencyArchive = jobRun.getDependencyPackage();
 
+			//If we have a dependency archive, then set loadDependencyPlusExtensionArchive
+			if (dependencyArchive != null) {
+				getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
+			}
 			//Job Runs generally self determine
 			preInit();
 			
@@ -1867,6 +1881,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else {
 				return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
 			}
+		} else if (moduleFilter != null) {
+			return moduleFilter.contains(c.getModuleId());
 		}
 		return true;
 	}

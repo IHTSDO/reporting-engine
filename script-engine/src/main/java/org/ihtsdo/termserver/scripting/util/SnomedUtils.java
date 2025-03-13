@@ -2773,4 +2773,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 		return Long.parseLong(id.substring(0, chopPoint));
 	}
+
+	public static String getAlternateIdentifiers(Concept c, boolean includeScheme) {
+		return c.getAlternateIdentifiers().stream()
+				.map(a -> (includeScheme? "" : (a.getIdentifierSchemeId() +  ": ")) + a.getAlternateIdentifier())
+				.collect(Collectors.joining(", \n"));
+	}
 }
