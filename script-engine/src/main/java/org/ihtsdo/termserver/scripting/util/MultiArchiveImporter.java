@@ -7,6 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ImportType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -28,7 +29,7 @@ public class MultiArchiveImporter extends BatchFix {
 	private static final String TASK_PREFIX = "";  //Remember to finish with a space
 	private static final MODE mode = MODE.TASK_PER_ARCHIVE;
 
-	protected MultiArchiveImporter(BatchFix clone) {
+	public MultiArchiveImporter(TermServerScript clone) {
 		super(clone);
 	}
 
@@ -64,7 +65,7 @@ public class MultiArchiveImporter extends BatchFix {
 					continue;
 				}
 				LOGGER.info("Processing: {}", thisArchive);
-				importArchive(thisArchive);
+				importArchive(thisArchive, TASK_PREFIX);
 
 				if (processingLimit != NOT_SET && archivesProcessed >= processingLimit) {
 					LOGGER.info("Processing limit of {} reached.  Exiting.", processingLimit);
@@ -80,14 +81,15 @@ public class MultiArchiveImporter extends BatchFix {
 		}
 	}
 
-	private void importArchive(File thisArchive) throws TermServerScriptException {
+	public void importArchive(File thisArchive, String taskPrefix) throws TermServerScriptException {
 		String result = "OK";
 		Task task = mode == MODE.ALL_ARCHIVES_IN_ONE_TASK ? lastTaskCreated : null;
 		try {
 			if (task == null) {
 				task = new Task(null, getNextAuthor(), getNextReviewer());
 				lastTaskCreated = task;
-				task.setSummary(TASK_PREFIX + "Import " + thisArchive.getName());
+				String prefix = (taskPrefix.isEmpty() ? "" : taskPrefix + " ") + "Import ";
+				task.setSummary(prefix + thisArchive.getName());
 				taskHelper.createTask(task);
 			}
 

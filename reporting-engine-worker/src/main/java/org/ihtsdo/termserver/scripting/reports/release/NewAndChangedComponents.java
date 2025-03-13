@@ -28,6 +28,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	private static final Logger LOGGER = LoggerFactory.getLogger(NewAndChangedComponents.class);
 
 	public static final String CONCEPTS_WITH_DESCRIPTIONS = "Concepts with Descriptions";
+	private static final String CONCEPTS_WITH_TEXT_DEFN = "Concepts with TextDefn";
 
 	private final Set<Concept> newConcepts = new HashSet<>();
 	private final Set<Concept> inactivatedConcepts = new HashSet<>();
@@ -72,14 +73,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<<118245000 |Measurement finding (finding)|");
-		//params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
-		//params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		//params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
-		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		//params.put(MODULES, "45991000052106");
-		//params.put(WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus");
-		//params.put(CHANGES_SINCE, "20210801");
+		//ECL, "<<118245000 |Measurement finding (finding)|"
+		//THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip"
+		//THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip"
+		//PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip"
+		//PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip"
+		//MODULES, "45991000052106"
+		//WORD_MATCHES, "COVID,COVID-19,Severe acute respiratory syndrome coronavirus 2,SARS-CoV-2,2019-nCoV,2019 novel coronavirus"
+		//CHANGES_SINCE, "20210801"
 		params.put(INCLUDE_DETAIL, "true");
 		params.put(UNPROMOTED_CHANGES_ONLY, "false");
 		TermServerScript.run(NewAndChangedComponents.class, args, params);
@@ -298,6 +299,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		
 		LOGGER.info("Examining {} concepts of interest", conceptsOfInterest.size());
 		for (Concept c : conceptsOfInterest) {
+			if (c.getId().equals("2933111000005104")) {
+				LOGGER.debug("here");
+			}
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
@@ -657,9 +661,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					reportMembership(hasLostTextDefn,c),
 					reportMembership(hasChangedAcceptabilityTextDefn,c));
 		}
-		getSummaryCount("Concepts with TextDefn").isNew = hasNewTextDefn.size();
-		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
-		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
+		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isNew = hasNewTextDefn.size();
+		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isChanged = hasChangedTextDefn.size();
+		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isInactivated = hasLostTextDefn.size();
 	}
 
 	private void produceDescriptionReport() throws TermServerScriptException {
@@ -859,6 +863,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 
 		@Override
 		public void setBranchPath(String onBranch) {
+			throw new UnsupportedOperationException("Not implemented");
 		}
 
 		@Override
