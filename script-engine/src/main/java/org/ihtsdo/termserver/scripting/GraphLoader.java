@@ -738,21 +738,23 @@ public class GraphLoader implements ScriptConstants {
 				//Allow trailing empty fields
 				String[] lineItems = line.split(FIELD_DELIMITER, -1);
 
+				//Can we also populate an alternate identifier onto the concept?
+				Concept c = getConcept(lineItems[REF_IDX_REFCOMPID]);
+				AlternateIdentifier altId = new AlternateIdentifier();
+				AlternateIdentifier.populatefromRf2(altId, lineItems);
+				c.addAlternateIdentifier(altId);
+
 				if (lineItems[IDX_ACTIVE].equals("1")) {
-					String altId = lineItems[IDX_ID];
-					String sctId = lineItems[REF_IDX_REFCOMPID];
-					String schemeId = lineItems[REF_IDX_REFSETID];
-					Concept scheme = getConcept(schemeId);
+					Concept scheme = getConcept(altId.getIdentifierSchemeId());
 					Map<String, String> schemeMap = alternateIdentifierMap.computeIfAbsent(scheme, k -> new HashMap<>());
-					schemeMap.put(altId, sctId);
+					schemeMap.put(altId.getAlternateIdentifier(), c.getId());
 				}
 			} else {
 				isHeaderLine = false;
 			}
 		}
 	}
-	
-	
+
 	public int loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));

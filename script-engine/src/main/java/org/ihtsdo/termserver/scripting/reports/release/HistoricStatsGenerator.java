@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -18,6 +20,10 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Generates a file of data based on a release so that we can do investigations 
@@ -32,27 +38,19 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * See HistoricStatsAnalyzer for analysis.
  * NB Used by Summary Component Stats as well as HistoricStatsAnalyzer
  * */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricStatsGenerator.class);
 
-	private static int MAX_HIERARCHY_DEPTH = 150;
+	private static final int MAX_HIERARCHY_DEPTH = 150;
 	
 	private boolean splitOutDisease = false;  //If you change this to true, don't check it in! See ISRS-1392.
 	
-	private static final String dataDir = "historic-data/";
-	private static int ACTIVE = 1;
-	private static int INACTIVE = 0;
+	private static final String DATA_DIR = "historic-data/";
+	private static final int ACTIVE = 1;
+	private static final int INACTIVE = 0;
 	private Map<String, String> semTagHierarchyMap;
-	private List<String> moduleFilter;
-	
-	public HistoricStatsGenerator() {
-	}
-	
+
 	public HistoricStatsGenerator(TermServerScript ts) {
 		project = ts.getProject();
 	}
@@ -61,7 +59,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		Map<String, String> params = new HashMap<>();
 		TermServerScript.run(HistoricStatsGenerator.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		suppressOutput = true;
 		super.init(run);
@@ -77,7 +76,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				.withTag(INT)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		FileWriter fw = null;
 		try {
@@ -87,32 +87,31 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			populateSemTagHierarchyMap(tc);
 			
 			//Create the historic-data directory if required
-			File dataDirFile = new File(dataDir);
+			File dataDirFile = new File(DATA_DIR);
 			if (!dataDirFile.exists()) {
-				LOGGER.info("Creating directory to store historic data analysis: " + dataDir);
+				LOGGER.info("Creating directory to store historic data analysis: {}", DATA_DIR);
 				boolean success = dataDirFile.mkdir();
 				if (!success) {
 					throw new TermServerScriptException("Failed to create " + dataDirFile.getAbsolutePath());
 				}
 			}
 			
-			File f = new File(dataDir + project.getKey() + ".tsv");
-			LOGGER.info("Creating dataFile: " + f.getAbsolutePath());
+			File f = new File(DATA_DIR + project.getKey() + ".tsv");
+			LOGGER.info("Creating dataFile: {}", f.getAbsolutePath());
 			Files.createDirectories(f.toPath().getParent());
-			f.createNewFile();
+			if (!f.createNewFile()) {
+				throw new TermServerScriptException("Failed to create " + f.getAbsolutePath());
+			}
 			fw = new FileWriter(f);
 			
 			LOGGER.debug("Determining all IPs");
 			Set<Concept> IPs = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
 		
-			LOGGER.debug("Outputting Data to " + f.getAbsolutePath());
+			LOGGER.debug("Outputting Data to {}", f.getAbsolutePath());
 			for (Concept c : gl.getAllConcepts()) {
-				/*if (c.getId().equals("16711071000119107")) {
-					LOGGER.debug("here");
-				}*/
-				String active = c.isActive() ? "Y" : "N";
+				String active = c.isActiveSafely() ? "Y" : "N";
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
-				String hierarchy = getHierarchy(tc, c, new Stack<Concept>());
+				String hierarchy = getHierarchy(tc, c, new Stack<>());
 				String IP = IPs.contains(c) ? "Y" : "N";
 				String sdDescendant = hasSdDescendant(tc, c);
 				String sdAncestor = hasSdAncestor(tc, c);
@@ -149,19 +148,19 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private String getHistAssocTargets(Concept c) {
 		return c.getAssociationEntries(ActiveState.ACTIVE, true)
 				.stream()
-				.map(a -> a.getTargetComponentId())
+				.map(AssociationEntry::getTargetComponentId)
 				.collect(Collectors.joining(","));
 	}
 
 	private void populateSemTagHierarchyMap(TransitiveClosure tc) throws TermServerScriptException {
 		semTagHierarchyMap = new HashMap<>();
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
-				String[] parts = SnomedUtils.deconstructFSN(c.getFsnSafely(), true);
+			if (c.isActiveSafely()) {
+				String[] parts = SnomedUtilsBase.deconstructFSN(c.getFsnSafely(), true);
 				if (parts.length == 2 && 
 						!StringUtils.isEmpty(parts[1]) && 
 						!semTagHierarchyMap.containsKey(parts[1])) {
-					String hierarchySCTID = getHierarchy(tc, c, new Stack<Concept>());
+					String hierarchySCTID = getHierarchy(tc, c, new Stack<>());
 					if (!StringUtils.isEmpty(hierarchySCTID)) {
 						semTagHierarchyMap.put(parts[1], hierarchySCTID);
 					}
@@ -175,14 +174,14 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
 		.stream()
-		.filter(r -> inScope(r))
-		.map(r -> r.getId())
+		.filter(this::inScope)
+		.map(Relationship::getId)
 		.collect(Collectors.joining(","));
 	
 		results[INACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE)
 		.stream()
-		.filter(r -> inScope(r))
-		.map(r -> r.getId())
+		.filter(this::inScope)
+		.map(Relationship::getId)
 		.collect(Collectors.joining(","));
 		return results;
 	}
@@ -192,14 +191,14 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getDescriptions(ActiveState.ACTIVE)
 		.stream()
-		.filter(d -> inScope(d))
-		.map(d -> d.getId())
+		.filter(this::inScope)
+		.map(Description::getId)
 		.collect(Collectors.joining(","));
 		
 		results[INACTIVE] = c.getDescriptions(ActiveState.INACTIVE)
 			.stream()
-			.filter(d -> inScope(d))
-			.map(d -> d.getId())
+			.filter(this::inScope)
+			.map(Description::getId)
 			.collect(Collectors.joining(","));
 		
 		return results;
@@ -209,15 +208,15 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		String[] results = new String[2];
 		
 		results[ACTIVE] = c.getAxiomEntries().stream()
-		.filter(a -> a.isActive())
-		.filter(a -> inScope(a))
-		.map(a -> a.getId())
+		.filter(Component::isActive)
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
 		results[INACTIVE] = c.getAxiomEntries().stream()
-		.filter(a -> a.isActive() == false)
-		.filter(a -> inScope(a))
-		.map(a -> a.getId())
+		.filter(a -> !a.isActiveSafely())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
 		return results;
@@ -280,14 +279,14 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getInactivationIndicatorEntries(ActiveState.ACTIVE)
 		.stream()
-		.filter(i -> inScope(i))
-		.map(i -> i.getId())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 
 		results[INACTIVE] = c.getInactivationIndicatorEntries(ActiveState.INACTIVE)
 		.stream()
-		.filter(i -> inScope(i))
-		.map(i -> i.getId())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
 		return results;
@@ -298,14 +297,14 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = getDescriptionInactivationIndicatorEntries(c, ActiveState.ACTIVE)
 		.stream()
-		.filter(i -> inScope(i))
-		.map(i -> i.getId())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 
 		results[INACTIVE] = getDescriptionInactivationIndicatorEntries(c, ActiveState.INACTIVE)
 		.stream()
-		.filter(i -> inScope(i))
-		.map(i -> i.getId())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
 		return results;
@@ -324,14 +323,14 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getAssociationEntries(ActiveState.ACTIVE)
 		.stream()
-		.filter(h -> inScope(h))
-		.map(h -> h.getId())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
 		results[INACTIVE] = c.getAssociationEntries(ActiveState.INACTIVE)
 		.stream()
-		.filter(h -> inScope(h))
-		.map(h -> h.getId())
+		.filter(this::inScope)
+		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
 		return results;
@@ -343,11 +342,11 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			return ROOT_CONCEPT.getConceptId();
 		}
 		
-		if (c.isActive() && c.getDepth() == 1) {
+		if (c.isActiveSafely() && c.getDepth() == 1) {
 			return c.getConceptId();
 		}
 
-		if (!c.isActive() || c.getDepth() == NOT_SET) {
+		if (!c.isActiveSafely() || c.getDepth() == NOT_SET) {
 			stack.push(c);
 			if (stack.size() > MAX_HIERARCHY_DEPTH) {
 				reportStackOverflow(stack);
@@ -372,7 +371,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 			
 			//Attempt to determine hierarchy from the semantic tag
-			String[] parts = SnomedUtils.deconstructFSN(c.getFsnSafely(), true);
+			String[] parts = SnomedUtilsBase.deconstructFSN(c.getFsnSafely(), true);
 			if (parts.length == 2 && 
 					!StringUtils.isEmpty(parts[1]) && 
 					semTagHierarchyMap.containsKey(parts[1])) {
@@ -382,12 +381,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		}
 		
 		Set<Long> allAncestors = tc.getAncestors(c);
-		
-		if (splitOutDisease) {
-			//We're going to separate out Diseases from Clinical Findings
-			if (allAncestors.contains(64572001L)) {
-				return DISEASE.getConceptId();
-			}
+
+		//Are we going to separate out Diseases from Clinical Findings
+		if (splitOutDisease && allAncestors.contains(64572001L)) {
+			return DISEASE.getConceptId();
 		}
 
 		for (Long sctId : tc.getAncestors(c)) {
@@ -399,11 +396,11 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		throw new TermServerScriptException("Unable to determine hierarchy for " + c);
 	}
 
-	private void reportStackOverflow(Stack<Concept> stack) throws TermServerScriptException {
+	private void reportStackOverflow(Stack<Concept> stack) {
 		String stackStr = stack.stream()
-				.map(c -> c.getId())
+				.map(Concept::getId)
 				.collect(Collectors.joining(", "));
-		LOGGER.error("Recursive loop encountered in hierarchy of: " + stackStr, (Exception)null);
+		LOGGER.error("Recursive loop encountered in hierarchy of: {}", stackStr, (Exception)null);
 	}
 
 	private Deque<Concept> getParentsByISARelationships(Concept concept) throws TermServerScriptException {
@@ -422,10 +419,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 					Concept nextParent = relationship.getTarget();
 					
 					// Prefer active before considering the effective date
-					if ((!parent.isActive() && nextParent.isActive())) {
+					if ((!parent.isActiveSafely() && nextParent.isActiveSafely())) {
 						parents.remove(nextParent);
 						parents.push(nextParent);
-					} else if (parent.isActive() && nextParent.isActive() || !parent.isActive() && !nextParent.isActive()) {
+					} else if (parent.isActiveSafely() && nextParent.isActiveSafely() || !parent.isActiveSafely() && !nextParent.isActiveSafely()) {
 						Integer comparison = SnomedUtils.compareEffectiveDate(parent.getEffectiveTime(),
 								nextParent.getEffectiveTime());
 						if (comparison != null && comparison == -1) {
@@ -444,7 +441,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	}
 
 	private void ouput(FileWriter fw, String... fields) throws IOException {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		boolean isFirst = true;
 		for (String field : fields) {
 			if (!isFirst) {
@@ -481,9 +478,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	public void setModuleFilter(List<String> moduleFilter) {
 		this.moduleFilter = moduleFilter;
 	}
-	
+
+	@Override
 	protected boolean inScope (Component c) {
-		if (moduleFilter == null || moduleFilter.size() == 0) {
+		if (moduleFilter == null || moduleFilter.isEmpty()) {
 			return true;
 		}
 		

@@ -39,7 +39,6 @@ public class HistoricDataUser extends TermServerReport {
 	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown");
 
 	public static final boolean DEBUG_TO_FILE = false;
-	protected List<String> moduleFilter;
 
 	protected String prevRelease;
 	protected String prevDependency;

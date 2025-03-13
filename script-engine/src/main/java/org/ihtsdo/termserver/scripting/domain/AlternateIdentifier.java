@@ -87,13 +87,13 @@ AlternateIdentifier extends Component implements ScriptConstants {
 		return row;
 	}
 	
-	public static void populatefromRf2(AlternateIdentifier m, String[] lineItems)  {
-		m.setAlternateIdentifier(lineItems[REF_IDX_ID]);
-		m.setEffectiveTime(lineItems[REF_IDX_EFFECTIVETIME]);
-		m.setActive(lineItems[REF_IDX_ACTIVE].equals("1"));
-		m.setModuleId(lineItems[REF_IDX_MODULEID]);
-		m.setIdentifierSchemeId(lineItems[REF_IDX_REFSETID]);
-		m.setReferencedComponentId(lineItems[REF_IDX_REFCOMPID]);
+	public static void populatefromRf2(AlternateIdentifier altId, String[] lineItems)  {
+		altId.setAlternateIdentifier(lineItems[REF_IDX_ID]);
+		altId.setEffectiveTime(lineItems[REF_IDX_EFFECTIVETIME]);
+		altId.setActive(lineItems[REF_IDX_ACTIVE].equals("1"));
+		altId.setModuleId(lineItems[REF_IDX_MODULEID]);
+		altId.setIdentifierSchemeId(lineItems[REF_IDX_REFSETID]);
+		altId.setReferencedComponentId(lineItems[REF_IDX_REFCOMPID]);
 	}
 
 	@Override 
