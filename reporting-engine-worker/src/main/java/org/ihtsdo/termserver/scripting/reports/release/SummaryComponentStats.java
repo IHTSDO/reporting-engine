@@ -39,14 +39,14 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13,
 			TAB_DESC_BY_LANG = 14;  
 	static final int MAX_REPORT_TABS = 15;
-	static final int DATA_WIDTH = 28;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
+	static final int DATA_WIDTH = 29;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACTIVATED = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5,
 			IDX_MOVED_MODULE = 6, IDX_CHANGED_INACTIVE = 7, IDX_NEW_P = 8, IDX_NEW_SD = 9,
 			IDX_TOTAL = 10, IDX_INACT_AMBIGUOUS = 11,  IDX_INACT_MOVED_ELSEWHERE = 12, IDX_INACT_CONCEPT_NON_CURRENT = 13,
 			IDX_INACT_DUPLICATE = 14, IDX_INACT_ERRONEOUS = 15, IDX_INACT_INAPPROPRIATE = 16, IDX_INACT_LIMITED = 17,
 			IDX_INACT_OUTDATED = 18, IDX_INACT_PENDING_MOVE = 19, IDX_INACT_NON_CONFORMANCE = 20,
 			IDX_INACT_NOT_EQUIVALENT = 21, IDX_CONCEPTS_AFFECTED = 22, IDX_TOTAL_ACTIVE = 23, IDX_PROMOTED=24,
-			IDX_NEW_IN_QI_SCOPE = 25, IDX_GAINED_ATTRIBUTES = 26, IDX_LOST_ATTRIBUTES = 27; 
+			IDX_NEW_IN_QI_SCOPE = 25, IDX_GAINED_ATTRIBUTES = 26, IDX_LOST_ATTRIBUTES = 27, IDX_INACT_OTHER = 28;
 	
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 
@@ -80,7 +80,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// * LangRefSet
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Concepts Affected",
 			// * Inactivations
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Total Active, Concepts Affected",
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Other, Total Active, Concepts Affected",
 			// * Hist Assoc
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Concepts Affected",
 			// * Text Defn
@@ -677,7 +677,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT:
 				counts[IDX_INACT_NOT_EQUIVALENT]++;
 				break;
-			default : throw new IllegalArgumentException("Unexpected inactivation reason " + reasonId);
+			default:
+				counts[IDX_INACT_OTHER]++;
+				break;
 		}
 	}
 
@@ -767,10 +769,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)))
 		);
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_INACT_AMBIGUOUS,
-				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
-				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
-				IDX_INACT_NOT_EQUIVALENT, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED)));
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE,
+				IDX_INACT_AMBIGUOUS, IDX_INACT_MOVED_ELSEWHERE,	IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS, IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED,
+				IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE, IDX_INACT_NOT_EQUIVALENT, IDX_INACT_OTHER, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED)));
 
 		Stream.of(TAB_LANG, TAB_HIST).forEach(index ->
 			sheetFieldsByIndex.put(index, new LinkedList<>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED))))
