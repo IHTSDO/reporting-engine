@@ -1,11 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Stream;
-
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -16,14 +10,21 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportSheetManager;
-import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
-import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
+import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
+import org.snomed.otf.script.dao.ReportSheetManager;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 /**
@@ -191,6 +192,20 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	public String[] getColumnHeadings() {
 		return columnHeadings;
+	}
+
+	@Override
+	public String[] getColumnWidths() {
+		String[] columnWidths = new String[MAX_REPORT_TABS];
+
+		for (int tabIdx = 0; tabIdx < columnWidths.length; tabIdx++) {
+			String[] tabColumnWidths = new String[DATA_WIDTH];
+			Arrays.fill(tabColumnWidths, 0, 3, "0");
+			Arrays.fill(tabColumnWidths, 3, DATA_WIDTH, "85");
+			columnWidths[tabIdx] = String.join(",", tabColumnWidths);
+		}
+
+		return columnWidths;
 	}
 
 	@Override
