@@ -1,5 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
+import org.ihtsdo.otf.exception.TermServerRuntimeException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportConfiguration;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -9,17 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportConfiguration;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PackageComparisonReport extends SummaryComponentStats implements ReportClass {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PackageComparisonReport.class);
@@ -58,13 +58,18 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final String RIGHT_MODULES_FILENAME = "right_modules.txt";
 	private static final String HEADERS_DIFF_FILENAME = "diff__headers.txt";
 	private static final String FILES_DIFF_FILENAME = "diff__files.txt";
+
+
+	private final String[] tabNames = new String[] {
+			"File Comparison"
+	};
 	
 	private final String[] columnHeadings = new String[] {
 			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Header, Total"
 	};
 
-	private final String[] tabNames = new String[] {
-			"File Comparison"
+	private final String[] columnWidths = new String[] {
+			"460, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85"
 	};
 
 	enum TotalsIndex {
@@ -116,6 +121,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return concatArrays(super.getColumnHeadings(), columnHeadings);
 	}
 
+	@Override
+	public String[] getColumnWidths() {
+		return concatArrays(super.getColumnWidths(), columnWidths);
+	}
+
 	private String[] concatArrays(String[] array1, String[] array2) {
 		String[] result = Arrays.copyOf(array1, array1.length + array2.length);
 		System.arraycopy(array2, 0, result, array1.length, array2.length);
@@ -149,7 +159,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
 		if (!StringUtils.isEmpty(prevDependency)) {
-			LOGGER.info("Setting previous dependency archive to " + prevDependency);
+			LOGGER.info("Setting previous dependency archive to {}", prevDependency);
 			setDependencyArchive(prevDependency);
  		}
 		super.loadProjectSnapshot(fsnOnly);
@@ -159,7 +169,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
 		if (!StringUtils.isEmpty(thisDependency)) {
-			LOGGER.info("Setting dependency archive to " + thisDependency);
+			LOGGER.info("Setting dependency archive to {}", thisDependency);
 			setDependencyArchive(thisDependency);
 		}
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
@@ -201,9 +211,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 		String command = "scripts/" + SCRIPT_NAME + SPACE + String.join(SPACE, scriptArguments);
 
-		LOGGER.info("Starting script execution. Command: " + command);
+		LOGGER.info("Starting script execution. Command: {}", command);
 		executeScript(command);
-		LOGGER.info("Diff files for '" + previousRelease.getPath() + "' and '" + currentRelease.getPath() + "' are uploaded to s3://snomed-compares/" + uploadFolder);
+		LOGGER.info("Diff files for '{}' and '{}' are uploaded to 's3://snomed-compares/{}'", previousRelease.getPath(), currentRelease.getPath(), uploadFolder);
 
 		processFiles(uploadFolder);
 		outputResults();
@@ -234,8 +244,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				// Process timed out
 				throw new TermServerScriptException("Script execution timed out, timeout set to " + TIMEOUT_MINUTES + " minutes");
 			}
-		} catch (IOException | InterruptedException e) {
-			LOGGER.error("Script execution failed");
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
 	}
@@ -269,7 +280,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			report(FILE_COMPARISON_TAB, "Files changed:");
 
 			// Process content diff files (snapshot files only)
-			try (Stream<Path> stream = Files.list(diffDir)) { //.filter(file -> !Files.isDirectory(file))) {
+			try (Stream<Path> stream = Files.list(diffDir)) {
 				stream
 						.map(this::getFilename)
 						.filter(this::matches)
@@ -291,8 +302,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 						.map(Path::toFile)
 						.forEach(File::delete);
 			}
-		} catch (IOException | RuntimeException e) {
-			LOGGER.error("Error processing diff files in " + uploadFolder);
+		} catch (IOException | TermServerRuntimeException e) {
+			LOGGER.error("Error processing diff files in {}", uploadFolder);
 			throw new TermServerScriptException(e);
 		}
 	}
@@ -310,7 +321,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				files.put(name, count);
 			}
 		} catch (Exception e) {
-			LOGGER.warn("Failed to load {} file due to {}", filename, e);
+			LOGGER.error("Failed to load file '{}'", filename, e);
 		}
 	}
 
@@ -321,7 +332,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				modules.add(line);
 			}
 		} catch (Exception e) {
-			LOGGER.warn("Failed to load {} file due to {}", filename, e);
+			LOGGER.error("Failed to load file '{}'", filename, e);
 		}
 	}
 
@@ -557,8 +568,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			report(FILE_COMPARISON_TAB, "");
 
 		} catch (IOException | IndexOutOfBoundsException e) {
-			LOGGER.error("Error processing file: " + filename);
-			throw new TermServerScriptException(e);
+			LOGGER.error("Error processing list of files: {}", filename);
+			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
 
@@ -649,8 +660,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			fileTotals.put(filename, totals);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
-			LOGGER.error("Error processing file: " + filename);
-			throw new RuntimeException(e);
+			LOGGER.error("Error processing file: {}", filename);
+			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
 
@@ -735,8 +746,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			fileTotals.put(filename + " " + (refsetIds == null ? "[ALL REFSETS]" : "[SEP REFSETS: " + String.join(",", refsetIds) + "]"), totals);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
-			LOGGER.error("Error processing file: " + filename);
-			throw new RuntimeException(e);
+			LOGGER.error("Error processing association file: {}", filename);
+			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
 
@@ -821,8 +832,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			fileTotals.put(filename, totals);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
-			LOGGER.error("Error processing file: " + filename);
-			throw new RuntimeException(e);
+			LOGGER.error("Error processing concept file: {}", filename);
+			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
 
