@@ -70,17 +70,18 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected TaskHelper taskHelper;
 
 
-	protected BatchFix(BatchFix clone) {
+	protected BatchFix(TermServerScript clone) {
 		if (clone != null) {
 			if (clone.hasInputFile()) {
 				this.inputFiles.add(0, clone.getInputFile());
 			}
 			setReportManager(clone.getReportManager());
-			this.project = clone.project;
-			this.tsClient = clone.tsClient;
-			this.scaClient = clone.scaClient;
+			this.project = clone.getProject();
+			this.tsClient = clone.getTSClient();
+			this.scaClient = clone.getAuthoringServicesClient();
 		}
 		this.headers = "TaskKey, TaskDesc, SCTID, FSN, ConceptType, Severity, ActionType, ";
+		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
 	}
 
 	@Override
@@ -91,7 +92,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	@Override
 	protected List<Component> processFile() throws TermServerScriptException {
 		startTimer();
-		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
 		if (selfDetermining) {
 			allComponentsToProcess = identifyComponentsToProcess();
 		} else {
@@ -554,13 +554,17 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 		if (authors == null) {
 			if (jobRun != null && jobRun.getParamValue(AUTHOR) != null) {
-				authors = Arrays.asList(jobRun.getParamValue(AUTHOR).split(","));
+				setAuthors(jobRun.getParamValue(AUTHOR));
 			} else {
 				throw new TermServerScriptException("No target author detected in command line arguments");
 			}
 		}
 
 		LOGGER.info("Batching {} concepts per task", taskSize);
+	}
+
+	public void setAuthors(String authorsStr) {
+		authors = Arrays.asList(authorsStr.split(","));
 	}
 
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) throws TermServerScriptException {
@@ -1643,4 +1647,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		return changesMade;
 	}
 
+	public List<String> getAuthors() {
+		return authors;
+	}
 }

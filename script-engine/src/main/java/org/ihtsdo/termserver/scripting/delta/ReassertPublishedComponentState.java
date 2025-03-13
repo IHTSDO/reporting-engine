@@ -11,16 +11,17 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * MSSP-1661 Need to reassert various components back to their previously published state,
  * but restricted to those exact components
  */
-
-public class ReassertPublishedComponentState extends DeltaGenerator {
+public class ReassertPublishedComponentState extends DeltaGeneratorWithAutoImport {
 
 	String[] componentsToProcess = new String[] {
-			"663114025","663113020","734078021","776663023"};
+			"4dca6968-0ebf-4086-8eaf-cf4157e39cc3",
+			"f40babb8-bd96-4dbc-87f3-8fa7c86e586f"};
 
 	public static void main(String[] args) throws TermServerScriptException {
 		ReassertPublishedComponentState delta = new ReassertPublishedComponentState();
 		try {
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+			delta.taskPrefix = "ISRS-7179";
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
@@ -35,7 +36,8 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
 			if (!dryRun) {
-				SnomedUtils.createArchive(new File(delta.outputDirName));
+				File archive = SnomedUtils.createArchive(new File(delta.outputDirName));
+				delta.importArchiveToNewTask(archive);
 			}
 		} finally {
 			delta.finish();
@@ -55,7 +57,7 @@ public class ReassertPublishedComponentState extends DeltaGenerator {
 		String[] tabNames = new String[] {	
 				"Reassertions"};
 		
-		super.postInit(googleFolder, tabNames, columnHeadings, false);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override

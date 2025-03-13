@@ -34,7 +34,7 @@ public class ReassertPublishedState extends DeltaGenerator {
 				"Id, FSN, SemTag, Component Reasserted"};
 		String[] tabNames = new String[] {	
 				"Reassertions"};
-		super.postInit(GFOLDER_MS, tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_MS, tabNames, columnHeadings);
 	}
 
 	@Override

@@ -88,6 +88,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean allowMissingExpectedModules = false;
 	protected boolean allowDirectoryInputFile = false;
 	protected int tabForFinalWords = PRIMARY_REPORT;
+	private boolean loadingRelease = false;
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
@@ -248,41 +249,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		//TODO Make calls through client objects rather than resty direct and remove this member
 		//TODO May then be able to remove otf-common entirely and just use resource-manager
-		if (localClientsRequired == true) {
+		if (localClientsRequired) {
 			scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 			tsClient = createTSClient(this.url, authenticatedCookie);
 		}
-		boolean loadingRelease = false;
+
 		//Recover the full project path from authoring services, if not already fully specified
 		if (project == null) {
-			project = new Project();
-			if (projectName.startsWith("MAIN")) {
-				project.setBranchPath(projectName);
-				if (projectName.equals("MAIN")) {
-					project.setKey(projectName);
-				} else {
-					project.setKey(projectName.substring(projectName.lastIndexOf("/")));
-				}
-			} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
-				LOGGER.info("Loading release: " + projectName); 
-				loadingRelease = true;
-				project.setKey(projectName);
-			} else {
-				if (runStandAlone) {
-					LOGGER.info("Running stand alone. Guessing project path to be MAIN/" + projectName);
-					project.setBranchPath("MAIN/" + projectName);
-				} else {
-					try {
-						project = scaClient.getProject(projectName);
-						LOGGER.info("Recovered project " + project.getKey() + " with branch path: " + project.getBranchPath());
-					} catch (RestClientException e) {
-						throw new TermServerScriptException("Unable to recover project: " + projectName,e);
-					}
-				}
-				project.setKey(projectName);
-			}
+			recoverProjectFromProjectName(projectName);
 		} else {
-			LOGGER.warn("Project already set as " + project);
+			LOGGER.warn("Project already set as {}", project);
 		}
 		
 		if (taskKey != null) {
@@ -300,6 +276,35 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		// Configure the type(s) and locations(s) for processing report output.
 		initialiseReportConfiguration(jobRun);
+	}
+
+	public void recoverProjectFromProjectName(String projectName) throws TermServerScriptException {
+		project = new Project();
+		if (projectName.startsWith("MAIN")) {
+			project.setBranchPath(projectName);
+			if (projectName.equals("MAIN")) {
+				project.setKey(projectName);
+			} else {
+				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
+			}
+		} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
+			LOGGER.info("Loading release: {}", projectName);
+			loadingRelease = true;
+			project.setKey(projectName);
+		} else {
+			if (runStandAlone) {
+				LOGGER.info("Running stand alone. Guessing project path to be MAIN/{}", projectName);
+				project.setBranchPath("MAIN/" + projectName);
+			} else {
+				try {
+					project = scaClient.getProject(projectName);
+					LOGGER.info("Recovered project {} with branch path: {}", project.getKey(), project.getBranchPath());
+				} catch (RestClientException e) {
+					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
+				}
+			}
+			project.setKey(projectName);
+		}
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {

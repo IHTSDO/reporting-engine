@@ -45,7 +45,7 @@ public class UnfixableLangRefsetDuplicates extends DeltaGenerator {
 		String[] tabNames = new String[] {	
 				"UnfixableLangRefsetDuplicates",
 				"Historic Duplications"};
-		super.postInit(googleFolder, tabNames, columnHeadings, false);
+		super.postInit(googleFolder, tabNames, columnHeadings);
 	}
 
 	@Override
