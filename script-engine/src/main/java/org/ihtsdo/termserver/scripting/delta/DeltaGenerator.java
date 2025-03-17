@@ -78,6 +78,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected boolean batchDelimitersDetected = false;
 	protected int archivesCreated = 0;
+	private File lastArchiveCreated = null;
 
 	@Override
 	protected void init (String[] args) throws TermServerScriptException {
@@ -592,8 +593,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 				conceptsOutput += outputModifiedComponents(true);
 			}
 			getRF2Manager().flushFiles(true); //Just flush the RF2, we might want to keep the report going
-			File archive = SnomedUtils.createArchive(new File(outputDirName));
-			String msg = "Created " + archive.getName() + " containing " + conceptsOutput + " concepts";
+			lastArchiveCreated = SnomedUtils.createArchive(new File(outputDirName));
+			String msg = "Created " + lastArchiveCreated.getName() + " containing " + conceptsOutput + " concepts";
 			LOGGER.info(msg);
 			report((Concept) null, Severity.NONE, ReportActionType.INFO, msg);
 			return conceptsOutput;
@@ -638,7 +639,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 			finish();
 		}
 	}
-	
+
+	public File getLastArchiveCreated () {
+		return lastArchiveCreated;
+	}
 	
 	protected void close(ZipInputStream zis) {
 		try {
