@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -35,7 +34,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	public static final String THIS_RELEASE = "This Release";
 	public static final String MODULES = "Modules";
 	protected Set<Concept> statedIntermediatePrimitives;
-	protected List<String> moduleFilter;
 	String origProject; //We need to save this because visibility is decided per project so zip files don't get picked up.
 
 	public static void main(String[] args) throws TermServerScriptException {
@@ -69,12 +67,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
 			projectName = run.getParamValue(THIS_RELEASE);
 			run.setProject(projectName);
-		}
-
-		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
-			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
-					.map(String::trim)
-					.toList();
 		}
 
 		super.init(run);

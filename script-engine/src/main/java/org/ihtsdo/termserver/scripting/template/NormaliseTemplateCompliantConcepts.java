@@ -440,9 +440,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/procedures/Periodontal.json" };
 		templateNames = new String[] { "templates/procedures/Exteriorization.json" }
 		templateNames = new String[] { "templates/procedures/Construction of stoma.json" };
+		templateNames = new String[] { "templates/procedures/Radiotherapy.json" };
 		*/
 
-		templateNames = new String[] { "templates/procedures/Radiotherapy.json" };
+		templateNames = new String[] { "templates/procedures/Drainage.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
@@ -456,19 +457,20 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"SCTID, FSN, SemTag, Reason, Inferred Expression",
 				"SCTID, FSN, SemTag",
 				"SCTID, FSN, SemTag"};
-		String[] tabNames = new String[] {	"Normalization Processing",
+		String[] tabNames = new String[] {
+				"Normalization Processing",
 				"Metadata",
 				"Excluded Concepts",
 				"Misaligned Concepts",
 				"Perfected Concepts"};
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override
-	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		if ((loadedConcept.getGciAxioms() != null && loadedConcept.getGciAxioms().size() > 0) 
-				|| (loadedConcept.getAdditionalAxioms() != null && loadedConcept.getAdditionalAxioms().size() > 0)) {
+		if ((loadedConcept.getGciAxioms() != null && !loadedConcept.getGciAxioms().isEmpty())
+				|| (loadedConcept.getAdditionalAxioms() != null && !loadedConcept.getAdditionalAxioms().isEmpty())) {
 			throw new ValidationFailure(task, loadedConcept, "Concept uses axioms");
 		}
 		int changesMade = removeRedundandRelationships(task, loadedConcept);
@@ -546,7 +548,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Relationship> ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships();
 		for (Relationship r : ungrouped) {
 			Set<Relationship> inferredMatches = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r);
-			if (inferredMatches.size() == 0) {
+			if (inferredMatches.isEmpty()) {
 				removeRelationship(t, c, r, "Redundant ungrouped stated: ");
 				changesMade++;
 			}
@@ -575,6 +577,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		return changesMade;
 	}
 
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
