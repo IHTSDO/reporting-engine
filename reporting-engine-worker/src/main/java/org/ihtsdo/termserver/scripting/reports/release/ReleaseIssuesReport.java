@@ -143,6 +143,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		cache = gl.getDescendantsCache();
 
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getArchiveManager().setLoadOtherReferenceSets(true);
 		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 
 		inputFiles.add(0, new File("resources/prepositions.txt"));
@@ -295,7 +296,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		LOGGER.info("Checking {} concepts...", gl.getAllConcepts().size());
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConceptsSorted = allConceptsSorted.stream()
-				.filter(c -> c.isActiveSafely())
+				.filter(Component::isActiveSafely)
 				.toList();
 		LOGGER.info("Sorted {} concepts", allConceptsSorted.size());
 		LOGGER.info("Detecting recently touched concepts");
@@ -334,6 +335,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		} else {
 			dueWithoutTo();
 		}
+
+		checkComponentsReferenceDependentModules();
 
 		LOGGER.info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -379,6 +382,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		populateSummaryTab();
 		
 		LOGGER.info("Summary tab complete, all done.");
+	}
+
+	private void checkComponentsReferenceDependentModules() {
+		//We're going to go through every component and check that the concepts it references,
+		//belong to a module that is visible from the module of the component
 	}
 
 	private void inappropriateModuleJumping() throws TermServerScriptException {
