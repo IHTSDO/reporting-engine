@@ -1,0 +1,7 @@
+{
+  "name": "Exteriorization ",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Exteriorization+%28procedure%29+-+v0.1",
+  "version": 1,
+  "domain": "<< 59719002 |Exteriorization (procedure)|",
+  "logicalTemplate": "71388002 |Procedure (procedure)|  : [[~1..1 @roleGroup]] { [[~1..1]]  260686004 |Method (attribute)|  = [[ +id ( <<  129354008 |Exteriorization - action (qualifier value)|  ) @Exteriorization ]], [[~0..1]] [[ +id ( <  363704007 |Procedure site (attribute)|  ) @Proceduresite ]] = [[ +id ( <  442083009 |Anatomical or acquired body structure (body structure)|  ) @Bodystructure ]], [[~0..1]]  363700003 |Direct morphology (attribute)|  = [[ +id ( < 49755003 |Morphologically abnormal structure (morphologic abnormality)|  ) @Morphology ]]}"
+}

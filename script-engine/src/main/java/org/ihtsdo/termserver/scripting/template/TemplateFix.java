@@ -69,33 +69,6 @@ abstract public class TemplateFix extends BatchFix {
 		//when we recover that same ECL later and try to use them.
 		EclCache.reset();
 	}
-	
-	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
-		initTemplatesAndExclusions();
-		postInit(tabNames, columnHeadings,false);
-		LOGGER.info("Post initialisation complete, with multiple tabs");
-	}
-	
-	private void importExplicitExclusions() throws TermServerScriptException {
-		explicitExclusions = new HashSet<>();
-		LOGGER.info("Loading Explicit Exclusions {}", getInputFile());
-		if (!getInputFile().canRead()) {
-			throw new TermServerScriptException("Cannot read: " + getInputFile());
-		}
-		List<String> lines;
-		try {
-			lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
-		}
-		LOGGER.debug("Processing Explicit Exclusions File");
-		for (String line : lines) {
-			String sctId = line.split(TAB)[0];
-			Concept excluded = gl.getConcept(sctId, false, true);  //Validate concept exists
-			explicitExclusions.add(excluded);
-		}
-		addSummaryInformation("Explicitly excluded concepts specified", explicitExclusions.size());
-	}
 
 	public void postInit() throws TermServerScriptException {
 		initTemplatesAndExclusions();
@@ -103,6 +76,12 @@ abstract public class TemplateFix extends BatchFix {
 		LOGGER.info("Post initialisation complete");
 	}
 	
+	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
+		initTemplatesAndExclusions();
+		postInit(tabNames, columnHeadings,false);
+		LOGGER.info("Post initialisation complete, with multiple tabs");
+	}
+
 	private void initTemplatesAndExclusions() throws TermServerScriptException {
 		if (subHierarchyStr != null) {
 			subHierarchy = gl.getConcept(subHierarchyStr);
@@ -115,14 +94,14 @@ abstract public class TemplateFix extends BatchFix {
 				Template t = loadLocalTemplate(id, templateNames[x]);
 				validateTemplate(t);
 				templates.add(t);
-				LOGGER.info("Loaded template: " + t);
+				LOGGER.info("Loaded template: {}", t);
 				
 				if (StringUtils.isEmpty(subsetECL)) {
 					subsetECL = t.getDomain();
-					LOGGER.info("Subset ECL set to " + subsetECL);
+					LOGGER.info("Subset ECL set to {}", subsetECL);
 				}
 			}
-			LOGGER.info(templates.size() + " Templates loaded successfully");
+			LOGGER.info("{} Templates loaded successfully", templates.size());
 		}
 		
 		if (exclusions == null) {
@@ -172,12 +151,33 @@ abstract public class TemplateFix extends BatchFix {
 		complexTemplateAttributes.add(gl.getConcept("47429007"));  //|Associated with (attribute)
 		
 	}
-	
+
+	private void importExplicitExclusions() throws TermServerScriptException {
+		explicitExclusions = new HashSet<>();
+		LOGGER.info("Loading Explicit Exclusions {}", getInputFile());
+		if (!getInputFile().canRead()) {
+			throw new TermServerScriptException("Cannot read: " + getInputFile());
+		}
+		List<String> lines;
+		try {
+			lines = Files.readLines(getInputFile(), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failure while reading: " + getInputFile(), e);
+		}
+		LOGGER.debug("Processing Explicit Exclusions File");
+		for (String line : lines) {
+			String sctId = line.split(TAB)[0];
+			Concept excluded = gl.getConcept(sctId, false, true);  //Validate concept exists
+			explicitExclusions.add(excluded);
+		}
+		addSummaryInformation("Explicitly excluded concepts specified", explicitExclusions.size());
+	}
+
 	private void validateTemplate(Template t) throws TermServerScriptException {
 		//Is the Domain specified by the template valid?  No point running if it selects no rows
 		boolean useLocalStoreIfSimple = false;
 		String ecl = t.getDomain();
-		if (!getArchiveManager().isAllowStaleData() && findConcepts(ecl, false, useLocalStoreIfSimple).size() == 0) {
+		if (!getArchiveManager().isAllowStaleData() && findConcepts(ecl, false, useLocalStoreIfSimple).isEmpty()) {
 			throw new TermServerScriptException("Template domain: " + ecl + " returned 0 rows");
 		}
 		
@@ -187,7 +187,7 @@ abstract public class TemplateFix extends BatchFix {
 			for (Attribute a : g.getAttributes()) {
 				//Does this attribute have a named slot?
 				if (!StringUtils.isEmpty(a.getValueSlotName())) {
-					String attributeClause = a.toString().replaceAll("  ", " ");
+					String attributeClause = a.toString().replace("  ", " ");
 					String attributeClauseValue = attributeClause.substring(attributeClause.indexOf("=") + 1).trim();
 					if (namedSlots.containsKey(a.getValueSlotName())) {
 						//TODO This comparison should be made without FSNs involved

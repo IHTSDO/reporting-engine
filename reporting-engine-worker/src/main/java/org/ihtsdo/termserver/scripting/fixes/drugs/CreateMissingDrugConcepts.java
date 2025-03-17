@@ -115,10 +115,12 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
+		String[] columnHeadings = new String[] {
+				"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
 				"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
 				"Suppressed Concepts"};
-		String[] tabNames = new String[] {	"Missing MP/MPF Concepts",
+		String[] tabNames = new String[] {
+				"Missing MP/MPF Concepts",
 				"Processing Issues",
 				"Suppressed Concepts"};
 
