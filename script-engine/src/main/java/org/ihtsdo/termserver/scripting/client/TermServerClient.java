@@ -528,7 +528,7 @@ public class TermServerClient {
 
 
 	private void importArchive(String importJobLocation, File archive) throws JSONException, InterruptedException, TermServerScriptException {
-		LOGGER.info("Importing " + archive + " in import job " + importJobLocation);
+		LOGGER.info("Importing {} in import job {}", archive, importJobLocation);
 		String url = importJobLocation + "/archive";
 		
 		HttpHeaders headers = new HttpHeaders();
@@ -576,7 +576,7 @@ public class TermServerClient {
 		try {
 			Preconditions.checkNotNull(descId);
 			JSONResource response =  resty.json(getDescriptionsPath(descId, branchPath) + "/updates", RestyHelper.content(descObj, JSON_CONTENT_TYPE));
-			LOGGER.info("Updated description " + descId);
+			LOGGER.info("Updated description {}", descId);
 			return response;
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -597,7 +597,30 @@ public class TermServerClient {
 			LOGGER.info("Deleted refset member id: {}", refsetMemberId);
 	}
 
-	private String getRefsetMemberUrl(String refSetMemberId, String branch) {
+	public void deleteRefsetMembers(List<String> refsetMemberIds, String branch, boolean toForce) throws TermServerScriptException {
+		Map<String, List<String>> importRequest = new HashMap<>();
+		importRequest.put("memberIds", refsetMemberIds);
+		HttpEntity<Map<String, List<String>>> requestEntity = new HttpEntity<>(importRequest, headers);
+		ResponseEntity<String> response = null;
+		String url = getRefsetMembersUrl(branch) + (toForce?"?force=true":"");
+		// Make DELETE request
+		try {
+			response = restTemplate.exchange(
+					url,
+					HttpMethod.DELETE,
+					requestEntity,
+					String.class
+			);
+		} catch (RestClientException e) {
+			LOGGER.error("Failed to delete refset members from {}", url, e);
+		}
+		if (response != null && !response.getStatusCode().is2xxSuccessful()) {
+			throw new TermServerScriptException("Failed to delete refset members from : " + url + " : " + response.getBody());
+		}
+		LOGGER.info("Deleted {} refset members on branch {}", refsetMemberIds.size(), branch);
+	}
+
+	private String getRefsetMembersUrl(String refSetMemberId, String branch) {
 		return this.serverUrl + "/" + branch + MEMBERS + refSetMemberId;
 	}
 
@@ -613,12 +636,12 @@ public class TermServerClient {
 		}
 	}
 
-	private String getRefsetMemberUrl(String branch) {
+	private String getRefsetMembersUrl(String branch) {
 		return this.serverUrl + "/" + branch + "/members";
 	}
 	
 	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
-		return getRefsetMemberUrl(refSetMemberId, branch) + "?force=" + toForce;
+		return getRefsetMembersUrl(refSetMemberId, branch) + "?force=" + toForce;
 	}
 
 	public Refset loadRefsetEntries(String branchPath, String refsetId, String referencedComponentId) throws TermServerScriptException {
@@ -691,7 +714,7 @@ public class TermServerClient {
 
 	public RefsetMember getRefsetMember(String uuid, String branchPath) {
 		try {
-			String url = getRefsetMemberUrl(uuid, branchPath);
+			String url = getRefsetMembersUrl(uuid, branchPath);
 			return restTemplate.getForObject(url, RefsetMember.class);
 		} catch (Exception e) {
 			if (e.getMessage().contains("Member not found")) {
@@ -729,7 +752,7 @@ public class TermServerClient {
 
 	public LangRefsetEntry getLangRefsetMember(String uuid, String branchPath) {
 		try {
-			String url = getRefsetMemberUrl(uuid, branchPath);
+			String url = getRefsetMembersUrl(uuid, branchPath);
 			return restTemplate.getForObject(url, LangRefsetEntry.class);
 		} catch (Exception e) {
 			if (e.getMessage().contains("Member not found")) {
@@ -745,7 +768,7 @@ public class TermServerClient {
 	
 	public Collection<RefsetMember> findRefsetMembers(String branchPath, List<Concept> refCompIds, String refsetFilter) throws TermServerScriptException {
 		try {
-			String url = getRefsetMemberUrl(branchPath);
+			String url = getRefsetMembersUrl(branchPath);
 			url += "?";
 			boolean isFirst = true;
 			for (Component c : refCompIds) {
@@ -769,7 +792,7 @@ public class TermServerClient {
 	public Collection<RefsetMember> findRefsetMembers(String branchPath, String refsetId, Boolean isNullEffectiveTime) throws TermServerScriptException {
 		try {
 			Collection<RefsetMember> members = new ArrayList<>(); 
-			String url = getRefsetMemberUrl(branchPath) + "?";
+			String url = getRefsetMembersUrl(branchPath) + "?";
 			if (refsetId != null) {
 				url += "&referenceSet=" + refsetId;
 			}
@@ -792,7 +815,7 @@ public class TermServerClient {
 	}
 	
 	public RefsetMember updateRefsetMember(RefsetMember rm, String branchPath) {
-		String url = getRefsetMemberUrl(rm.getId(), branchPath);
+		String url = getRefsetMembersUrl(rm.getId(), branchPath);
 		ResponseEntity<RefsetMember> response = restTemplate.exchange(
 				url,
 				HttpMethod.PUT,
