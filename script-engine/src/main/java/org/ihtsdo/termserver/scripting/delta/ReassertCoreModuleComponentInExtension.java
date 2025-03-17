@@ -47,7 +47,7 @@ public class ReassertCoreModuleComponentInExtension extends DeltaGenerator {
 
 	@Override
 	public void init (String[] args) throws TermServerScriptException {
-		getArchiveManager().setReleasedFlagPopulated(true);
+		getArchiveManager().setPopulateReleaseFlag(true);
 		super.init(args);
 	}
 

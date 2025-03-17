@@ -288,6 +288,13 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		}
 	}
 
+	protected Task createSingleTask() throws TermServerScriptException {
+		Batch batch = new Batch(getScriptName());
+		Task task = batch.addNewTask(getNextAuthor(), getNextReviewer());
+		createTaskIfRequired(batch, task, "1 of 1");
+		return task;
+	}
+
 	private void createTaskIfRequired(Batch batch, Task task, String xOfY) throws TermServerScriptException {
 		//Did user specify that we're working in a particular task?  If so, we can only
 		//work within a single task

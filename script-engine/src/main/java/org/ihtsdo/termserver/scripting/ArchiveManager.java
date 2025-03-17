@@ -58,7 +58,7 @@ public class ArchiveManager implements ScriptConstants {
 	private boolean ensureSnapshotPlusDeltaLoad = false;
 	private boolean populatePreviousTransitiveClosure = false;
 	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
-	private boolean releasedFlagPopulated = false;
+	private boolean populateReleaseFlag = false;
 	private boolean runIntegrityChecks = true;
 	private boolean loadOtherReferenceSets = false;
 	private final List<String> integrityCheckIgnoreList = List.of(
@@ -307,23 +307,23 @@ public class ArchiveManager implements ScriptConstants {
 			}
 
 			if (!snapshot.exists() ||
-					(isStale && !allowStaleData) || 
-					(ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) ||
+					(isStale && !allowStaleData) ||
+					((ensureSnapshotPlusDeltaLoad || populateReleaseFlag) && !loadEditionArchive) ||
 					(populatePreviousTransitiveClosure && gl.getPreviousTC() == null)) {
 				
-				if (ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) {
-					LOGGER.info("Generating fresh snapshot because 'ensureSnapshotPlusDeltaLoad' flag must be populated");
+				if ((ensureSnapshotPlusDeltaLoad || populateReleaseFlag) && !loadEditionArchive) {
+					LOGGER.info("Generating fresh snapshot because 'ensureSnapshotPlusDeltaLoad' or 'populateReleaseFlag' is set, and not loading from edition archive");
 				} else if (populatePreviousTransitiveClosure && gl.getPreviousTC() == null) {
 					LOGGER.info("Generating fresh snapshot because previous transitive closure must be populated");
 				}
 				generateSnapshot(ts.getProject());
-				releasedFlagPopulated = true;
+				populateReleaseFlag = true;
 				writeSnapshotToCache = true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
 				//We might already have this project in memory
 				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject()) && 
-						(ensureSnapshotPlusDeltaLoad == false || (ensureSnapshotPlusDeltaLoad && releasedFlagPopulated))) {
+						(ensureSnapshotPlusDeltaLoad == false || (ensureSnapshotPlusDeltaLoad && populateReleaseFlag))) {
 					LOGGER.info("{} already held in memory, no need to reload.  Resetting any issues held against components...", ts.getProject());
 					gl.makeReady();
 				} else {
@@ -332,22 +332,22 @@ public class ArchiveManager implements ScriptConstants {
 						LOGGER.info("{} being wiped to make room for {}", currentlyHeldInMemory.getKey(), ts.getProject());
 						gl.reset();
 						System.gc();
-						releasedFlagPopulated = false;
+						populateReleaseFlag = false;
 					}
 					//Do we also need a fresh snapshot here so we can have the 'released' flag?
 					//If we're loading an edition archive then that is - by definition all released.
-					if (ensureSnapshotPlusDeltaLoad && !releasedFlagPopulated && !loadEditionArchive) {
+					if (ensureSnapshotPlusDeltaLoad && !populateReleaseFlag && !loadEditionArchive) {
 						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
 						generateSnapshot(ts.getProject());
 						writeSnapshotToCache = true;
-						releasedFlagPopulated = true;
+						populateReleaseFlag = true;
 					} else {
 						LOGGER.info("Loading snapshot archive contents into memory: " + snapshot);
 						try {
 							//This archive is 'current state' so we can't know what is released or not
 							//Unless it's an edition archive
-							releasedFlagPopulated = loadEditionArchive;
+							populateReleaseFlag = loadEditionArchive;
 							//We only know if the components are released when loading an edition archive
 							Boolean isReleased = loadEditionArchive ? true : null;
 							loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
@@ -970,12 +970,12 @@ public class ArchiveManager implements ScriptConstants {
 		this.populatePreviousTransitiveClosure = populatePreviousTransitiveClosure;
 	}
 
-	public boolean isReleasedFlagPopulated() {
-		return releasedFlagPopulated;
+	public boolean isPopulateReleaseFlag() {
+		return populateReleaseFlag;
 	}
 
-	public void setReleasedFlagPopulated(boolean releasedFlagPopulated) {
-		this.releasedFlagPopulated = releasedFlagPopulated;
+	public void setPopulateReleaseFlag(boolean populateReleaseFlag) {
+		this.populateReleaseFlag = populateReleaseFlag;
 	}
 	
 	public void reset() {
@@ -1002,7 +1002,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		if (fullReset) {
-			singleton.releasedFlagPopulated = false;
+			singleton.populateReleaseFlag = false;
 			singleton.loadEditionArchive = false;
 			singleton.loadDependencyPlusExtensionArchive = false;
 			singleton.populatePreviousTransitiveClosure = false;

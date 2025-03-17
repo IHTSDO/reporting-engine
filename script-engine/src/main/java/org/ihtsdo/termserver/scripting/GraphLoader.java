@@ -855,7 +855,7 @@ public class GraphLoader implements ScriptConstants {
 
 					//If we've already received a newer version of this component, say
 					//by loading INT first and a published MS 2nd, then skip
-					if (!StringUtils.isEmpty(original.getEffectiveTime())
+					if (original != null && !StringUtils.isEmpty(original.getEffectiveTime())
 							&& (isReleased != null && isReleased)
 							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 						//Skipping incoming published langrefset row, older than that held
@@ -888,7 +888,7 @@ public class GraphLoader implements ScriptConstants {
 
 				//Complexity here that we've historically had language refset entries
 				//for the same description which attempt to cancel each other out using
-				//different UUIDs.  Therefore if we get a later entry inactivating a given
+				//different UUIDs.  Therefore, if we get a later entry inactivating a given
 				//dialect, then allow that to overwrte an earlier value with a different UUUID
 
 				//Do we have an existing entry for this description & dialect that is later and inactive?
@@ -1310,7 +1310,7 @@ public class GraphLoader implements ScriptConstants {
 	}
 
 	private void populateAllComponents() {
-		Script.print("Populating maps of all components.");
+		Script.print("Populating maps of all components");
 		allComponents = new HashMap<>();
 		componentOwnerMap = new HashMap<>();
 		int tenPercent = getAllConcepts().size()/10;
@@ -1371,6 +1371,11 @@ public class GraphLoader implements ScriptConstants {
 			for (ComponentAnnotationEntry ae : c.getComponentAnnotationEntries()) {
 				allComponents.put(ae.getId(), ae);
 				componentOwnerMap.put(ae, c);
+			}
+
+			for (AlternateIdentifier altId : c.getAlternateIdentifiers()) {
+				allComponents.put(altId.getId(), altId);
+				componentOwnerMap.put(altId, c);
 			}
 		}
 		Script.print("\n");

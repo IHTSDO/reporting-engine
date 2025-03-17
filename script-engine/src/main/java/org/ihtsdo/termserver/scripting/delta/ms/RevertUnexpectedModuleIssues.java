@@ -59,7 +59,7 @@ public class RevertUnexpectedModuleIssues extends DeltaGenerator {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setReleasedFlagPopulated(true);
+		getArchiveManager().setPopulateReleaseFlag(true);
 		ReportSheetManager.setTargetFolderId("1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"); //Managed Service
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);

@@ -30,7 +30,7 @@ public class RevertNewInactiveStateModuleJump extends DeltaGenerator {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setReleasedFlagPopulated(true);
+		getArchiveManager().setPopulateReleaseFlag(true);
 		gl.setRecordPreviousState(true);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);

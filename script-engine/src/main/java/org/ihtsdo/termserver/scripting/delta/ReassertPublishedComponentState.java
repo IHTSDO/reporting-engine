@@ -46,7 +46,7 @@ public class ReassertPublishedComponentState extends DeltaGeneratorWithAutoImpor
 
 	@Override
 	public void init (String[] args) throws TermServerScriptException {
-		getArchiveManager().setReleasedFlagPopulated(true);
+		getArchiveManager().setPopulateReleaseFlag(true);
 		super.init(args);
 	}
 

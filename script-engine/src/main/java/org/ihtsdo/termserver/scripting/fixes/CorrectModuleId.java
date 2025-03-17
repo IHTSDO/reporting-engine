@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.util.*;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -83,12 +82,9 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
 		LOGGER.info("Identifying concepts to process");
-		List<Concept> processMe = new ArrayList<Concept>();
+		List<Concept> processMe = new ArrayList<>();
 		setQuiet(true);
 		for (Concept c : ROOT_CONCEPT.getDescendants(NOT_SET)) {
-			if (!c.getConceptId().equals("277040004")) {
-			//	continue;
-			}
 			if (fixModuleId(null, c.cloneWithIds()) > 0) {
 				processMe.add(c);
 			}
@@ -96,14 +92,7 @@ public class CorrectModuleId extends BatchFix implements ScriptConstants{
 		setQuiet(false);
 		LOGGER.info("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
-		return new ArrayList<Component>(processMe);
-	}
-
-	
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		throw new NotImplementedException("This class self determines concepts to process");
+		return new ArrayList<>(processMe);
 	}
 
 }
