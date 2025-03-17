@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.pipeline.npu;
 
+import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -13,9 +14,9 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(NpuAttributePartMapManager.class);
 
-	protected NpuAttributePartMapManager(ContentPipelineManager cpm, Map<String, Part> loincParts,
+	protected NpuAttributePartMapManager(ContentPipelineManager cpm, Map<String, Part> parts,
 			Map<String, String> partMapNotes) {
-		super(cpm, loincParts, partMapNotes);
+		super(cpm, parts, partMapNotes);
 	}
 
 	@Override
@@ -25,7 +26,10 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 
 	@Override
 	protected void populateHardCodedMappings() throws TermServerScriptException {
-		LOGGER.warn("NPU has no mapping hard coded mappings");
+		hardCodedMappings.put("Ratio", List.of(
+				gl.getConcept("30766002|Quantitative (qualifier value)|")));
+		hardCodedMappings.put("Ordinal", List.of(
+				gl.getConcept("117363000 |Ordinal value|")));
 	}
 
 }

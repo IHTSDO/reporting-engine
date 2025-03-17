@@ -246,13 +246,13 @@ public class NpuDetail implements NpuScriptConstants {
 		this.lastNote = lastNote;
 	}
 
-	public List<Part> getParts() {
+	public List<Part> getParts(NpuConcept npuConcept) {
 		return List.of(
-				new Part(NPU_PART_COMPONENT, elementCodesForComponents),
-				new Part(NPU_PART_SYSTEM, elementCodesForSystems),
-				new Part(NPU_PART_PROPERTY, elementCodesForProperties),
-				new Part(NPU_PART_SCALE, scale),
-				new Part(NPU_PART_UNIT, elementCodesForUnit)
+			new Part(elementCodesForComponents, NPU_PART_COMPONENT, npuConcept.getComponent()),
+			new Part(elementCodesForSystems, NPU_PART_SYSTEM, npuConcept.getSystem()),
+			new Part(elementCodesForProperties, NPU_PART_PROPERTY, npuConcept.getProperty()),
+			new Part(scale, NPU_PART_SCALE, npuConcept.getScaleType()),
+			new Part(elementCodesForUnit, NPU_PART_UNIT, npuConcept.getUnit())
 		);
 	}
 }

@@ -192,9 +192,14 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, Part part, Concept attributeType) throws TermServerScriptException {
 		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), getExternalIdentifier(), part.getPartNumber(), attributeType);
+		for (RelationshipTemplate rt : additionalAttributes) {
+			applyTemplateSpecificModellingRules(additionalAttributes, part, rt);
+		}
 		attributes.addAll(additionalAttributes);
 		return !additionalAttributes.isEmpty();
 	}
+
+	protected abstract void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt)  throws TermServerScriptException;
 
 	protected void addAttributesToConcept(RelationshipTemplate rt, Part part, boolean expectNullMap) {
 		if (rt != null) {
@@ -280,10 +285,95 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	protected String populateTemplateItem(String templateItem, String ptTemplateStr) throws TermServerScriptException {
 		String regex = "\\[" + templateItem + "\\]";
 		if (slotTermMap.containsKey(templateItem)) {
-			String itemStr = StringUtils.decapitalizeFirstLetter(slotTermMap.get(templateItem));
+			String itemStr = slotTermMap.get(templateItem);
+			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
+
+			boolean isDeletion = false;
+			if (itemStr.isEmpty()){
+				isDeletion = true;
+			} else if (!csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
+					&& !csUtils.startsWithAcronym(itemStr)) {
+				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+			}
+
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
+
+			if (isDeletion) {
+				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
+				if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
+					ptTemplateStr = ptTemplateStr.replace(" at ", "");
+				}
+				//Process concepts that don't have a time can result in "in  in" so tidy that up
+				ptTemplateStr = ptTemplateStr.replace(" in  in ", " in ");
+			}
+		} else {
+			ptTemplateStr = populateTermTemplateFromAttribute(regex, templateItem, ptTemplateStr);
 		}
 		return ptTemplateStr;
+	}
+
+	protected String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) {
+		//Do we need to append any values to this term
+		if (slotTermAppendMap.containsKey(partTypeName)) {
+			itemStr += " " + slotTermAppendMap.get(partTypeName);
+		}
+
+		ptStr = ptStr.replaceAll(templateItem, itemStr);
+		return ptStr;
+	}
+
+	protected String populateTermTemplateFromAttribute(String regex, String templateItem, String ptTemplateStr) {
+		Concept attributeType = typeMap.get(templateItem);
+		if (attributeType == null) {
+			concept.addIssue("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
+			return ptTemplateStr;
+		}
+		Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		if (rels.isEmpty()) {
+			return ptTemplateStr;
+		}
+		if (rels.size() > 1) {
+			//Special case for influenza virus antigen
+			if (rels.iterator().next().getTarget().getFsn().contains("Influenza")) {
+				ptTemplateStr = populateTermTemplate("influenza antibody", regex, ptTemplateStr, templateItem);
+			} else {
+				String itemStr = rels.stream()
+						.map(this::getCaseAdjustedTweakedTerm)
+						.collect(Collectors.joining(" and "));
+				ptTemplateStr = populateTermTemplate(itemStr, regex, ptTemplateStr, templateItem);
+			}
+		} else {
+			RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
+			ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
+		}
+		return ptTemplateStr;
+	}
+
+	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr, String partTypeName) {
+		String itemStr = getCaseAdjustedTweakedTerm(rt);
+		return populateTermTemplate(itemStr, templateItem, ptStr, partTypeName);
+	}
+
+	private String getCaseAdjustedTweakedTerm(IRelationship rt) {
+		//TO DO Detect GB Spelling and break out another term
+		try {
+			Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
+			String itemStr = targetPt.getTerm();
+			itemStr = applyTermTweaking(rt, itemStr);
+
+			//Can we make this lower case?
+			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithProperNounPhrase(getConcept(), itemStr)) {
+				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
+			}
+			return itemStr;
+		} catch (TermServerScriptException e) {
+			LOGGER.error("Failed to get term for {}",rt.getTarget().getFsn(),e);
+			return rt.getTarget().getFsn();
+		}
+	}
+
+	protected String applyTermTweaking(IRelationship r, String term) {
+		return term;  //Override to apply tweaks
 	}
 
 	protected abstract void populateParts() throws TermServerScriptException;

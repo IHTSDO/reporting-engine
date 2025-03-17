@@ -24,7 +24,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 
 	@Override
 	public String getSemTag() {
-		return "(observable entity)";
+		return " (observable entity)";
 	}
 
 	protected NpuTemplatedConcept(ExternalConcept externalConcept) {
@@ -51,8 +51,9 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 	@Override
 	protected void populateParts() throws TermServerScriptException {
 		prepareConceptDefaultedForModule(SCTID_NPU_EXTENSION_MODULE);
+		NpuConcept npuConcept = getNpuConcept();
 		NpuDetail npuDetail = ((ImportNpuConcepts)cpm).npuDetailsMap.get(getExternalIdentifier());
-		for (Part part : npuDetail.getParts()) {
+		for (Part part : npuDetail.getParts(npuConcept)) {
 			populatePart(part);
 		}
 
@@ -71,6 +72,17 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 	@Override
 	protected boolean detailsIndicatePrimitiveConcept() throws TermServerScriptException {
 		return false;
+	}
+
+	@Override
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		//If we're working with a Unit, and we haven't found a mapping for it, then use the name from the NPU part
+		//and make the concept primitive
+		if (part.getPartTypeName().equals(NPU_PART_UNIT) && attributes.isEmpty()) {
+			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			slotTermMap.put(NPU_PART_UNIT, part.getPartName());
+		}
+
 	}
 
 	@Override

@@ -2,8 +2,12 @@ package org.ihtsdo.termserver.scripting.pipeline.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConceptNull;
+
+import java.util.List;
 
 public class TemplatedConceptNull extends TemplatedConcept {
 
@@ -33,6 +37,11 @@ public class TemplatedConceptNull extends TemplatedConcept {
 	@Override
 	public String getSchemaId() {
 		throw new IllegalArgumentException(UNEXPECTED);
+	}
+
+	@Override
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		//Override here if template rules needed
 	}
 
 	@Override

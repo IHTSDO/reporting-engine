@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc.template;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
@@ -133,6 +132,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		loincDetailMap = loincDetailMapAllTerms.get(externalConcept.getExternalIdentifier());
 	}
 
+	@Override
 	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rules that apply to all templates:
 		if (part.getPartNumber().equals("LP36683-8")) {
@@ -204,85 +204,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			} else {
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, replacement);
 			}
-		} else if (slotTermMap.containsKey(templateItem)) {
-			String itemStr = slotTermMap.get(templateItem);
-			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
-
-			boolean isDeletion = false;
-			if (itemStr.isEmpty()){
-				isDeletion = true;
-			} else if (!csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
-					&& !csUtils.startsWithAcronym(itemStr)) {
-				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
-			}
-
-			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
-
-			if (isDeletion) {
-				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
-				if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
-					ptTemplateStr = ptTemplateStr.replace(" at ", "");
-				}
-				//Process concepts that don't have a time can result in "in  in" so tidy that up
-				ptTemplateStr = ptTemplateStr.replace(" in  in ", " in ");
-			}
 		} else {
-			ptTemplateStr = populateTermTemplateFromAttribute(regex, templateItem, ptTemplateStr);
+			return super.populateTemplateItem(templateItem, ptTemplateStr);
 		}
 		return ptTemplateStr;
 	}
 
-	private String populateTermTemplateFromAttribute(String regex, String templateItem, String ptTemplateStr) {
-		Concept attributeType = typeMap.get(templateItem);
-		if (attributeType == null) {
-			concept.addIssue("Token " + templateItem + " missing from typeMap in " + this.getClass().getSimpleName());
-			return ptTemplateStr;
-		}
-		Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-		if (rels.isEmpty()) {
-			return ptTemplateStr;
-		}
-		if (rels.size() > 1) {
-			//Special case for influenza virus antigen
-			if (rels.iterator().next().getTarget().getFsn().contains("Influenza")) {
-				ptTemplateStr = populateTermTemplate("influenza antibody", regex, ptTemplateStr, templateItem);
-			} else {
-					String itemStr = rels.stream()
-						.map(this::getCaseAdjustedTweakedTerm)
-						.collect(Collectors.joining(" and "));
-				ptTemplateStr = populateTermTemplate(itemStr, regex, ptTemplateStr, templateItem);
-			}
-		} else {
-			RelationshipTemplate rt = new RelationshipTemplate(rels.iterator().next());
-			ptTemplateStr = populateTermTemplate(rt, regex, ptTemplateStr, templateItem);
-		}
-		return ptTemplateStr;
-	}
-
-	private String populateTermTemplate(RelationshipTemplate rt, String templateItem, String ptStr, String partTypeName) {
-		String itemStr = getCaseAdjustedTweakedTerm(rt);
-		return populateTermTemplate(itemStr, templateItem, ptStr, partTypeName);
-	}
-
-	private String getCaseAdjustedTweakedTerm(IRelationship rt) {
-		//TO DO Detect GB Spelling and break out another term
-		try {
-			Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
-			String itemStr = targetPt.getTerm();
-			itemStr = applyTermTweaking(rt, itemStr);
-
-			//Can we make this lower case?
-			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithProperNounPhrase(getConcept(), itemStr)) {
-				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
-			}
-			return itemStr;
-		} catch (TermServerScriptException e) {
-			LOGGER.error("Failed to get term for {}",rt.getTarget().getFsn(),e);
-			return rt.getTarget().getFsn();
-		}
-	}
-
-	private String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) {
+	@Override
+	protected String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) {
 		//Do we need to append any values to this term
 		if (slotTermAppendMap.containsKey(partTypeName)) {
 			itemStr += " " + slotTermAppendMap.get(partTypeName);
@@ -298,7 +227,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		return ptStr;
 	}
 
-	private String applyTermTweaking(IRelationship r, String term) {
+	@Override
+	protected String applyTermTweaking(IRelationship r, String term) {
 		Concept value = r.getTarget();
 		
 		//Firstly, do we have a flat out replacement for this value?
@@ -315,6 +245,12 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		}
 
+		term = checkTypeTermRemovalMap(r, term);
+		
+		return term;
+	}
+
+	private String checkTypeTermRemovalMap(IRelationship r, String term) {
 		//Are we making any removals based on the type?
 		if (typeValueTermRemovalMap.containsKey(r.getType())) {
 			//Add a space to ensure we do whole word removal
@@ -338,7 +274,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 			term = term.trim();
 		}
-		
 		return term;
 	}
 
