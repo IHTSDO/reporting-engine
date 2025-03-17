@@ -4,8 +4,10 @@ import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 
@@ -58,6 +60,11 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	@Override
 	public String getSchemaId() {
 		return SCTID_NUVA_SCHEMA;
+	}
+
+	@Override
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		//Override here if template rules needed
 	}
 
 	@Override

@@ -234,6 +234,11 @@ public class NpuConcept extends ExternalConcept {
 		this.compSpec = compSpec;
 	}
 
+	@Override
+	public String getProperty() {
+		return getKindOfProperty();
+	}
+
 	public String getKindOfProperty() {
 		return kindOfProperty;
 	}

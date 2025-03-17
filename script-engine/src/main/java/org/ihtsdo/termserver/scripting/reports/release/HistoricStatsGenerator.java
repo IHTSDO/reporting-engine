@@ -111,7 +111,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			for (Concept c : gl.getAllConcepts()) {
 				String active = c.isActiveSafely() ? "Y" : "N";
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
-				String hierarchy = getHierarchy(tc, c, new Stack<>());
+				String hierarchy = getHierarchy(tc, c, new LinkedList<>());
 				String IP = IPs.contains(c) ? "Y" : "N";
 				String sdDescendant = hasSdDescendant(tc, c);
 				String sdAncestor = hasSdAncestor(tc, c);
@@ -160,7 +160,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				if (parts.length == 2 && 
 						!StringUtils.isEmpty(parts[1]) && 
 						!semTagHierarchyMap.containsKey(parts[1])) {
-					String hierarchySCTID = getHierarchy(tc, c, new Stack<>());
+					String hierarchySCTID = getHierarchy(tc, c, new LinkedList<>());
 					if (!StringUtils.isEmpty(hierarchySCTID)) {
 						semTagHierarchyMap.put(parts[1], hierarchySCTID);
 					}
@@ -336,7 +336,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		return results;
 	}
 
-	private String getHierarchy(TransitiveClosure tc, Concept c, Stack<Concept> stack) throws TermServerScriptException {
+	private String getHierarchy(TransitiveClosure tc, Concept c, Deque<Concept> stack) throws TermServerScriptException {
 
 		if (c.equals(ROOT_CONCEPT)) {
 			return ROOT_CONCEPT.getConceptId();
@@ -396,7 +396,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		throw new TermServerScriptException("Unable to determine hierarchy for " + c);
 	}
 
-	private void reportStackOverflow(Stack<Concept> stack) {
+	private void reportStackOverflow(Deque<Concept> stack) {
 		String stackStr = stack.stream()
 				.map(Concept::getId)
 				.collect(Collectors.joining(", "));

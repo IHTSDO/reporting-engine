@@ -7,6 +7,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
+import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -27,6 +28,11 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 	@Override
 	public String getSemTag() {
 		return " (vaccine)";
+	}
+
+	@Override
+	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		//Override here if template rules needed
 	}
 
 	protected NuvaTemplatedVaccineConcept(ExternalConcept externalConcept) {

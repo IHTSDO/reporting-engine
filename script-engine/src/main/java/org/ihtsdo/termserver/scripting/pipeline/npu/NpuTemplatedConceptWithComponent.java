@@ -13,7 +13,7 @@ public class NpuTemplatedConceptWithComponent extends NpuTemplatedConcept {
 	public static NpuTemplatedConcept create(ExternalConcept externalConcept) throws TermServerScriptException {
 		NpuTemplatedConceptWithComponent templatedConcept = new NpuTemplatedConceptWithComponent(externalConcept);
 		templatedConcept.populateTypeMapCommonItems();
-		templatedConcept.setPreferredTermTemplate("[SCALE] of [PROPERTY] of [COMPONENT] in [SYSTEM] measured by [UNIT] ");
+		templatedConcept.setPreferredTermTemplate("[PROPERTY] of [COMPONENT] in [SYSTEM] in [UNIT]");
 		return templatedConcept;
 	}
 

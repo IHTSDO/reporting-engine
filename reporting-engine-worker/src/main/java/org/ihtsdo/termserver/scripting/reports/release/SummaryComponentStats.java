@@ -188,6 +188,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		return columnHeadings;
 	}
 
+	@Override
 	public String[] getColumnWidths() {
 		String[] columnWidths = new String[MAX_REPORT_TABS];
 

@@ -37,10 +37,10 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	protected int unsuccessfullValueReplacement = 0;
 	protected int lexicallyMatchingMapReuse = 0;
 	
-	protected AttributePartMapManager(ContentPipelineManager cpm, Map<String, Part> loincParts, Map<String, String> partMapNotes) {
+	protected AttributePartMapManager(ContentPipelineManager cpm, Map<String, Part> parts, Map<String, String> partMapNotes) {
 		this.cpm = cpm;
 		this.gl = cpm.getGraphLoader();
-		this.parts = loincParts;
+		this.parts = parts;
 		this.partMapNotes = partMapNotes;
 	}
 
@@ -53,19 +53,19 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 				mappings.add(new RelationshipTemplate(attributeType, attributeValue));
 			}
 			return mappings;
-		} else if (containsMappingForLoincPartNum(partNum)) {
+		} else if (containsMappingForPartNum(partNum)) {
 			RelationshipTemplate rt = partToAttributeMap.get(partNum).clone();
 			rt.setType(attributeType);
 			return List.of(rt);
 		} else if (idxTab != NOT_SET && !cpm.getMappingsAllowedAbsent().contains(partNum)) {
-			//Some special rules exist for certain LOINC parts, so we don't need to report if we have one of those.
-			String loincPartStr = parts.get(partNum) == null ? "Loinc Part Not Known - " + partNum : parts.get(partNum).toString();
+			//Some special rules exist for certain parts, so we don't need to report if we have one of those.
+			String partStr = parts.get(partNum) == null ? "Part Not Known - " + partNum : parts.get(partNum).toString();
 			cpm.report(idxTab,
 					externalIdentifier,
 					ContentPipelineManager.getSpecialInterestIndicator(externalIdentifier),
 					cpm.getExternalConcept(externalIdentifier).getLongDisplayName(),
 					"No attribute mapping available",
-					loincPartStr);
+					partStr);
 			cpm.addMissingMapping(partNum, externalIdentifier);
 		}
 		return new ArrayList<>();
@@ -75,6 +75,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 		// Output format from Snap2SNOMED is expected to be:
 		// Source code[0]   Source display  Status  PartTypeName    Target code[4]  Target display  Relationship type code  Relationship type display   No map flag[8] Status[9]
 		populateKnownMappings();
+		populateHardCodedMappings();
 		int lineNum = 0;
 		Set<String> partsSeen = new HashSet<>();
 		List<String> mappingNotes = new ArrayList<>();
@@ -184,7 +185,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	}
 	
 
-	public boolean containsMappingForLoincPartNum(String loincPartNum) {
+	public boolean containsMappingForPartNum(String loincPartNum) {
 		return partToAttributeMap.containsKey(loincPartNum);
 	}
 

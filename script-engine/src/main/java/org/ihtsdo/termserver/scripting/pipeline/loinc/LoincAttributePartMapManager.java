@@ -24,12 +24,10 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 		knownReplacementMap.put(gl.getConcept("119306004 |Drain device specimen (specimen)|"), gl.getConcept("1003707004 |Drain device submitted as specimen (specimen)|"));
 
 		hardCodedTypeReplacementMap.put(gl.getConcept("410670007 |Time|"), gl.getConcept("370134009 |Time aspect|"));
-
-		populateHardCodedMappings();
 	}
 
 	@Override
-	public boolean containsMappingForLoincPartNum(String loincPartNum) {
+	public boolean containsMappingForPartNum(String loincPartNum) {
 		return partToAttributeMap.containsKey(loincPartNum);
 	}
 

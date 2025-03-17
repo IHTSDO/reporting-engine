@@ -52,9 +52,9 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"npu_code, shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType, active, , ",
-				"NpuPartNum, NpuPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
-				"NpuNum, Item of Special Interest, NpuName, Issues, details",
-				"NpuNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, ADD_COMMON_COLUMNS",
+				"npu_code, Item of Interest, External Concept Long Name, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
+				"NpuNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, System, Component, Property, Proc, Unit, , , , , , , , , , , , , , , , , ",
+				"NpuNum, Item of Special Interest, NpuName, Issues, details, , , , , , , , , , ",
 				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, NpuNum, Descriptions, Expression, Status, , ",
 				"Category, NpuNum, Detail, , , "
@@ -95,6 +95,15 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 				String[] columns = line.split("\t", -1);
 				NpuDetail npuDetail = NpuDetail.parse(columns);
 				npuDetailsMap.put(npuDetail.getNpuCode(), npuDetail);
+				NpuConcept npuConcept = (NpuConcept)getExternalConcept(npuDetail.getNpuCode());
+				if (npuConcept == null) {
+					LOGGER.debug("NPU Concept not found for NPU code: {}", npuDetail.getNpuCode());
+				} else {
+					//In the case of NPU, the parts are not given separately, but can be pulled out of the details
+					for (Part part : npuDetail.getParts(npuConcept)) {
+						partMap.put(part.getPartNumber(), part);
+					}
+				}
 			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to read NPU detail file", e);
@@ -197,7 +206,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 
 	@Override
 	protected String[] getHighUsageIndicators(Set<ExternalConcept> externalConcepts) {
-		return new String[0];
+		return new String[]{"N/A", "N/A", "N/A", "N/A", "N/A"};
 	}
 
 }

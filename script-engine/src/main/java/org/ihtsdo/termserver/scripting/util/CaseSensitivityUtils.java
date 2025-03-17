@@ -95,6 +95,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private void determineKnownNames() {
 		//Words that contain X's indicate someone's name
+		LOGGER.info("Determining known names");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActiveSafely()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -107,7 +108,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				}
 			}
 		}
-		
+		LOGGER.info("{} known names detected", knownNames.size());
 	}
 
 	public boolean isProperNoun(String word) {
