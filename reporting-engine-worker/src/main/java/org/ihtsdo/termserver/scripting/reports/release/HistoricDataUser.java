@@ -40,22 +40,21 @@ public class HistoricDataUser extends TermServerReport {
 
 	public static final boolean DEBUG_TO_FILE = false;
 
+	protected String thisRelease;
 	protected String prevRelease;
-	protected String prevDependency;
-	protected String thisDependency;
 
+	protected String thisDependency;
+	protected String prevDependency;
+
+	protected String thisEffectiveTime;
 	protected String previousEffectiveTime;
+
 	boolean isPublishedReleaseAnalysis = false;
 
 	protected String projectKey;
 	protected String origProject;
 	protected Map<String, HistoricData> prevData;
-	//2D data structure Concepts, Descriptions, Relationships, Axioms, LangRefset, Inactivation Indicators, Historical Associations
-	protected Map<Concept, int[][]> summaryDataMap;
-	protected Map<String, int[]> refsetDataMap;
-	protected String thisEffectiveTime;
-	protected int topLevelHierarchyCount = 0;
-	protected String complexName;
+
 	protected boolean previousTransitiveClosureNeeded = true;
 
 	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException {
