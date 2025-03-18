@@ -29,15 +29,30 @@ public class ReleaseSummary {
 	public ReleaseSummary() {
 		releases = new ArrayList<>();
 		columnHeadings = new String[] {
-				"Release Date|", "Concept|Concepts added","Concept|Modified per release","Concept|Total unique",
-				"Description|Added for new concepts","Description|Updated for existing concepts","Description|Total unique",
-				"Text Definition|Added for new concepts","Text Definition|Updated for existing concepts",
-				"Text Definition|Total unique","Language Refset|Added for new concepts","Language Refset|Updated for existing concepts",
-				"Language Refset|Total unique","Axiom|Added for new concepts","Axiom|Updated for existing concepts","Axiom|Total unique",
-				"Stated Relationship|Added for new concepts","Stated Relationship|Updated for existing concepts",
-				"Stated Relationship|Total unique","Inferred Relationship|Added for new concepts",
-				"Inferred Relationship|Updated for existing concepts","Inferred Relationship|Total unique",
-				"Concrete Relationship|Added for new concepts", "Concrete Relationship|Updated for existing concepts",
+				"Release Date|",
+				"Concept|Concepts added",
+				"Concept|Modified per release",
+				"Concept|Total unique",
+				"Description|Added for new concepts",
+				"Description|Updated for existing concepts",
+				"Description|Total unique",
+				"Text Definition|Added for new concepts",
+				"Text Definition|Updated for existing concepts",
+				"Text Definition|Total unique",
+				"Language Refset|Added for new concepts",
+				"Language Refset|Updated for existing concepts",
+				"Language Refset|Total unique",
+				"Axiom|Added for new concepts",
+				"Axiom|Updated for existing concepts",
+				"Axiom|Total unique",
+				"Stated Relationship|Added for new concepts",
+				"Stated Relationship|Updated for existing concepts",
+				"Stated Relationship|Total unique",
+				"Inferred Relationship|Added for new concepts",
+				"Inferred Relationship|Updated for existing concepts",
+				"Inferred Relationship|Total unique",
+				"Concrete Relationship|Added for new concepts",
+				"Concrete Relationship|Updated for existing concepts",
 				"Concrete Relationship|Total unique"
 		};
 	}
@@ -46,7 +61,7 @@ public class ReleaseSummary {
 		ReleaseSummary rs = ReleaseSummary.loadFromLocal(new File("resources/legacy_int_release_summary.json"));
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		String json = gson.toJson(rs);
-		System.out.println(json);
+		LOGGER.info(json);
 	}
 
 	public String[] getColumnHeadings() {

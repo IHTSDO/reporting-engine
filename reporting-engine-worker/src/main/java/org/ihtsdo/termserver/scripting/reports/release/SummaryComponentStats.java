@@ -34,12 +34,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SummaryComponentStats.class);
 
+	static final int MAX_REPORT_TABS = 16;
+	static final int MAX_REPORT_TABS_WITH_HIERARCHY = MAX_REPORT_TABS - 3;
+	static final int DATA_WIDTH = 29;
+
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_CD = 3, TAB_AXIOMS = 4,
 			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
 			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13,
-			TAB_DESC_BY_LANG = 14;  
-	static final int MAX_REPORT_TABS = 15;
-	static final int DATA_WIDTH = 29;  //New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
+			TAB_DESC_BY_LANG = 14, TAB_INACT_REASON = 15;
+
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACTIVATED = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5,
 			IDX_MOVED_MODULE = 6, IDX_CHANGED_INACTIVE = 7, IDX_NEW_P = 8, IDX_NEW_SD = 9,
 			IDX_TOTAL = 10, IDX_INACT_AMBIGUOUS = 11,  IDX_INACT_MOVED_ELSEWHERE = 12, IDX_INACT_CONCEPT_NON_CURRENT = 13,
@@ -54,19 +57,24 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	protected static final List<DescriptionType> NOT_TEXT_DEFN = List.of(DescriptionType.FSN, DescriptionType.SYNONYM);
 
 	static final String DESCRIPTION = "Description";
-	static final String TEXT_DEFINITION = "Text Defn";
+	static final String TEXT_DEFINITION = "Text Definition";
+	static final String SUBTOTAL_TEXT = TAB + "SubTotal";
 
 	List<Concept> topLevelHierarchies;
 	File debugFile;
+	protected String complexName;
 
-	protected int[][] totals;
+	protected int[][] totals = new int[MAX_REPORT_TABS][DATA_WIDTH];
+	protected Map<Concept, int[][]> summaryDataMap = new HashMap<>();
+	protected Map<String, int[]> refsetDataMap = new HashMap<>();
+	protected Map<String, int[]> inactivationReasonDataMap = new HashMap<>();
 	protected Map<String, Map<String, int[]>> descriptionStatsByLanguage = new HashMap<>();
 
 	protected int[] associationSubTotals = new int[DATA_WIDTH];
 	protected int[] languageSubTotals = new int[DATA_WIDTH];
 	protected int[] indicatorSubTotals = new int[DATA_WIDTH];
 
-	private String[] columnHeadings = new String[] {
+	private final String[] columnHeadings = new String[] {
 			// * Concepts
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Moved Module, Changed Inactive, New SD, New P, Total Active, Total, Promoted",
 			// * Descriptions
@@ -78,17 +86,17 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// * Axioms
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
 			// * LangRefSet
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Concepts Affected",
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
 			// * Inactivations
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Other, Total Active, Concepts Affected",
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
 			// * Hist Assoc
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Concepts Affected",
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
 			// * Text Defn
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total, Concepts Affected",
 			// * QI Scope
 			"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
 			// * Desc Assoc
-			"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, New Inactive, Total Active, Total",
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 			// * Desc CNC
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 			// * Desc Inact
@@ -96,9 +104,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// * Refsets
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 			// * Desc By Lang
-			" , , Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
+			", Description Type, Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+			// * Inact Reason
+			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
 	};
-	private String[] tabNames = new String[] {
+	private final String[] tabNames = new String[] {
 			"Concepts",
 			"Descriptions",
 			"Relationships",
@@ -113,7 +123,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			"Desc CNC",
 			"Desc Inact",
 			"Refsets",
-			"Desc by Lang"
+			"Desc by Lang",
+			"Inact Reason"
 	};
 
 	Concept[] QIScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
@@ -128,9 +139,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20241201T120000Z.zip");
-		// REPORT_OUTPUT_TYPES, "S3" REPORT_FORMAT_TYPE, "JSON"
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20241201T120000Z.zip");
+		params.put(REPORT_OUTPUT_TYPES, "S3");
+		params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerScript.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -162,8 +174,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		//Reset this flag for Editions as we might run against the same project so not reset as expected.
 		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
-		summaryDataMap = new HashMap<>();
-		refsetDataMap = new HashMap<>();
 		
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
 		LOGGER.info("Running report with runIntegrityChecks set to {}", runIntegrityChecks);
@@ -190,16 +200,23 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	@Override
 	public String[] getColumnWidths() {
-		String[] columnWidths = new String[MAX_REPORT_TABS];
+		String columnWidthsForOneTab = getColumnWidthsForOneTab();
 
-		for (int tabIdx = 0; tabIdx < columnWidths.length; tabIdx++) {
-			String[] tabColumnWidths = new String[DATA_WIDTH];
-			Arrays.fill(tabColumnWidths, 0, 3, "0");
-			Arrays.fill(tabColumnWidths, 3, DATA_WIDTH, "85");
-			columnWidths[tabIdx] = String.join(",", tabColumnWidths);
-		}
+		String[] columnWidths = new String[MAX_REPORT_TABS];
+		Arrays.fill(columnWidths, columnWidthsForOneTab);
 
 		return columnWidths;
+	}
+
+	private String getColumnWidthsForOneTab() {
+		int[] columnWidths = new int[DATA_WIDTH];
+		// Set 0 for auto-resize
+		columnWidths[0] = 0;   // SCTID
+		columnWidths[1] = 300; // Hierarchy
+		columnWidths[2] = 0;   // SemTag
+		Arrays.fill(columnWidths, 3, DATA_WIDTH, 85); // All columns with numeric data
+
+		return String.join(COMMA, Arrays.stream(columnWidths).mapToObj(String::valueOf).toList());
 	}
 
 	@Override
@@ -220,12 +237,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 		}
 		LOGGER.info("Cleaning Up");
-		prevData = null;
-		summaryDataMap = null;
-		refsetDataMap = null;
-		topLevelHierarchies = null;
-		System.gc();
+		cleanUp();
 		LOGGER.info("Complete");
+	}
+
+	private void cleanUp() {
+		prevData = null;
+		System.gc();
 	}
 
 	@Override
@@ -283,6 +301,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			analyzeComponents(isNewConcept, (datum==null?null:datum.getAxiomIds()), (datum==null?null:datum.getAxiomIdsInact()), summaryData[TAB_AXIOMS], c.getAxiomEntries());
 			analyzeComponents(isNewConcept, (datum==null?null:datum.getInactivationIds()), (datum==null?null:datum.getInactivationIdsInact()), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
 			analyzeComponents(isNewConcept, (datum==null?null:datum.getHistAssocIds()), (datum==null?null:datum.getHistAssocIdsInact()), summaryData[TAB_HIST], c.getAssociationEntries(ActiveState.BOTH, true));
+
 			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
 					.flatMap(d -> d.getLangRefsetEntries().stream())
 					.toList();
@@ -377,29 +396,18 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 
-	private int[] getRefsetData (String refsetId) {
-		int[] refsetCounts = refsetDataMap.get(refsetId);
-		if (refsetCounts == null) {
-			refsetCounts = new int[DATA_WIDTH];
-			refsetDataMap.put(refsetId, refsetCounts);
-		}
-		return refsetCounts;
+	private int[] getRefsetData(String refsetId) {
+		return refsetDataMap.computeIfAbsent(refsetId, k -> new int[DATA_WIDTH]);
+	}
+
+	private int[] getInactivationReasonData(String inactivationReasonId) {
+		return inactivationReasonDataMap.computeIfAbsent(inactivationReasonId, k -> new int[DATA_WIDTH]);
 	}
 	
-	private int[] getDescriptionByLanguageArray (DescriptionType type, String lang) {
+	private int[] getDescriptionByLanguageArray(DescriptionType type, String lang) {
 		String statBucket = (type == DescriptionType.TEXT_DEFINITION ? TEXT_DEFINITION : DESCRIPTION);
-		Map<String, int[]> statsByLanguage = descriptionStatsByLanguage.get(statBucket);
-		if (statsByLanguage == null) {
-			statsByLanguage = new HashMap<>();
-			descriptionStatsByLanguage.put(statBucket, statsByLanguage);
-		}
-		
-		int[] descCounts = statsByLanguage.get(lang);
-		if (descCounts == null) {
-			descCounts = new int[DATA_WIDTH];
-			statsByLanguage.put(lang, descCounts);
-		}
-		return descCounts;
+		Map<String, int[]> statsByLanguage = descriptionStatsByLanguage.computeIfAbsent(statBucket, k -> new HashMap<>());
+		return statsByLanguage.computeIfAbsent(lang, k -> new int[DATA_WIDTH]);
 	}
 	
 	private void analyzeDescriptions(Concept c, HistoricData datum, int[] counts, int[] inactCounts, int[] cncCounts) throws TermServerScriptException {
@@ -554,15 +562,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						incrementCounts(component, counts, IDX_NEW_NEW);
 						debugToFile(component, "NewNew");
 					}
-
-					if (component instanceof InactivationIndicatorEntry inactivationIndicatorEntry) {
-						incrementInactivationReason(counts, inactivationIndicatorEntry.getInactivationReasonId());
-					}
 				} else if (previouslyExistedInactive) {
 					incrementCounts(component, counts, IDX_REACTIVATED);
 					debugToFile(component, "Reactivated");
 					conceptAffected = true;
-				} else if (previouslyExistedActive && isChangedSinceLastRelease(component)) {
+				} else if (isChangedSinceLastRelease(component)) {
 					incrementCounts(component, counts, IDX_CHANGED);
 					debugToFile(component, "Changed");
 					conceptAffected = true;
@@ -576,7 +580,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					incrementCounts(component, counts, IDX_INACTIVATED);
 					debugToFile(component, "Inactivated");
 					conceptAffected = true;
-				} else if (previouslyExistedInactive && isChangedSinceLastRelease(component)) {
+				} else if (isChangedSinceLastRelease(component)) {
 					incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
 					debugToFile(component, "Changed Inactive");
 					conceptAffected = true;
@@ -602,6 +606,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		//If this component is a description, then also increment our descriptions by language summary
 		if (component instanceof Description description) {
 			getDescriptionByLanguageArray(description.getType(), description.getLang())[idx]++;
+		}
+		//If this component is an inactivation indicator, then also increment our inactivation reason data
+		if (component instanceof InactivationIndicatorEntry inactivationIndicatorEntry) {
+			getInactivationReasonData(inactivationIndicatorEntry.getInactivationReasonId())[idx]++;
 		}
 	}
 
@@ -636,54 +644,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 
-	private void incrementInactivationReason(int[] counts, String reasonId) {
-		switch (reasonId) {
-			case SCTID_INACT_AMBIGUOUS:
-				counts[IDX_INACT_AMBIGUOUS]++;
-				break;
-			case SCTID_INACT_MOVED_ELSEWHERE:
-				counts[IDX_INACT_MOVED_ELSEWHERE]++;
-				break;
-			case SCTID_INACT_CONCEPT_NON_CURRENT:
-				counts[IDX_INACT_CONCEPT_NON_CURRENT]++;
-				break;
-			case SCTID_INACT_DUPLICATE:
-				counts[IDX_INACT_DUPLICATE]++;
-				break;
-			case SCTID_INACT_ERRONEOUS:
-				counts[IDX_INACT_ERRONEOUS]++;
-				break;
-			case SCTID_INACT_INAPPROPRIATE:
-				counts[IDX_INACT_INAPPROPRIATE]++;
-				break;
-			case SCTID_INACT_LIMITED:
-				counts[IDX_INACT_LIMITED]++;
-				break;
-			case SCTID_INACT_OUTDATED:
-				counts[IDX_INACT_OUTDATED]++;
-				break;
-			case SCTID_INACT_PENDING_MOVE:
-				counts[IDX_INACT_PENDING_MOVE]++;
-				break;
-			case SCTID_INACT_NON_CONFORMANCE:
-				counts[IDX_INACT_NON_CONFORMANCE]++;
-				break;
-			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT:
-				counts[IDX_INACT_NOT_EQUIVALENT]++;
-				break;
-			default:
-				counts[IDX_INACT_OTHER]++;
-				break;
-		}
-	}
-
 	private void outputResults() throws TermServerScriptException {
 		Concept totalConcept = new Concept("","Total");
-		totals = new int[MAX_REPORT_TABS][DATA_WIDTH];
+
 		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
 			if (summaryData != null) {
-				for (int idxTab = 0; idxTab < MAX_REPORT_TABS - 2; idxTab++) {
+				for (int idxTab = 0; idxTab < MAX_REPORT_TABS_WITH_HIERARCHY; idxTab++) {
 					report(idxTab, hierarchy, summaryData[idxTab]);
 					for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
 						totals[idxTab][idxMovement] += summaryData[idxTab][idxMovement];
@@ -697,6 +664,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		associationSubTotals = outputRefsetData(TAB_REFSET, "association", totals);
 		languageSubTotals = outputRefsetData(TAB_REFSET, "language", totals);
 		indicatorSubTotals = outputRefsetData(TAB_REFSET, "indicator", totals);
+
+		outputInactivationReasonData(TAB_INACT_REASON, totals);
 		
 		outputDescriptionByLanguage(TAB_DESC_BY_LANG, totals);
 		
@@ -707,20 +676,35 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	
 	private int[] outputRefsetData(int tabIdx, String filter, int[][] totals) throws TermServerScriptException {
 		int[] subTotals = new int[DATA_WIDTH];
-		Concept subTotalConcept = new Concept("","  SubTotal");
+		Concept subTotalConcept = new Concept("", SUBTOTAL_TEXT);
 		for (Map.Entry<String, int[]> entry : refsetDataMap.entrySet()) {
 			Concept refset = gl.getConcept(entry.getKey());
 			if (refset.getFsn().contains(filter)) {
 				report(tabIdx, refset, entry.getValue());
 				for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
 					subTotals[idxMovement] += entry.getValue()[idxMovement];
-					totals[tabIdx][idxMovement] +=  entry.getValue()[idxMovement];
+					totals[tabIdx][idxMovement] += entry.getValue()[idxMovement];
 				}
 			}
 		}
 		report(tabIdx, subTotalConcept, subTotals);
 		report(tabIdx, "");
 		return subTotals;
+	}
+
+	private void outputInactivationReasonData(int tabIdx, int[][] totals) throws TermServerScriptException {
+		int[] subTotals = new int[DATA_WIDTH];
+		Concept subTotalConcept = new Concept("", SUBTOTAL_TEXT);
+		for (Map.Entry<String, int[]> entry : inactivationReasonDataMap.entrySet()) {
+			Concept inactivationReason = gl.getConcept(entry.getKey());
+			report(tabIdx, inactivationReason, entry.getValue());
+			for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
+				subTotals[idxMovement] += entry.getValue()[idxMovement];
+				totals[tabIdx][idxMovement] += entry.getValue()[idxMovement];
+			}
+		}
+		report(tabIdx, subTotalConcept, subTotals);
+		report(tabIdx, "");
 	}
 	
 	private void outputDescriptionByLanguage(int tabIdx, int[][] totals) throws TermServerScriptException {
@@ -729,13 +713,13 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			String descType = descTypeEntry.getKey();
 			for (Map.Entry<String, int[]> entry : descTypeEntry.getValue().entrySet()) {
 				String lang = entry.getKey();
-				report(tabIdx, descType + " - " + lang, entry.getValue());
+				report(tabIdx, descType, lang, entry.getValue());
 				for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
 					subTotals[idxMovement] += entry.getValue()[idxMovement];
 					totals[tabIdx][idxMovement] +=  entry.getValue()[idxMovement];
 				}
 			}
-			report(tabIdx, "Subtotal", subTotals);
+			report(tabIdx, SUBTOTAL_TEXT, "", subTotals);
 			report(tabIdx, "");
 		}
 	}
@@ -745,35 +729,26 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		countIssue(c);
 	}
 	
-	protected void report(int idxTab, String lang, int[] data) throws TermServerScriptException {
-		super.report(idxTab, "", "", lang, getReportData(idxTab, data));
+	protected void report(int idxTab, String descriptionType, String lang, int[] data) throws TermServerScriptException {
+		super.report(idxTab, "", descriptionType, lang, getReportData(idxTab, data));
 	}
 
 	private static Map<Integer, List<Integer>> getSheetFieldsMap() {
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS,
+				new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_MOVED_MODULE, IDX_CHANGED_INACTIVE, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
-		Stream.of(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN).forEach(index ->
-			sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)))
+		Stream.of(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_LANG, TAB_INACT_IND, TAB_HIST, TAB_TEXT_DEFN).forEach(index ->
+				sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)))
 		);
 		
-		Stream.of(TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET, TAB_DESC_BY_LANG).forEach(index ->
-			sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)))
+		Stream.of(TAB_DESC_HIST, TAB_DESC_CNC, TAB_DESC_INACT, TAB_REFSET, TAB_DESC_BY_LANG, TAB_INACT_REASON).forEach(index ->
+				sheetFieldsByIndex.put(index, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)))
 		);
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE,
-				IDX_INACT_AMBIGUOUS, IDX_INACT_MOVED_ELSEWHERE,	IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS, IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED,
-				IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE, IDX_INACT_NOT_EQUIVALENT, IDX_INACT_OTHER, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED)));
-
-		Stream.of(TAB_LANG, TAB_HIST).forEach(index ->
-			sheetFieldsByIndex.put(index, new LinkedList<>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_NEW_NEW, IDX_CHANGED_INACTIVE, IDX_TOTAL_ACTIVE, IDX_CONCEPTS_AFFECTED))))
-		);
-		
 		sheetFieldsByIndex.put(TAB_QI, new LinkedList<>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACTIVATED, IDX_TOTAL_ACTIVE)));
-
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<>(Arrays.asList(IDX_NEW, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 
 		return sheetFieldsByIndex;
 	}
@@ -828,27 +803,35 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		rs.setPreviousEffectiveTime(previousEffectiveTime);
 		
 		String[] data = new String[24];
+		// Concepts
 		data[0]  = sum(TAB_CONCEPTS, IDX_NEW);
 		data[1]  = sum(TAB_CONCEPTS, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE, IDX_MOVED_MODULE);
 		data[2]  = sum(TAB_CONCEPTS, IDX_TOTAL);
+		// Descriptions
 		data[3]  = sum(TAB_DESCS, IDX_NEW_NEW);
 		data[4]  = minusPlus(TAB_DESCS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[5]  = sum(TAB_DESCS, IDX_TOTAL);
+		// Text definitions
 		data[6]  = sum(TAB_TEXT_DEFN, IDX_NEW_NEW);
 		data[7]  = minusPlus(TAB_TEXT_DEFN, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[8]  = sum(TAB_TEXT_DEFN, IDX_TOTAL);
+		// Language refsets
 		data[9]  = sum(TAB_LANG, IDX_NEW_NEW);
 		data[10] = minusPlus(TAB_LANG, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[11] = sum(TAB_LANG, IDX_TOTAL);
+		// Axioms
 		data[12] = sum(TAB_AXIOMS, IDX_NEW_NEW);
 		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[14] = sum(TAB_AXIOMS, IDX_TOTAL);
+		// Stated relationships
 		data[15] = "0";
 		data[16] = "0";
 		data[17] = "1024719";
+		// Inferred relationships
 		data[18] = sum(TAB_RELS, IDX_NEW_NEW);
 		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[20] = sum(TAB_RELS, IDX_TOTAL);
+		// Concrete domains
 		data[21] = sum(TAB_CD, IDX_NEW_NEW);
 		data[22] = minusPlus(TAB_CD, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[23] = sum(TAB_CD, IDX_TOTAL);
