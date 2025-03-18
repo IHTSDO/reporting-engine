@@ -54,7 +54,7 @@ public class MissingDispositionSubstanceGroupers2 extends TermServerReport {
 	private Set<Concept> getSubstancesUsedToDefineDrugsCatagorizedByDisposition() throws TermServerScriptException {
 		Set<Concept> substancesUsedToDefineDrugsCatagorizedByDisposition = new HashSet<>();
 		for (Concept c : findConcepts("<< 766779001 |Medicinal product categorized by disposition (product)|")) {
-			substancesUsedToDefineDrugsCatagorizedByDisposition.addAll(DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP));
+			substancesUsedToDefineDrugsCatagorizedByDisposition.addAll(DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP, false));
 		}
 		return substancesUsedToDefineDrugsCatagorizedByDisposition;
 	}
