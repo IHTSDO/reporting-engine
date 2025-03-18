@@ -57,7 +57,7 @@ public class MultipleModifications extends TermServerReport {
 
 	private void findCDsWithMultipleModifications() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
-			for (Relationship r : DrugUtils.getIngredientRelationships(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			for (Relationship r : DrugUtils.getIngredientRelationships(c, CharacteristicType.INFERRED_RELATIONSHIP, true)) {
 				if (substancesWithMultipleModifications.contains(r.getTarget())) {
 					String basesStr = getBases(r.getTarget())
 							.stream()

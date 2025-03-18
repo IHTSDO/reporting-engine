@@ -301,20 +301,25 @@ public class DrugUtils implements ScriptConstants {
 		return bases;
 	}
 	
-	public static Set<Relationship> getIngredientRelationships (Concept c, CharacteristicType charType) {
+	public static Set<Relationship> getIngredientRelationships (Concept c, CharacteristicType charType, boolean includeClinicalDrugs) {
 		Set<Relationship> ingredientRels = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
 			ingredientRels.add(r);
 		}
-		for (Relationship r : c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
-			ingredientRels.add(r);
+		if (includeClinicalDrugs) {
+			for (Relationship r : c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
+				ingredientRels.add(r);
+			}
 		}
 		return ingredientRels;
 	}
-	
 
 	public static List<Concept> getIngredients(Concept c, CharacteristicType charType) {
-		Set<Concept> ingredients = getIngredientRelationships(c, charType)
+		return getIngredients(c, charType, true);
+	}
+
+	public static List<Concept> getIngredients(Concept c, CharacteristicType charType, boolean includeClinicalDrugs) {
+		Set<Concept> ingredients = getIngredientRelationships(c, charType, includeClinicalDrugs)
 				.stream()
 				.map(Relationship::getTarget)
 				.collect(Collectors.toSet());
@@ -453,8 +458,8 @@ public class DrugUtils implements ScriptConstants {
 		
 		//Now work through each of those relationship groups for each ingredient
 		for (Concept ingred : lhsIngreds) {
-			RelationshipGroup lhsGroup = getGroupContainingIngredient(lhs, ingred);
-			RelationshipGroup rhsGroup = getGroupContainingIngredient(rhs, ingred);
+			RelationshipGroup lhsGroup = getGroupContainingIngredient(lhs, ingred, true);
+			RelationshipGroup rhsGroup = getGroupContainingIngredient(rhs, ingred, true);
 			if (!matchesBossPAIStrength(lhsGroup, rhsGroup)) {
 				return false;
 			}
@@ -462,8 +467,8 @@ public class DrugUtils implements ScriptConstants {
 		return true;
 	}
 
-	public static RelationshipGroup getGroupContainingIngredient(Concept c, Concept targetIngredient) {
-		for (Relationship r : getIngredientRelationships(c, CharacteristicType.STATED_RELATIONSHIP)) {
+	public static RelationshipGroup getGroupContainingIngredient(Concept c, Concept targetIngredient, boolean includeClinicalDrugs) {
+		for (Relationship r : getIngredientRelationships(c, CharacteristicType.STATED_RELATIONSHIP, includeClinicalDrugs)) {
 			if (r.getTarget().equals(targetIngredient)) {
 				return c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, r.getGroupId());
 			}
@@ -472,43 +477,15 @@ public class DrugUtils implements ScriptConstants {
 	}
 
 	public static boolean matchesBossPAIStrength(RelationshipGroup lhsGroup, RelationshipGroup rhsGroup) {
-		if (!SnomedUtils.isEqualValueInGroups(HAS_BOSS, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_VALUE, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_DENOM_VALUE, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_UNIT, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_DENOM_UNIT, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_VALUE, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_DENOM_VALUE, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_UNIT, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		if (!SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_DENOM_UNIT, lhsGroup, rhsGroup)) {
-			return false;
-		}
-		
-		return true;
+		return  SnomedUtils.isEqualValueInGroups(HAS_BOSS, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_VALUE, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_DENOM_VALUE, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_UNIT, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_PRES_STRENGTH_DENOM_UNIT, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_VALUE, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_DENOM_VALUE, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_UNIT, lhsGroup, rhsGroup) &&
+				SnomedUtils.isEqualValueInGroups(HAS_CONC_STRENGTH_DENOM_UNIT, lhsGroup, rhsGroup);
 	}
 
 	public static Concept findDoseFormFromFSN(String fsn) throws TermServerScriptException {
