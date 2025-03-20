@@ -21,7 +21,7 @@ public class ReassertPublishedComponentState extends DeltaGeneratorWithAutoImpor
 		ReassertPublishedComponentState delta = new ReassertPublishedComponentState();
 		try {
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-			delta.taskPrefix = "ISRS-7179";
+			delta.taskPrefix = "";
 			delta.runStandAlone = false;
 			delta.inputFileHasHeaderRow = true;
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships

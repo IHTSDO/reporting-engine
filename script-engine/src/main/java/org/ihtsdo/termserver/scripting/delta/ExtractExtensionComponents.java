@@ -68,13 +68,9 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			delta.taskPrefix = "";
 			delta.runStandAlone = false;
 			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+			//No need to specify a module if reading from Snowstorm, we'll pick up the moduleId(s) from the branch metadata
 			//delta.sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
-			//delta.sourceModuleIds = "32506021000036107"; //AU Module
-			//delta.sourceModuleIds = "11000181102"; //Estonia
 			//delta.sourceModuleIds = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.sourceModuleIds = "51000202101"; //Norway Module
-			//delta.sourceModuleIds = Set.of("57091000202101");  //Norway module for medicines
-			//delta.sourceModuleIds = Set.of("731000124108");  //US Module
 			//delta.sourceModuleIds = "332351000009108"; //Vet Extension
 
 			delta.init(args);
@@ -164,7 +160,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		Set<Component> componentsSeen = new HashSet<>();
 		for (Component c : componentsOfInterest) {
 			if (componentsSeen.contains(c)) {
-				LOGGER.warn("Duplicate concept identified for transfer: " + c);
+				LOGGER.warn("Duplicate concept identified for transfer: {}", c);
 				continue;
 			} else {
 				componentsSeen.add(c);
@@ -260,7 +256,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			}
 		}
 		
-		if (thisBatch.size() > 0) {
+		if (!thisBatch.isEmpty()) {
 			archiveBatches.add(thisBatch);
 			LOGGER.info(++batchNo + ": No Hierarchy - " + thisBatch.size());
 		}
@@ -292,13 +288,13 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 		//The number of concepts in the map plus the footloose concepts should add up to our total
 		long mapCount = parentChildMap.values().stream()
-				.flatMap(l -> l.stream())
-				.count();
+				.mapToLong(Collection::size)
+				.sum();
 		mapCount += parentChildMap.size();  //Also add 1 for each parent
 		if (((int)mapCount + footlooseConcepts.size()) != componentsOfInterest.size()) {
 			//Which concepts have gone missing?
 			Set<Concept> allocated = parentChildMap.values().stream()
-					.flatMap(l -> l.stream())
+					.flatMap(Collection::stream)
 					.collect(Collectors.toSet());
 			allocated.addAll(parentChildMap.keySet());
 			allocated.addAll(footlooseConcepts);
@@ -316,7 +312,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		Set<Concept> ancestorsToImport = gl.getAncestorsCache().getAncestors(c, true);  //Need a mutable set
 		//If no ancestors in common with what we're loading, then concept is free
 		ancestorsToImport.retainAll(componentsOfInterest);
-		if (ancestorsToImport.size() > 0) {
+		if (!ancestorsToImport.isEmpty()) {
 			alsoImportingAncestors = true;
 			//We'll stop here and allow that ancestor to pick up its descendants when its turn comes
 			return;
