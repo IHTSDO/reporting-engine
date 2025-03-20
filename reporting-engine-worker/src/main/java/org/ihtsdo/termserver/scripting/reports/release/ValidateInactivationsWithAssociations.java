@@ -156,21 +156,33 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							associationsWithCardinality.add(new AssociationCardinality("1..*", SCTID_ASSOC_POSS_EQUIV_REFSETID, true));
 							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
-						case SCTID_INACT_NON_CONFORMANCE :
-							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
-							associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
-							break;
-						case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN:
-							associationsWithCardinality.add(new AssociationCardinality("0..0", null, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
-							break;
-						case SCTID_INACT_CLASS_DERIVED_COMPONENT :
-
-							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
-							associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_PART_EQUIV_REFSETID, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
-							break;
+					    case SCTID_INACT_CLASS_DERIVED_COMPONENT :
+						    associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+						    associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_PART_EQUIV_REFSETID, true));
+						    validate(c, i, associationsWithCardinality, isLegacy);
+						    break;
+					    case SCTID_INACT_DUPLICATE :
+						    associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_SAME_AS_REFSETID, true));
+						    validate(c, i, associationsWithCardinality, isLegacy);
+						    break;
+					    case SCTID_INACT_ERRONEOUS :
+						    associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+						    validate(c, i, associationsWithCardinality, isLegacy);
+						    break;
+					    case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN:
+						    associationsWithCardinality.add(new AssociationCardinality("0..0", null, true));
+						    validate(c, i, associationsWithCardinality, isLegacy);
+						    break;
+					    case SCTID_INACT_NON_CONFORMANCE :
+						    associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+						    associationsWithCardinality.add(new AssociationCardinality("0..*", SCTID_ASSOC_ALTERNATIVE_REFSETID, true));
+						    validate(c, i, associationsWithCardinality, isLegacy);
+						    break;
+					    case SCTID_INACT_OUTDATED :
+						    associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
+						    associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_POSS_REPLACED_BY_REFSETID, true));
+						    validate(c, i, associationsWithCardinality, isLegacy);
+						    break;
 						case SCTID_INACT_MOVED_ELSEWHERE :
 							if (isLegacy) {
 								associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_MOVED_TO_REFSETID, false));
@@ -185,10 +197,6 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 								validate(c, i, associationsWithCardinality, isLegacy);
 							}
 							break;
-						case SCTID_INACT_DUPLICATE :
-							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_SAME_AS_REFSETID, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
-							break;
 						case SCTID_INACT_LIMITED :
 							if (isLegacy) {
 								associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_WAS_A_REFSETID, true));
@@ -199,15 +207,6 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 								report(SECONDARY_REPORT, c, c.getEffectiveTime(), issue, "N");
 								countIssue(c);
 							}
-							break;
-						case SCTID_INACT_ERRONEOUS :
-							associationsWithCardinality.add(new AssociationCardinality("1..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
-							break;
-						case SCTID_INACT_OUTDATED :
-							associationsWithCardinality.add(new AssociationCardinality("0..1", SCTID_ASSOC_REPLACED_BY_REFSETID, true));
-							associationsWithCardinality.add(new AssociationCardinality("2..*", SCTID_ASSOC_POSS_REPLACED_BY_REFSETID, true));
-							validate(c, i, associationsWithCardinality, isLegacy);
 							break;
 						default :
 							String issue = "Unrecognised concept inactivation indicator";
