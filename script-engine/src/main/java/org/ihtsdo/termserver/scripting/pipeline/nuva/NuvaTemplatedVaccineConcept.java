@@ -21,7 +21,7 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 	protected static Concept vaccine;
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
-		TemplatedConcept.cpm = cpm;
+		TemplatedConcept.initialise(cpm);
 		vaccine = cpm.getGraphLoader().getConcept("787859002 |Vaccine product (medicinal product)|");
 	}
 
@@ -56,6 +56,8 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(RF2Constants.SCTID_NUVA_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, vaccine);
+		concept.addRelationship(PLAYS_ROLE, gl.getConcept("318331000221102 |Active immunity stimulant role|"));
+
 		//Real vaccines (not abstract) only differ in their brand name, so we'll mark those as primitive
 		DefinitionStatus ds = getNuvaVaccine().isAbstract() ? DefinitionStatus.FULLY_DEFINED : DefinitionStatus.PRIMITIVE;
 		concept.setDefinitionStatus(ds);
@@ -89,17 +91,25 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 
 	@Override
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
-		//For the NUVA PT, we'll keep that as acceptable, and use the brand name as the PT
-		if (d.getType().equals(DescriptionType.SYNONYM)) {
-			List<String> synonyms = getNuvaVaccine().getSynonyms();
-			if (!synonyms.isEmpty()) {
-				SnomedUtils.demoteAcceptabilityMap(d);
-				if (synonyms.size() > 1) {
-					throw new IllegalArgumentException("Vaccine has more than one synonym: " + getNuvaVaccine().getExternalIdentifier());
+		//Where a branded product exists, we'll use the branded drug name as both the PT, and the FSN (with semtag of vaccine added).
+		NuvaVaccine nuvaVaccine = getNuvaVaccine();
+		if (!nuvaVaccine.isAbstract()) {
+			if (nuvaVaccine.getSynonyms().isEmpty()) {
+				throw new IllegalArgumentException("Vaccine has no synonyms: " + nuvaVaccine.getExternalIdentifier());
+			} else {
+				//If this is an FSN, we will replace it (adding a new semantic tag) and throw away the procedurally generated one
+				//If it's the PT, then we will replace it, and demote the original
+				String newTerm = nuvaVaccine.getSynonyms().get(0);
+				if (d.getType().equals(DescriptionType.SYNONYM)) {
+					SnomedUtils.demoteAcceptabilityMap(d);
+					//We create a new description here as the original one will be added to the concept in the calling function
+					Description newPT = Description.withDefaults(newTerm, DescriptionType.SYNONYM, defaultPrefAcceptabilityMap);
+					newPT.setModuleId(cpm.getExternalContentModuleId());
+					concept.addDescription(newPT);
+				} else {
+					//We only need to modify the text of the FSN here as no second version is needed
+					d.setTerm(newTerm + getSemTag());
 				}
-
-				Description newPT = Description.withDefaults(synonyms.get(0), DescriptionType.SYNONYM, Acceptability.PREFERRED);
-				concept.addDescription(newPT);
 			}
 		}
 	}

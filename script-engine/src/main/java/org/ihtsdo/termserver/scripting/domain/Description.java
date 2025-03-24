@@ -141,7 +141,8 @@ public class Description extends Component implements ScriptConstants, Serializa
 		d.setType(type);
 		d.setReleased(false);
 		d.setDirty();
-		d.setAcceptabilityMap(acceptabilityMap);
+		//Create a copy of the acceptabilityMap, incase we've been passed some static immutable reference map
+		d.setAcceptabilityMap(new HashMap<>(acceptabilityMap));
 		return d;
 	}
 

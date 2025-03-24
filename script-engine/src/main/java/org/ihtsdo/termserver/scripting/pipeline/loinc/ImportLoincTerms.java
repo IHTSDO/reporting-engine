@@ -112,7 +112,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 		postInit(tabNames, columnHeadings);
 		scheme = gl.getConcept(SCTID_LOINC_SCHEMA);
-		externalContentModule = SCTID_LOINC_EXTENSION_MODULE;
+		externalContentModuleId = SCTID_LOINC_EXTENSION_MODULE;
 		namespace = "1010000";
 	}
 
@@ -242,7 +242,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 
 		RefsetMember rm = new RefsetMember();
-		rm.setModuleId(externalContentModule);
+		rm.setModuleId(externalContentModuleId);
 		rm.setReferencedComponentId(ltc.getConcept().getId());
 		rm.setActive(true, true);
 		rm.setRefsetId(refset.getId());

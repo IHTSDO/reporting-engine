@@ -64,7 +64,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected Concept scheme;
 	protected String namespace;
-	protected String externalContentModule;
+	protected String externalContentModuleId;
 	protected Rf2ConceptCreator conceptCreator;
 	protected int additionalThreadCount = 0;
 	protected Set<TemplatedConcept> successfullyModelled = new HashSet<>();
@@ -136,6 +136,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				conceptCreator.finish();
 			}
 		}
+	}
+
+	public String getExternalContentModuleId() {
+		return externalContentModuleId;
 	}
 
 	protected void preModelling() throws TermServerScriptException {
@@ -382,7 +386,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					Concept existingTarget = getExistingConceptIfExists(existingTargetSCTID, tc);
 					if (existingTarget == null) {
 						//We need to give this concept an ID before we can form an axiom
-						conceptCreator.populateComponentId(targetValue,targetValue, externalContentModule);
+						conceptCreator.populateComponentId(targetValue,targetValue, externalContentModuleId);
 					} else {
 						r.setTarget(existingTarget);
 					}
@@ -474,7 +478,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		} else {
 			//If we only have a newly modelled component, give it an id
 			//and prepare to output
-			conceptCreator.populateComponentId(tc.getExistingConcept(), newlyModelledComponent, externalContentModule);
+			conceptCreator.populateComponentId(tc.getExistingConcept(), newlyModelledComponent, externalContentModuleId);
 			newlyModelledComponent.setDirty();
 		}
 	}
@@ -557,7 +561,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		if (c.isActiveSafely()) {
 			c.setActive(false);  //This will inactivate the concept and all relationships
 			InactivationIndicatorEntry ii = InactivationIndicatorEntry.withDefaults(c, SCTID_INACT_OUTDATED);
-			ii.setModuleId(externalContentModule);
+			ii.setModuleId(externalContentModuleId);
 			c.addInactivationIndicator(ii);
 			differencesList.add("CONCEPT");
 		}
