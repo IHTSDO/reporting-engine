@@ -62,7 +62,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 
 		super.postInit(tabNames, columnHeadings, false);
 		scheme = gl.getConcept(SCTID_NPU_SCHEMA);
-		externalContentModule = SCTID_NPU_EXTENSION_MODULE;
+		externalContentModuleId = SCTID_NPU_EXTENSION_MODULE;
 		namespace = "1003000";
 	}
 
@@ -166,7 +166,6 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 	protected void importPartMap() throws TermServerScriptException {
 		attributePartMapManager = new NpuAttributePartMapManager(this, partMap, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_NPU_PARTS_MAP_BASE_FILE));
-		NpuTemplatedConcept.initialise(this);
 	}
 
 	@Override

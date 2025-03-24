@@ -30,6 +30,9 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	protected static ContentPipelineManager cpm;
 	protected static GraphLoader gl;
 
+	protected static Map<String, Acceptability> defaultPrefAcceptabilityMap;
+	protected static Map<String, Acceptability> defaultAccAcceptabilityMap;
+
 	protected static Set<String> partNumsMapped = new HashSet<>();
 	protected static Set<String> partNumsUnmapped = new HashSet<>();
 	protected static Map<String, ExternalConceptUsage> unmappedPartUsageMap = new HashMap<>();
@@ -51,6 +54,20 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	
 	protected Map<String, String> slotTermMap = new HashMap<>();
 	protected Map<String, String> slotTermAppendMap = new HashMap<>();
+
+	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
+		TemplatedConcept.cpm = cpm;
+		TemplatedConcept.gl = cpm.getGraphLoader();
+
+		//Most products we're working with will only support en-US
+		defaultPrefAcceptabilityMap = Map.of(
+				US_ENG_LANG_REFSET, Acceptability.PREFERRED
+		);
+
+		defaultAccAcceptabilityMap = Map.of(
+				US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE
+		);
+	}
 
 	public static void reportStats(int tabIdx) throws TermServerScriptException {
 		cpm.report(tabIdx, "");
@@ -241,10 +258,10 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		ptTemplateStr = tidyUpTerm(ptTemplateStr);
 		ptTemplateStr = StringUtils.capitalizeFirstLetter(ptTemplateStr);
 
-		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, Acceptability.PREFERRED);
+		Description pt = Description.withDefaults(ptTemplateStr, DescriptionType.SYNONYM, defaultPrefAcceptabilityMap);
 		applyTemplateSpecificTermingRules(pt);
 
-		Description fsn = Description.withDefaults(ptTemplateStr + getSemTag(), DescriptionType.FSN, Acceptability.PREFERRED);
+		Description fsn = Description.withDefaults(ptTemplateStr + getSemTag(), DescriptionType.FSN, defaultPrefAcceptabilityMap);
 		applyTemplateSpecificTermingRules(fsn);
 
 		concept.addDescription(pt);
@@ -253,7 +270,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		if (cpm.shouldIncludeShortNameDescription()) {
 			//Also add the Long Common Name as a Synonym
 			String scn = getExternalConcept().getShortDisplayName();
-			Description lcn = Description.withDefaults(scn, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			Description lcn = Description.withDefaults(scn, DescriptionType.SYNONYM, defaultAccAcceptabilityMap);
 			//Override the case significance for these
 			lcn.addIssue(CaseSensitivityUtils.FORCE_CS);
 			concept.addDescription(lcn);

@@ -17,11 +17,6 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 		return SCTID_NPU_SCHEMA;
 	}
 
-	public static void initialise(ContentPipelineManager cpm) {
-		TemplatedConcept.gl = cpm.getGraphLoader();
-		TemplatedConcept.cpm = cpm;
-	}
-
 	@Override
 	public String getSemTag() {
 		return " (observable entity)";

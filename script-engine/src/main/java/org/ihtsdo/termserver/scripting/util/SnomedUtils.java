@@ -213,6 +213,14 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		for (String refset : d.getAcceptabilityMap().keySet()) {
 			d.getAcceptabilityMap().put(refset, Acceptability.ACCEPTABLE);
 		}
+
+		for (LangRefsetEntry entry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+			if (entry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+				entry.setAcceptabilityId(SCTID_ACCEPTABLE_TERM);
+				entry.setEffectiveTime(null);
+				entry.setDirty();
+			}
+		}
 	}
 	
 	public static Map<String, Acceptability> mergeAcceptabilityMap (Description left,Description right) {
