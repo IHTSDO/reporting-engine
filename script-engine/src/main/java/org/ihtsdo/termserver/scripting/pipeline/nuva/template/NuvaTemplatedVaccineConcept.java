@@ -21,10 +21,12 @@ import java.util.UUID;
 public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements ContentPipeLineConstants {
 
 	protected static Concept vaccine;
+	protected static Concept hasValence;
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
 		TemplatedConcept.initialise(cpm);
 		vaccine = cpm.getGraphLoader().getConcept("787859002 |Vaccine product (medicinal product)|");
+		hasValence = cpm.getGraphLoader().getConcept("41002000106 |Has valence (attribute)|");
 	}
 
 	@Override
@@ -76,7 +78,7 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 			if (valenceConcept.getConceptId() == null) {
 				valenceConcept.setConceptId(UUID.randomUUID().toString());
 			}
-			RelationshipTemplate rt = new RelationshipTemplate(HAS_DISPOSITION, valenceConcept);
+			RelationshipTemplate rt = new RelationshipTemplate(hasValence, valenceConcept);
 			concept.addRelationship(rt, GROUP_1);
 		}
 	}

@@ -222,7 +222,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private void reportSummaryCounts() throws TermServerScriptException {
 		int summaryTabIdx = getTab(TAB_SUMMARY);
 		report(summaryTabIdx, "");
-		//Work through each catagory (sorted) and then output each summary Count for that category
+		//Work through each category (sorted) and then output each summary Count for that category
 		summaryCountsByCategory.keySet().stream()
 				.sorted()
 				.forEach(cat -> {
