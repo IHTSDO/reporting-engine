@@ -1,7 +1,9 @@
-package org.ihtsdo.termserver.scripting.pipeline.nuva;
+package org.ihtsdo.termserver.scripting.pipeline.nuva.domain;
 
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConstants;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

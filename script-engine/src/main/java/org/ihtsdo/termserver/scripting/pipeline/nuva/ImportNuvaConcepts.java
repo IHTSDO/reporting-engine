@@ -3,6 +3,9 @@ package org.ihtsdo.termserver.scripting.pipeline.nuva;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaVaccine;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.template.NuvaTemplatedVaccineConcept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.template.NuvaTemplatedValenceConcept;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 
 import java.util.*;

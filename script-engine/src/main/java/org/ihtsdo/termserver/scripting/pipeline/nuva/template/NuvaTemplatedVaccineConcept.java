@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.nuva;
+package org.ihtsdo.termserver.scripting.pipeline.nuva.template;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -9,6 +9,8 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaVaccine;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaValence;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
