@@ -7,3 +7,4 @@ releases
 releases/
 reports/*
 !/scripts/*.sh
+content-impact-testing

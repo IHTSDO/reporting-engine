@@ -1032,4 +1032,11 @@ public class ArchiveManager implements ScriptConstants {
 	public S3Manager getS3Manager() throws TermServerScriptException {
 		return ((ArchiveDataLoader)getArchiveDataLoader()).getS3Manager();
 	}
+
+	public void setRecordPreviousState(boolean b) {
+		gl.setRecordPreviousState(b);
+		//To record previous state, we need to have loaded the previously published snapshot.
+		//This cannot be done from a cached snapshot + delta combined.
+		setEnsureSnapshotPlusDeltaLoad(b);
+	}
 }

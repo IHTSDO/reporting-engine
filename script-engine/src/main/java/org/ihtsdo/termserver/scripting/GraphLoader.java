@@ -687,6 +687,7 @@ public class GraphLoader implements ScriptConstants {
 					}
 					
 					if (!isReleased  && c.getModuleId() != null) {
+						//At this point we're importing something that is _not_ released, so copy the current state into an array, before we overwrite it
 						c.setPreviousState(c.getMutableFields());
 					}
 				}

@@ -44,7 +44,7 @@ public class RecoverTargetComponetIds extends BatchFix {
 	public void postInit() throws TermServerScriptException {
 		String prevRelease = project.getMetadata().getPreviousRelease();
 		previousReleaseBranch = "MAIN/" + SnomedUtils.formatReleaseDate(prevRelease);
-		LOGGER.debug("Copying missing data from " + previousReleaseBranch);
+		LOGGER.debug("Copying missing data from {}", previousReleaseBranch);
 		super.postInit();
 	}
 
