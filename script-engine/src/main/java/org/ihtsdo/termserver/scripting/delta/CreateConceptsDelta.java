@@ -6,21 +6,32 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import java.util.Map;
 
 public class CreateConceptsDelta extends DeltaGenerator {
 
 	private static final DefinitionStatus defStatus = DefinitionStatus.PRIMITIVE;
 
+	//Most products we're working with will only support en-US
+	protected static final Map<String, Acceptability> DEFAULT_PREF_ACCEPTABILITY_MAP = Map.of(
+			US_ENG_LANG_REFSET, Acceptability.PREFERRED
+	);
+
 	private final String[] fsns = new String[] {
 			"NUVA Extension Module",
 			"NUVA code identifier (core metadata concept)",
-			"Valence (disposition)"};
+			"Valence (valence)",
+			"Has valence (attribute)",};
 
 	private final String[] parents = new String[] {
 			"1201891009 |SNOMED CT Community content module|",
 			"900000000000453004 |Identifier scheme|",
-			"726711005 |Disposition|"};
+			"362981000 |Qualifier value (qualifier value)|",
+			"762705008 |Concept model object attribute|"
+	};
 
 	public static void main(String[] args) throws TermServerScriptException {
 		new CreateConceptsDelta().standardExecutionWithIds(args);
@@ -54,11 +65,13 @@ public class CreateConceptsDelta extends DeltaGenerator {
 	}
 
 	private void addDescription(Concept c, DescriptionType type, String term) throws TermServerScriptException {
-		Description d = Description.withDefaults(term, type, Acceptability.PREFERRED);
+		CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
+		Description d = Description.withDefaults(term, type, DEFAULT_PREF_ACCEPTABILITY_MAP);
 		d.setDescriptionId(descIdGenerator.getSCTID());
 		d.setConceptId(c.getConceptId());
 		d.setModuleId(targetModuleId);
 		alignLangRefsetToDescription(d);
+		d.setCaseSignificance(csUtils.suggestCorrectCaseSignificance(c, d));
 		c.addDescription(d);
 		report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d);
 	}

@@ -207,7 +207,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 	}
 
-	public CaseSignificance suggestCorrectCaseSignficance(Concept context, Description d) throws TermServerScriptException {
+	public CaseSignificance suggestCorrectCaseSignificance(Concept context, Description d) throws TermServerScriptException {
 		//Have we set a flag for override?
 		if (d.hasIssue(FORCE_CS)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;

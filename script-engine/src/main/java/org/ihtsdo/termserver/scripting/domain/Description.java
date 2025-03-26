@@ -117,17 +117,12 @@ public class Description extends Component implements ScriptConstants, Serializa
 			} else {
 				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
 			}
-
-			//And create langrefset entries for both English dialects
-			for (String refsetId : ENGLISH_DIALECTS) {
-				LangRefsetEntry l = LangRefsetEntry.withDefaults(d, refsetId, SnomedUtils.translateAcceptabilityToSCTID(acceptability));
-				d.getLangRefsetEntries().add(l);
-			}
+			createLangRefsetEntriesAlignedToMap(d);
 		}
 		return d;
 	}
-	
-	public static Description withDefaults (String term, DescriptionType type, Map<String,Acceptability> acceptabilityMap) {
+
+	public static Description withDefaults (String term, DescriptionType type, Map<String,Acceptability> acceptabilityMap) throws TermServerScriptException {
 		Description d = new Description();
 		if (!StringUtils.isEmpty(term)) {
 			d.setCaseSignificance(StringUtils.calculateCaseSignificance(term));
@@ -141,9 +136,19 @@ public class Description extends Component implements ScriptConstants, Serializa
 		d.setType(type);
 		d.setReleased(false);
 		d.setDirty();
-		//Create a copy of the acceptabilityMap, incase we've been passed some static immutable reference map
-		d.setAcceptabilityMap(new HashMap<>(acceptabilityMap));
+		if (acceptabilityMap != null) {
+			//Create a copy of the acceptabilityMap, in case we've been passed some static immutable reference map
+			d.setAcceptabilityMap(new HashMap<>(acceptabilityMap));
+			createLangRefsetEntriesAlignedToMap(d);
+		}
 		return d;
+	}
+
+	private static void createLangRefsetEntriesAlignedToMap(Description d) throws TermServerScriptException {
+		for (Map.Entry<String, Acceptability> entry : d.getAcceptabilityMap().entrySet()) {
+			LangRefsetEntry l = LangRefsetEntry.withDefaults(d, entry.getKey(), SnomedUtils.translateAcceptabilityToSCTID(entry.getValue()));
+			d.getLangRefsetEntries().add(l);
+		}
 	}
 
 	public static void setPaddingMode(boolean b) {
