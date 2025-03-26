@@ -280,7 +280,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	private void reviewCaseSensitivity(Concept c) throws TermServerScriptException {
 		CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
 		for (Description d : c.getDescriptions()) {
-			d.setCaseSignificance(csUtils.suggestCorrectCaseSignficance(c, d));
+			d.setCaseSignificance(csUtils.suggestCorrectCaseSignificance(c, d));
 		}
 	}
 
