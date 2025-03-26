@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaVaccine;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.template.NuvaTemplatedBrandedVaccineConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.template.NuvaTemplatedVaccineConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.template.NuvaTemplatedValenceConcept;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
@@ -76,7 +77,15 @@ public class ImportNuvaConcepts extends ContentPipelineManager implements NuvaCo
 
 	@Override
 	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
-		return NuvaTemplatedVaccineConcept.create(externalConcept);
+		if (externalConcept instanceof NuvaVaccine nuvaVaccine) {
+			if (nuvaVaccine.isAbstract()) {
+				return NuvaTemplatedVaccineConcept.create(externalConcept);
+			} else {
+				return NuvaTemplatedBrandedVaccineConcept.create(externalConcept);
+			}
+		} else {
+			throw new TermServerScriptException("Encountered non-vaccine object in NUVA pipeline: " + externalConcept);
+		}
 	}
 
 	@Override

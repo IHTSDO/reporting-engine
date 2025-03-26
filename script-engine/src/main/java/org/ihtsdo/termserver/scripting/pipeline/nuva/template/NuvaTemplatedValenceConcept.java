@@ -26,7 +26,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	}
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
-		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103|Valence (disposition)|");
+		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103|Valence (valence)|");
 	}
 
 	private NuvaValence getNuvaValence() {
@@ -45,6 +45,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 		if (valenceTemplate.getConcept() == null) {
 			try {
 				valenceTemplate.populateTemplate();
+				valenceTemplate.populateAlternateIdentifier();
 			} catch (TermServerScriptException e) {
 				valenceTemplate.getConcept().addIssue(e.getMessage());
 			}
