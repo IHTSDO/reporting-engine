@@ -26,7 +26,6 @@ public class MultiArchiveImporter extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
-	private static final String TASK_PREFIX = "";
 	private static final MODE mode = MODE.TASK_PER_ARCHIVE;
 
 	public MultiArchiveImporter(TermServerScript clone) {
@@ -39,6 +38,7 @@ public class MultiArchiveImporter extends BatchFix {
 		MultiArchiveImporter importer = new MultiArchiveImporter(null);
 		try {
 			ReportSheetManager.setTargetFolderId("1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"); //Batch Import
+			importer.taskPrefix = "INFRA-14845";
 			importer.classifyTasks = true;
 			importer.allowDirectoryInputFile = true;
 			importer.init(args);
@@ -60,15 +60,8 @@ public class MultiArchiveImporter extends BatchFix {
 
 			if (thisArchive.getPath().endsWith(".zip")) {
 				archivesProcessed++;
-				if (archivesProcessed < restartFromTask) {
-					LOGGER.info("Skipping archive {} as we're restarting from task {}", thisArchive, restartFromTask);
-					continue;
-				}
-				LOGGER.info("Processing: {}", thisArchive);
-				importArchive(thisArchive, TASK_PREFIX);
-
-				if (processingLimit != NOT_SET && archivesProcessed >= processingLimit) {
-					LOGGER.info("Processing limit of {} reached.  Exiting.", processingLimit);
+				boolean stopHere = importArchiveOrStop(thisArchive, archivesProcessed);
+				if (stopHere) {
 					break;
 				}
 			} else {
@@ -81,7 +74,23 @@ public class MultiArchiveImporter extends BatchFix {
 		}
 	}
 
-	public void importArchive(File thisArchive, String taskPrefix) throws TermServerScriptException {
+	public boolean importArchiveOrStop(File thisArchive, int archivesProcessed) throws TermServerScriptException {
+		boolean stopHere = false;
+		if (archivesProcessed < restartFromTask) {
+			LOGGER.info("Skipping archive {} as we're restarting from task {}", thisArchive, restartFromTask);
+		} else {
+			LOGGER.info("Processing: {}", thisArchive);
+			importArchive(thisArchive);
+
+			if (processingLimit != NOT_SET && archivesProcessed >= processingLimit) {
+				LOGGER.info("Processing limit of {} reached.  Exiting.", processingLimit);
+				stopHere = true;
+			}
+		}
+		return stopHere;
+	}
+
+	public void importArchive(File thisArchive) throws TermServerScriptException {
 		String result = "OK";
 		Task task = mode == MODE.ALL_ARCHIVES_IN_ONE_TASK ? lastTaskCreated : null;
 		try {

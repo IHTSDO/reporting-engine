@@ -18,7 +18,7 @@ public class DeltaGeneratorWithAutoImport extends DeltaGenerator {
 
 		if (proceed) {
 			importer.recoverProjectFromProjectName(projectName);
-			importer.importArchive(this.archive, taskPrefix);
+			importer.importArchive(this.archive);
 		}
 	}
 
