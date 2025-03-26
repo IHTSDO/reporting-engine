@@ -1,8 +1,9 @@
-package org.ihtsdo.termserver.scripting.pipeline.nuva;
+package org.ihtsdo.termserver.scripting.pipeline.nuva.domain;
 
 import org.apache.jena.rdf.model.Statement;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +127,7 @@ public abstract class NuvaConcept extends ExternalConcept {
 		}
 	}
 
-	protected static String getObject(Statement stmt) {
+	public static String getObject(Statement stmt) {
 		if (stmt.getObject().isLiteral()) {
 			try {
 				return stmt.getObject().asLiteral().toString();

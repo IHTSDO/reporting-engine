@@ -10,12 +10,15 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaDisease;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaVaccine;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaValence;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConcept.*;
+import static org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaConcept.*;
 
 public class NuvaOntologyLoader extends TermServerScript implements NuvaConstants {
 

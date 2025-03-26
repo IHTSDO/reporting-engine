@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.nuva;
+package org.ihtsdo.termserver.scripting.pipeline.nuva.domain;
 
 import org.apache.jena.rdf.model.Literal;
 import org.ihtsdo.otf.utils.StringUtils;

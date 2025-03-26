@@ -218,8 +218,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		String firstLetter = term.substring(0,1);
 		String chopped = term.substring(1);
 		
-		//Text Definitions must be CS
-		if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+		//Text Definitions must be CS.  Also for descriptions that start with an acronym
+		if (d.getType().equals(DescriptionType.TEXT_DEFINITION) || startsWithAcronym(term)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		} else if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
 			//Lower case first letters must be entire term case-sensitive
