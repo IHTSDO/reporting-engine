@@ -21,6 +21,7 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	protected boolean isAbstract;
 	private String enLabel;
 	protected final List<String> hiddenLabels = new ArrayList<>();
+	protected final Map<String, String> altLabels = new HashMap<>();
 	protected List<String> synonyms = new ArrayList<>();
 
 	protected NuvaConcept(String externalIdentifier) {
@@ -96,6 +97,8 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 			setExternalIdentifier(getObject(stmt));
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ALT_LABEL)) {
+			NuvaLabel altLabel = getLabel(stmt);
+			altLabels.put(altLabel.getLangCode(), altLabel.getValue());
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ABSTRACT)) {
 			String abstractStr = getObject(stmt);
@@ -187,5 +190,24 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 		} else {
 			this.enLabel = enLabel;
 		}
+	}
+
+	public Map<String, String> getAltLabels() {
+		return altLabels;
+	}
+
+	public String getAltLabel(String langCode, String fallBack, ContentPipelineManager cpm) throws TermServerScriptException {
+		int tabIdx = cpm.getTab(TAB_MODELING_ISSUES);
+		if (altLabels.containsKey(langCode)) {
+			return altLabels.get(langCode);
+		} else if (altLabels.containsKey(fallBack)) {
+			//Do we have a French translation we could use?
+			if (altLabels.containsKey("fr")) {
+				cpm.report(tabIdx, this, RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English altLabel, using French: " + altLabels.get("fr"));
+			}
+			return altLabels.get(fallBack);
+		}
+		cpm.report(tabIdx, this, RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing all AltLabels");
+		return null;
 	}
 }

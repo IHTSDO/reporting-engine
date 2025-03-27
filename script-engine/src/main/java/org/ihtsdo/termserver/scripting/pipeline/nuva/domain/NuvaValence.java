@@ -7,8 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader.NuvaUri.CONTAINED_IN_VACCINE;
-import static org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader.NuvaUri.PREVENTS;
 import static org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader.NuvaUri.VALENCE;
 
 import java.util.ArrayList;
