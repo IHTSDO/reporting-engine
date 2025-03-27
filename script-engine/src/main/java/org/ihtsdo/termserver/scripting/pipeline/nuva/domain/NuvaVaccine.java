@@ -35,7 +35,7 @@ public class NuvaVaccine extends NuvaConcept implements Comparable<NuvaVaccine>,
 
 	private void fromStatement(Statement stmt) {
 		if (!isCommonPredicate(stmt)) {
-			if (isPredicate(stmt, NuvaOntologyLoader.NuvaUri.VALENCE)) {
+			if (isPredicate(stmt, NuvaOntologyLoader.NuvaUri.CONTAINS_VALENCE)) {
 				valenceRefs.add(getObject(stmt));
 			} else if (isPredicate(stmt, NuvaOntologyLoader.NuvaUri.MATCH)) {
 				String match = getObject(stmt);
