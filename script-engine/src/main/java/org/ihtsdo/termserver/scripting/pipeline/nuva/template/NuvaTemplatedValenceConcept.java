@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaValence;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 
 import java.util.*;
 
@@ -26,7 +27,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	}
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
-		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103|Valence (valence)|");
+		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103 |Valence (valence)|");
 	}
 
 	private NuvaValence getNuvaValence() {
@@ -69,8 +70,24 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	}
 
 	@Override
-	protected void applyTemplateSpecificTermingRules(Description pt) {
-		//Do we need to apply any specific rules to the description?
+	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
+		//If this is the fsn, we'll take the opportunity to add the valence shorthand notation
+		if (d.getType().equals(DescriptionType.FSN)) {
+			NuvaValence valence = getNuvaValence();
+			//The notation is held in the altLabel, which is translated
+			if (valence.getAltLabels().isEmpty()) {
+				int tabIdx = cpm.getTab(ContentPipeLineConstants.TAB_MODELING_ISSUES);
+				cpm.report(tabIdx, externalConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Valence has no shorthand notation");
+			} else {
+				String shorthandTerm = valence.getAltLabel("en", "fr", cpm);
+				if (shorthandTerm != null) {
+					Description shorthandDesc = Description.withDefaults(shorthandTerm, DescriptionType.SYNONYM, defaultAccAcceptabilityMap);
+					shorthandDesc.addIssue(CaseSensitivityUtils.FORCE_CS);
+					shorthandDesc.setModuleId(cpm.getExternalContentModuleId());
+					concept.addDescription(shorthandDesc);
+				}
+			}
+		}
 	}
 
 	public static NuvaTemplatedValenceConcept create(ExternalConcept externalConcept) {

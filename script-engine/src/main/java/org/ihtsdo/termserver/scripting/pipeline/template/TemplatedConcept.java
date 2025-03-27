@@ -306,7 +306,9 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
 
 			boolean isDeletion = false;
-			if (itemStr.isEmpty()){
+			if (itemStr == null) {
+				LOGGER.warn("What's going on here?");
+			} else if (itemStr.isEmpty()){
 				isDeletion = true;
 			} else if (!csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
 					&& !csUtils.startsWithAcronym(itemStr)) {

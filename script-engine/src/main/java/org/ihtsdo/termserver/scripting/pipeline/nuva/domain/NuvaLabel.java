@@ -31,4 +31,8 @@ public class NuvaLabel {
 	public boolean hasNoLanguage() {
 		return StringUtils.isEmpty(langCode);
 	}
+
+	public String getLangCode() {
+		return langCode;
+	}
 }
