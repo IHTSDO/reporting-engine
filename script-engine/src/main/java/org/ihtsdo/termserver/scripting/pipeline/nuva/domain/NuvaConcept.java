@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.pipeline.nuva.domain;
 import org.apache.jena.rdf.model.Statement;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConstants;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class NuvaConcept extends ExternalConcept {
+public abstract class NuvaConcept extends ExternalConcept implements NuvaConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaConcept.class);
 
@@ -139,6 +140,9 @@ public abstract class NuvaConcept extends ExternalConcept {
 			}
 		} else {
 			String str = stmt.getObject().toString();
+			if (str.startsWith(NUVA_NS)){
+				return str.substring(NUVA_NS.length());
+			}
 			int cut = str.indexOf("#") + 1;
 			return str.substring(cut);
 		}

@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import static org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaConcept.*;
 
 public class NuvaOntologyLoader extends TermServerScript implements NuvaConstants {
-
 	static {
 		ReportSheetManager.targetFolderId = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO";  //NUVA
 	}
@@ -51,22 +50,24 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 	private Property subClassProperty;
 
 	public enum NuvaUri {
-		ABSTRACT("http://data.esante.gouv.fr/NUVA/nuvs#isAbstract"),
+		ABSTRACT("http://ivci.org/NUVA/nuvs#isAbstract"),
 		ID("http://www.w3.org/2004/02/skos/core#notation"),
 		CODE("http://www.w3.org/2000/01/rdf-schema#label"),
 		TYPE("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 		SUBCLASSOF("http://www.w3.org/2000/01/rdf-schema#subClassOf"),
 		COMMENT("http://www.w3.org/2000/01/rdf-schema#comment"),
 		CREATED("http://purl.org/dc/terms/created"),
-		DISEASE("http://data.esante.gouv.fr/NUVA#Disease"),
+		DISEASE("http://ivci.org/NUVA/Disease"),
 		LABEL("http://www.w3.org/2000/01/rdf-schema#label"),
 		ALT_LABEL("http://www.w3.org/2004/02/skos/core#altLabel"),
 		HIDDEN_LABEL("http://www.w3.org/2004/02/skos/core#hiddenLabel"),
 		MODIFIED("http://purl.org/dc/terms/modified"),
 		MATCH("http://www.w3.org/2004/02/skos/core#exactMatch"),
-		VALENCE("http://data.esante.gouv.fr/NUVA/nuvs#containsValence"),
-		CONTAINED_IN_VACCINE("http://data.esante.gouv.fr/NUVA/nuvs#containedInVaccine"),
-		PREVENTS("http://data.esante.gouv.fr/NUVA/nuvs#prevents");
+		VACCINE("http://ivci.org/NUVA/Vaccine"),
+		VALENCE("http://ivci.org/NUVA/Valence"),
+		CONTAINS_VALENCE("http://ivci.org/NUVA/nuvs#containsValence"),
+		CONTAINED_IN_VACCINE("http://ivci.org/NUVA/nuvs#containedInVaccine"),
+		PREVENTS("http://ivci.org/NUVA/nuvs#prevents");
 
 		public final String value;
 
@@ -321,13 +322,15 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 				NuvaDisease disease = NuvaDisease.fromResource(nuvaId, subject.listProperties());
 				diseaseMap.put(disease.getExternalIdentifier(), disease);
 				return;
+			} else {
+				LOGGER.debug("Skipping {}", subclassStmt);
 			}
 		}
 	}
 
 
 	private void formHierarchy(Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap, Map<String, NuvaDisease> diseaseMap) {
-		formVaccineHerarchy(vaccineMap, valenceMap);
+		formVaccineHierarchy(vaccineMap, valenceMap);
 		formValenceHierarchy(valenceMap, diseaseMap);
 	}
 
@@ -351,7 +354,7 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 		}
 	}
 
-	private void formVaccineHerarchy(Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap) {
+	private void formVaccineHierarchy(Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap) {
 		//Work through all the vaccines and populate them with the valences that they currently have string references to
 		for (NuvaVaccine vaccine : vaccineMap.values()) {
 			for (String valenceId : vaccine.getValenceRefs()) {

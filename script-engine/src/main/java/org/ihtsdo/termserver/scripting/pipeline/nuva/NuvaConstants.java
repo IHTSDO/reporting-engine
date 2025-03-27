@@ -1,7 +1,8 @@
 package org.ihtsdo.termserver.scripting.pipeline.nuva;
 
 public interface NuvaConstants {
-	String NUVA_NS= "http://data.esante.gouv.fr/NUVA#";
+	// http://data.esante.gouv.fr/NUVA#
+	String NUVA_NS= "http://ivci.org/NUVA/";
 	String SNOMED_LABEL = "SNOMED-CT-";
 }
 
