@@ -126,6 +126,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.info("Identifying concepts to process");
 		return findConcepts(ecl).stream()
+			.filter(this::inScope)
 			.filter(this::meetsProcessingCriteria)
 			.sorted(SnomedUtils::compareSemTagFSN)
 				.map(c -> (Component)c)
