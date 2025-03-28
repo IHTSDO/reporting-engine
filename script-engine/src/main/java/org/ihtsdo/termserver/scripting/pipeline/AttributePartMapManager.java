@@ -18,9 +18,9 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	private static final int NOT_SET = -1;
 
 	private static final int IDX_PART_NUM = 0;
-	private static final int IDX_STATUS = 7;
-	private static final int IDX_NO_MAP = 6;
-	private static final int IDX_TARGET = 2;
+	private static final int IDX_STATUS = 8;
+	private static final int IDX_NO_MAP = 7;
+	private static final int IDX_TARGET = 3;
 
 	protected ContentPipelineManager cpm;
 	protected GraphLoader gl;
