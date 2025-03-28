@@ -65,7 +65,7 @@ public class ImportNuvaConcepts extends ContentPipelineManager implements NuvaCo
 		NuvaTemplatedVaccineConcept.initialise(this);
 		NuvaTemplatedValenceConcept.initialise(this);
 		NuvaOntologyLoader loader = new NuvaOntologyLoader();
-		List<NuvaVaccine> vaccines = loader.asVaccines(getInputFile());
+		List<NuvaVaccine> vaccines = loader.asVaccines(getInputFile(), this);
 		externalConceptMap = vaccines.stream()
 				.collect(Collectors.toMap(NuvaVaccine::getExternalIdentifier, c -> c));
 	}

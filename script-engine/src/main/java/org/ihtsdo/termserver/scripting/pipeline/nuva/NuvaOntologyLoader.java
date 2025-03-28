@@ -10,6 +10,7 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaDisease;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaVaccine;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaValence;
@@ -289,7 +290,7 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 		return model;
 	}
 
-	public List<NuvaVaccine> asVaccines(File file) {
+	public List<NuvaVaccine> asVaccines(File file, ContentPipelineManager cpm) throws TermServerScriptException {
 		dataModel = loadNuva(file);
 		Map<String, NuvaVaccine> vaccineMap = new HashMap<>();
 		Map<String, NuvaValence> valenceMap = new HashMap<>();
@@ -298,13 +299,13 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 		ResIterator subIterator = dataModel.listSubjects();
 		while (subIterator.hasNext()) {
 			Resource subject = subIterator.next();
-			convertToNuvaObjects(subject, vaccineMap, valenceMap, diseaseMap);
+			convertToNuvaObjects(subject, vaccineMap, valenceMap, diseaseMap, cpm);
 		}
 		formHierarchy(vaccineMap, valenceMap, diseaseMap);
 		return new ArrayList<>(vaccineMap.values());
 	}
 
-	private void convertToNuvaObjects(Resource subject, Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap, Map<String, NuvaDisease> diseaseMap) {
+	private void convertToNuvaObjects(Resource subject, Map<String, NuvaVaccine> vaccineMap, Map<String, NuvaValence> valenceMap, Map<String, NuvaDisease> diseaseMap, ContentPipelineManager cpm) throws TermServerScriptException {
 		String nuvaId = subject.toString().replace(NUVA_NS, "");
 		StmtIterator subclassIter = subject.listProperties(subClassProperty);
 		while (subclassIter.hasNext()) {
@@ -312,11 +313,12 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 			if (isObject(subclassStmt, NuvaClass.VACCINE)) {
 				NuvaVaccine vaccine = NuvaVaccine.fromResource(nuvaId, subject.listProperties());
 				vaccineMap.put(vaccine.getExternalIdentifier(), vaccine);
-				vaccine.postImportAdjustment();
+				vaccine.postImportAdjustment(cpm);
 				return;
 			} else if (isObject(subclassStmt, NuvaClass.VALENCE)) {
 				NuvaValence valence = NuvaValence.fromResource(nuvaId, subject.listProperties());
 				valenceMap.put(valence.getExternalIdentifier(), valence);
+				valence.postImportAdjustment(cpm);
 				return;
 			} else if (isObject(subclassStmt, NuvaClass.DISEASE)) {
 				NuvaDisease disease = NuvaDisease.fromResource(nuvaId, subject.listProperties());
