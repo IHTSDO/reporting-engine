@@ -52,6 +52,11 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	}
 
 	@Override
+	public String toString() {
+		return externalIdentifier;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof NuvaConcept other) {
 			return other.externalIdentifier.equals(this.externalIdentifier);
@@ -183,7 +188,7 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	public void postImportAdjustment(ContentPipelineManager cpm) throws TermServerScriptException {
 		//Are we missing a label?  See if we can use a label instead
 		if (enLabel == null) {
-			int tabIdx = cpm.getTab(cpm.TAB_MODELING_ISSUES);
+			int tabIdx = cpm.getTab(TAB_MODELING_ISSUES);
 			//Do we have a French translation we could use?
 			if (translations.containsKey("fr")) {
 				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using French: " + translations.get("fr"));
