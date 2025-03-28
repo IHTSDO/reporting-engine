@@ -27,7 +27,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 	}
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
-		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103 |Valence (valence)|");
+		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103 |Valence (valence)|", false, true);
 	}
 
 	private NuvaValence getNuvaValence() {

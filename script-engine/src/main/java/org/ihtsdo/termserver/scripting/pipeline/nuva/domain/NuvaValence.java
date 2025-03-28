@@ -7,8 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader.NuvaUri.VALENCE;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +45,7 @@ public class NuvaValence extends NuvaConcept implements Comparable<NuvaValence> 
 			if (isPredicate(stmt, NuvaOntologyLoader.NuvaUri.SUBCLASSOF)) {
 				String parentValence = getObject(stmt);
 				//Record this Valence if it's not "Valence" which is the top level object
-				if (!parentValence.equals(VALENCE.value)) {
+				if (!parentValence.equals(NuvaOntologyLoader.NuvaClass.VALENCE.value)) {
 					parentValenceIds.add(getObject(stmt));
 				}
 			} else if (isPredicate(stmt, NuvaOntologyLoader.NuvaUri.CONTAINED_IN_VACCINE)) {

@@ -31,25 +31,31 @@ public abstract class Expressable extends Component implements ScriptConstants {
 				.map(Concept::toString)
 				.collect(Collectors.joining (" + \n"));
 		
-		if (!getRelationships(charType, ActiveState.ACTIVE).isEmpty()) {
+		if (hasModel(charType)) {
 			expression += " : \n";
-		}
-		//Add any ungrouped attributes
-		boolean isFirstGroup = true;
-		for (RelationshipGroup group : getRelationshipGroups(charType)) {
-			if (isFirstGroup) {
-				isFirstGroup = false;
-			} else {
-				expression += ",\n";
+
+			//Add any ungrouped attributes
+			boolean isFirstGroup = true;
+			for (RelationshipGroup group : getRelationshipGroups(charType)) {
+				if (isFirstGroup) {
+					isFirstGroup = false;
+				} else {
+					expression += ",\n";
+				}
+				expression += group.isGrouped() ? "{" : "";
+				expression += group.getRelationships().stream()
+						.map(r -> "  " + r.toString())
+						.sorted()
+						.collect(Collectors.joining(",\n"));
+				expression += group.isGrouped() ? " }" : "";
 			}
-			expression += group.isGrouped() ? "{" : "";
-			expression += group.getRelationships().stream()
-					.map(r -> "  " + r.toString())
-					.sorted()
-					.collect(Collectors.joining (",\n"));
-			expression += group.isGrouped() ? " }" : "";
 		}
 		return expression;
 	}
 	
+	private boolean hasModel(CharacteristicType charType) {
+		//A concept has a model if it has any active attributes ie relationships that are not IS_A
+		return getRelationships(charType, ActiveState.ACTIVE).stream()
+				.anyMatch(r -> !r.getType().equals(IS_A));
+	}
 }
