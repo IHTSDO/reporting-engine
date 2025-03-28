@@ -1,17 +1,19 @@
 package org.ihtsdo.termserver.scripting.pipeline.nuva.domain;
 
 import org.apache.jena.rdf.model.Statement;
+import org.ihtsdo.otf.RF2Constants;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConstants;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-public abstract class NuvaConcept extends ExternalConcept implements NuvaConstants {
+public abstract class NuvaConcept extends ExternalConcept implements NuvaConstants, RF2Constants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaConcept.class);
 
@@ -20,6 +22,7 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	protected String modified;
 	protected boolean isAbstract;
 	private String enLabel;
+	private Map<String, String> translations = new HashMap<>();
 	protected final List<String> hiddenLabels = new ArrayList<>();
 	protected final Map<String, String> altLabels = new HashMap<>();
 	protected List<String> synonyms = new ArrayList<>();
@@ -91,6 +94,8 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 				synonyms.add(translation.getValue());
 			} else if (translation.hasLanguage("en")) {
 				setEnLabel(translation.getValue());
+			} else if (translation.hasLanguage("fr")) {
+				translations.put("fr", translation.getValue());
 			}
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ID)) {
@@ -175,10 +180,18 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 		return synonyms;
 	}
 
-	public void postImportAdjustment() {
+	public void postImportAdjustment(ContentPipelineManager cpm) throws TermServerScriptException {
 		//Are we missing a label?  See if we can use a label instead
-		if (enLabel == null && !synonyms.isEmpty()) {
-			setEnLabel("Missing translation: " + synonyms.get(0));
+		if (enLabel == null) {
+			int tabIdx = cpm.getTab(cpm.TAB_MODELING_ISSUES);
+			//Do we have a French translation we could use?
+			if (translations.containsKey("fr")) {
+				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using French: " + translations.get("fr"));
+				setEnLabel(translations.get("fr"));
+			} else if  (!synonyms.isEmpty()) {
+				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using synonym: " + synonyms.get(0));
+				setEnLabel("Missing translation: " + synonyms.get(0));
+			}
 		}
 	}
 
@@ -203,11 +216,11 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 		} else if (altLabels.containsKey(fallBack)) {
 			//Do we have a French translation we could use?
 			if (altLabels.containsKey("fr")) {
-				cpm.report(tabIdx, this, RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English altLabel, using French: " + altLabels.get("fr"));
+				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English altLabel, using French: " + altLabels.get("fr"));
 			}
 			return altLabels.get(fallBack);
 		}
-		cpm.report(tabIdx, this, RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing all AltLabels");
+		cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing all AltLabels");
 		return null;
 	}
 }
