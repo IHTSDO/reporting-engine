@@ -3,25 +3,28 @@ package org.ihtsdo.termserver.scripting.pipeline.npu.template;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.*;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
-import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
-import org.ihtsdo.termserver.scripting.pipeline.npu.ImportNpuConcepts;
 import org.ihtsdo.termserver.scripting.pipeline.npu.NpuScriptConstants;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuConcept;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuDetail;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public abstract class NpuTemplatedConcept extends TemplatedConcept implements NpuScriptConstants {
 	private static Concept unitsAttribute;
 	private static RelationshipTemplate defaultUnitOfMeasureAttribute;
 	private static Map<String, NpuDetail> npuDetailMap;
 
+	private static final String TRAILING_IN = " in ";
+
 	public static void initialise(ContentPipelineManager cpm,
 	                              Map<String, NpuDetail> npuDetailMap) throws TermServerScriptException {
 		TemplatedConcept.cpm = cpm;
 		TemplatedConcept.gl = cpm.getGraphLoader();
+		NpuTemplatedConcept.npuDetailMap = npuDetailMap;
 		Concept unitOfMeasure = gl.getConcept("767524001 |Unit of measure| ");
 		unitsAttribute = gl.getConcept("246514001 |Units|");
 		defaultUnitOfMeasureAttribute = new RelationshipTemplate(unitsAttribute, unitOfMeasure);
@@ -62,7 +65,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 	protected void populateParts() throws TermServerScriptException {
 		prepareConceptDefaultedForModule(SCTID_NPU_EXTENSION_MODULE);
 		NpuConcept npuConcept = getNpuConcept();
-		NpuDetail npuDetail = ((ImportNpuConcepts)cpm).getDetailsMap().get(getExternalIdentifier());
+		NpuDetail npuDetail = npuDetailMap.get(getExternalIdentifier());
 		for (Part part : npuDetail.getParts(npuConcept)) {
 			populatePart(part);
 		}
@@ -75,7 +78,8 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 		List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 		addAttributeFromDetail(attributesToAdd, part);
 
-		if (part.getPartTypeName().equals(NPU_PART_UNIT) && attributesToAdd.isEmpty()) {
+		if (part.getPartTypeName().equals(NPU_PART_UNIT)
+				&& SnomedUtils.isEmpty(part.getPartNumber())) {
 			//NPU Concepts without a unit will be given a default unit of measure
 			attributesToAdd.add(defaultUnitOfMeasureAttribute);
 			slotTermMap.put(NPU_PART_UNIT, "");
@@ -103,9 +107,18 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 	}
 
 	@Override
-	protected void applyTemplateSpecificTermingRules(Description pt) throws TermServerScriptException {
-		//Do we need to apply any specific rules to the terming?
-		//Override this function if so
+	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
+		//Did we have a blank Unit?  Trim off that trailing "in" if so.
+		if (slotTermMap.containsKey(NPU_PART_UNIT)
+				&& d.getTerm().endsWith(TRAILING_IN)) {
+			if (d.getType().equals(DescriptionType.FSN)) {
+				String[] fsnParts = SnomedUtilsBase.deconstructFSN(d.getTerm());
+				String newBase = fsnParts[0].substring(0, fsnParts[0].length() - TRAILING_IN.length());
+				d.setTerm(newBase + " " + fsnParts[1]);
+			} else {
+				d.setTerm(d.getTerm().substring(0, d.getTerm().length() - TRAILING_IN.length()));
+			}
+		}
 	}
 	
 }

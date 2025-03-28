@@ -41,7 +41,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_MAP_ME,
 			TAB_IMPORT_STATUS,
-			TAB_IOI,
+			TAB_ITEMS_OF_INTEREST,
 			TAB_STATS};
 	
 	public static void main(String[] args) throws TermServerScriptException {
@@ -98,8 +98,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				/*"LoincNum, LongCommonName, Concept, Correlation, Expression," + commonLoincColumns,*/
-				/*"LoincNum, LoincPartNum, Advice, LoincPartName, SNOMED Attribute, ", */
 				"Item, Info, Details, ,",
 				"LoincPartNum, LoincPartName, PartType, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"LoincNum, Item of Special Interest, LoincName, Issues, details",

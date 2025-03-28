@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,10 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	protected abstract void populateKnownMappings() throws TermServerScriptException;
 
 	public List<RelationshipTemplate> getPartMappedAttributeForType(int idxTab, String externalIdentifier, String partNum, Concept attributeType) throws TermServerScriptException {
-		if (hardCodedMappings.containsKey(partNum)) {
+		if (SnomedUtils.isEmpty(partNum)) {
+			//Can't look up an unspecified part.
+			//In the case of, eg NPU Unit not being specified, this is fine.
+		} else if (hardCodedMappings.containsKey(partNum)) {
 			List<RelationshipTemplate> mappings = new ArrayList<>();
 			for (Concept attributeValue : hardCodedMappings.get(partNum)) {
 				mappings.add(new RelationshipTemplate(attributeType, attributeValue));
@@ -57,7 +61,8 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 			RelationshipTemplate rt = partToAttributeMap.get(partNum).clone();
 			rt.setType(attributeType);
 			return List.of(rt);
-		} else if (idxTab != NOT_SET && !cpm.getMappingsAllowedAbsent().contains(partNum)) {
+		} else if (idxTab != NOT_SET
+				&& !cpm.getMappingsAllowedAbsent().contains(partNum)) {
 			//Some special rules exist for certain parts, so we don't need to report if we have one of those.
 			String partStr = parts.get(partNum) == null ? "Part Not Known - " + partNum : parts.get(partNum).toString();
 			cpm.report(idxTab,

@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.pipeline.*;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ConceptWrapper;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConceptUsage;
-import org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.slf4j.Logger;
@@ -230,7 +229,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			partNumsUnmapped.add(part.getPartNumber());
 			if (part instanceof LoincDetail loincDetail) {
-				((LoincScript) cpm).addMissingMapping(part.getPartNumber(), loincDetail.getLoincNum());
+				cpm.addMissingMapping(part.getPartNumber(), loincDetail.getLoincNum());
 			}
 
 			//Record the fact that we failed to find a map on a per part basis

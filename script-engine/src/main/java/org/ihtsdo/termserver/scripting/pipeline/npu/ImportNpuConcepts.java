@@ -39,7 +39,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_MAP_ME,
 			TAB_IMPORT_STATUS,
-			TAB_IOI,
+			TAB_ITEMS_OF_INTEREST,
 			TAB_STATS};
 
 	public static void main(String[] args) throws TermServerScriptException {
@@ -56,13 +56,17 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 				"npu_code, shortDefinition, system, component, kindOfProperty, proc, unit, specialty, contextDependent, group, scaleType, active, , ",
 				"npu_code, Item of Interest, External Concept Long Name, ColumnName, Part Status, SCTID, FSN, Priority Index, Usage Count, Top Priority Usage, Mapping Notes,",
 				"NpuNum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, System, Component, Property, Proc, Unit, , , , , , , , , , , , , , , , , ",
-				"NpuNum, Item of Special Interest, NpuName, Issues, details, , , , , , , , , , ",
+				"NPU Element Code, Element Name, Category, High Usage, Highest Usage, , Concepts Affected, , , ",
 				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, NpuNum, Descriptions, Expression, Status, , ",
 				"Category, NpuNum, Detail, , , "
 		};
 
 		super.postInit(tabNames, columnHeadings, false);
+
+		getReportManager().disableTab(getTab(TAB_IMPORT_STATUS));
+		getReportManager().disableTab(getTab(TAB_ITEMS_OF_INTEREST));
+
 		scheme = gl.getConcept(SCTID_NPU_SCHEMA);
 		externalContentModuleId = SCTID_NPU_EXTENSION_MODULE;
 		namespace = "1003000";
@@ -168,6 +172,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 	protected void importPartMap() throws TermServerScriptException {
 		attributePartMapManager = new NpuAttributePartMapManager(this, partMap, partMapNotes);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_NPU_PARTS_MAP_BASE_FILE));
+		NpuTemplatedConcept.initialise(this, npuDetailsMap);
 	}
 
 	@Override

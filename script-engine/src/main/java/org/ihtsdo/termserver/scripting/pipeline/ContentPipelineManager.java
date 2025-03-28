@@ -95,10 +95,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			init(args);
 			loadProjectSnapshot(false);
 			postInit();
-			//getReportManager().disableTab(getTab(TAB_MODELING_ISSUES));
-			//getReportManager().disableTab(getTab(TAB_MAP_ME));
-			//getReportManager().disableTab(getTab(TAB_IOI));
-			//getReportManager().disableTab(getTab(TAB_STATS));
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
 			loadSupportingInformation();
@@ -174,6 +170,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected void doModeling() throws TermServerScriptException {
 		for (String externalIdentifier : getExternalConceptsToModel()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(externalIdentifier);
+			validateTemplatedConcept(externalIdentifier, templatedConcept);
 			templatedConcept.populateAlternateIdentifier();
 			if (conceptSufficientlyModeled(getContentType(), externalIdentifier, templatedConcept)) {
 				recordSuccessfulModelling(templatedConcept);
@@ -669,20 +666,20 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (String loincNum : itemsOfInterest) {
 			boolean found = false;
 			if (MANUALLY_MAINTAINED_ITEMS.containsKey(loincNum)) {
-				report(getTab(TAB_IOI),reportKey, loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
+				report(getTab(ContentPipeLineConstants.TAB_ITEMS_OF_INTEREST),reportKey, loincNum, "Modelled manually", MANUALLY_MAINTAINED_ITEMS.get(loincNum));
 				continue;
 			}
 
 			for (TemplatedConcept tc : successfullyModelled) {
 				if (tc.getExternalIdentifier().equals(loincNum)) {
-					report(getTab(TAB_IOI), reportKey, tc.getExternalIdentifier(), "Modelled",tc.getConcept());
+					report(getTab(ContentPipeLineConstants.TAB_ITEMS_OF_INTEREST), reportKey, tc.getExternalIdentifier(), "Modelled",tc.getConcept());
 					found = true;
 					break;
 				}
 			}
 
 			if (!found) {
-				report(getTab(TAB_IOI),reportKey, loincNum, "Not Modelled");
+				report(getTab(ContentPipeLineConstants.TAB_ITEMS_OF_INTEREST),reportKey, loincNum, "Not Modelled");
 			}
 		}
 	}
@@ -780,13 +777,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		} else if (externalConceptMap.get(externalIdentifier).isHighestUsage() && templatedConcept != null) {
 			//Templates that come back as null will already have been counted as out of scope
 			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
-			report(getTab(TAB_IOI), "Highest Usage Mapping Failure", externalIdentifier);
+			report(getTab(ContentPipeLineConstants.TAB_ITEMS_OF_INTEREST), "Highest Usage Mapping Failure", externalIdentifier);
 		}
 		return false;
 	}
 
 	protected void validateTemplatedConcept(String externalIdentifier, TemplatedConcept templatedConcept) throws TermServerScriptException {
-
 		if (templatedConcept == null || templatedConcept.getConcept() == null) {
 			if (externalConceptMap.get(externalIdentifier) == null) {
 				report(getTab(TAB_MODELING_ISSUES),
@@ -824,7 +820,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 
 			if (concept.hasIssues() ) {
-				concept.addIssue("Template used: " + this.getClass().getSimpleName());
+				concept.addIssue("Template used: " + templatedConcept.getClass().getSimpleName());
 				report(getTab(TAB_MODELING_ISSUES),
 						externalConcept.getExternalIdentifier(),
 						ContentPipelineManager.getSpecialInterestIndicator(externalConcept.getExternalIdentifier()),

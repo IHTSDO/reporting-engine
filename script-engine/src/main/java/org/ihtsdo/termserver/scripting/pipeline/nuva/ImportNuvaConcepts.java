@@ -26,7 +26,7 @@ public class ImportNuvaConcepts extends ContentPipelineManager implements NuvaCo
 			TAB_MODELING_ISSUES,
 			TAB_PROPOSED_MODEL_COMPARISON,
 			TAB_IMPORT_STATUS,
-			TAB_IOI,
+			TAB_ITEMS_OF_INTEREST,
 			TAB_STATS};
 	
 	public static void main(String[] args) throws TermServerScriptException {
