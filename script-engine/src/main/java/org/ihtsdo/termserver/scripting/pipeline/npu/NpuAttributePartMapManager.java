@@ -30,6 +30,8 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 				gl.getConcept("30766002|Quantitative (qualifier value)|")));
 		hardCodedMappings.put("Ordinal", List.of(
 				gl.getConcept("117363000 |Ordinal value|")));
+		hardCodedMappings.put("Nominal", List.of(
+				gl.getConcept("117362005 |Nominal value|")));
 		hardCodedMappings.put("UMLSC0544483", List.of(
 				gl.getConcept("259698001|Globin chain (substance)|")));
 		hardCodedMappings.put("QU60166", List.of(
@@ -74,7 +76,6 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 				gl.getConcept("260073007|Human leukocyte antigen B allele (substance)|")));
 		hardCodedMappings.put("Hugo4944", List.of(
 				gl.getConcept("260082001|Human leukocyte antigen DQB1 allele (substance)|")));
-
 	}
 
 }
