@@ -14,6 +14,8 @@ import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuConcept;
 import org.ihtsdo.termserver.scripting.pipeline.npu.domain.NpuDetail;
+import org.ihtsdo.termserver.scripting.pipeline.npu.template.NpuTemplatedConcept;
+import org.ihtsdo.termserver.scripting.pipeline.npu.template.NpuTemplatedConceptWithComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,4 +210,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 		return new String[]{"N/A", "N/A", "N/A", "N/A", "N/A"};
 	}
 
+	public Map<String, NpuDetail> getDetailsMap() {
+		return npuDetailsMap;
+	}
 }

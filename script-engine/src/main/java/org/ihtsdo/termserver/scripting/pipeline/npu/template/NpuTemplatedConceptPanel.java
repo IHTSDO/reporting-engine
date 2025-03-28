@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.npu;
+package org.ihtsdo.termserver.scripting.pipeline.npu.template;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
