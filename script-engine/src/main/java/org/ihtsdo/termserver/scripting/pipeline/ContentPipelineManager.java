@@ -766,13 +766,17 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				&& !(templatedConcept instanceof TemplatedConceptNull)
 				&& !templatedConcept.getConcept().hasIssue(FSN_FAILURE)
 				&& !templatedConcept.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
+			if (templatedConcept.getConcept().getRelationships().isEmpty()) {
+				throw new TermServerScriptException("Missing relationships for concept " + contentType + " " + externalIdentifier);
+			}
+
 			incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content added - " + contentType);
 			return true;
 		}
 
 		incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
 		if (!externalConceptMap.containsKey(externalIdentifier)) {
-			incrementSummaryCount("Missing Extenternal Identifier","Identifier not found in source file - " + externalIdentifier);
+			incrementSummaryCount("Missing External Identifier","Identifier not found in source file - " + externalIdentifier);
 		} else if (externalConceptMap.get(externalIdentifier).isHighestUsage() && templatedConcept != null) {
 			//Templates that come back as null will already have been counted as out of scope
 			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
