@@ -26,6 +26,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	public static final String CHANGES_SINCE_LAST_ITERATION = "Changes since last iteration";
 	public static final String HIGHEST_USAGE_COUNTS = "Highest usage counts";
 	public static final String CONTENT_COUNT = "Content counts";
+	public static final String INTERNAL_MAP_COUNT = "Internal map counts";
 	public static final String REFSET_COUNT = "Refset counts";
 	public static final String FAILED_TO_LOAD = "Failed to load ";
 	public static final String LANG_REFSET_REMOVAL = "Lang Refset Removal";
@@ -618,9 +619,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	public void incrementSummaryCount(String category, String summaryItem) {
+		incrementSummaryCount(category, summaryItem, 1);
+	}
+
+	public void incrementSummaryCount(String category, String summaryItem, int increment) {
 		//Increment the count for this summary item, in the appropriate category
 		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
-		summaryCounts.merge(summaryItem, 1, Integer::sum);
+		summaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
 
 	public static final List<String> ITEMS_OF_INTEREST =

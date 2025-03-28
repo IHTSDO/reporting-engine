@@ -40,8 +40,8 @@ public class ImportNuvaConcepts extends ContentPipelineManager implements NuvaCo
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Item, Info, Details, Foo, Bar, What, Goes, Here?",
-				"NUVANum, Item of Special Interest, NUVAName, Issues, details, details",
+				"Category, Item, Count",
+				"NUVANum, Item of Special Interest, Severity, Actions, Issue, detail",
 				"NUVANum, SCTID, This Iteration, Template, Differences, Proposed Descriptions, Previous Descriptions, Proposed Model, Previous Model, detail, detail, detail, detail",
 				"PartNum, PartName, PartType, Needed for High Usage Mapping, Needed for Highest Usage Mapping, PriorityIndex, Usage Count,Top Priority Usage, Higest Rank, HighestUsageCount",
 				"Concept, FSN, SemTag, Severity, Action, NUVANum, Descriptions, Expression, Status, , ",

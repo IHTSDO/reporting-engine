@@ -302,6 +302,9 @@ public class NuvaOntologyLoader extends TermServerScript implements NuvaConstant
 			convertToNuvaObjects(subject, vaccineMap, valenceMap, diseaseMap, cpm);
 		}
 		formHierarchy(vaccineMap, valenceMap, diseaseMap);
+		cpm.incrementSummaryCount(ContentPipelineManager.INTERNAL_MAP_COUNT, "Vaccine Map", vaccineMap.size());
+		cpm.incrementSummaryCount(ContentPipelineManager.INTERNAL_MAP_COUNT, "Valence Map", valenceMap.size());
+		cpm.incrementSummaryCount(ContentPipelineManager.INTERNAL_MAP_COUNT, "Disease Map", diseaseMap.size());
 		return new ArrayList<>(vaccineMap.values());
 	}
 
