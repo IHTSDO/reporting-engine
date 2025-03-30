@@ -52,6 +52,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	
 	private boolean isRecentlyTouchedConceptsOnly = false;
 	private Set<Concept> recentlyTouchedConcepts;
+	private Collection<Concept> lipsomalAgentSubstances;
 	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
@@ -110,6 +111,8 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			isRecentlyTouchedConceptsOnly = true;
 			recentlyTouchedConcepts = SnomedUtils.getRecentlyTouchedConcepts(gl.getAllConcepts());
 		}
+		
+		lipsomalAgentSubstances = findConcepts("< 414612001 |Liposomal agent (substance)|");
 	}
 
 	@Override
@@ -473,6 +476,12 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.getType().equals(HAS_PRECISE_INGRED) || r.getType().equals(HAS_ACTIVE_INGRED) ) {
 				Concept ingredient = r.getTarget();
+				
+				//There is an exception that this rule does not apply to liposomal agents
+				if (lipsomalAgentSubstances.contains(ingredient)) {
+					continue;
+				}
+				
 				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
 						report(c, issueStr, ingredient, "is modification of", ir.getTarget());
