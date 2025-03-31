@@ -664,9 +664,9 @@ public class TermServerClient {
 					RefsetMember.class);
 			RefsetMember updatedEntry = response.getBody();
 			Preconditions.checkNotNull(updatedEntry);
-			LOGGER.info("Updated refset member " + refsetEntry.getId());
+			LOGGER.info("Updated refset member {}", refsetEntry.getId());
 		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
+			throw new TermServerScriptException("Unable to update refset entry {}" + refsetEntry + " due to " + e.getMessage(), e);
 		}
 	}
 	
