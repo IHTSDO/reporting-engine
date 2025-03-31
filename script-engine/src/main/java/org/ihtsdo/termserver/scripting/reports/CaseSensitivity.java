@@ -135,6 +135,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		if (reportedForFirstLetterInfractionOrAccepted(c, d,term, caseSig, preferred)) {
 			return true;
 		}
+		
+		if (reportedForStartingWithAcronymInfraction(c, d, caseSig, preferred)) {
+			return true;
+		}
 
 		if (caseSig.equals(CS) || caseSig.equals(cI)) {
 			if (checkCaseSignicanceOfCaseSensitiveTerm(c, d, chopped, preferred, caseSig, term)) {
@@ -144,6 +148,15 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			if (checkCaseSignificanceOfCaseInsensitiveTerm(c, d, chopped, preferred, caseSig)) {
 				return true;
 			}
+		}
+		return false;
+	}
+
+	private boolean reportedForStartingWithAcronymInfraction(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
+		if (!caseSig.equals(CS) && csUtils.startsWithAcronym(d.getTerm())) {
+			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
+			countIssue(c);
+			return true;
 		}
 		return false;
 	}
