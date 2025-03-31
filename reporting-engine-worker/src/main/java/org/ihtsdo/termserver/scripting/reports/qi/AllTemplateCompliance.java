@@ -92,7 +92,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 			String subsetECL = entry.getKey();
 			try {
 				List<Template> templates = entry.getValue();
-				LOGGER.info("Examining subset defined by '" + subsetECL + "' against " + templates.size() + " templates");
+				LOGGER.info("Examining subset defined by '{}' against {} templates", subsetECL, templates.size());
 				examineSubset(subsetECL, templates);
 			} catch (Exception e) {
 				LOGGER.error("Exception while processing domain {}", subsetECL, e);
@@ -110,7 +110,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	private void reportKPIs() throws TermServerScriptException {
 		//Total number of active concepts
 		long activeConcepts = gl.getAllConcepts().stream()
-							.filter(c -> c.isActive())
+							.filter(Component::isActiveSafely)
 							.count();
 		report(SECONDARY_REPORT, "Total number of active concepts", activeConcepts);
 		long inScope = calculateInScopeConcepts();
@@ -141,7 +141,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 					.stream()
 					.filter(this::inModuleScope)
 					.collect(Collectors.toSet());
-			LOGGER.info(subHierarchy + " contains " + concepts.size() + " concepts (in target module).");
+			LOGGER.info("{} contains {} concepts (in target module).", subHierarchy,concepts.size());
 			allInScopeConcepts = ImmutableSet.copyOf(Iterables.concat(allInScopeConcepts, concepts));
 		}
 		//Now only count those concepts that have some non-ISA inferred attributes

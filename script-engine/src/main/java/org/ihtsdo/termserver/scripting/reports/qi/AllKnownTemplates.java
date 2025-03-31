@@ -45,6 +45,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		ReportSheetManager.setTargetFolderId(GFOLDER_QI_STATS);
 	}
 
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		commonInit(run, singleTemplateMode);
 		if (!singleTemplateMode) {
@@ -317,11 +318,16 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			populateTemplates(null, "templates/procedures/Intubation.json");
 
 			populateTemplates(null, "templates/procedures/Periodontal.json");
+			populateTemplates(null,"templates/finding/Measurement Finding.json");
+			populateTemplates(null,"templates/procedures/Endoscopy.json");
+			populateTemplates(null,"templates/procedures/Periodontal.json");
+			populateTemplates(null,"templates/procedures/Exteriorization.json");
+			populateTemplates(null,"templates/procedures/Construction of stoma.json");
+			populateTemplates(null,"templates/procedures/Radiotherapy.json");
+			populateTemplates(null,"templates/procedures/Drainage.json");
 
-			populateTemplates(null, "templates/procedures/Construction of stoma.json");
 
-			populateTemplates(null, "templates/procedures/InsertionOfStent.json");
-			
+
 			//Do this one last to pick up whatever is left under Disease
 			populateTemplates("<< 64572001 |Disease (disorder)|", "templates/Disease.json");
 			
@@ -354,18 +360,14 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			}
 			
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
-			Template template = new Template(id++, lt, templateName);
-			LOGGER.info("Loading template " + templateName + " from TS to run against subset: " + ct.getDomain());
+			Template template = new Template(id, lt, templateName);
+			LOGGER.info("Loading template {} from TS to run against subset: {}", templateName, ct.getDomain());
 			
 			if (ct.getDomain() == null) {
-				LOGGER.warn("TS template " + templateName + " is not saying what domain it applies to");
+				LOGGER.warn("TS template {} does not say what domain it applies to", templateName);
 			}
 			//Have we seen this subset before?
-			List<Template> templates = domainTemplates.get(ct.getDomain());
-			if (templates == null) {
-				templates = new ArrayList<>();
-				domainTemplates.put(ct.getDomain(), templates);
-			}
+			List<Template> templates = domainTemplates.computeIfAbsent(ct.getDomain(), k -> new ArrayList<>());
 			template.setSource(TEMPLATE_SERVICE);
 			templates.add(template);
 		} catch (Exception e) {
@@ -376,7 +378,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	private void populateTemplates(String ecl, String... templateNames) throws TermServerScriptException {
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
-				LOGGER.info("Loading template: " + templateNames[x]);
+				LOGGER.info("Loading template: {}", templateNames[x]);
 				try {
 					ConceptTemplate ct = tsc.loadLocalConceptTemplate(templateNames[x]);
 					LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
