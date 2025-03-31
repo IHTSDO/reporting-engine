@@ -1173,7 +1173,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected int updateRefsetMember(Task t, RefsetMember r, String info) throws TermServerScriptException {
-		LOGGER.debug((dryRun? "Dry run ":"") + "Updating state of " + r + info);
+		String msg = (dryRun? "Dry run u":"U") + "pdating state of {} {}";
+		LOGGER.debug(msg, r, info);
 		if (!dryRun) {
 			tsClient.updateRefsetMember(t.getBranchPath(), r, false); //Don't force delete
 		}
