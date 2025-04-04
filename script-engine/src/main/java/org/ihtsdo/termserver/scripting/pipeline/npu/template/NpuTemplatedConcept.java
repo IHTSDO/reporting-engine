@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public abstract class NpuTemplatedConcept extends TemplatedConcept implements NpuScriptConstants {
 	private static Concept unitsAttribute;
 	private static RelationshipTemplate defaultUnitOfMeasureAttribute;
+	private static RelationshipTemplate fastingAttribute;
 	private static Map<String, NpuDetail> npuDetailMap;
 
 	private static final String TRAILING_IN = " in ";
@@ -28,6 +29,10 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 		Concept unitOfMeasure = gl.getConcept("767524001 |Unit of measure| ");
 		unitsAttribute = gl.getConcept("246514001 |Units|");
 		defaultUnitOfMeasureAttribute = new RelationshipTemplate(unitsAttribute, unitOfMeasure);
+
+		Concept precondition = gl.getConcept("704326004 |Precondition|");
+		Concept fasting = gl.getConcept("726054005 |After fasting (qualifier value)|");
+		defaultUnitOfMeasureAttribute = new RelationshipTemplate(precondition, fasting);
 	}
 
 		@Override
@@ -102,6 +107,15 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 		if (part.getPartTypeName().equals(NPU_PART_UNIT) && attributes.isEmpty()) {
 			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 			slotTermMap.put(NPU_PART_UNIT, part.getPartName());
+		}
+
+		if (part.getPartName().equals("System")) {
+			slotTermMap.put(NPU_PART_SYSTEM, "");
+		}
+
+		if (part.getPartNumber().equals("QU65029")) {
+			//Add an extra attribute for a precondition of fasting
+			attributes.add(fastingAttribute);
 		}
 
 	}
