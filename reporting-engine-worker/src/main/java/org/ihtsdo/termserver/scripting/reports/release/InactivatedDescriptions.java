@@ -75,7 +75,7 @@ public class InactivatedDescriptions extends TermServerReport implements ReportC
 								"along with the reason and historical association where applicable, " +
 								"optionally restricted to a particular semantic tag. " +
 								"Also optional is specifying a previously published release package to run against." +
-								"The issue count here is the total number of concepts which descriptions are inactivated.")
+								"The issue count here is the total number of descriptions inactivated.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -98,8 +98,8 @@ public class InactivatedDescriptions extends TermServerReport implements ReportC
 					if (!reported) {
 						report(c, d.getLang(), d.getDescriptionId(), d.getTerm(), i, "N/A");
 					}
+					countIssue(c);
 				}
-				countIssue(c);
 			}
 		}
 	}
