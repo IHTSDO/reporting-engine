@@ -395,14 +395,14 @@ public class ArchiveManager implements ScriptConstants {
 		checkIntegrity(fsnOnly);
 
 		if (writeSnapshotToCache &&  snapshotGenerator != null) {
-			snapshotGenerator.writeSnapshotToCache(ts);
+			snapshotGenerator.writeSnapshotToCache(ts, SCTID_CORE_MODULE);
 		} else if (snapshotGenerator == null) {
 			LOGGER.warn("Snapshot generator not initialised, cannot write snapshot to cache");
 		}
 		
 		LOGGER.info("Setting all components to be clean");
 
-		//Make sure to include stated rels in our clean up, otherwise delta generators
+		//Make sure to include stated rels in our clean-up, otherwise delta generators
 		//will output every axiom!
 		gl.getAllConcepts().stream()
 			.flatMap(c -> SnomedUtils.getAllComponents(c, true).stream())
