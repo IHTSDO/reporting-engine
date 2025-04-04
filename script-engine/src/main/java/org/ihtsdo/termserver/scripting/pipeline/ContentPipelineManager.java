@@ -96,7 +96,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			loadProjectSnapshot(false);
 			postInit();
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());
-			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", SCTID_LOINC_EXTENSION_MODULE});
+			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", getExternalContentModuleId()});
 			loadSupportingInformation();
 			importPartMap();
 			preModelling();

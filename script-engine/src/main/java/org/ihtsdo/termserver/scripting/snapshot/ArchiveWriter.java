@@ -16,6 +16,7 @@ import java.util.*;
 public class ArchiveWriter implements Runnable, RF2Constants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveWriter.class);
 	private TermServerScript ts;
+	private String moduleId;
 
 	protected String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	protected String packageDir;
@@ -55,8 +56,9 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 		this.outputDirName = outputDirFile.getAbsolutePath();
 	}
 
-	public void init() throws TermServerScriptException {
+	public void init(String moduleId) throws TermServerScriptException {
 		File outputDir = new File (outputDirName);
+		this.moduleId = moduleId;
 		int increment = 0;
 		while (outputDir.exists()) {
 			String proposedOutputDirName = outputDirName + "_" + (++increment) ;
@@ -182,7 +184,7 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 				altId,
 				"",
 				"1",
-				RF2Constants.SCTID_LOINC_EXTENSION_MODULE,
+				moduleId,
 				schema.getId(),
 				referencedComponentId};
 	}

@@ -58,7 +58,7 @@ public class SnapshotGenerator implements RF2Constants{
 		ts.setQuiet(false);
 	}
 
-	public void writeSnapshotToCache(TermServerScript ts) throws TermServerScriptException {
+	public void writeSnapshotToCache(TermServerScript ts, String defaultModuleId) throws TermServerScriptException {
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
 		//The disk copy will save time when we run again for the same project
 
@@ -66,7 +66,7 @@ public class SnapshotGenerator implements RF2Constants{
 		//in some process.
 		if (!skipSave) {
 			ArchiveWriter as = new ArchiveWriter(ts, outputDirFile);
-			as.init();
+			as.init(defaultModuleId);
 
 			if (runAsynchronously) {
 				new Thread(as).start();

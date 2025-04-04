@@ -23,8 +23,7 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 
 	public static void initialise(ContentPipelineManager cpm,
 	                              Map<String, NpuDetail> npuDetailMap) throws TermServerScriptException {
-		TemplatedConcept.cpm = cpm;
-		TemplatedConcept.gl = cpm.getGraphLoader();
+		TemplatedConcept.initialise(cpm);
 		NpuTemplatedConcept.npuDetailMap = npuDetailMap;
 		Concept unitOfMeasure = gl.getConcept("767524001 |Unit of measure| ");
 		unitsAttribute = gl.getConcept("246514001 |Units|");
