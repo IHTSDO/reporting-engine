@@ -227,14 +227,14 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		}
 		if (includeLegacyIssues || !isLegacy) {
 			//First detail is the issue text
-			issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+			incrementSummaryCount(details[0].toString());
 			countIssue(c);
 			report(PRIMARY_REPORT, c, details);
 		}
 	}
 
 	public void populateSummaryTabAndTotal() {
-		super.populateSummaryTabAndTotal();
+		super.populateSummaryTabAndTotal(SECONDARY_REPORT);
 		summaryCounts.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), e.getValue()));

@@ -33,8 +33,7 @@ public class LOINCStats extends TermServerReport {
 	private enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
 	
 	private Map<String, List<String>> refsetFileMap;
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
-	
+
 	public static void main(String[] args) throws TermServerScriptException {
 		LOINCStats app = new LOINCStats();
 		try {
@@ -44,7 +43,7 @@ public class LOINCStats extends TermServerReport {
 			app.loadProjectSnapshot(false);
 			app.postInit();
 			app.doReport();
-			app.populateSummaryTab();
+			app.populateSummaryTab(PRIMARY_REPORT);
 		} finally {
 			app.finish();
 		}
@@ -79,20 +78,20 @@ public class LOINCStats extends TermServerReport {
 			//Do we still have this item
 			if (!currentContentMap.containsKey(loincNum)) {
 				String issue = "Published LOINCNum no longer represented";
-				increment(issue);
+				incrementSummaryCount(issue);
 				checkForInactiveLoincNumDescription(loincNum, issue);
 			} else {
 				Concept c = currentContentMap.get(loincNum);
 				Set<Relationship> publishedRels = SnomedUtils.fromExpression(gl, expression);
 				Set<Relationship> differences = findStatedRelDifferences(c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE), publishedRels);
 				if (differences.size() > 0) {
-					increment ("Published expressions with attribute changes");
-					increment ("Published expression changes", differences.size());
+					incrementSummaryCount("Published expressions with attribute changes");
+					incrementSummaryCount("Published expression changes", differences.size());
 				}
 				differences = removeProperty(differences);
 				if (differences.size() > 0) {
-					increment ("Published expressions with attribute changes (ignore Property)");
-					increment ("Published expression changes (ignore Property)", differences.size());
+					incrementSummaryCount("Published expressions with attribute changes (ignore Property)");
+					incrementSummaryCount("Published expression changes (ignore Property)", differences.size());
 				}
 			}
 		}
@@ -104,37 +103,37 @@ public class LOINCStats extends TermServerReport {
 			boolean isNew = false;
 			if (c.isActive()) {
 				if (!refsetFileMap.containsKey(loincNum)) {
-					increment ("LoincNum new since Aug 2017");
+					incrementSummaryCount("LoincNum new since Aug 2017");
 					isNew = true;
 				} else {
 					//If this was present but now has null effective time, suggests that the definition status has been changed
 					if (StringUtils.isEmpty(c.getEffectiveTime())) {
-						increment ("Definition status updated (?)");
+						incrementSummaryCount("Definition status updated (?)");
 					}
 				}
 				
 				if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
-					increment("Active concept P");
+					incrementSummaryCount("Active concept P");
 				} else {
-					increment("Active concept SD");
+					incrementSummaryCount("Active concept SD");
 				}
 			} else {
-				increment("Inactivated Expression");
+				incrementSummaryCount("Inactivated Expression");
 				
 				//Does the inactive concept have a historical association
 				for (AssociationEntry e : c.getAssociationEntries(ActiveState.ACTIVE)) {
 					Concept replacement = gl.getConcept(e.getTargetComponentId());
 					if (currentContentMap.containsValue(replacement)) {
-						increment("Inactivated concept has replacement value");
+						incrementSummaryCount("Inactivated concept has replacement value");
 					} else {
-						increment("Inactivated concept replacement value not found");
+						incrementSummaryCount("Inactivated concept replacement value not found");
 					}
 				}
 			}
 			
 			//Have any of the FSN/PT been modified since published?
 			if (!isNew && hasDescriptionChanges(c)) {
-				increment("Has FSN/PT updated");
+				incrementSummaryCount("Has FSN/PT updated");
 			}
 		}
 	}
@@ -214,14 +213,6 @@ public class LOINCStats extends TermServerReport {
 		}
 	}
 	
-	private void increment(String key) {
-		increment(key, 1);
-	}
-	
-	private void increment(String key, int increment) {
-		issueSummaryMap.merge(key.toString(), increment, Integer::sum);
-	}
-	
 	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
 		return getLoincNumDescription(c, ActiveState.ACTIVE).getTerm().substring(LOINC_NUM_PREFIX.length());
 	}
@@ -250,13 +241,6 @@ public class LOINCStats extends TermServerReport {
 		}
 		throw new TermServerScriptException(c + " does not specify a LOINC num");
 	}
-
-	private void populateSummaryTab() throws TermServerScriptException {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Map.Entry.comparingByKey())
-				.forEach(e -> reportSafely (PRIMARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-	}
-	
 
 	private void checkForInactiveLoincNumDescription(String loincNum, String issue) throws TermServerScriptException {
 		Concept foundInactiveDesc = gl.getAllConcepts().stream()

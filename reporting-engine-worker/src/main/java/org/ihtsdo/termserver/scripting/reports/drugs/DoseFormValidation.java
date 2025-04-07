@@ -2,10 +2,9 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -17,9 +16,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +26,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DoseFormValidation.class);
 
 	private List<Concept> allDrugs;
-	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
+	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
 	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
 	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
@@ -44,7 +41,8 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		params.put(RECENT_CHANGES_ONLY, "true");
 		TermServerScript.run(DoseFormValidation.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
@@ -55,7 +53,8 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
-		String[] tabNames = new String[] {	"Issues",
+		String[] tabNames = new String[] {
+				"Issues",
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateAcceptableDoseFormMaps();
@@ -88,7 +87,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
-		populateSummaryTab();
+		populateSummaryTab(SECONDARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
@@ -143,21 +142,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		}
 	}
 
-	private void populateSummaryTab() throws TermServerScriptException {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
-	}
-
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
+	@Override
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
@@ -169,7 +154,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		String fileName = "resources/acceptable_dose_forms.tsv";
 		LOGGER.debug("Loading {}", fileName);
 		try {
-			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
 			boolean isHeader = true;
 			for (String line : lines) {
 				String[] items = line.split(TAB);

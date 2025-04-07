@@ -1345,7 +1345,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	@Override
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}

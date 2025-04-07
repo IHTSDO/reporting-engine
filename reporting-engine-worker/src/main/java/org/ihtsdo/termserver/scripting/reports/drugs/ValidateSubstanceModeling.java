@@ -1,9 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -14,7 +12,6 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +36,11 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Detail",
+		String[] columnHeadings = new String[] {
+				"SCTID, FSN, Semtag, Issue, Detail",
 				"Issue, Count"};
-		String[] tabNames = new String[] {	"Issues",
+		String[] tabNames = new String[] {
+				"Issues",
 				"Summary"};
 		super.postInit(tabNames, columnHeadings);
 	}
@@ -60,19 +59,8 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateSubstancesModeling();
-		populateSummaryTab();
+		populateSummaryTab(SECONDARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
-	}
-
-	private void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(Map.Entry::getValue)
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	private void validateSubstancesModeling() throws TermServerScriptException {
@@ -84,7 +72,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 		}
 		LOGGER.info("Substances validation complete.");
 	}
-	
+
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
 	private void validateDisposition(Concept concept) throws TermServerScriptException {
 		validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
@@ -113,8 +101,6 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	/**
 	 * list of concepts that have an inferred parent with a stated attribute 
 	 * that is not the same as the that of the concept.
-	 * @return
-	 * @throws TermServerScriptException 
 	 */
 	private void checkForOddlyInferredParent(Concept concept, Concept attributeType, boolean allowMoreSpecific) throws TermServerScriptException {
 		String issueStr ="Inferred parent has a stated attribute not stated in child.";
@@ -197,7 +183,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	@Override
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}

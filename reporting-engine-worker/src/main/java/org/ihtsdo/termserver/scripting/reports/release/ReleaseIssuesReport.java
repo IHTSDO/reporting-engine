@@ -31,9 +31,11 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.io.Files;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * INFRA-2723 Detect various possible issues
- * 
  * https://docs.google.com/spreadsheets/d/1jrCR_VOZ6k7qBwDAhTqbt67iisbm_rThV7vt37lr_Rg/edit#gid=0
  
  For cut-n-paste list of issues checked:
@@ -66,10 +68,6 @@ import com.google.common.io.Files;
  RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
  RP-878 Check Interprets/Has Interpretation attributes not grouped with any other attribute
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
@@ -246,7 +244,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 				"Issue, Count"};
-		String[] tabNames = new String[] {	"Issues",
+		String[] tabNames = new String[] {
+				"Issues",
 				"Summary"};
 		
 		super.postInit(tabNames, columnHeadings);
@@ -379,7 +378,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		checkMRCMModuleScope();
 
 		LOGGER.info("Checks complete, creating summary tag");
-		populateSummaryTab();
+		populateSummaryTab(SECONDARY_REPORT);
 		
 		LOGGER.info("Summary tab complete, all done.");
 	}
@@ -508,17 +507,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String prevModule = previousState[MUT_IDX_MODULEID];
 		String currModule = currentState[MUT_IDX_MODULEID];
 		return prevModule.equals(currModule);
-	}
-
-	private void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-
-		int total = issueSummaryMap.entrySet().stream()
-				.map(Map.Entry::getValue)
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	//ISRS-286 Ensure Parents in same module.
@@ -1801,7 +1789,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount(details[0].toString());
 		countIssue(c);
 		return report(PRIMARY_REPORT, c, details);
 	}

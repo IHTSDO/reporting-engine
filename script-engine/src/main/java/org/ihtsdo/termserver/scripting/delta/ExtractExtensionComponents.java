@@ -450,7 +450,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		}
 		try {
 			if (!switchModule(thisConcept, componentsToProcess)) {
-				addSummaryInformation("Specified but no movement: " + thisConcept, null);
+				setSummaryInformation("Specified but no movement", thisConcept);
 				incrementSummaryInformation("Concepts no movement required");
 			} else if (thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) &&
 					SnomedUtils.countAttributes(thisConcept, CharacteristicType.STATED_RELATIONSHIP) == 0) {

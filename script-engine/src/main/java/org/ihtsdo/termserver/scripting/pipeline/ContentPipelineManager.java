@@ -72,8 +72,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected Set<TemplatedConcept> inactivatedConcepts = new HashSet<>();
 	protected boolean includeShortNameDescription = true;
 
-	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
-
 	protected Set<ComponentType> skipForComparison = Set.of(
 			ComponentType.INFERRED_RELATIONSHIP,
 			ComponentType.SIMPLE_REFSET_MEMBER,
@@ -118,7 +116,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
 			postModelling();
-			reportSummaryCounts();
+			reportSummaryCounts(getTab(TAB_SUMMARY));
 			conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 		} finally {
 			while (additionalThreadCount > 0) {
@@ -217,20 +215,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 	protected abstract Set<String> getObjectionableWords();
 
-	private void reportSummaryCounts() throws TermServerScriptException {
-		int summaryTabIdx = getTab(TAB_SUMMARY);
-		report(summaryTabIdx, "");
-		//Work through each category (sorted) and then output each summary Count for that category
-		summaryCountsByCategory.keySet().stream()
-				.sorted()
-				.forEach(cat -> {
-					reportSafely(summaryTabIdx, cat);
-					Map<String, Integer> summaryCounts = summaryCountsByCategory.get(cat);
-					summaryCounts.keySet().stream()
-							.sorted()
-							.forEach(summaryItem -> reportSafely(summaryTabIdx, "", summaryItem, summaryCounts.get(summaryItem)));
-				});
-	}
 
 	private void outputAllConceptsToDelta() throws TermServerScriptException {
 		for (TemplatedConcept tc : successfullyModelled) {
@@ -613,16 +597,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	
 	protected String getNamespace() {
 		return namespace;
-	}
-
-	public void incrementSummaryCount(String category, String summaryItem) {
-		incrementSummaryCount(category, summaryItem, 1);
-	}
-
-	public void incrementSummaryCount(String category, String summaryItem, int increment) {
-		//Increment the count for this summary item, in the appropriate category
-		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
-		summaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
 
 	public static final List<String> ITEMS_OF_INTEREST =

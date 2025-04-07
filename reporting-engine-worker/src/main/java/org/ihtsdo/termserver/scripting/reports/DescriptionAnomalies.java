@@ -1,11 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -15,11 +13,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 /**
  * Lists all active descriptions that have no acceptability
  */
-
 public class DescriptionAnomalies extends TermServerReport implements ReportClass {
 
-	private Map<String, Integer> descriptionIssueSummaryMap = new HashMap<>();
-	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		TermServerScript.run(DescriptionAnomalies.class, args, params);
@@ -68,7 +63,7 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 				checkAcceptableSynInAncestors(c);
 			}
 		}
-		populateSummaryTab();
+		populateSummaryTab(PRIMARY_REPORT);
 	}
 	
 	private void checkAcceptableSynInAncestors(Concept c) throws TermServerScriptException {
@@ -104,27 +99,11 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 			}
 		}
 	}
-	
-	private void populateSummaryTab() {
-		descriptionIssueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (PRIMARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = descriptionIssueSummaryMap.entrySet().stream()
-				.map(Map.Entry::getValue)
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (PRIMARY_REPORT, (Component)null, "TOTAL", total);
-	}
-
-	@Override
-	protected void initialiseSummary(String issue) {
-		descriptionIssueSummaryMap.merge(issue, 0, Integer::sum);
-	}
 
 	@Override
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		descriptionIssueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(SECONDARY_REPORT, c, details);
 	}

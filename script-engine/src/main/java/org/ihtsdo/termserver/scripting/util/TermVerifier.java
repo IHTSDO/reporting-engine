@@ -62,7 +62,7 @@ public class TermVerifier implements ScriptConstants {
 				if (lineNum == 0) {
 					continue; //skip header row  
 				}
-				lineItems = lines.get(lineNum).replace("\"", "").split(TermServerScript.inputFileDelimiter);
+				lineItems = lines.get(lineNum).replace("\"", "").split(TermServerScript.INPUT_FILE_DELIMITER);
 				Concept c = GraphLoader.getGraphLoader().getConcept(lineItems[idx_sctid]);
 				conceptTermsMap.put(c, lineItems);
 			}

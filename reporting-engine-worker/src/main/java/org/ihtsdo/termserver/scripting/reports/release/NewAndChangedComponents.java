@@ -69,7 +69,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	public static final int MAX_ROWS_FOR_TRACEABILITY = 10000;
 	private boolean loadHistoricallyGeneratedData = false;
 	
-	Map<String, SummaryCount> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
+	Map<String, SummaryCountNewChangedInactive> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -302,7 +302,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			if (c.getId().equals("2933111000005104")) {
 				LOGGER.debug("here");
 			}
-			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
+			SummaryCountNewChangedInactive summaryCount = getSummaryCountNewChangedInactive(ComponentType.CONCEPT.name());
 			if (!loadHistoricallyGeneratedData && c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (inScope(c)) {
@@ -335,8 +335,8 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				Set<Concept> hasChanged = isTextDefn ? hasChangedTextDefn : hasChangedDescriptions;
 				Set<Concept> hasChangedAcceptability = isTextDefn ? hasChangedAcceptabilityTextDefn : hasChangedAcceptabilityDesc;
 				
-				summaryCount = getSummaryCount(componentType.name() + " - " + d.getLang());
-				SummaryCount summaryCountLRF = getSummaryCount(ComponentType.LANGREFSET.name() + " - " + d.getLang());
+				summaryCount = getSummaryCountNewChangedInactive(componentType.name() + " - " + d.getLang());
+				SummaryCountNewChangedInactive summaryCountLRF = getSummaryCountNewChangedInactive(ComponentType.LANGREFSET.name() + " - " + d.getLang());
 				boolean isNew = false;
 				boolean isChanged = false;
 				boolean wasInactivated = false;
@@ -369,7 +369,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					}
 					
 					//Description inactivation indicators
-					summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Descriptions");
+					summaryCount = getSummaryCountNewChangedInactive(ComponentType.ATTRIBUTE_VALUE.name() + " - Descriptions");
 					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 						if (SnomedUtils.hasChangesSince(i, changesFromET, false)) {
 							if (isReleased(c, i, ComponentType.ATTRIBUTE_VALUE)) {
@@ -385,7 +385,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					}
 					
 					//Description hist assocs
-					summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
+					summaryCount = getSummaryCountNewChangedInactive(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
 					for (AssociationEntry h : d.getAssociationEntries()) {
 						if (SnomedUtils.hasChangesSince(h, changesFromET, false)) {
 							if (isReleased(c, h, ComponentType.HISTORICAL_ASSOCIATION)) {
@@ -435,7 +435,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				}
 			}
 			
-			summaryCount = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
+			summaryCount = getSummaryCountNewChangedInactive(ComponentType.INFERRED_RELATIONSHIP.name());
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
 				if (inScope(r) && SnomedUtils.hasChangesSince(r, changesFromET, false)) {
 					if (r.isActiveSafely()) {
@@ -454,7 +454,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				}
 			}
 			
-			summaryCount = getSummaryCount(ComponentType.AXIOM.name());
+			summaryCount = getSummaryCountNewChangedInactive(ComponentType.AXIOM.name());
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (inScope(a) && SnomedUtils.hasChangesSince(a, changesFromET, false)) {
 					if (isReleased(c, a, ComponentType.AXIOM)) {
@@ -473,7 +473,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			}
 			
 			if (inScope(c)) {
-				summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Concepts");
+				summaryCount = getSummaryCountNewChangedInactive(ComponentType.ATTRIBUTE_VALUE.name() + " - Concepts");
 				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
 					if (SnomedUtils.hasChangesSince(i, changesFromET, false)) {
 						hasChangedInactivationIndicators.add(c);
@@ -489,7 +489,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					}
 				}
 				
-				summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Concepts");
+				summaryCount = getSummaryCountNewChangedInactive(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Concepts");
 				for (AssociationEntry a : c.getAssociationEntries()) {
 					if (SnomedUtils.hasChangesSince(a, changesFromET, false)) {
 						hasChangedAssociations.add(c);
@@ -603,7 +603,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
 		Collections.sort(summaryCountKeys);
 		for (String componentType : summaryCountKeys) {
-			SummaryCount sc = summaryCounts.get(componentType);
+			SummaryCountNewChangedInactive sc = summaryCounts.get(componentType);
 			String componentName = StringUtils.capitalizeFirstLetter(componentType.toLowerCase());
 			if (!componentName.endsWith("s") && !componentName.contains(" - ")) {
 				componentName += "s";
@@ -661,9 +661,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 					reportMembership(hasLostTextDefn,c),
 					reportMembership(hasChangedAcceptabilityTextDefn,c));
 		}
-		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isNew = hasNewTextDefn.size();
-		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isChanged = hasChangedTextDefn.size();
-		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isInactivated = hasLostTextDefn.size();
+		getSummaryCountNewChangedInactive(CONCEPTS_WITH_TEXT_DEFN).isNew = hasNewTextDefn.size();
+		getSummaryCountNewChangedInactive(CONCEPTS_WITH_TEXT_DEFN).isChanged = hasChangedTextDefn.size();
+		getSummaryCountNewChangedInactive(CONCEPTS_WITH_TEXT_DEFN).isInactivated = hasLostTextDefn.size();
 	}
 
 	private void produceDescriptionReport() throws TermServerScriptException {
@@ -684,9 +684,9 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		for (Concept c : SnomedUtils.sort(superSet)) {
 			produceDescriptionReportForConcept(c, includeTraceability);
 		}
-		getSummaryCount(CONCEPTS_WITH_DESCRIPTIONS).isNew = hasNewDescriptions.size();
-		getSummaryCount(CONCEPTS_WITH_DESCRIPTIONS).isChanged = hasChangedDescriptions.size();
-		getSummaryCount(CONCEPTS_WITH_DESCRIPTIONS).isInactivated = hasLostDescriptions.size();
+		getSummaryCountNewChangedInactive(CONCEPTS_WITH_DESCRIPTIONS).isNew = hasNewDescriptions.size();
+		getSummaryCountNewChangedInactive(CONCEPTS_WITH_DESCRIPTIONS).isChanged = hasChangedDescriptions.size();
+		getSummaryCountNewChangedInactive(CONCEPTS_WITH_DESCRIPTIONS).isInactivated = hasLostDescriptions.size();
 	}
 
 	private void produceDescriptionReportForConcept(Concept c, boolean includeTraceability) throws TermServerScriptException {
@@ -820,14 +820,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		}
 	}
 
-	class SummaryCount {
+	class SummaryCountNewChangedInactive {
 		int isNew;
 		int isChanged;
 		int isInactivated;
 	}
 	
-	SummaryCount getSummaryCount(String type) {
-		summaryCounts.computeIfAbsent(type, k -> new SummaryCount());
+	SummaryCountNewChangedInactive getSummaryCountNewChangedInactive(String type) {
+		summaryCounts.computeIfAbsent(type, k -> new SummaryCountNewChangedInactive());
 		return summaryCounts.get(type);
 	}
 	

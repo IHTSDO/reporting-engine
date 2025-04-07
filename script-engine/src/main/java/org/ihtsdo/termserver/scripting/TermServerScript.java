@@ -39,6 +39,7 @@ import com.google.gson.GsonBuilder;
 public abstract class TermServerScript extends Script implements ScriptConstants {
 
 	protected static final String EXCEPTION_ENCOUNTERED = "Exception encountered";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerScript.class);
 	public static final String COMMAND_LINE_USAGE = "Usage: java <VM_ARGUMENTS> <TSScriptClass> " +
 			"[-a author] " +
@@ -73,7 +74,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int processingLimit = NOT_SET;
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
-	protected List<File> inputFiles = new ArrayList<File>(Collections.nCopies(10, (File) null));
+	protected List<File> inputFiles = new ArrayList<>(Collections.nCopies(10, null));
 	private String dependencyArchive;
 	protected String projectName;
 	private String reportName;
@@ -91,7 +92,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int tabForFinalWords = PRIMARY_REPORT;
 	private boolean loadingRelease = false;
 	protected List<String> moduleFilter;
-	
+
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 	private final List<String> finalWords = new ArrayList<>();
@@ -100,29 +101,25 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail, AdditionalDetail, ";
 	protected String secondaryReportColumns = "ActionDetail, ";
-	protected String tertiaryReportColumns = "ActionDetail, ";
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
-	public Scanner STDIN = new Scanner(System.in);
+	public static final Scanner STDIN = new Scanner(System.in);
 	
 	public static final String CONCEPTS_IN_FILE = "Concepts in file";
 	public static final String CONCEPTS_TO_PROCESS = "Concepts to process";
-	public static final String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static final String ISSUE_COUNT = "Issue count";
 	public static final String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static final String WHITE_LISTED_COUNT = "White Listed Count";
 	private static final String DELETING = "Deleting {}";
 	private static final String DRY_DELETING = "Dry run deleting {}";
-	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
-	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
+	public static final String INPUT_FILE_DELIMITER = TSV_FIELD_DELIMITER;
+	protected String tsRoot = "MAIN/";
 	public static final String EXPECTED_PROTOCOL = "https://";
 	
 	
 	protected static final String AUTHOR = "Author";
-	public static final String Reviewer = "Reviewer";
 	public static final String CONCEPTS_PER_TASK = "Concepts per task";
 	public static final String RESTART_FROM_TASK = "Restart from task";
 	
-	public static final String FILE = "File";
 	protected static final String DRY_RUN = "Dry Run";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
@@ -139,7 +136,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected ReportDataBroker reportDataBroker;
 
-	public static Gson gson;
+	public static final Gson gson;
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Relationship.class, new RelationshipSerializer());
@@ -205,7 +202,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else if (thisArg.equals("-c")) {
 				authenticatedCookie = args[x+1];
 			} else if (thisArg.equals("-d")) {
-				dryRun = args[x+1].equalsIgnoreCase("Y");
+				TermServerScript.dryRun = args[x+1].equalsIgnoreCase("Y");
 				if (!dryRun) {
 					this.runStandAlone = false;
 				}
@@ -310,7 +307,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
-		int envChoice = NOT_SET;
+		int envChoice;
 		if (headlessEnvironment != null) {
 			envChoice = headlessEnvironment;
 		} else {
@@ -570,12 +567,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				if (getReportManager() != null) {
 					jobRun.setResultUrl(getReportManager().getUrl());
 				}
-				Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
-				int issueCount = 0;
-				if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
-					issueCount = Integer.parseInt(issueCountObj.toString());
-				}
-				jobRun.setIssuesReported(issueCount);
+				jobRun.setIssuesReported(getSummaryCount(ISSUE_COUNT));
 			}
 		} catch (Exception e2) {
 			LOGGER.error("Failed to set result URL in final block", e2);
@@ -1305,11 +1297,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					continue; //skip header row  
 				}
 				String[] lineItems;
-				if (Objects.equals(inputFileDelimiter, CSV_FIELD_DELIMITER)) {
+				if (Objects.equals(INPUT_FILE_DELIMITER, CSV_FIELD_DELIMITER)) {
 					//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 					lineItems = splitCarefully(lines.get(lineNum));
 				} else {
-					lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
+					lineItems = lines.get(lineNum).replace("\"", "").split(INPUT_FILE_DELIMITER);
 				}
 				if (lineItems.length >= 1) {
 					try{
@@ -1392,17 +1384,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private void finaliseSummaryText(Date endTime) {
 		List<String> reportLast = new ArrayList<>(Arrays.asList(ISSUE_COUNT, "Report lines written"));
 		List<String> criticalIssues = new ArrayList<>();
+
 		outputAllSummaryText(reportLast, criticalIssues);
-
-		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
-			if (summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
-				double c = ((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
-				double t = ((Integer)summaryDetails.get("Tasks created"));
-				double avg = Math.round((c/t) * 10) / 10.0;
-				outputSummaryText("Concepts per task: " + avg);
-			}
-		}
-
 		outputCriticalIssues(criticalIssues);
 		outputFinalWords(reportLast);
 
@@ -1414,7 +1397,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private void outputAllSummaryText(List<String> reportLast, List<String> criticalIssues) {
-		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
+		for (Map.Entry<String, Integer> summaryDetail : getSummaryDetails().entrySet()) {
 			String key = summaryDetail.getKey();
 			if (reportLast.contains(key)) {
 				continue;
@@ -1452,9 +1435,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 
 		for (String key : reportLast) {
-			if (summaryDetails.containsKey(key)) {
-				String display = summaryDetails.get(key).toString();
-				outputSummaryText(key + (display.isEmpty()?"":": ") + display);
+			if (summaryContainsKey(key)) {
+				outputSummaryText(getSummaryCount(key).toString());
 			}
 		}
 	}

@@ -6,13 +6,11 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.*;
-
 
 /*
 	Makes modifications to terms, driven by an input CSV file
@@ -28,7 +26,6 @@ public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
 		DrugsReTerming fix = new DrugsReTerming(null);
 		try {
 			fix.init(args);
-			TermServerScript.inputFileDelimiter = COMMA;
 			fix.inputFileHasHeaderRow = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions

@@ -4,26 +4,27 @@ import java.io.File;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-/**
- *Used from SE Translation.  Namespace 1000052
- *Updated for Belgium.  Namespace 1000172
- */
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *Used from SE Translation.  Namespace 1000052
+ *Updated for Belgium.  Namespace 1000172
+ */
 public class GenerateTranslation extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateTranslation.class);
 
 	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
-	enum KnownTranslations { SWEDEN, BELGIUM };
+	enum KnownTranslations { SWEDEN, BELGIUM }
 	Map<String, String> langToRefsetMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException {
@@ -44,7 +45,6 @@ public class GenerateTranslation extends DeltaGenerator {
 
 	private void config() {
 		inputFileHasHeaderRow = true;
-		inputFileDelimiter = TSV_FIELD_DELIMITER;
 		isExtension = true; //Ensures the correct partition identifier is used.
 		switch (thisTranslation) {
 			case SWEDEN:
@@ -65,6 +65,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 	}
 
+	@Override
 	protected List<Component> processFile() throws TermServerScriptException {
 		List<Component> newTranslationsLoaded = super.processFile();
 		Set<Component> newTranslations = new HashSet<Component>(newTranslationsLoaded);
@@ -115,7 +116,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			Description usPrefTerm = getUsPrefTerm(concept);
 			if (!usPrefTerm.getTerm().equals(expectedUSTerm)) {
 				//Check if we're perhaps using the FSN (with or without the semantic tag)
-				String fsnPart = SnomedUtils.deconstructFSN(concept.getFsn())[0];
+				String fsnPart = SnomedUtilsBase.deconstructFSN(concept.getFsn())[0];
 				if (!concept.getFsn().equals(expectedUSTerm) && !fsnPart.equals(expectedUSTerm)) {
 					report(concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: '" + expectedUSTerm + "'");
 					return;

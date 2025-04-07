@@ -20,7 +20,6 @@ public abstract class TermServerReport extends TermServerScript {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerReport.class);
 
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
-	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
 
 	protected boolean unpromotedChangesOnly = false;
 	
@@ -118,15 +117,6 @@ public abstract class TermServerReport extends TermServerScript {
 		report(0, c, details);
 	}
 
-	@Override
-	public void incrementSummaryInformation(String key) {
-		if (!quiet) {
-			//This is a bit silly to have two maps
-			super.incrementSummaryInformation(key);
-			issueSummaryMap.merge(key, 1, Integer::sum);
-		}
-	}
-	
 	public static void run(Class<? extends ReportClass> reportClass, String[] args) throws TermServerScriptException {
 		run(reportClass, args, null);
 	}
@@ -164,22 +154,6 @@ public abstract class TermServerReport extends TermServerScript {
 			}
 		}
 		return false;
-	}
-	protected void populateSummaryTabAndTotal() {
-		populateSummaryTabAndTotal(SECONDARY_REPORT);
-	}
-
-	protected void populateSummaryTabAndTotal(int tabIdx) {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(tabIdx, (Component) null, e.getKey(), e.getValue()));
-
-		int total = issueSummaryMap.values().stream().mapToInt(Integer::intValue).sum();
-		reportSafely(tabIdx, (Component) null, "TOTAL", total);
-	}
-
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 
 	protected String isActive(Component c1, Component c2) {

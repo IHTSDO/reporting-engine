@@ -46,7 +46,6 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
 	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
 	
@@ -126,7 +125,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
-		populateSummaryTab();
+		populateSummaryTab(PRIMARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
@@ -309,18 +308,6 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 			}
 		}
 	}
-	
-
-	private void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.values().stream()
-				.mapToInt(Integer::intValue)
-				.sum();
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
-	}
 
 	/**
 	*	Acutation should be modeled with presentation strength and unit of presentation.
@@ -416,9 +403,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 	/**
 	 * For Pattern 2A Drugs (liquids) where we have both a presentation strength and a concentration
 	 * report these values and confirm if the units change between the two, and if the calculation is correct
-	 * @param concept
-	 * @return
-	 * @throws TermServerScriptException 
+	 * @throws TermServerScriptException
 	 */
 	private void validateConcentrationStrength(Concept c) throws TermServerScriptException {
 		String issueStr = "Presentation/Concentration mismatch";
@@ -1141,13 +1126,9 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		return NOT_SET;
 	}
 	
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount(details[0].toString());
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}

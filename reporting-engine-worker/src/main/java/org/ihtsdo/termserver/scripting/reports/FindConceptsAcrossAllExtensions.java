@@ -111,7 +111,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 			try {
 				for (Concept c : findConcepts(eclForExtensionModules)) {
 					report(tabIdx, c);
-					issueSummaryMap.merge(cs.getName(), 1, Integer::sum);
+					incrementSummaryCount(cs.getName());
 					if (!cs.getShortName().equals(SNOMEDCT)) {
 						countIssue(c);
 					}

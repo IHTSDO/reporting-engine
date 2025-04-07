@@ -2,10 +2,10 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -20,7 +20,6 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -31,7 +30,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MP_MPF_Validation.class);
 
 	private List<Concept> allDrugs;
-	private static String RECENT_CHANGES_ONLY = "Recent Changes Only";
+	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
@@ -39,7 +38,6 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	
 	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
 	private List<Concept> bannedMpParents;
@@ -70,9 +68,11 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Expected Result, Variance, Source, Further Details",
+		String[] columnHeadings = new String[] {
+				"SCTID, FSN, Semtag, Issue, Expected Result, Variance, Source, Further Details",
 				"Issue, Count"};
-		String[] tabNames = new String[] {	"Issues",
+		String[] tabNames = new String[] {
+				"Issues",
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateAcceptableDoseFormMaps();
@@ -124,14 +124,14 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
-		populateSummaryTab();
+		populateSummaryTab(SECONDARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
 	private void validateDrugsModeling() throws TermServerScriptException {
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		double conceptsConsidered = 0;
-		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
+
 		for (Concept c : allDrugs) {
 			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
 				continue;
@@ -153,7 +153,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 			}
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
-			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
 				report(c, issueStr);
@@ -230,17 +230,6 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-	}
-
-	private void populateSummaryTab() throws TermServerScriptException {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(e -> e.getValue())
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
@@ -410,7 +399,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	}
 	
 
-	private int getTagLevel(Concept c) throws TermServerScriptException {
+	private int getTagLevel(Concept c) {
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 		for (int i=0; i < semTagHiearchy.length; i++) {
 			if (semTagHiearchy[i].equals(semTag)) {
@@ -424,7 +413,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 
 	private String getParentsJoinedStr(Concept c) {
 		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
-				.map(p -> p.getFsn())
+				.map(Concept::getFsn)
 				.collect(Collectors.joining(", \n"));
 	}
 	
@@ -519,7 +508,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		String issueStr = "Multiple " + charType + " instances of active ingredient";
 		initialiseSummary(issueStr);
 		
-		Set<Concept> valuesEncountered = new HashSet<Concept>();
+		Set<Concept> valuesEncountered = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, activeIngredient, ActiveState.ACTIVE)) {
 			//Have we seen this value for the target attribute type before?
 			Concept target = r.getTarget();
@@ -535,7 +524,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		String issueStr =  "MP/MPF must have one or more 'Has active ingredient' attributes";
 		initialiseSummary(issueStr);
 		if ((isMP(c) || isMPF(c)) && 
-				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE).size() < 1) {
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE).isEmpty()) {
 			report(c, issueStr);
 		}
 		
@@ -616,14 +605,11 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 	boolean isConcAttribute(Concept type) {
 		return concAttributes.contains(type);
 	}
-	
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
+
+	@Override
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}
@@ -632,7 +618,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		String fileName = "resources/acceptable_dose_forms.tsv";
 		LOGGER.debug("Loading {}", fileName);
 		try {
-			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
 			boolean isHeader = true;
 			for (String line : lines) {
 				String[] items = line.split(TAB);

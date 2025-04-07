@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -14,7 +13,6 @@ import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +28,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 
-	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 
 	private List<Concept> bannedMpParents;
@@ -56,9 +53,11 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
+		String[] columnHeadings = new String[] {
+				"SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
 				"Issue, Count"};
-		String[] tabNames = new String[] {	"Issues",
+		String[] tabNames = new String[] {
+				"Issues",
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
 		populateGrouperSubstances();
@@ -97,7 +96,7 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
-		populateSummaryTab();
+		populateSummaryTab(SECONDARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
@@ -259,18 +258,6 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-	}
-	
-
-	private void populateSummaryTab() throws TermServerScriptException {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(Map.Entry::getValue)
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	private void validateProductModellingRules(Concept c) throws TermServerScriptException {
@@ -643,14 +630,10 @@ public class VaccineValidation extends TermServerReport implements ReportClass {
 		LOGGER.error("Unable to find semantic tag level for: {}", c, (Exception)null);
 		return NOT_SET;
 	}
-	
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
+
 	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}
