@@ -889,7 +889,7 @@ public class GraphLoader implements ScriptConstants {
 				//Complexity here that we've historically had language refset entries
 				//for the same description which attempt to cancel each other out using
 				//different UUIDs.  Therefore, if we get a later entry inactivating a given
-				//dialect, then allow that to overwrte an earlier value with a different UUUID
+				//dialect, then allow that to overwrite an earlier value with a different UUID
 
 				//Do we have an existing entry for this description & dialect that is later and inactive?
 				boolean clearToAdd = true;
@@ -901,11 +901,12 @@ public class GraphLoader implements ScriptConstants {
 						checkForActiveDuplication(d, existing, langRefsetEntry);
 					}
 
-					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) <= 1) {
+					//If the existing langrefset is later than this new row, don't add the new row
+					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) < 0) {
 						clearToAdd = false;
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
 						//As long as they have different UUIDs, it's OK to have the same effective time
-						//But we'll ignore the inactivation
+						//But we'll ignore the inactivation, since there's still an active row
 						if (!langRefsetEntry.isActiveSafely()) {
 							clearToAdd = false;
 						}
