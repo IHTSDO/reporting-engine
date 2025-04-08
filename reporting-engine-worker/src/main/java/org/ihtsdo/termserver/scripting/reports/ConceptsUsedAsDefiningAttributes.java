@@ -71,7 +71,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 		String[] columnHeadings = new String[] { 
 				tab1Heading,
 		};
-		String[] tabNames = new String[] {	
+		String[] tabNames = new String[] {
 				"Concepts using Attribute Values",
 		};
 		super.postInit(tabNames, columnHeadings);
@@ -79,6 +79,7 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 		if (!StringUtils.isEmpty(outOfScopeECL)) {
 			outOfScope = findConcepts(outOfScopeECL);
 		}
+
 	}
 	
 	@Override
@@ -139,7 +140,8 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 
 	private List<Concept> getAttributeValuesOfInterest() throws TermServerScriptException {
 		List<Concept> conceptsOfInterest = new ArrayList<>();
-		for (Concept c : findConcepts(subsetECL)) {
+		startingSet = findConcepts(subsetECL);
+		for (Concept c : startingSet) {
 			if (filterConceptsRegEx == null || filterConceptsRegEx.matcher(c.getFsn()).find()) {
 				conceptsOfInterest.add(c);
 			}
