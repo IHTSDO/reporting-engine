@@ -98,12 +98,12 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		//Where a branded product exists, we'll use the branded drug name as both the PT, and the FSN (with semtag of vaccine added).
 		NuvaVaccine nuvaVaccine = getNuvaVaccine();
 		if (!nuvaVaccine.isAbstract()) {
-			if (nuvaVaccine.getSynonyms().isEmpty()) {
-				throw new IllegalArgumentException("Vaccine has no synonyms: " + nuvaVaccine.getExternalIdentifier());
+			if (nuvaVaccine.getUntranslatedLabels().isEmpty()) {
+				throw new IllegalArgumentException("Vaccine has no untranslated Labels: " + nuvaVaccine.getExternalIdentifier());
 			} else {
 				//If this is an FSN, we will replace it (adding a new semantic tag) and throw away the procedurally generated one
 				//If it's the PT, then we will replace it, and demote the original
-				String newTerm = nuvaVaccine.getSynonyms().get(0);
+				String newTerm = nuvaVaccine.getUntranslatedLabels().get(0);
 				if (d.getType().equals(DescriptionType.SYNONYM)) {
 					SnomedUtils.demoteAcceptabilityMap(d);
 					//We create a new description here as the original one will be added to the concept in the calling function

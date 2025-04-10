@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
+import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaValence;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
@@ -28,6 +29,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
 		valenceGrouper = cpm.getGraphLoader().getConcept("31002000103 |Valence (valence)|", false, true);
+		NuvaConcept.init(cpm);
 	}
 
 	private NuvaValence getNuvaValence() {
@@ -79,7 +81,7 @@ public class NuvaTemplatedValenceConcept extends TemplatedConcept implements Con
 				int tabIdx = cpm.getTab(ContentPipeLineConstants.TAB_MODELING_ISSUES);
 				cpm.report(tabIdx, externalConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Valence has no shorthand notation");
 			} else {
-				String shorthandTerm = valence.getAltLabel("en", "fr", cpm);
+				String shorthandTerm = valence.getAltLabel("en", "fr");
 				if (shorthandTerm != null) {
 					Description shorthandDesc = Description.withDefaults(shorthandTerm, DescriptionType.SYNONYM, defaultAccAcceptabilityMap);
 					shorthandDesc.addIssue(CaseSensitivityUtils.FORCE_CS);
