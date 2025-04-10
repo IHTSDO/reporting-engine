@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.pipeline.nuva.domain;
 import org.apache.jena.rdf.model.Statement;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConstants;
@@ -16,16 +15,21 @@ import java.util.*;
 public abstract class NuvaConcept extends ExternalConcept implements NuvaConstants, RF2Constants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaConcept.class);
+	private static ContentPipelineManager cpm;
 
 	protected int translationCount = 0;
 	protected String created;
 	protected String modified;
 	protected boolean isAbstract;
-	private String enLabel;
-	private Map<String, String> translations = new HashMap<>();
+	private final Map<String, String> labels = new HashMap<>();
+	private final Map<String, String> comments = new HashMap<>();
 	protected final List<String> hiddenLabels = new ArrayList<>();
 	protected final Map<String, String> altLabels = new HashMap<>();
-	protected List<String> synonyms = new ArrayList<>();
+	protected List<String> untranslatedLabels = new ArrayList<>();
+
+	public static void init(ContentPipelineManager cpm) {
+		NuvaConcept.cpm = cpm;
+	}
 
 	protected NuvaConcept(String externalIdentifier) {
 		super(externalIdentifier);
@@ -44,11 +48,6 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	@Override
 	public String[] getCommonColumns() {
 		return new String[0];
-	}
-
-	@Override
-	public int getPriority() {
-		return 0;
 	}
 
 	@Override
@@ -71,11 +70,16 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 
 	@Override
 	public String getLongDisplayName() {
-		if (StringUtils.isEmpty(enLabel)) {
-			LOGGER.debug("Check no display name here");
-			return externalIdentifier + " - display name not specified";
+		try {
+			//Branded drugs have their long name as a comment.   Abstract drugs have it as a label
+			if (isAbstract) {
+				return getLabel("en", "fr");
+			} else {
+				return getComment("en", "fr");
+			}
+		} catch (TermServerScriptException e) {
+			throw new IllegalStateException("Failed to get display name for " + getExternalIdentifier(), e);
 		}
-		return enLabel;
 	}
 
 	@Override
@@ -92,15 +96,12 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	}
 
 	protected boolean isCommonPredicate(Statement stmt) {
-		if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.LABEL)
-			|| isPredicate(stmt, NuvaOntologyLoader.NuvaUri.COMMENT)) {
-			NuvaLabel translation = getLabel(stmt);
-			if (translation.hasNoLanguage()) {
-				synonyms.add(translation.getValue());
-			} else if (translation.hasLanguage("en")) {
-				setEnLabel(translation.getValue());
-			} else if (translation.hasLanguage("fr")) {
-				translations.put("fr", translation.getValue());
+		if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.LABEL)) {
+			NuvaLabel label = getLabel(stmt);
+			if (label.hasNoLanguage()) {
+				untranslatedLabels.add(label.getValue());
+			} else {
+				labels.put(label.getLangCode(), label.getValue());
 			}
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ID)) {
@@ -109,6 +110,10 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ALT_LABEL)) {
 			NuvaLabel altLabel = getLabel(stmt);
 			altLabels.put(altLabel.getLangCode(), altLabel.getValue());
+			return true;
+		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.COMMENT)) {
+			NuvaLabel comment = getLabel(stmt);
+			comments.put(comment.getLangCode(), comment.getValue());
 			return true;
 		} else if (isPredicate(stmt , NuvaOntologyLoader.NuvaUri.ABSTRACT)) {
 			String abstractStr = getObject(stmt);
@@ -166,7 +171,7 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	}
 
 	public String getEnLabel() {
-		return enLabel;
+		return labels.get("en");
 	}
 
 	public String getCreated() {
@@ -181,32 +186,22 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 		return isAbstract;
 	}
 
-	public List<String> getSynonyms() {
-		return synonyms;
+	public List<String> getUntranslatedLabels() {
+		return untranslatedLabels;
 	}
 
 	public void postImportAdjustment(ContentPipelineManager cpm) throws TermServerScriptException {
 		//Are we missing a label?  See if we can use a label instead
-		if (enLabel == null) {
+		if (getEnLabel() == null) {
 			int tabIdx = cpm.getTab(TAB_MODELING_ISSUES);
 			//Do we have a French translation we could use?
-			if (translations.containsKey("fr")) {
-				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using French: " + translations.get("fr"));
-				setEnLabel(translations.get("fr"));
-			} else if  (!synonyms.isEmpty()) {
-				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using synonym: " + synonyms.get(0));
-				setEnLabel("Missing translation: " + synonyms.get(0));
+			if (labels.containsKey("fr")) {
+				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using French: " + labels.get("fr"));
+				labels.put("en", labels.get("fr"));
+			} else if  (!untranslatedLabels.isEmpty()) {
+				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English label, using synonym: " + untranslatedLabels.get(0));
+				labels.put("en", "Missing translation: " + untranslatedLabels.get(0));
 			}
-		}
-	}
-
-	private void setEnLabel(String enLabel) {
-		//If this string contains a new line character, cut at that point
-		int cut = enLabel.indexOf("\n");
-		if (cut > 0) {
-			this.enLabel = enLabel.substring(0, cut);
-		} else {
-			this.enLabel = enLabel;
 		}
 	}
 
@@ -214,18 +209,30 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 		return altLabels;
 	}
 
-	public String getAltLabel(String langCode, String fallBack, ContentPipelineManager cpm) throws TermServerScriptException {
+	public String getAltLabel(String langCode, String fallBack) throws TermServerScriptException {
+		return getText("altLabel", altLabels, langCode, fallBack);
+	}
+
+	public String getLabel(String langCode, String fallBack) throws TermServerScriptException {
+		return getText("Labels", labels, langCode, fallBack);
+	}
+
+	public String getComment(String langCode, String fallBack) throws TermServerScriptException {
+		return getText("Comments", comments, langCode, fallBack);
+	}
+
+	public String getText(String mapName, Map<String, String> textMap, String langCode, String fallBack) throws TermServerScriptException {
 		int tabIdx = cpm.getTab(TAB_MODELING_ISSUES);
-		if (altLabels.containsKey(langCode)) {
-			return altLabels.get(langCode);
-		} else if (altLabels.containsKey(fallBack)) {
+		if (textMap.containsKey(langCode)) {
+			return textMap.get(langCode);
+		} else if (textMap.containsKey(fallBack)) {
 			//Do we have a French translation we could use?
-			if (altLabels.containsKey("fr")) {
-				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English altLabel, using French: " + altLabels.get("fr"));
+			if (textMap.containsKey(fallBack)) {
+				cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing English " + mapName + ", using " + fallBack + " : " + textMap.get("fr"));
 			}
-			return altLabels.get(fallBack);
+			return textMap.get(fallBack);
 		}
-		cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing all AltLabels");
+		cpm.report(tabIdx, this, "", RF2Constants.Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Missing all text in " + mapName);
 		return null;
 	}
 }
