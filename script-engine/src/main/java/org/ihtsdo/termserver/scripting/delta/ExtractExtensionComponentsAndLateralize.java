@@ -20,7 +20,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 	protected void doAdditionalProcessing(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		//Now it might be that the source extension already has this concept lateralized
 		//eg 847081000000101 |Balloon dilatation of bronchus using fluoroscopic guidance (procedure)|
-		LOGGER.info("Creating lateralized concepts for " + c);
+		LOGGER.info("Creating lateralized concepts for {}", c);
 		try {
 			extractOrCreateLateralizedConcept(c, LEFT, componentsToProcess);
 			extractOrCreateLateralizedConcept(c, RIGHT, componentsToProcess);
@@ -42,7 +42,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		if (existingLateralizedConcept == null) {
 			Concept newLateralizedConcept = createLateralizedConcept(c, laterality);
 			gl.registerConcept(newLateralizedConcept);
-			LOGGER.info("Lateralized concept created: " + newLateralizedConcept);
+			LOGGER.info("Lateralized concept created: {}", newLateralizedConcept);
 		} else {
 			//If this concept is already on our list to process, we don't need to take any action.
 			if (componentsToProcess.contains(existingLateralizedConcept)) {
