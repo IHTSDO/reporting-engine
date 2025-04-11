@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -16,11 +17,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
-/**
- * FRI-254 A number of what were originally SQL queries now converted into a user-runnable
- * report
- * */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +25,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionImpactReport.class);
 
 	private static final String INTERNATIONAL_RELEASE = "Proposed International Release Archive";
+	private static final String COMMON_HEADINGS = "SCTID, FSN, SemTag,";
 
 	private static final int COUNT_AS_NEW_CONCEPT = 1;
 	private static final int COUNT_AS_EXISTING_CONCEPT = 0;
@@ -47,7 +44,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250201T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250401T120000Z.zip");
 		TermServerScript.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -155,16 +152,18 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation", "Translated Concept Inactivated - Replacement Requires Translation", "Translated Concept Inactivated - No Replacement Specified"}};
 		
 		String[] columnHeadings = new String[] {"Summary Item, Count",
-												"SCTID, FSN, SemTag," + formColumnNames(columnNames[0], true),
-												"SCTID, FSN, SemTag," + formColumnNames(columnNames[1], false),
-												"SCTID, FSN, SemTag,Impact,Affected Concept,Historical Associations",
-												"SCTID, FSN, SemTag, Axioms Affected"};
+				COMMON_HEADINGS + formColumnNames(columnNames[0], true),
+				COMMON_HEADINGS + "Impact,Affected Concept,Historical Associations",
+				COMMON_HEADINGS + formColumnNames(columnNames[1], false),
+				COMMON_HEADINGS + "Impact Information",
+				COMMON_HEADINGS + "Axioms Affected"};
 		
 		String[] tabNames = new String[]{"Summary Counts",  //PRIMARY
 				"Inactivations",   //SECONDARY
-				"Translations",   //TERTIARY
-				"Inactivation Detail",  //QUATERNARY
-				"Non-core Axioms Detail" //QUINARY
+				"Inactivation Detail",  //TERTIARY
+				"Translations",   //QUAD
+				"Translation Detail", //QUINARY
+				"Non-core Axioms Detail" //SENARY_REPORT
 		};
 		super.postInit(GFOLDER_RELEASE_STATS, tabNames, columnHeadings, false);
 	}
@@ -212,7 +211,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		
 		//We can now populate all the of the total columns
 		writeTotalRow(SECONDARY_REPORT, columnNames[0], true);
-		writeTotalRow(TERTIARY_REPORT, columnNames[1], false);
+		writeTotalRow(QUATERNARY_REPORT, columnNames[1], false);
 	}
 
 	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
@@ -272,7 +271,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			examples[0] = currentConcept + "\nParent of : " + exampleConcept;
 			String histAssocStr = historicalAssociationStrMap.get(currentConcept);
 			for (Concept detail : usedIn) {
-				report(QUATERNARY_REPORT, currentConcept, "Becomes inactive, stated parent of", detail, histAssocStr);
+				report(TERTIARY_REPORT, currentConcept, "Becomes inactive, stated parent of", detail, histAssocStr);
 			}
 		}
 
@@ -286,7 +285,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + exampleConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 			String histAssocStr = historicalAssociationStrMap.get(currentConcept);
 			for (Concept detail : usedIn) {
-				report(QUATERNARY_REPORT, currentConcept, "Becomes inactive, used in modelling of", detail, histAssocStr);
+				report(TERTIARY_REPORT, currentConcept, "Becomes inactive, used in modelling of", detail, histAssocStr);
 			}
 		}
 
@@ -311,7 +310,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			examples[3] = currentConcept.toString();
 			incrementSummaryInformation(summaryNames[6]);
 			//And since we're not expecting very many of these, output each one on a detail tab
-			report(QUINARY_REPORT, currentConcept, getFirstNonCoreAxiom(currentConcept));
+			report(SENARY_REPORT, currentConcept, getFirstNonCoreAxiom(currentConcept));
 		}
 
 		return new int[] {
@@ -335,15 +334,19 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		for (String sctId : thisHierarchy) {
 			newConceptCount += countTranslations(sctId, translationCounts, summaryNames, conceptReplacementSeen);
 		}
-		report(TERTIARY_REPORT, topLevelConcept, newConceptCount, translationCounts[0], translationCounts[1], translationCounts[2], translationCounts[3]);
+		report(QUATERNARY_REPORT, topLevelConcept, newConceptCount, translationCounts[0], translationCounts[1], translationCounts[2], translationCounts[3]);
 	}
 
 	private int countTranslations(String sctId, int[] translationCounts, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
+		HistoricData datum = incomingData.get(sctId);
 		Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
 		//If this concept does not currently exist, then it's new, so it'll need a translation
 		if (currentConcept == null) {
 			//No need to check scope, this can only have come from the international edition
 			incrementSummaryInformation(summaryNames[0]);
+			String fsn = datum.getFsn();
+			String semTag = SnomedUtilsBase.deconstructFSN(fsn)[1];
+			report(QUINARY_REPORT, sctId, fsn, semTag, "New Concept");
 			return COUNT_AS_NEW_CONCEPT; //Count as new concept
 		}
 
@@ -352,7 +355,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			return COUNT_AS_EXISTING_CONCEPT;
 		}
 
-		HistoricData datum = incomingData.get(sctId);
 		if (datum == null) {
 			throw new TermServerScriptException(sctId + " is known to extension, is considered International and yet is not known to proposed update package.  Check date specified.  It must be in advance of current extension upgrade point");
 		}
@@ -392,19 +394,27 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				if (targetConcept == null || !hasTranslation(targetConcept)) {
 					translationStats.translatedInactivatedCount++;
 					incrementSummaryInformation(summaryNames[3]);
+					//We might not know about this concept in this project, but it should be known to the incoming data
+					String parentConcept = datum.getConceptId() + " |" + datum.getFsn() + "|";
+					HistoricData incomingDatum = incomingData.get(histAssocTarget);
+					String histFsn = incomingDatum.getFsn();
+					String histSemTag = SnomedUtilsBase.deconstructFSN(histFsn)[1];
+					report(QUINARY_REPORT, histAssocTarget, histFsn, histSemTag, "Concept is untranslated replacement for " + parentConcept);
 				}
 				conceptReplacementSeen.add(histAssocTarget);
 			}
 		}
 	}
 
-	private void checkForChangedFSN(Concept currentConcept, HistoricData datum, TranslationStats translationStats, String[] summaryNames) {
+	private void checkForChangedFSN(Concept currentConcept, HistoricData datum, TranslationStats translationStats, String[] summaryNames) throws TermServerScriptException {
 		//Has the FSN changed from what's currently here?
 		if (!currentConcept.getFsn().equals(datum.getFsn())) {
 			if (hasTranslation(currentConcept)) {
+				report(QUINARY_REPORT, currentConcept, "Existing translated FSN has been replaced");
 				translationStats.changedFSNCount++;
 				incrementSummaryInformation(summaryNames[1]);
 			} else {
+				report(QUINARY_REPORT, currentConcept, "Existing untranslated FSN has been replaced");
 				translationStats.changedFSNCountNoCurrent++;
 				incrementSummaryInformation(summaryNames[2]);
 			}

@@ -42,6 +42,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(HistoricStatsGenerator.class);
 
+	public static final String FAILED_TO_CREATE = "Failed to create ";
+
 	private static final int MAX_HIERARCHY_DEPTH = 150;
 	
 	private boolean splitOutDisease = false;  //If you change this to true, don't check it in! See ISRS-1392.
@@ -81,56 +83,22 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	public void runJob() throws TermServerScriptException {
 		FileWriter fw = null;
 		try {
-			TransitiveClosure tc = gl.generateTransitiveClosure();
-			
-			LOGGER.info("Creating map of semantic tag hierarchies");
-			populateSemTagHierarchyMap(tc);
-			
 			//Create the historic-data directory if required
-			File dataDirFile = new File(DATA_DIR);
-			if (!dataDirFile.exists()) {
-				LOGGER.info("Creating directory to store historic data analysis: {}", DATA_DIR);
-				boolean success = dataDirFile.mkdir();
-				if (!success) {
-					throw new TermServerScriptException("Failed to create " + dataDirFile.getAbsolutePath());
-				}
-			}
+			ensureHistoricDataDirExistsOrThrow();
 			
 			File f = new File(DATA_DIR + project.getKey() + ".tsv");
-			LOGGER.info("Creating dataFile: {}", f.getAbsolutePath());
-			Files.createDirectories(f.toPath().getParent());
-			if (!f.createNewFile()) {
-				throw new TermServerScriptException("Failed to create " + f.getAbsolutePath());
-			}
-			fw = new FileWriter(f);
-			
-			LOGGER.debug("Determining all IPs");
-			Set<Concept> IPs = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
-		
-			LOGGER.debug("Outputting Data to {}", f.getAbsolutePath());
-			for (Concept c : gl.getAllConcepts()) {
-				String active = c.isActiveSafely() ? "Y" : "N";
-				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
-				String hierarchy = getHierarchy(tc, c, new LinkedList<>());
-				String IP = IPs.contains(c) ? "Y" : "N";
-				String sdDescendant = hasSdDescendant(tc, c);
-				String sdAncestor = hasSdAncestor(tc, c);
-				String[] relIds = getRelIds(c);
-				String[] descIds = getDescIds(c);
-				String[] axiomIds = getAxiomIds(c);
-				String[] langRefSetIds = getLangRefsetIds(c);
-				String[] inactivationIds = getInactivationIds(c);
-				String[] descInactivationIds = getDescInactivationIds(c);
-				String[] histAssocIds = getHistAssocIds(c);
-				String[] descHistAssocIds = getDescHistAssocIds(c);
-				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
-				String histAssocTargets = getHistAssocTargets(c);
-				ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
-						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
-						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
-						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
-						c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE],
-						descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], histAssocTargets);
+			//Since the package is published, if this file already exists, we can just reuse it
+			if (!f.exists()) {
+				fw = initialiseHistoricDataFile(f);
+				LOGGER.info("Outputting Data to {}", f.getAbsolutePath());
+				TransitiveClosure tc = gl.generateTransitiveClosure();
+
+				LOGGER.info("Creating map of semantic tag hierarchies");
+				populateSemTagHierarchyMap(tc);
+
+				generateHistoricData(fw, tc);
+			} else {
+				LOGGER.info("Reusing existing dataFile: {}", f.getAbsolutePath());
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -140,8 +108,64 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 					fw.close();
 				}
 			} catch (IOException e) {
-				LOGGER.error("Exception encountered",e);
+				LOGGER.error("Exception encountered during tidy-up. Ignoring.",e);
 			}
+		}
+	}
+
+	private void ensureHistoricDataDirExistsOrThrow() throws TermServerScriptException {
+		File dataDirFile = new File(DATA_DIR);
+		if (!dataDirFile.exists()) {
+			LOGGER.info("Creating directory to store historic data analysis: {}", DATA_DIR);
+			boolean success = dataDirFile.mkdir();
+			if (!success) {
+				throw new TermServerScriptException(FAILED_TO_CREATE + dataDirFile.getAbsolutePath());
+			}
+		}
+	}
+
+	private FileWriter initialiseHistoricDataFile(File f) throws TermServerScriptException {
+		try {
+			LOGGER.info("Creating dataFile: {}", f.getAbsolutePath());
+			Files.createDirectories(f.toPath().getParent());
+			if (!f.createNewFile()) {
+				throw new TermServerScriptException(FAILED_TO_CREATE + f.getAbsolutePath());
+			}
+			LOGGER.debug("Outputting Data to {}", f.getAbsolutePath());
+			return new FileWriter(f);
+		} catch (IOException e) {
+			throw new TermServerScriptException(FAILED_TO_CREATE + f.getAbsolutePath(), e);
+		}
+	}
+
+	private void generateHistoricData(FileWriter fw, TransitiveClosure tc) throws TermServerScriptException, IOException {
+		LOGGER.debug("Determining all IPs");
+		Set<Concept> intermediatePrimitives = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
+
+		for (Concept c : gl.getAllConcepts()) {
+			String active = c.isActiveSafely() ? "Y" : "N";
+			String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
+			String hierarchy = getHierarchy(tc, c, new LinkedList<>());
+			String intermediatePrimitiveIndicator = intermediatePrimitives.contains(c) ? "Y" : "N";
+			String sdDescendant = hasSdDescendant(tc, c);
+			String sdAncestor = hasSdAncestor(tc, c);
+			String[] relIds = getRelIds(c);
+			String[] descIds = getDescIds(c);
+			String[] axiomIds = getAxiomIds(c);
+			String[] langRefSetIds = getLangRefsetIds(c);
+			String[] inactivationIds = getInactivationIds(c);
+			String[] descInactivationIds = getDescInactivationIds(c);
+			String[] histAssocIds = getHistAssocIds(c);
+			String[] descHistAssocIds = getDescHistAssocIds(c);
+			String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
+			String histAssocTargets = getHistAssocTargets(c);
+			ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, intermediatePrimitiveIndicator,
+					sdDescendant, sdAncestor,
+					relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE],
+					axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
+					inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
+					c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE],
+					descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], histAssocTargets);
 		}
 	}
 
