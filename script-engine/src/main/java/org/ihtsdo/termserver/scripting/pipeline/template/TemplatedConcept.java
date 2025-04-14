@@ -309,7 +309,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 				LOGGER.warn("What's going on here?");
 			} else if (itemStr.isEmpty()){
 				isDeletion = true;
-			} else if (!csUtils.startsWithProperNounPhrase(getConcept(), itemStr)
+			} else if (!csUtils.startsWithKnownCaseSensitiveTerm(getConcept(), itemStr)
 					&& !csUtils.startsWithAcronym(itemStr)) {
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
@@ -380,7 +380,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			itemStr = applyTermTweaking(rt, itemStr);
 
 			//Can we make this lower case?
-			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithProperNounPhrase(getConcept(), itemStr)) {
+			if (CaseSensitivityUtils.isciorcI(targetPt) && !CaseSensitivityUtils.get().startsWithKnownCaseSensitiveTerm(getConcept(), itemStr)) {
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
 			return itemStr;

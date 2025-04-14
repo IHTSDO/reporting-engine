@@ -21,6 +21,11 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	
 	private static final String CS_WORDS_FILE = "cs_words.tsv";
 
+	private enum CaseSensitiveSourceOfTruthType {
+		SUBSTANCE, ORGANISM, CS_WORDS_FILE, LANGUAGE, RELIGION, EPONYM,
+		PROPER_NOUN_FROM_CS_WORDS_FILE, KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE
+	}
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
 
 	public static final String FORCE_CS = "FORCE_CS";
@@ -39,10 +44,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	private static CaseSensitivityUtils singleton;
 
 	private final Map<Concept, List<String>> csInContext = new HashMap<>();
-	private final List<String> properNouns = new ArrayList<>();
-	private final Map<String, Concept> knownNames = new HashMap<>();
-	private final Map<String, List<String>> properNounPhrases = new HashMap<>();
-	private final List<String> knownLowerCase = new ArrayList<>();
 	private final Pattern numberLetter = Pattern.compile("\\d[a-z]");
 	private final Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
 	private final Set<String> wildcardWords = new HashSet<>();
@@ -50,7 +51,12 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	private boolean substancesAndOrganismsAreSourcesOfTruth = true;
 	private List<Concept> sourceOfTruthHierarchies;
 
-	private static String[] taxonomyWordsArray = new String[] { "Clade","Class","Division",
+	private Map<CaseSensitiveSourceOfTruthType, Object> caseSensitiveSourceOfTruthMap = new EnumMap<>(CaseSensitiveSourceOfTruthType.class);
+
+	private List<String> caseInsensitivePrefix = List.of("Non-", "Pseudo-", "Hyper-", "Anti-");
+
+	private static String[] taxonomyWordsArray = new String[] {
+			"Clade","Class","Division",
 			"Domain","Family","Genus","Infraclass",
 			"Infraclass","Infrakingdom","Infraorder",
 			"Infraorder","Kingdom","Order","Phylum",
@@ -81,10 +87,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public void init() throws TermServerScriptException {
+		GraphLoader gl = GraphLoader.getGraphLoader();
 		loadCSWords();
-		determineKnownNames();
+		determineEponyms();
 		if (substancesAndOrganismsAreSourcesOfTruth) {
-			sourceOfTruthHierarchies = List.of(SUBSTANCE, ORGANISM);
+			sourceOfTruthHierarchies = List.of(SUBSTANCE,
+					ORGANISM,
+					gl.getConcept("297289008 |World languages|"),
+					gl.getConcept("108334009 |Religion AND/OR philosophy|"));
 			for (Concept sourceOfTruth : sourceOfTruthHierarchies) {
 				processSourceOfTruth(sourceOfTruth);
 			}
@@ -93,26 +103,38 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 	}
 
-	private void determineKnownNames() {
+	private void determineEponyms() {
 		//Words that contain X's indicate someone's name
-		LOGGER.info("Determining known names");
+		LOGGER.info("Determining eponyms (known names / proper nouns)");
+		Map<String, Concept> knownNames = new HashMap<>();
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActiveSafely()) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					for (String word : d.getTerm().split(" ")) {
-						if (word.endsWith("'s")) {
-							String wordWithoutApostrophe = word.substring(0, word.length() - 2);
-							knownNames.put(wordWithoutApostrophe, c);
-						}
-					}
+				checkConceptForEponyms(c, knownNames);
+			}
+		}
+		LOGGER.info("{} eponyms detected", knownNames.size());
+		caseSensitiveSourceOfTruthMap.put(CaseSensitiveSourceOfTruthType.EPONYM, knownNames);
+	}
+
+	private void checkConceptForEponyms(Concept c, Map<String, Concept> knownNames) {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			for (String word : d.getTerm().split(" ")) {
+				if (word.endsWith("'s") || word.endsWith("s'")) {
+					String wordWithoutApostrophe = trimApostrophe(word);
+					knownNames.put(wordWithoutApostrophe, c);
 				}
 			}
 		}
-		LOGGER.info("{} known names detected", knownNames.size());
 	}
 
-	public boolean isProperNoun(String word) {
-		return properNouns.contains(word);
+	private String trimApostrophe(String word) {
+		if (word.endsWith("'s")) {
+			return word.substring(0, word.length() - 2);
+		} else if (word.endsWith("s'")) {
+			return word.substring(0, word.length() - 1);
+		} else {
+			throw new IllegalArgumentException("Word does not end with 's or s': " + word);
+		}
 	}
 
 	public boolean isSourceOfTruthHierarchy(Concept hierarchy) {
@@ -190,21 +212,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				wildcardWords.add(wildWord);
 				return;
 			}
-			//Is this a phrase?
-			String[] words = phrase.split(" ");
-			if (words.length == 1) {
-				properNouns.add(phrase);
-			} else {
-				List<String> phrases = properNounPhrases.get(words[0]);
-				if (phrases == null) {
-					phrases = new ArrayList<>();
-					properNounPhrases.put(words[0], phrases);
-				}
-				phrases.add(phrase);
-			}
+			getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.PROPER_NOUN_FROM_CS_WORDS_FILE).add(phrase);
 		} else {
-			knownLowerCase.add(phrase);
+			getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE).add(phrase);
 		}
+	}
+
+	private List<String> getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType type) {
+		return (List<String>) caseSensitiveSourceOfTruthMap.computeIfAbsent(type, k -> new ArrayList<String>());
 	}
 
 	public CaseSignificance suggestCorrectCaseSignificance(Concept context, Description d) throws TermServerScriptException {
@@ -245,7 +260,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private CaseSignificance suggestCorrectCaseSignificanceForCaseInSensitiveTerm(Concept context, Description d, String chopped,
 	                                                                              String term) {
-		if (startsWithProperNounPhrase(context, term)) {
+		if (startsWithKnownCaseSensitiveTerm(context, term)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		}
 
@@ -266,7 +281,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	                                                                            String caseSig, String term) {
 		if (chopped.equals(chopped.toLowerCase()) &&
 				!singleLetterCombo(term) &&
-				!startsWithProperNounPhrase(context, term) &&
+				!startsWithKnownCaseSensitiveTerm(context, term) &&
 				!containsKnownLowerCaseWord(term)) {
 			if (caseSig.equals(CS) && startsWithSingleLetter(d.getTerm())){
 				//Probably OK
@@ -287,8 +302,11 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public boolean containsKnownLowerCaseWord(String term) {
-		for (String lowerCaseWord : knownLowerCase) {
-			if (term.equals(lowerCaseWord) || term.contains(" "  + lowerCaseWord + " ") || term.contains(" " + lowerCaseWord + "/") || term.contains("/" + lowerCaseWord + " ")) {
+		for (String lowerCaseWord : getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE)) {
+			if (term.equals(lowerCaseWord)
+				|| term.contains(" "  + lowerCaseWord + " ")
+				|| term.contains(" " + lowerCaseWord + "/")
+				|| term.contains("/" + lowerCaseWord + " ")) {
 				return true;
 			}
 		}
@@ -308,6 +326,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 		for (int i = 1; i < firstWord.length(); i++) {
 			char c = firstWord.charAt(i);
+			if ((c == '-' || c=='/') && i + 1 < firstWord.length() && Character.isUpperCase(firstWord.charAt(i + 1))) {
+				i++; // Skip the dash and the capital letter. This is a repeat of sentence capitalization.
+				continue;
+			}
 			if (Character.isUpperCase(c)) {
 				hasUpperCaseAfterFirstLetter = true;
 			} else if (Character.isLowerCase(c)) {
@@ -320,38 +342,30 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return hasUpperCaseAfterFirstLetter && (hasLowerCaseAfterFirstLetter || firstWord.equals(firstWord.toUpperCase()));
 	}
 
-	public boolean startsWithProperNounPhrase(Concept context, String term) {
+	public boolean startsWithKnownCaseSensitiveTerm(Concept context, String term) {
 		String[] words = term.split(" ");
 		String firstWord = words[0];
 		
-		if (properNouns.contains(firstWord) || knownNames.containsKey(firstWord)) {
+		if (checkSourcesOfTruthForCSWord(firstWord)) {
 			return true;
 		}
 
 		//Is the first word or the phrase one of our sources of truth?
 		//This is a quick lookup, so do this first before we get into loops
-		if (startsWithKnownCsWordInContext(context, firstWord, term)) {
+		if (isCsSourceOfTruth(context) || startsWithKnownCsWordInContext(context, firstWord, term)) {
 			return true;
 		}
 
 		//Also split on a slash
 		firstWord = firstWord.split("/")[0];
-		if (properNouns.contains(firstWord)) {
+		if (checkSourcesOfTruthForCSWord(firstWord)) {
 			return true;
 		}
 
-		//Could we match a noun phrase?
-		if (properNounPhrases.containsKey(firstWord)) {
-			for (String phrase : properNounPhrases.get(firstWord)) {
-				if (term.startsWith(phrase)) {
-					return true;
-				}
-			}
-		}
-		
 		if (startsWithWildcardWord(firstWord)) {
 			return true;
 		}
+
 
 		//Work the number of words up progressively to see if we get a match 
 		//eg first two words in "Influenza virus vaccine-containing product in nasal dose form" is an Organism
@@ -364,6 +378,30 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 		
 		return false;
+	}
+
+	public boolean isCsSourceOfTruth(Concept c) {
+		return csInContext.containsKey(c);
+	}
+
+	private boolean checkSourcesOfTruthForCSWord(String word) {
+		for (Object sourceOfTruthObj : caseSensitiveSourceOfTruthMap.values()) {
+			if (sourceOfTruthObj instanceof Collection) {
+				Collection<?> sourceOfTruth = (Collection<?>) sourceOfTruthObj;
+				if (sourceOfTruth.contains(word)) {
+					return true;
+				}
+			} else if (sourceOfTruthObj instanceof Map) {
+				Map<?, ?> sourceOfTruth = (Map<?, ?>) sourceOfTruthObj;
+				if (sourceOfTruth.containsKey(word)) {
+					return true;
+				}
+			}
+		}
+
+		//Are we 's or s' ?  trim that off and check again
+		return ((word.endsWith("'s") || word.endsWith("s'"))
+			&& checkSourcesOfTruthForCSWord(trimApostrophe(word)));
 	}
 
 	public boolean startsWithKnownCsWordInContext(Concept context, String firstWord, String term) {
@@ -422,11 +460,26 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			return true;
 		}
 		
-		//A letter on it's own will often be lower case eg 3715305012 [768869001] US: P, GB: P: Interferon alfa-n3-containing product [cI]
+		//A letter on its own will often be lower case
+		//eg 3715305012 [768869001] US: P, GB: P: Interferon alfa-n3-containing product [cI]
 		return singleLetter.matcher(term).find();
 	}
-	
-	
+
+	public boolean startsWithNumber(String term) {
+		//Does the first character start with a number?
+		return Character.isDigit(term.charAt(0));
+	}
+
+	public boolean startsWithLowerCaseLetter(String term) {
+		//Does the first character start with a lower case letter?
+		return Character.isAlphabetic(term.charAt(0)) && Character.isLowerCase(term.charAt(0));
+	}
+
+	public boolean termIsSingleWord(String term) {
+		return term.split(" ").length == 1;
+	}
+
+
 	public class KnowledgeSource {
 		String category;
 		String reference;
@@ -445,23 +498,17 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	public Map<String, Set<KnowledgeSource>> explainEverything() {
 		Map<String, Set<KnowledgeSource>> everything = new TreeMap<>();
 		//Add everything we know about, and where it came from
-		for (String word : properNouns) {
-			populateKnowledgeSource(everything, word, "Proper Noun", CS_WORDS_FILE);
-		}
-		
-		for (String word : properNounPhrases.keySet()) {
-			populateKnowledgeSource(everything, word, "Proper Noun Phrase", CS_WORDS_FILE);
-		}
-		
-		for (String word : knownLowerCase) {
-			populateKnowledgeSource(everything, word, "Known Lower Case", CS_WORDS_FILE);
+		for (Map.Entry<CaseSensitiveSourceOfTruthType, Object> entry : caseSensitiveSourceOfTruthMap.entrySet()) {
+			for (String word : getCaseSensitiveSourceOfTruth(entry.getKey())) {
+				populateKnowledgeSource(everything, word, entry.getKey().name(), CS_WORDS_FILE);
+			}
 		}
 		
 		for (String word : wildcardWords) {
 			populateKnowledgeSource(everything, word, "Wildcard Word", CS_WORDS_FILE);
 		}
 		
-		for (Map.Entry<String, Concept> entry : knownNames.entrySet()) {
+		for (Map.Entry<String, Concept> entry : ((Map<String,Concept>)getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.EPONYM)).entrySet()) {
 			String word = entry.getKey();
 			if (word.startsWith("(")) {
 				word = word.substring(1, word.length());
@@ -482,6 +529,15 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		//Have we seen this word before, create a new set of knowledge sources if not using computeIfAbsent
 		Set<KnowledgeSource> sources = everything.computeIfAbsent(word, k -> new HashSet<>());
 		sources.add(new KnowledgeSource(category, reference));
+	}
+
+	public boolean startsWithCaseInsensitivePrefix(String term) {
+		for (String prefix : caseInsensitivePrefix) {
+			if (term.startsWith(prefix)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }
