@@ -3,7 +3,9 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.File;
 import java.util.*;
 
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -17,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
  * DRUGS-269, SUBST-130, MAINT-77, INFRA-2723, MAINT-345
- * Lists all case sensitive terms that do not have capital letters after the first letter
+ * Lists all case-sensitive terms that do not have capital letters after the first letter
  * UPDATE: We'll also load in the existing cs_words.txt file instead of hardcoding a list of proper nouns.
  */
 public class CaseSensitivity extends TermServerReport implements ReportClass {
@@ -26,11 +28,21 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private static final String INCLUDE_SUB_ORG = "Include Substances and Organisms";
 	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 
+	private static final List<String> eponymPatterns = List.of("disorder", "syndrome", "disease", "anomaly");
+
+	private Concept unitOfMeasure;
+
+	enum Strictness {
+		LAX, PICKY
+	}
+
 	private Set<Concept> allExclusions = new HashSet<>();
 	private Set<String> whiteList = new HashSet<>();  //Note this can be both descriptions and concept SCTIDs
 	private boolean recentChangesOnly = true;
 	private CaseSensitivityUtils csUtils;
 	private boolean includeProductionWhiteList = true;
+
+	private Strictness strictness = Strictness.LAX;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
@@ -65,6 +77,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		if (includeProductionWhiteList) {
 			includeProductionWhiteList();
 		}
+
+		unitOfMeasure = gl.getConcept("767524001 |Unit of measure|");
 	}
 
 	@Override
@@ -128,6 +142,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		String chopped = term.substring(1);
 		String preferred = d.isPreferred() ? "Y" : "N";
 
+		if (reportedForNumberStartRuleOrAccepted(c, d, caseSig, preferred)) {
+			return true;
+		}
+
 		if (reportedForTextDefinitionRuleOrAccepted(c, d, caseSig, preferred)) {
 			return true;
 		}
@@ -152,8 +170,36 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		return false;
 	}
 
+	private boolean reportedForNumberStartRuleOrAccepted(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
+		if (csUtils.startsWithNumber(d.getTerm())) {
+			if (caseSig.equals(CS)) {
+				//Now if we're not being picky, we'll ignore numeric acronyms and terms that consist of a single word eg 30mm
+				if (strictness.equals(Strictness.LAX)
+						&& ( csUtils.startsWithAcronym(d.getTerm()) || csUtils.termIsSingleWord(d.getTerm()))) {
+					return false;
+				}
+				report(c, d, preferred, caseSig, "Terms starting with numbers cannot be CS");
+				countIssue(c);
+				return true;
+			}
+			//Does this term contain a capital letter after the first letter?
+			if (caseSig.equals(ci) && d.getTerm().length() > 1) {
+				String chopped = d.getTerm().substring(1);
+				if (!chopped.equals(chopped.toLowerCase())) {
+					report(c, d, preferred, caseSig, "Terms featuring a capital letter after the first letter cannot be ci");
+					countIssue(c);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private boolean reportedForStartingWithAcronymInfraction(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
-		if (!caseSig.equals(CS) && csUtils.startsWithAcronym(d.getTerm())) {
+		//Now, although we might _have_ an acronym, if it starts with a number, then we'd want cI instead
+		if (!caseSig.equals(CS) && csUtils.startsWithAcronym(d.getTerm())
+			&& !csUtils.startsWithNumber(d.getTerm())
+			&& !csUtils.startsWithCaseInsensitivePrefix(d.getTerm())) {
 			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
 			countIssue(c);
 			return true;
@@ -163,16 +209,11 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private boolean reportedForFirstLetterInfractionOrAccepted(Concept c, Description d, String term, String caseSig, String preferred) throws TermServerScriptException {
 		String firstLetter = term.substring(0, 1);
-		if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase())) {
-			if (!caseSig.equals(CS)) {
-				//Lower case first letters must be entire term case-sensitive
-				report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
-				countIssue(c);
-				return true;
-			}
-		} else if (csUtils.startsWithAcronym(term) && !caseSig.equals(CS)) {
-			//Terms starting with acronyms should be entire term case-sensitive
-			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
+		if (Character.isLetter(firstLetter.charAt(0))
+				&& firstLetter.equals(firstLetter.toLowerCase())
+				&& !caseSig.equals(CS)) {
+			//Lower case first letters must be entire term case-sensitive
+			report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 			countIssue(c);
 			return true;
 		}
@@ -238,9 +279,11 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private boolean checkCaseSignicanceOfCaseSensitiveTerm(Concept c, Description d, String chopped, String preferred, String caseSig, String term) throws TermServerScriptException {
 		if (chopped.equals(chopped.toLowerCase()) &&
 				!csUtils.singleLetterCombo(term) &&
-				!csUtils.startsWithProperNounPhrase(c, term) &&
+				!csUtils.startsWithLowerCaseLetter(term) &&
+				!csUtils.startsWithKnownCaseSensitiveTerm(c, term) &&
 				!csUtils.containsKnownLowerCaseWord(term)) {
-			if (caseSig.equals(CS) && csUtils.startsWithSingleLetter(d.getTerm())) {
+			if ((caseSig.equals(CS) && csUtils.startsWithSingleLetter(d.getTerm()))
+			|| (strictness.equals(Strictness.LAX) && (isUnit(c) || isProbableEponym(d) || checkKnownSpecialCases(d)))) {
 				//Probably OK
 			} else {
 				report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
@@ -249,6 +292,34 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			}
 		}
 		return false;
+	}
+
+	private boolean checkKnownSpecialCases(Description d) {
+		//diagnostic allergen extract as a CS usually uses a specific organism, but is then modelled using the substance,
+		//so we cannot check for a source of truth using the correct context.  Calling this function in 'LAX' strictness,
+		//we'll assume it's OK
+		return d.getTerm().contains("diagnostic allergen extract");
+	}
+
+	private boolean isProbableEponym(Description d) {
+		//If this is a 2 word term like X disorder, then (assuming we're saying CS) this is probably an eponym
+		String term = d.getTerm();
+		if (d.getType().equals(DescriptionType.FSN)) {
+			term = SnomedUtilsBase.deconstructFSN(term)[0];
+		}
+		String[] words = term.split(" ");
+		if (words.length == 2) {
+			for (String eponymWord : eponymPatterns) {
+				if (words[1].equals(eponymWord)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean isUnit(Concept c) throws TermServerScriptException {
+		return c.getAncestors(RF2Constants.NOT_SET).contains(unitOfMeasure);
 	}
 
 	//Temporary measure to allow like-for-like testing with the existing case sensitivity report in production

@@ -90,7 +90,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstan
 					if (singleCapital(subString)) {
 						report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - single captial letter");
 						return NO_CHANGES_MADE;
-					} else if (csUtils.startsWithProperNounPhrase(c, subString)) {
+					} else if (csUtils.startsWithKnownCaseSensitiveTerm(c, subString)) {
 						report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - known cs word");
 						return NO_CHANGES_MADE;
 					} else {
