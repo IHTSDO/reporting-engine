@@ -527,22 +527,26 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				}
 			}
 
-			report(FILE_COMPARISON_TAB, "Files created: " + created.size() + ". See file totals in the relevant sections below");
-			for (String file : created) {
-				report(FILE_COMPARISON_TAB, file);
-			}
-			report(FILE_COMPARISON_TAB, "");
-
-			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size() + ". See file totals in the relevant sections below");
-			for (String file : deleted) {
-				report(FILE_COMPARISON_TAB, file);
-			}
-			report(FILE_COMPARISON_TAB, "");
+			outputFilesChanges(created, deleted);
 
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing list of files: {}", FILES_DIFF_FILENAME);
 			throw new TermServerRuntimeException(e.getMessage());
 		}
+	}
+
+	private void outputFilesChanges(Set<String> created, Set<String> deleted) throws TermServerScriptException {
+		report(FILE_COMPARISON_TAB, "Files created: " + created.size() + ". See file totals in the relevant sections below");
+		for (String file : created) {
+			report(FILE_COMPARISON_TAB, file);
+		}
+		report(FILE_COMPARISON_TAB, "");
+
+		report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size() + ". See file totals in the relevant sections below");
+		for (String file : deleted) {
+			report(FILE_COMPARISON_TAB, file);
+		}
+		report(FILE_COMPARISON_TAB, "");
 	}
 
 	private void process(Path path, String filename) {
