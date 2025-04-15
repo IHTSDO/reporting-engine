@@ -540,4 +540,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return false;
 	}
 
+	public boolean isAllNumbersOrSymbols(String term) {
+		return term.matches("[^\\p{L}]+");
+	}
+
 }

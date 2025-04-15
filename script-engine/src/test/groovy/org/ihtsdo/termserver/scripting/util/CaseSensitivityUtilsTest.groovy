@@ -18,5 +18,18 @@ class CaseSensitivityUtilsTest extends Specification {
         "abc"         || false  // Lowercase word
     }
 
+    def "test isAllNumbersOrSymbols"() {
+        expect:
+        caseSensitivityUtils.isAllNumbersOrSymbols(term) == expected
+
+        where:
+        term          || expected
+        "123'45"        || true   // Numbers and symbols
+        "hello"       || false  // Regular word
+        "hello123"         || false  // Regular word with numbers
+        "123é"         || false   // contains a letter character
+        "ø123"          || false // contains a letter character
+    }
+
 
 }
