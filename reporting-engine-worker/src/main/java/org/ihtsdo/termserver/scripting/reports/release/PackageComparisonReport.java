@@ -510,19 +510,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					// For the same component deleted indicator always comes before created indicator in the file
 					case LINE_DELETED_INDICATOR:
 						// Previous release entry
-						if (created.contains(value)) {
-							created.remove(value);
-						} else {
-							deleted.add(value);
-						}
+						countPreviousReleaseEntry(created, deleted, value);
 						break;
 					case LINE_CREATED_INDICATOR:
 						// Current release entry
-						if (deleted.contains(value)) {
-							deleted.remove(value);
-						} else {
-							created.add(value);
-						}
+						countCurrentReleaseEntry(created, deleted, value);
 						break;
 				}
 			}
@@ -532,6 +524,22 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing list of files: {}", FILES_DIFF_FILENAME);
 			throw new TermServerRuntimeException(e.getMessage());
+		}
+	}
+
+	private void countPreviousReleaseEntry(Set<String> created, Set<String> deleted, String value) {
+		if (created.contains(value)) {
+			created.remove(value);
+		} else {
+			deleted.add(value);
+		}
+	}
+
+	private void countCurrentReleaseEntry(Set<String> created, Set<String> deleted, String value) {
+		if (deleted.contains(value)) {
+			deleted.remove(value);
+		} else {
+			created.add(value);
 		}
 	}
 
