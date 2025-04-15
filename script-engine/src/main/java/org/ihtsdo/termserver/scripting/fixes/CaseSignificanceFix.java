@@ -115,8 +115,7 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 				if (caseSig.equals(CS)) {
 					//If we start with a small letter, single letter or a proper noun, that's fine
 					if (!firstLetter.equals(firstLetter.toLowerCase()) 
-							&& !csUtils.isProperNoun(firstWord)
-							&& !csUtils.startsWithProperNounPhrase(c, d.getTerm())
+							&& !csUtils.startsWithKnownCaseSensitiveTerm(c, d.getTerm())
 							&& !firstLetterSingle(d.getTerm())) {
 						report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
@@ -194,13 +193,13 @@ public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 						//Not dealing with this situation right now
 						//report (c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 					} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-						if (chopped.equals(chopped.toLowerCase()) && !csUtils.isProperNoun(firstWord)) {
+						if (chopped.equals(chopped.toLowerCase()) && !csUtils.startsWithKnownCaseSensitiveTerm(null, firstWord)) {
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> ci" );
 							checkTerm.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							changesMade++;
 						} else if (caseSig.equals(CS)){
 							//Might be CS when doesn't need to be
-							if (!csUtils.isProperNoun(firstWord)) {
+							if (!csUtils.startsWithKnownCaseSensitiveTerm(null, firstWord)) {
 								report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> cI" );
 								checkTerm.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 								changesMade++;
