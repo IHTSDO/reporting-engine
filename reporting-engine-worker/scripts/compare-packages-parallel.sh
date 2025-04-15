@@ -13,24 +13,6 @@ extractZip () {
 	fi
 }
 
-createList () {
-	sourceDir=$1
-	targetFile=$2	
-
-	find "${sourceDir}" -type f -execdir basename {} ';' | sort > "${targetFile}"
-}
-
-countLines () {
-	sourceDir=$1
-	targetFile=$2
-
-	for thisFile in ${sourceDir}/* ; do
-		fileName=`basename "${thisFile}"`
-		fileCount=$((`wc -l "${thisFile}" | awk '{print $1}'` - 1)) # exclude header line
-		echo -e "${fileName}\t${fileCount}" >> "${targetFile}"
-	done
-}
-
 stripBetaPrefix () {
 	targetDir=$1
 
@@ -90,12 +72,6 @@ leftName=$1
 leftArchive=$2
 rightName=$3
 rightArchive=$4
-flags=$5
-
-if [ "${flags}" == "-normaliseDates" ]; then
-	normaliseDates=true
-	echo "Option set to make effective dates in filenames the same"
-fi
 
 leftLocation="target/left_archive"
 echo "Extracting left archive into ${leftLocation}"
@@ -108,20 +84,18 @@ extractZip "${rightArchive}" "${rightLocation}"
 # Move the left structure into directory "a" excluding json files
 mkdir -p target/a
 echo "Moving ${leftName} from ${leftLocation} into flat structure 'a'"
-find "${leftLocation}" -type f ! -name "*.json" | xargs -I {} mv {} target/a
+find "${leftLocation}" -type f -not -name "*.json" | xargs -I {} mv {} target/a
 
 # Move the right structure into directory "b" excluding json files
 mkdir -p target/b
 echo "Moving ${rightName} from ${rightLocation} into flat structure 'b'"
-find "${rightLocation}" -type f ! -name "*.json" | xargs -I {} mv {} target/b
+find "${rightLocation}" -type f -not -name "*.json" | xargs -I {} mv {} target/b
 
 # Remove dates from a and b
-if [ "${normaliseDates}" ]; then
-	echo
-	echo "Normalising dates"
-	normaliseDates target/a
-	normaliseDates target/b
-fi
+echo
+echo "Normalising dates"
+normaliseDates target/a
+normaliseDates target/b
 
 echo
 echo "Stripping any beta archive prefix"
@@ -129,22 +103,39 @@ stripBetaPrefix target/a
 stripBetaPrefix target/b
 
 echo
-echo "Creating lists"
+echo "Creating lists of files"
+leftFilesList="_left_files.txt"
+rightFilesList="_right_files.txt"
 
-leftFilesList="_${leftName}"_files_list.txt
-rightFilesList="_${rightName}"_files_list.txt
-commonFilesList="_common_files_list.txt"
+find target/a -type f -not -name ".*" -execdir basename {} ';' | sort > "${leftFilesList}"
+find target/b -type f -not -name ".*" -execdir basename {} ';' | sort > "${rightFilesList}"
 
-createList "target/a" "${leftFilesList}"
-createList "target/b" "${rightFilesList}"
+commonFilesList="_common_files.txt"
+deletedFilesList="_deleted_files.txt"
+createdFilesList="_created_files.txt"
+
+# Common files in target/a and target/b
 comm -1 -2 "${leftFilesList}" "${rightFilesList}" > "${commonFilesList}"
+comm -2 -3 "${leftFilesList}" "${rightFilesList}" > "${deletedFilesList}"
+comm -1 -3 "${leftFilesList}" "${rightFilesList}" > "${createdFilesList}"
+
+# xargs fails with command too long error so have to use loops
+
+# Create empty counterpart files for the deleted files in target/b
+while IFS= read -r file
+do
+  head -n 1 target/a/${file} > target/b/${file}
+  echo "${file}" >> ${commonFilesList}
+done < ${deletedFilesList}
+
+# Create empty counterpart files for the created files in target/a
+while IFS= read -r file
+do
+  head -n 1 target/b/${file} > target/a/${file}
+  echo "${file}" >> ${commonFilesList}
+done < ${createdFilesList}
 
 mkdir -p target/c
-
-echo
-echo "Calculating line count without header line"
-countLines "target/a" "target/c/left_files_line_counts.txt"
-countLines "target/b" "target/c/right_files_line_counts.txt"
 
 echo
 echo "Files differences between ${leftName} and ${rightName}"
@@ -189,5 +180,7 @@ parallel -j 6 --no-notice --ungroup --colsep ' ' -a ${parallelFeed} ./compare-fi
 rm ${parallelFeed}
 rm ${processOrderFile}
 rm ${commonFilesList}
+rm ${deletedFilesList}
+rm ${createdFilesList}
 rm ${leftFilesList}
 rm ${rightFilesList}

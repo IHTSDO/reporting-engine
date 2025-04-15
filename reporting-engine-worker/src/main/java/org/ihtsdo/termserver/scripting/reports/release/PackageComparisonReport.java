@@ -45,15 +45,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private String previousReleasePath;
 	private String currentReleasePath;
 	private Map<String, Map<TotalsIndex, Integer>> fileTotals = new TreeMap<>();
-	
-	private Map<String, Integer> leftFilesLineCounts = new HashMap<>();
-	private Map<String, Integer> rightFilesLineCounts = new HashMap<>();
 	private Map<String, Integer> headersDiffCounts = new HashMap<>();
-
 	private Set<String> leftModules = new HashSet<>();
 	private Set<String> rightModules = new HashSet<>();
-	private static final String LEFT_FILES_LINE_COUNT_FILENAME = "left_files_line_counts.txt";
-	private static final String RIGHT_FILES_LINE_COUNT_FILENAME = "right_files_line_counts.txt";
 	private static final String LEFT_MODULES_FILENAME = "left_modules.txt";
 	private static final String RIGHT_MODULES_FILENAME = "right_modules.txt";
 	private static final String HEADERS_DIFF_FILENAME = "diff__headers.txt";
@@ -89,12 +83,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-        // AT Extension
-		params.put(THIS_RELEASE, "at/snomed_ct_at_releases/2025-02-19T14:31:46/output-files/xSnomedCT_ManagedServiceAT_PREPRODUCTION_AT1000234_20250215T120000Z.zip");
-		params.put(PREV_RELEASE, "at/snomed_ct_at_releases/2024-08-20T15:27:53/output-files/SnomedCT_ManagedServiceAT_PRODUCTION_AT1000234_20240815T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240701T120000Z.zip");
-		params.put(MODULES, "11000234105");
+		// SE Extension
+		params.put(THIS_RELEASE, "se/snomed_ct_se_releases/2024-11-27T17:45:35/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20241130T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240801T120000Z.zip");
+		params.put(PREV_RELEASE, "se/snomed_ct_se_releases/2024-05-15T17:18:28/output-files/xSnomedCT_ManagedServiceSE_PREPRODUCTION_SE1000052_20240531T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
+		params.put(MODULES, "45991000052106");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -269,13 +263,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			loadModulesFile(diffDir, LEFT_MODULES_FILENAME, leftModules);
 			loadModulesFile(diffDir, RIGHT_MODULES_FILENAME, rightModules);
 
-			// Load the files containing the line counts for the left and right files and header diff count
-			loadTabDelimitedFile(diffDir, LEFT_FILES_LINE_COUNT_FILENAME, leftFilesLineCounts);
-			loadTabDelimitedFile(diffDir, RIGHT_FILES_LINE_COUNT_FILENAME, rightFilesLineCounts);
+			// Load header diff counts
 			loadTabDelimitedFile(diffDir, HEADERS_DIFF_FILENAME, headersDiffCounts);
 
-			// Process files list diff file
-			processFilesList(diffDir, FILES_DIFF_FILENAME);
+			// Process files diff file
+			processFilesList(diffDir);
 
 			report(FILE_COMPARISON_TAB, "Files changed:");
 
@@ -493,11 +485,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return "\"" + arg + "\"";
 	}
 
-	private void processFilesList(Path path, String filename) throws TermServerScriptException {
+	private void processFilesList(Path path) throws TermServerScriptException {
 		Set<String> created = new TreeSet<>();
 		Set<String> deleted = new TreeSet<>();
 
-		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + FILES_DIFF_FILENAME, StandardCharsets.UTF_8))) {
 			String line;
 
 			while ((line = br.readLine()) != null) {
@@ -537,38 +529,18 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 			report(FILE_COMPARISON_TAB, "Files created: " + created.size() + ". See file totals in the relevant sections below");
 			for (String file : created) {
-				if (rightFilesLineCounts.containsKey(file)) {
-					Integer lineCount = rightFilesLineCounts.get(file);
-					Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
-					for (TotalsIndex index : TotalsIndex.values()) {
-						totals.put(index, 0);
-					}
-					totals.put(TotalsIndex.NEW, lineCount);
-					totals.put(TotalsIndex.TOTAL, lineCount);
-					fileTotals.put(file, totals);
-				}
 				report(FILE_COMPARISON_TAB, file);
 			}
 			report(FILE_COMPARISON_TAB, "");
 
 			report(FILE_COMPARISON_TAB, "Files deleted: " + deleted.size() + ". See file totals in the relevant sections below");
 			for (String file : deleted) {
-				if (leftFilesLineCounts.containsKey(file)) {
-					Integer lineCount = leftFilesLineCounts.get(file);
-					Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
-					for (TotalsIndex index : TotalsIndex.values()) {
-						totals.put(index, 0);
-					}
-					totals.put(TotalsIndex.DELETED, lineCount);
-					totals.put(TotalsIndex.TOTAL, lineCount);
-					fileTotals.put(file, totals);
-				}
 				report(FILE_COMPARISON_TAB, file);
 			}
 			report(FILE_COMPARISON_TAB, "");
 
 		} catch (IOException | IndexOutOfBoundsException e) {
-			LOGGER.error("Error processing list of files: {}", filename);
+			LOGGER.error("Error processing list of files: {}", FILES_DIFF_FILENAME);
 			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
