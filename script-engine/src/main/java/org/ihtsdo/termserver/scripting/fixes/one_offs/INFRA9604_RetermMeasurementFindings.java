@@ -106,7 +106,7 @@ public class INFRA9604_RetermMeasurementFindings extends BatchFix {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) 
 					&& !StringUtils.isCaseSensitive(d.getTerm())
-					&& !nounHelper.startsWithProperNounPhrase(c, d.getTerm())) {
+					&& !nounHelper.startsWithKnownCaseSensitiveTerm(c, d.getTerm())) {
 				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 				report(t, c, Severity.MEDIUM, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, before + " -> ci", d);
