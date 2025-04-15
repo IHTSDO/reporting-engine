@@ -14,6 +14,7 @@ public class DeltaGeneratorWithAutoImport extends DeltaGenerator {
 	protected void importArchiveToNewTask(File archive) throws TermServerScriptException {
 		this.archive = archive;
 		importer = new MultiArchiveImporter(this);
+		importer.setTaskPrefix(taskPrefix);
 		boolean proceed = reviewSettingsWithUser();
 
 		if (proceed) {

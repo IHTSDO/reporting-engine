@@ -1657,4 +1657,8 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	public List<String> getAuthors() {
 		return authors;
 	}
+
+	public void setTaskPrefix(String taskPrefix) {
+		this.taskPrefix = taskPrefix;
+	}
 }

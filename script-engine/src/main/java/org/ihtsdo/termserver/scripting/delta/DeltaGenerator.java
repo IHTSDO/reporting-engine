@@ -265,6 +265,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 
+	@Override
+	public void postInit() throws TermServerScriptException {
+		postInit(GFOLDER_ADHOC_UPDATES);
+	}
+
 	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 			"SCTID, FSN, SemTag, Severity, Action, Details," + additionalReportColumns
