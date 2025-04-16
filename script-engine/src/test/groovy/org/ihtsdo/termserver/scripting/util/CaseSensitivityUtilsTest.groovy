@@ -16,6 +16,7 @@ class CaseSensitivityUtilsTest extends Specification {
         "Hello"       || false  // Regular word
         "French-English"         || false   // Repetition of sentence capitalization in dashed word
         "abc"         || false  // Lowercase word
+        "Sperms/mL"   || false  // Only first letter capital before slash
     }
 
     def "test isAllNumbersOrSymbols"() {
