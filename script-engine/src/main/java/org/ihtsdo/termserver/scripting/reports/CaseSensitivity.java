@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.authoringtemplate.domain.CaseSignificance;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -126,9 +127,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
 		for (Concept c : hierarchyDescendants) {
-			if (c.getId().equals("69443001")) {
-				LOGGER.info("Checking case significance in concept: {}", c);
-			}
 			if (inScopeForCsChecking(c)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)
