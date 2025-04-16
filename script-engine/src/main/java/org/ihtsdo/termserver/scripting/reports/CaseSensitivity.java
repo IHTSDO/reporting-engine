@@ -30,7 +30,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private static final List<String> eponymPatterns = List.of("disorder", "syndrome", "disease", "anomaly");
 
-	private Concept unitOfMeasure;
+	private List<Concept> hierarchiesKnownLikelyToBeCS;
 
 	enum Strictness {
 		LAX, PICKY
@@ -78,7 +78,9 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			includeProductionWhiteList();
 		}
 
-		unitOfMeasure = gl.getConcept("767524001 |Unit of measure|");
+		hierarchiesKnownLikelyToBeCS = List.of(
+				gl.getConcept("767524001 |Unit of measure|"),
+				gl.getConcept("272396007 |Ranked categories|"));
 	}
 
 	@Override
@@ -116,13 +118,18 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
 		for (Concept c : hierarchyDescendants) {
-			if (c.getId().equals("107580008")) {
+			if (c.getId().equals("104606001")) {
 				LOGGER.info("Checking case significance in concept: {}", c);
 			}
 			if (inScopeForCsChecking(c)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (checkCaseSignificance(c, d)) {
+					if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)
+							&& checkCaseSignificance(c, d)) {
 						break;
+					} else if (d.getType().equals(DescriptionType.TEXT_DEFINITION)
+							&& !d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+						report(c, d, "Y", "CS", "Text Definitions must be CS");
+						countIssue(c);
 					}
 				}
 			}
@@ -171,7 +178,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	}
 
 	private boolean reportedForNumberStartRuleOrAccepted(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
-		if (csUtils.startsWithNumber(d.getTerm())) {
+		if (csUtils.startsWithNumberOrSymbol(d.getTerm())) {
 			if (caseSig.equals(CS)) {
 				//Now if we're not being picky, we'll ignore numeric acronyms and terms that consist of a single word eg 30mm
 				if (strictness.equals(Strictness.LAX)
@@ -198,7 +205,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private boolean reportedForStartingWithAcronymInfraction(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
 		//Now, although we might _have_ an acronym, if it starts with a number, then we'd want cI instead
 		if (!caseSig.equals(CS) && csUtils.startsWithAcronym(d.getTerm())
-			&& !csUtils.startsWithNumber(d.getTerm())
+			&& !csUtils.startsWithNumberOrSymbol(d.getTerm())
 			&& !csUtils.startsWithCaseInsensitivePrefix(d.getTerm())) {
 			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
 			countIssue(c);
@@ -283,7 +290,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				!csUtils.startsWithKnownCaseSensitiveTerm(c, term) &&
 				!csUtils.containsKnownLowerCaseWord(term)) {
 			if ((caseSig.equals(CS) && csUtils.startsWithSingleLetter(d.getTerm()))
-			|| (strictness.equals(Strictness.LAX) && (isUnit(c) || isProbableEponym(d) || checkKnownSpecialCases(d)))) {
+			|| (strictness.equals(Strictness.LAX) && (isInHierarchyKnownToBeLikelyCS(c) || isProbableEponym(d) || checkKnownSpecialCases(d)))) {
 				//Probably OK
 			} else {
 				report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
@@ -318,8 +325,14 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		return false;
 	}
 
-	private boolean isUnit(Concept c) throws TermServerScriptException {
-		return c.getAncestors(RF2Constants.NOT_SET).contains(unitOfMeasure);
+	private boolean isInHierarchyKnownToBeLikelyCS (Concept c) throws TermServerScriptException {
+		Set<Concept> ancestors = c.getAncestors(RF2Constants.NOT_SET);
+		for (Concept hierarchyKnownToBeLikelyCS : hierarchiesKnownLikelyToBeCS) {
+			if (ancestors.contains(hierarchyKnownToBeLikelyCS)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	//Temporary measure to allow like-for-like testing with the existing case sensitivity report in production
