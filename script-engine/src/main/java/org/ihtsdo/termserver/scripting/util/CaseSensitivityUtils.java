@@ -144,6 +144,9 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	private void processSourceOfTruth(Concept sourceOfTruth) throws TermServerScriptException {
 		LOGGER.info("Processing case sensitive source of truth: {}", sourceOfTruth);
 		for (Concept c : sourceOfTruth.getDescendants(NOT_SET)) {
+			if (c.getId().equals("31006001")) {
+				LOGGER.debug("Processing source of truth: {}", c);
+			}
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
 				if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
 					processDescriptionSourceOfTruth(c, d);
@@ -326,10 +329,17 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 		for (int i = 1; i < firstWord.length(); i++) {
 			char c = firstWord.charAt(i);
+
+			//If we get to a slash the the only capital encountered was the first letter, then we can stop checking for acronym eg Sperms/mL
+			if (c == '/' && !hasUpperCaseAfterFirstLetter) {
+				return false;
+			}
+
 			if ((c == '-' || c=='/') && i + 1 < firstWord.length() && Character.isUpperCase(firstWord.charAt(i + 1))) {
 				i++; // Skip the dash and the capital letter. This is a repeat of sentence capitalization.
 				continue;
 			}
+
 			if (Character.isUpperCase(c)) {
 				hasUpperCaseAfterFirstLetter = true;
 			} else if (Character.isLowerCase(c)) {
@@ -465,9 +475,9 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return singleLetter.matcher(term).find();
 	}
 
-	public boolean startsWithNumber(String term) {
-		//Does the first character start with a number?
-		return Character.isDigit(term.charAt(0));
+	public boolean startsWithNumberOrSymbol(String term) {
+		//Does the term start with something that is not a unicode letter?
+		return term.substring(0,1).matches("[^\\p{L}]+");
 	}
 
 	public boolean startsWithLowerCaseLetter(String term) {
@@ -478,7 +488,6 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	public boolean termIsSingleWord(String term) {
 		return term.split(" ").length == 1;
 	}
-
 
 	public class KnowledgeSource {
 		String category;
@@ -500,7 +509,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		//Add everything we know about, and where it came from
 		for (Map.Entry<CaseSensitiveSourceOfTruthType, Object> entry : caseSensitiveSourceOfTruthMap.entrySet()) {
 			for (String word : getCaseSensitiveSourceOfTruth(entry.getKey())) {
-				populateKnowledgeSource(everything, word, entry.getKey().name(), CS_WORDS_FILE);
+				populateKnowledgeSource(everything, word, entry.getKey().name(), "");
 			}
 		}
 		
