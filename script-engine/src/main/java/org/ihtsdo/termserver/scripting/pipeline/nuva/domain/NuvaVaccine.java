@@ -5,13 +5,10 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaConstants;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.NuvaOntologyLoader;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class NuvaVaccine extends NuvaConcept implements Comparable<NuvaVaccine>, NuvaConstants {
-	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaVaccine.class);
 
 	private final Map<String, NuvaValence> valenceMap = new HashMap<>();
 	private final List<String> valenceRefs = new ArrayList<>();
@@ -24,9 +21,6 @@ public class NuvaVaccine extends NuvaConcept implements Comparable<NuvaVaccine>,
 
 	public static NuvaVaccine fromResource(String nuvaId, StmtIterator stmtIterator) {
 		NuvaVaccine vaccine = new NuvaVaccine(nuvaId);
-		if (nuvaId.equals("VAC1076")) {
-			LOGGER.debug("here");
-		}
 		while (stmtIterator.hasNext()) {
 			vaccine.fromStatement(stmtIterator.next());
 		}

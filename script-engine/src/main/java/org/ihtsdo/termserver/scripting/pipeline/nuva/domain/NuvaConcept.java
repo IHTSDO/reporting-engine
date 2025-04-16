@@ -71,14 +71,9 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	@Override
 	public String getLongDisplayName() {
 		try {
-			//Branded drugs have their long name as a comment.   Abstract drugs have it as a label
-			if (isAbstract) {
-				return getLabel("en", "fr");
-			} else {
-				return getComment("en", "fr");
-			}
+			return getComment("en", "fr");
 		} catch (TermServerScriptException e) {
-			throw new IllegalStateException("Failed to get display name for " + getExternalIdentifier(), e);
+			throw new IllegalStateException("Failed to get long display name (ie OWL comment) for " + getExternalIdentifier(), e);
 		}
 	}
 
@@ -134,7 +129,9 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	protected static NuvaLabel getLabel(Statement stmt) {
 		if (stmt.getObject().isLiteral()) {
 			try {
-				return NuvaLabel.fromLiteral(stmt.getObject().asLiteral());
+				NuvaLabel label = NuvaLabel.fromLiteral(stmt.getObject().asLiteral());
+				normaliseLabel(label);
+				return label;
 			} catch (Exception e) {
 				LOGGER.warn("{}: {}", e.getMessage(), stmt);
 				String str = stmt.getObject().toString();
@@ -143,6 +140,17 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 			}
 		} else {
 			throw new IllegalArgumentException("Not a label: " + stmt);
+		}
+	}
+
+	private static void normaliseLabel(NuvaLabel label) {
+		if (label.getValue().contains("\n")
+		|| label.getValue().contains("\r")
+		|| label.getValue().contains("\t")) {
+			label.setValue(label.getValue().replaceAll("[\r\n\t]", ""));
+			if (label.getLangCode().equals("en")) {
+				LOGGER.warn("Removed illegal whitespace from label: {}", label.getValue());
+			}
 		}
 	}
 

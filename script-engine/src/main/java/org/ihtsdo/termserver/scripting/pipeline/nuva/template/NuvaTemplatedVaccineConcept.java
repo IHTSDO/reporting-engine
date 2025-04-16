@@ -12,11 +12,9 @@ import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaVaccine;
 import org.ihtsdo.termserver.scripting.pipeline.nuva.domain.NuvaValence;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import java.util.List;
 import java.util.UUID;
-
 
 public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements ContentPipeLineConstants {
 
@@ -83,7 +81,7 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		}
 	}
 
-	private NuvaVaccine getNuvaVaccine() {
+	protected NuvaVaccine getNuvaVaccine() {
 		return (NuvaVaccine) externalConcept;
 	}
 
@@ -95,26 +93,12 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 
 	@Override
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
-		//Where a branded product exists, we'll use the branded drug name as both the PT, and the FSN (with semtag of vaccine added).
+		//Abstract vaccines will use the OWL label as the PT, and the OWL comment as the FSN
+		//The comment will  have been supplied as the longCommonName in the template, so we
+		//only need to make a tweak to the PT
 		NuvaVaccine nuvaVaccine = getNuvaVaccine();
-		if (!nuvaVaccine.isAbstract()) {
-			if (nuvaVaccine.getUntranslatedLabels().isEmpty()) {
-				throw new IllegalArgumentException("Vaccine has no untranslated Labels: " + nuvaVaccine.getExternalIdentifier());
-			} else {
-				//If this is an FSN, we will replace it (adding a new semantic tag) and throw away the procedurally generated one
-				//If it's the PT, then we will replace it, and demote the original
-				String newTerm = nuvaVaccine.getUntranslatedLabels().get(0);
-				if (d.getType().equals(DescriptionType.SYNONYM)) {
-					SnomedUtils.demoteAcceptabilityMap(d);
-					//We create a new description here as the original one will be added to the concept in the calling function
-					Description newPT = Description.withDefaults(newTerm, DescriptionType.SYNONYM, defaultPrefAcceptabilityMap);
-					newPT.setModuleId(cpm.getExternalContentModuleId());
-					concept.addDescription(newPT);
-				} else {
-					//We only need to modify the text of the FSN here as no second version is needed
-					d.setTerm(newTerm + getSemTag());
-				}
-			}
+		if (d.getType().equals(DescriptionType.SYNONYM)) {
+			d.setTerm(nuvaVaccine.getLabel("en", "fr"));
 		}
 	}
 	
