@@ -19,7 +19,8 @@ public class CaseSensitiveList extends TermServerReport implements ReportClass {
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		additionalReportColumns = "Case Sensitive Word, Category, Referece, Details, ";
+		headers = "Case Sensitive Word, Category, Reference, ";
+		additionalReportColumns = "";
 		super.postInit();
 		csUtils = CaseSensitivityUtils.get(true);
 	}
@@ -41,8 +42,9 @@ public class CaseSensitiveList extends TermServerReport implements ReportClass {
 		Map<String, Set<CaseSensitivityUtils.KnowledgeSource>> explanation = csUtils.explainEverything();
 		for (Map.Entry<String, Set<CaseSensitivityUtils.KnowledgeSource>> entry : explanation.entrySet()) {
 			Set<CaseSensitivityUtils.KnowledgeSource> sources = entry.getValue();
-			String sourceString = sources.stream().map(CaseSensitivityUtils.KnowledgeSource::toString).reduce((a, b) -> a + ",\n" + b).orElse("");
-			report(PRIMARY_REPORT, null, entry.getKey(), sourceString);
+			String sourceString = sources.stream().map(CaseSensitivityUtils.KnowledgeSource::getCategory).reduce((a, b) -> a + ",\n" + b).orElse("");
+			String referenceString = sources.stream().map(CaseSensitivityUtils.KnowledgeSource::getReference).reduce((a, b) -> a + ",\n" + b).orElse("");
+			report(PRIMARY_REPORT, entry.getKey(), sourceString, referenceString);
 		}
 	}
 

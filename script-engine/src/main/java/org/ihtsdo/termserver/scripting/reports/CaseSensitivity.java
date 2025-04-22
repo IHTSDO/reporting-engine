@@ -58,7 +58,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		super.init(run);
 		ReportSheetManager.setTargetFolderId(GFOLDER_RELEASE_QA);
 		recentChangesOnly = run.getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);
-		additionalReportColumns = "FSN, Semtag, Description, isPreferred, CaseSignificance, Issue";
+		additionalReportColumns = "FSN, Semtag, Description, EffectiveTime, isPreferred, CaseSignificance, Issue";
 		inputFiles.add(0, new File("resources/cs_words.tsv"));
 	}
 
@@ -118,7 +118,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
 		for (Concept c : hierarchyDescendants) {
-			if (c.getId().equals("104606001")) {
+			if (c.getId().equals("275390005")) {
 				LOGGER.info("Checking case significance in concept: {}", c);
 			}
 			if (inScopeForCsChecking(c)) {
@@ -128,7 +128,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						break;
 					} else if (d.getType().equals(DescriptionType.TEXT_DEFINITION)
 							&& !d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-						report(c, d, "Y", "CS", "Text Definitions must be CS");
+						report(c, d, d.getEffectiveTime(), "Y", "CS", "Text Definitions must be CS");
 						countIssue(c);
 					}
 				}
@@ -185,7 +185,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						&& ( csUtils.startsWithAcronym(d.getTerm()) || csUtils.termIsSingleWord(d.getTerm()))) {
 					return false;
 				}
-				report(c, d, preferred, caseSig, "Terms starting with numbers cannot be CS");
+				report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Terms starting with numbers cannot be CS");
 				countIssue(c);
 				return true;
 			}
@@ -193,7 +193,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			if (caseSig.equals(ci) && d.getTerm().length() > 1) {
 				String chopped = d.getTerm().substring(1);
 				if (!chopped.equals(chopped.toLowerCase())) {
-					report(c, d, preferred, caseSig, "Terms featuring a capital letter after the first letter cannot be ci");
+					report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Terms featuring a capital letter after the first letter cannot be ci");
 					countIssue(c);
 					return true;
 				}
@@ -207,7 +207,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		if (!caseSig.equals(CS) && csUtils.startsWithAcronym(d.getTerm())
 			&& !csUtils.startsWithNumberOrSymbol(d.getTerm())
 			&& !csUtils.startsWithCaseInsensitivePrefix(d.getTerm())) {
-			report(c, d, preferred, caseSig, "Terms starting with acronyms must be CS");
+			report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Terms starting with acronyms must be CS");
 			countIssue(c);
 			return true;
 		}
@@ -220,7 +220,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				&& firstLetter.equals(firstLetter.toLowerCase())
 				&& !caseSig.equals(CS)) {
 			//Lower case first letters must be entire term case-sensitive
-			report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
+			report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Terms starting with lower case letter must be CS");
 			countIssue(c);
 			return true;
 		}
@@ -231,7 +231,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		//Text Definitions must be CS
 		if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
 			if (!caseSig.equals(CS)) {
-				report(c, d, preferred, caseSig, "Text Definitions must be CS");
+				report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Text Definitions must be CS");
 				countIssue(c);
 			}
 			return true;
@@ -268,7 +268,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private boolean checkCaseSignificanceOfCaseInsensitiveTerm(Concept c, Description d, String chopped, String preferred, String caseSig) throws TermServerScriptException {
 		//For case-insensitive terms, we're on the lookout for capital letters after the first letter
 		if (!chopped.equals(chopped.toLowerCase())) {
-			report(c, d, preferred, caseSig, "Case insensitive term has a capital after first letter");
+			report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Case insensitive term has a capital after first letter");
 			countIssue(c);
 			return true;
 		}
@@ -276,7 +276,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		//Or if one of our sources of truth?
 		String firstWord = d.getTerm().split(" ")[0];
 		if (csUtils.startsWithKnownCsWordInContext(c, firstWord, null)) {
-			report(c, d, preferred, caseSig, "Case insensitive term should be CS as per " +  csUtils.explainCsWordInContext(c, firstWord));
+			report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Case insensitive term should be CS as per " +  csUtils.explainCsWordInContext(c, firstWord));
 			countIssue(c);
 			return true;
 		}
@@ -293,7 +293,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			|| (strictness.equals(Strictness.LAX) && (isInHierarchyKnownToBeLikelyCS(c) || isProbableEponym(d) || checkKnownSpecialCases(d)))) {
 				//Probably OK
 			} else {
-				report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
+				report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Case sensitive term does not have capital after first letter");
 				countIssue(c);
 				return true;
 			}
