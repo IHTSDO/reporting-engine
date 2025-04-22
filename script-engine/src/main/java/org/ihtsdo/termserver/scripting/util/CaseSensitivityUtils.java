@@ -121,6 +121,9 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			for (String word : d.getTerm().split(" ")) {
 				if (word.endsWith("'s") || word.endsWith("s'")) {
 					String wordWithoutApostrophe = trimApostrophe(word);
+					if (wordWithoutApostrophe.startsWith("(")) {
+						wordWithoutApostrophe = word.substring(1, word.length());
+					}
 					knownNames.put(wordWithoutApostrophe, c);
 				}
 			}
@@ -181,7 +184,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 		if (!termWithoutTaxonomy.equals(term)) {
 			termWithoutTaxonomy = termWithoutTaxonomy.replace("  ", " ").trim();
-			csInContext.computeIfAbsent(c, k -> new ArrayList<>()).add(termWithoutTaxonomy);
+			List<String> csWords = csInContext.computeIfAbsent(c, k -> new ArrayList<>());
+			if (!csWords.contains(termWithoutTaxonomy)) {
+				csWords.add(termWithoutTaxonomy);
+			}
 		}
 	}
 
@@ -420,7 +426,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		for (Concept attributeValue : SnomedUtils.getTargets(context)) {
 			if (csInContext.containsKey(attributeValue)) {
 				for (String knownCsWord : csInContext.get(attributeValue)) {
-					if ((firstWord != null && knownCsWord.startsWith(firstWord)) 
+					if ((firstWord != null && knownCsWord.equals(firstWord))
 							|| knownCsWord.equals(term)) {
 						return true;
 					}
@@ -501,6 +507,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		public String toString()  {
 			return category + ": " + reference;
 		}
+
+		public String getReference() {
+			return reference;
+		}
+
+		public String getCategory() {
+			return category;
+		}
 	}
 
 
@@ -508,23 +522,25 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		Map<String, Set<KnowledgeSource>> everything = new TreeMap<>();
 		//Add everything we know about, and where it came from
 		for (Map.Entry<CaseSensitiveSourceOfTruthType, Object> entry : caseSensitiveSourceOfTruthMap.entrySet()) {
-			for (String word : getCaseSensitiveSourceOfTruth(entry.getKey())) {
-				populateKnowledgeSource(everything, word, entry.getKey().name(), "");
+			String source = entry.getKey().name();
+			Object structure = entry.getValue();
+			if (structure instanceof Map<?, ?> mapStructure) {
+				for (Map.Entry<?, ?> structureEntry : mapStructure.entrySet()) {
+					populateKnowledgeSource(everything, (String)structureEntry.getKey(), source, structureEntry.getValue().toString());
+				}
+			} else if (structure instanceof List<?> listStructure) {
+				for (Object word : listStructure) {
+					populateKnowledgeSource(everything, (String)word, source, "");
+				}
+			} else {
+				LOGGER.warn("Unknown structure type: {}", structure);
 			}
 		}
 		
 		for (String word : wildcardWords) {
 			populateKnowledgeSource(everything, word, "Wildcard Word", CS_WORDS_FILE);
 		}
-		
-		for (Map.Entry<String, Concept> entry : ((Map<String,Concept>)getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.EPONYM)).entrySet()) {
-			String word = entry.getKey();
-			if (word.startsWith("(")) {
-				word = word.substring(1, word.length());
-			}
-			populateKnowledgeSource(everything, word, "Name via X's", findCsDescriptionFeaturingWord(entry.getValue(), word));
-		}
-		
+
 		for (Map.Entry<Concept, List<String>> entry : csInContext.entrySet()) {
 			for (String word : entry.getValue()) {
 				populateKnowledgeSource(everything, word, "Source of Truth", findCsDescriptionFeaturingWord(entry.getKey(), word));
