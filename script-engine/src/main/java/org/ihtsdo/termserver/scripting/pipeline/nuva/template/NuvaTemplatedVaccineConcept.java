@@ -20,6 +20,7 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 
 	protected static Concept vaccine;
 	protected static Concept hasValence;
+	protected static List<String> passiveVaccines;
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
 		TemplatedConcept.initialise(cpm);
@@ -58,7 +59,10 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(RF2Constants.SCTID_NUVA_EXTENSION_MODULE);
 		concept.addRelationship(IS_A, vaccine);
-		concept.addRelationship(PLAYS_ROLE, gl.getConcept("318331000221102 |Active immunity stimulant role|"));
+
+		if (!isPassiveVaccine(getNuvaVaccine())) {
+			concept.addRelationship(PLAYS_ROLE, gl.getConcept("318331000221102 |Active immunity stimulant role|"));
+		}
 
 		//Real vaccines (not abstract) only differ in their brand name, so we'll mark those as primitive
 		DefinitionStatus ds = getNuvaVaccine().isAbstract() ? DefinitionStatus.FULLY_DEFINED : DefinitionStatus.PRIMITIVE;
@@ -100,6 +104,19 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 		if (d.getType().equals(DescriptionType.SYNONYM)) {
 			d.setTerm(nuvaVaccine.getLabel("en", "fr"));
 		}
+	}
+
+	private static boolean isPassiveVaccine(NuvaVaccine vaccine) {
+		if (passiveVaccines == null) {
+			passiveVaccines = List.of(
+				"VAC1223","VAC1156","VAC1104","VAC1099","VAC1097","VAC1093","VAC1092","VAC1091","VAC1089","VAC1088",
+				"VAC1087","VAC1084","VAC1083","VAC1082","VAC1081","VAC1069","VAC1062","VAC1050","VAC1046","VAC0941",
+				"VAC0923","VAC0867","VAC0864","VAC0863","VAC0580","VAC0579","VAC0503","VAC0502","VAC0501","VAC0500",
+				"VAC0499","VAC0498","VAC0497","VAC0496","VAC0485","VAC0458","VAC0442","VAC0394","VAC0378","VAC0358",
+				"VAC0357","VAC0317","VAC0308"
+			);
+		}
+		return passiveVaccines.contains(vaccine.getExternalIdentifier());
 	}
 	
 }
