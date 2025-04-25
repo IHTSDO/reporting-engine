@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.ihtsdo.termserver.scripting.util.UnacceptableCharacters.NBSPSTR;
+
 public abstract class NuvaConcept extends ExternalConcept implements NuvaConstants, RF2Constants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NuvaConcept.class);
@@ -144,14 +146,16 @@ public abstract class NuvaConcept extends ExternalConcept implements NuvaConstan
 	}
 
 	private static void normaliseLabel(NuvaLabel label) {
-		if (label.getValue().contains("\n")
-		|| label.getValue().contains("\r")
-		|| label.getValue().contains("\t")) {
-			label.setValue(label.getValue().replaceAll("[\r\n\t]", ""));
-			if (label.getLangCode().equals("en")) {
-				LOGGER.warn("Removed illegal whitespace from label: {}", label.getValue());
-			}
+		String text = label.getValue();
+		String normalizedText = text.replaceAll("[\r\n\t]", "")
+				.replace("  ", " ")
+				.replace(NBSPSTR, " ")
+				.trim();
+
+		if (!text.equals(normalizedText) && label.getLangCode().equals("en")) {
+			LOGGER.warn("Removed illegal or double whitespace from label: {}", label.getValue());
 		}
+		label.setValue(normalizedText);
 	}
 
 	public static String getObject(Statement stmt) {
