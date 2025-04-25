@@ -31,6 +31,11 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.io.Files;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.ihtsdo.termserver.scripting.util.UnacceptableCharacters.*;
+
 /**
  * INFRA-2723 Detect various possible issues
  * 
@@ -66,10 +71,6 @@ import com.google.common.io.Files;
  RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
  RP-878 Check Interprets/Has Interpretation attributes not grouped with any other attribute
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
@@ -82,18 +83,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Set<String> stopWords = new HashSet<>();
 	List<String> wordsOftenTypedInReverse = new ArrayList<>();
 	List<String> wordsOftenTypedTwice = new ArrayList<>();
-	private static final String NBSPSTR = "\u00A0";
-	private static final String ZEROSP = "\u200B";
-	private static final String LONG_DASH = "—";
-	private static final String EN_DASH = "\u2013";
-	private static final String EM_DASH = "\u2014";
-	private static final String RIGHT_APOS = "\u2019";
-	private static final String LEFT_APOS = "\u2018";
-	private static final String RIGHT_QUOTE = "\u201D";
-	private static final String LEFT_QUOTE = "\u201C";
-	private static final String GRAVE_ACCENT = "\u0060";
-	private static final String ACUTE_ACCENT = "\u00B4";
-	private static final String SOFT_HYPHEN = "\u00AD";
 
 	private static final String URL_REGEX = "https?://\\S+\\b";
 	
