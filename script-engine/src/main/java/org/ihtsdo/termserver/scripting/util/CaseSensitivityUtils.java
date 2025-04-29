@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 public class CaseSensitivityUtils implements ScriptConstants {
 	
 	private static final String CS_WORDS_FILE = "cs_words.tsv";
+	private static final int LOWER_CASE_COUNT_FOR_NOT_ACRONYM = 4;
 
 	private enum CaseSensitiveSourceOfTruthType {
 		SUBSTANCE, ORGANISM, CS_WORDS_FILE, LANGUAGE, RELIGION, EPONYM,
@@ -333,10 +334,23 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		boolean hasUpperCaseAfterFirstLetter = false;
 		boolean hasLowerCaseAfterFirstLetter = false;
 
+		//We're also going to check that if we have more than LOWER_CASE_COUNT_FOR_NOT_ACRONYM lower case letters in a row, then this isn't an acronym
+		int lowerCaseLettersInARow = 0;
+
 		for (int i = 1; i < firstWord.length(); i++) {
 			char c = firstWord.charAt(i);
 
-			//If we get to a slash the the only capital encountered was the first letter, then we can stop checking for acronym eg Sperms/mL
+			//How many lower case letters in a row do we have?
+			if (Character.isLowerCase(c)) {
+				lowerCaseLettersInARow++;
+				if (lowerCaseLettersInARow >= LOWER_CASE_COUNT_FOR_NOT_ACRONYM) {
+					return false;
+				}
+			} else {
+				lowerCaseLettersInARow = 0;
+			}
+
+			//If we get to a slash and the only capital encountered was the first letter, then we can stop checking for acronym eg Sperms/mL
 			if (c == '/' && !hasUpperCaseAfterFirstLetter) {
 				return false;
 			}
