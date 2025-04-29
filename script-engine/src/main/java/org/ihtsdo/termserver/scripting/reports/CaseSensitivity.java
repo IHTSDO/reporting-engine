@@ -290,7 +290,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				!csUtils.startsWithKnownCaseSensitiveTerm(c, term) &&
 				!csUtils.containsKnownLowerCaseWord(term)) {
 			if ((caseSig.equals(CS) && csUtils.startsWithSingleLetter(d.getTerm()))
-			|| (strictness.equals(Strictness.LAX) && (isInHierarchyKnownToBeLikelyCS(c) || isProbableEponym(d) || checkKnownSpecialCases(d)))) {
+			|| (strictness.equals(Strictness.LAX) && (isInHierarchyKnownToBeLikelyCS(c) || isProbableEponym(d) || checkKnownSpecialCases(c,d)))) {
 				//Probably OK
 			} else {
 				report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Case sensitive term does not have capital after first letter");
@@ -301,11 +301,12 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		return false;
 	}
 
-	private boolean checkKnownSpecialCases(Description d) {
+	private boolean checkKnownSpecialCases(Concept c, Description d) {
 		//diagnostic allergen extract as a CS usually uses a specific organism, but is then modelled using the substance,
 		//so we cannot check for a source of truth using the correct context.  Calling this function in 'LAX' strictness,
 		//we'll assume it's OK
-		return d.getTerm().contains("diagnostic allergen extract");
+		return c.getFSNDescription().getTerm().contains("diagnostic allergen extract")
+				|| d.getTerm().contains("Universal designation");
 	}
 
 	private boolean isProbableEponym(Description d) {
