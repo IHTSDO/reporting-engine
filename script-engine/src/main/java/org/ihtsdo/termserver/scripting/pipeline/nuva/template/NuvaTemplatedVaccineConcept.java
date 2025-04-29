@@ -5,6 +5,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipeLineConstants;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
@@ -18,19 +19,17 @@ import java.util.UUID;
 
 public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements ContentPipeLineConstants {
 
-	protected static Concept vaccine;
 	protected static Concept hasValence;
 	protected static List<String> passiveVaccines;
 
 	public static void initialise(ContentPipelineManager cpm) throws TermServerScriptException {
 		TemplatedConcept.initialise(cpm);
-		vaccine = cpm.getGraphLoader().getConcept("787859002 |Vaccine product (medicinal product)|");
 		hasValence = cpm.getGraphLoader().getConcept("41002000106 |Has valence (attribute)|");
 	}
 
 	@Override
 	public String getSemTag() {
-		return " (vaccine)";
+		return isPassiveVaccine(getNuvaVaccine()) ?" (product)" : " (vaccine)";
 	}
 
 	@Override
@@ -58,9 +57,12 @@ public class NuvaTemplatedVaccineConcept extends TemplatedConcept implements Con
 	protected void populateParts() throws TermServerScriptException {
 		concept = Concept.withDefaults(null);
 		concept.setModuleId(RF2Constants.SCTID_NUVA_EXTENSION_MODULE);
-		concept.addRelationship(IS_A, vaccine);
+		concept.addRelationship(IS_A, ScriptConstants.MEDICINAL_PRODUCT);
 
-		if (!isPassiveVaccine(getNuvaVaccine())) {
+		if (isPassiveVaccine(getNuvaVaccine())) {
+			concept.addRelationship(HAS_ACTIVE_INGRED, gl.getConcept("112133008 |Immunoglobulin|"));
+			concept.addRelationship(PLAYS_ROLE, gl.getConcept("871530006 |Passive immunity stimulant therapeutic role|"));
+		} else {
 			concept.addRelationship(PLAYS_ROLE, gl.getConcept("318331000221102 |Active immunity stimulant role|"));
 		}
 
