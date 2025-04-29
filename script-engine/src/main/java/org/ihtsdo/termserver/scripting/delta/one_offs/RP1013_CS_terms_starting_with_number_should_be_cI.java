@@ -88,7 +88,7 @@ public class RP1013_CS_terms_starting_with_number_should_be_cI extends DeltaGene
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)
 					&& !d.getType().equals(DescriptionType.TEXT_DEFINITION)
-					&& csUtils.startsWithNumber(d.getTerm())) {
+					&& csUtils.startsWithNumberOrSymbol(d.getTerm())) {
 				//Change to initial character case
 				d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 				d.setEffectiveTime(null);
