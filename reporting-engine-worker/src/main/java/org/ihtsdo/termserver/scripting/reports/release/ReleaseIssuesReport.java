@@ -376,7 +376,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		checkMRCMModuleScope();
 
 		LOGGER.info("Checks complete, creating summary tag");
-		populateSummaryTab();
+		populateSummaryTabAndTotal(SECONDARY_REPORT);
 		
 		LOGGER.info("Summary tab complete, all done.");
 	}
@@ -500,17 +500,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String prevModule = previousState[MUT_IDX_MODULEID];
 		String currModule = currentState[MUT_IDX_MODULEID];
 		return prevModule.equals(currModule);
-	}
-
-	private void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-
-		int total = issueSummaryMap.entrySet().stream()
-				.map(Map.Entry::getValue)
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	//ISRS-286 Ensure Parents in same module.
