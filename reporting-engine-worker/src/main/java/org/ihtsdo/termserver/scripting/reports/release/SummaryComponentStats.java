@@ -309,10 +309,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		}
 	}
 
-	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) {
-		// Concept is no longer in the target module
+	private void analyzeConcept(Concept c, Concept topLevel, HistoricData datum, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		if (matchesModuleFilter(c.getModuleId())) {
-			counts[IDX_TOTAL]++;
+			incrementCounts(c, counts, IDX_TOTAL);
 			if (c.isActiveSafely()) {
 				incrementActiveConceptCounts(c, datum, counts);
 			} else {
@@ -325,53 +324,66 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				incrementQIScopeCounts(c, datum, qiCounts);
 			}
 		} else {
-			// Was it in the target module last time?
+			// Concept is no longer in the target module. Was it in the target module last time?
 			if (datum != null && matchesModuleFilter(datum.getModuleId())) {
-				counts[IDX_PROMOTED]++;
+				incrementCounts(c, counts, IDX_PROMOTED);
+				debugToFile(c, "Promoted");
 			}
 		}
 	}
 
-	private void incrementActiveConceptCounts(Concept c, HistoricData datum, int[] counts) {
-		counts[IDX_TOTAL_ACTIVE]++;
+	private void incrementActiveConceptCounts(Concept c, HistoricData datum, int[] counts) throws TermServerScriptException {
+		incrementCounts(c, counts, IDX_TOTAL_ACTIVE);
 		if (datum == null) {
 			// No previous data, so this is a new concept
 			if (c.isPrimitive()) {
-				counts[IDX_NEW_P]++;
+				incrementCounts(c, counts, IDX_NEW_P);
+				debugToFile(c, "New P");
 			} else {
-				counts[IDX_NEW_SD]++;
+				incrementCounts(c, counts, IDX_NEW_SD);
+				debugToFile(c, "New SD");
 			}
-			counts[IDX_NEW]++;
-			counts[IDX_NEW_NEW]++;
+			incrementCounts(c, counts, IDX_NEW);
+			debugToFile(c, "New");
+
+			incrementCounts(c, counts, IDX_NEW_NEW);
+			debugToFile(c, "New New");
 		} else if (datum.getModuleId().equals(c.getModuleId())) {
 			if (!datum.isActive()) {
 				// Was inactive in the last release, but active now
-				counts[IDX_REACTIVATED]++;
+				incrementCounts(c, counts, IDX_REACTIVATED);
+				debugToFile(c, "Reactivated");
 			} else if (isChangedSinceLastRelease(c)) {
 				// Remains active and changed since last release
-				counts[IDX_CHANGED]++;
+				incrementCounts(c, counts, IDX_CHANGED);
+				debugToFile(c, "Changed");
 			}
 		} else {
 			// Was in a different module but has now moved into this module
-			counts[IDX_MOVED_MODULE]++;
+			incrementCounts(c, counts, IDX_MOVED_MODULE);
+			debugToFile(c, "Moved Module");
 		}
 	}
 
-	private void incrementInactiveConceptCounts(Concept c, HistoricData datum, int[] counts) {
+	private void incrementInactiveConceptCounts(Concept c, HistoricData datum, int[] counts) throws TermServerScriptException {
 		if (datum == null) {
 			// No previous data and inactive, so this is a new inactive concept
-			counts[IDX_NEW_INACTIVE]++;
+			incrementCounts(c, counts, IDX_NEW_INACTIVE);
+			debugToFile(c, "New Inactive");
 		} else if (datum.getModuleId().equals(c.getModuleId())) {
 			if (datum.isActive()) {
 				// Was active in the last release, but inactive now
-				counts[IDX_INACTIVATED]++;
+				incrementCounts(c, counts, IDX_INACTIVATED);
+				debugToFile(c, "Inactivated");
 			} else if (isChangedSinceLastRelease(c)) {
 				// Remains inactive and changed since last release
-				counts[IDX_CHANGED_INACTIVE]++;
+				incrementCounts(c, counts, IDX_CHANGED_INACTIVE);
+				debugToFile(c, "Changed Inactive");
 			}
 		} else {
 			// Was in a different module but has now moved into this module
-			counts[IDX_MOVED_MODULE]++;
+			incrementCounts(c, counts, IDX_MOVED_MODULE);
+			debugToFile(c, "Moved Module");
 		}
 	}
 
@@ -541,7 +553,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			}
 
 			incrementCounts(component, counts, IDX_TOTAL);
-			debugToFile(component, "Total");
 
 			//Was the component present in the previous data?
 			boolean previouslyExistedActive = ids != null && ids.contains(component.getId());
@@ -560,7 +571,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 						//so it's not been 'added' as such.  Well, we might want to count additions
 						//to existing concepts separately.
 						incrementCounts(component, counts, IDX_NEW_NEW);
-						debugToFile(component, "NewNew");
+						debugToFile(component, "New New");
 					}
 				} else if (previouslyExistedInactive) {
 					incrementCounts(component, counts, IDX_REACTIVATED);
