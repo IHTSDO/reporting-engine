@@ -28,6 +28,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private static final String INCLUDE_SUB_ORG = "Include Substances and Organisms";
 	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 
+	private static final boolean USE_ORGANISM_TAXONOMY_WORD_TRIGGERS_CS_RULE = true;
+
 	private static final List<String> eponymPatterns = List.of("disorder", "syndrome", "disease", "anomaly");
 
 	private List<Concept> hierarchiesKnownLikelyToBeCS;
@@ -48,7 +50,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		Map<String, Object> params = new HashMap<>();
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		params.put(RECENT_CHANGES_ONLY, "N");
-		params.put(INCLUDE_SUB_ORG, "N");
+		params.put(INCLUDE_SUB_ORG, "Y");
 		TermServerScript.run(CaseSensitivity.class, params, args);
 	}
 
@@ -60,6 +62,12 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		recentChangesOnly = run.getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);
 		additionalReportColumns = "FSN, Semtag, Description, EffectiveTime, isPreferred, CaseSignificance, Issue";
 		inputFiles.add(0, new File("resources/cs_words.tsv"));
+
+		//Don't allow substances and organisms to be checked unless we're only working with unpromoted changes
+		if (getJobRun().getParameters().getMandatoryBoolean(INCLUDE_SUB_ORG)
+			&& !getJobRun().getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY)) {
+			throw new TermServerScriptException("Substances and Organisms can only be checked in combination with 'Unpromoted Changes Only'");
+		}
 	}
 
 	@Override
@@ -118,7 +126,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
 		for (Concept c : hierarchyDescendants) {
-			if (c.getId().equals("275390005")) {
+			if (c.getId().equals("69443001")) {
 				LOGGER.info("Checking case significance in concept: {}", c);
 			}
 			if (inScopeForCsChecking(c)) {
@@ -144,7 +152,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			return false;
 		}
 
-		String term = d.getTerm().replace("-", " ");
+		String term = d.getTerm();
 		String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 		String chopped = term.substring(1);
 		String preferred = d.isPreferred() ? "Y" : "N";
@@ -293,8 +301,37 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			|| (strictness.equals(Strictness.LAX) && (isInHierarchyKnownToBeLikelyCS(c) || isProbableEponym(d) || checkKnownSpecialCases(c,d)))) {
 				//Probably OK
 			} else {
-				report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Case sensitive term does not have capital after first letter");
-				countIssue(c);
+				//Now it might be that our term does not feature a capital, but it has a word that's all LOWER case, which is never the less case sensitive
+				//like p-tert-butylphenol
+				if (!csUtils.containsKnownLowerCaseWord(term)
+						&& !(USE_ORGANISM_TAXONOMY_WORD_TRIGGERS_CS_RULE && organismExistsWithTaxonomicTerm(c, term))) {
+					report(c, d, d.getEffectiveTime(), preferred, caseSig, "Case sensitive term does not have capital after first letter");
+					countIssue(c);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean organismExistsWithTaxonomicTerm(Concept c, String term) throws TermServerScriptException {
+		if (c.getFSNDescription().getTerm().contains("organism")) {
+			//Does the first word of this term exist as the 2nd term in some taxonomic way with a capital?
+			String firstWord = term.split(" ")[0];
+			Collection<Concept> ancestors = c.getAncestors(RF2Constants.NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
+			if (wordContainedInTaxonomicContext(firstWord, ancestors)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean wordContainedInTaxonomicContext(String word, Collection<Concept> ancestors) {
+		for (Concept ancestor : ancestors) {
+			String fsnTerm = ancestor.getFSNDescription().getTerm();
+			String firstWordInFSN = fsnTerm.split(" ")[0];
+			if (csUtils.isTaxonomicWord(firstWordInFSN)
+				&& fsnTerm.contains(word)) {
 				return true;
 			}
 		}
