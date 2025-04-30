@@ -24,7 +24,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private enum CaseSensitiveSourceOfTruthType {
 		SUBSTANCE, ORGANISM, CS_WORDS_FILE, LANGUAGE, RELIGION, EPONYM,
-		PROPER_NOUN_FROM_CS_WORDS_FILE, KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE
+		PROPER_NOUN_FROM_CS_WORDS_FILE, KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE,
+		KNOWN_LOWER_CASE_SOURCE_OF_TRUTH
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CaseSensitivityUtils.class);
@@ -176,6 +177,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		}
 	}
 
+	public boolean isTaxonomicWord(String word) {
+		return taxonomyWords.contains(word);
+	}
+
 	private void addSourcesOfTruthWithoutTaxonomy(Concept c, String term) {
 		String termWithoutTaxonomy = term;
 		for (String taxonomyWord : taxonomyWords) {
@@ -188,6 +193,14 @@ public class CaseSensitivityUtils implements ScriptConstants {
 			List<String> csWords = csInContext.computeIfAbsent(c, k -> new ArrayList<>());
 			if (!csWords.contains(termWithoutTaxonomy)) {
 				csWords.add(termWithoutTaxonomy);
+			}
+		}
+
+		//If the term is entirely lower case, then we can add that as a separate tracked source of truth
+		if (term.equals(term.toLowerCase())) {
+			List<String> csWords = getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.KNOWN_LOWER_CASE_SOURCE_OF_TRUTH);
+			if (!csWords.contains(term)) {
+				csWords.add(term);
 			}
 		}
 	}
@@ -213,7 +226,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	private void loadCSWord(String line) {
 		//Split the line on tabs
 		String[] items = line.split(TAB);
-		String phrase = items[0];
+		String phrase = items[0].trim();
 		//Does the word contain a capital letter (ie not the same as it's all lower case variant)
 		if (!phrase.equals(phrase.toLowerCase())) {
 			//Does this word end in a wildcard?
@@ -312,11 +325,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	public boolean containsKnownLowerCaseWord(String term) {
-		for (String lowerCaseWord : getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE)) {
-			if (term.equals(lowerCaseWord)
-				|| term.contains(" "  + lowerCaseWord + " ")
-				|| term.contains(" " + lowerCaseWord + "/")
-				|| term.contains("/" + lowerCaseWord + " ")) {
+		for (String word : term.split(" ")) {
+			if (word.equals(word.toLowerCase()) &&
+					(getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.KNOWN_LOWER_CASE_FROM_CS_WORDS_FILE).contains(word))
+			|| getCaseSensitiveSourceOfTruth(CaseSensitiveSourceOfTruthType.KNOWN_LOWER_CASE_SOURCE_OF_TRUTH).contains(word)) {
 				return true;
 			}
 		}
@@ -406,6 +418,11 @@ public class CaseSensitivityUtils implements ScriptConstants {
 				return true;
 			}
 		}
+
+		//If the first word contains a dash, then also check that first part word without the dash
+		if (firstWord.contains("-")) {
+			return startsWithKnownCaseSensitiveTerm(context, term.replace("-", " "));
+		}
 		
 		return false;
 	}
@@ -415,9 +432,9 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	}
 
 	private boolean checkSourcesOfTruthForCSWord(String word) {
-		for (Object sourceOfTruthObj : caseSensitiveSourceOfTruthMap.values()) {
-			if (sourceOfTruthObj instanceof Collection) {
-				Collection<?> sourceOfTruth = (Collection<?>) sourceOfTruthObj;
+		for (Map.Entry<CaseSensitiveSourceOfTruthType, Object> entry : caseSensitiveSourceOfTruthMap.entrySet()) {
+			Object sourceOfTruthObj = entry.getValue();
+			if (sourceOfTruthObj instanceof Collection<?> sourceOfTruth) {
 				if (sourceOfTruth.contains(word)) {
 					return true;
 				}
