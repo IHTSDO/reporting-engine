@@ -60,6 +60,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	static final String TEXT_DEFINITION = "Text Definition";
 	static final String SUBTOTAL_TEXT = TAB + "SubTotal";
 
+	static final String NEW = "New";
+	static final String CHANGED = "Changed";
+	static final String INACTIVATED = "Inactivated";
+	static final String NEW_INACTIVE = "New Inactive";
+	static final String CHANGED_INACTIVE = "Changed Inactive";
+	static final String REACTIVATED = "Reactivated";
+	static final String MOVED_MODULE = "Moved Module";
+	static final String PROMOTED = "Promoted";
+
 	List<Concept> topLevelHierarchies;
 	File debugFile;
 	protected String complexName;
@@ -327,7 +336,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// Concept is no longer in the target module. Was it in the target module last time?
 			if (datum != null && matchesModuleFilter(datum.getModuleId())) {
 				incrementCounts(c, counts, IDX_PROMOTED);
-				debugToFile(c, "Promoted");
+				debugToFile(c, PROMOTED);
 			}
 		}
 	}
@@ -344,7 +353,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				debugToFile(c, "New SD");
 			}
 			incrementCounts(c, counts, IDX_NEW);
-			debugToFile(c, "New");
+			debugToFile(c, NEW);
 
 			incrementCounts(c, counts, IDX_NEW_NEW);
 			debugToFile(c, "New New");
@@ -352,16 +361,16 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			if (!datum.isActive()) {
 				// Was inactive in the last release, but active now
 				incrementCounts(c, counts, IDX_REACTIVATED);
-				debugToFile(c, "Reactivated");
+				debugToFile(c, REACTIVATED);
 			} else if (isChangedSinceLastRelease(c)) {
 				// Remains active and changed since last release
 				incrementCounts(c, counts, IDX_CHANGED);
-				debugToFile(c, "Changed");
+				debugToFile(c, CHANGED);
 			}
 		} else {
 			// Was in a different module but has now moved into this module
 			incrementCounts(c, counts, IDX_MOVED_MODULE);
-			debugToFile(c, "Moved Module");
+			debugToFile(c, MOVED_MODULE);
 		}
 	}
 
@@ -369,21 +378,21 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (datum == null) {
 			// No previous data and inactive, so this is a new inactive concept
 			incrementCounts(c, counts, IDX_NEW_INACTIVE);
-			debugToFile(c, "New Inactive");
+			debugToFile(c, NEW_INACTIVE);
 		} else if (datum.getModuleId().equals(c.getModuleId())) {
 			if (datum.isActive()) {
 				// Was active in the last release, but inactive now
 				incrementCounts(c, counts, IDX_INACTIVATED);
-				debugToFile(c, "Inactivated");
+				debugToFile(c, INACTIVATED);
 			} else if (isChangedSinceLastRelease(c)) {
 				// Remains inactive and changed since last release
 				incrementCounts(c, counts, IDX_CHANGED_INACTIVE);
-				debugToFile(c, "Changed Inactive");
+				debugToFile(c, CHANGED_INACTIVE);
 			}
 		} else {
 			// Was in a different module but has now moved into this module
 			incrementCounts(c, counts, IDX_MOVED_MODULE);
-			debugToFile(c, "Moved Module");
+			debugToFile(c, MOVED_MODULE);
 		}
 	}
 
@@ -452,15 +461,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
 			// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 			incrementCounts(a, counts, IDX_NEW);
-			debugToFile(a, "New");
+			debugToFile(a, NEW);
 		} else if (datum.getDescHistAssocIdsInact().contains(a.getId())) {
 			// If previously inactive and now active, then it's reactivated
 			incrementCounts(a, counts, IDX_REACTIVATED);
-			debugToFile(a, "Reactivated");
+			debugToFile(a, REACTIVATED);
 		} else if (datum.getDescHistAssocIds().contains(a.getId()) && isChangedSinceLastRelease(a)) {
 			// Was and is active, yet it has changed since last release, then it's changed
 			incrementCounts(a, counts, IDX_CHANGED);
-			debugToFile(a, "Changed");
+			debugToFile(a, CHANGED);
 		}
 	}
 
@@ -468,15 +477,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		if (datum == null || !(datum.getDescHistAssocIds().contains(a.getId()) || datum.getDescHistAssocIdsInact().contains(a.getId()))) {
 			// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 			incrementCounts(a, counts, IDX_NEW_INACTIVE);
-			debugToFile(a, "New Inactive");
+			debugToFile(a, NEW_INACTIVE);
 		} else if (datum.getDescHistAssocIds().contains(a.getId())) {
 			// If previously active and now inactive, then it's inactivated
 			incrementCounts(a, counts, IDX_INACTIVATED);
-			debugToFile(a, "Inactivated");
+			debugToFile(a, INACTIVATED);
 		} else if (datum.getDescHistAssocIdsInact().contains(a.getId()) && isChangedSinceLastRelease(a)) {
 			// Was and is inactive, yet it has changed since last release, then it's changed inactive
 			incrementCounts(a, counts, IDX_CHANGED_INACTIVE);
-			debugToFile(a, "Changed Inactive");
+			debugToFile(a, CHANGED_INACTIVE);
 		}
 	}
 
@@ -503,16 +512,16 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				|| datum.getDescInactivationIdsInact().contains(i.getId()))) {
 			// Is inactive, but either the concept is new, or we have not seen this id before (active or inactive), then it's new inactive
 			incrementCounts(i, counts, IDX_NEW_INACTIVE);
-			debugToFile(i, "New Inactive");
+			debugToFile(i, NEW_INACTIVE);
 		} else if (datum.getDescInactivationIds().contains(i.getId())) {
 			// If previously active and now inactive, then it's inactivated
 			incrementCounts(i, counts, IDX_INACTIVATED);
-			debugToFile(i, "Inactivated");
+			debugToFile(i, INACTIVATED);
 		} else if (datum.getDescInactivationIdsInact().contains(i.getId())
 				&& isChangedSinceLastRelease(i)) {
 			// Was and is inactive, yet it has changed since last release, then it's changed inactive
 			incrementCounts(i, counts, IDX_CHANGED_INACTIVE);
-			debugToFile(i, "Changed Inactive");
+			debugToFile(i, CHANGED_INACTIVE);
 		}
 	}
 
@@ -523,15 +532,15 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				|| datum.getDescInactivationIdsInact().contains(i.getId()))) {
 			// Is active, but either the concept is new, or we have not seen this id before (active or inactive), then it's new
 			incrementCounts(i, counts, IDX_NEW);
-			debugToFile(i, "New");
+			debugToFile(i, NEW);
 		} else if (datum.getDescInactivationIdsInact().contains(i.getId())) {
 			// If previously inactive and now active, then it's reactivated
 			incrementCounts(i, counts, IDX_REACTIVATED);
-			debugToFile(i, "Reactivated");
+			debugToFile(i, REACTIVATED);
 		} else if (datum.getDescInactivationIds().contains(i.getId()) && isChangedSinceLastRelease(i)) {
 			// Was and is active, yet it has changed since last release, then it's changed
 			incrementCounts(i, counts, IDX_CHANGED);
-			debugToFile(i, "Changed");
+			debugToFile(i, CHANGED);
 		}
 	}
 
@@ -563,7 +572,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW);
-					debugToFile(component, "New");
+					debugToFile(component, NEW);
 					conceptAffected = true;
 
 					if (isNewConcept) {
@@ -575,25 +584,25 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 					}
 				} else if (previouslyExistedInactive) {
 					incrementCounts(component, counts, IDX_REACTIVATED);
-					debugToFile(component, "Reactivated");
+					debugToFile(component, REACTIVATED);
 					conceptAffected = true;
 				} else if (isChangedSinceLastRelease(component)) {
 					incrementCounts(component, counts, IDX_CHANGED);
-					debugToFile(component, "Changed");
+					debugToFile(component, CHANGED);
 					conceptAffected = true;
 				}
 			} else {
 				if (!(previouslyExistedActive || previouslyExistedInactive)) {
 					incrementCounts(component, counts, IDX_NEW_INACTIVE);
-					debugToFile(component, "New Inactive");
+					debugToFile(component, NEW_INACTIVE);
 					conceptAffected = true;
 				} else if (previouslyExistedActive) {
 					incrementCounts(component, counts, IDX_INACTIVATED);
-					debugToFile(component, "Inactivated");
+					debugToFile(component, INACTIVATED);
 					conceptAffected = true;
 				} else if (isChangedSinceLastRelease(component)) {
 					incrementCounts(component, counts, IDX_CHANGED_INACTIVE);
-					debugToFile(component, "Changed Inactive");
+					debugToFile(component, CHANGED_INACTIVE);
 					conceptAffected = true;
 				}
 			}
