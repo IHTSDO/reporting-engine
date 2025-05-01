@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.snomed.otf</groupId>
-	<version>7.7.0</version>
+	<version>7.7.1</version>
 	<artifactId>reporting-engine</artifactId>
 	<packaging>pom</packaging>
 
