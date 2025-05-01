@@ -24,7 +24,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
 
 	Set<String> expectedLanguages = new HashSet<>();
-	boolean includeIntConcepts = true;
+	boolean includeIntConcepts = false;
 	boolean includeInactiveConcepts = false;
 	private boolean verboseOutput = true;
 	
@@ -60,7 +60,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		
 		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions"};
 		if (verboseOutput) {
-			columnHeadings = new String[] {"SCTID, FSN, SemTag, language, DescriptionId, term"};
+			columnHeadings = new String[] {"SCTID, FSN, SemTag, Lang, DescriptionId, EffectiveTime, Term"};
 		}
 		String[] tabNames = new String[] {	
 				"Translated Concepts"};
@@ -106,7 +106,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			if (verboseOutput) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (expectedLanguages.contains(d.getLang())) {
-						report(c, d.getLang(), d.getId(), d.getTerm());
+						report(c, d.getLang(), d.getId(), d.getEffectiveTimeSafely(), d.getTerm());
 					}
 				}
 			} else {
