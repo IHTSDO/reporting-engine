@@ -302,7 +302,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			if (batch.getTasks().size() > 1) {
 				throw new TermServerScriptException("Task key specified.  Cannot work with " + batch.getTasks().size() + " tasks.  Check number of concepts per task");
 			}
-			task.setBranchPath(this.getProject().getBranchPath());
+			task.setBranchPath(this.getProject().getBranchPath());  //Project contains the task branch path at this point
 			task.setPreExistingTask(true);
 			String dryRunStr = (dryRun ? "Dry Run, p" : "P");
 			LOGGER.info("{}re-existing task specified: {}", dryRunStr, task.getBranchPath());

@@ -696,9 +696,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
-		if (dryRun) {
+		if (dryRun && getTaskKey() == null) {
 			//In a dry run situation, the task branch is not created so use the Project instead
 			//But we'll clone it, so the object isn't confused with any local changes
+
+			//That said, if we've specifed an _existing_ task then we do want to use that, so check for a taskKey
 			
 			//If we're already working at project level, don't modify branchPath
 			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
@@ -712,7 +714,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				return gl.getConcept(sctid).cloneWithIds();
 			}
 		}
-		Concept loadedConcept = loadConcept (tsClient, sctid, branchPath);
+		Concept loadedConcept = loadConcept(tsClient, sctid, branchPath);
 		return loadedConcept;
 	}
 	
