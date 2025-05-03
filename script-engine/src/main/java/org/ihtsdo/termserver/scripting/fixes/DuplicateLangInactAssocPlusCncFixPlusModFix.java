@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 import java.util.*;
 import java.lang.IllegalArgumentException;
 
@@ -15,6 +14,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.web.client.RestClientResponseException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /*
  * INFRA-2480 Finding concept and description inactivation indicators that are duplicated
  * and remove the unpublished version
@@ -24,13 +26,11 @@ import org.springframework.web.client.RestClientResponseException;
  * ISRS-1257 Detect CNC indicators on descriptions that have been made inactive and remove
  * MSSP-1571 Detect refset members that apply to extension components but have been created in the core module
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateLangInactAssocPlusCncFixPlusModFix.class);
+
+	private static final String REMOVING_DUPLICATE = "Removing duplicate: {}";
 
 	String defaultModuleId = null;
 	
@@ -38,7 +38,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
+	public static void main(final String[] args) throws TermServerScriptException {
 		final DuplicateLangInactAssocPlusCncFixPlusModFix fix = new DuplicateLangInactAssocPlusCncFixPlusModFix(null);
 		try {
 			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
@@ -100,7 +100,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		List<DuplicatePair> duplicatePairs = getDuplicateRefsetMembers(c, c.getInactivationIndicatorEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
-				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.remove);
+				String msg = (dryRun?"Dry Run, not ":"") + REMOVING_DUPLICATE;
+				LOGGER.debug(msg, duplicatePair.remove);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.remove);
 				if (!dryRun) {
 					try {
@@ -125,7 +126,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 		duplicatePairs = getDuplicateRefsetMembers(c, c.getAssociationEntries());
 		for (DuplicatePair duplicatePair : duplicatePairs) {
 			if (duplicatePair.isDeleting()) {
-				LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.remove);
+				String msg = (dryRun?"Dry Run, not ":"") + REMOVING_DUPLICATE;
+				LOGGER.debug(msg, duplicatePair.remove);
 				report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.remove, "Kept: " + duplicatePair.keep);
 				if (!dryRun) {
 					tsClient.deleteRefsetMember(duplicatePair.remove.getId(), t.getBranchPath(), false);
@@ -176,7 +178,8 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			duplicatePairs = getDuplicateRefsetMembers(d, d.getLangRefsetEntries());
 			for (final DuplicatePair duplicatePair : duplicatePairs) {
 				if (duplicatePair.isDeleting()) {
-					LOGGER.debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + duplicatePair.remove);
+					String msg = (dryRun?"Dry Run, not ":"") + REMOVING_DUPLICATE;
+					LOGGER.debug(msg, duplicatePair.remove);
 					report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, duplicatePair.remove, "Kept: " + duplicatePair.keep);
 					if (!dryRun) {
 						tsClient.deleteRefsetMember(duplicatePair.remove.getId(), t.getBranchPath(), false);
