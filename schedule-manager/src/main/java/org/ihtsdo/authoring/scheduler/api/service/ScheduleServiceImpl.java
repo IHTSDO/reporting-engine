@@ -400,6 +400,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 			if (jobRun.getRequestTime().before(new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(STUCK_JOB_HOURS)))) {
 				LOGGER.warn("JobRun {} has been stuck in {} status for over {} hours.  Marking as failed.", jobRun, jobRun.getStatus(), STUCK_JOB_HOURS);
 				jobRun.setStatus(JobStatus.Failed);
+				jobRun.setDebugInfo("Job status manually updated to 'failed'");
 				jobRunRepository.save(jobRun);
 				jobsCleared++;
 			}
