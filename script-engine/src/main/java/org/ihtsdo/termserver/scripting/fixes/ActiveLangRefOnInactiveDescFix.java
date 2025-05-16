@@ -44,7 +44,7 @@ public class ActiveLangRefOnInactiveDescFix extends BatchFix {
 		int changesMade = 0;
 		try {
 			for (Description d : c.getDescriptions()) {
-				if (!d.isActive() && inScope(d)) {
+				if (!d.isActiveSafely() && inScope(d)) {
 					//Does it still have an active language refset?
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						l.setActive(false);
@@ -63,16 +63,14 @@ public class ActiveLangRefOnInactiveDescFix extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		LOGGER.info("Identifying concepts to process...");
 		List<Component> componentsToProcess = new ArrayList<>();
-		//Looking for inactive descriptions in the MS 
-		nextConcept:
+		//Looking for inactive descriptions appropriately scoped
 		for (Concept c : gl.getAllConcepts()) {
+			//Does it still have an active language refset?
 			for (Description d : c.getDescriptions()) {
-				if (!d.isActive() && inScope(d)) {
-					//Does it still have an active language refset?
-					if (d.getLangRefsetEntries(ActiveState.ACTIVE).size() > 0) {
-						componentsToProcess.add(c);
-						continue nextConcept;
-					}
+				if (!d.isActiveSafely() && inScope(d) &&
+						!d.getLangRefsetEntries(ActiveState.ACTIVE).isEmpty()) {
+					componentsToProcess.add(c);
+					break;
 				}
 			}
 		}
