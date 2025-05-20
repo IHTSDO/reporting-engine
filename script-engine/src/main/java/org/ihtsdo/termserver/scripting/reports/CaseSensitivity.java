@@ -48,9 +48,9 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
-		params.put(UNPROMOTED_CHANGES_ONLY, "N");
-		params.put(RECENT_CHANGES_ONLY, "N");
-		params.put(INCLUDE_SUB_ORG, "Y");
+		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
+		params.put(RECENT_CHANGES_ONLY, "Y");
+		params.put(INCLUDE_SUB_ORG, "N");
 		TermServerScript.run(CaseSensitivity.class, params, args);
 	}
 
@@ -126,9 +126,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
 		for (Concept c : hierarchyDescendants) {
-			if (c.getId().equals("69443001")) {
-				LOGGER.info("Checking case significance in concept: {}", c);
-			}
 			if (inScopeForCsChecking(c)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)

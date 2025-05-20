@@ -12,12 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
 import org.snomed.otf.scheduler.domain.JobRun;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public abstract class TermServerReport extends TermServerScript {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerReport.class);
 
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
 	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
@@ -35,15 +30,14 @@ public abstract class TermServerReport extends TermServerScript {
 			if (unpromotedChangesOnly && projectName.equals("MAIN")) {
 				throw new TermServerScriptException("Unpromoted changes only is not supported for use on MAIN");
 			}
+			if (unpromotedChangesOnly) {
+				unpromotedChangesHelper = new UnpromotedChangesHelper(this);
+			}
 		}
 	}
 
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
-		if (unpromotedChangesOnly) {
-			unpromotedChangesHelper = new UnpromotedChangesHelper(this);
-			LOGGER.info("Populating map of unpromoted change components");
-			unpromotedChangesHelper.populateUnpromotedChangesMap(project, getArchiveManager().isLoadOtherReferenceSets());
-		}
+
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
