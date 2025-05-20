@@ -30,10 +30,12 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 	public UnpromotedChangesHelper(TermServerScript ts) {
 		this.ts = ts;
 	}
-	
-	public void populateUnpromotedChangesMap(Project project, boolean loadOtherRefsets) throws TermServerScriptException {
-		//Re-query our current task/project to obtain just those components which 
-		//haven't been promoted
+
+	private void populateUnpromotedChangesMap() throws TermServerScriptException {
+		//Re-query our current task/project to obtain just those components which haven't been promoted
+		LOGGER.info("Populating map of unpromoted change components");
+		Project project = ts.getProject();
+		boolean loadOtherRefsets = ts.getArchiveManager().isLoadOtherReferenceSets();
 		try {
 			File delta = ts.getArchiveManager().generateDelta(project, true);
 			unpromotedChangesMap = new HashMap<>();
@@ -67,51 +69,50 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 			String fileName = path.getFileName().toString();
 			
 			if (fileName.contains("._")) {
-				//LOGGER.info("Skipping " + fileName);
 				return;
 			}
 			
 			if (fileName.contains("sct2_Concept_")) {
-				LOGGER.info("Loading unpromoted Concept delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Concept delta file: {}", fileName);
 				loadFile(is, IDX_ID);
 			} else if (fileName.contains("sct2_Relationship_")) {
-				LOGGER.info("Loading unpromoted Relationship delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Relationship delta file: {}", fileName);
 				loadFile(is, REL_IDX_SOURCEID);
 			} else if (fileName.contains("sct2_StatedRelationship_")) {
-				LOGGER.info("Loading unpromoted Stated Relationship delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Stated Relationship delta file: {}", fileName);
 				loadFile(is, REL_IDX_SOURCEID);
 			} else if (fileName.contains("sct2_RelationshipConcrete")) {
-				LOGGER.info("Loading unpromoted Concrete Relationship delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Concrete Relationship delta file: {}", fileName);
 				loadFile(is, REL_IDX_SOURCEID);
 			} else if (fileName.contains("sct2_sRefset_OWL")) {
-				LOGGER.info("Loading unpromoted Axiom delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Axiom delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("sct2_Description_")) {
-				LOGGER.info("Loading unpromoted Description delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Description delta file: {}", fileName);
 				loadFile(is, DES_IDX_CONCEPTID);
 			} else if (fileName.contains("sct2_TextDefinition_")) {
-				LOGGER.info("Loading unpromoted Text Definition delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Text Definition delta file: {}", fileName);
 				loadFile(is, DES_IDX_CONCEPTID);
 			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet")) {
-				LOGGER.info("Loading unpromoted Concept Inactivation Indicator delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Concept Inactivation Indicator delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet")) {
-				LOGGER.info("Loading unpromoted Description Inactivation Indicator delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Description Inactivation Indicator delta file: {}", fileName);
 				loadFile(is, NOT_SET);
 			} else if (fileName.contains("der2_cRefset_AttributeValue")) {
-				LOGGER.info("Loading unpromoted Attribute Value delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Attribute Value delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("Association")) {
-				LOGGER.info("Loading unpromoted Historical Association delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Historical Association delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("Language")) {
-				LOGGER.info("Loading unpromoted Language Reference Set delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Language Reference Set delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (fileName.contains("ComponentAnnotationStringValue")) {
-				LOGGER.info("Loading unpromoted Component Annotation delta file: " + fileName);
+				LOGGER.info("Loading unpromoted Component Annotation delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
-				LOGGER.info("Loading unpromoted other Reference Set delta file: " + fileName);
+				LOGGER.info("Loading unpromoted other Reference Set delta file: {}", fileName);
 				loadFile(is, REF_IDX_REFCOMPID);
 			}
 
@@ -146,6 +147,13 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 	}
 
 	public boolean hasUnpromotedChange(Component c) {
+		if (unpromotedChangesMap == null) {
+			try {
+				populateUnpromotedChangesMap();
+			} catch (TermServerScriptException e) {
+				throw new IllegalStateException("Failed to populate map of unpromoted changes", e);
+			}
+		}
 		return unpromotedChangesMap.containsKey(c.getId()) || unpromotedChangesMap.containsValue(c.getId());
 	}
 
