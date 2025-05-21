@@ -37,8 +37,8 @@ public class MultiArchiveImporter extends BatchFix {
 	public static void main(String[] args) throws TermServerScriptException {
 		MultiArchiveImporter importer = new MultiArchiveImporter(null);
 		try {
-			ReportSheetManager.setTargetFolderId("1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"); //Batch Import
-			importer.taskPrefix = "INFRA-14845";
+			ReportSheetManager.setTargetFolderId(GFOLDER_BATCH_IMPORTS);
+			importer.taskPrefix = "";  //No need for a trailing space
 			importer.classifyTasks = true;
 			importer.allowDirectoryInputFile = true;
 			importer.init(args);
@@ -97,8 +97,7 @@ public class MultiArchiveImporter extends BatchFix {
 			if (task == null) {
 				task = new Task(null, getNextAuthor(), getNextReviewer());
 				lastTaskCreated = task;
-				String prefix = (taskPrefix.isEmpty() ? "" : taskPrefix + " ") + "Import ";
-				task.setSummary(prefix + thisArchive.getName());
+				task.setSummary("Import " + thisArchive.getName());
 				taskHelper.createTask(task);
 			}
 

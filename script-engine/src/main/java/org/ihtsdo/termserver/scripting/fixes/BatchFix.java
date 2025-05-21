@@ -69,7 +69,6 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	private Batch currentBatch;
 	protected TaskHelper taskHelper;
 
-
 	protected BatchFix(TermServerScript clone) {
 		if (clone != null) {
 			if (clone.hasInputFile()) {
