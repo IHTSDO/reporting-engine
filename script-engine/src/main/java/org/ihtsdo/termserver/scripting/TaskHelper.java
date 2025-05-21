@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,14 @@ public class TaskHelper {
 		this.ts = ts;
 		this.taskThrottle = taskThrottle;
 		this.populateTaskDescription = populateTaskDescription;
+		setTaskPrefix(taskPrefix);
+	}
+
+	public void setTaskPrefix(String taskPrefix) {
+		//Add a space to the prefix if one has not been provided
+		if (!StringUtils.isEmpty(taskPrefix) && !taskPrefix.endsWith(" ")) {
+			taskPrefix += " ";
+		}
 		this.taskPrefix = taskPrefix;
 	}
 

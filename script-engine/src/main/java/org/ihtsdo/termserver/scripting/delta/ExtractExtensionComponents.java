@@ -390,9 +390,10 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		return closestToIdealTopUp;
 	}
 
+	@Override
 	protected List<Component> processFile() throws TermServerScriptException {
 		if (archiveBatches != null) {
-			int batchNum = 1;
+			int batchNum = 0;
 			while (!archiveBatches.isEmpty()) {
 				batchNum++;
 				LOGGER.info("Processing archive batch {}", batchNum);
@@ -629,9 +630,9 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 		allModifiedConcepts.add(c);
 
-		//If we have no stated modelling (either stated relationships, or those extracted from an axiom,
+		//If we have no stated modelling (either stated relationships, or those extracted from an axiom),
 		//create an Axiom Entry from the inferred rels.
-		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).isEmpty()) {
 			convertInferredRelsToAxiomEntry(c);
 		}
 	}
@@ -900,8 +901,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			//Because axiom relationships don't have IDs we need to search for type/value
-			//Relationship relOnTS = conceptOnTS.getRelationship(r.getId());
-			if (conceptOnTS.getRelationships(r).size() > 0) {
+			if (!conceptOnTS.getRelationships(r).isEmpty()) {
 				report(conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already on target server", r);
 				return false;
 			}
@@ -913,7 +913,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		
 		if (includeDependencies && !allModifiedConcepts.contains(r.getType())) {
 			if (switchModule(r.getType(), componentsToProcess)) {
-				//Is this an unexpected dependency
+				//Is this an unexpected dependency?
 				if (!componentsToProcess.contains(r.getType())) {
 					incrementSummaryInformation("Unexpected dependencies included");
 					addSummaryInformation("Unexpected type dependency: " + r.getType(), "");

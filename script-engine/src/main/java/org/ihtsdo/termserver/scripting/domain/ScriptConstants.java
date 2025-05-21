@@ -15,20 +15,21 @@ public interface ScriptConstants extends RF2Constants {
 	int NONARY_REPORT = 8;
 	int DENARY_REPORT = 9;
 
-	String GFOLDER_QI = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
-	String GFOLDER_DRUGS_MISSING = "1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT"; // Drugs Missing
 	String GFOLDER_ADHOC_REPORTS = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 	String GFOLDER_ADHOC_UPDATES = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
-	String GFOLDER_MS = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
-	String GFOLDER_GENERAL_QA = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
-	String GFOLDER_RELEASE_QA = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
-	String GFOLDER_QI_STATS = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-	String GFOLDER_RELEASE_STATS = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
-	String GFOLDER_LOINC = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
-	String GFOLDER_NUVA = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO"; //NUVA
+	String GFOLDER_BATCH_IMPORTS = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; //Batch Imports
+	String GFOLDER_DRUGS_MISSING = "1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT"; // Drugs Missing
 	String GFOLDER_EXTRACT_AND_PROMOTE = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
+	String GFOLDER_GENERAL_QA = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
+	String GFOLDER_LOINC = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
+	String GFOLDER_MS = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+	String GFOLDER_NUVA = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO"; //NUVA
+	String GFOLDER_QI = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
+	String GFOLDER_QI_STATS = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+	String GFOLDER_RELEASE_QA = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
+	String GFOLDER_RELEASE_STATS = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 	String GFOLDER_TECHNICAL_SPECIALIST = "13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"; //Technical Specialist
-	
+
 	Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	Concept NULL_CONCEPT = new Concept ("-1");
 	Concept MULTI_CONCEPT = new Concept ("-2");
