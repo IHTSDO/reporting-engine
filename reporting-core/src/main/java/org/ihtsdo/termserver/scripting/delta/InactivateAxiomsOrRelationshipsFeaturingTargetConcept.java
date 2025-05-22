@@ -77,7 +77,7 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 		}
 	}
 
-	private List<Relationship> getNonISARelsWithCheck(Concept c, Relationship relToRemove) throws ValidationFailure{
+	private List<Relationship> getNonISARelsWithCheck(Concept c, Relationship relToRemove) throws ValidationFailure {
 		//Now every axiom will include an IS A relationship, so if we're going to inactivate this axiom
 		//we need to double check that IS A rels are present in some _other_ axiom on the concept
 		List<Relationship> nonISARels = new ArrayList<>();
