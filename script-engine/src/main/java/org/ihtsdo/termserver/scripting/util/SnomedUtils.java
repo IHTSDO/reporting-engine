@@ -615,8 +615,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
 	}
 	
-	public static String translateCaseSignificanceFromEnum(
-			CaseSignificance caseSignificance) throws TermServerScriptException {
+	public static String translateCaseSignificanceFromEnum(CaseSignificance caseSignificance) throws TermServerScriptException {
 		switch (caseSignificance) {
 			case ENTIRE_TERM_CASE_SENSITIVE: return "CS";
 			case CASE_INSENSITIVE: return "ci";
@@ -624,6 +623,15 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			default :
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificance);
+	}
+
+	public static String translateCaseSignificanceFromEnumSafely(CaseSignificance caseSignificance) {
+		switch (caseSignificance) {
+			case ENTIRE_TERM_CASE_SENSITIVE: return "CS";
+			case CASE_INSENSITIVE: return "ci";
+			case INITIAL_CHARACTER_CASE_INSENSITIVE : return "cI";
+			default : return "??";
+		}
 	}
 	
 	public static CaseSignificance translateCaseSignificanceToEnum(
