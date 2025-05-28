@@ -1083,7 +1083,7 @@ public class GraphLoader implements ScriptConstants {
 		String line;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
+				String[] lineItems = line.split(FIELD_DELIMITER, -1);
 
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
@@ -1146,7 +1146,7 @@ public class GraphLoader implements ScriptConstants {
 		String line;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
+				String[] lineItems = line.split(FIELD_DELIMITER, -1);
 
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
@@ -1608,40 +1608,48 @@ public class GraphLoader implements ScriptConstants {
 		}
 
 		//The columns after the referenced component id give us our additional field names
-		String[] fieldNames = headerLine.split(TAB);
+		String[] fieldNames = headerLine.split(TAB, -1);
 		String[] additionalFieldNames = Arrays.copyOfRange(fieldNames, REF_IDX_FIRST_ADDITIONAL, fieldNames.length);
 
 		LOGGER.info("Loading reference set file {}", fileName);
-		for (String line = br.readLine(); line != null; line = br.readLine()) {
-			String[] lineItems = line.split(TAB);
-			RefsetMember member = new RefsetMember();
-			RefsetMember.populatefromRf2(member, lineItems, additionalFieldNames);
-			if (isReleased != null) {
-				member.setReleased(isReleased);
+		int lineNum = 0;
+		String line = "No line read yet";
+		try {
+			for (line = br.readLine(); line != null; line = br.readLine()) {
+				lineNum++;
+				loadReferenceSetLine(line, additionalFieldNames, isReleased);
 			}
-			/*if (member.getId().equals("acc12fa8-74db-5e6e-9408-5ea60cd650e6")) {
-				LOGGER.info("Check here");
-			}*/
-			//Do we already have this member?  Copy the released flag if so
-			if (SnomedUtils.isConceptSctid(member.getReferencedComponentId())) {
-				Concept c = getConcept(member.getReferencedComponentId());
-				RefsetMember existing = c.getOtherRefsetMember(member.getId());
-				if (existing != null) {
-					member.setReleased(existing.getReleased());
-				}
-				c.addOtherRefsetMember(member);
-			} else {
-				Description d = getDescription(member.getReferencedComponentId());
-				RefsetMember existing = d.getOtherRefsetMember(member.getId());
-				if (existing != null) {
-					member.setReleased(existing.getReleased());
-				}
-				d.getOtherRefsetMembers().add(member);
-			}
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to load reference set file " + fileName + " at line " + lineNum + ": " + line, e);
 		}
 	}
 
-    public void removeConcept(Concept c) {
+	private void loadReferenceSetLine(String line, String[] additionalFieldNames, Boolean isReleased) throws TermServerScriptException {
+		String[] lineItems = line.split(TAB, -1);
+		RefsetMember member = new RefsetMember();
+		RefsetMember.populatefromRf2(member, lineItems, additionalFieldNames);
+		if (isReleased != null) {
+			member.setReleased(isReleased);
+		}
+		//Do we already have this member?  Copy the released flag if so
+		if (SnomedUtils.isConceptSctid(member.getReferencedComponentId())) {
+			Concept c = getConcept(member.getReferencedComponentId());
+			RefsetMember existing = c.getOtherRefsetMember(member.getId());
+			if (existing != null) {
+				member.setReleased(existing.getReleased());
+			}
+			c.addOtherRefsetMember(member);
+		} else {
+			Description d = getDescription(member.getReferencedComponentId());
+			RefsetMember existing = d.getOtherRefsetMember(member.getId());
+			if (existing != null) {
+				member.setReleased(existing.getReleased());
+			}
+			d.getOtherRefsetMembers().add(member);
+		}
+	}
+
+	public void removeConcept(Concept c) {
 		concepts.remove(c.getId());
 		if (allComponents != null) {
 			allComponents.remove(c.getId());

@@ -36,9 +36,8 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(MAP_CONCEPT, "447562003 |SNOMED CT to ICD-10 extended map|");
-		params.put(COMPACT, "true");
+		params.put(COMPACT, "false");
 		params.put(REVERSE_MAP, "false");
-		params.put(EXCLUDE, "<< 129125009 |Procedure with explicit context (situation)|");
 		TermServerScript.run(ListMapEntries.class, args, params);
 	}
 	
@@ -120,7 +119,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 					LOGGER.warn("List of concepts truncated for mapTarget {}", mapTarget);
 				}
 				String memberStr = members.stream()
-						.map(rm -> rm.toString())
+						.map(RefsetMember::toString)
 						.collect(Collectors.joining("\n"));
 				if (memberStr.length() > MAX_CELL_SIZE) {
 					memberStr = memberStr.substring(0, MAX_CELL_SIZE) + "...";
@@ -171,7 +170,7 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 				continue;
 			}
 			for (RefsetMember rm : c.getOtherRefsetMembers()) {
-				if (rm.isActive() && rm.getRefsetId().equals(mapConcept.getId())) {
+				if (rm.isActiveSafely() && rm.getRefsetId().equals(mapConcept.getId())) {
 					countIssue(c);
 					report(c, rm.getField(MAP_TARGET), rm);
 				}
