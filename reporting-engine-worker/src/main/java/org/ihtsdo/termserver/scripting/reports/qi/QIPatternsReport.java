@@ -218,6 +218,7 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 		}
 	}
 
+	@Override
 	protected void initialiseSummary(String issue) {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}

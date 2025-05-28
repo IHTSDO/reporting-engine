@@ -1476,7 +1476,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							&& !msg.contains("at: ")
 							&& !msg.contains("\"")
 							&& !msg.contains("Completed processing in")) {
-						msg = QUOTE + msg.replaceAll(": ", QUOTE_COMMA_QUOTE).replaceAll(":", QUOTE_COMMA_QUOTE) + QUOTE;
+						msg = QUOTE + msg.replace(": ", QUOTE_COMMA_QUOTE).replace(":", QUOTE_COMMA_QUOTE) + QUOTE;
 					}
 					writeToReportFile(summaryTabIdx, msg);
 				} catch (Exception e) {
@@ -1680,7 +1680,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		incrementSummaryInformation("Report lines written");
 	}
 
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details);
 	}
 	
