@@ -24,7 +24,7 @@ public class UserUpdateOnBranch extends TermServerReport implements ReportClass 
 	public static final String USER_LIST = "Users";
 	public static final String PROJECT_LIST = "Projects";
 	public static final String FROM_ET = "From Effective Time";
-	public static final DecimalFormat DP = new DecimalFormat("#.00");
+	public static final DecimalFormat DP = new DecimalFormat("#.0");
 
 	private TraceabilityServiceClient client;
 	private String users;
@@ -35,9 +35,9 @@ public class UserUpdateOnBranch extends TermServerReport implements ReportClass 
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(USER_LIST, "wscampbell,ssantamaria,pwilliams");
-		params.put(PROJECT_LIST, "MAIN/SNOMEDCT-CSR/NEBCSR,MAIN/CSRINT1");
-		params.put(FROM_ET, "2021-01-01");
+		params.put(USER_LIST, "ewooler");
+		params.put(PROJECT_LIST, "MAIN/EYECARE");
+		params.put(FROM_ET, "2024-01-01");
 		TermServerScript.run(UserUpdateOnBranch.class, args, params);
 	}
 
@@ -56,7 +56,7 @@ public class UserUpdateOnBranch extends TermServerReport implements ReportClass 
 				"Detail"
 		};
 		String[] columnHeadings = new String[] {
-				"User, Task, SCTID, FSN, Axiom ET",
+				"User, Task, SCTID, FSN, Axiom ET, Creation Detected, Currently Inactive",
 				"User, Branch, Commit, Action(s), Promoted Date, Highest Promoted Branch, ",
 		};
 		postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
@@ -87,26 +87,47 @@ public class UserUpdateOnBranch extends TermServerReport implements ReportClass 
 		LOGGER.info("Checking activity for relevance on {} concepts", allAxiomsModifiedInTimePeriod.size());
 		int conceptCount = 0;
 		for (AxiomEntry a : allAxiomsModifiedInTimePeriod) {
-			//Was this an axiom that also returned traceability for the specified users on those specific branches?
-			if (axiomActivityMap.containsKey(a.getId())) {
-				for (Activity activity : axiomActivityMap.get(a.getId())) {
-					Concept c = gl.getConceptSafely(a.getReferencedComponentId());
-					if (!alreadySeenForUser(activity.getUsername(), c)) {
-						report(PRIMARY_REPORT, activity.getUsername(), getLastItem(activity.getBranch()), c.getId(), c.getFsn(), a.getEffectiveTime());
-					}
-					if (!alreadySeenCommitForUserOnBranch(activity)) {
-						report(SECONDARY_REPORT, activity.getUsername(), activity.getBranch(), activity.getCommitDate(), getConceptsWithActions(activity), activity.getPromotionDate(), activity.getHighestPromotedBranch());
-					}
-				}
-			}
+			checkAxiomForActivity(a, axiomActivityMap);
 
-			if (++conceptCount % 100 == 0) {
+			if (++conceptCount % 1000 == 0) {
 				String perc = DP.format((conceptCount * 100) / (float)allAxiomsModifiedInTimePeriod.size());
 				LOGGER.info("Processed {} concepts = {}%", conceptCount, perc);
 			}
 
 		}
 		LOGGER.info ("Job complete");
+	}
+
+	private void checkAxiomForActivity(AxiomEntry a, Map<String, List<Activity>> axiomActivityMap) throws TermServerScriptException {
+		//Was this an axiom that also returned traceability for the specified users on those specific branches?
+		if (axiomActivityMap.containsKey(a.getId())) {
+			for (Activity activity : axiomActivityMap.get(a.getId())) {
+				Concept c = gl.getConceptSafely(a.getReferencedComponentId());
+				String creationDetected = checkForConceptCreation(axiomActivityMap.get(a.getId()));
+				String currentlyInactive = c.isActiveSafely() ? "N" : "Y";
+				if (!alreadySeenForUser(activity.getUsername(), c)) {
+					report(PRIMARY_REPORT, activity.getUsername(), getLastItem(activity.getBranch()), c.getId(), c.getFsn(), a.getEffectiveTime(), creationDetected, currentlyInactive);
+				}
+				if (!alreadySeenCommitForUserOnBranch(activity)) {
+					report(SECONDARY_REPORT, activity.getUsername(), activity.getBranch(), activity.getCommitDate(), getConceptsWithActions(activity), activity.getPromotionDate(), activity.getHighestPromotedBranch());
+				}
+			}
+		}
+	}
+
+	private String checkForConceptCreation(List<Activity> activities) {
+		// If any activity for this axiom is a concept creation, then return "Y"
+		for (Activity activity : activities) {
+			if (activity.getActivityType() == ActivityType.CONTENT_CHANGE) {
+				for (ConceptChange conceptChange : activity.getConceptChanges()) {
+					if (conceptChange.getComponentChanges().stream()
+							.anyMatch(componentChange -> componentChange.getChangeType() == ChangeType.CREATE)) {
+						return "Y";
+					}
+				}
+			}
+		}
+		return "N";
 	}
 
 	private boolean alreadySeenCommitForUserOnBranch(Activity activity) {
@@ -139,7 +160,7 @@ public class UserUpdateOnBranch extends TermServerReport implements ReportClass 
 
 	private String getConceptsWithActions(Activity activity) {
 		return activity.getConceptChanges().stream()
-				.map(change -> toString(change))
+				.map(this::toString)
 				.collect(Collectors.joining("\n"));
 	}
 
@@ -162,6 +183,7 @@ public class UserUpdateOnBranch extends TermServerReport implements ReportClass 
 			}
 			return axiomActivityMap;
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			throw new TermServerScriptException("Failed to get traceability info for specified users", e);
 		}
 	}
