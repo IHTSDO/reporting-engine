@@ -385,7 +385,6 @@ public class ConceptLateralizer implements ScriptConstants {
 		return term.toLowerCase().contains(lateralityStr.toLowerCase());
 	}
 
-
 	private Concept findBilateralDescendent(Concept c) {
 		//If this concept has one immediate LEFT child, and one immediate RIGHT child, then
 		//if BOTH of those concepts feature the same concept, then that is likely to be the bilateral one
