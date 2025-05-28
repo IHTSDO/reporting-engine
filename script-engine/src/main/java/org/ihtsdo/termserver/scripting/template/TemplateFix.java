@@ -46,7 +46,8 @@ abstract public class TemplateFix extends BatchFix {
 	protected TemplateFix(BatchFix clone) {
 		super(clone);
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		if (args != null) {
 			super.init(args);
@@ -70,12 +71,13 @@ abstract public class TemplateFix extends BatchFix {
 		EclCache.reset();
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		initTemplatesAndExclusions();
 		super.postInit();
 		LOGGER.info("Post initialisation complete");
 	}
-	
+
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		initTemplatesAndExclusions();
 		postInit(tabNames, columnHeadings,false);
