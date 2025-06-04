@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -12,34 +11,22 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Normalize concepts selected via ECL
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class NormaliseConcepts extends BatchFix {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
 
-	Boolean useStatedECL = false;
-	//private String ecl = "<< 66191007 |Transient arthropathy (disorder)|";
-	//private String ecl = "<! 267038008 |Edema (finding)|";
-	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
-	//private String ecl = "<! 409063005 |Counseling (procedure)|";
-	//private String ecl = "<< 10942006 |Plication (procedure)|  ";
-	//private String ecl = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 408737001 |Malposition|";
-	//private String ecl = "<! 416940007 |Past history of procedure (situation)|";
-	//private String ecl = "< 3253007 |Discoloration of skin (finding)|";
-	//private String ecl = "< 67889009 |Irrigation (procedure)|";
-	//private String ecl = "< 11429006 |Consultation (procedure)| ";
-	//private String ecl = "< 14766002 |Aspiration (procedure)| ";
-	//private String ecl = "<! 59108006 |Injection (procedure)|";
-	private String ecl = "<<782901001 |Insertion procedure (procedure)| MINUS (<<42825003 |Cannulation (procedure)| OR <<45211000 |Catheterization (procedure)| OR << 77343006 |Angiography (procedure)| OR << 418285008 |Angioplasty of blood vessel (procedure)| OR  << 363687006 |Endoscopic procedure (procedure)| OR  << 1296925008 |Insertion of stent (procedure)| OR 77465005 |Transplantation (procedure)|)";
-	
+	private static final boolean USE_STATED_ECL = false;
+	private static final String ECL = "< 239762007 |Flail joint (disorder)|";
+	private static Concept ppp = null;  //This can be left as null, and calculated from the top level hierarchy
+
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
 	}
@@ -54,38 +41,40 @@ public class NormaliseConcepts extends BatchFix {
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			LOGGER.info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
+			LOGGER.error("Failed to NormaliseTemplateCompliantConcepts", e);
 		} finally {
 			app.finish();
 		}
 	}
-	
+
+	@Override
 	protected void init(String[] args) throws TermServerScriptException {
 		reportNoChange = false;
 		selfDetermining = true;
 		summaryTabIdx = SECONDARY_REPORT;
 		super.init(args);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
-				"Report Metadata, Detail, Detail"};
-		String[] tabNames = new String[] {	"Normalization Processing",
-				"Metadata"};
-		//ppp = gl.getConcept("64572001 |Disease (disorder)|");
-		//ppp = gl.getConcept("404684003 |Clinical finding (finding)|");
-		//ppp = gl.getConcept("243796009 |Situation with explicit context (situation)|");
-		//ppp = gl.getConcept("71388002 |Procedure (procedure)|");
-		//This can be passed through as null now, and calculated from the top level hierarchy
+		String[] columnHeadings = new String[] {
+				"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
+				"Report Metadata, Detail, Detail"
+		};
+
+		String[] tabNames = new String[] {
+				"Normalization Processing",
+				"Metadata"
+		};
+		//ppp = gl.getConcept("239762007 |Flail joint (disorder)|")
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override
-	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		if ((loadedConcept.getGciAxioms() != null && loadedConcept.getGciAxioms().size() > 0) 
-				|| (loadedConcept.getAdditionalAxioms() != null && loadedConcept.getAdditionalAxioms().size() > 0)) {
+		if ((loadedConcept.getGciAxioms() != null && !loadedConcept.getGciAxioms().isEmpty())
+				|| (loadedConcept.getAdditionalAxioms() != null && !loadedConcept.getAdditionalAxioms().isEmpty())) {
 			throw new ValidationFailure(task, loadedConcept, "Concept uses axioms");
 		}
 		int changesMade = removeRedundandRelationships(task, loadedConcept);
@@ -100,7 +89,7 @@ public class NormaliseConcepts extends BatchFix {
 	private int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
-		changesMade += checkAndSetProximalPrimitiveParent(t, c, null, false, false);
+		changesMade += checkAndSetProximalPrimitiveParent(t, c, ppp, false, false);
 		
 		//Remove any redundant relationships, or they'll be missing from the inferred view
 		changesMade += removeRedundandRelationships(t,c);
@@ -123,16 +112,12 @@ public class NormaliseConcepts extends BatchFix {
 		
 		nextInferredGroup:
 		for (RelationshipGroup inferredGroup : inferredGroups) {
-			boolean matchFound = false;
 			for (RelationshipGroup statedGroup : statedGroups) {
 				if (inferredGroup.equals(statedGroup)) {
-					matchFound = true;
 					continue nextInferredGroup;
 				}
 			}
-			if (!matchFound) {
-				toBeStated.add(inferredGroup);
-			}
+			toBeStated.add(inferredGroup);
 		}
 		changesMade += stateRelationshipGroups(t, c, toBeStated);
 		if (changesMade == 0) {
@@ -153,7 +138,7 @@ public class NormaliseConcepts extends BatchFix {
 		Set<Relationship> ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships();
 		for (Relationship r : ungrouped) {
 			Set<Relationship> inferredMatches = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r);
-			if (inferredMatches.size() == 0) {
+			if (inferredMatches.isEmpty()) {
 				removeRelationship(t, c, r, "Redundant ungrouped stated: ");
 				changesMade++;
 			}
@@ -182,6 +167,7 @@ public class NormaliseConcepts extends BatchFix {
 		return changesMade;
 	}
 
+	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//First pass attempt to remodel because we don't want to batch anything that results 
 		//in no changes being made.
@@ -189,11 +175,8 @@ public class NormaliseConcepts extends BatchFix {
 		Set<Concept> noChangesRequired = new HashSet<>();
 		
 		setQuiet(true);
-		CharacteristicType charType = useStatedECL ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
-		for (Concept concept : findConcepts(ecl, true, charType)) {
-			/*if (concept.getId().equals("428979007")) {
-				LOGGER.debug("here");
-			}*/
+		CharacteristicType charType = USE_STATED_ECL ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
+		for (Concept concept : findConcepts(ECL, true, charType)) {
 			//Make changes to a clone of the concept so we don't affect our local copy
 			Concept clone = concept.cloneWithIds();
 			int changesMade = normaliseConcept(null, clone);
