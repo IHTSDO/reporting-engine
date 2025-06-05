@@ -1715,15 +1715,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					report(c, issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 				} else {
 					if (refConcept.getPreferredSynonym(US_ENG_LANG_REFSET) == null) {
-						report(c, issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+						report(c, issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept, rm.getId(), field);
 					} else {
 						String fsn = matcher.group(3);
 						if (fsn == null) {
-							report(c, issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+							report(c, issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept, rm.getId(), field);
 						} else if (!refConcept.getFsn().equals(fsn)) {
 							//Sometimes we use the PT.  Check on the rules for when we use each one.
 							if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
-								report(c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
+								report(c, issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, "Text in refset field: " + fsn, rm.getId(), field);
 							}
 						}
 					}
