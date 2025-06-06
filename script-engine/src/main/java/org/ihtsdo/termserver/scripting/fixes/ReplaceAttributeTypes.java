@@ -47,7 +47,7 @@ public class ReplaceAttributeTypes extends BatchFix {
 	public static void main(String[] args) throws TermServerScriptException {
 		ReplaceAttributeTypes fix = new ReplaceAttributeTypes(null);
 		try {
-			ReportSheetManager.setTargetFolderId("1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m");  //Ad-hoc batch updates
+			ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_UPDATES);
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
