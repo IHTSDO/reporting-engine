@@ -61,6 +61,7 @@ public class SimpleConceptList extends TermServerReport implements ReportClass {
 				.withParameters(params)
 				.withTag(INT)
 				.withTag(MS)
+				.withExpectedDuration(60)
 				.build();
 	}
 
