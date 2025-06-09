@@ -46,6 +46,7 @@ public class TextDefinitionsPresentAndMissing extends TermServerReport implement
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withExpectedDuration(60)
 				.build();
 	}
 

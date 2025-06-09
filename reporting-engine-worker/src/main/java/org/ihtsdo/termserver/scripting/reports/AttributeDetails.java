@@ -73,6 +73,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withExpectedDuration(30)
 				.build();
 	}
 	
