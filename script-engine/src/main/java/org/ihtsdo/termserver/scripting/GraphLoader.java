@@ -11,12 +11,14 @@ import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MdrsEntry;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.module.storage.ModuleDependencyReferenceSet;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
@@ -31,6 +33,7 @@ public class GraphLoader implements ScriptConstants {
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<>();
+	private ModuleDependencyReferenceSet mdrs = null;
 	private Map<String, Description> descriptions = new HashMap<>();
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
@@ -89,6 +92,13 @@ public class GraphLoader implements ScriptConstants {
 	private GraphLoader() {
 		//Prevents instantiation by other than getGraphLoader()
 	}
+
+	public ModuleDependencyReferenceSet getMdrs() throws TermServerScriptException {
+		if (mdrs == null) {
+			throw new TermServerScriptException("MDRS requested, but not loaded");
+		}
+		return mdrs;
+	}
 	
 	private static void populateKnownConcepts() {
 		//Pre-populate known concepts to ensure we only ever refer to one object
@@ -116,6 +126,7 @@ public class GraphLoader implements ScriptConstants {
 	public void reset() {
 		LOGGER.info("Resetting Graph Loader - memory wipe");
 		concepts = new HashMap<>();
+		mdrs = null;
 		descriptions = new HashMap<>();
 		allComponents = null;
 		componentOwnerMap = null;
@@ -1224,8 +1235,7 @@ public class GraphLoader implements ScriptConstants {
 			}
 		}
 	}
-	
-	
+
 	private AssociationEntry getAssociationEntry(String componentId, String assocId) throws TermServerScriptException {
 		if (SnomedUtils.isConceptSctid(componentId)) {
 			Concept c = getConcept(componentId, false, false);
@@ -1265,7 +1275,49 @@ public class GraphLoader implements ScriptConstants {
 	public boolean isUsedAsHistoricalAssociationTarget (Concept c) {
 		return historicalAssociations.containsKey(c);
 	}
-	
+
+	public void loadModuleDependencyFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		if (mdrs == null) {
+			mdrs = new ModuleDependencyReferenceSet();
+		}
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER, -1);
+
+				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
+					continue;
+				}
+				String id = lineItems[IDX_ID];
+
+				MdrsEntry mdrsEntry = MdrsEntry.fromRf2(lineItems);
+
+				//Only set the released flag if it's not set already
+				if (mdrsEntry.isReleased() == null) {
+					mdrsEntry.setReleased(isReleased);
+				}
+
+				//Do we already have this mdrs entry?  Copy the released flag if so
+				MdrsEntry existing = mdrs.getMdrsRow(id);
+				if (existing != null) {
+					mdrsEntry.setReleased(existing.getReleased());
+					if (isRecordPreviousState() && !isReleased) {
+						mdrsEntry.setPreviousState(existing.getMutableFields());
+					}
+				}
+
+				if (mdrsEntry.isActiveSafely()) {
+					mdrs.addMdrsRow(mdrsEntry);
+				}
+
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+
 	public void loadMRCMAttributeRangeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		mrcmAttributeRangeManager.loadFile(is, isReleased);
 	}

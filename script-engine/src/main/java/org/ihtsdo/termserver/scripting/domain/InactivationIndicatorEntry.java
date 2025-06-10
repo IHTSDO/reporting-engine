@@ -112,7 +112,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		i.setId(lineItems[INACT_IDX_ID]);
 		i.setEffectiveTime(lineItems[INACT_IDX_EFFECTIVETIME]);
 		i.setActive(lineItems[INACT_IDX_ACTIVE].equals("1"));
-		i.setModuleId(lineItems[INACT_IDX_MODULID]);
+		i.setModuleId(lineItems[INACT_IDX_MODULEID]);
 		i.setRefsetId(lineItems[INACT_IDX_REFSETID]);
 		i.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
 		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
