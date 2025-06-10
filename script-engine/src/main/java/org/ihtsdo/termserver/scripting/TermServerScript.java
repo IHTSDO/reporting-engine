@@ -20,6 +20,7 @@ import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
+import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;

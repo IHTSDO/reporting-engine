@@ -598,7 +598,7 @@ public class Description extends Component implements ScriptConstants, Serializa
 			d.setReleased(true);
 		}
 		boolean isPublished = d.isReleased() != null && d.isReleased();
-		d.setModuleId(lineItems[DES_IDX_MODULID], isPublished);
+		d.setModuleId(lineItems[DES_IDX_MODULEID], isPublished);
 		d.setCaseSignificance(SnomedUtils.translateCaseSignificanceToEnum(lineItems[DES_IDX_CASESIGNIFICANCEID]));
 		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);

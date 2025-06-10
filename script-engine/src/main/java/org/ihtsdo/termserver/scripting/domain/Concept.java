@@ -1178,7 +1178,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public static Concept fillFromRf2(Concept c, String[] lineItems) {
 		c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
-		c.setModuleId(lineItems[CON_IDX_MODULID]);
+		c.setModuleId(lineItems[CON_IDX_MODULEID]);
 		c.setDefinitionStatus(SnomedUtils.translateDefnStatus(lineItems[CON_IDX_DEFINITIONSTATUSID]));
 		//Set the given effective time last incase we've lost it by changing the moduleId
 		c.setEffectiveTime(lineItems[CON_IDX_EFFECTIVETIME]);

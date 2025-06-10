@@ -854,6 +854,9 @@ public class ArchiveManager implements ScriptConstants {
 		} else if (fileName.contains("ComponentAnnotationStringValue")) {
 			LOGGER.info("Loading ComponentAnnotationStringValue File: {} file: {}", fileType, fileName);
 			gl.loadComponentAnnotationFile(is, isReleased);
+		}  else if (fileName.contains("ssRefset_ModuleDependency")) {
+			LOGGER.info("Loading Module Dependency File: {} file: {}", fileType, fileName);
+			gl.loadModuleDependencyFile(is, isReleased);
 		} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
 			loadTheReferenceSet = true;
 		}

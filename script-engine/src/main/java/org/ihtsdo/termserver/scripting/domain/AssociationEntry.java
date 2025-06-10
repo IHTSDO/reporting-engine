@@ -41,9 +41,10 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	public AssociationEntry clone(boolean keepIds) {
 		return clone(this.referencedComponentId, keepIds);
 	}
-	
+
+	@Override
 	public String toString() {
-		String activeIndicator = isActive()?"":"*";
+		String activeIndicator = isActiveSafely()?"":"*";
 		return "[" + activeIndicator + "HA]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + getTargetComponentId();
 	}
 	
@@ -63,7 +64,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		h.setId(lineItems[ASSOC_IDX_ID]);
 		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
 		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
-		h.setModuleId(lineItems[ASSOC_IDX_MODULID]);
+		h.setModuleId(lineItems[ASSOC_IDX_MODULEID]);
 		h.setRefsetId(lineItems[ASSOC_IDX_REFSETID]);
 		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
 		if (lineItems.length <= ASSOC_IDX_TARGET) {
@@ -73,7 +74,8 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		}
 		return h;
 	}
-	
+
+	@Override
 	public String[] toRF2() {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
@@ -83,7 +85,8 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 				getTargetComponentId()
 		};
 	}
-	
+
+	@Override
 	public String[] toRF2Deletion() {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
@@ -99,6 +102,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	public String getTargetComponentId() {
 		return getField(TARGET_COMPONENT_ID);
 	}
+
 	public void setTargetComponentId(String targetComponentId) {
 		if (getTargetComponentId() != null && !getTargetComponentId().equals(targetComponentId)) {
 			isDirty = true;
@@ -141,6 +145,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	
 	//Note that because Java does not support polymorphism of variables, only methods,
 	//we need to call this method to pick up the field names of descendant types.
+	@Override
 	public String[] getAdditionalFieldNames() {
 		return additionalFieldNames;
 	}

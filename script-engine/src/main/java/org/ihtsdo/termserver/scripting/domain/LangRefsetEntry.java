@@ -66,7 +66,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 		l.setId(lineItems[LANG_IDX_ID]);
 		l.setEffectiveTime(lineItems[LANG_IDX_EFFECTIVETIME]);
 		l.setActive(lineItems[LANG_IDX_ACTIVE].equals("1"));
-		l.setModuleId(lineItems[LANG_IDX_MODULID]);
+		l.setModuleId(lineItems[LANG_IDX_MODULEID]);
 		l.setRefsetId(lineItems[LANG_IDX_REFSETID]);
 		l.setReferencedComponentId(lineItems[LANG_IDX_REFCOMPID]);
 		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);

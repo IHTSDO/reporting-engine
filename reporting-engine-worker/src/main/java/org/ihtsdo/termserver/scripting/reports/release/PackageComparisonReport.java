@@ -677,7 +677,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				// 4 - refsetId, etc
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[ASSOC_IDX_ID];
-				String moduleId = data[ASSOC_IDX_MODULID];
+				String moduleId = data[ASSOC_IDX_MODULEID];
 				String effectiveTime = data[ASSOC_IDX_EFFECTIVETIME];
 
 				if (refsetIds != null && !refsetIds.contains(data[ASSOC_IDX_REFSETID])) {
