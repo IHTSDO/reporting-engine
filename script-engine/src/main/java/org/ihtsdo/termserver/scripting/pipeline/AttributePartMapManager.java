@@ -19,8 +19,8 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	private static final int NOT_SET = -1;
 
 	private static final int IDX_PART_NUM = 0;
-	private static final int IDX_STATUS = 8;
-	private static final int IDX_NO_MAP = 7;
+	private static final int IDX_STATUS = 7;
+	private static final int IDX_NO_MAP = 6;
 	private static final int IDX_TARGET = 3;
 
 	protected ContentPipelineManager cpm;
@@ -113,19 +113,14 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	private void processPartFileLine(String line, Set<String> partsSeen, List<String> mappingNotes) throws TermServerScriptException {
 		String[] items = line.split("\t");
 		String partNum = items[IDX_PART_NUM];
-		//Do we expect to see a map here?  Snap2Snomed also outputs unmapped parts
-		if (items[IDX_STATUS].equals("UNMAPPED") || items[IDX_STATUS].equals("DRAFT")) {
-			//Skip this one
+
+		if (partsSeen.contains(partNum)) {
+			//Have we seen this part before?  Map should now be unique
+			mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
 		} else if (items[IDX_NO_MAP].equals("true")) {
 			//And we can have items that report being mapped, but with 'no map' - warn about those.
 			mappingNotes.add("Map indicates part mapped to 'No Map'");
-		} else if (items[IDX_STATUS].equals("REJECTED")) {
-			//And we can have items that report being mapped, but with 'no map' - warn about those.
-			mappingNotes.add("Map indicates non-viable map - " + items[IDX_STATUS]);
-		} else if (partsSeen.contains(partNum)) {
-			//Have we seen this part before?  Map should now be unique
-			mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
-		} else {
+		} else if (items[IDX_STATUS].equals("ACCEPTED")) {
 			partsSeen.add(partNum);
 			Concept attributeValue = gl.getConcept(items[IDX_TARGET], false, true);
 			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue);
@@ -133,6 +128,10 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 				mappingNotes.add("Inactive concept");
 			}
 			partToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
+		} else if (items[IDX_STATUS].equals("UNMAPPED")) {
+			//Skip this one without mentioning it
+		} else {
+			mappingNotes.add("Map indicates non-viable map status - " + items[IDX_STATUS]);
 		}
 
 		if (!mappingNotes.isEmpty()) {
