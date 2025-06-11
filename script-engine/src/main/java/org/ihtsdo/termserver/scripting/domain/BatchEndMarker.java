@@ -1,10 +1,12 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 
 public class BatchEndMarker extends Component {
 	
@@ -41,5 +43,10 @@ public class BatchEndMarker extends Component {
 	@Override
 	public boolean matchesMutableFields(Component other) {
 		throw new IllegalArgumentException("Wasn't expecting to compare BatchEndMarkers!");
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		return Collections.emptyList();
 	}
 }

@@ -8,6 +8,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 
 public class 
 
@@ -135,5 +136,13 @@ AlternateIdentifier extends Component implements ScriptConstants {
 		AlternateIdentifier otherAltId = (AlternateIdentifier)other;
 		return this.getIdentifierSchemeId().equals(otherAltId.getIdentifierSchemeId())
 				&& this.getReferencedComponentId().equals(otherAltId.getReferencedComponentId());
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		return List.of(
+				cs.getComponent(getReferencedComponentId()),
+				cs.getComponent(getIdentifierSchemeId())
+		);
 	}
 }

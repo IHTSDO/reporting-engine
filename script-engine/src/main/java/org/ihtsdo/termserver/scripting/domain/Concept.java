@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -1878,6 +1879,12 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public boolean matchesMutableFields(Component other) {
 		Concept otherConcept = (Concept) other;
 		return getDefinitionStatus().equals(otherConcept.getDefinitionStatus());
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		//In fact the concept row itself doesn't reference any other components
+		return Collections.emptyList();
 	}
 
 	public boolean hasAlternateIdentifier(String codeSystemSctId) {

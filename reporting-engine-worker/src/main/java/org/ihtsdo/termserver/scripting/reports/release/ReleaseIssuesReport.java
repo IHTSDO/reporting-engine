@@ -14,10 +14,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.AxiomUtils;
-import org.ihtsdo.termserver.scripting.DescendantsCache;
-import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -373,9 +370,30 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
-	private void checkComponentsReferenceDependentModules() {
+	private void checkComponentsReferenceDependentModules() throws TermServerScriptException {
+		String issueStr = "Component references a module that is not visible from its own module, according to the MDRS";
+		LOGGER.info("Starting check of components referencing dependent modules");
 		//We're going to go through every component and check that the concepts it references,
 		//belong to a module that is visible from the module of the component
+		for (Component c : gl.getAllComponents()) {
+			if (!c.isActiveSafely() || !inScope(c)) {
+				continue;
+			}
+			//What is the moduleId of this component?
+			String moduleId = c.getModuleId();
+			for (Component referencedComponent : c.getReferencedComponents(gl)) {
+				//What is the module of the referenced component?
+				String referencedModule = referencedComponent.getModuleId();
+				if (!referencedModule.equals(moduleId) &&
+					!gl.getMdrs().getDependencies(moduleId).contains(referencedModule)) {
+					Concept owningConcept = gl.getComponentOwner(c.getId());
+					String msg = "Component references component in module " + referencedModule +
+							" which is not visible from its own module " + moduleId;
+					reportAndIncrementSummary(owningConcept, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c, referencedComponent), msg, c.toString());
+				}
+			}
+		}
+		LOGGER.info("Finished check of components referencing dependent modules");
 	}
 
 	private void inappropriateModuleJumping() throws TermServerScriptException {
