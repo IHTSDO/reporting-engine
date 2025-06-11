@@ -222,7 +222,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				File thisFile = new File(args[x+1]);
 				setInputFile(fileIdx, thisFile);
 				if (!getInputFile(fileIdx).canRead()) {
-					if (!getInputFile(fileIdx).getName().contains("Dummy")) {
+					if (!getInputFile(fileIdx).getName().equalsIgnoreCase("Dummy")) {
 						throw new TermServerScriptException("Unable to read input file: " + thisFile);
 					}
 				} else {
@@ -1814,7 +1814,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public void setInputFile(int idx, File file) throws TermServerScriptException {
 		//Allow Dummy file for basic sequential integer SCTID Generators.
-		if (!file.getName().equals("Dummy") && 
+		if (!file.getName().equalsIgnoreCase("Dummy") &&
 				(!file.canRead() || (!file.isFile() && !allowDirectoryInputFile))) {
 			throw new TermServerScriptException("Unable to read specified file: " + file);
 		}
