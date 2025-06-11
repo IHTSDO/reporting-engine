@@ -302,15 +302,14 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		String regex = "\\[" + templateItem + "\\]";
 		if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = slotTermMap.get(templateItem);
-			CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
+
 
 			boolean isDeletion = false;
 			if (itemStr == null) {
 				LOGGER.warn("What's going on here?");
 			} else if (itemStr.isEmpty()){
 				isDeletion = true;
-			} else if (!csUtils.startsWithKnownCaseSensitiveTerm(getConcept(), itemStr)
-					&& !csUtils.startsWithAcronym(itemStr)) {
+			} else if (safeToDecapitalizeFirstLetter(itemStr)){
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
 
@@ -328,6 +327,20 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			ptTemplateStr = populateTermTemplateFromAttribute(regex, templateItem, ptTemplateStr);
 		}
 		return ptTemplateStr;
+	}
+
+	private boolean safeToDecapitalizeFirstLetter(String phrase) throws TermServerScriptException {
+		CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
+		//We're trying to match the previous behaviour of the system to avoid unnecessary capitalization churn.
+		//It _looks_ like if the first word contained a capital letter after the first letter, then we previously considered
+		//it CS and didn't decapitalize.
+		String firstWord = phrase.split(" ")[0];
+
+		if (StringUtils.hasCapitalAfterFirstLetter(firstWord)
+				|| csUtils.startsWithKnownCaseSensitiveTerm(getConcept(), phrase)) {
+			return false;
+		}
+		return !csUtils.startsWithAcronym(phrase);
 	}
 
 	protected String populateTermTemplate(String itemStr, String templateItem, String ptStr, String partTypeName) {
