@@ -51,14 +51,14 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	@Override
 	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
 		return switch (externalConcept.getProperty()) {
-			case "ArVRat", "CRat", "MRat", "SRat", "VRat" -> LoincTemplatedConceptWithProcess.create(externalConcept);
+			case "ARat", "ArVRat", "CRat", "MRat", "NRat", "SRat", "VRat" -> LoincTemplatedConceptWithProcess.create(externalConcept);
 			case "RelTime", "Time", "Vel", "RelVel" -> LoincTemplatedConceptWithProcessNoOutput.create(externalConcept);
 			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
-			case "ACnc", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
-				 "LaCnc", "Len", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "Naric", "NCnc",
-				 "PPres", "Pres", "PrThr", "SCnc", "SCnt", "Sub", "Titr" ->
+			case "ACnc", "ACnt", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
+				 "LaCnc", "Len", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "MSCnc", "Naric", "NCnc", "Num",
+				 "PPres", "Pres", "PrThr", "SCnc", "SCncDiff", "SCnt", "Sub", "Titr", "ThreshNum" ->
 					LoincTemplatedConceptWithComponent.create(externalConcept);
-			case "MRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
+			case "CRto", "MRto", "NRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
 			case "Anat", "Aper", "Color", "Disposition", "DistWidth", "EntMCnc", "EntMeanVol", "EntVol",
 			     "ID", "Morph", "Osmol", "Prid", "Rden", "Source", "SpGrav", "Temp", "Type", "Visc", "Vol" ->
 					createTemplateBasedOnProperties(externalConcept);
