@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -939,6 +940,11 @@ public class Description extends Component implements ScriptConstants, Serializa
 		Description otherDesc = (Description) other;
 		return this.getType().equals(otherDesc.getType())
 				&& this.getTerm().equals(otherDesc.getTerm());
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		return List.of(cs.getComponent(this.getConceptId()));
 	}
 
 	public Description withCaseSignificance(CaseSignificance caseSignificance) {

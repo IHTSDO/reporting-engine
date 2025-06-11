@@ -8,14 +8,12 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.exception.TermServerRuntimeException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MdrsEntry;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.domain.mrcm.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.module.storage.ModuleDependencyReferenceSet;
@@ -27,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.Script;
 
-public class GraphLoader implements ScriptConstants {
+public class GraphLoader implements ScriptConstants, ComponentStore {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
@@ -1276,7 +1274,7 @@ public class GraphLoader implements ScriptConstants {
 		return historicalAssociations.containsKey(c);
 	}
 
-	public void loadModuleDependencyFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+	public void loadModuleDependencyFile(InputStream is, Boolean isReleased) throws IOException {
 		if (mdrs == null) {
 			mdrs = new ModuleDependencyReferenceSet();
 		}
@@ -1285,36 +1283,37 @@ public class GraphLoader implements ScriptConstants {
 		String line;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER, -1);
-
-				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
-					continue;
-				}
-				String id = lineItems[IDX_ID];
-
-				MdrsEntry mdrsEntry = MdrsEntry.fromRf2(lineItems);
-
-				//Only set the released flag if it's not set already
-				if (mdrsEntry.isReleased() == null) {
-					mdrsEntry.setReleased(isReleased);
-				}
-
-				//Do we already have this mdrs entry?  Copy the released flag if so
-				MdrsEntry existing = mdrs.getMdrsRow(id);
-				if (existing != null) {
-					mdrsEntry.setReleased(existing.getReleased());
-					if (isRecordPreviousState() && !isReleased) {
-						mdrsEntry.setPreviousState(existing.getMutableFields());
-					}
-				}
-
-				if (mdrsEntry.isActiveSafely()) {
-					mdrs.addMdrsRow(mdrsEntry);
-				}
-
+				loadModuleDependencyRow(line.split(FIELD_DELIMITER, -1), isReleased);
 			} else {
 				isHeaderLine = false;
 			}
+		}
+	}
+
+	private void loadModuleDependencyRow(String[] lineItems, Boolean isReleased) {
+		if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
+			return;
+		}
+		String id = lineItems[IDX_ID];
+
+		MdrsEntry mdrsEntry = MdrsEntry.fromRf2(lineItems);
+
+		//Only set the released flag if it's not set already
+		if (mdrsEntry.isReleased() == null) {
+			mdrsEntry.setReleased(isReleased);
+		}
+
+		//Do we already have this mdrs entry?  Copy the released flag if so
+		MdrsEntry existing = mdrs.getMdrsRow(id);
+		if (existing != null) {
+			mdrsEntry.setReleased(existing.getReleased());
+			if (isRecordPreviousState() && !isReleased) {
+				mdrsEntry.setPreviousState(existing.getMutableFields());
+			}
+		}
+
+		if (mdrsEntry.isActiveSafely()) {
+			mdrs.addMdrsRow(mdrsEntry);
 		}
 	}
 
@@ -1339,6 +1338,11 @@ public class GraphLoader implements ScriptConstants {
 			populateAllComponents();
 		}
 		return allComponents.get(id);
+	}
+
+	@Override
+	public boolean isComponentId(String id) {
+		return getComponent(id) != null;
 	}
 
 	public Collection<Component> getAllComponents() {

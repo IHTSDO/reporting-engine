@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -560,6 +561,20 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		return this.getCharacteristicType().equals(otherRel.getCharacteristicType())
 				&& this.getType().equals(otherRel.getType())
 				&& this.getTarget().equals(otherRel.getType());
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		if (this.isConcrete()) {
+		return List.of(
+				this.getSource(),
+				this.getType());
+		} else {
+			return List.of(
+				this.getSource(),
+				this.getType(),
+				this.getTarget());
+		}
 	}
 
 }

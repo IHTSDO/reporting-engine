@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 
 public class Axiom extends Expressable implements ScriptConstants {
 
@@ -20,7 +21,7 @@ public class Axiom extends Expressable implements ScriptConstants {
 	private DefinitionStatus definitionStatus;
 	@SerializedName("relationships")
 	@Expose
-	private Set<Relationship> relationships = new HashSet<Relationship>();
+	private Set<Relationship> relationships = new HashSet<>();
 	@SerializedName("namedConceptOnLeft")
 	@Expose
 	private Boolean namedConceptOnLeft;
@@ -183,5 +184,14 @@ public class Axiom extends Expressable implements ScriptConstants {
 	@Override
 	public boolean matchesMutableFields(Component other) {
 		throw new IllegalArgumentException("Wasn't expecting to compare Axioms!");
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		Set<Component> referencedComponents = new HashSet<>();
+		for (Relationship r : relationships) {
+			referencedComponents.addAll(r.getReferencedComponents(cs));
+		}
+		return new ArrayList<>(referencedComponents);
 	}
 }
