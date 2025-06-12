@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionComponents {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponentsAndLateralize.class);
 
 	private static Set<Concept> bodyStructures = null;
 

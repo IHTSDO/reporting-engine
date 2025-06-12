@@ -26,6 +26,7 @@ public class ReplaceRelationshipTargets extends DeltaGenerator implements Script
 		}
 	}
 
+	@Override
 	public void postInit(String googleFolder) throws TermServerScriptException {
 		restrictToType = gl.getConcept("246501002 |Technique|");
 		find = gl.getConcept("10061010000109 |Screening technique (qualifier value)|");
@@ -37,7 +38,7 @@ public class ReplaceRelationshipTargets extends DeltaGenerator implements Script
 	protected void process() throws TermServerScriptException {
 		print ("Processing concepts replace " + find + " with " + replace);
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, restrictToType, ActiveState.ACTIVE)) {
 					if (r.getTarget().equals(find)) {
 						Relationship replacementRel = r.cloneWithoutAxiom(null);

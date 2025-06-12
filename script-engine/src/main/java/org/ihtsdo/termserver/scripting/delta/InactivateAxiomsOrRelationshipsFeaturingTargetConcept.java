@@ -26,6 +26,7 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 		}
 	}
 
+	@Override
 	public void postInit(String googleFolder) throws TermServerScriptException {
 		eclSubset = "<< 763087004 |Medicinal product categorized by therapeutic role (product)| ";
 		restrictToType = gl.getConcept("766939001 |Plays role (attribute)| ");
@@ -36,7 +37,7 @@ public class InactivateAxiomsOrRelationshipsFeaturingTargetConcept extends Delta
 	protected void process() throws TermServerScriptException {
 		print ("Processing concepts to remove axioms featuring " + find );
 		for (Concept c : findConcepts(eclSubset)) {
-			if (c.isActive()) {
+			if (c.isActiveSafely()) {
 				processConcept(c);
 			}
 		}

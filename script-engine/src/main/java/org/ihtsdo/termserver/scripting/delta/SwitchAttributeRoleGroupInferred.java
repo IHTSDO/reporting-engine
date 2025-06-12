@@ -13,28 +13,15 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 
 	private static final int BATCH_SIZE = 99999;
 
-	private int lastBatchSize = 0;
-	
 	public static void main(String[] args) throws TermServerScriptException {
-		SwitchAttributeRoleGroupInferred delta = new SwitchAttributeRoleGroupInferred();
-		try {
-			delta.runStandAlone = true;
-			delta.additionalReportColumns = "Action Detail";
-			delta.newIdsRequired = false;
-			delta.init(args);
-			delta.loadProjectSnapshot(true);
-			delta.postLoadInit();
-			delta.process();
-			delta.createOutputArchive(false, delta.lastBatchSize);
-		} finally {
-			delta.finish();
-		}
+		new SwitchAttributeRoleGroupInferred().standardExecution(args);
 	}
 
-	private void postLoadInit() throws TermServerScriptException {
+	@Override
+	public void postInit(String googleFolder) throws TermServerScriptException {
 		relTemplate = new RelationshipTemplate(gl.getConcept("272741003 |Laterality (attribute)|"), gl.getConcept("182353008 |Side|"));
 		exclusions = new HashSet<>();
-		super.postInit(GFOLDER_ADHOC_UPDATES);
+		super.postInit(googleFolder);
 	}
 
 	@Override
@@ -56,7 +43,6 @@ public class SwitchAttributeRoleGroupInferred extends DeltaGenerator {
 				}
 
 		}
-		lastBatchSize = conceptsInThisBatch;
 	}
 
 	private List<Concept> determineConceptsToProcess() throws TermServerScriptException {

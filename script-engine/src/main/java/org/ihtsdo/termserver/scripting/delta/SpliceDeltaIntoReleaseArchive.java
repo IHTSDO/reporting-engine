@@ -14,14 +14,13 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Watch that this is a partial implementation that will be added to as the need arrises.
  * For INFRA-9963 we only need to splice in new Common French descriptions to a published Swiss package
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SpliceDeltaIntoReleaseArchive extends DeltaGenerator implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SpliceDeltaIntoReleaseArchive.class);

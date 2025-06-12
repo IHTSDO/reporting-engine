@@ -79,6 +79,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected boolean batchDelimitersDetected = false;
 	protected int archivesCreated = 0;
 	private File lastArchiveCreated = null;
+	protected int conceptsInLastBatch = 0;
 
 	@Override
 	protected void init (String[] args) throws TermServerScriptException {
@@ -638,7 +639,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			process();
 			getRF2Manager().flushFiles(true);  //Flush and Close
 			if (!dryRun) {
-				SnomedUtils.createArchive(new File(outputDirName));
+				createOutputArchive(true, conceptsInLastBatch);
 			}
 		} finally {
 			finish();

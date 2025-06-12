@@ -13,12 +13,8 @@ import java.util.Map;
 
 public class CreateConceptsDelta extends DeltaGenerator {
 
-	private static final DefinitionStatus defStatus = DefinitionStatus.PRIMITIVE;
-
-	//Most products we're working with will only support en-US
-	protected static final Map<String, Acceptability> DEFAULT_PREF_ACCEPTABILITY_MAP = Map.of(
-			US_ENG_LANG_REFSET, Acceptability.PREFERRED
-	);
+	protected static final DefinitionStatus defStatus = DefinitionStatus.PRIMITIVE;
+	protected static boolean usLangOnly = false;
 
 	private final String[] fsns = new String[] {
 			"NUVA Extension Module",
@@ -44,13 +40,27 @@ public class CreateConceptsDelta extends DeltaGenerator {
 	}
 
 	@Override
+	public void postInit(String googleFolder) throws TermServerScriptException {
+		String[] columnHeadings = new String[]{
+				"SCTID, FSN, SemTag, Severity, Action, Details," + additionalReportColumns,
+				"SCTID, Descriptions, Expression, Reference"
+		};
+
+		String[] tabNames = new String[]{
+				"Actions Taken",
+				"Concepts Modelled"
+		};
+		postInit(googleFolder, tabNames, columnHeadings);
+	}
+
+	@Override
 	public void process() throws TermServerScriptException {
 		for (int x = 0; x < fsns.length; x++) {
 			Concept c = new Concept(conIdGenerator.getSCTID());
 			c.setActive(true);
 			c.setDefinitionStatus(defStatus);
 			c.setModuleId(targetModuleId);
-			addDescriptions(c, fsns[x]);
+			addFsnAndCounterpart(c, fsns[x], true, null);
 			addRelationships(c, parents[x]);
 			report(c, Severity.LOW, ReportActionType.CONCEPT_ADDED);
 			SnomedUtils.setAllComponentsDirty(c, true);
@@ -58,22 +68,42 @@ public class CreateConceptsDelta extends DeltaGenerator {
 		}
 	}
 
-	private void addDescriptions(Concept c, String term) throws TermServerScriptException {
-		addDescription(c, DescriptionType.FSN, term);
-		String ptTerm = SnomedUtilsBase.deconstructFSN(term)[0];
-		addDescription(c, DescriptionType.SYNONYM, ptTerm);
+	@Override
+	public boolean outputRF2(Concept c) throws TermServerScriptException {
+		//Log the concept created on a separate tab
+		report(SECONDARY_REPORT, c.getId(), SnomedUtils.getDescriptionsFull(c), c.toExpression(CharacteristicType.STATED_RELATIONSHIP), c.getIssues());
+		return super.outputRF2(c);
 	}
 
-	private void addDescription(Concept c, DescriptionType type, String term) throws TermServerScriptException {
+	protected void addFsnAndCounterpart(Concept c, String term, boolean fsnCounterpartIsPt, CaseSignificance caseSig) throws TermServerScriptException {
+		addDescription(c, DescriptionType.FSN, term, true, caseSig);
+		String ptTerm = SnomedUtilsBase.deconstructFSN(term)[0];
+		addDescription(c, DescriptionType.SYNONYM, ptTerm,fsnCounterpartIsPt, caseSig);
+	}
+
+	protected void addDescription(Concept c, DescriptionType type, String term, boolean isPreferred, CaseSignificance caseSig) throws TermServerScriptException {
 		CaseSensitivityUtils csUtils = CaseSensitivityUtils.get();
-		Description d = Description.withDefaults(term, type, DEFAULT_PREF_ACCEPTABILITY_MAP);
+		Description d = Description.withDefaults(term, type, getAcceptabilityMap(isPreferred));
 		d.setDescriptionId(descIdGenerator.getSCTID());
 		d.setConceptId(c.getConceptId());
 		d.setModuleId(targetModuleId);
 		alignLangRefsetToDescription(d);
-		d.setCaseSignificance(csUtils.suggestCorrectCaseSignificance(c, d));
+		d.setCaseSignificance(caseSig == null ? csUtils.suggestCorrectCaseSignificance(c, d) : caseSig);
 		c.addDescription(d);
 		report(c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d);
+	}
+
+	private Map<String, Acceptability> getAcceptabilityMap(boolean isPreferred) {
+		if (usLangOnly) {
+			return Map.of(
+					US_ENG_LANG_REFSET, isPreferred ? Acceptability.PREFERRED : Acceptability.ACCEPTABLE
+			);
+		} else {
+			return Map.of(
+					US_ENG_LANG_REFSET, isPreferred ? Acceptability.PREFERRED : Acceptability.ACCEPTABLE,
+					GB_ENG_LANG_REFSET, isPreferred ? Acceptability.PREFERRED : Acceptability.ACCEPTABLE
+					);
+		}
 	}
 
 	private void alignLangRefsetToDescription(Description d) {
@@ -83,7 +113,7 @@ public class CreateConceptsDelta extends DeltaGenerator {
 		}
 	}
 
-	private void addRelationships(Concept c, String parentStr) throws TermServerScriptException {
+	protected void addRelationships(Concept c, String parentStr) throws TermServerScriptException {
 		Concept parent = gl.getConcept(parentStr);
 		Relationship r = new Relationship(c, IS_A, parent, UNGROUPED);
 		r.setActive(true);

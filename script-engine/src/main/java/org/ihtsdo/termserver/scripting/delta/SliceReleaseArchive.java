@@ -14,15 +14,14 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Watch that this is a partial implementation that will be added to as the need arrises.
  * For INFRA-9963 we only need to splice in new Common French descriptions to a published Swiss package
  * @author peter
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SliceReleaseArchive.class);
@@ -30,27 +29,14 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	Set<String> knownDescriptions = new HashSet<>();
 	Map<String, SummaryCount> summaryCounts = new HashMap<>();
 	
-	public static Set<String> filesOfInterest = new HashSet<>(); 
+	protected static Set<String> filesOfInterest = new HashSet<>();
 	static {
 		//Package filename, mapped to the name of the delta filename to be pulled in
 		filesOfInterest.add("der2_cRefset_Language#TYPE#-fr-ch_CH1000195_20221207.txt");
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException {
-		SliceReleaseArchive delta = new SliceReleaseArchive();
-		try {
-			delta.runStandAlone = true;
-			delta.newIdsRequired = false; 
-			delta.init(args);
-			//delta.loadProjectSnapshot(false); //Don't need anything in memory for this
-			delta.postInit(GFOLDER_ADHOC_UPDATES);
-			delta.process();
-			delta.getRF2Manager().flushFiles(true);  //Flush and Close
-			SnomedUtils.createArchive(new File(delta.outputDirName));
-			delta.outputSummaryCounts();
-		} finally {
-			delta.finish();
-		}
+		new SliceReleaseArchive().standardExecution(args);
 	}
 
 	@Override
@@ -68,25 +54,6 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 	@Override
 	protected void initialiseFileHeaders() throws TermServerScriptException {
 		LOGGER.info("Skipping initialisation of usual delta output files");
-	}
-	
-	private void outputSummaryCounts() throws TermServerScriptException {
-		report(PRIMARY_REPORT, "");
-		for (Map.Entry<String, SummaryCount> summaryCountEntry : summaryCounts.entrySet()) {
-			String fileName = summaryCountEntry.getKey();
-			SummaryCount summaryCount = summaryCountEntry.getValue();
-			output(fileName, "Rows passed through", summaryCount.rowsPassedThrough);
-			output(fileName, "Rows updated", summaryCount.rowsUpdated);
-			output(fileName, "Rows added", summaryCount.rowsAdded);
-			output(fileName, "Rows skipped", summaryCount.rowsSkipped);
-			output(fileName, "Rows passed through but EN", summaryCount.rowsProblematic);
-			//output("", "Concepts Affected", conceptsAffected.size());
-		}
-	}
-
-	private void output(String fileName, String msg, int data) throws TermServerScriptException {
-		LOGGER.info(fileName + ": " + msg + " - " + data);
-		report(PRIMARY_REPORT, fileName, msg, data);
 	}
 
 	@Override
@@ -117,7 +84,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 
 	private void processFile(Path path, InputStream is) throws TermServerScriptException, IOException {
 		String pathStr = path.toString();
-		File targetFile = new File(outputDirName + File.separator + path.toString());
+		File targetFile = new File(outputDirName + File.separator + path);
 		
 		//Is this a file we're interested in modifying?
 		ExtractType type = SnomedUtils.getExtractType(pathStr);
@@ -172,7 +139,7 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 		return false;
 	}
 
-	private void firstPass() throws IOException, TermServerScriptException {
+	private void firstPass() throws IOException {
 		LOGGER.info("Loading {}", getInputFile());
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(getInputFile()));
 		ZipEntry ze = zis.getNextEntry();
@@ -188,7 +155,9 @@ public class SliceReleaseArchive extends DeltaGenerator implements ScriptConstan
 			try{
 				zis.closeEntry();
 				zis.close();
-			} catch (Exception e){} //Well, we tried.
+			} catch (Exception e){
+				//Well, we tried.
+			}
 		}
 		LOGGER.info("Finished Loading {}", getInputFile());
 	}

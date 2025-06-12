@@ -11,13 +11,12 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * Produce Delta archive containing components reverted to their parent version.
- */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Produce Delta archive containing components reverted to their parent version.
+ */
 public class RevertComponentToParentVersion extends DeltaGenerator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RevertComponentToParentVersion.class);
@@ -73,6 +72,7 @@ public class RevertComponentToParentVersion extends DeltaGenerator {
 		}
 	}
 
+	@Override
 	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
 				"Id, Type",
