@@ -40,7 +40,6 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 	public void process() throws TermServerScriptException {
 		for (ConceptRow row : conceptsToCreate) {
 			createConcept(row);
-
 			if (++conceptsInLastBatch >= BATCH_SIZE) {
 				if (!dryRun) {
 					createOutputArchive(true, conceptsInLastBatch);
