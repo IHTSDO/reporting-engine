@@ -1307,12 +1307,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				if (lineNum == 0  && inputFileHasHeaderRow) {
 					continue; //skip header row  
 				}
+				String lineStr = lines.get(lineNum);
 				String[] lineItems;
+
 				if (Objects.equals(inputFileDelimiter, CSV_FIELD_DELIMITER)) {
 					//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
-					lineItems = splitCarefully(lines.get(lineNum));
+					lineItems = splitCarefully(lineStr);
 				} else {
-					lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
+					lineItems = lineStr.replace("\"", "").split(inputFileDelimiter);
 				}
 				if (lineItems.length >= 1) {
 					try{
@@ -1322,11 +1324,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							allComponents.addAll(components);
 						} else {
 							if (!expectNullConcepts) {
-								LOGGER.debug("Skipped line " + lineNum + ": '" + lines.get(lineNum) + "', malformed or not required?");
+								LOGGER.debug("Skipped line {}: '{}', malformed or not required?", lineNum, lineStr);
 							}
 						}
 					} catch (Exception e) {
-						throw new TermServerScriptException("Failed to load line " + lineNum + ": '" + lines.get(lineNum) + "' due to ",e);
+						throw new TermServerScriptException("Failed to load line " + lineNum + ": '" + lineStr + "' due to ",e);
 					}
 				} else {
 					LOGGER.debug("Skipping blank line {}", lineNum);

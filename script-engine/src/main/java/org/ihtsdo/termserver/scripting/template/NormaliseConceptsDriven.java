@@ -22,7 +22,7 @@ public class NormaliseConceptsDriven extends BatchFix {
 	public static void main(String[] args) throws TermServerScriptException {
 		NormaliseConceptsDriven app = new NormaliseConceptsDriven(null);
 		try {
-			ReportSheetManager.setTargetFolderId("1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl");  // QI/Normalization
+			ReportSheetManager.setTargetFolderId(GFOLDER_QI_NORMALIZATION);
 			app.classifyTasks = false;
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -44,10 +44,16 @@ public class NormaliseConceptsDriven extends BatchFix {
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
-				"Report Metadata, Detail, Detail"};
-		String[] tabNames = new String[] {	"Normalization Processing",
-				"Metadata"};
+		String[] columnHeadings = new String[] {
+				"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
+				"Report Metadata, Detail, Detail"
+		};
+
+		String[] tabNames = new String[] {
+				"Normalization Processing",
+				"Metadata"
+		};
+
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -56,7 +62,7 @@ public class NormaliseConceptsDriven extends BatchFix {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		if ((loadedConcept.getGciAxioms() != null && !loadedConcept.getGciAxioms().isEmpty())
 				|| (loadedConcept.getAdditionalAxioms() != null && !loadedConcept.getAdditionalAxioms().isEmpty())) {
-			throw new ValidationFailure(task, loadedConcept, "Concept uses axioms");
+			throw new ValidationFailure(task, loadedConcept, "Concept uses additional or GCI axioms");
 		}
 		int changesMade = removeRedundandRelationships(task, loadedConcept);
 		changesMade += normaliseConcept(task, loadedConcept);
@@ -70,7 +76,9 @@ public class NormaliseConceptsDriven extends BatchFix {
 	private int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
-		changesMade += checkAndSetProximalPrimitiveParent(t, c, null, false, false);
+		//Have we specified a ppp in the issues field?
+		Concept newPPP = checkConceptForSpecifiedPPP(c);
+		changesMade += checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false);
 		
 		//Remove any redundant relationships, or they'll be missing from the inferred view
 		changesMade += removeRedundandRelationships(t,c);
@@ -83,7 +91,23 @@ public class NormaliseConceptsDriven extends BatchFix {
 		
 		return changesMade;
 	}
-	
+
+	private Concept checkConceptForSpecifiedPPP(Concept loadedConcept) throws TermServerScriptException {
+		Concept newPPP = null;
+		//If we've just loaded this concept, we won't have the issues list populated, so switch back to the copy in memory
+		Concept c = gl.getConcept(loadedConcept.getConceptId());
+		if (c.getIssueList() != null && !c.getIssueList().isEmpty()) {
+			String ppp = c.getIssueList().get(0);
+			if (ppp != null && !ppp.isEmpty()) {
+				newPPP = gl.getConcept(ppp);
+				if (newPPP == null) {
+					throw new TermServerScriptException("Specified PPP " + ppp + " not found in the terminology");
+				}
+			}
+		}
+		return newPPP;
+	}
+
 	public int restateInferredRelationships(Task t, Concept c) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
