@@ -10,6 +10,8 @@ import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -1482,6 +1484,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 			allComponents.put(i.getId(), i);
 			componentOwnerMap.put(i, c);
+		}
+
+		for (AssociationEntry a : d.getAssociationEntries()) {
+			allComponents.put(a.getId(), a);
+			componentOwnerMap.put(a, c);
 		}
 		
 		for (LangRefsetEntry l : d.getLangRefsetEntries()) {
