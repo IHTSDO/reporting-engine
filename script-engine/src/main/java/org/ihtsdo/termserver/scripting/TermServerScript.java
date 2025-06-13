@@ -2024,7 +2024,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		assocs.addAll(inactiveConcept.getAssociationTargets().getPossEquivTo());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getPartEquivTo());
 		assocs.addAll(inactiveConcept.getAssociationTargets().getSameAs());
-		if (assocs.size() == 0) {
+		if (assocs.isEmpty()) {
 			if (isIsA) {
 				//We'll try and carry on without this parent.
 				return null;
@@ -2058,7 +2058,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public void addFinalWords(String msg) {
-
 		finalWords.add(msg);
 	}
 
@@ -2067,6 +2066,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public void restateInferredRelationships(Concept c, boolean includeISA) throws TermServerScriptException {
+		//by default, the exclusions will be empty
+		restateInferredRelationships(c, includeISA, Collections.emptyList());
+	}
+
+
+	public void restateInferredRelationships(Concept c, boolean includeISA, List<Concept> typeExclusions) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		List<RelationshipGroup> toBeStated = new ArrayList<>();
 		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, includeISA);
@@ -2085,33 +2090,35 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				toBeStated.add(inferredGroup);
 			}
 		}
-		stateRelationshipGroups(c, toBeStated);
+		stateRelationshipGroups(c, toBeStated, typeExclusions);
 	}
 
-	private int stateRelationshipGroups(Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
+	private int stateRelationshipGroups(Concept c, List<RelationshipGroup> toBeStated, List<Concept> typeExclusions) throws TermServerScriptException {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {
-			//Group 0 must remain group 0.  Otherwise find an available group number
+			//Group 0 must remain group 0.  Otherwise, find an available group number
 			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
-			changesMade += stateRelationshipGroup(c, g, freeGroup);
+			changesMade += stateRelationshipGroup(c, g, freeGroup, typeExclusions);
 		}
 		return changesMade;
 	}
 
-	private int stateRelationshipGroup(Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
+	private int stateRelationshipGroup(Concept c, RelationshipGroup g, int freeGroup, List<Concept> typeExclusions) throws TermServerScriptException {
 		int changesMade = 0;
 		AxiomEntry axiom = null;
 		//Does c already have an axiom we can merge these relationships into?
-		if (c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 0) {
+		if (!c.getAxiomEntries(ActiveState.ACTIVE, false).isEmpty()) {
 			axiom = c.getAxiomEntries(ActiveState.ACTIVE, false).iterator().next();
 		}
 
 		for (Relationship r : g.getRelationships()) {
-			Relationship newRel = r.clone(null);
-			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
-			newRel.setGroupId(freeGroup);
-			newRel.setAxiomEntry(axiom);
-			changesMade += replaceRelationship((Task)null, c, newRel.getType(), newRel.getTarget(), newRel.getConcreteValue(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE, false);
+			if (!typeExclusions.contains(r.getType())) {
+				Relationship newRel = r.clone(null);
+				newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+				newRel.setGroupId(freeGroup);
+				newRel.setAxiomEntry(axiom);
+				changesMade += replaceRelationship((Task) null, c, newRel.getType(), newRel.getTarget(), newRel.getConcreteValue(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE, false);
+			}
 		}
 		return changesMade;
 	}

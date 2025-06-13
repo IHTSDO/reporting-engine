@@ -22,17 +22,19 @@ import org.slf4j.LoggerFactory;
  */
 public class MultiArchiveImporter extends BatchFix {
 
-	enum MODE {TASK_PER_ARCHIVE, ALL_ARCHIVES_IN_ONE_TASK}
+	public enum MODE {TASK_PER_ARCHIVE, ALL_ARCHIVES_IN_ONE_TASK}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MultiArchiveImporter.class);
 
-	private static final MODE mode = MODE.TASK_PER_ARCHIVE;
+	private MODE mode = MODE.TASK_PER_ARCHIVE;
 
 	public MultiArchiveImporter(TermServerScript clone) {
 		super(clone);
 	}
 
 	private Task lastTaskCreated = null;
+
+	private boolean existingTaskBeingUsed = false;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		MultiArchiveImporter importer = new MultiArchiveImporter(null);
@@ -103,7 +105,9 @@ public class MultiArchiveImporter extends BatchFix {
 
 			if (!dryRun) {
 				tsClient.importArchive(task.getBranchPath(), ImportType.DELTA, thisArchive);
-				updateTask(task, getReportName(), getReportManager().getUrl());
+				if (!existingTaskBeingUsed) {
+					updateTask(task, getReportName(), getReportManager().getUrl());
+				}
 				if (classifyTasks && mode == MODE.TASK_PER_ARCHIVE) {
 					classify(task);
 				}
@@ -126,5 +130,16 @@ public class MultiArchiveImporter extends BatchFix {
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(e);
 		}
+	}
+
+	public void setLastTaskCreated(String taskId) {
+		lastTaskCreated = new Task(null, null, null);
+		lastTaskCreated.setBranchPath(getProject().getBranchPath() + "/" + taskId);
+		lastTaskCreated.setKey(taskId);
+		existingTaskBeingUsed = true;
+	}
+
+	public void setMode(MODE mode) {
+		this.mode = mode;
 	}
 }
