@@ -220,19 +220,6 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		}
 	}
 
-	protected void reportAndIncrementSummary(Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
-		//Are we filtering this report to only concepts with unpromoted changes?
-		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
-			return;
-		}
-		if (includeLegacyIssues || !isLegacy) {
-			//First detail is the issue text
-			issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
-			countIssue(c);
-			report(PRIMARY_REPORT, c, details);
-		}
-	}
-
 	public void populateSummaryTabAndTotal() {
 		super.populateSummaryTabAndTotal();
 		summaryCounts.entrySet().stream()
