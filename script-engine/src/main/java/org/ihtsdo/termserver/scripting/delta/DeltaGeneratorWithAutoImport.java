@@ -12,19 +12,26 @@ public class DeltaGeneratorWithAutoImport extends DeltaGenerator {
 	private MultiArchiveImporter importer;
 	private File archive;
 
+
 	protected void importArchiveToNewTask(File archive) throws TermServerScriptException {
 		this.archive = archive;
 		importer = new MultiArchiveImporter(this);
-		importer.setTaskPrefix(taskPrefix);
 		boolean proceed = reviewSettingsWithUser();
 
 		if (proceed) {
-			importer.recoverProjectFromProjectName(projectName);
+			importer.setTaskPrefix(taskPrefix);
 			importer.importArchive(this.archive);
 		}
 	}
 
 	private boolean reviewSettingsWithUser() throws TermServerScriptException {
+
+		//Quite often forget to set a task prefix, so let's prompt for it
+		if (StringUtils.isEmpty(taskPrefix)) {
+			print("What INFRA/MSSP ticket are you working here: ");
+			taskPrefix = STDIN.nextLine().trim();
+		}
+
 		//Check if we're going to rename the file to be the task prefix
 		print("Rename " + archive.getName() + " to " + taskPrefix + ".zip ? Y/N [Y]: ");
 		String response = STDIN.nextLine().trim();
@@ -56,8 +63,8 @@ public class DeltaGeneratorWithAutoImport extends DeltaGenerator {
 		print("Assign to author [" + authorDisplay + "]: ");
 		importer.setAuthors(STDIN.nextLine().trim());
 
-		print("Ready to import into a new task in " + projectName + "? Y/N [Y]: ");
+		print("Ready to import into a task in " + projectName + "? Y/N [Y]: ");
 		response = STDIN.nextLine().trim();
-		return response.isEmpty() || !response.equalsIgnoreCase("N");
+		return !response.equalsIgnoreCase("N");
 	}
 }
