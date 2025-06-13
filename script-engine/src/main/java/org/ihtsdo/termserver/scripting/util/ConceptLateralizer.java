@@ -364,7 +364,7 @@ public class ConceptLateralizer implements ScriptConstants {
 		//For example, 955009 |Bronchial structure| is lateralized to 736637009 |Structure of left bronchus|
 		List<Concept> lateralizedChildren = new ArrayList<>();
 		for (Concept child : unlaterlizedConcept.getChildren(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (child.getFsn().contains(lateralityStr) || child.getFsn().contains(lateralityStr.toLowerCase())) {
+			if (containsLateralityString(child.getFsn(), lateralityStr)) {
 				lateralizedChildren.add(child);
 			}
 		}
@@ -376,6 +376,13 @@ public class ConceptLateralizer implements ScriptConstants {
 			return lateralizedChildren.get(0);
 		}
 		return null;
+	}
+
+	private boolean containsLateralityString(String term, String lateralityStr) {
+		//To avoid matching "cleft", we'll add a space and check that.
+		term = " " + term;
+		lateralityStr = " " + lateralityStr;
+		return term.toLowerCase().contains(lateralityStr.toLowerCase());
 	}
 
 
