@@ -10,6 +10,8 @@ import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -1394,7 +1396,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				if (r.getRelationshipId() == null) {
 					throw new IllegalArgumentException ("Rel ID not expected to be null");
 				}
-				//Have we historically swapped ID from stated to inferred
+				//Have we historically swapped ID from a stated to an inferred relationship?
 				if (allComponents.containsKey(r.getRelationshipId())) {
 					if (r.isActiveSafely()) {
 						Script.print("\nAll Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
@@ -1446,6 +1448,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 			allComponents.put(i.getId(), i);
 			componentOwnerMap.put(i, c);
+		}
+
+		for (AssociationEntry a : d.getAssociationEntries()) {
+			allComponents.put(a.getId(), a);
+			componentOwnerMap.put(a, c);
 		}
 		
 		for (LangRefsetEntry l : d.getLangRefsetEntries()) {

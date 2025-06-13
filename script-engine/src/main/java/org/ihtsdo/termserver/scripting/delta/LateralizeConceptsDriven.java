@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.ConceptLateralizer;
@@ -10,7 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LateralizeConceptsDriven extends DeltaGenerator implements ScriptConstants, TermGenerationStrategy {
@@ -32,11 +35,11 @@ public class LateralizeConceptsDriven extends DeltaGenerator implements ScriptCo
 	@Override
 	protected void process() throws TermServerScriptException {
 		populateLateralizedInstructionMap();
+		List<Component> conceptsToLateralize = new ArrayList<>(lateralizedInstructionMap.keySet());
 		for (LateralizeInstruction li : lateralizedInstructionMap.values()) {
-
-			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, LEFT, null);
-			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, RIGHT, null);
-			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, BILATERAL, null);
+			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, LEFT, conceptsToLateralize);
+			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, RIGHT, conceptsToLateralize);
+			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, BILATERAL, conceptsToLateralize);
 		}
 	}
 
