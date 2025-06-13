@@ -39,6 +39,8 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	private boolean includeDependencies = true;
 	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	private boolean copyInferredParentRelsToStated = false;
+
+	private static final List<String> KNOWN_DEFECTIVE_PROJECTS = List.of("GEN");
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
@@ -56,6 +58,8 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 
 	protected boolean copyInferredRelationshipsToStatedWhereMissing = true;
+	protected boolean butNotLaterality = true;
+	protected List<Concept> attributeTypesExcludedFromInferredToStated = new ArrayList<>();
 
 	protected String[] componentIdsToProcess = null; //If it's just a couple, no need for a file, just specify here.
 	protected String componentsToProcessEcl = null; // (<<64572001 |Disease|:116676008 |Associated morphology|=46360000 |Abnormal curvature|) {{ C moduleId = 890108001 }}
@@ -78,10 +82,13 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			if (delta.getProject().getKey().contains("uk_sct2")) {
 				LOGGER.warn("UK Edition detected, will not check for OWL axiom / stated relationships");
 				delta.getArchiveManager().setRunIntegrityChecks(false);
-				delta.sourceModuleIds = Set.of("999000011000001104", "83821000000107", "999000011000000103");
+				delta.sourceModuleIds = Set.of("999000011000001104", "83821000000107", "999000011000000103", "999000041000000102");
 				delta.copyInferredParentRelsToStated = true;
 				delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
+			} else if (KNOWN_DEFECTIVE_PROJECTS.contains(delta.getProject().getKey())) {
+				delta.getArchiveManager().setRunIntegrityChecks(false);
 			}
+
 			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -130,6 +137,10 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		knownReplacements.put(gl.getConcept("261231004|Local flap|"), gl.getConcept("256683004|Flap|"));
 		knownReplacements.put(gl.getConcept("367651003 |Malignant neoplasm of p, s, or u origin|"), gl.getConcept("1240414004 |Malignant neoplasm|"));
 		initialiseSummaryInformation("Unexpected dependencies included");
+
+		if (butNotLaterality) {
+			attributeTypesExcludedFromInferredToStated = List.of(gl.getConcept("272741003 |Laterality (attribute)|"));
+		}
 		super.postInit(googleFolder);
 	}
 	
@@ -430,7 +441,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		Concept thisConcept = (Concept)thisComponent;
 
 		if (copyInferredRelationshipsToStatedWhereMissing) {
-			restateInferredRelationships(thisConcept, copyInferredParentRelsToStated);
+			restateInferredRelationships(thisConcept, copyInferredParentRelsToStated, attributeTypesExcludedFromInferredToStated);
 		}
 
 		//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
