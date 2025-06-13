@@ -1420,7 +1420,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				if (!checkOnly) {
 					changesMade += setProximalPrimitiveParent(t, c, newPPP);
 				} else {
-					//If we're just checking, then yes we think we'd have made changes here
+					//If we're just checking, then yes, we think we'd have made changes here
 					return CHANGE_MADE;
 				}
 			} else {
@@ -1444,14 +1444,14 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 				} else {
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
 					//OR if the current parent is a supertype of the PPP, such as when we're moving from Disease to Complication.
-					//OR if the other parent itself is sufficiently defined and it's PPP is a supertype of the concepts PPP eg Clinical Finding
+					//OR if the other parent itself is sufficiently defined and its PPP is a supertype of the concepts PPP eg Clinical Finding
 					Concept thisParent = gl.getConcept(r.getTarget().getConceptId());
 					if (gl.getAncestorsCache().getAncestors(thisParent).contains(newParent) ||
 							gl.getAncestorsCache().getAncestors(newParent).contains(thisParent)) {
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else if (parentRelationshipRedundantToPPP(thisParent, newParent)) {
-						report(t, c, Severity.HIGH, ReportActionType.INFO, "SD parent " + thisParent + " considered redundant with presence of " + newParent);
+						report(t, c, Severity.MEDIUM, ReportActionType.INFO, "Ancestry of exist SD parent " + thisParent + " sufficiently defined up to a primitive *above* the new parent: " + newParent + " so safe to remove.");
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else {
@@ -1470,7 +1470,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 
 	private boolean parentRelationshipRedundantToPPP(Concept existingParent, Concept newParent) throws TermServerScriptException {
 		AncestorsCache cache = gl.getAncestorsCache();
-		//Is the existing parent's ancestry sufficiently defined up to a point that is above the new parent?
+		//Is the existing parent's ancestry sufficiently defined to a point above the new parent?
 		boolean isRedundant = false;
 		if (existingParent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 			List<Concept> ppps = determineProximalPrimitiveParents(existingParent);
