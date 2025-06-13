@@ -16,8 +16,7 @@ import org.apache.commons.lang.StringUtils;
 
 public class UntranslatedConcepts extends TermServerReport implements ReportClass {
 	private String intEffectiveTime;
-	boolean includeLegacyIssues = false;
-	
+
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(ECL, "<<404684003 |Clinical finding (finding)|");
@@ -28,7 +27,6 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA Reports
-		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 		if (project.getKey().equals("MAIN")) {

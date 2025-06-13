@@ -257,7 +257,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
-				
+
 				//Only load OWL Expressions
 				if (!lineItems[REF_IDX_REFSETID].equals(SCTID_OWL_AXIOM_REFSET)) {
 					continue;
@@ -307,10 +307,6 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 							//Set the axiom on the relationships, otherwise they won't match existing ones
 							replacedRelationships.forEach(r -> r.setAxiomEntry(axiomEntry));
 							alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
-							//We've taken these out entirely.   Don't leave inactive stated relationship in concept
-							/*for (Relationship r : replacedRelationships) {
-								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
-							}*/
 						}
 					}
 					c.getAxiomEntries().add(axiomEntry);

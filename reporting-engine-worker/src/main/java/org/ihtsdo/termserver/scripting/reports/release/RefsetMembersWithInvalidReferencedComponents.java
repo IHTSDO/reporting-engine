@@ -55,7 +55,6 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 
 	private Map<Concept, Boolean> refsetsWithChanges = new HashMap<>();
 	private Map<String, Integer> summaryCounts = new HashMap<>();
-	private boolean includeLegacyIssues = false;
 
 	/**
 	 * Run the report from the command line, no arguments required for this report.
@@ -107,6 +106,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	 * @param run the job run object
 	 * @throws TermServerScriptException if there is an error initializing the report
 	 */
+	@Override
 	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId(RELEASE_VALIDATION_FOLDER_ID);
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
@@ -126,6 +126,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		);
 	}
 
+	@Override
 	public void runJob() throws TermServerScriptException {
 		LOGGER.info("Running report \"{}\"", REPORT_NAME);
 
@@ -188,7 +189,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 					continue;
 				}
 				//Are we interested in this refset?
-				if (includeLegacyIssues || refsetsWithChanges.get(refset)) {
+				if (includeLegacyIssues || refsetsWithChanges.get(refset) != null) {
 					//Historical Associations and Inactivation Indicators are applied to inactive concepts
 					//so we don't need to check those - we're expecting their referenced components to be inactive.
 					if (refsetMember.getComponentType() != Component.ComponentType.HISTORICAL_ASSOCIATION
@@ -220,19 +221,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		}
 	}
 
-	protected void reportAndIncrementSummary(Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
-		//Are we filtering this report to only concepts with unpromoted changes?
-		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
-			return;
-		}
-		if (includeLegacyIssues || !isLegacy) {
-			//First detail is the issue text
-			issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
-			countIssue(c);
-			report(PRIMARY_REPORT, c, details);
-		}
-	}
-
+	@Override
 	public void populateSummaryTabAndTotal() {
 		super.populateSummaryTabAndTotal();
 		summaryCounts.entrySet().stream()

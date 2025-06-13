@@ -18,6 +18,7 @@ public abstract class TermServerReport extends TermServerScript {
 	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
 
 	protected boolean unpromotedChangesOnly = false;
+	protected boolean includeLegacyIssues = false;
 	
 	protected UnpromotedChangesHelper unpromotedChangesHelper;
 	
@@ -33,6 +34,11 @@ public abstract class TermServerReport extends TermServerScript {
 			if (unpromotedChangesOnly) {
 				unpromotedChangesHelper = new UnpromotedChangesHelper(this);
 			}
+		}
+
+		includeLegacyIssues = jobRun.getParamBoolean(INCLUDE_ALL_LEGACY_ISSUES);
+		if (includeLegacyIssues && unpromotedChangesOnly) {
+			throw new TermServerScriptException("Cannot include legacy issues when only unpromoted changes are being processed. Unpromoted content cannot also be 'legacy'.");
 		}
 	}
 
@@ -197,9 +203,19 @@ public abstract class TermServerReport extends TermServerScript {
 		return c.isActiveSafely() ? "Y" : "N";
 	}
 
-	protected void reportAndIncrementSummary(Concept concept, boolean isLegacy, Object... details) throws TermServerScriptException {
-		boolean reported = report(concept, details);
-		incrementSummary(reported, isLegacy);
+	protected void reportAndIncrementSummary(Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
+		//Are we filtering this report to only concepts with unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return;
+		}
+
+		if (includeLegacyIssues || !isLegacy) {
+			//The first detail is the issue text
+			issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+			countIssue(c);
+			boolean reported = report(PRIMARY_REPORT, c, details);
+			incrementSummary(reported, isLegacy);
+		}
 	}
 
 	private void incrementSummary(boolean reported, boolean isLegacy) {

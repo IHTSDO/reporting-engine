@@ -46,7 +46,6 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 
-	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;
 	public static final String CARDINALITY_ISSUE = "Cardinality constraint breached.  Expected ";
 

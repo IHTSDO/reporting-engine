@@ -17,8 +17,7 @@ import org.apache.commons.lang.StringUtils;
 public class ConceptsTranslatedInactivated extends TermServerReport implements ReportClass {
 
 	private String intEffectiveTime;
-	boolean includeLegacyIssues = false;
-	
+
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
@@ -126,7 +125,7 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 		return superSet.stream()
 		.filter (this::inScope)
 		.sorted(SnomedUtils::compareSemTagFSN)
-		.collect(Collectors.toList());
+		.toList();
 	}
 	
 }
