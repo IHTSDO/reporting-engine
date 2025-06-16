@@ -26,6 +26,7 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		getArchiveManager().setRunIntegrityChecks(false);  //DO NOT check in
+		getArchiveManager().setPopulateReleaseFlag(true);
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		super.init(run);
 	}
@@ -33,9 +34,9 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"UUID,EffectiveTime,RefsetId,Active,ReferencedComponentId,fsn,domainConstraint,parentDomain,proximalPrimitiveConstraint,proximalPrimitiveRefinement,domainTemplateForPrecoordination,domainTemplateForPostcoordination,guideURL",
-				"UUID,EffectiveTime,RefsetId,Active,ReferencedComponentId,fsn,domainId,grouped,attributeCardinality,attributeInGroupCardinality,ruleStrengthId,contentTypeId",
-				"UUID,EffectiveTime,RefsetId,Active,ReferencedComponentId,fsn,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId"
+				"UUID,New/Changed,RefsetId,Active,ReferencedComponentId,fsn,domainConstraint,parentDomain,proximalPrimitiveConstraint,proximalPrimitiveRefinement,domainTemplateForPrecoordination,domainTemplateForPostcoordination,guideURL",
+				"UUID,New/Changed,RefsetId,Active,ReferencedComponentId,fsn,domainId,grouped,attributeCardinality,attributeInGroupCardinality,ruleStrengthId,contentTypeId",
+				"UUID,New/Changed,RefsetId,Active,ReferencedComponentId,fsn,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId"
 		};
 		String[] tabNames = new String[] {
 				"MRCM Domain",
@@ -78,7 +79,7 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 			if (StringUtils.isEmpty(rm.getEffectiveTime())) {
 				countIssue((Concept)null);
 				String fsn = gl.getConcept(rm.getReferencedComponentId()).getFsn();
-				report(tabIdx, rm.getId(), rm.getEffectiveTime(), rm.getRefsetId(), SnomedUtils.translateActiveState(rm), rm.getReferencedComponentId(), fsn, rm.getAdditionalFieldsArray());
+				report(tabIdx, rm.getId(), rm.isReleasedSafely() ? "Changed" : "New", rm.getRefsetId(), SnomedUtils.translateActiveState(rm), rm.getReferencedComponentId(), fsn, rm.getAdditionalFieldsArray());
 			}
 		}
 	}
@@ -89,7 +90,7 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 				if (StringUtils.isEmpty(rm.getEffectiveTime())) {
 					countIssue((Concept) null);
 					String fsn = gl.getConcept(rm.getReferencedComponentId()).getFsn();
-					report(tabIdx, rm.getId(), rm.getEffectiveTime(), rm.getRefsetId(), SnomedUtils.translateActiveState(rm), rm.getReferencedComponentId(), fsn, rm.getAdditionalFieldsArray());
+					report(tabIdx, rm.getId(), rm.isReleasedSafely() ? "Changed" : "New", rm.getRefsetId(), SnomedUtils.translateActiveState(rm), rm.getReferencedComponentId(), fsn, rm.getAdditionalFieldsArray());
 				}
 			}
 		}

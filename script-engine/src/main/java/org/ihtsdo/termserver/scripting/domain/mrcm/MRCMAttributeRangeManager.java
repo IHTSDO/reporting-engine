@@ -123,7 +123,10 @@ public class MRCMAttributeRangeManager implements ScriptConstants  {
 		Map<String, MRCMAttributeRange> attribRanges = mrcmStagingAttribMap.computeIfAbsent(refComp, k -> new HashMap<>());
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given referenced component id
-		attribRanges.put(ar.getId(), ar);
+		attribRanges.merge(ar.getId(), ar, (existing, value) -> {
+			value.setReleased(existing.isReleased());
+			return value;
+		});
 	}
 
 	private boolean finaliseMRCMAttributeRange(

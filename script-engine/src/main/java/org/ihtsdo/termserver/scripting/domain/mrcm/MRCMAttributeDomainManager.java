@@ -129,7 +129,10 @@ public class MRCMAttributeDomainManager implements ScriptConstants  {
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given attribute & domain
 		UUID uuid = UUID.fromString(ar.getId());
-		domainRules.put(uuid, ar);
+		domainRules.merge(uuid, ar, (existing, value) -> {
+			value.setReleased(existing.isReleased());
+			return value;
+		});
 	}
 
 	private boolean finaliseMRCMAttributeDomain(

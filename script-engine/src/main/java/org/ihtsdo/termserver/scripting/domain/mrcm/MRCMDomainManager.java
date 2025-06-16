@@ -81,7 +81,10 @@ public class MRCMDomainManager implements ScriptConstants  {
 		Map<String, MRCMDomain> attribRanges = mrcmStagingAttribMap.computeIfAbsent(refComp, k -> new HashMap<>());
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given referenced component id
-		attribRanges.put(ar.getId(), ar);
+		attribRanges.merge(ar.getId(), ar, (existing, value) -> {
+			value.setReleased(existing.getReleased());
+			return value;
+		});
 	}
 
 	private boolean finaliseMRCMDomain(
