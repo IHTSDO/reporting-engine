@@ -9,9 +9,10 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
+public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship>, Serializable {
 
 	@SerializedName("relationshipId")
 	@Expose
@@ -60,7 +61,7 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	private String axiomIdPart;
 
 	private boolean intendedForAxiom = false;
-	
+
 	protected static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
 

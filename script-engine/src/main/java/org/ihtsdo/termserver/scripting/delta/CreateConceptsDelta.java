@@ -14,7 +14,7 @@ import java.util.Map;
 public class CreateConceptsDelta extends DeltaGenerator {
 
 	protected static final DefinitionStatus defStatus = DefinitionStatus.PRIMITIVE;
-	protected static boolean usLangOnly = false;
+	protected static boolean usLangOnly = true;
 
 	private final String[] fsns = new String[] {
 			"NUVA Extension Module",
