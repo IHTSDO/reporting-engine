@@ -15,10 +15,12 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import org.snomed.otf.script.Script;
 
+import java.io.Serializable;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Concept extends Expressable implements ScriptConstants, Comparable<Concept>  {
+public class Concept extends Expressable implements ScriptConstants, Comparable<Concept>, Serializable  {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
@@ -490,7 +492,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		CharacteristicType charType = r.getCharacteristicType();
 		//Do I need to adjust parent/child?  Might still exist in another axiom
 		if (r.getType().equals(IS_A) && 
-				getRelationships(charType, IS_A, r.getTarget(), ActiveState.ACTIVE).size() == 0) {
+				getRelationships(charType, IS_A, r.getTarget(), ActiveState.ACTIVE).isEmpty()) {
 			Concept parent = r.getTarget();
 			parent.removeChild(charType, this);
 			removeParent(charType, parent);
@@ -622,7 +624,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		if (r.getId() == null) {
 			//Before considering inactive rels, check we don't already have this relationship
 			Set<Relationship> activeRels = getRelationships(r);
-			if (activeRels.size() > 0) {
+			if (!activeRels.isEmpty()) {
 				LOGGER.warn("Ignoring relationship add in {}, triple + group already present and active {}", this, activeRels.iterator().next());
 				return NO_CHANGES_MADE;
 			}
@@ -1141,7 +1143,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				SnomedUtils.translateDefnStatusToSctid(definitionStatus)};
 	}
 	
-	public String[] toRF2Deletion() throws TermServerScriptException {
+	public String[] toRF2Deletion() {
 		return new String[] {conceptId, 
 				effectiveTime, 
 				deletionEffectiveTime,
@@ -1194,7 +1196,8 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		}
 		return siblings;
 	}
-	
+
+	@Override
 	public void setId(String id) {
 		super.setId(id);
 		conceptId = id;
@@ -1446,7 +1449,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {
 				if (reuseMe.getType().equals(r.getType()) && reuseMe.getTarget().equals(r.getTarget())) {
 					//Check we actually need this relationship before reusing
-					if (getRelationships(r, ActiveState.ACTIVE).size() == 0) { 
+					if (getRelationships(r, ActiveState.ACTIVE).isEmpty()) {
 						System.out.println("** Reusing: " + reuseMe + " in group " + r.getGroupId());
 						availableForReuse.remove(reuseMe);
 						reuseMe.setGroupId(r.getGroupId());

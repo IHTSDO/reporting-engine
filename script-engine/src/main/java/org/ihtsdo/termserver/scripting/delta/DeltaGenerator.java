@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class DeltaGenerator extends TermServerScript {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DeltaGenerator.class);
+	protected static final Logger LOGGER = LoggerFactory.getLogger(DeltaGenerator.class);
 
 	protected String outputDirName = "output";
 	protected String packageRoot;
@@ -365,7 +365,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	protected int outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
-		LOGGER.info("Outputting to RF2 in {}...", outputDirName);
+		LOGGER.info("Outputting RF2 to directory /{}...", outputDirName);
 		int conceptsOutput = 0;
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {

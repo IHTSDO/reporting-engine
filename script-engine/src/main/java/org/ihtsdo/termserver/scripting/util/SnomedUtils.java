@@ -2760,6 +2760,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static void setAllComponentsDirty(Concept c, boolean includeStatedRels) {
+		c.setDirty();
 		getAllComponents(c, includeStatedRels).stream().forEach(Component::setDirty);
 	}
 

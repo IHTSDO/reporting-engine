@@ -11,9 +11,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
+public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship>, Serializable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
 	
@@ -62,8 +63,10 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	}
 	
 	private transient String axiomIdPart;
+
+	private transient boolean intendedForAxiom = false;
 	
-	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
+	protected static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
 
 	public Relationship() {
@@ -235,7 +238,6 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		}
 		//Do not include the inactivation indicator, otherwise we might not
 		//be able to recognise the object in a set if it changes after being created.
-		//return toString(true, false).hashCode();
 		try {
 			if (isConcrete()) {
 				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), concreteValue);
@@ -243,11 +245,9 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 				if (target == null) {
 					throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
 				}
-				int hash = Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
-				return hash;
+				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
 			}
 		} catch (NullPointerException e) {
-			LOGGER.debug("Null pointer here");
 			throw e;
 		}
 	}
@@ -257,14 +257,10 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	}
 
 	public boolean equals(Object other, boolean ignoreAxiom, boolean ignoreGroup) {
-		if ((other instanceof Relationship) == false) {
+		if (!(other instanceof Relationship rhs)) {
 			return false;
 		}
-		/*if (this.toString().equals("[S1:2a8120] 116686009 |Has specimen (attribute)| -> 119361006 |Plasma specimen (specimen)|")) {
-			LOGGER.debug("Debug here");
-		}*/
-		Relationship rhs = ((Relationship) other);
-		
+
 		//Must be of the same characteristic type
 		if (!this.getCharacteristicType().equals(rhs.characteristicType)) {
 			return false;
@@ -276,7 +272,7 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		}
 		
 		//If we have two rels the same but coming from different axioms, they should be handled separately
-		if (ignoreAxiom == false && (
+		if (!ignoreAxiom && (
 				(this.getAxiomEntry() != null && rhs.getAxiomEntry() == null) ||
 				(this.getAxiomEntry() == null && rhs.getAxiomEntry() != null) ||
 				(this.getAxiomEntry() != null && rhs.getAxiomEntry() != null &&
@@ -286,7 +282,7 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		
 		//If loading from the TS we have an Axiom rather than AxiomEntry
 		//If we have two rels the same but coming from different axioms, they should be handled separately
-		if (ignoreAxiom == false && (
+		if (!ignoreAxiom && (
 				(this.getAxiom() != null && rhs.getAxiom() == null) ||
 				(this.getAxiom() == null && rhs.getAxiom() != null) ||
 				(this.getAxiom() != null && rhs.getAxiom() != null && !this.getAxiom().getId().equals(rhs.getAxiom().getId())))) {
@@ -455,7 +451,7 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 
 	
 	public boolean fromAxiom() {
-		return axiomEntry != null || axiom != null;
+		return axiomEntry != null || axiom != null || intendedForAxiom;
 	}
 
 	public AxiomEntry getAxiomEntry() {
@@ -489,7 +485,7 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		//the pre-axiom condition ie yes the same axiom
 		if (this.getAxiomEntry() == null && r.getAxiomEntry() == null) {
 			return true;
-		} else if (this.getAxiomEntry() != null & r.getAxiomEntry() != null) {
+		} else if (this.getAxiomEntry() != null && r.getAxiomEntry() != null) {
 			return this.getAxiomEntry().equals(r.getAxiomEntry());
 		}
 		return false;
@@ -548,7 +544,8 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		mutableFields[++idx] = this.characteristicType.toString();
 		return mutableFields;
 	}
-	
+
+	@Override
 	public String toStringWithId() {
 		return getId() + ": " + toString();
 	}
@@ -577,4 +574,11 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		}
 	}
 
+	public boolean isIntendedForAxiom() {
+		return intendedForAxiom;
+	}
+
+	public void setIntendedForAxiom(boolean intendedForAxiom) {
+		this.intendedForAxiom = intendedForAxiom;
+	}
 }

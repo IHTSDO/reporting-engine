@@ -14,7 +14,7 @@ import java.util.Map;
 public class CreateConceptsDelta extends DeltaGenerator {
 
 	protected static final DefinitionStatus defStatus = DefinitionStatus.PRIMITIVE;
-	protected static boolean usLangOnly = false;
+	protected static boolean usLangOnly = true;
 
 	private final String[] fsns = new String[] {
 			"NUVA Extension Module",
@@ -64,15 +64,20 @@ public class CreateConceptsDelta extends DeltaGenerator {
 			addRelationships(c, parents[x]);
 			report(c, Severity.LOW, ReportActionType.CONCEPT_ADDED);
 			SnomedUtils.setAllComponentsDirty(c, true);
-			outputRF2(c);
+			gl.registerConcept(c);
+			outputRF2(c, true);
 		}
 	}
 
 	@Override
-	public boolean outputRF2(Concept c) throws TermServerScriptException {
+	public boolean outputRF2(Concept c, boolean alwaysCheckSubComponents) throws TermServerScriptException {
+		if (!c.isDirty()) {
+			return false;
+		}
+
 		//Log the concept created on a separate tab
 		report(SECONDARY_REPORT, c.getId(), SnomedUtils.getDescriptionsFull(c), c.toExpression(CharacteristicType.STATED_RELATIONSHIP), c.getIssues());
-		return super.outputRF2(c);
+		return super.outputRF2(c, alwaysCheckSubComponents);
 	}
 
 	protected void addFsnAndCounterpart(Concept c, String term, boolean fsnCounterpartIsPt, CaseSignificance caseSig) throws TermServerScriptException {
@@ -102,7 +107,7 @@ public class CreateConceptsDelta extends DeltaGenerator {
 			return Map.of(
 					US_ENG_LANG_REFSET, isPreferred ? Acceptability.PREFERRED : Acceptability.ACCEPTABLE,
 					GB_ENG_LANG_REFSET, isPreferred ? Acceptability.PREFERRED : Acceptability.ACCEPTABLE
-					);
+			);
 		}
 	}
 
@@ -118,6 +123,7 @@ public class CreateConceptsDelta extends DeltaGenerator {
 		Relationship r = new Relationship(c, IS_A, parent, UNGROUPED);
 		r.setActive(true);
 		r.setModuleId(targetModuleId);
+		r.setIntendedForAxiom(true);  //Avoids problems trying to register this component
 		c.addRelationship(r);
 		report(c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
 	}

@@ -3,6 +3,8 @@ package org.ihtsdo.termserver.scripting.delta;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -10,6 +12,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(CreateConceptsDeltaDriven.class);
 
 	List<ConceptRow> conceptsToCreate;
 	private static final String SEMTAG = " (substance)";
@@ -35,26 +39,7 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 	@Override
 	public void process() throws TermServerScriptException {
 		for (ConceptRow row : conceptsToCreate) {
-			Concept c = new Concept(conIdGenerator.getSCTID());
-			c.setActive(true);
-			c.setDefinitionStatus(defStatus);
-			c.setModuleId(targetModuleId);
-			addFsnAndCounterpart(c, generateFSN(row.termBase), false, CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-			addDescription(c, DescriptionType.SYNONYM, generateSynonym(row.termBase), true, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-			for (String synonym : row.synonyms) {
-				addDescription(c, DescriptionType.SYNONYM, generateSynonym(synonym), false, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-			}
-			for (String parent: row.parents) {
-				addRelationships(c, parent);
-			}
-			report(c, Severity.LOW, ReportActionType.CONCEPT_ADDED);
-			SnomedUtils.setAllComponentsDirty(c, true);
-
-			//We'll store the reference (eg the relevant LOINC Part) in the concept issues for output
-			if (row.reference != null && !row.reference.isEmpty()) {
-				c.clearIssues();
-				c.addIssue(row.reference);
-			}
+			createConcept(row);
 
 			if (++conceptsInLastBatch >= BATCH_SIZE) {
 				if (!dryRun) {
@@ -69,6 +54,30 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 		}
 	}
 
+	private void createConcept(ConceptRow row) throws TermServerScriptException {
+		Concept c = new Concept(conIdGenerator.getSCTID());
+		c.setActive(true);
+		c.setDefinitionStatus(defStatus);
+		c.setModuleId(targetModuleId);
+		addFsnAndCounterpart(c, generateFSN(row.termBase), false, CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		addDescription(c, DescriptionType.SYNONYM, generateSynonym(row.termBase), true, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		for (String synonym : row.synonyms) {
+			addDescription(c, DescriptionType.SYNONYM, generateSynonym(synonym), false, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		}
+		for (String parent: row.parents) {
+			addRelationships(c, parent);
+		}
+		report(c, Severity.LOW, ReportActionType.CONCEPT_ADDED);
+		SnomedUtils.setAllComponentsDirty(c, true);
+		gl.registerConcept(c);
+
+		//We'll store the reference (eg the relevant LOINC Part) in the concept issues for output
+		if (row.reference != null && !row.reference.isEmpty()) {
+			c.clearIssues();
+			c.addIssue(row.reference);
+		}
+	}
+
 	private String generateFSN(String termBase) {
 		return FSN_TERM_PREFIX + termBase + FSN_TERM_SUFFIX + SEMTAG;
 	}
@@ -78,6 +87,7 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 	}
 
 	private void processInputFile() throws TermServerScriptException {
+		LOGGER.info("Processing input file: {}", getInputFile());
 		try (BufferedReader reader = new BufferedReader(new FileReader(getInputFile()))) {
 			String line;
 			boolean isFirstLine = true;

@@ -1364,75 +1364,84 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 
 	private void populateAllComponents() {
 		Script.print("Populating maps of all components");
-		allComponents = new HashMap<>();
-		componentOwnerMap = new HashMap<>();
 		int tenPercent = getAllConcepts().size()/10;
+
 		int conceptsProcessed = 0;
-		
 		for (Concept c : getAllConcepts()) {
 			if (++conceptsProcessed % tenPercent == 0) {
 				Script.print(".");
 			}
-
-			allComponents.put(c.getId(), c);
-			componentOwnerMap.put(c,  c);
-			for (Description d : c.getDescriptions()) {
-				populateDescriptionComponents(c, d);
-			}
-			
-			for (Relationship r : c.getRelationships()) {
-				//A relationship with a null ID will have come from an axiom.
-				//We'll let the axiomEntry cover that.
-				if (r.fromAxiom()) {
-					continue;
-				}
-				
-				if (r.getRelationshipId() == null) {
-					throw new IllegalArgumentException ("Rel ID not expected to be null");
-				}
-				//Have we historically swapped ID from stated to inferred
-				if (allComponents.containsKey(r.getRelationshipId())) {
-					if (r.isActiveSafely()) {
-						Script.print("\nAll Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
-						allComponents.put(r.getRelationshipId(), r);
-					} else if (allComponents.get(r.getRelationshipId()).isActiveSafely()) {
-						Script.print("\nIgnoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
-					} else {
-						Script.print("\nTwo inactive components share the same id of " + r.getId() + ": " + r + " and " + allComponents.get(r.getId()));
-					}
-				} else {
-					allComponents.put(r.getRelationshipId(), r);
-				}
-				componentOwnerMap.put(r,  c);
-			}
-
-			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
-				allComponents.put(i.getId(), i);
-				componentOwnerMap.put(i,  c);
-			}
-			
-			for (AssociationEntry h : c.getAssociationEntries()) {
-				allComponents.put(h.getId(), h);
-				componentOwnerMap.put(h,  c);
-			}
-			
-			for (AxiomEntry a : c.getAxiomEntries()) {
-				allComponents.put(a.getId(), a);
-				componentOwnerMap.put(a, c);
-			}
-
-			for (ComponentAnnotationEntry ae : c.getComponentAnnotationEntries()) {
-				allComponents.put(ae.getId(), ae);
-				componentOwnerMap.put(ae, c);
-			}
-
-			for (AlternateIdentifier altId : c.getAlternateIdentifiers()) {
-				allComponents.put(altId.getId(), altId);
-				componentOwnerMap.put(altId, c);
-			}
+			populateComponentMapForConcept(c);
 		}
 		Script.print("\n");
 		LOGGER.info("Component owner map complete with {} entries.", componentOwnerMap.size());
+	}
+
+	public void populateComponentMapForConcept(Concept c) {
+		if (allComponents == null) {
+			allComponents = new HashMap<>();
+			componentOwnerMap = new HashMap<>();
+		}
+		allComponents.put(c.getId(), c);
+		componentOwnerMap.put(c,  c);
+		for (Description d : c.getDescriptions()) {
+			populateDescriptionComponents(c, d);
+		}
+
+		for (Relationship r : c.getRelationships()) {
+			populateComponentMapForRelationship(c, r);
+		}
+
+		for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
+			allComponents.put(i.getId(), i);
+			componentOwnerMap.put(i,  c);
+		}
+
+		for (AssociationEntry h : c.getAssociationEntries()) {
+			allComponents.put(h.getId(), h);
+			componentOwnerMap.put(h,  c);
+		}
+
+		for (AxiomEntry a : c.getAxiomEntries()) {
+			allComponents.put(a.getId(), a);
+			componentOwnerMap.put(a, c);
+		}
+
+		for (ComponentAnnotationEntry ae : c.getComponentAnnotationEntries()) {
+			allComponents.put(ae.getId(), ae);
+			componentOwnerMap.put(ae, c);
+		}
+
+		for (AlternateIdentifier altId : c.getAlternateIdentifiers()) {
+			allComponents.put(altId.getId(), altId);
+			componentOwnerMap.put(altId, c);
+		}
+	}
+
+	private void populateComponentMapForRelationship(Concept c, Relationship r) {
+		//A relationship with a null ID will have come from an axiom.
+		//We'll let the axiomEntry cover that.
+		if (r.fromAxiom()) {
+			return;
+		}
+
+		if (r.getRelationshipId() == null) {
+			throw new IllegalArgumentException ("Rel ID not expected to be null");
+		}
+		//Have we historically swapped ID from a stated to an inferred relationship?
+		if (allComponents.containsKey(r.getRelationshipId())) {
+			if (r.isActiveSafely()) {
+				Script.print("\nAll Components Map replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
+				allComponents.put(r.getRelationshipId(), r);
+			} else if (allComponents.get(r.getRelationshipId()).isActiveSafely()) {
+				Script.print("\nIgnoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
+			} else {
+				Script.print("\nTwo inactive components share the same id of " + r.getId() + ": " + r + " and " + allComponents.get(r.getId()));
+			}
+		} else {
+			allComponents.put(r.getRelationshipId(), r);
+		}
+		componentOwnerMap.put(r,  c);
 	}
 
 	private void populateDescriptionComponents(Concept c, Description d) {
@@ -1458,6 +1467,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 
 	public void registerConcept(Concept concept) {
 		concepts.put(concept.getConceptId(), concept);
+		populateComponentMapForConcept(concept);
 	}
 	
 	public Concept registerConcept(String sctIdFSN) throws TermServerScriptException {
@@ -1811,10 +1821,8 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	}
 
 	public void setAllComponentsClean() {
-		for (Concept concept : getAllConcepts()) {
-			for (Component c : SnomedUtils.getAllComponents(concept)) {
-				c.setClean();
-			}
+		for (Component c : getAllComponents()) {
+			c.setClean();
 		}
 	}
 	
