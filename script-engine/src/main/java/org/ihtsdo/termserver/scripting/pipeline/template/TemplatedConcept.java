@@ -20,10 +20,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplatedConcept.class);
 
-	protected TemplatedConcept(ExternalConcept externalConcept) {
-		this.externalConcept = externalConcept;
-	}
-
 	public enum IterationIndicator { NEW, REMOVED, RESURRECTED, MODIFIED, UNCHANGED, MANUAL }
 
 	protected static ContentPipelineManager cpm;
@@ -67,6 +63,11 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 				US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE
 		);
 	}
+
+	protected TemplatedConcept(ExternalConcept externalConcept) {
+		this.externalConcept = externalConcept;
+	}
+
 
 	public static void reportStats(int tabIdx) throws TermServerScriptException {
 		cpm.report(tabIdx, "");

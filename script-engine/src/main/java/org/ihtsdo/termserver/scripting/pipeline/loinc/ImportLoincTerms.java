@@ -235,7 +235,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	private void createNewRefsetMemberIfRequired(LoincTemplatedConcept ltc, Concept refset) throws TermServerScriptException {
 		//Does this concept already appear in this refset?
 		if (ltc.getConcept().appearsInRefset(refset)) {
-			LOGGER.info("{} already appears in {}", ltc.getConcept(), refset.getFsn());
+			incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " unchanged");
 			return;
 		}
 

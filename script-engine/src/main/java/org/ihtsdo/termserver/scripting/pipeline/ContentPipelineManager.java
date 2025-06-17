@@ -301,7 +301,15 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 
 		//Create a Templated Concept to record the inactivation
-		TemplatedConcept inactivation = TemplatedConceptNull.createNull(inactivatingCode, null);
+		//But does this external code even still existing in the external code system?
+		TemplatedConcept inactivation;
+		ExternalConcept ec = externalConceptMap.get(inactivatingCode);
+		if (ec == null) {
+			LOGGER.warn("Did not find an external concept for inactivating code: {}", inactivatingCode);
+			inactivation = TemplatedConceptNull.createNull(inactivatingCode, null);
+		} else {
+			inactivation = TemplatedConceptNull.create(ec);
+		}
 		inactivation.setConcept(existingConcept);
 		inactivatedConcepts.add(inactivation);
 
@@ -734,7 +742,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		Concept proposedConcept = tc.getConcept();
 		Concept existingConcept = tc.getExistingConcept();
 		ExternalConcept externalConcept = tc.getExternalConcept();
-		
+
 		String previousSCG = existingConcept == null ? "N/A" : existingConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String proposedSCG = proposedConcept == null ? "N/A" : proposedConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 		String proposedDescriptionsStr = proposedConcept == null ? "N/A" : SnomedUtils.getDescriptionsToString(proposedConcept);
