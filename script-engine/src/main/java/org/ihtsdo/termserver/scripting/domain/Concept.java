@@ -15,8 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import org.snomed.otf.script.Script;
 
-import java.io.Serializable;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 

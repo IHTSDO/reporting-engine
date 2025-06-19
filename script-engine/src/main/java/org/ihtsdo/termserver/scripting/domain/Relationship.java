@@ -9,11 +9,10 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import java.io.Serializable;
 import java.util.*;
 
-public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship>, Serializable {
-
+public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
+	
 	@SerializedName("relationshipId")
 	@Expose
 	private String relationshipId;
