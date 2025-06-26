@@ -47,7 +47,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 	
-	private Integer conceptsPerArchive = 9999;
+	private Integer conceptsPerArchive = 11;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 
@@ -85,6 +85,14 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				delta.sourceModuleIds = Set.of("999000011000001104", "83821000000107", "999000011000000103", "999000041000000102");
 				delta.copyInferredParentRelsToStated = true;
 				delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
+			} else if (delta.getProject().getKey().contains("Argentina")) {
+				LOGGER.warn("Argentinian Edition detected");
+				delta.sourceModuleIds = Set.of("11000221109");
+				delta.getArchiveManager().setRunIntegrityChecks(false);
+			} else if (delta.getProject().getKey().contains("Uruguay")) {
+				LOGGER.warn("Uruguayian Edition detected");
+				delta.sourceModuleIds = Set.of("5631000179106");
+				delta.getArchiveManager().setRunIntegrityChecks(false);
 			} else if (KNOWN_DEFECTIVE_PROJECTS.contains(delta.getProject().getKey())) {
 				delta.getArchiveManager().setRunIntegrityChecks(false);
 			}
