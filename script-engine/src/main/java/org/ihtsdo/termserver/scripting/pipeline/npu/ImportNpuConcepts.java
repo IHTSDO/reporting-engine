@@ -65,7 +65,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 		super.postInit(tabNames, columnHeadings, false);
 
 		getReportManager().disableTab(getTab(TAB_IMPORT_STATUS));
-		getReportManager().disableTab(getTab(TAB_ITEMS_OF_INTEREST));
+		//getReportManager().disableTab(getTab(TAB_ITEMS_OF_INTEREST));
 
 		scheme = gl.getConcept(SCTID_NPU_SCHEMA);
 		externalContentModuleId = SCTID_NPU_EXTENSION_MODULE;

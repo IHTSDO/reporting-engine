@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.delta.Rf2ConceptCreator;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConceptNull;
+import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConceptNull;
 import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConceptWithDefaultMap;
@@ -587,11 +588,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		//Collect both included and excluded terms by property
 		Map<String, List<ExternalConcept>> included = externalConceptMap.values().stream()
 				.filter(lt -> successfullyModelledExternalIds.contains(lt.getExternalIdentifier()))
-				.collect(Collectors.groupingBy(ExternalConcept::getProperty));
+				.collect(Collectors.groupingBy(this::decorateProperty));
 
 		Map<String, List<ExternalConcept>> excluded = externalConceptMap.values().stream()
 				.filter(lt -> !successfullyModelledExternalIds.contains(lt.getExternalIdentifier()))
-				.collect(Collectors.groupingBy(ExternalConcept::getProperty));
+				.collect(Collectors.groupingBy(this::decorateProperty));
 
 		Set<String> properties = new LinkedHashSet<>(included.keySet());
 		properties.addAll(excluded.keySet());
@@ -605,8 +606,20 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			int excludedInTop2KCount = excluded.getOrDefault(property, new ArrayList<>()).stream()
 					.filter(ExternalConcept::isHighestUsage)
 					.toList().size();
-			report(tabIdx, property, inScope(property), includedCount, includedInTop2KCount, excludedCount, excludedInTop2KCount);
+			report(tabIdx, property, inScope(undecorate(property)), includedCount, includedInTop2KCount, excludedCount, excludedInTop2KCount);
 		}
+	}
+
+	private String undecorate(String property) {
+		return property.split(" ")[0];
+	}
+
+	private String decorateProperty(ExternalConcept ec) {
+		String decoratedProperty = ec.getProperty();
+		if (ec instanceof LoincTerm lt) {
+			decoratedProperty += " " + lt.getClassType();
+		}
+		return decoratedProperty;
 	}
 
 	public int getTab(String tabName) throws TermServerScriptException {
@@ -884,7 +897,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected String inScope(String property) throws TermServerScriptException {
 		//Construct a dummy LoincNum with this property and see if it's in scope or not
 		ExternalConceptNull dummy = new ExternalConceptNull(DUMMY_EXTERNAL_IDENTIFIER, property);
-		return getAppropriateTemplate(dummy) == null ? "N" : "Y";
+		return getAppropriateTemplate(dummy) instanceof TemplatedConceptNull ? "N" : "Y";
 	}
 
 }
