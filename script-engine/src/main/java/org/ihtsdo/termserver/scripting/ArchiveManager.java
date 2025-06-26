@@ -355,7 +355,7 @@ public class ArchiveManager implements ScriptConstants {
 							throw unrecoverable;
 						} catch (Exception e) {
 							LOGGER.error("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
-							if (!snapshot.getName().startsWith("releases/")) {
+							if (!snapshot.getPath().startsWith("releases/")) {
 								LOGGER.info("Deleting {}", snapshot);
 								try {
 									if (snapshot.isFile()) {
@@ -369,7 +369,7 @@ public class ArchiveManager implements ScriptConstants {
 									LOGGER.error("Failed to delete snapshot {} due to ", snapshot, e2);
 								}
 							} else {
-								LOGGER.info("Not deleting {} as it's a release.", snapshot);
+								LOGGER.info("Not deleting {} as it's a release, but you should look at it!", snapshot);
 							}
 							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
 							//Next time round the snapshot on disk won't be detected and we'll take a different code path

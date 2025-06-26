@@ -92,7 +92,7 @@ public class CisClient {
 					CisResponse.class).getBody();
 			if (!response.getStatus().equals("0")) {
 				if (response.getStatus().equals("3")) {
-					throw new TermServerScriptException("Bulk job failed: " + response.getLog());
+					throw new TermServerScriptException("Bulk job " + id + " failed: " + response.getLog());
 				}
 
 				ParameterizedTypeReference<List<CisRecord>> type = new ParameterizedTypeReference<>(){};
@@ -102,7 +102,7 @@ public class CisClient {
 					try {
 						return restTemplate.exchange(url, HttpMethod.GET, null, type).getBody();
 					} catch (Exception e) {
-						LOGGER.info("Failed to get bulk job records due to " + e.getMessage() + " retrying after 30s nap...");
+						LOGGER.info("Failed to get bulk job records due to {} retrying after 30s nap...", e.getMessage());
 						try {
 							Thread.sleep(30000);
 						} catch (InterruptedException ex) {

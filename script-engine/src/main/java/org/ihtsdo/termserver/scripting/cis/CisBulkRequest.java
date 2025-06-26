@@ -49,11 +49,11 @@ public class CisBulkRequest {
 
     @Override
     public String toString() {
-        return "CisBulkRequest{" +
-                "comment='" + comment + '\'' +
-                ", namespace=" + namespace +
-                ", sctids=" + sctids +
-                ", software='" + software + '\'' +
+        return "CisBulkRequest {" +
+                "comment = '" + comment + '\'' +
+                ", namespace = " + namespace +
+                ", sctids (" + sctids.size() + ") = " + sctids +
+                ", software = '" + software + '\'' +
                 '}';
     }
 }
