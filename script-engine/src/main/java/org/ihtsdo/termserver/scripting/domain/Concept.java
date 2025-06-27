@@ -1117,18 +1117,18 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public List<AxiomEntry> getAxiomEntries(ActiveState activeState, boolean includeGCIs) {
-		switch (activeState) {
-			case BOTH: return getAxiomEntries();
-			case ACTIVE: return getAxiomEntries().stream()
-					.filter(a -> a.isActiveSafely())
+		return switch (activeState) {
+			case BOTH -> getAxiomEntries();
+			case ACTIVE -> getAxiomEntries().stream()
+					.filter(Component::isActiveSafely)
 					.filter(a -> includeGCIs || !a.isGCI())
 					.collect(Collectors.toList());
-			case INACTIVE: return getAxiomEntries().stream()
+			case INACTIVE -> getAxiomEntries().stream()
 					.filter(a -> !a.isActiveSafely())
 					.filter(a -> includeGCIs || !a.isGCI())
 					.collect(Collectors.toList());
-			default: throw new IllegalStateException("Unknown state " + activeState);
-		}
+			default -> throw new IllegalStateException("Unknown state " + activeState);
+		};
 	}
 	
 	//id	effectiveTime	active	moduleId	definitionStatusId

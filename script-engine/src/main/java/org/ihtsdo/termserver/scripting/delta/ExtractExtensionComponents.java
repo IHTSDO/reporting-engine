@@ -32,89 +32,95 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
 	private static final boolean AUTO_IMPORT = false;
-
-	private List<Component> allIdentifiedConcepts;
-	private Set<Component> allModifiedConcepts = new HashSet<>();
-	private List<Component> noMoveRequired = new ArrayList<>();
-	private boolean includeDependencies = true;
-	private boolean includeInferredParents = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
-	private boolean copyInferredParentRelsToStated = false;
-
+	private static final boolean EXCLUDE_NON_ENGLISH_TERMS = true;
+	private static final boolean CONTAINS_REPLACEMENT_FSNS = true;
+	private static final boolean INCLUDE_DEPENDENCIES = true;
+	private static final boolean INCLUDE_INFERRED_PARENTS = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
+	private static final boolean COPY_INFERRED_PARENT_RELS_TO_STATED = false;
+	private static final boolean SELECT_CONCEPTS_VIA_REVIEW = false; //If true, then we will only process concepts that have been selected in the review panel
 	private static final List<String> KNOWN_DEFECTIVE_PROJECTS = List.of("GEN");
-	
+
+	private final Set<Component> allModifiedConcepts = new HashSet<>();
+	private final List<Component> noMoveRequired = new ArrayList<>();
+
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
 	private static String secondaryCheckPath = "MAIN";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 	
-	private Integer conceptsPerArchive = 11;
+	private Integer conceptsPerArchive = 1;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 
-	protected boolean containsReplacementFSNs = false;
 	Map<String, String> replacementFSNs = new HashMap<>();
-	
 	Map<Concept, Concept> knownReplacements = new HashMap<>();
 	Set<String> knownMapToCoreLangRefsets = Sets.newHashSet("999001261000000100"); //|National Health Service realm language reference set (clinical part)|
 
 	protected boolean copyInferredRelationshipsToStatedWhereMissing = true;
 	protected boolean butNotLaterality = true;
 	protected List<Concept> attributeTypesExcludedFromInferredToStated = new ArrayList<>();
+	protected Rf2ConceptCreator conceptCreator;
 
 	protected String[] componentIdsToProcess = null; //If it's just a couple, no need for a file, just specify here.
 	protected String componentsToProcessEcl = null; // (<<64572001 |Disease|:116676008 |Associated morphology|=46360000 |Abnormal curvature|) {{ C moduleId = 890108001 }}
 
 	public static void main(String[] args) throws TermServerScriptException {
-		ExtractExtensionComponents delta = new ExtractExtensionComponents();
+		new ExtractExtensionComponents().doExtensionComponentExtraction(args);
 		// ExtractExtensionComponents delta = new ExtractExtensionComponentsAndLateralize();
+	}
+
+	protected void doExtensionComponentExtraction(String[] args) throws TermServerScriptException {
 		try {
 			ReportSheetManager.setTargetFolderId("12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"); //Extract and Promote
-			delta.taskPrefix = "";
-			delta.runStandAlone = false;
-			delta.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+			taskPrefix = "";
+			runStandAlone = false;
+			getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			//No need to specify a module if reading from Snowstorm, we'll pick up the moduleId(s) from the branch metadata
-			//delta.sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
-			//delta.sourceModuleIds = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
-			//delta.sourceModuleIds = "332351000009108"; //Vet Extension
-
-			delta.init(args);
+			//sourceModuleIds = SCTID_CORE_MODULE; //NEBCSR are using core module these days.
+			//sourceModuleIds = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
+			//sourceModuleIds = "332351000009108"; //Vet Extension
+			init(args);
 			SnapshotGenerator.setSkipSave(true);
-			if (delta.getProject().getKey().contains("uk_sct2")) {
+
+			conceptCreator = Rf2ConceptCreator.build(this);
+
+			if (getProject().getKey().contains("uk_sct2")) {
 				LOGGER.warn("UK Edition detected, will not check for OWL axiom / stated relationships");
-				delta.getArchiveManager().setRunIntegrityChecks(false);
-				delta.sourceModuleIds = Set.of("999000011000001104", "83821000000107", "999000011000000103", "999000041000000102");
-				delta.copyInferredParentRelsToStated = true;
-				delta.getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
-			} else if (delta.getProject().getKey().contains("Argentina")) {
+				getArchiveManager().setRunIntegrityChecks(false);
+				sourceModuleIds = Set.of("999000011000001104", "83821000000107", "999000011000000103", "999000041000000102");
+				getArchiveManager().setExpectStatedParents(false); //UK Edition doesn't do stated modeling
+			} else if (getProject().getKey().contains("Argentina")) {
 				LOGGER.warn("Argentinian Edition detected");
-				delta.sourceModuleIds = Set.of("11000221109");
-				delta.getArchiveManager().setRunIntegrityChecks(false);
-			} else if (delta.getProject().getKey().contains("Uruguay")) {
+				sourceModuleIds = Set.of("11000221109");
+				getArchiveManager().setRunIntegrityChecks(false);
+			} else if (getProject().getKey().contains("Uruguay")) {
 				LOGGER.warn("Uruguayian Edition detected");
-				delta.sourceModuleIds = Set.of("5631000179106");
-				delta.getArchiveManager().setRunIntegrityChecks(false);
-			} else if (KNOWN_DEFECTIVE_PROJECTS.contains(delta.getProject().getKey())) {
-				delta.getArchiveManager().setRunIntegrityChecks(false);
+				sourceModuleIds = Set.of("5631000179106");
+				getArchiveManager().setRunIntegrityChecks(false);
+			} else if (KNOWN_DEFECTIVE_PROJECTS.contains(getProject().getKey())) {
+				getArchiveManager().setRunIntegrityChecks(false);
 			}
 
-			delta.getGraphLoader().setAllowIllegalSCTIDs(true);
+			getGraphLoader().setAllowIllegalSCTIDs(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
+			loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't include the project export in our timings
-			delta.additionalReportColumns = "Defn Status, Stated Parent(s), Additional Detail, , ";
-			delta.postInit(GFOLDER_EXTRACT_AND_PROMOTE);
-			delta.startTimer();
-			delta.preProcessFile();
-			//delta.selectConceptsViaReview();
-			delta.processFile();
-			if (delta.archiveBatches == null) {
-				delta.createOutputArchive();
+			additionalReportColumns = "Defn Status, Stated Parent(s), Additional Detail, , ";
+			postInit(GFOLDER_EXTRACT_AND_PROMOTE);
+			startTimer();
+			preProcessFile();
+			if (SELECT_CONCEPTS_VIA_REVIEW) {
+				selectConceptsViaReview();
+			}
+			processFile();
+			if (archiveBatches == null) {
+				createOutputArchive();
 			}
 			if (AUTO_IMPORT) {
-				delta.importArchiveToNewTask(delta.getLastArchiveCreated());
+				importArchiveToNewTask(getLastArchiveCreated());
 			}
 		} finally {
-			delta.finish();
+			finish();
 		}
 	}
 
@@ -281,8 +287,8 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		}
 		
 		long totalConceptsInBatches = archiveBatches.stream()
-				.flatMap(l -> l.stream())
-				.count();
+				.mapToLong(Collection::size)
+				.sum();
 		LOGGER.info("Total concepts pre-processed into batches: {}", totalConceptsInBatches);
 		
 		if ((int)totalConceptsInBatches != componentsOfInterest.size()) {
@@ -318,8 +324,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			allocated.addAll(parentChildMap.keySet());
 			allocated.addAll(footlooseConcepts);
 			componentsOfInterest.removeAll(allocated);
-			componentsOfInterest.stream()
-					.forEach(c -> LOGGER.error("Gone missing: {}", c));
+			componentsOfInterest.forEach(c -> LOGGER.error("Gone missing: {}", c));
 			throw new TermServerScriptException("Batched count " + mapCount + " + " +  footlooseConcepts.size() + " does not equal expected " + componentsOfInterest.size() + " concepts.");
 		}
 	}
@@ -388,7 +393,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 					Set<Concept> thisBatch = parentChildMap.get(batchParent);
 					thisBatch.add(bestMerge);
 					thisBatch.addAll(parentChildMap.get(bestMerge));
-					LOGGER.info("Adding " + bestMerge + "(" + (parentChildMap.get(bestMerge).size() + 1) + ") to batch with parent " + batchParent);
+					LOGGER.info("Adding {}({}) to batch with parent {}",bestMerge, (parentChildMap.get(bestMerge).size() + 1), batchParent);
 					parentChildMap.remove(bestMerge);
 				}
 			} while (bestMerge != null);
@@ -411,6 +416,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	@Override
 	protected List<Component> processFile() throws TermServerScriptException {
+  List<Component> allIdentifiedConcepts;
 		if (archiveBatches != null) {
 			int batchNum = 0;
 			while (!archiveBatches.isEmpty()) {
@@ -449,7 +455,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		Concept thisConcept = (Concept)thisComponent;
 
 		if (copyInferredRelationshipsToStatedWhereMissing) {
-			restateInferredRelationships(thisConcept, copyInferredParentRelsToStated, attributeTypesExcludedFromInferredToStated);
+			restateInferredRelationships(thisConcept, COPY_INFERRED_PARENT_RELS_TO_STATED, attributeTypesExcludedFromInferredToStated);
 		}
 
 		//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
@@ -494,10 +500,6 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	private boolean switchModule(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 
-		if (c.getConceptId().equals("1119523003")) {
-			LOGGER.debug("Here: {}", c);
-		}
-		
 		//Have we already attempted to move this concept?  Don't try again
 		if (noMoveRequired.contains(c)) {
 			return false;
@@ -540,7 +542,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	private boolean switchModuleOfSubComponents(Concept c, List<Component> componentsToProcess, Concept conceptOnTS) throws TermServerScriptException {
 		boolean subComponentsMoved = false;
-		if (containsReplacementFSNs) {
+		if (CONTAINS_REPLACEMENT_FSNS) {
 			replaceFsnInTransit(c);
 			subComponentsMoved = true;
 		} else {
@@ -551,7 +553,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 		//Policy is not to moved inferred modelling
 		//Unless we also want the inferred parents
-		if (includeInferredParents) {
+		if (INCLUDE_INFERRED_PARENTS) {
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
 				if ((!r.getModuleId().equals(targetModuleId) && !r.getModuleId().equals(SCTID_MODEL_MODULE))) {
 					moveRelationshipTarget(r, componentsToProcess);
@@ -560,10 +562,10 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			}
 		}
 
-		for (AxiomEntry a : c.getAxiomEntries()) {
+		for (AxiomEntry a : c.getAxiomEntries(ActiveState.ACTIVE, true)) {
 			//We have an issue with concepts in the examined space already
 			//having the target module but needing to move anyway.  So
-			//attempt move and see what we're missing.
+			//attempt the move and see what we're missing.
 			if (moveAxiomToTargetModule(c, a, conceptOnTS, componentsToProcess)) {
 				subComponentsMoved = true;
 			}
@@ -649,7 +651,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 		allModifiedConcepts.add(c);
 
-		//If we have no stated modelling (either stated relationships, or those extracted from an axiom),
+		//If we have no stated modelling (either stated relationships or those extracted from an axiom),
 		//create an Axiom Entry from the inferred rels.
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).isEmpty()) {
 			convertInferredRelsToAxiomEntry(c);
@@ -659,21 +661,29 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	private void replaceFsnInTransit(Concept c) throws TermServerScriptException {
 		List<Description> replacementTerms = new ArrayList<>();
 		String fsnTern = replacementFSNs.get(c.getId());
+		if (StringUtils.isEmpty(fsnTern)) {
+			throw new IllegalStateException("No replacement FSN provided for " + c.getId() + " - please check your replacementFSNs map");
+		}
 		Description fsn = Description.withDefaults(fsnTern, DescriptionType.FSN, Acceptability.PREFERRED);
+		conceptCreator.populateComponentId(c, fsn, c.getModuleId());
+
 		replacementTerms.add(fsn);
 
 		String ptTerm = SnomedUtilsBase.deconstructFSN(fsnTern)[0];
 		Description pt = Description.withDefaults(ptTerm, DescriptionType.SYNONYM, Acceptability.PREFERRED);
+		conceptCreator.populateComponentId(c, pt, c.getModuleId());
 		replacementTerms.add(pt);
-		
 		c.setDescriptions(replacementTerms);
+
+		//Re-register the concept so that we can clear the dirty flag when needed (this is done on all components known to the GL)
+		gl.populateComponentMapForConcept(c);
 	}
 
-	private boolean moveDescriptions(Concept c, Concept conceptOnTS) throws TermServerScriptException {
+	protected boolean moveDescriptions(Concept c, Concept conceptOnTS) throws TermServerScriptException {
 		boolean subComponentsMoved = false;
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
 			//We're going to skip any non-English Descriptions
-			if (!d.getLang().equals("en")) {
+			if (EXCLUDE_NON_ENGLISH_TERMS && !d.getLang().equals("en")) {
 				continue;
 			}
 			boolean thisDescMoved = false;
@@ -930,7 +940,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		//And mark the relationship as dirty just in case we're moving content that's already in the target module.  
 		r.setDirty();
 		
-		if (includeDependencies && !allModifiedConcepts.contains(r.getType())) {
+		if (INCLUDE_DEPENDENCIES && !allModifiedConcepts.contains(r.getType())) {
 			if (switchModule(r.getType(), componentsToProcess)) {
 				//Is this an unexpected dependency?
 				if (!componentsToProcess.contains(r.getType())) {
@@ -963,7 +973,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		boolean isIsA = r.getType().equals(IS_A);
 		String charTypeStr = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)?"Stated":"Inferred";
 		//If we don't have a target, we'll assume that's a concrete value.  No need to check that.
-		if (target != null && includeDependencies && !allModifiedConcepts.contains(target)) {
+		if (target != null && INCLUDE_DEPENDENCIES && !allModifiedConcepts.contains(target)) {
 			//Don't worry about the target if it's on our to-do list anyway.
 			if (!componentsToProcess.contains(target)) {
 				//If our dependency is in the core module, then check - live - if it is active
@@ -1021,8 +1031,9 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		//Do we have an FSN override to deal with?
-		if (containsReplacementFSNs && lineItems.length == 3) {
-			replacementFSNs.put(lineItems[0], lineItems[2]);
+		if (CONTAINS_REPLACEMENT_FSNS && lineItems.length == 2) {
+			Concept c = gl.getConcept(lineItems[0]);
+			replacementFSNs.put(c.getId(), lineItems[1]);
 		}
 		return super.loadLine(lineItems);
 	}
@@ -1032,7 +1043,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		Concept loadedConcept = loadedConcepts.get(c.getConceptId());
 		if (loadedConcept == null) {
 			loadedConcept = loadConcept(secondaryConnection, c, secondaryCheckPath);
-			//If the concept was not found, that may be OK
+			//If the concept was not found, that is OK because it means we don't already have it.
 			if (loadedConcept == null || loadedConcept.getConceptId() == null) {
 				loadedConcept = NULL_CONCEPT;
 			}
