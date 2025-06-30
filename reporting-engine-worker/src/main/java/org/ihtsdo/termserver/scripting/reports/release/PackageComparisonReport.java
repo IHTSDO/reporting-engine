@@ -38,6 +38,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final String LANGUAGE_REFSET_FILENAME = "der2_cRefset_Language";
 	private static final String ASSOCIATION_REFSET_FILENAME = "der2_cRefset_Association";
 	private static final String ATTRIBUTE_VALUE_REFSET_FILENAME = "der2_cRefset_AttributeValue";
+	private static final String MODULE_DEPENDENCY_REFSET_FILENAME = "der2_ssRefset_ModuleDependency";
 
 	public static final String SCTID_SE_REFSETID = "734138000";
 	public static final String SCTID_SP_REFSETID = "734139008";
@@ -55,15 +56,18 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 
 	private final String[] tabNames = new String[] {
-			"File Comparison"
+			"File Comparison",
+			"MDRS"
 	};
 	
 	private final String[] columnHeadings = new String[] {
-			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Header, Total"
+			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Header, Total",
+			"id, effectiveTime, active, moduleId, refsetId, referencedComponentId, sourceEffectiveTime, targetEffectiveTime"
 	};
 
 	private final String[] columnWidths = new String[] {
-			"460, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85"
+			"460, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85",
+			"0, 0, 0, 0, 0, 0, 0, 0"
 	};
 
 	enum TotalsIndex {
@@ -83,12 +87,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		// SE Extension
-		params.put(THIS_RELEASE, "se/snomed_ct_se_releases/2024-11-27T17:45:35/output-files/SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20241130T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240801T120000Z.zip");
-		params.put(PREV_RELEASE, "se/snomed_ct_se_releases/2024-05-15T17:18:28/output-files/xSnomedCT_ManagedServiceSE_PREPRODUCTION_SE1000052_20240531T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240201T120000Z.zip");
-		params.put(MODULES, "45991000052106");
+		// NO Extension
+		params.put(PREV_RELEASE, "no/snomed_ct_no_releases/2025-06-02T11:36:04/output-files/SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250615T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250401T120000Z.zip");
+		params.put(THIS_RELEASE, "no/snomed_ct_no_releases/2025-06-30T12:11:50/output-files/SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250715T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250501T120000Z.zip");
+		params.put(MODULES, "51000202101, 57101000202106, 57091000202101");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -566,6 +570,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
  		} else {
 			processFile(path, filename);
 		}
+		if (filename.contains(MODULE_DEPENDENCY_REFSET_FILENAME)) {
+			outputMDRSFile(path, filename);
+		}
 	}
 
 	private void processFile(Path path, String filename) {
@@ -817,6 +824,27 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 		} catch (IOException | IndexOutOfBoundsException e) {
 			LOGGER.error("Error processing concept file: {}", filename);
+			throw new TermServerRuntimeException(e.getMessage());
+		}
+	}
+
+	private void outputMDRSFile(Path path, String filename) {
+		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				char ch = line.charAt(0);
+
+				if (!(ch == LINE_DELETED_INDICATOR || ch == LINE_CREATED_INDICATOR)) {
+					continue;
+				}
+
+				String[] data = line.split(FIELD_DELIMITER);
+				report(FILE_COMPARISON_TAB + 1, (Object[]) data);
+			}
+
+		} catch (IOException | IndexOutOfBoundsException | TermServerScriptException e) {
+			LOGGER.error("Error reading MDRS file: {}", filename);
 			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
