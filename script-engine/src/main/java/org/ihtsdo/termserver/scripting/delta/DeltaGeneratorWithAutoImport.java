@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.util.MultiArchiveImporter;
 
 import java.io.File;
@@ -37,6 +38,20 @@ public class DeltaGeneratorWithAutoImport extends DeltaGenerator {
 
 		print("Import onto which project? : ");
 		projectName = STDIN.nextLine().trim();
+		importer.recoverProjectFromProjectName(projectName);
+
+		//Do we want to import onto an existing task?
+		print("Import onto an existing task? Y/N [N]: ");
+		response = STDIN.nextLine().trim();
+		if (response.equalsIgnoreCase("Y")) {
+			print ("Please enter the task ID to import onto: ");
+			response = STDIN.nextLine().trim();
+			if (!StringUtils.isEmpty(response)) {
+				importer.setLastTaskCreated(STDIN.nextLine().trim());
+				importer.setMode(MultiArchiveImporter.MODE.ALL_ARCHIVES_IN_ONE_TASK);
+			}
+		}
+
 		String authorDisplay = importer.getAuthors() == null ? "" : importer.getAuthors().get(0);
 		print("Assign to author [" + authorDisplay + "]: ");
 		importer.setAuthors(STDIN.nextLine().trim());

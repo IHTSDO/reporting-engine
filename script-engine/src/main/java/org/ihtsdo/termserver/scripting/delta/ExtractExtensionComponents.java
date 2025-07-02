@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
+	private static final Integer CONCEPTS_PER_ARCHIVE = 1;
 	private static final boolean AUTO_IMPORT = false;
 	private static final boolean EXCLUDE_NON_ENGLISH_TERMS = true;
 	private static final boolean CONTAINS_REPLACEMENT_FSNS = true;
@@ -39,16 +40,15 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	private static final boolean COPY_INFERRED_PARENT_RELS_TO_STATED = false;
 	private static final boolean SELECT_CONCEPTS_VIA_REVIEW = false; //If true, then we will only process concepts that have been selected in the review panel
 	private static final List<String> KNOWN_DEFECTIVE_PROJECTS = List.of("GEN");
+	private static final String SECONDARY_CHECK_PATH = "MAIN";
 
 	private final Set<Component> allModifiedConcepts = new HashSet<>();
 	private final List<Component> noMoveRequired = new ArrayList<>();
 
-	private Map<String, Concept> loadedConcepts = new HashMap<>();
+	private final Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
-	private static String secondaryCheckPath = "MAIN";
-	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
+	private final AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 	
-	private Integer conceptsPerArchive = 1;
 	Queue<List<Component>> archiveBatches = null;
 	private boolean ensureConceptsHaveBeenReleased = false;
 
@@ -72,7 +72,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	protected void doExtensionComponentExtraction(String[] args) throws TermServerScriptException {
 		try {
 			ReportSheetManager.setTargetFolderId("12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"); //Extract and Promote
-			taskPrefix = "";
+			taskPrefix = "INFRA-15480";
 			runStandAlone = false;
 			getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			//No need to specify a module if reading from Snowstorm, we'll pick up the moduleId(s) from the branch metadata
@@ -97,6 +97,9 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				LOGGER.warn("Uruguayian Edition detected");
 				sourceModuleIds = Set.of("5631000179106");
 				getArchiveManager().setRunIntegrityChecks(false);
+			}  else if (getProject().getKey().contains("Spanish")) {
+				LOGGER.warn("Spanish Edition detected");
+				sourceModuleIds = Set.of("450829007");
 			} else if (KNOWN_DEFECTIVE_PROJECTS.contains(getProject().getKey())) {
 				getArchiveManager().setRunIntegrityChecks(false);
 			}
@@ -212,7 +215,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		//to worry about what concepts go in what Zip file.
 		if (batchDelimitersDetected) {
 			assignConceptsToBatchesUsingDelimiter(componentsOfInterest);
-		} else if (componentsOfInterest.size() < conceptsPerArchive) {
+		} else if (componentsOfInterest.size() < CONCEPTS_PER_ARCHIVE) {
 			archiveBatches.add(componentsOfInterest);
 		} else {
 			assignConceptsToBatches(componentsOfInterest);
@@ -274,7 +277,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		List<Component> thisBatch = new ArrayList<>();
 		while (!footlooseConcepts.isEmpty()) {
 			thisBatch.add(footlooseConcepts.remove());
-			if (thisBatch.size() == conceptsPerArchive) {
+			if (thisBatch.size() == CONCEPTS_PER_ARCHIVE) {
 				archiveBatches.add(thisBatch);
 				LOGGER.info(++batchNo + ": No Hierarchy - " + thisBatch.size());
 				thisBatch = new ArrayList<>();
@@ -301,14 +304,14 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		LOGGER.info("Allocating " + footlooseConcepts.size() + " loose concepts to " + parentChildMap.size() + " existing batches");
 		for (Concept batchParent : new HashSet<>(parentChildMap.keySet())) {
 			int thisBatchSize = parentChildMap.get(batchParent).size() + 1;
-			if (thisBatchSize >= conceptsPerArchive) {
+			if (thisBatchSize >= CONCEPTS_PER_ARCHIVE) {
 				continue;
 			}
 			do {
 				Concept topUp = footlooseConcepts.remove();
 				parentChildMap.get(batchParent).add(topUp);
 				thisBatchSize = parentChildMap.get(batchParent).size() + 1;
-			} while (thisBatchSize < conceptsPerArchive && !footlooseConcepts.isEmpty());
+			} while (thisBatchSize < CONCEPTS_PER_ARCHIVE && !footlooseConcepts.isEmpty());
 		}
 
 		//The number of concepts in the map plus the footloose concepts should add up to our total
@@ -349,12 +352,12 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		if (!descendantsToImport.isEmpty()) {
 			alsoImportingDescendants = true;
 			LOGGER.info("{} has {} descendants to import", c, descendantsToImport.size());
-			if (descendantsToImport.size() >= conceptsPerArchive) {
+			if (descendantsToImport.size() >= CONCEPTS_PER_ARCHIVE) {
 				//We'll need to load this concept in its own import and promote to the project
 				//so it's available as a parent for subsequent loads
 				//requiresFirstPassLoad.add(c);
 				//continue;
-				int excess = descendantsToImport.size() - conceptsPerArchive;
+				int excess = descendantsToImport.size() - CONCEPTS_PER_ARCHIVE;
 				LOGGER.warn("Exceeding batch size by {} for {} ({} descendants).  Consider pre-importing and promoting first.", excess, c, descendantsToImport.size());
 			}
 			//Don't want to import a concept twice, but if we do, we have a problem
@@ -386,7 +389,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				//How many concepts are in this batch, +1 for the parent itself
 				Set<Concept> batchContents = parentChildMap.get(batchParent);
 				int thisBatchSize = batchContents.size() + 1;
-				int topUpSize = conceptsPerArchive - thisBatchSize;
+				int topUpSize = CONCEPTS_PER_ARCHIVE - thisBatchSize;
 				bestMerge = findBestMerge(parentChildMap, batchesAvailableToMerge, topUpSize);
 				if (bestMerge != null) {
 					batchesAvailableToMerge.remove(bestMerge);
@@ -1042,7 +1045,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		//Do we already have this concept?
 		Concept loadedConcept = loadedConcepts.get(c.getConceptId());
 		if (loadedConcept == null) {
-			loadedConcept = loadConcept(secondaryConnection, c, secondaryCheckPath);
+			loadedConcept = loadConcept(secondaryConnection, c, SECONDARY_CHECK_PATH);
 			//If the concept was not found, that is OK because it means we don't already have it.
 			if (loadedConcept == null || loadedConcept.getConceptId() == null) {
 				loadedConcept = NULL_CONCEPT;
