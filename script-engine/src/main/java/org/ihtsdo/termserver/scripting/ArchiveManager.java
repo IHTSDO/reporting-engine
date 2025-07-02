@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
@@ -67,6 +69,8 @@ public class ArchiveManager implements ScriptConstants {
 	);
 	
 	private Project currentlyHeldInMemory;
+	private boolean useWindowsZipEncoding = false;
+
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 
 	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
@@ -136,9 +140,12 @@ public class ArchiveManager implements ScriptConstants {
 			LOGGER.debug("Checking TS branch metadata: {}", branchPath);
 			server = ts.getTSClient().getServerUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
-			//If metadata is empty, or missing previous release, recover parent
-			//But timestamp will remain a property of the branch
-			//But not if we're already on MAIN and it's STILL missing!
+			if (branch == null) {
+				throw new TermServerScriptException("Unable to find branch: '" + branchPath + "'");
+			}
+			//If metadata is empty, or missing previous release, recover the parent
+			//But the timestamp will remain a property of the branch
+			//But not if we're already on MAIN, and it's STILL missing!
 			while (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
 				if (branchPath.equals("MAIN")) {
 					throw new TermServerScriptException("Metadata data missing in MAIN");
@@ -204,7 +211,7 @@ public class ArchiveManager implements ScriptConstants {
 			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
 			.toList();
 			
-			if (releases.size() < 1) {
+			if (releases.isEmpty()) {
 				throw new TermServerScriptException("Less than 1 previous releases detected");
 			}
 			if (!releases.get(0).getEffectiveDate().toString().equals(previousRelease)) {
@@ -243,7 +250,7 @@ public class ArchiveManager implements ScriptConstants {
 					} else {
 						//Can we find it in S3?
 						String cwd = new File("").getAbsolutePath();
-						LOGGER.info("{} not found locally in {}, attempting to download from S3.", ts.getDependencyArchive(), cwd);
+						LOGGER.info("Dependency Archive {} not found locally in {}, attempting to download from S3.", ts.getDependencyArchive(), cwd);
 						getArchiveDataLoader().download(dependency);
 						if (dependency.exists()) {
 							loadArchive(dependency, fsnOnly, "Snapshot", true);
@@ -251,7 +258,7 @@ public class ArchiveManager implements ScriptConstants {
 							throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist and was not recovered from S3.");
 						}
 					}
-					//Now lets not pretend we're holding anything in memory at this point, because we still have to load in
+					//Now let's not pretend we're holding anything in memory at this point, because we still have to load in
 					//the extension before we have that.
 					currentlyHeldInMemory = null;
 				}
@@ -343,7 +350,7 @@ public class ArchiveManager implements ScriptConstants {
 						writeSnapshotToCache = true;
 						populateReleaseFlag = true;
 					} else {
-						LOGGER.info("Loading snapshot archive contents into memory: " + snapshot);
+						LOGGER.info("Loading snapshot archive contents into memory: {}", snapshot);
 						try {
 							//This archive is 'current state' so we can't know what is released or not
 							//Unless it's an edition archive
@@ -644,6 +651,9 @@ public class ArchiveManager implements ScriptConstants {
 			String branchPath = project.getBranchPath();
 			while (!metadataPopulated) {
 				Branch branch = ts.getTSClient().getBranch(branchPath);
+				if (branch == null) {
+					throw new TermServerScriptException("Unable to find branch '" + branchPath + "'");
+				}
 				project.setMetadata(branch.getMetadata());
 				if (project.getMetadata() != null && project.getMetadata().getPreviousPackage() != null) {
 					metadataPopulated = true;
@@ -717,6 +727,17 @@ public class ArchiveManager implements ScriptConstants {
 			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
+		} catch (IllegalArgumentException e) {
+			if (!useWindowsZipEncoding) {
+				LOGGER.error("Failed to extract project state from archive {} due to {}", archive.getName(), e.getMessage());
+				LOGGER.error("Second attempt to load archive with Windows zip encoding enabled");
+				useWindowsZipEncoding = true;
+				loadArchive(archive, fsnOnly, fileType, isReleased);
+			} else {
+				throw e; //If we've already tried with Windows zip encoding, then we really can't load this archive
+			}
+		} finally {
+			useWindowsZipEncoding = false; //Reset this so that we don't use it inappropriately in the future
 		}
 	}
 
@@ -772,7 +793,8 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException {
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
+		Charset encoding = useWindowsZipEncoding ? Charset.forName("windows-1252") : StandardCharsets.UTF_8;
+		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive), encoding);
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
