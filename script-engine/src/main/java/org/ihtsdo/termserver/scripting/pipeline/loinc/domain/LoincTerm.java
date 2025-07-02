@@ -485,4 +485,10 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 	public int compareTo(@NotNull LoincTerm l) {
 		return getCommonTestRankNormalized().compareTo(l.getCommonTestRankNormalized());
 	}
+
+	@Override
+	public boolean isGrouperConcept() {
+		//A grouper concept should be marked as sufficiently defined, even if it does not feature a full set of attributes.
+		return getLoincClass().equals(LoincClassType.LABORDERS.getName());
+	}
 }

@@ -180,8 +180,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("10355-6")) {
-			LOGGER.debug("Re-outputs alternate identifier");
+		if (externalIdentifier.equals("108027-4")) {
+			LOGGER.debug("Check grouper behaviour");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);

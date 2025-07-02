@@ -42,4 +42,9 @@ public abstract class ExternalConcept {
 	public int getPriority() {
 		return 0;
 	}
+
+	public boolean isGrouperConcept() {
+		//A grouper concept should be marked as sufficiently defined, even if it does not feature a full set of attributes.
+		return false;
+	}
 }

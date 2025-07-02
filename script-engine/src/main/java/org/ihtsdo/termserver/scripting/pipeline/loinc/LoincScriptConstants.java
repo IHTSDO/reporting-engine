@@ -8,6 +8,8 @@ public interface LoincScriptConstants extends ContentPipeLineConstants {
 	Concept ORD_REFSET = new Concept("635111010000100", "LOINC Orderable Reference Set");
 	Concept OBS_REFSET = new Concept("635121010000106", "LOINC Observable Reference Set");
 
+	String NO_VALUE_SPECIFIED = "-";
+
 	String LOINC_PART_TYPE_ADJUSTMENT = "ADJUSTMENT";
 	String LOINC_PART_TYPE_CHALLENGE = "CHALLENGE";
 	String LOINC_PART_TYPE_CLASS = "CLASS";
