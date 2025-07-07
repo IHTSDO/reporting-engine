@@ -15,12 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import org.snomed.otf.script.Script;
 
-import java.io.Serializable;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Concept extends Expressable implements ScriptConstants, Comparable<Concept>, Serializable  {
+public class Concept extends Expressable implements ScriptConstants, Comparable<Concept> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
@@ -1677,7 +1675,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return fromAxiom;
 	}
 	
-	transient String semTag = null;
+	String semTag = null;
 	public String getSemTag() {
 		
 		if (semTag != null) {

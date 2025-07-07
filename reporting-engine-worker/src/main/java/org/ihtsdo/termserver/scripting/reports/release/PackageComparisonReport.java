@@ -860,19 +860,14 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[IDX_ID];
 
-				switch (ch) {
-					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
-					case LINE_DELETED_INDICATOR:
-						deleted.put(key, data);
-						break;
-					case LINE_CREATED_INDICATOR:
-						// Current release entry
-						if (deleted.containsKey(key)) {
-							changed.put(key, new ArrayList<>(List.of(deleted.remove(key), data)));
-						} else {
-							created.put(key, data);
-						}
-						break;
+				if (ch == LINE_DELETED_INDICATOR) {
+					deleted.put(key, data);
+				} else {
+					if (deleted.containsKey(key)) {
+						changed.put(key, new ArrayList<>(List.of(deleted.remove(key), data)));
+					} else {
+						created.put(key, data);
+					}
 				}
 			}
 		} catch (IOException e) {

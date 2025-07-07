@@ -1150,7 +1150,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Don't log lack of semantic tag for inactive concepts
 			String termWithoutTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), !c.isActiveSafely())[0];
 			
-			//We can short cut this if we don't have any brackets here.  
+			//We can shortcut this if we don't have any brackets here.
 			if (!termWithoutTag.contains("(")) {
 				continue;
 			}

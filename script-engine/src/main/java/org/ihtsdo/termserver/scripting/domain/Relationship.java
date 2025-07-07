@@ -8,15 +8,10 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentStore;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.*;
 
-public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship>, Serializable {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
+public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
 	
 	@SerializedName("relationshipId")
 	@Expose
@@ -62,9 +57,9 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 		return !isConcrete();
 	}
 	
-	private transient String axiomIdPart;
+	private String axiomIdPart;
 
-	private transient boolean intendedForAxiom = false;
+	private boolean intendedForAxiom = false;
 	
 	protected static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
@@ -234,21 +229,17 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	@Override
 	public int hashCode() {
 		if (relationshipId != null && relationshipId.length() > 5) {
-				return relationshipId.hashCode();
+			return relationshipId.hashCode();
 		}
 		//Do not include the inactivation indicator, otherwise we might not
 		//be able to recognise the object in a set if it changes after being created.
-		try {
-			if (isConcrete()) {
-				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), concreteValue);
-			} else {
-				if (target == null) {
-					throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
-				}
-				return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
+		if (isConcrete()) {
+			return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), concreteValue);
+		} else {
+			if (target == null) {
+				throw new IllegalArgumentException("Non-concrete relationship '" + this.toString() + "' encountered with no attribute target");
 			}
-		} catch (NullPointerException e) {
-			throw e;
+			return Objects.hash(characteristicType, groupId, getAxiomIdPart(), type.getId(), target.getId());
 		}
 	}
 	
