@@ -571,7 +571,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			processFile(path, filename);
 		}
 		if (filename.contains(MODULE_DEPENDENCY_REFSET_FILENAME)) {
-			outputMDRSFile(path, filename);
+			processMDRSFile(path, filename);
 		}
 	}
 
@@ -828,8 +828,21 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 	}
 
-	private void outputMDRSFile(Path path, String filename) {
-		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
+	private void processMDRSFile(Path path, String filename) {
+		Map<String, String[]> created = new HashMap<>();
+		Map<String, String[]> deleted = new HashMap<>();
+		Map<String, List<String[]>> changed = new HashMap<>();
+
+		readMDRSFile(path + File.separator + filename, changed, created, deleted);
+		try {
+			outputMDRSFile(changed, created, deleted);
+		} catch (TermServerScriptException e) {
+			throw new TermServerRuntimeException(e.getMessage());
+		}
+	}
+
+	private void readMDRSFile(String filename, Map<String, List<String[]>> changed, Map<String, String[]> created, Map<String, String[]> deleted) {
+		try (BufferedReader br = new BufferedReader(new FileReader(filename, StandardCharsets.UTF_8))) {
 			String line;
 
 			while ((line = br.readLine()) != null) {
@@ -839,15 +852,59 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					continue;
 				}
 
-				String[] data = line.split(FIELD_DELIMITER);
-				report(FILE_COMPARISON_TAB + 1, (Object[]) data);
-			}
+				// Start from index = 2 to exclude "<" or ">" and the following space and split into parts:
+				// 0 - id
+				// 1 - effectiveTime
+				// 2 - active
+				// 3 - moduleId, etc.
+				String[] data = line.substring(2).split(FIELD_DELIMITER);
+				String key = data[IDX_ID];
 
-		} catch (IOException | IndexOutOfBoundsException | TermServerScriptException e) {
+				switch (ch) {
+					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
+					case LINE_DELETED_INDICATOR:
+						deleted.put(key, data);
+						break;
+					case LINE_CREATED_INDICATOR:
+						// Current release entry
+						if (deleted.containsKey(key)) {
+							changed.put(key, new ArrayList<>(List.of(deleted.remove(key), data)));
+						} else {
+							created.put(key, data);
+						}
+						break;
+				}
+			}
+		} catch (IOException e) {
 			LOGGER.error("Error reading MDRS file: {}", filename);
 			throw new TermServerRuntimeException(e.getMessage());
 		}
 	}
+
+	private void outputMDRSFile(Map<String, List<String[]>> changed, Map<String, String[]> created, Map<String, String[]> deleted) throws TermServerScriptException {
+		// Output changed entries
+		report(FILE_COMPARISON_TAB + 1, "Changed MDRS records: " + changed.size());
+		for (List<String[]> oldAndNewdata : changed.values()) {
+			report(FILE_COMPARISON_TAB + 1, (Object[]) oldAndNewdata.get(0));
+			report(FILE_COMPARISON_TAB + 1, (Object[]) oldAndNewdata.get(1));
+			report(FILE_COMPARISON_TAB + 1, "");
+		}
+
+		// Output created entries
+		report(FILE_COMPARISON_TAB + 1, "Created MDRS records: " + created.size());
+		for (String[] data : created.values()) {
+			report(FILE_COMPARISON_TAB + 1, (Object[]) data);
+		}
+		report(FILE_COMPARISON_TAB + 1, "");
+
+		// Output deleted entries
+		report(FILE_COMPARISON_TAB + 1, "Deleted MDRS records: " + deleted.size());
+		for (String[] data : deleted.values()) {
+			report(FILE_COMPARISON_TAB + 1, (Object[]) data);
+		}
+		report(FILE_COMPARISON_TAB + 1, "");
+	}
+
 
 	private void count(Map<TotalsIndex, Integer> totals, TotalsIndex index) {
 		totals.compute(index, (k, v) -> v + 1);
