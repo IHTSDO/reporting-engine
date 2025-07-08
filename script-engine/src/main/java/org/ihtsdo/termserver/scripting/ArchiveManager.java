@@ -506,12 +506,12 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	private String determineSourceofPhantomConcept(Concept c) {
-		//What all components referenced this concept?
+		//Which components referenced this concept?
 		Collection<Component> components = SnomedUtils.getAllComponents(c);
 		if (components.isEmpty()) {
 			return "Integrity concern: concept " + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
 		}
-		//Reduce count by 1 because the concept itself gets counted, and that's a phantom.
+		//Reduce the count by 1 because the concept itself gets counted, and that's a phantom.
 		int refCount = components.size()-1;
 
 		//If the concept is not referenced by any of it's own components, then we'll see what other concepts reference it.

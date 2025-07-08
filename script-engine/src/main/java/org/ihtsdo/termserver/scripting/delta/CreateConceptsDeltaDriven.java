@@ -17,10 +17,10 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 
 	List<ConceptRow> conceptsToCreate;
 	private static final String SEMTAG = " (substance)";
-	private static final String FSN_TERM_PREFIX = "Deoxyribonucleic acid of ";
+	private static final String FSN_TERM_PREFIX = "";
 	private static final String FSN_TERM_SUFFIX = "";
 	private static final String PT_TERM_PREFIX = "";
-	private static final String PT_TERM_SUFFIX = " DNA";
+	private static final String PT_TERM_SUFFIX = "";
 
 	private static final int BATCH_SIZE = 10;
 
@@ -59,8 +59,8 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 		c.setActive(true);
 		c.setDefinitionStatus(defStatus);
 		c.setModuleId(targetModuleId);
-		addFsnAndCounterpart(c, generateFSN(row.termBase), false, CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-		addDescription(c, DescriptionType.SYNONYM, generateSynonym(row.termBase), true, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		addFsnAndCounterpart(c, generateFSN(row.fsn), false, CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		addDescription(c, DescriptionType.SYNONYM, generateSynonym(row.pt), true, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		for (String synonym : row.synonyms) {
 			addDescription(c, DescriptionType.SYNONYM, generateSynonym(synonym), false, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		}
@@ -102,16 +102,19 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 					throw new TermServerScriptException("Invalid line format: " + line);
 				}
 				ConceptRow row = new ConceptRow();
-				row.termBase = cols[0].trim();
-				row.synonyms = Arrays.stream(cols[1].split("(?=[A-Z])"))
+				row.fsn = cols[0].trim();
+				row.pt = cols[1].trim();
+				//To split on capital letter use (?=[A-Z])
+				row.synonyms = Arrays.stream(cols[2].split("RNA"))
+						.map(s -> s + "RNA")
 				    .map(String::trim)
-				    .filter(s -> !s.isEmpty())
+				    .filter(s -> !s.isEmpty() && !s.equals("RNA"))
 				    .toList();
-				row.parents = Arrays.stream(cols[2].split(","))
+				row.parents = Arrays.stream(cols[3].split(","))
 						.map(String::trim)
 						.filter(s -> !s.isEmpty())
 						.toList();
-				row.reference=cols[3].trim();
+				row.reference=cols[4].trim();
 				conceptsToCreate.add(row);
 			}
 		} catch (IOException e) {
@@ -120,7 +123,8 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 	}
 
 	class ConceptRow {
-		String termBase;
+		String fsn;
+		String pt;
 		List<String> synonyms;
 		List<String> parents;
 		String reference;
