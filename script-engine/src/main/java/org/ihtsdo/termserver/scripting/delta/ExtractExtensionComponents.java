@@ -34,7 +34,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	private static final Integer CONCEPTS_PER_ARCHIVE = 1;
 	private static final boolean AUTO_IMPORT = false;
 	private static final boolean EXCLUDE_NON_ENGLISH_TERMS = true;
-	private static final boolean CONTAINS_REPLACEMENT_FSNS = true;
+	private static final boolean CONTAINS_REPLACEMENT_FSNS = false;  //If true, extra column needed in input file!
 	private static final boolean INCLUDE_DEPENDENCIES = true;
 	private static final boolean INCLUDE_INFERRED_PARENTS = false;  //DO NOT CHECK IN AS TRUE - NEEDED ONLY FOR DRUGS
 	private static final boolean COPY_INFERRED_PARENT_RELS_TO_STATED = false;
@@ -97,9 +97,15 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				LOGGER.warn("Uruguayian Edition detected");
 				sourceModuleIds = Set.of("5631000179106");
 				getArchiveManager().setRunIntegrityChecks(false);
-			}  else if (getProject().getKey().contains("Spanish")) {
+			} else if (getProject().getKey().contains("Spanish")) {
 				LOGGER.warn("Spanish Edition detected");
 				sourceModuleIds = Set.of("450829007");
+			} else if (getProject().getKey().contains("Española")) {
+				LOGGER.warn("Spain Edition detected");
+				getArchiveManager().setRunIntegrityChecks(false);
+				//Something we could do for Spain is define a levels of strictness for integrity checks,
+				//and allow phantom concepts when they're only referenced by inactive components
+				sourceModuleIds = Set.of("900000001000122104");
 			} else if (KNOWN_DEFECTIVE_PROJECTS.contains(getProject().getKey())) {
 				getArchiveManager().setRunIntegrityChecks(false);
 			}

@@ -2118,8 +2118,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				Relationship newRel = r.clone(null);
 				newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				newRel.setGroupId(freeGroup);
-				newRel.setAxiomEntry(axiom);
-				changesMade += replaceRelationship((Task) null, c, newRel.getType(), newRel.getTarget(), newRel.getConcreteValue(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE, false);
+				changesMade += replaceRelationship((Task) null, c, newRel.getType(), newRel.getTarget(), newRel.getConcreteValue(), newRel.getGroupId(), RelationshipTemplate.Mode.PERMISSIVE, false, axiom);
 			}
 		}
 		return changesMade;
@@ -2134,6 +2133,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, RelationshipTemplate.Mode mode, boolean reportAlreadyExisting) throws TermServerScriptException {
+		return replaceRelationship(t, c, type, value, concreteValue, groupId, mode, reportAlreadyExisting, null);
+	}
+
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, ConcreteValue concreteValue, int groupId, RelationshipTemplate.Mode mode, boolean reportAlreadyExisting, AxiomEntry assignToAxiom) throws TermServerScriptException {
 		int changesMade = 0;
 		if (checkForNoViableRelationshipReplacement(t, c, type, value, concreteValue, groupId, reportAlreadyExisting)) {
 			return NO_CHANGES_MADE;
@@ -2155,6 +2158,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//Copying relationships from elsewhere indicates they have not been released in their current condition
 		newRel.setReleased(false);
 		newRel.setDirty();
+		newRel.setAxiomEntry(assignToAxiom);
 		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 		c.addRelationship(newRel);
 		changesMade++;

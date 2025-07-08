@@ -41,7 +41,7 @@ public class MultiArchiveImporter extends BatchFix {
 		try {
 			ReportSheetManager.setTargetFolderId(GFOLDER_BATCH_IMPORTS);
 			importer.taskPrefix = "";  //No need for a trailing space
-			importer.classifyTasks = true;
+			importer.classifyTasks = false;
 			importer.allowDirectoryInputFile = true;
 			importer.init(args);
 			importer.postInit(null, new String[]{"Task, Archive, User, Result"}, false);
