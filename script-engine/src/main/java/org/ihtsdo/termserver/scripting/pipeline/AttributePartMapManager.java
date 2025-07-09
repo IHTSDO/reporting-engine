@@ -37,6 +37,8 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	protected int successfullValueReplacement = 0;
 	protected int unsuccessfullValueReplacement = 0;
 	protected int lexicallyMatchingMapReuse = 0;
+
+	protected boolean allowStatusMapped = false;
 	
 	protected AttributePartMapManager(ContentPipelineManager cpm, Map<String, Part> parts, Map<String, String> partMapNotes) {
 		this.cpm = cpm;
@@ -120,7 +122,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 		} else if (items[IDX_NO_MAP].equals("true")) {
 			//And we can have items that report being mapped, but with 'no map' - warn about those.
 			mappingNotes.add("Map indicates part mapped to 'No Map'");
-		} else if (items[IDX_STATUS].equals("ACCEPTED")) {
+		} else if (items[IDX_STATUS].equals("ACCEPTED") || (allowStatusMapped && items[IDX_STATUS].equals("MAPPED"))) {
 			partsSeen.add(partNum);
 			Concept attributeValue = gl.getConcept(items[IDX_TARGET], false, true);
 			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue);
@@ -194,4 +196,8 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	}
 
 	protected abstract void populateHardCodedMappings() throws TermServerScriptException;
+
+	public void allowStatusMapped(boolean allowStatusMapped) {
+		this.allowStatusMapped = allowStatusMapped;
+	}
 }

@@ -19,9 +19,9 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LOINCStats extends TermServerReport {
+public class LoincStats extends TermServerReport {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(LOINCStats.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoincStats.class);
 
 	private static String publishedRefsetFile = "G:\\My Drive\\018_Loinc\\2021\\der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt";
 	//Alternatively in Unix /Volumes/GoogleDrive/My Drive/018_Loinc/2021/der2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20170731.txt
@@ -36,7 +36,7 @@ public class LOINCStats extends TermServerReport {
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException {
-		LOINCStats app = new LOINCStats();
+		LoincStats app = new LoincStats();
 		try {
 			ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC
 			app.getGraphLoader().setExcludedModules(new HashSet<>());

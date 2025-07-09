@@ -171,6 +171,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 	@Override
 	protected void importPartMap() throws TermServerScriptException {
 		attributePartMapManager = new NpuAttributePartMapManager(this, partMap, partMapNotes);
+		attributePartMapManager.allowStatusMapped(true);
 		attributePartMapManager.populatePartAttributeMap(getInputFile(FILE_IDX_NPU_PARTS_MAP_BASE_FILE));
 		NpuTemplatedConcept.initialise(this, npuDetailsMap);
 	}
