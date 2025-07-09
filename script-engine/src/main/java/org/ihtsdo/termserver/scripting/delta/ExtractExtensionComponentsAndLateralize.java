@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -15,8 +16,13 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponentsAndLateralize.class);
 
-	private static Set<Concept> bodyStructures = null;
+	private static final String SP_USING_SP = " using ";
+	private static final String STRUCTURE = "structure";
+	private static final String STRUCTURE_OF = "Structure of ";
 
+	private Set<Concept> bodyStructures = null;
+
+	@Override
 	protected void doAdditionalProcessing(Concept c, List<Component> componentsToProcess) throws TermServerScriptException {
 		//Now it might be that the source extension already has this concept lateralized
 		//eg 847081000000101 |Balloon dilatation of bronchus using fluoroscopic guidance (procedure)|
@@ -31,7 +37,6 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 	}
 
 	private void extractOrCreateLateralizedConcept(Concept c, Concept laterality, List<Component> componentsToProcess) throws TermServerScriptException {
-		String lateralityStr = laterality.getPreferredSynonym().toLowerCase();
 		Concept existingLateralizedConcept;
 		if (laterality.equals(BILATERAL)) {
 			existingLateralizedConcept = findBilateralDescendent(c);
@@ -74,7 +79,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		}
 		lateralizeFsn(c, clone, laterality);
 		clone.setDirty();
-		SnomedUtils.getAllComponents(clone).forEach(concept -> concept.setDirty());
+		SnomedUtils.getAllComponents(clone).forEach(Component::setDirty);
 
 		report(clone, Severity.LOW, ReportActionType.CONCEPT_ADDED, SnomedUtils.getDescriptions(clone), clone.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 		return clone;
@@ -85,7 +90,6 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			if (isBodyStructure(r.getTarget())) {
 				Concept lateralizedBodyStructure = findLateralizedCounterpart(r.getTarget(), laterality, overrideCurrentLaterality);
 				if (lateralizedBodyStructure == null) {
-					//throw new TermServerScriptException("Failed to find lateralized counterpart for " + r.getTarget() + " with laterality " + laterality);
 					report(r.getSource(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Failed to find lateralized counterpart for " + r.getTarget() + " with laterality " + laterality + " - continuing with unlateralized concept.");
 				} else {
 					r.setTarget(lateralizedBodyStructure);
@@ -119,7 +123,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		if (!successfulLaterlization) {
 			//We'll add the lateralized body structure to the end of the FSN
 			//Or, if it's "using", before "using"
-			String[] fsnParts = SnomedUtils.deconstructFSN(clone.getFsn());
+			String[] fsnParts = SnomedUtilsBase.deconstructFSN(clone.getFsn());
 			String lateralizedBodyStructurePT = getBodyStructurePT(clone);
 
 			if (lateralizedBodyStructurePT == null) {
@@ -135,21 +139,14 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 				lateralizedBodyStructurePT += " (" + lateralityStr + ")";
 			}
 			String laterlizedFsn = fsnParts[0] + " of " + lateralizedBodyStructurePT + " " + fsnParts[1];
-			if (fsnParts[0].contains(" using ")) {
-				int cutPoint = fsnParts[0].indexOf(" using ");
+			if (fsnParts[0].contains(SP_USING_SP)) {
+				int cutPoint = fsnParts[0].indexOf(SP_USING_SP);
 				laterlizedFsn = fsnParts[0].substring(0, cutPoint) + " of " + lateralizedBodyStructurePT + fsnParts[0].substring(cutPoint) + " " + fsnParts[1];
 			}
 			clone.getFSNDescription().setTerm(laterlizedFsn);
 			clone.setFsn(laterlizedFsn);
 		}
 		
-		/*if (!successfulLaterlization) {
-			String allBodyStructures = getBodyStructureStrs(original).stream().collect(Collectors.joining(", "));
-			if (StringUtils.isEmpty(allBodyStructures)) {
-				allBodyStructures = "None found";
-			}
-			throw new TermServerScriptException("Failed to lateralize FSN for " + original + " with laterality " + laterality + " and body structure(s): " + allBodyStructures);
-		}*/
         normalizeDescriptions(clone, laterality);
 	}
 
@@ -157,8 +154,8 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
         //remove all non-FSN descriptions and add them back in based on the FSN
 		clone.getDescriptions(ActiveState.ACTIVE).stream()
 				.filter(d -> !d.getType().equals(DescriptionType.FSN))
-				.forEach(d -> clone.removeDescription(d));
-		String pt = SnomedUtils.deconstructFSN(clone.getFSNDescription().getTerm())[0];
+				.forEach(clone::removeDescription);
+		String pt = SnomedUtilsBase.deconstructFSN(clone.getFSNDescription().getTerm())[0];
 		if (laterality.equals(BILATERAL)) {
 			pt = pt.replace("right and left", "bilateral");
 		}
@@ -168,12 +165,11 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 		//Bilateral concepts will have an acceptable "both" synonym
 		if (laterality.equals(BILATERAL)) {
 			String bothTerm = pt.replace("bilateral", "both");
-			//if (!bothTerm.endsWith("structure")) {
 			if (!bothTerm.endsWith(")")) {
 				if (bothTerm.contains(" with ")) {
 					bothTerm = bothTerm.replace(" with ", "s with ");
-				} else if (bothTerm.contains(" using ")) {
-					bothTerm = bothTerm.replace(" using ", "s using ");
+				} else if (bothTerm.contains(SP_USING_SP)) {
+					bothTerm = bothTerm.replace(SP_USING_SP, "s using ");
 				} else {
 					bothTerm += "s";
 				}
@@ -190,7 +186,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 						d.setConceptId(clone.getId());
 						d.getLangRefsetEntries().forEach(l -> l.setReferencedComponentId(d.getId()));
                     } catch (TermServerScriptException e) {
-                        throw new RuntimeException(e);
+                        throw new IllegalStateException(e);
                     }
                 });
     }
@@ -198,7 +194,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
     private Set<String> getBodyStructureStrs(Concept original) throws TermServerScriptException {
 		Set<String> bodyStructureStrs = new LinkedHashSet<>();  //Preserve insertion order
 
-		if (original.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+		if (original.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 			String msg = "No stated relationship groups found for " + original;
 			if (!copyInferredRelationshipsToStatedWhereMissing) {
 				msg += " do you need to set copyInferredRelationshipsToStatedWhereMissing to true? in parent class?";
@@ -216,8 +212,8 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 					String origPT = pt;
 					bodyStructureStrs.add(pt);
 
-					if (pt.contains("structure")) {
-						String ptWithoutStructure = pt.replace("structure", "").replace("  ", " ").trim();
+					if (pt.contains(STRUCTURE)) {
+						String ptWithoutStructure = pt.replace(STRUCTURE, "").replace("  ", " ").trim();
 						bodyStructureStrs.add(ptWithoutStructure);
 						if (ptWithoutStructure.contains(" of ")) {
 							String ptWithoutStructureOf = ptWithoutStructure.replace(" of ", " ").replace("  ", " ").trim();
@@ -227,7 +223,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 
 					//Also for the case X structure of Y, we'll try just "of Y"
 					if (origPT.contains("structure of ")) {
-						String[] parts = pt.split("structure");
+						String[] parts = pt.split(STRUCTURE);
 						bodyStructureStrs.add(parts[1]);
 					}
 
@@ -242,12 +238,10 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 	}
 
 	private String getBodyStructurePT(Concept c) throws TermServerScriptException {
-		Set<String> bodyStructureStrs = new TreeSet<>();
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 			for (Relationship r : g.getRelationships()) {
 				if (isBodyStructure(r.getTarget())) {
-					String pt = r.getTarget().getPreferredSynonym().toLowerCase();
-					return pt;
+					return r.getTarget().getPreferredSynonym().toLowerCase();
 				}
 			}
 		}
@@ -271,8 +265,8 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			lateralizedCounterpart = findBodyStructureWithFsn(lateralizedFsn);
 		}
 
-		if (lateralizedCounterpart == null && isBodyStructure(unlaterlizedConcept) && unlateralizedFsn.startsWith("Structure of ")) {
-			String lateralizedFsn = unlateralizedFsn.replace("Structure of ", "Structure of " + lateralityStr + " ");
+		if (lateralizedCounterpart == null && isBodyStructure(unlaterlizedConcept) && unlateralizedFsn.startsWith(STRUCTURE_OF)) {
+			String lateralizedFsn = unlateralizedFsn.replace(STRUCTURE_OF, STRUCTURE_OF + lateralityStr + " ");
 			lateralizedCounterpart = findBodyStructureWithFsn(lateralizedFsn);
 		}
 
@@ -337,7 +331,7 @@ public class ExtractExtensionComponentsAndLateralize extends ExtractExtensionCom
 			leftChildren.retainAll(rightChildren);
 			if (leftChildren.size() == 1) {
 				Concept bilateral = leftChildren.iterator().next();
-				LOGGER.info("Sanity check bilateral detection: " + bilateral);
+				LOGGER.info("Sanity check bilateral detection: {}", bilateral);
 				return bilateral;
 			}
 		}

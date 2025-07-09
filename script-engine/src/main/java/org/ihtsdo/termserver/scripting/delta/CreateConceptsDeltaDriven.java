@@ -17,10 +17,10 @@ public class CreateConceptsDeltaDriven extends CreateConceptsDelta {
 
 	List<ConceptRow> conceptsToCreate;
 	private static final String SEMTAG = " (substance)";
-	private static final String FSN_TERM_PREFIX = "";
+	private static final String FSN_TERM_PREFIX = "Deoxyribonucleic acid of ";
 	private static final String FSN_TERM_SUFFIX = "";
 	private static final String PT_TERM_PREFIX = "";
-	private static final String PT_TERM_SUFFIX = "";
+	private static final String PT_TERM_SUFFIX = " DNA";
 
 	private static final int BATCH_SIZE = 10;
 

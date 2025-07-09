@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
+import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
@@ -74,7 +75,7 @@ public class LoincPopulateSnap2SnomedMapTerms extends LoincScript {
 
 	@Override
 	protected void importPartMap() throws TermServerScriptException {
-
+		throw new NotImplementedException();
 	}
 
 	@Override

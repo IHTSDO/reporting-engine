@@ -72,7 +72,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	protected void doExtensionComponentExtraction(String[] args) throws TermServerScriptException {
 		try {
 			ReportSheetManager.setTargetFolderId("12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"); //Extract and Promote
-			taskPrefix = "INFRA-15569";
+			taskPrefix = "";
 			runStandAlone = false;
 			getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			//No need to specify a module if reading from Snowstorm, we'll pick up the moduleId(s) from the branch metadata

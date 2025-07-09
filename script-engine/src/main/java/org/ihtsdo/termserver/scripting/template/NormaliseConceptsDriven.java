@@ -4,9 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -58,6 +56,7 @@ public class NormaliseConceptsDriven extends NormaliseConcepts {
 		return changesMade;
 	}
 
+	@Override
 	protected int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
@@ -117,6 +116,7 @@ public class NormaliseConceptsDriven extends NormaliseConcepts {
 		return changesMade;
 	}
 
+	@Override
 	protected int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {

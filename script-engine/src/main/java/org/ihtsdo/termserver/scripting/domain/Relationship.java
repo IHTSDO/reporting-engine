@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import java.util.*;
 
 public class Relationship extends Component implements IRelationship, ScriptConstants, Comparable<Relationship> {
-	
+
 	@SerializedName("relationshipId")
 	@Expose
 	private String relationshipId;
