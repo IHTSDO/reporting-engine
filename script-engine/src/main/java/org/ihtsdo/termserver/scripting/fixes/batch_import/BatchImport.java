@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 public class BatchImport extends BatchFix implements BatchJobClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImport.class);
-	private static final char DELIMITER = TAB_CHAR;  // ';'
+	private static final char DELIMITER = ';'; // TAB_CHAR
 	private static final String LIST_ITEM_START = "<li>";
 	private static final String LIST_ITEM_END = "</li>";
 	private static final Boolean CLASSIFY_TASKS = true;
