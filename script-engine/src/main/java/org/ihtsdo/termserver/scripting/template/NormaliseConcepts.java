@@ -21,11 +21,11 @@ import org.slf4j.LoggerFactory;
  */
 public class NormaliseConcepts extends BatchFix {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
+	protected static final Logger LOGGER = LoggerFactory.getLogger(NormaliseConcepts.class);
 
-	private static final boolean USE_STATED_ECL = false;
-	private static final String ECL = "< 239762007 |Flail joint (disorder)|";
-	private static Concept ppp = null;  //This can be left as null, and calculated from the top level hierarchy
+	protected static final boolean USE_STATED_ECL = false;
+	protected static final String ECL = "< 239762007 |Flail joint (disorder)|";
+	protected static Concept ppp = null;  //This can be left as null, and calculated from the top level hierarchy
 
 	public NormaliseConcepts(BatchFix clone) {
 		super(clone);
@@ -86,7 +86,7 @@ public class NormaliseConcepts extends BatchFix {
 		return changesMade;
 	}
 
-	private int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
+	protected int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
 		changesMade += checkAndSetProximalPrimitiveParent(t, c, ppp, false, false);
@@ -126,7 +126,7 @@ public class NormaliseConcepts extends BatchFix {
 		return changesMade;
 	}
 	
-	private int removeUngroupedRelationships(Task t, Concept c) throws TermServerScriptException {
+	protected int removeUngroupedRelationships(Task t, Concept c) throws TermServerScriptException {
 		//Work through stated ungrouped relationships and remove them if they don't also exist inferred, ungrouped
 		
 		//If there are no ungrouped relationships, then nothing to do here
@@ -146,7 +146,7 @@ public class NormaliseConcepts extends BatchFix {
 		return changesMade;
 	}
 
-	private int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
+	protected int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {
 			//Group 0 must remain group 0.  Otherwise find an available group number
@@ -156,7 +156,7 @@ public class NormaliseConcepts extends BatchFix {
 		return changesMade;
 	}
 
-	private int stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
+	protected int stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Relationship r : g.getRelationships()) {
 			Relationship newRel = r.clone(null);

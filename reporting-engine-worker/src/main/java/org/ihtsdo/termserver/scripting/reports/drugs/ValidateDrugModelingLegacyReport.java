@@ -1,10 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,15 +13,10 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.TermGenerator;
+import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
-
-import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +35,6 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	
 	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
-	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
-	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	private Map<BaseMDF, Set<RelationshipGroup>> baseMDFMap;
 	private List<Concept> bannedMpParents;
@@ -53,6 +43,8 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	private boolean isRecentlyTouchedConceptsOnly = false;
 	private Set<Concept> recentlyTouchedConcepts;
 	private Collection<Concept> lipsomalAgentSubstances;
+
+	private DoseFormHelper doseFormHelper;
 	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
@@ -85,7 +77,8 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
 		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
-		populateAcceptableDoseFormMaps();
+		doseFormHelper = new DoseFormHelper();
+		doseFormHelper.initialise(gl);
 		populateGrouperSubstances();
 		populateBaseMDFMap();
 		
@@ -382,21 +375,12 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		String issueStr2 = c.getConceptType() + " uses unacceptable dose form";
 		initialiseSummary(issueStr1);
 		initialiseSummary(issueStr2);
-		
-		Map<Concept, Boolean> acceptableDoseForms;
-		if (isMPF(c)) {
-			acceptableDoseForms = acceptableMpfDoseForms;
-		} else {
-			acceptableDoseForms = acceptableCdDoseForms;
-		}
-		
-		acceptableDoseForms.put(gl.getConcept("785898006 |Conventional release solution for irrigation (dose form)|"), Boolean.TRUE);
-		acceptableDoseForms.put(gl.getConcept("785910004 |Prolonged-release intralesional implant (dose form)|"), Boolean.TRUE);
-		
+
 		Concept thisDoseForm = SnomedUtils.getTarget(c, doseFormTypes, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
+
 		//Is this dose form acceptable?
-		if (acceptableDoseForms.containsKey(thisDoseForm)) {
-			if (acceptableDoseForms.get(thisDoseForm).equals(Boolean.FALSE)) {
+		if (doseFormHelper.usesListedDoseForm(c, thisDoseForm)) {
+			if (!doseFormHelper.usesAcceptableDoseForm(c, thisDoseForm)) {
 				report(c, issueStr2, thisDoseForm);
 			}
 		} else {
@@ -1349,28 +1333,6 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}
-	
-	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
-		String fileName = "resources/acceptable_dose_forms.tsv";
-		LOGGER.debug("Loading {}", fileName );
-		try {
-			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
-			boolean isHeader = true;
-			for (String line : lines) {
-				String[] items = line.split(TAB);
-				if (!isHeader) {
-					Concept c = gl.getConcept(items[0]);
-					acceptableMpfDoseForms.put(c, items[2].equals("yes"));
-					acceptableCdDoseForms.put(c, items[3].equals("yes"));
-				} else {
-					isHeader = false;
-				}
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read " + fileName, e);
-		}
-	}
-	
 
 	private boolean isMP(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 

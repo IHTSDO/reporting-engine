@@ -13,7 +13,7 @@ import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.util.*;
 
-public class NormaliseConceptsDriven extends BatchFix {
+public class NormaliseConceptsDriven extends NormaliseConcepts {
 
 	public NormaliseConceptsDriven(BatchFix clone) {
 		super(clone);
@@ -43,21 +43,6 @@ public class NormaliseConceptsDriven extends BatchFix {
 	}
 
 	@Override
-	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {
-				"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
-				"Report Metadata, Detail, Detail"
-		};
-
-		String[] tabNames = new String[] {
-				"Normalization Processing",
-				"Metadata"
-		};
-
-		super.postInit(tabNames, columnHeadings, false);
-	}
-
-	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		if ((loadedConcept.getGciAxioms() != null && !loadedConcept.getGciAxioms().isEmpty())
@@ -73,7 +58,7 @@ public class NormaliseConceptsDriven extends BatchFix {
 		return changesMade;
 	}
 
-	private int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
+	protected int normaliseConcept(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 
 		//Have we specified a ppp in the issues field?
@@ -92,7 +77,7 @@ public class NormaliseConceptsDriven extends BatchFix {
 		return changesMade;
 	}
 
-	private Concept checkConceptForSpecifiedPPP(Concept loadedConcept) throws TermServerScriptException {
+	protected Concept checkConceptForSpecifiedPPP(Concept loadedConcept) throws TermServerScriptException {
 		Concept newPPP = null;
 		//If we've just loaded this concept, we won't have the issues list populated, so switch back to the copy in memory
 		Concept c = gl.getConcept(loadedConcept.getConceptId());
@@ -108,6 +93,7 @@ public class NormaliseConceptsDriven extends BatchFix {
 		return newPPP;
 	}
 
+	@Override
 	public int restateInferredRelationships(Task t, Concept c) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
@@ -130,44 +116,13 @@ public class NormaliseConceptsDriven extends BatchFix {
 		}
 		return changesMade;
 	}
-	
-	private int removeUngroupedRelationships(Task t, Concept c) throws TermServerScriptException {
-		//Work through stated ungrouped relationships and remove them if they don't also exist inferred, ungrouped
-		
-		//If there are no ungrouped relationships, then nothing to do here
-		if (c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED) == null) {
-			return NO_CHANGES_MADE;
-		}
-		
-		int changesMade = 0;
-		Set<Relationship> ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships();
-		for (Relationship r : ungrouped) {
-			Set<Relationship> inferredMatches = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r);
-			if (inferredMatches.isEmpty()) {
-				removeRelationship(t, c, r, "Redundant ungrouped stated: ");
-				changesMade++;
-			}
-		}
-		return changesMade;
-	}
 
-	private int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
+	protected int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {
 			//Group 0 must remain group 0.  Otherwise, find an available group number
 			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
 			changesMade += stateRelationshipGroup(t, c, g, freeGroup);
-		}
-		return changesMade;
-	}
-
-	private int stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
-		int changesMade = 0;
-		for (Relationship r : g.getRelationships()) {
-			Relationship newRel = r.clone(null);
-			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
-			newRel.setGroupId(freeGroup);
-			changesMade += addRelationship(t, c, newRel, RelationshipTemplate.Mode.PERMISSIVE);
 		}
 		return changesMade;
 	}
