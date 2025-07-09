@@ -92,24 +92,29 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
-	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
-	List<AssociationEntry> associationEntries;
-	List<AxiomEntry> axiomEntries;
-	ObjectPropertyAxiomRepresentation objectPropertyAxiom;
+	private List<InactivationIndicatorEntry> inactivationIndicatorEntries;
+	private List<AssociationEntry> associationEntries;
+	private List<AxiomEntry> axiomEntries;
+	private ObjectPropertyAxiomRepresentation objectPropertyAxiom;
 
-	Set<Concept> statedParents = new HashSet<>();
-	Set<Concept> inferredParents = new HashSet<>();
-	Set<Concept> statedChildren;  //Lazy create Set to reduce memory footprint
-	Set<Concept> inferredChildren;
-	
-	List<RelationshipGroup> statedRelationshipGroups;
-	List<RelationshipGroup> inferredRelationshipGroups;
+	private Set<Concept> statedParents = new HashSet<>();
+	private Set<Concept> inferredParents = new HashSet<>();
+	private Set<Concept> statedChildren;  //Lazy create Set to reduce memory footprint
+	private Set<Concept> inferredChildren;
+
+	private List<RelationshipGroup> statedRelationshipGroupsWithIsA;
+	private List<RelationshipGroup> inferredRelationshipGroupsWithIsA;
+	private List<RelationshipGroup> statedRelationshipGroupsWithoutIsA;
+	private List<RelationshipGroup> inferredRelationshipGroupsWithoutIsA;
+
 	private Set<RefsetMember> otherRefsetMembers;
 
 	public void reset() {
 		assertionFailures = new ArrayList<>();
-		statedRelationshipGroups = null;
-		inferredRelationshipGroups = null;
+		statedRelationshipGroupsWithIsA = null;
+		inferredRelationshipGroupsWithIsA = null;
+		statedRelationshipGroupsWithoutIsA = null;
+		inferredRelationshipGroupsWithoutIsA = null;
 		descriptions = new ArrayList<>();
 		relationships = new HashSet<>();
 		statedParents.clear();
@@ -1387,7 +1392,13 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	}
 	
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, boolean includeIsA) {
-		List<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
+		List<RelationshipGroup> relationshipGroups;
+		if (includeIsA) {
+			relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroupsWithIsA : inferredRelationshipGroupsWithIsA;
+		} else {
+			relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroupsWithoutIsA : inferredRelationshipGroupsWithoutIsA;
+		}
+
 		if (relationshipGroups == null) {
 			boolean flatten = characteristicType.equals(CharacteristicType.INFERRED_RELATIONSHIP);
 			//RelationshipGroups will be distinct from the axioms they came from
@@ -1420,11 +1431,20 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 
 			relationshipGroups.sort(Comparator.comparing(RelationshipGroup::getGroupId));
 
-			if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-				statedRelationshipGroups = relationshipGroups;
+			if (includeIsA) {
+				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+					statedRelationshipGroupsWithIsA = relationshipGroups;
+				} else {
+					inferredRelationshipGroupsWithIsA = relationshipGroups;
+				}
 			} else {
-				inferredRelationshipGroups = relationshipGroups;
+				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+					statedRelationshipGroupsWithoutIsA = relationshipGroups;
+				} else {
+					inferredRelationshipGroupsWithoutIsA = relationshipGroups;
+				}
 			}
+
 		}
 		return relationshipGroups;
 	}
@@ -1465,8 +1485,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	
 	public void recalculateGroups() {
 		//Force recalculation of groups next time they're requested
-		statedRelationshipGroups = null;
-		inferredRelationshipGroups = null;
+		statedRelationshipGroupsWithIsA = null;
+		inferredRelationshipGroupsWithIsA = null;
+		statedRelationshipGroupsWithoutIsA = null;
+		inferredRelationshipGroupsWithoutIsA = null;
 	}
 
 	public int getMaxGroupId(CharacteristicType charType) {

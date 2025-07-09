@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
-	private static final Integer CONCEPTS_PER_ARCHIVE = 1;
-	private static final boolean AUTO_IMPORT = false;
+	private static final Integer CONCEPTS_PER_ARCHIVE = 10;
+	private static final boolean AUTO_IMPORT = true;
 	private static final boolean EXCLUDE_NON_ENGLISH_TERMS = true;
 	private static final boolean CONTAINS_REPLACEMENT_FSNS = false;  //If true, extra column needed in input file!
 	private static final boolean INCLUDE_DEPENDENCIES = true;
@@ -72,7 +72,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	protected void doExtensionComponentExtraction(String[] args) throws TermServerScriptException {
 		try {
 			ReportSheetManager.setTargetFolderId("12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"); //Extract and Promote
-			taskPrefix = "INFRA-15480";
+			taskPrefix = "INFRA-15569";
 			runStandAlone = false;
 			getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 			//No need to specify a module if reading from Snowstorm, we'll pick up the moduleId(s) from the branch metadata
@@ -463,7 +463,9 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	protected void extractComponent(Component thisComponent, List<Component> componentsToProcess, boolean doAdditionalProcessing) throws TermServerScriptException {
 		Concept thisConcept = (Concept)thisComponent;
 
-		if (copyInferredRelationshipsToStatedWhereMissing) {
+		//We will not copy inferred relationship to stated if there is no stated modelling, because we'll pick up the whole concept
+		//further down.
+		if (copyInferredRelationshipsToStatedWhereMissing && hasStatedModeling(thisConcept)) {
 			restateInferredRelationships(thisConcept, COPY_INFERRED_PARENT_RELS_TO_STATED, attributeTypesExcludedFromInferredToStated);
 		}
 
@@ -662,9 +664,13 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 		//If we have no stated modelling (either stated relationships or those extracted from an axiom),
 		//create an Axiom Entry from the inferred rels.
-		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).isEmpty()) {
+		if (!hasStatedModeling(c)) {
 			convertInferredRelsToAxiomEntry(c);
 		}
+	}
+
+	private boolean hasStatedModeling(Concept c) {
+		return !c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).isEmpty();
 	}
 
 	private void replaceFsnInTransit(Concept c) throws TermServerScriptException {
