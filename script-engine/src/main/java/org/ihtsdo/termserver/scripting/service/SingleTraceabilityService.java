@@ -46,7 +46,8 @@ public class SingleTraceabilityService extends CommonTraceabilityService {
 	private static final int MAX_PENDING_SIZE  = 100;
 	private static final int MIN_PENDING_SIZE  = 50;
 	
-	private Map<String, Issue> jiraIssueMap = new HashMap<>();
+	private Map<String, String> jiraTaskAuthorMap = new HashMap<>();
+	private Set<String> jiraTasksNotFound = new HashSet<>();
 	
 	private static final int IDX_USERNAME = 0;
 	private static final int IDX_BRANCH = 1;
@@ -162,40 +163,55 @@ public class SingleTraceabilityService extends CommonTraceabilityService {
 	}
 
 	private void recoverTaskAuthor(Object[] info) {
-		if (info[IDX_BRANCH] != null) {
-			String branch = info[IDX_BRANCH].toString();
-			//Have we seen this branch before?
-			Issue jiraIssue = jiraIssueMap.get(info[IDX_BRANCH]);
-			try {
-				if (jiraIssue == null) {
-					String taskKey = branch.substring(branch.lastIndexOf("/")+1);
-					//Do we infact have a project here?
-					if (!taskKey.contains("-")) {
-						LOGGER.warn("Cannot retrieve author details from project: " + branch);
-						return;
-					}
-					jiraIssue = jiraHelper.getJiraTicket(taskKey);
-				}
-				
-				if (jiraIssue != null) {
-					info[IDX_USERNAME] = jiraIssue.getAssignee().getId();
-
-					//It might be that we have a 'name' and id is null
-					if (StringUtils.isEmpty(info[IDX_USERNAME])) {
-						info[IDX_USERNAME] = jiraIssue.getAssignee().getName();
-					}
-					//If the username is still unacceptable, try the reporter
-					if (unacceptableUsernames.contains(info[IDX_USERNAME].toString())) {
-						info[IDX_USERNAME] = "*" + jiraIssue.getReporter().getName();
-					}
-					jiraIssueMap.put(branch, jiraIssue);
-				}
-			} catch (Exception e) {
-				LOGGER.error("Unable to recover task information related to " + info[IDX_BRANCH],e);
-				//Store this failure so that we don't try to recover it again.
-				jiraIssueMap.put(branch, null);
-			}
+		if (info[IDX_BRANCH] == null) {
+			return;
 		}
+
+		String branch = info[IDX_BRANCH].toString();
+		String taskKey = branch.substring(branch.lastIndexOf("/") + 1);
+
+		// Do we in fact have a project here?
+		if (!taskKey.contains("-")) {
+			LOGGER.warn("Cannot retrieve author details from project: {}", branch);
+			return;
+		}
+
+		// Have we tried to recover this task before but failed?
+		if (jiraTasksNotFound.contains(taskKey)) {
+			LOGGER.warn("Skipping task as we have already failed to recover it: {}", taskKey);
+			return;
+		}
+
+		// Have we seen this branch before?
+		String author = jiraTaskAuthorMap.computeIfAbsent(branch, k -> getJiraTaskAuthor(taskKey));
+
+		if (author != null) {
+			info[IDX_USERNAME] = author;
+		}
+	}
+
+	private String getJiraTaskAuthor(String taskKey) {
+		String author = null;
+
+		try {
+			Issue jiraIssue = jiraHelper.getJiraTicket(taskKey);
+			author = jiraIssue.getAssignee().getId();
+
+			//It might be that we have a 'name' and id is null
+			if (StringUtils.isEmpty(author)) {
+				author = jiraIssue.getAssignee().getName();
+			}
+
+			//If the username is still unacceptable, try the reporter
+			if (unacceptableUsernames.contains(author)) {
+				author = "*" + jiraIssue.getReporter().getName();
+			}
+		} catch (TermServerScriptException e) {
+			LOGGER.error("Unable to recover task information related to {}", taskKey);
+			// Store this failure so that we don't try to recover it again.
+			jiraTasksNotFound.add(taskKey);
+		}
+		return author;
 	}
 
 	private Activity createDummyActivity(String conceptId, Exception e) {
