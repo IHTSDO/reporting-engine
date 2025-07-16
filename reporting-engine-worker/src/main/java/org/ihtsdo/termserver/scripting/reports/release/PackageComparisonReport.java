@@ -446,8 +446,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			fileDetails[index.ordinal() + 1] = fileTotals.get(index);
 		}
 
-		// For extensions MOVED_MODULE and PROMOTED are not applicable
-		if (isExtension()) {
+		// MOVED_MODULE and PROMOTED are only applicable for concepts when comparing editions
+		if (isExtension() || !filename.contains(CONCEPT_FILENAME)) {
 			fileDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = fileDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A";
 		}
 
@@ -463,12 +463,17 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			scsDetails[TotalsIndex.CHANGED.ordinal() + 1] = scsTotals[IDX_CHANGED];
 			scsDetails[TotalsIndex.INACTIVATED.ordinal() + 1] = scsTotals[IDX_INACTIVATED];
 			scsDetails[TotalsIndex.REACTIVATED.ordinal() + 1] = scsTotals[IDX_REACTIVATED];
-			scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = scsTotals[IDX_MOVED_MODULE];
-			scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = scsTotals[IDX_PROMOTED];
+			if ("Concepts".equals(scsName)) {
+				scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = scsTotals[IDX_MOVED_MODULE];
+				scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = scsTotals[IDX_PROMOTED];
+			} else {
+				scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = "N/A";
+				scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A";
+			}
 			scsDetails[TotalsIndex.NEW_INACTIVE.ordinal() + 1] = scsTotals[IDX_NEW_INACTIVE];
 			scsDetails[TotalsIndex.CHANGED_INACTIVE.ordinal() + 1] = scsTotals[IDX_CHANGED_INACTIVE];
-			scsDetails[TotalsIndex.DELETED.ordinal() + 1] = 0; // missing in SCS
-			scsDetails[TotalsIndex.HEADER.ordinal() + 1] = 0; // missing in SCS
+			scsDetails[TotalsIndex.DELETED.ordinal() + 1] = "N/A"; // missing in SCS
+			scsDetails[TotalsIndex.HEADER.ordinal() + 1] = "N/A"; // missing in SCS
 
 			scsDetails[TotalsIndex.TOTAL.ordinal() + 1] =
 					scsTotals[IDX_NEW] +
