@@ -56,13 +56,14 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
 			case "ACnc", "ACnt", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
 				 "LaCnc", "Len", "LnCnc", "LsCnc", "Mass", "MCnc", "MCnt", "MoM", "MSCnc", "Naric", "NCnc", "Num",
-				 "PPres", "Pres", "PrThr", "SCnc", "SCncDiff", "SCnt", "Sub", "Titr", "ThreshNum", "{Measurement}" ->
+				 "PPres", "Pres", "PrThr", "SCnc", "SCncDiff", "SCnt", "Sub", "Titr", "ThreshNum" ->
 					LoincTemplatedConceptWithComponent.create(externalConcept);
 			case "CRto", "MRto", "NRto", "Ratio", "SRto" -> LoincTemplatedConceptWithRatio.create(externalConcept);
 			case "Anat", "Aper", "Color", "Disposition", "DistWidth", "EntMCnc", "EntMeanVol", "EntVol",
 			     "ID", "Morph", "Osmol", "Prid", "Rden", "Source", "SpGrav", "Temp", "Type", "Visc", "Vol" ->
 					createTemplateBasedOnProperties(externalConcept);
 			case "Susc" -> LoincTemplatedConceptWithSusceptibility.create(externalConcept);
+			case "{Measurement}" -> LoincTemplatedConceptForGrouper.create(externalConcept);
 			default -> TemplatedConceptNull.create(externalConcept);
 		};
 	}
