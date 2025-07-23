@@ -112,7 +112,6 @@ public class AddAttributionAnnotations extends DeltaGenerator implements ScriptC
 			changesMade++;
 			countIssue(c);
 			conceptsAnnotated.add(c);
-
 		}
 		report(c, Severity.LOW, action, processingDetail, rmStr);
 		return changesMade;

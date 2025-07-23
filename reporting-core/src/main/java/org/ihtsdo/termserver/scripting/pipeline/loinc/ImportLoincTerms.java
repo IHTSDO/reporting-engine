@@ -1,7 +1,10 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc;
 
+import org.ihtsdo.otf.RF2Constants;
+import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -33,6 +36,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	//-f5 "G:\My Drive\018_Loinc\2023\Loinc_Detail_Type_1_2.75_Active_Lab_NonVet.tsv"
 
 	private final Set<UUID> existingEnGbLangRefsetIds = new HashSet<>();
+
+	private Concept discouragementAnnotationType;
 	
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
@@ -113,6 +118,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		scheme = gl.getConcept(SCTID_LOINC_SCHEMA);
 		externalContentModuleId = SCTID_LOINC_EXTENSION_MODULE;
 		namespace = "1010000";
+		discouragementAnnotationType = gl.getConcept("665161010000107 |LOINC comment (attribute)| ", false, true);
+		getReportManager().disableTab(getTab(TAB_IMPORT_STATUS));
 	}
 
 	@Override
@@ -216,19 +223,27 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		//We will need to import the existing OBS/ORD Refsets and work out what needs to change, but
 		//for the moment we have the luxury of a greenfield site.  Just create them.
 		for (TemplatedConcept tc : successfullyModelled) {
+			if (tc.getExternalIdentifier().equals("10887-8")) {
+				LOGGER.debug("Check annotation output");
+			}
 			if (tc instanceof LoincTemplatedConcept ltc) {
 				LoincTerm loincTerm = ltc.getLoincTerm();
-				switch (loincTerm.getOrderObs()) {
-					case "Order" -> createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
-					case "Observation" -> createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
-					case "Both" -> {
-						createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
-						createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
-					}
-					default -> {
-						//Do nothing
-					}
-				}
+				checkForOrdObsRefsets(loincTerm, ltc);
+				checkForDiscouragement(loincTerm, ltc);
+			}
+		}
+	}
+
+	private void checkForOrdObsRefsets(LoincTerm loincTerm, LoincTemplatedConcept ltc) throws TermServerScriptException {
+		switch (loincTerm.getOrderObs()) {
+			case "Order" -> createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
+			case "Observation" -> createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
+			case "Both" -> {
+				createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
+				createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
+			}
+			default -> {
+				//Do nothing
 			}
 		}
 	}
@@ -250,5 +265,23 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " created");
 		conceptCreator.outputRF2(Component.ComponentType.SIMPLE_REFSET_MEMBER, rm.toRF2());
 	}
+
+	private void checkForDiscouragement(LoincTerm loincTerm, LoincTemplatedConcept ltc) throws TermServerScriptException {
+		if (loincTerm.getStatus().equals("DISCOURAGED")) {
+			//Does this concept already have an annotation?
+			if (ltc.getConcept().getComponentAnnotationEntries().isEmpty()) {
+				incrementSummaryCount("Annotations", "New");
+				ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(ltc.getConcept(), discouragementAnnotationType, "Discouraged");
+				cae.setModuleId(RF2Constants.SCTID_LOINC_EXTENSION_MODULE);
+				ltc.getConcept().addComponentAnnotationEntry(cae);
+				conceptCreator.outputRF2(Component.ComponentType.COMPONENT_ANNOTATION, cae.toRF2());
+			} else {
+				incrementSummaryCount("Annotations", "Unchanged");
+			}
+		} else if (!ltc.getConcept().getComponentAnnotationEntries().isEmpty()) {
+			throw new NotImplementedException();
+		}
+	}
+
 
 }
