@@ -88,8 +88,11 @@ public class ArchiveManager implements ScriptConstants {
 				ownershipIndicator = "changed";
 				underChangedOwnership = true;
 			}
-			LOGGER.info("Archive manager under {} ownership: {}", ownershipIndicator, ts.getClass().getSimpleName());
+			LOGGER.info("Archive manager under {} ownership due to change of report: {}", ownershipIndicator, ts.getClass().getSimpleName());
 			singleton.gl = ts.getGraphLoader();
+		} else if (singleton.currentlyHeldInMemory != null && !singleton.currentlyHeldInMemory.equals(ts.getProject())) {
+			underChangedOwnership = true;
+			LOGGER.info("Archive manager under changed ownership due to change of project. Previously {}, now {}", singleton.currentlyHeldInMemory, ts.getProject());
 		} else {
 			LOGGER.info("Archive manager being reused in: {}", ts.getClass().getSimpleName());
 		}
