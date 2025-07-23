@@ -188,6 +188,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			LOGGER.debug("Check compnum3");
 		}
 
+		if (externalIdentifier.equals("20695-3")) {
+			LOGGER.debug("Check term capitalization");
+	}
+
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
 		if (!confirmExternalIdentifierExists(externalIdentifier) ||
 				containsObjectionableWord(externalConcept)) {
