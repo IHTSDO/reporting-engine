@@ -70,6 +70,8 @@ public class CaseSensitivityUtils implements ScriptConstants {
 
 	private static Set<String> taxonomyWords = new HashSet<>(Arrays.asList(taxonomyWordsArray));
 
+	private static List<String> exceptionsToEponyms = List.of("Mother's", "Father's");
+
 	public static CaseSensitivityUtils get() throws TermServerScriptException {
 		return get(true);
 	}
@@ -121,10 +123,10 @@ public class CaseSensitivityUtils implements ScriptConstants {
 	private void checkConceptForEponyms(Concept c, Map<String, Concept> knownNames) {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			for (String word : d.getTerm().split(" ")) {
-				if (word.endsWith("'s") || word.endsWith("s'")) {
+				if (!exceptionsToEponyms.contains(word) && (word.endsWith("'s") || word.endsWith("s'"))) {
 					String wordWithoutApostrophe = trimApostrophe(word);
 					if (wordWithoutApostrophe.startsWith("(")) {
-						wordWithoutApostrophe = word.substring(1, word.length());
+						wordWithoutApostrophe = word.substring(1);
 					}
 					knownNames.put(wordWithoutApostrophe, c);
 				}
