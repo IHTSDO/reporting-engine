@@ -59,10 +59,11 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	protected void loadLoincDetail() throws TermServerScriptException {
 		LOGGER.info("Loading Loinc Detail: {}", getInputFile(FILE_IDX_LOINC_DETAIL));
 		BufferedReader in = null;
+		int count = 0;
+		String line = null;
 		try {
 			in = new BufferedReader(new FileReader(getInputFile(FILE_IDX_LOINC_DETAIL)));
-			String line = in.readLine();
-			int count = 0;
+			line = in.readLine();
 			while (line != null) {
 				if (count > 0) {
 					LoincDetail loincDetail = LoincDetail.parse(line.split(TAB));
@@ -83,7 +84,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 			}
 			LOGGER.info("Loaded {} details for {} loincNums", count, loincDetailMapOfMaps.size());
 		} catch (Exception e) {
-			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_LOINC_DETAIL), e);
+			throw new TermServerScriptException(FAILED_TO_LOAD + getInputFile(FILE_IDX_LOINC_DETAIL) + " at line " + count + ": " + line, e);
 		} finally {
 			if (in != null) {
 				try {
