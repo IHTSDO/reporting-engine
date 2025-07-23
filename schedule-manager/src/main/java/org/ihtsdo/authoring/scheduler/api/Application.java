@@ -88,7 +88,7 @@ public class Application {
 		}
 		String domain = uri.getHost();
 		domain = domain.startsWith("www.") ? domain.substring(4) : domain;
-		return (domain.contains("-") ? domain.substring(0, domain.lastIndexOf("-")) : domain.substring(0, domain.indexOf("."))).toLowerCase();
+		return (domain.contains("-") ? domain.substring(0, domain.indexOf("-")) : domain.substring(0, domain.indexOf("."))).toLowerCase();
 	}
 
 /*	@Bean
