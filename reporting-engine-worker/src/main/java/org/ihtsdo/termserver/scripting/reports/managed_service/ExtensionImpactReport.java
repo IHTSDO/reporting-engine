@@ -44,7 +44,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250401T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250801T120000Z.zip");
 		TermServerScript.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -155,7 +155,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				COMMON_HEADINGS + formColumnNames(columnNames[0], true),
 				COMMON_HEADINGS + "Impact,Affected Concept,Historical Associations",
 				COMMON_HEADINGS + formColumnNames(columnNames[1], false),
-				COMMON_HEADINGS + "Impact Information",
+				COMMON_HEADINGS + "Impact Information,Existing FSN,Translated FSN,Translated PT",
 				COMMON_HEADINGS + "Axioms Affected"};
 		
 		String[] tabNames = new String[]{"Summary Counts",  //PRIMARY
@@ -346,7 +346,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			incrementSummaryInformation(summaryNames[0]);
 			String fsn = datum.getFsn();
 			String semTag = SnomedUtilsBase.deconstructFSN(fsn)[1];
-			report(QUINARY_REPORT, sctId, fsn, semTag, "New Concept");
+			report(QUINARY_REPORT, sctId, fsn, semTag, "New Concept", "", "", "");
 			return COUNT_AS_NEW_CONCEPT; //Count as new concept
 		}
 
@@ -399,7 +399,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 					HistoricData incomingDatum = incomingData.get(histAssocTarget);
 					String histFsn = incomingDatum.getFsn();
 					String histSemTag = SnomedUtilsBase.deconstructFSN(histFsn)[1];
-					report(QUINARY_REPORT, histAssocTarget, histFsn, histSemTag, "Concept is untranslated replacement for " + parentConcept);
+					report(QUINARY_REPORT, histAssocTarget, histFsn, histSemTag, "Concept is untranslated replacement for " + parentConcept, datum.getFsn(), "", "");
 				}
 				conceptReplacementSeen.add(histAssocTarget);
 			}
@@ -409,12 +409,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private void checkForChangedFSN(Concept currentConcept, HistoricData datum, TranslationStats translationStats, String[] summaryNames) throws TermServerScriptException {
 		//Has the FSN changed from what's currently here?
 		if (!currentConcept.getFsn().equals(datum.getFsn())) {
+			String fsn = datum.getFsn();
+			String semTag = SnomedUtilsBase.deconstructFSN(fsn)[1];
 			if (hasTranslation(currentConcept)) {
-				report(QUINARY_REPORT, currentConcept, "Existing translated FSN has been replaced");
+				report(QUINARY_REPORT, datum.getConceptId(), fsn, semTag, "Existing translated FSN has been replaced", currentConcept.getFsn(), getTranslatedFsn(currentConcept), getTranslatedPreferredSynonym(currentConcept));
 				translationStats.changedFSNCount++;
 				incrementSummaryInformation(summaryNames[1]);
 			} else {
-				report(QUINARY_REPORT, currentConcept, "Existing untranslated FSN has been replaced");
+				report(QUINARY_REPORT, datum.getConceptId(), fsn, semTag, "Existing untranslated FSN has been replaced", currentConcept.getFsn(), "", "");
 				translationStats.changedFSNCountNoCurrent++;
 				incrementSummaryInformation(summaryNames[2]);
 			}
@@ -518,6 +520,24 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private boolean hasTranslation(Concept c) {
 		return c.getDescriptions().stream()
 				.anyMatch(d -> !d.getLang().equals("en"));
+	}
+
+	private String getTranslatedFsn(Concept c) throws TermServerScriptException {
+		for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE)) {
+			if (!SnomedUtils.isInternational(d)) {
+				return d.getTerm();
+			}
+		}
+		return "No translated FSN found for concept " + c.getId();
+	}
+
+	private String getTranslatedPreferredSynonym(Concept c) throws TermServerScriptException {
+		for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+			if (!SnomedUtils.isInternational(d)) {
+				return d.getTerm();
+			}
+		}
+		return "No translated preferred synonym found for concept " + c.getId();
 	}
 
 	@Override
