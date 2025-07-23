@@ -143,6 +143,9 @@ public class IdGenerator implements ScriptConstants{
 	}
 	
 	public void setNamespace(String namespace) {
+		if (!StringUtils.isEmpty(namespace) && !namespace.equals("0")) {
+			isExtension = true;
+		}
 		this.namespace = namespace;
 	}	
 	
