@@ -63,8 +63,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 			RelationshipTemplate rt = partToAttributeMap.get(partNum).clone();
 			rt.setType(attributeType);
 			return List.of(rt);
-		} else if (idxTab != NOT_SET
-				&& !cpm.getMappingsAllowedAbsent().contains(partNum)) {
+		} else if (idxTab != NOT_SET && !cpm.getMappingsAllowedAbsent().contains(partNum)) {
 			//Some special rules exist for certain parts, so we don't need to report if we have one of those.
 			String partStr = parts.get(partNum) == null ? "Part Not Known - " + partNum : parts.get(partNum).toString();
 			cpm.report(idxTab,

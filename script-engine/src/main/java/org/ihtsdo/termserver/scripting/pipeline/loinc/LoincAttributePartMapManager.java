@@ -119,6 +119,8 @@ public class LoincAttributePartMapManager extends AttributePartMapManager implem
 				gl.getConcept("4635002 |Arterial blood (substance)|")));
 		hardCodedMappings.put("LP446471-7", List.of(
 				gl.getConcept("53130003 |Venous blood (substance)|")));
+		hardCodedMappings.put("LP447904-6", List.of(
+				gl.getConcept("685451010000100 |Measurement property (qualifier value)|")));
 	}
 
 }

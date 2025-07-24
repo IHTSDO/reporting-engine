@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.pipeline.loinc.domain;
 
 public enum LoincClassType {
-	LABORDERS("LABORDERS");
+	LABORDERS("LABORDERS.ONTOLOGY");
 
 	private final String name;
 
