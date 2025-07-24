@@ -19,6 +19,7 @@ import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_MEASUREMENT_PART;
 import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_OBSERVATION_PART;
 
 public abstract class LoincTemplatedConcept extends TemplatedConcept implements LoincScriptConstants {
@@ -132,6 +133,17 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		loincDetailMap = loincDetailMapAllTerms.get(externalConcept.getExternalIdentifier());
 	}
 
+	protected void populateTypeMapCommonItems() throws TermServerScriptException {
+		typeMap.put(LOINC_PART_TYPE_CHALLENGE, precondition);
+		typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("246093002 |Component (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_DEVICE, gl.getConcept("424226004 |Using device (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_METHOD, gl.getConcept("246501002 |Technique (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_PROPERTY, gl.getConcept("370130000 |Property (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
+		typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
+	}
+
 	@Override
 	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
 		//Rules that apply to all templates:
@@ -156,7 +168,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			d.addIssue(CaseSensitivityUtils.FORCE_CS);
 
 			//And we'll use the FSN minus the semantic tag as another acceptable term
-			Description additionalAcceptableDesc = Description.withDefaults(useAsAdditionalAcceptableTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+			Description additionalAcceptableDesc = Description.withDefaults(useAsAdditionalAcceptableTerm, DescriptionType.SYNONYM, defaultAccAcceptabilityMap);
 			getConcept().addDescription(additionalAcceptableDesc);
 		}
 	}
@@ -172,7 +184,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		
 		//Add in the traditional colon form that we've previously used as the FSN
 		String colonStr = getLoincTerm(getExternalIdentifier()).getColonizedTerm();
-		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		Description colonDesc = Description.withDefaults(colonStr, DescriptionType.SYNONYM, defaultAccAcceptabilityMap);
 		colonDesc.addIssue(CaseSensitivityUtils.FORCE_CS);
 		concept.addDescription(colonDesc);
 	}
@@ -316,7 +328,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		} else {
 			boolean attributeAdded = addAttributeFromDetail(attributesToAdd, loincDetail);
-			//Now if we didn't find a map, then for non-critical parts, we'll used the loinc part name anyway
+			//Now if we didn't find a map, then for non-critical parts, we'll use the loinc part name anyway
 			if (!attributeAdded && useTypesInPrimitive.contains(loincDetail.getPartTypeName())) {
 				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
 					expectNullMap = true;
@@ -330,6 +342,15 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 						slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
 					}
 					addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+					//If this is a grouper, then we can't have any primitives, thank you.
+					if (getExternalConcept().isGrouperConcept()) {
+						cpm.report( cpm.getTab(TAB_MODELING_ISSUES),
+								getExternalIdentifier(),
+								getExternalConcept().getLongDisplayName(),
+								"Grouper concept with no mapping for " + loincDetail.getPartTypeName() + " excluded rather than marked primitive",
+								loincDetail);
+						addProcessingFlag(ProcessingFlag.DROP_OUT);
+					}
 				}
 			}
 		}
@@ -337,8 +358,18 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//"Unknown" type parts should use the loinc description rather than the concept
 		if (columnsToCheckForUnknownIndicators.contains(loincDetail.getLDTColumnName())
 				&& containsUnknownPhrase(loincDetail.getPartName())) {
-			slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
-			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			//We don't want primitive groupers.  Drop out and report
+			if (getExternalConcept().isGrouperConcept()) {
+				int tab = cpm.getTab(TAB_MODELING_ISSUES);
+				cpm.report(tab, getExternalIdentifier(),
+					getExternalConcept().getLongDisplayName(),
+					"Grouper part features some unknown word",
+					loincDetail);
+				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			} else {
+				slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
+				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			}
 		}
 
 		partTypeSeen.add(partTypeName);
@@ -553,17 +584,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
 		}
-	}
-
-	protected void populateTypeMapCommonItems() throws TermServerScriptException {
-		typeMap.put(LOINC_PART_TYPE_CHALLENGE, precondition);
-		typeMap.put(LOINC_PART_TYPE_COMPONENT, gl.getConcept("246093002 |Component (attribute)|"));
-		typeMap.put(LOINC_PART_TYPE_DEVICE, gl.getConcept("424226004 |Using device (attribute)|"));
-		typeMap.put(LOINC_PART_TYPE_METHOD, gl.getConcept("246501002 |Technique (attribute)|"));
-		typeMap.put(LOINC_PART_TYPE_PROPERTY, gl.getConcept("370130000 |Property (attribute)|"));
-		typeMap.put(LOINC_PART_TYPE_SCALE, gl.getConcept("370132008 |Scale type (attribute)|"));
-		typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704327008 |Direct site (attribute)|"));
-		typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("370134009 |Time aspect (attribute)|"));
 	}
 
 }

@@ -203,7 +203,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 
 	@Override
 	protected void preModelling() throws TermServerScriptException {
-		//Temporarily we're going to cache a list of LOINC en-gb langrefset UUIDs
+		//Temporarily, we're going to cache a list of LOINC en-gb langrefset UUIDs
 		//So that - before we examine the change set, we can inactivate or remove them
 		Map<String, String> altIdentifierMap = gl.getSchemaMap(scheme);
 		LOGGER.info("Noting existing en-gb lang refsets");

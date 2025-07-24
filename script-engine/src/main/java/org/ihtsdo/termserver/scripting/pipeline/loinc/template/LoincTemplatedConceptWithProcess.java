@@ -85,6 +85,15 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 		super.applyTemplateSpecificModellingRules(attributes, loincDetail, rt);
 	}
 
+	private boolean componentIsSubstance() throws TermServerScriptException {
+		String loincPartNum = getLoincDetailOrThrow(COMPONENT_PN).getPartNumber();
+		Concept attributeType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
+		List<RelationshipTemplate> attributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, getExternalIdentifier(), loincPartNum, attributeType);
+		//Return true if any attribute value fsn contains "substance"
+		return attributes.stream()
+				.anyMatch(rt -> rt.getTarget().getFsn().contains("(substance)"));
+	}
+
 	@Override
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
 		//If the CHARACTERIZES slot is still here, but we're allowing it to be empty,
