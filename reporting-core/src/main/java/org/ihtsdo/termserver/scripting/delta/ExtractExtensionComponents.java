@@ -1018,7 +1018,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 							newRel.setAxiomEntry(r.getAxiomEntry());
 							newRel.setModuleId(targetModuleId);
 							newRel.setDirty();
-							//Don't need IDs for axiom based relationships
+							//Don't need IDs for axiom-based relationships
 							if (!r.fromAxiom()) {
 								newRel.setRelationshipId(relIdGenerator.getSCTID());
 							}
@@ -1029,7 +1029,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				}
 				//Again will recursively switch all dependencies as we're switching a concept here
 				if (switchModule(target, componentsToProcess)) {
-					//Is this an unexpected dependency
+					//Is this an unexpected dependency?
 					if (!componentsToProcess.contains(target)) {
 						incrementSummaryInformation("Unexpected dependencies included");
 						addSummaryInformation("Unexpected target dependency: " + target, "");

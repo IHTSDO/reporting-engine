@@ -98,6 +98,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			postInit();
 			conceptCreator = Rf2ConceptCreator.build(this, getInputFile(FILE_IDX_CONCEPT_IDS), getInputFile(FILE_IDX_DESC_IDS), getInputFile(FILE_IDX_REL_IDS), this.getNamespace());
 			conceptCreator.initialiseGenerators(new String[]{"-nS",this.getNamespace(), "-m", getExternalContentModuleId()});
+			TemplatedConcept.initialise(this);
 			loadSupportingInformation();
 			importPartMap();
 			preModelling();
@@ -180,12 +181,12 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected TemplatedConcept modelExternalConcept(String externalIdentifier) throws TermServerScriptException {
-		if (externalIdentifier.equals("108027-4")) {
-			LOGGER.debug("Check grouper behaviour");
-		}
-
 		if (externalIdentifier.equals("20695-3")) {
 			LOGGER.debug("Check term capitalization");
+		}
+
+		if (externalIdentifier.equals("18305-3")) {
+			LOGGER.debug("Check terming includes 'specimen'");
 		}
 
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
@@ -241,7 +242,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (TemplatedConcept tc : successfullyModelled) {
 			Concept concept = tc.getConcept();
 			try {
-				conceptCreator.writeConceptToRF2(getTab(TAB_IMPORT_STATUS), concept, tc.getExternalIdentifier());
+				conceptCreator.writeConceptToRF2(NOT_SET, concept, tc.getExternalIdentifier());
 			} catch (Exception e) {
 				report(getTab(TAB_IMPORT_STATUS), null, concept, Severity.CRITICAL, ReportActionType.API_ERROR, tc.getExternalIdentifier(), e);
 			}

@@ -1717,7 +1717,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public boolean report(int reportIdx, Concept c, Object...details) throws TermServerScriptException {
-		if (quiet || isWhiteListed(c, details)) {
+		if (quiet || isWhiteListed(c, details) || reportIdx == NOT_SET) {
 			return false;
 		}
 
