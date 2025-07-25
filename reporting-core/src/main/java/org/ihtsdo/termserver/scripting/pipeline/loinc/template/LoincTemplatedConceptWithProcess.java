@@ -56,24 +56,25 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	@Override
 	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
 		LoincDetail loincDetail = (LoincDetail) part;
-		//Rule v.3.4.a & b
+		//Rule v.3.4.a
 		//All process observables will have an agent and characterizes.
-		//But only if we're working with Urine
+		//But only if we're working with Urine and the component is a type of substance
 		if (loincDetail.getLDTColumnName().equals(SYSTEM_PN)
-			&& loincDetail.getPartName().contains("Urine")) {
+			&& loincDetail.getPartName().contains("Urine")
+			&& componentIsSubstance()) {
 			Concept agent = gl.getConcept("704322002 |Process agent (attribute)|");
 			Concept kidneyStruct = gl.getConcept("64033007 |Kidney structure (body structure)|");
 			attributes.add(new RelationshipTemplate(agent, kidneyStruct));
 
 			Concept characterizes = gl.getConcept("704321009 |Characterizes (attribute)|");
-			Concept excrtProc = gl.getConcept("718500008 |Excretory process (qualifier value)| ");
-			attributes.add(new RelationshipTemplate(characterizes, excrtProc));
+			Concept excreteProc = gl.getConcept("718500008 |Excretory process (qualifier value)| ");
+			attributes.add(new RelationshipTemplate(characterizes, excreteProc));
 			slotTermMap.put("CHARACTERIZES", "excretion");
 		} else {
 			addProcessingFlag(ProcessingFlag.SUPPRESS_CHARACTERIZES_TERM);
 		}
 
-		//Rule vi.6.b   LP16409-2 Erythrocyte sedimentation rate
+		//Rule vi.6.b LP16409-2 Erythrocyte sedimentation rate
 		if (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals("LP16409-2")) {
 			swapAttributeType(attributes, processOutput, gl.getConcept("704321009 |Characterizes (attribute)|"));
 			RelationshipTemplate additionalAttribute = new RelationshipTemplate(
@@ -86,7 +87,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	}
 
 	private boolean componentIsSubstance() throws TermServerScriptException {
-		String loincPartNum = getLoincDetailOrThrow(COMPONENT_PN).getPartNumber();
+		String loincPartNum = getLoincDetailOrThrow(COMPNUM_PN).getPartNumber();
 		Concept attributeType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		List<RelationshipTemplate> attributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, getExternalIdentifier(), loincPartNum, attributeType);
 		//Return true if any attribute value fsn contains "substance"

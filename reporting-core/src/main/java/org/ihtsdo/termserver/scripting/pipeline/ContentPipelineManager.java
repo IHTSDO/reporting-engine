@@ -307,7 +307,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		}
 
 		//Create a Templated Concept to record the inactivation
-		//But does this external code even still existing in the external code system?
+		//But, does this external code even still exist in the external code system?
 		TemplatedConcept inactivation;
 		ExternalConcept ec = externalConceptMap.get(inactivatingCode);
 		if (ec == null) {

@@ -13,9 +13,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AttributePartMapManager implements ContentPipeLineConstants{
+public abstract class AttributePartMapManager implements ContentPipeLineConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
+	private static final String MAP_IMPORT = "Map Import";
 	private static final int NOT_SET = -1;
 
 	private static final int IDX_PART_NUM = 0;
@@ -31,12 +32,6 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 	protected Map<Concept, Concept> knownReplacementMap = new HashMap<>();
 	protected Map<Concept, Concept> hardCodedTypeReplacementMap = new HashMap<>();
 	protected final Map<String, String> partMapNotes;
-
-	protected int unsuccessfullTypeReplacement = 0;
-	protected int successfullTypeReplacement = 0;
-	protected int successfullValueReplacement = 0;
-	protected int unsuccessfullValueReplacement = 0;
-	protected int lexicallyMatchingMapReuse = 0;
 
 	protected boolean allowStatusMapped = false;
 	
@@ -97,15 +92,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 					}
 				}
 			}
-
 			LOGGER.info("Populated map of {} parts to attributes", partToAttributeMap.size());
-			int tabIdx = cpm.getTab(TAB_SUMMARY);
-			cpm.report(tabIdx, "");
-			cpm.report(tabIdx, "successfullTypeReplacement",successfullTypeReplacement);
-			cpm.report(tabIdx, "unsuccessfullTypeReplacement",unsuccessfullTypeReplacement);
-			cpm.report(tabIdx, "successfullValueReplacement",successfullValueReplacement);
-			cpm.report(tabIdx, "unsuccessfullValueReplacement",unsuccessfullValueReplacement);
-			cpm.report(tabIdx, "lexicallyMatchingMapReuse",lexicallyMatchingMapReuse);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to read " + attributeMapFile + " at line " + lineNum, e);
 		}
@@ -139,7 +126,6 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 			partMapNotes.put(partNum, String.join("\n", mappingNotes));
 			mappingNotes.clear();
 		}
-
 	}
 
 	public Concept replaceValueIfRequired(List<String> mappingNotes, Concept attributeValue) {
@@ -153,8 +139,8 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 			}
 
 			String replacementMsg = replacementValue == null ? "  no replacement available." : hardCodedIndicator + " replaced with " + replacementValue;
-			if (replacementValue == null) unsuccessfullValueReplacement++;
-			else successfullValueReplacement++;
+			String successStr = replacementValue == null ? "Unsuccessful" : "Successful";
+			cpm.incrementSummaryCount(MAP_IMPORT, successStr + " value replacement");
 			String prefix = replacementValue == null ? "* " : "";
 			mappingNotes.add(prefix + "Mapped to" + hardCodedIndicator + " inactive value: " + attributeValue + replacementMsg);
 
@@ -178,8 +164,8 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 				replacementType = cpm.getReplacementSafely(mappingNotes, attributeType, false);
 			}
 			String replacementMsg = replacementType == null ? " no replacement available." : hardCodedIndicator + " replaced with " + replacementType;
-			if (replacementType == null) unsuccessfullTypeReplacement++;
-			else successfullTypeReplacement++;
+			String successStr = replacementType == null ? "Unsuccessful" : "Successful";
+			cpm.incrementSummaryCount(MAP_IMPORT, successStr + " type replacement");
 			mappingNotes.add("Mapped to" + hardCodedIndicator + " inactive type: " + attributeType + replacementMsg);
 
 			if (replacementType != null) {
@@ -188,7 +174,6 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 		}
 		return attributeType;
 	}
-	
 
 	public boolean containsMappingForPartNum(String loincPartNum) {
 		return partToAttributeMap.containsKey(loincPartNum);
