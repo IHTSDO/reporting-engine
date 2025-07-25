@@ -68,11 +68,10 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		this.externalConcept = externalConcept;
 	}
 
-
 	public static void reportStats(int tabIdx) throws TermServerScriptException {
-		cpm.report(tabIdx, "");
-		cpm.report(tabIdx, "Unique PartNums mapped", partNumsMapped.size());
-		cpm.report(tabIdx, "Unique PartNums unmapped", partNumsUnmapped.size());
+		cpm.report(tabIdx, "PartNum Mapping");
+		cpm.report(tabIdx, "", "Unique PartNums mapped", partNumsMapped.size());
+		cpm.report(tabIdx, "","Unique PartNums unmapped", partNumsUnmapped.size());
 	}
 
 	public ExternalConcept getExternalConcept() {
@@ -220,11 +219,14 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	protected void addAttributesToConcept(RelationshipTemplate rt, Part part, boolean expectNullMap) {
 		if (rt != null) {
-			cpm.incrementSummaryCount("Part Mappings", "Mapped");
+			partNumsMapped.add(part.getPartNumber());
+			cpm.incrementSummaryCount("Part Mapping Processing", "Mapped successfully");
 			concept.addRelationship(rt, GROUP_1);
-		} else if (!expectNullMap
-				&& !cpm.getMappingsAllowedAbsent().contains(part.getPartNumber())){
-			cpm.incrementSummaryCount("Part Mappings", "Unmapped");
+		} else if (!expectNullMap && !cpm.getMappingsAllowedAbsent().contains(part.getPartNumber())){
+			//Record the fact that we failed to find a map on a per-part basis
+			partNumsUnmapped.add(part.getPartNumber());
+
+			cpm.incrementSummaryCount("Part Mapping Processing", "Mapped unsuccessfully");
 			String issue = "Not Mapped - " + part.getPartTypeName() + " | " + part.getPartNumber() + "| " + part.getPartName();
 			concept.addIssue(issue);
 			concept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
@@ -233,8 +235,6 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 				cpm.addMissingMapping(part.getPartNumber(), loincDetail.getLoincNum());
 			}
 
-			//Record the fact that we failed to find a map on a per part basis
-			partNumsMapped.add(part.getPartNumber());
 			ExternalConceptUsage usage = unmappedPartUsageMap.get(part.getPartNumber());
 			if (usage == null) {
 				usage = new ExternalConceptUsage();
