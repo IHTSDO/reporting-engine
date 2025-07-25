@@ -77,7 +77,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 				//And we also want ANOTHER copy of this term (minus the semtag) because
 				//the existing PT is being transformed (next line) into the slash separated form
 				String fsnMinusSemtag = SnomedUtilsBase.deconstructFSN(d.getTerm())[0];
-				Description additionalAcceptableDesc = Description.withDefaults(fsnMinusSemtag, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+				Description additionalAcceptableDesc = Description.withDefaults(fsnMinusSemtag, DescriptionType.SYNONYM, defaultAccAcceptabilityMap);
 				getConcept().addDescription(additionalAcceptableDesc);
 			}
 		} else {
