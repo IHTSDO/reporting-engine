@@ -31,7 +31,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	public static final String LOINC_TIME_PART = "LP6969-2";
 	public static final String LOINC_OBSERVATION_PART = "LP442509-8";
-	public static final String LOINC_MEASUREMENT_PART = "LP447904-6";
+	public static final String LOINC_SPECIMEN_VOLUME_PART = "LP19577-3";
 
 	private static final List<String> ALLOW_ABSENT_MAPPING = Arrays.asList(LOINC_TIME_PART, LOINC_OBSERVATION_PART);
 	
