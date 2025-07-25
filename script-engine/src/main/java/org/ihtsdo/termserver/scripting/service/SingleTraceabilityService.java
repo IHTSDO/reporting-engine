@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SingleTraceabilityService extends CommonTraceabilityService {
@@ -46,8 +47,8 @@ public class SingleTraceabilityService extends CommonTraceabilityService {
 	private static final int MAX_PENDING_SIZE  = 100;
 	private static final int MIN_PENDING_SIZE  = 50;
 	
-	private Map<String, String> jiraTaskAuthorMap = new HashMap<>();
-	private Set<String> jiraTasksNotFound = new HashSet<>();
+	private Map<String, String> jiraTaskAuthorMap = new ConcurrentHashMap<>();
+	private Set<String> jiraTasksNotFound = ConcurrentHashMap.newKeySet();
 	
 	private static final int IDX_USERNAME = 0;
 	private static final int IDX_BRANCH = 1;
