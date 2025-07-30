@@ -304,30 +304,37 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		if (slotTermMap.containsKey(templateItem)) {
 			String itemStr = slotTermMap.get(templateItem);
 
-
-			boolean isDeletion = false;
-			if (itemStr == null) {
-				LOGGER.warn("What's going on here?");
-			} else if (itemStr.isEmpty()){
-				isDeletion = true;
+			if (StringUtils.isEmpty(itemStr)){
+				regex = includePrepositionInDeletion(regex, ptTemplateStr);
 			} else if (safeToDecapitalizeFirstLetter(itemStr)){
 				itemStr = StringUtils.decapitalizeFirstLetter(itemStr);
 			}
 
 			ptTemplateStr = ptTemplateStr.replaceAll(regex, itemStr);
-
-			if (isDeletion) {
-				//Did we just wipe out a value?  Trim any trailing connecting words like 'at [TIME]' if so
-				if (StringUtils.isEmpty(itemStr) && ptTemplateStr.contains(" at ")) {
-					ptTemplateStr = ptTemplateStr.replace(" at ", "");
-				}
-				//Process concepts that don't have a time can result in "in  in" so tidy that up
-				ptTemplateStr = ptTemplateStr.replace(" in  in ", " in ");
-			}
 		} else {
 			ptTemplateStr = populateTermTemplateFromAttribute(regex, templateItem, ptTemplateStr);
 		}
 		return ptTemplateStr;
+	}
+
+	private String includePrepositionInDeletion(String regex, String ptTemplateStr) {
+		// Find the position of the regex (slot) in the template string
+		int slotIndex = ptTemplateStr.indexOf(regex.replaceAll("\\\\", ""));
+		if (slotIndex == -1) {
+			return regex; // fallback, not found
+		}
+		// Find the word (preposition) before the slot
+		int preStart = slotIndex - 1;
+		while (preStart >= 0 && Character.isWhitespace(ptTemplateStr.charAt(preStart))) {
+			preStart--;
+		}
+		while (preStart >= 0 && Character.isLetter(ptTemplateStr.charAt(preStart))) {
+			preStart--;
+		}
+		preStart++;
+		// Extract the preposition and build the new regex
+		String preposition = ptTemplateStr.substring(preStart, slotIndex);
+		return " " + preposition + regex;
 	}
 
 	private boolean safeToDecapitalizeFirstLetter(String phrase) throws TermServerScriptException {

@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
@@ -47,7 +46,7 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 
 	@Override
 	protected void loadSupportingInformation() throws TermServerScriptException {
-		loadFullLoincFile(NOT_SET);
+		loadFullLoincFile();
 		loadLoincParts();
 	}
 
@@ -136,41 +135,22 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 		}
 	}
 
-	protected void loadFullLoincFile(int tabIdx) throws TermServerScriptException {
-		loadFullLoincFile(tabIdx, getInputFile(FILE_IDX_LOINC_FULL));
+	protected void loadFullLoincFile() throws TermServerScriptException {
+		loadFullLoincFile(getInputFile(FILE_IDX_LOINC_FULL));
 	}
 
-	protected void loadFullLoincFile(int tabIdx, File fullLoincFile) throws TermServerScriptException {
+	protected void loadFullLoincFile(File fullLoincFile) throws TermServerScriptException {
 		additionalThreadCount++;
 		LOGGER.info("Loading Full Loinc: {}", fullLoincFile);
-		Set<String> targettedProperties = new HashSet<>(Arrays.asList("PrThr", "MCnc","ACnc", "SCnc","Titr", "Prid"));
 		try {
 			Reader in = new InputStreamReader(new FileInputStream(fullLoincFile));
 			//withSkipHeaderRecord() is apparently ignored when using iterator
 			Iterator<CSVRecord> iterator = CSVFormat.EXCEL.parse(in).iterator();
 			iterator.next();  //throw away the header row
-			int hasTargettedPropertyIn20K = 0;
-			int hasTargettedPropertyNotIn20K = 0;
 			while (iterator.hasNext()) {
 				CSVRecord thisLine = iterator.next();
 				LoincTerm loincTerm = LoincTerm.parse(thisLine);
 				externalConceptMap.put(loincTerm.getLoincNum(), loincTerm);
-				//Is this term one of the top 20K?
-				String testRank = loincTerm.getCommonTestRank();
-				if (StringUtils.isEmpty(testRank) || testRank.equals("0")) {
-					if (targettedProperties.contains(loincTerm.getProperty())) {
-						hasTargettedPropertyNotIn20K++;
-					}
-				} else if (tabIdx != NOT_SET && targettedProperties.contains(loincTerm.getProperty())) {
-					hasTargettedPropertyIn20K++;
-				}
-			}
-			if (tabIdx != NOT_SET) {
-				report(tabIdx,"");
-				report(tabIdx,"Summary:");
-				report(tabIdx,"");
-				report(tabIdx,"Has Targeted Property in Top 20K", hasTargettedPropertyIn20K);
-				report(tabIdx,"Has Targeted Property not in Top 20K", hasTargettedPropertyNotIn20K);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(FAILED_TO_LOAD + fullLoincFile, e);

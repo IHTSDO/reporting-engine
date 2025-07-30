@@ -26,6 +26,8 @@ public interface LoincScriptConstants extends ContentPipeLineConstants {
 	String LOINC_PART_TYPE_TIME = "TIME";
 	String LOINC_PART_TYPE_TIME_MODIFIER = "TIME MODIFIER";
 
+	String LOINC_PROPERTY_PRESENCE = "Pres";
+	String LOINC_PROPERTY_PRESENCE_THRESHOLD = "PrThr";
 
 	String COMPONENT_PN = "COMPONENT_PN";
 	String COMPONENTCORE_PN = "COMPONENTCORE_PN";
