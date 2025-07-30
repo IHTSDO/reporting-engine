@@ -42,7 +42,7 @@ public class LoincFileAnalysis extends LoincScript {
 	}
 
 	public void reportFileAnalysis(int fileIdx) throws Exception {
-		loadFullLoincFile(NOT_SET, getInputFile(FILE_IDX_LOINC_FULL));
+		loadFullLoincFile(getInputFile(FILE_IDX_LOINC_FULL));
 		loadAltIdFile(getInputFile(FILE_IDX_ALT_ID));
 		int unknownLoincNums = 0;
 		try {
@@ -80,7 +80,7 @@ public class LoincFileAnalysis extends LoincScript {
 	}
 
 	public void loinc20kAnalysis() throws Exception {
-		loadFullLoincFile(NOT_SET, getInputFile(FILE_IDX_LOINC_FULL));
+		loadFullLoincFile(getInputFile(FILE_IDX_LOINC_FULL));
 		loadAltIdFile(getInputFile(FILE_IDX_ALT_ID));
 		try {
 			for (String loincNum : externalConceptMap.keySet()) {
