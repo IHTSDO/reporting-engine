@@ -185,10 +185,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			LOGGER.debug("Check term capitalization");
 		}
 
-		if (externalIdentifier.equals("18305-3")) {
-			LOGGER.debug("Check terming includes 'specimen'");
-		}
-
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
 		if (!confirmExternalIdentifierExists(externalIdentifier) ||
 				containsObjectionableWord(externalConcept)) {

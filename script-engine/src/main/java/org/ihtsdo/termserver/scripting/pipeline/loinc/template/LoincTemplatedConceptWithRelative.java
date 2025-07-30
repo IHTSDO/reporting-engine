@@ -36,7 +36,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 		LoincDetail loincDetail = (LoincDetail) part;
 		//Rule 2.d.ii An exception is made for LOINC DIVISORs when the property is one that would require a template
 		//with Relative to, e.g., AFr, CFr, MFr, NFr, SFr, VFr, MRto, Ratio, SRto, but there is no DIVISOR LP
-		//provided in the detail file, or the DIVISOR LP is LP443411-6 Specimen Volume. In this case the
+		//provided in the detail file, or the DIVISOR LP is LP443411-6 Specimen Volume. In this case, the
 		//DIVISOR (Relative to) is not required.
 
 		//We will run this rule when we see the COMPONENT detail, because if there's no Divisor, then
