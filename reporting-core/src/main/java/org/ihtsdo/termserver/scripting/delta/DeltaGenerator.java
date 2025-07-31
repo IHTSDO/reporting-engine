@@ -528,6 +528,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 					LOGGER.warn("Mismatch between Concept and Axiom module: {} vs {}", c, a);
 				}
 				conceptComponentOutput = true;
+				//We've created a new axiomEntry, so ensure it's registered with the GL
+				gl.populateComponentMapForConcept(c);
 			}
 			
 			//Now output inferred relationships

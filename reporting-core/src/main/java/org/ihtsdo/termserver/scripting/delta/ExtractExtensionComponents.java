@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtractExtensionComponents.class);
-	private static final Integer CONCEPTS_PER_ARCHIVE = 10;
-	private static final boolean AUTO_IMPORT = true;
+	private static final Integer CONCEPTS_PER_ARCHIVE = 1;
+	private static final boolean AUTO_IMPORT = false;
 	private static final boolean EXCLUDE_NON_ENGLISH_TERMS = true;
 	private static final boolean CONTAINS_REPLACEMENT_FSNS = false;  //If true, extra column needed in input file!
 	private static final boolean INCLUDE_DEPENDENCIES = true;
@@ -351,7 +351,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			return;
 		}
 
-		//Does concept have descendants that we want to group with it?
+		//Does this concept have descendants that we want to group with it?
 		//We need the parents to be imported before any children, so rework any set as one that maintains the order input
 		Set<Concept> descendantsToImport = gl.getDescendantsCache().getDescendants(c, true);
 		descendantsToImport.retainAll(componentsOfInterest);
@@ -361,8 +361,6 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			if (descendantsToImport.size() >= CONCEPTS_PER_ARCHIVE) {
 				//We'll need to load this concept in its own import and promote to the project
 				//so it's available as a parent for subsequent loads
-				//requiresFirstPassLoad.add(c);
-				//continue;
 				int excess = descendantsToImport.size() - CONCEPTS_PER_ARCHIVE;
 				LOGGER.warn("Exceeding batch size by {} for {} ({} descendants).  Consider pre-importing and promoting first.", excess, c, descendantsToImport.size());
 			}
@@ -543,6 +541,9 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		}
 		
 		allModifiedConcepts.add(c);
+
+		//Register this concept again with the GL so that whatever we've done, the components are known such that they can be cleaned
+		gl.populateComponentMapForConcept(c);
 		
 		if (conceptAlreadyTransferred) {
 			incrementSummaryInformation("Existing concept, additional components moved.");
@@ -589,7 +590,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		boolean relationshipMoved = false;
 		boolean relationshipAlreadyMoved = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			//If this is an axiom based relationship, then we'll catch that below with an axiom move
+			//If this is an axiom-based relationship, then we'll catch that below with an axiom move
 			//Actually, if any of them are axiom based, then we don't need to check the others.
 			if (r.fromAxiom()) {
 				break;
@@ -629,14 +630,14 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				if (c.getModuleId().equals(targetModuleId)) {
 					report(c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
 				} else {
-					String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
+					String msg = "Odd Situation. Concept " + c + " already exists at destination in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
 					LOGGER.warn(msg);
 					report(c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
 				}
 			}
 		} else {
-			//If this _isn't_ a concept that was originally listed for transfer and it does exist on the target server, then
-			//we won't look any closer at it.
+			//If this _isn't_ a concept that was originally listed for transfer, and it does exist on the target server,
+			//then we won't look any closer at it.
 			return true;
 		}
 		return false;
@@ -656,7 +657,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			report(c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
 		}
 		c.setModuleId(targetModuleId);
-		//mark it as dirty explicitly, just incase it already had this module!
+		//mark it as dirty explicitly, just in case it already had this module!
 		c.setDirty();
 		incrementSummaryInformation("Concepts moved");
 
@@ -689,9 +690,6 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		conceptCreator.populateComponentId(c, pt, c.getModuleId());
 		replacementTerms.add(pt);
 		c.setDescriptions(replacementTerms);
-
-		//Re-register the concept so that we can clear the dirty flag when needed (this is done on all components known to the GL)
-		gl.populateComponentMapForConcept(c);
 	}
 
 	protected boolean moveDescriptions(Concept c, Concept conceptOnTS) throws TermServerScriptException {
@@ -913,7 +911,6 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				if (a.isDirty()) {
 					//The OWL Service is tricky to set up because we'd need to tell it about which attribute types
 					//should be role grouped, so we'll do a dirty search and replace instead.
-					//String owlStr = gl.getAxiomService().convertRelationshipsToAxiom(axiomRepresentation);
 					for (Map.Entry<Concept, Concept> entry : replacementsMadeMap.entrySet()) {
 						a.setOwlExpression(a.getOwlExpression().replaceAll(":"+entry.getKey().getId(), ":"+entry.getValue().getId()));
 					}
@@ -969,14 +966,12 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 				noMoveRequired.add(r.getType());
 			}
 		}
-		
-		
-		
+
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
 		moveRelationshipTarget(r, componentsToProcess);
 		
-		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
+		//If we didn't need to transfer the concept, then do report the movement of its subcomponents.
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			report(r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
 		}
@@ -985,6 +980,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 
 	private void moveRelationshipTarget(Relationship r, List<Component> componentsToProcess/*, Map<Concept, Concept> replacementsMadeMap*/) throws TermServerScriptException {
 		Concept target = r.getTarget();
+		Concept glTarget = gl.getConcept(target.getConceptId());
 		boolean isIsA = r.getType().equals(IS_A);
 		String charTypeStr = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)?"Stated":"Inferred";
 		//If we don't have a target, we'll assume that's a concrete value.  No need to check that.
@@ -1117,7 +1113,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	}
 
 	private void moveLangRefsetEntriesToTargetModule(Description d, boolean usGbVariance, boolean doShiftDescription) throws TermServerScriptException {
-		//AU for example doesn't give language refset entries for FSNs
+		//AU, for example, doesn't give language refset entries for FSNs
 		if (d.isActiveSafely() && d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).isEmpty()) {
 			createTargetLangRefsetEntries(d);
 		} else {
@@ -1147,10 +1143,8 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 		}
 
 		for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
-			//if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
 			gbEntry.setModuleId(targetModuleId);
 			gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
-			//}
 			//Do we need to copy the GB Langref as the US one?  Not if we detected us/gb variance originally
 			if (!usGbVariance && !hasUSLangRefset) {
 				// This ensures existing langrefset entries are re-used if present, or a new one is created.
@@ -1184,7 +1178,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 	}
 
 	private void createTargetLangRefsetEntries(Description d) throws TermServerScriptException {
-		//The international edition however, does PREF for FSNs
+		//The international edition, however, does PREF for FSNs
 		String acceptability = SCTID_PREFERRED_TERM;
 		if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred()) {
 			acceptability = SCTID_ACCEPTABLE_TERM;
