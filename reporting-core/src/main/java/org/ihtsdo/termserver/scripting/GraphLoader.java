@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -30,6 +31,7 @@ import org.snomed.otf.script.Script;
 public class GraphLoader implements ScriptConstants, ComponentStore {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
+	private static Pattern sctIdPattern;
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<>();
@@ -45,7 +47,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	public static final int MAX_DEPTH = 1000;
 	private Set<String> orphanetConceptIds;
 	private AxiomRelationshipConversionService axiomService;
-	
+
 	private DescendantsCache descendantsCache = DescendantsCache.getDescendantsCache();
 	private DescendantsCache statedDescendantsCache = DescendantsCache.getStatedDescendantsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
@@ -80,6 +82,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
+			sctIdPattern = java.util.regex.Pattern.compile("(\\d+)");
 			singleton = new GraphLoader();
 			singleton.axiomService = new AxiomRelationshipConversionService(NEVER_GROUPED_ATTRIBUTES);
 			singleton.excludedModules = new HashSet<>();
@@ -635,10 +638,9 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 			}
 			return null;
 		}
-		if (identifier.contains(PIPE)) {
-			identifier = identifier.split(ESCAPED_PIPE)[0].trim();
-		}
-		String sctId = identifier.trim();
+		// Extract the first contiguous set of digits, ignoring anything after the last contiguous numbers and any subsequent numbers
+		java.util.regex.Matcher sctIdmatcher = sctIdPattern.matcher(identifier);
+		String sctId = sctIdmatcher.find() ? sctIdmatcher.group(1) : identifier.trim();
 		
 		//Make sure we're actually being asked for a concept
 		if (sctId.length() < 6 || !isConcept(sctId)) {
