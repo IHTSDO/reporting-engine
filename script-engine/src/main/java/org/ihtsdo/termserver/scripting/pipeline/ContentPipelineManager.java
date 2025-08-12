@@ -186,7 +186,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			LOGGER.debug("Check term capitalization");
 		}
 
-		if (externalIdentifier.equals("91671-8")) {
+		if (externalIdentifier.equals("49959-0")) {
 			LOGGER.debug("Check compnum3");
 		}
 
@@ -220,6 +220,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			if (externalConcept.isHighestUsage()) {
 				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
 			}
+		}
+
+		if (HARDCODED_DROP_OUT.contains(externalIdentifier)) {
+			tc.addProcessingFlag(ProcessingFlag.DROP_OUT);
+			tc.getConcept().addIssue("Manually specified for exclusion");
 		}
 		return tc;
 	}
@@ -671,6 +676,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
 		summaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
+
+	public static final List<String> HARDCODED_DROP_OUT = List.of("49959-0");
 
 	public static final List<String> ITEMS_OF_INTEREST =
 			List.of("882-1","881-3","61151-7","1751-7","9318-7","1759-0","33037-3","41276-7","10466-1",
