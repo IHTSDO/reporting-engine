@@ -185,6 +185,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			LOGGER.debug("Check term capitalization");
 		}
 
+		if (externalIdentifier.equals("97507-8")) {
+			LOGGER.debug("Check time");
+		}
+
 		ExternalConcept externalConcept = externalConceptMap.get(externalIdentifier);
 		if (!confirmExternalIdentifierExists(externalIdentifier) ||
 				containsObjectionableWord(externalConcept)) {
@@ -297,9 +301,16 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	private void processInactivation(String inactivatingCode, Map<String, String> altIdentifierMap) throws TermServerScriptException {
 		String existingConceptSCTID = altIdentifierMap.get(inactivatingCode);
 		Concept existingConcept = gl.getConcept(existingConceptSCTID, false, false);
+
+		boolean remainsInactive = false;
 		if (existingConcept != null) {
-			inactivateConcept(existingConcept);
-			conceptCreator.outputRF2Inactivation(existingConcept);
+			if (existingConcept.isActiveSafely()) {
+				inactivateConcept(existingConcept);
+				conceptCreator.outputRF2Inactivation(existingConcept);
+			} else {
+				//If the existing concept is already inactive, we just need to record that.
+				remainsInactive = true;
+			}
 		}
 
 		//Create a Templated Concept to record the inactivation
@@ -312,11 +323,20 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		} else {
 			inactivation = TemplatedConceptNull.create(ec);
 		}
+
+		if (remainsInactive) {
+			inactivation.setIterationIndicator(TemplatedConcept.IterationIndicator.REMAINS_INACTIVE);
+		}
+
 		inactivation.setConcept(existingConcept);
 		inactivatedConcepts.add(inactivation);
 
 		doProposedModelComparison(inactivation);
-		incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, TemplatedConcept.IterationIndicator.REMOVED.toString());
+
+		String iterationIndicator = remainsInactive ?
+				TemplatedConcept.IterationIndicator.REMAINS_INACTIVE.toString() :
+				TemplatedConcept.IterationIndicator.REMOVED.toString();
+		incrementSummaryCount(CHANGES_SINCE_LAST_ITERATION, iterationIndicator);
 
 		//Might not be obvious: the alternate identifier continues to exist even when the concept becomes inactive
 		//So - temporarily again - we'll normalize the scheme id
