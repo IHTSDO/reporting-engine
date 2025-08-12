@@ -382,6 +382,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 			} else {
 				String itemStr = rels.stream()
 						.map(this::getCaseAdjustedTweakedTerm)
+						.sorted()
 						.collect(Collectors.joining(" and "));
 				ptTemplateStr = populateTermTemplate(itemStr, regex, ptTemplateStr, templateItem);
 			}
