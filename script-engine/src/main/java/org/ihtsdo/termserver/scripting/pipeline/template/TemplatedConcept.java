@@ -173,9 +173,13 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 	}
 
 	public void populateTemplate() throws TermServerScriptException {
-		if (isHighestUsage()) {
-			cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage In Scope");
+		if (isHighUsage()) {
+			cpm.incrementSummaryCount(ContentPipelineManager.HIGH_USAGE_COUNTS, "High Usage In Scope");
+			if (isHighestUsage()) {
+				cpm.incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage In Scope");
+			}
 		}
+
 		populateParts();
 		populateTerms();
 		reviewCaseSensitivity(concept);

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 public abstract class ContentPipelineManager extends TermServerScript implements ContentPipeLineConstants {
 
 	public static final String CHANGES_SINCE_LAST_ITERATION = "Changes since last iteration";
+	public static final String HIGH_USAGE_COUNTS = "High usage counts";
 	public static final String HIGHEST_USAGE_COUNTS = "Highest usage counts";
 	public static final String CONTENT_COUNT = "Content counts";
 	public static final String INTERNAL_MAP_COUNT = "Internal map counts";
@@ -212,9 +213,13 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 		if (!(tc instanceof TemplatedConceptNull)) {
 			tc.populateTemplate();
-		} else if (externalConcept.isHighestUsage()) {
+		} else if (externalConcept.isHighUsage()) {
 			//This is a 'highest usage' term, which is out of scope
-			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
+			incrementSummaryCount(ContentPipelineManager.HIGH_USAGE_COUNTS, "High Usage Out of Scope");
+			//Is it also 'highest usage'?
+			if (externalConcept.isHighestUsage()) {
+				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
+			}
 		}
 		return tc;
 	}
@@ -378,7 +383,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 		//Is this a high usage concept?
 		if (activeIndicators.contains(tc.getIterationIndicator()) && tc.isHighUsage()) {
-			incrementSummaryCount(HIGHEST_USAGE_COUNTS, "Active with high usage");
+			incrementSummaryCount(HIGH_USAGE_COUNTS, "Active with high usage");
 		}
 		if (activeIndicators.contains(tc.getIterationIndicator()) && tc.isHighestUsage()) {
 			incrementSummaryCount(HIGHEST_USAGE_COUNTS,"Active with highest usage");
@@ -816,10 +821,15 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		incrementSummaryCount(ContentPipelineManager.CONTENT_COUNT, "Content not added - " + contentType);
 		if (!externalConceptMap.containsKey(externalIdentifier)) {
 			incrementSummaryCount("Missing External Identifier","Identifier not found in source file - " + externalIdentifier);
-		} else if (externalConceptMap.get(externalIdentifier).isHighestUsage() && templatedConcept != null) {
+		} else if (externalConceptMap.get(externalIdentifier).isHighUsage() && templatedConcept != null) {
 			//Templates that come back as null will already have been counted as out of scope
-			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
-			report(getTab(ContentPipeLineConstants.TAB_ITEMS_OF_INTEREST), "Highest Usage Mapping Failure", externalIdentifier);
+			String usageLevel = "High";
+			incrementSummaryCount(ContentPipelineManager.HIGH_USAGE_COUNTS,"High Usage Mapping Failure");
+			if (externalConceptMap.get(externalIdentifier).isHighestUsage()) {
+				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS,"Highest Usage Mapping Failure");
+				usageLevel = "Highest";
+			}
+			report(getTab(ContentPipeLineConstants.TAB_ITEMS_OF_INTEREST), usageLevel + " Usage Mapping Failure", externalIdentifier);
 		}
 		return false;
 	}
