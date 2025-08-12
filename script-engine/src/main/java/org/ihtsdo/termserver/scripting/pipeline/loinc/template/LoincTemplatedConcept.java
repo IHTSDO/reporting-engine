@@ -300,6 +300,13 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	protected void populateParts() throws TermServerScriptException {
 		prepareConceptDefaultedForModule(SCTID_LOINC_EXTENSION_MODULE);
+
+		//Add additional check for LOINC Concept being deprecated
+		if (getLoincTerm().getStatus().equals("DEPRECATED")) {
+			addProcessingFlag(ProcessingFlag.DROP_OUT);
+			getConcept().addIssue("Concept marked as deprecated, although present in detail file");
+		}
+
 		Set<String> partTypeSeen = new HashSet<>();
 		for (LoincDetail loincDetail : loincDetailMap.values()) {
 			populatePart(loincDetail, partTypeSeen);
@@ -406,23 +413,22 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
-		Concept componentAttrib = typeMap.get(LOINC_PART_TYPE_COMPONENT);
-		Concept challengeAttrib = typeMap.get(LOINC_PART_TYPE_CHALLENGE);
+		Concept componentAttribType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
 		if (hasDetailForColName(COMPONENT_PN) && hasNoSubParts()) {
 			//Use COMPNUM_PN LOINC Part map to model SCT Component
-			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 		} else {
-			determineComponentAttributesWithSubParts(attributes, componentAttrib, challengeAttrib);
+			determineComponentAttributesWithSubParts(attributes, componentAttribType);
 		}
 
 		ensureComponentMappedOrRepresentedInTerm(attributes);
 		return attributes;
 	}
 
-	private void determineComponentAttributesWithSubParts(List<RelationshipTemplate> attributes, Concept componentAttrib, Concept challengeAttrib) throws TermServerScriptException {
+	private void determineComponentAttributesWithSubParts(List<RelationshipTemplate> attributes, Concept componentAttribType) throws TermServerScriptException {
 		LoincDetail denom = getLoincDetailForColNameIfPresent(COMPDENOM_PN);
 		if (denom != null) {
-			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
+			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 			addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPDENOM_PN), relativeTo);
 
 			//Check for percentage, unless this is a ratio
@@ -432,15 +438,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 		}
 
-		if (detailPresent(COMPSUBPART2_PN)) {
-			if(attributes.isEmpty()) {
-				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttrib);
-			}
-			if (!addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), challengeAttrib)) {
-				//Did we not find a map for the challenge?  Then we're going to mark this as primitive
-				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
-			}
-		}
+		processSubComponents(attributes, componentAttribType);
 	}
 
 	public LoincTerm getLoincTerm() {
@@ -573,6 +571,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPNUM_PN), componentAttribType);
 			}
 			if (!addAttributeFromDetailWithType(attributes, getLoincDetailOrThrow(COMPSUBPART2_PN), precondition)) {
+				//Did we not find a map for the challenge?  Then we're going to mark this as primitive
 				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 			}
 		}
