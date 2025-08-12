@@ -59,7 +59,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 
 	@Override
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
-		//If the DIVISOR slot is still here but we're allowing it to be empty,
+		//If the DIVISOR slot is still here, but we're allowing it to be empty,
 		//remove it, and then remove the SEPARATOR
 		if (hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_DIVISOR)
 				&& d.getTerm().contains("[DIVISORS]")) {
