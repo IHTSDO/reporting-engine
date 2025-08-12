@@ -160,6 +160,14 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		if (gl.getDescendantsCache().getDescendants(DEVICE).contains(rt.getTarget())) {
 			rt.setType(USING_DEVICE);
 		}
+
+		//If the component is Specimen Volume, then change the System from Direct Site to Inheres In
+		if (rt.getType().equals(DIRECT_SITE)) {
+			LoincDetail component = getLoincDetailForColNameIfPresent(COMPNUM_PN);
+			if (component != null && component.getPartNumber().equals(LOINC_SPECIMEN_VOLUME_PART)) {
+				rt.setType(INHERES_IN);
+			}
+		}
 	}
 
 	protected void applyTemplateSpecificTermingRules(Description d) throws TermServerScriptException {
@@ -333,10 +341,11 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if (!loincDetail.getLDTColumnName().equals(COMPNUM_PN)) {
 				return;
 			}
-			attributesToAdd = determineComponentAttributes();
 			if (loincDetail.getPartNumber().equals(LOINC_SPECIMEN_VOLUME_PART)) {
 				expectNullMap = true;
 			}
+			attributesToAdd = determineComponentAttributes();
+
 		} else if (loincDetail.getPartName().equals(NO_VALUE_SPECIFIED)) {
 			//Deliberately not setting the value is expected if this is a grouper
 			if (!getExternalConcept().isGrouperConcept()) {
