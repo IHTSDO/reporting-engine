@@ -20,7 +20,7 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplatedConcept.class);
 
-	public enum IterationIndicator { NEW, REMOVED, RESURRECTED, MODIFIED, UNCHANGED, MANUAL }
+	public enum IterationIndicator { NEW, REMOVED, RESURRECTED, MODIFIED, UNCHANGED, MANUAL, REMAINS_INACTIVE }
 
 	protected static ContentPipelineManager cpm;
 	protected static GraphLoader gl;
