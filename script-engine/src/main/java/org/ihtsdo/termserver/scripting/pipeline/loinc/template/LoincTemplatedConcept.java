@@ -48,8 +48,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_SUFFIX, "COMPNUMSUFFIX_PN");
 		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_SUPER_SYSTEM, "SYSTEMSUPERSYSTEM_PN");
 		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_SYSTEM, "SYSTEM_PN");
-		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_TIME_MODIFIER, "TIMEMODIFIER_PN");
-		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_TIME, "TIMECORE_PN");
+		mapTypeToPrimaryColumn.put(LOINC_PART_TYPE_TIME, "TIME_PN");
 	}
 	
 	protected static RelationshipTemplate percentAttribute;
@@ -63,7 +62,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected static Concept relativeTo;
 	protected static Set<String> skipPartTypes = new HashSet<>(Arrays.asList("CLASS", "SUFFIX", "SUPER SYSTEM", "ADJUSTMENT", "COUNT"));
 	protected static Set<String> useTypesInPrimitive = new HashSet<>(Arrays.asList("SYSTEM", "METHOD", "SCALE", "TIME"));
-	protected static Set<String> skipLDTColumnNames = new HashSet<>(List.of("SYSTEMCORE_PN"));
+	protected static Set<String> skipLDTColumnNames = new HashSet<>(List.of("SYSTEMCORE_PN","TIMECORE_PN"));
 	protected static Set<String> columnsToCheckForUnknownIndicators = new HashSet<>(Arrays.asList(COMPNUM_PN, COMPDENOM_PN, SYSTEM_PN));
 	protected static Set<String> unknownIndicators = new HashSet<>(Arrays.asList("unidentified", "other", "NOS", "unk sub", "unknown", "unspecified", "abnormal", "total"));
 	protected static Set<String> allowSpecimenTermForLoincParts = new HashSet<>(Arrays.asList("LP7593-9", "LP7735-6", "LP189538-4"));
