@@ -194,9 +194,12 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 		NpuTemplatedConcept templatedConcept = getAppropriateTemplate(externalConcept);
 		if (templatedConcept != null) {
 			templatedConcept.populateTemplate();
-		} else if (externalConcept.isHighestUsage()) {
+		} else if (externalConcept.isHighUsage()) {
 			//This is a highest usage term which is out of scope
-			incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
+			incrementSummaryCount(ContentPipelineManager.HIGH_USAGE_COUNTS, "High Usage Out of Scope");
+			if (externalConcept.isHighestUsage()) {
+				incrementSummaryCount(ContentPipelineManager.HIGHEST_USAGE_COUNTS, "Highest Usage Out of Scope");
+			}
 		}
 		return templatedConcept;
 	}
