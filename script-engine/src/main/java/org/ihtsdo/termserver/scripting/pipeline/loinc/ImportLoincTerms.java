@@ -19,10 +19,7 @@ import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConceptNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class ImportLoincTerms extends LoincScript implements LoincScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ImportLoincTerms.class);
@@ -38,6 +35,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	private final Set<UUID> existingEnGbLangRefsetIds = new HashSet<>();
 
 	private Concept discouragementAnnotationType;
+
+	private Map<String, LoincTemplatedConcept> fsnMap = new HashMap<>();
 	
 	protected String[] tabNames = new String[] {
 			TAB_SUMMARY,
@@ -90,7 +89,9 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 					return LoincTemplatedConceptWithInheres.create(externalConcept);
 				}
 			} else {
-				throw new TermServerScriptException("No Component part found for " + externalConcept.getExternalIdentifier());
+				//throw new TermServerScriptException("No Component part found for " + externalConcept.getExternalIdentifier());
+				LOGGER.warn("No Component part found for " + externalConcept.getExternalIdentifier() + ".  Using Inheres template");
+				return LoincTemplatedConceptWithInheres.create(externalConcept);
 			}
 		}
 		throw new TermServerScriptException("No detail map found for " + externalConcept.getExternalIdentifier());
@@ -142,10 +143,11 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			TemplatedConcept templatedConcept = modelExternalConcept(loincNum);
 			if (templatedConcept != null) {
 				templatedConcept.populateAlternateIdentifier();
-			}
-			validateTemplatedConcept(loincNum, templatedConcept);
-			if (conceptSufficientlyModeled("Observable", loincNum, templatedConcept)) {
-				successfullyModelled.add(templatedConcept);
+				validateTemplatedConcept(templatedConcept);
+				postModelling(templatedConcept);
+				if (conceptSufficientlyModeled("Observable", loincNum, templatedConcept)) {
+					successfullyModelled.add(templatedConcept);
+				}
 			}
 		}
 
@@ -153,11 +155,13 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 			LoincTemplatedConcept templatedConcept = doPanelModeling(panelLoincNum);
 			if (templatedConcept != null) {
 				templatedConcept.populateAlternateIdentifier();
+				validateTemplatedConcept(templatedConcept);
+				postModelling(templatedConcept);
+				if (conceptSufficientlyModeled("Panel", panelLoincNum, templatedConcept)) {
+					successfullyModelled.add(templatedConcept);
+				}
 			}
-			validateTemplatedConcept(panelLoincNum, templatedConcept);
-			if (conceptSufficientlyModeled("Panel", panelLoincNum, templatedConcept)) {
-				successfullyModelled.add(templatedConcept);
-			}
+
 		}
 	}
 
@@ -219,22 +223,19 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	}
 
 	@Override
-	protected void postModelling() throws TermServerScriptException {
-		//We will need to import the existing OBS/ORD Refsets and work out what needs to change, but
-		//for the moment we have the luxury of a greenfield site.  Just create them.
-		for (TemplatedConcept tc : successfullyModelled) {
-			if (tc.getExternalIdentifier().equals("10887-8")) {
-				LOGGER.debug("Check annotation output");
-			}
-			if (tc instanceof LoincTemplatedConcept ltc) {
-				LoincTerm loincTerm = ltc.getLoincTerm();
-				checkForOrdObsRefsets(loincTerm, ltc);
-				checkForDiscouragement(loincTerm, ltc);
-			}
+	protected void postModelling(TemplatedConcept tc) throws TermServerScriptException {
+		super.postModelling(tc);
+
+		if (tc instanceof LoincTemplatedConcept ltc
+				&& !ltc.hasProcessingFlag(ProcessingFlag.DROP_OUT)) {
+			checkForOrdObsRefsets(ltc);
+			checkForDiscouragement(ltc);
+			checkForDuplicateFSN(ltc);
 		}
 	}
 
-	private void checkForOrdObsRefsets(LoincTerm loincTerm, LoincTemplatedConcept ltc) throws TermServerScriptException {
+	private void checkForOrdObsRefsets(LoincTemplatedConcept ltc) throws TermServerScriptException {
+		LoincTerm loincTerm = ltc.getLoincTerm();
 		switch (loincTerm.getOrderObs()) {
 			case "Order" -> createNewRefsetMemberIfRequired(ltc, ORD_REFSET);
 			case "Observation" -> createNewRefsetMemberIfRequired(ltc, OBS_REFSET);
@@ -266,7 +267,8 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		conceptCreator.outputRF2(Component.ComponentType.SIMPLE_REFSET_MEMBER, rm.toRF2());
 	}
 
-	private void checkForDiscouragement(LoincTerm loincTerm, LoincTemplatedConcept ltc) throws TermServerScriptException {
+	private void checkForDiscouragement(LoincTemplatedConcept ltc) throws TermServerScriptException {
+		LoincTerm loincTerm = ltc.getLoincTerm();
 		if (loincTerm.getStatus().equals("DISCOURAGED")) {
 			//Does this concept already have an annotation?
 			if (ltc.getConcept().getComponentAnnotationEntries().isEmpty()) {
@@ -283,5 +285,37 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 	}
 
-
+	private void checkForDuplicateFSN(LoincTemplatedConcept ltc) throws TermServerScriptException {
+		//Check if we have already created a concept with this FSN in the fsnMap
+		String fsn = ltc.getConcept().getFsn();
+		if (fsnMap.containsKey(fsn)) {
+			LoincTemplatedConcept existingLtc = fsnMap.get(fsn);
+			if (!existingLtc.getExternalIdentifier().equals(ltc.getExternalIdentifier())) {
+				LOGGER.warn("Duplicate FSN found: {} for {} and {}.  Modifying FSNs", fsn, ltc.getExternalIdentifier(), existingLtc.getExternalIdentifier());
+				String newFSN = ltc.addScaleToFsn();
+				String newFsnForExisting = existingLtc.addScaleToFsn();
+				if (newFSN.equals(newFsnForExisting)) {
+					LOGGER.warn("Unable to resolve FSN duplication {} vs {}", ltc, existingLtc);
+					incrementSummaryCount("FSN Issues Encountered", "Duplicate FSN Pairs Unresolved");
+					report(getTab(TAB_ITEMS_OF_INTEREST),
+							"FSN Duplication unresolvable",
+							ltc.getExternalIdentifier(),
+							ltc,
+							existingLtc);
+				} else {
+					fsnMap.put(newFSN, ltc);
+					fsnMap.put(newFsnForExisting, existingLtc);
+					fsnMap.remove(fsn);
+					incrementSummaryCount("FSN Issues Encountered", "Duplicate FSN Pairs Resolved");
+					report(getTab(TAB_ITEMS_OF_INTEREST),
+							"FSN Duplication resolved using scale",
+							ltc.getExternalIdentifier(),
+							ltc,
+							existingLtc);
+				}
+			}
+		} else {
+			fsnMap.put(fsn, ltc);
+		}
+	}
 }
