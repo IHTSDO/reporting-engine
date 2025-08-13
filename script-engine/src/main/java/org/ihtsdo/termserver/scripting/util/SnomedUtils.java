@@ -979,6 +979,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
 		return getTarget(c, types, groupId, charType, false);
 	}
+
+	public static Concept getTarget(Concept c, Concept type, int groupId, CharacteristicType charType) throws TermServerScriptException {
+		return getTarget(c, new Concept[]{type}, groupId, charType, false);
+	}
 	
 	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 
 	//order specified by the array
@@ -986,7 +990,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
-				LOGGER.warn(c + " has multiple " + type + " in group " + groupId);
+				LOGGER.warn("{} has multiple {} in group {}", c, type, groupId);
 			} else if (rels.size() == 1) {
 				if (allowNewConcepts) {
 					return rels.iterator().next().getTarget();
