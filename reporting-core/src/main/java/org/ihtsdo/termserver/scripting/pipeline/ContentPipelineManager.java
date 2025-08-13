@@ -120,7 +120,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 				default:
 					throw new TermServerScriptException("Unrecognised Run Mode :" + runMode);
 			}
-			postModelling();
 			reportSummaryCounts();
 			conceptCreator.createOutputArchive(getTab(TAB_IMPORT_STATUS));
 		} finally {
@@ -146,9 +145,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		//Override this method in base class to do some setup prior to modeling
 	}
 
-	protected void postModelling() throws TermServerScriptException {
+	protected void postModelling(TemplatedConcept tc) throws TermServerScriptException {
 		//Override this method in base class to do some final work with the successfully modelled concepts
 		//and also those being inactivated eg sorting out the ORD/OBS Refset Members in LOINC
+		validateTemplatedConcept(tc);
+		tc.populateAlternateIdentifier();
 	}
 
 	private boolean tabExists(String tabName) {
@@ -173,8 +174,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	protected void doModeling() throws TermServerScriptException {
 		for (String externalIdentifier : getExternalConceptsToModel()) {
 			TemplatedConcept templatedConcept = modelExternalConcept(externalIdentifier);
-			validateTemplatedConcept(externalIdentifier, templatedConcept);
-			templatedConcept.populateAlternateIdentifier();
+			postModelling(templatedConcept);
 			if (conceptSufficientlyModeled(getContentType(), externalIdentifier, templatedConcept)) {
 				recordSuccessfulModelling(templatedConcept);
 			}
@@ -841,7 +841,8 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return false;
 	}
 
-	protected void validateTemplatedConcept(String externalIdentifier, TemplatedConcept templatedConcept) throws TermServerScriptException {
+	protected void validateTemplatedConcept(TemplatedConcept templatedConcept) throws TermServerScriptException {
+		String externalIdentifier = templatedConcept.getExternalIdentifier();
 		if (templatedConcept == null || templatedConcept.getConcept() == null) {
 			if (externalConceptMap.get(externalIdentifier) == null) {
 				report(getTab(TAB_MODELING_ISSUES),

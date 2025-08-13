@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincTerm;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 
 
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +73,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	
 	//Map of Loinc Details for this concept
 	protected Map<String, LoincDetail> loincDetailMap;
+
+	protected boolean scaleAddedToFSN = false;
 
 	@Override
 	public String getSchemaId() {
@@ -571,7 +574,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	public String toString() {
-		return this.getClass().getSimpleName() + " for loincNum " + getExternalIdentifier();
+		return this.getClass().getSimpleName() + "  " + getExternalIdentifier() + " " + getConcept();
 	}
 
 	protected void processSubComponents(List<RelationshipTemplate> attributes, Concept componentAttribType) throws TermServerScriptException {
@@ -610,6 +613,40 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
 		}
+	}
+
+	public String addScaleToFsn() throws TermServerScriptException {
+		//Have we already added the scale?
+		if (scaleAddedToFSN) {
+			throw new TermServerScriptException("Scale already added to FSN for " + getExternalIdentifier());
+		}
+
+		Concept scaleAttribute = SnomedUtils.getTarget(getConcept(), typeMap.get(LOINC_PART_TYPE_SCALE), GROUP_1, CharacteristicType.STATED_RELATIONSHIP);
+		if (scaleAttribute == null) {
+			throw new TermServerScriptException("No scale attribute found for " + getExternalIdentifier());
+		}
+
+		String scaleStr = scaleAttribute.getPreferredSynonym();
+		Description fsnDesc = getConcept().getFSNDescription();
+		String fsnStr = fsnDesc.getTerm();
+		String origFsnWithoutSemtag = SnomedUtils.deconstructFSN(fsnStr)[0];
+
+		//Can we lower case the first letter before prepending the scale?
+		if (!fsnDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+			fsnStr = StringUtils.deCapitalize(fsnStr);
+		}
+
+		String newFsnStr = scaleStr + " of " + fsnStr;
+		fsnDesc.setTerm(newFsnStr);
+		getConcept().setFsn(newFsnStr);
+
+		//Do we have a matching term without the semtag that also needs adjusted?
+		Description matchingDesc = getConcept().getDescription(origFsnWithoutSemtag, ActiveState.ACTIVE);
+		if (matchingDesc != null) {
+			String newMatchingStr = SnomedUtils.deconstructFSN(newFsnStr)[0];
+			matchingDesc.setTerm(newMatchingStr);
+		}
+		return newFsnStr;
 	}
 
 }
