@@ -87,12 +87,9 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		// NO Extension
-		params.put(PREV_RELEASE, "no/snomed_ct_no_releases/2025-06-02T11:36:04/output-files/SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250615T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250401T120000Z.zip");
-		params.put(THIS_RELEASE, "no/snomed_ct_no_releases/2025-06-30T12:11:50/output-files/SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250715T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250501T120000Z.zip");
-		params.put(MODULES, "51000202101, 57101000202106, 57091000202101");
+		params.put(THIS_RELEASE, "au/snomed_ct_au_releases/2025-05-22T09:16:58/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20250531T120000Z.zip");
+		params.put(PREV_RELEASE, "au/snomed_ct_au_releases/2025-03-24T09:50:06/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20250331T120000Z.zip");
+		params.put(MODULES, "32506021000036107, 351000168100");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -883,8 +880,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 	private void outputMDRSFile(Map<String, List<String[]>> changed, Map<String, String[]> created, Map<String, String[]> deleted) throws TermServerScriptException {
 		// Output changed entries
-		report(FILE_COMPARISON_TAB + 1, "Changed MDRS records: " + changed.size());
-		for (List<String[]> oldAndNewdata : changed.values()) {
+		List<List<String[]>> changedList = new ArrayList<>(changed.values());
+		changedList.sort(new SortMDRS());
+
+		report(FILE_COMPARISON_TAB + 1, "Changed MDRS records: " + changedList.size());
+		for (List<String[]> oldAndNewdata : changedList) {
 			report(FILE_COMPARISON_TAB + 1, (Object[]) oldAndNewdata.get(0));
 			report(FILE_COMPARISON_TAB + 1, (Object[]) oldAndNewdata.get(1));
 			report(FILE_COMPARISON_TAB + 1, "");
@@ -952,6 +952,32 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 		boolean isReactivated() {
 			return INACTIVE_FLAG.equals(previousValue[IDX_ACTIVE]) && ACTIVE_FLAG.equals(currentValue[IDX_ACTIVE]);
+		}
+	}
+
+	class SortMDRS implements Comparator<List<String[]>> {
+		@Override
+		public int compare(List<String[]> o1 , List<String[]> o2) {
+			String[] data1 = o1.get(0);
+			String[] data2 = o2.get(0);
+
+			if (compareByIdx(MDRS_IDX_SOURCE_EFFECTIVE_TIME, data1, data2) == 0) {
+				if (compareByIdx(MDRS_IDX_MODULEID, data1, data2) == 0) {
+					if (compareByIdx(MDRS_IDX_TARGET_EFFECTIVE_TIME, data1, data2) == 0) {
+						return compareByIdx(MDRS_IDX_REFCOMPID, data1, data2);
+					}
+					return compareByIdx(MDRS_IDX_TARGET_EFFECTIVE_TIME, data1, data2);
+				}
+				return compareByIdx(MDRS_IDX_MODULEID, data1, data2);
+			}
+			return compareByIdx(MDRS_IDX_SOURCE_EFFECTIVE_TIME, data1, data2);
+		}
+
+		private int compareByIdx(int idx, String[] o1, String[] o2) {
+			String val1 = o1[idx];
+			String val2 = o2[idx];
+
+			return val1.compareTo(val2);
 		}
 	}
 }
