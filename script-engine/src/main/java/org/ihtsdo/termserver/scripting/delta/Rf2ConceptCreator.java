@@ -69,14 +69,14 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 			report(tabIdx, concept, Severity.LOW, ReportActionType.CONCEPT_ADDED, info, SnomedUtils.getDescriptions(concept), expression, "OK");
 
 			//Set that concept to clean so we don't output it twice
-			SnomedUtils.getAllComponents(concept).stream().forEach(c -> c.setClean());
+			SnomedUtils.getAllComponents(concept).forEach(Component::setClean);
 		}
 	}
 
 	public void outputRF2Inactivation(Concept concept) throws TermServerScriptException {
 		//We'll do inactivations quietly
 		super.outputRF2(concept);
-		SnomedUtils.getAllComponents(concept).stream().forEach(c -> c.setClean());
+		SnomedUtils.getAllComponents(concept).forEach(Component::setClean);
 	}
 
 
@@ -138,12 +138,11 @@ public class Rf2ConceptCreator extends DeltaGenerator {
 		}
 
 		String finalConceptId = conceptId;
-		c.getDescriptions().stream()
-			.forEach(d -> d.setConceptId(finalConceptId));
-		c.getRelationships().stream()
-			.forEach(d -> d.setSourceId(finalConceptId));
-		c.getAlternateIdentifiers().stream()
-			.forEach(a -> a.setReferencedComponentId(finalConceptId));
+		c.getDescriptions().forEach(d -> d.setConceptId(finalConceptId));
+		c.getRelationships().forEach(r -> r.setSourceId(finalConceptId));
+		c.getAlternateIdentifiers().forEach(i -> i.setReferencedComponentId(finalConceptId));
+		c.getComponentAnnotationEntries().forEach(a -> a.setReferencedComponentId(finalConceptId));
+		c.getOtherRefsetMembers().forEach(rm -> rm.setReferencedComponentId(finalConceptId));
 	}
 	
 	private void setDescriptionId(String conceptId, Component component) throws TermServerScriptException {

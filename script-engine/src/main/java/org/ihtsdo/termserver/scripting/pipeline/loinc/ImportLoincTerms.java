@@ -89,8 +89,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 					return LoincTemplatedConceptWithInheres.create(externalConcept);
 				}
 			} else {
-				//throw new TermServerScriptException("No Component part found for " + externalConcept.getExternalIdentifier());
-				LOGGER.warn("No Component part found for " + externalConcept.getExternalIdentifier() + ".  Using Inheres template");
+				LOGGER.warn("No Component part found for {}.  Using Inheres template.", externalConcept.getExternalIdentifier());
 				return LoincTemplatedConceptWithInheres.create(externalConcept);
 			}
 		}
@@ -249,9 +248,10 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		}
 	}
 
-	private void createNewRefsetMemberIfRequired(LoincTemplatedConcept ltc, Concept refset) throws TermServerScriptException {
+	private void createNewRefsetMemberIfRequired(LoincTemplatedConcept ltc, Concept refset) {
 		//Does this concept already appear in this refset?
-		if (ltc.getConcept().appearsInRefset(refset)) {
+		Concept c = ltc.getConcept();
+		if (c.appearsInRefset(refset)) {
 			incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " unchanged");
 			return;
 		}
@@ -263,11 +263,11 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		rm.setRefsetId(refset.getId());
 		rm.setId(UUID.randomUUID().toString());
 		rm.setDirty();
+		c.addOtherRefsetMember(rm);
 		incrementSummaryCount(ContentPipelineManager.REFSET_COUNT, refset.getFsn() + " created");
-		conceptCreator.outputRF2(Component.ComponentType.SIMPLE_REFSET_MEMBER, rm.toRF2());
 	}
 
-	private void checkForDiscouragement(LoincTemplatedConcept ltc) throws TermServerScriptException {
+	private void checkForDiscouragement(LoincTemplatedConcept ltc) {
 		LoincTerm loincTerm = ltc.getLoincTerm();
 		if (loincTerm.getStatus().equals("DISCOURAGED")) {
 			//Does this concept already have an annotation?
@@ -276,7 +276,6 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 				ComponentAnnotationEntry cae = ComponentAnnotationEntry.withDefaults(ltc.getConcept(), discouragementAnnotationType, "Discouraged");
 				cae.setModuleId(RF2Constants.SCTID_LOINC_EXTENSION_MODULE);
 				ltc.getConcept().addComponentAnnotationEntry(cae);
-				conceptCreator.outputRF2(Component.ComponentType.COMPONENT_ANNOTATION, cae.toRF2());
 			} else {
 				incrementSummaryCount("Annotations", "Unchanged");
 			}

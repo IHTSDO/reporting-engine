@@ -352,7 +352,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		} else if (loincDetail.getPartName().equals(NO_VALUE_SPECIFIED)) {
 			//Deliberately not setting the value is expected if this is a grouper
 			if (!getExternalConcept().isGrouperConcept()) {
-				LOGGER.warn("LoincNum {} has a part with no value specified, but this is not a grouper concept.  This is unexpected and may cause issues.", getExternalIdentifier());
+				if (!getLoincTerm().isPanel()) {
+					LOGGER.warn("LoincNum {} has a part with no value specified, but this is not a grouper concept or panel.  This is unexpected and may cause issues.", getExternalIdentifier());
+				}
 				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 			} else {
 				slotTermMap.put(LOINC_PART_TYPE_PROPERTY, "Measurement");

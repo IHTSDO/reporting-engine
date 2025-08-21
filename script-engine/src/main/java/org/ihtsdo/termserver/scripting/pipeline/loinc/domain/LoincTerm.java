@@ -491,4 +491,8 @@ public class LoincTerm extends ExternalConcept implements Comparable<LoincTerm> 
 		//A grouper concept should be marked as sufficiently defined, even if it does not feature a full set of attributes.
 		return getLoincClass().equals(LoincClassType.LABORDERS.getName());
 	}
+
+	public boolean isPanel() {
+		return getLoincClass().contains("PANEL");
+	}
 }
