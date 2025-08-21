@@ -555,11 +555,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				addProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT);
 				slotTermMap.put(loincDetail.getPartTypeName(), "");
 			} else if (loincDetail.getPartNumber().equals(LOINC_SPECIMEN_VOLUME_PART)) {
-				//We won't have a component since it will be 'specimen volume', so switch
-				//the term template
-				addProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT);
+				//We won't have a system since inheres-in will take specimen, so simplify the term template
 				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
-				setPreferredTermTemplate("[PROPERTY] of [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
+				setPreferredTermTemplate("[PROPERTY] of [COMPONENT] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 			} else if (!skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
 				//Rule 2.c If we don't have a part mapping, use what we do get in the FSN
 				slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
