@@ -471,7 +471,11 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 
 		List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(tc.getExistingConcept(), tc.getConcept(), skipForComparison);
 		if (ComponentComparisonResult.hasChanges(componentComparisonResults)) {
-			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MODIFIED);
+			if (tc.getExistingConcept().isActiveSafely()) {
+				tc.setIterationIndicator(TemplatedConcept.IterationIndicator.MODIFIED);
+			} else {
+				tc.setIterationIndicator(TemplatedConcept.IterationIndicator.REACTIVATED);
+			}
 		} else {
 			tc.setIterationIndicator(TemplatedConcept.IterationIndicator.UNCHANGED);
 			tc.addDifferenceFromExistingConcept("All Unchanged");
