@@ -12,6 +12,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -557,7 +558,20 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 
 		conceptComponentOutput |= outputComponentAnnotations(c);
+
+		for (RefsetMember rm : c.getOtherRefsetMembers()) {
+			conceptComponentOutput |= outputRF2(rm);
+		}
 		return conceptComponentOutput;
+	}
+
+	protected boolean outputRF2(RefsetMember rm) throws TermServerScriptException {
+		if (rm.isDirty() && !dryRun) {
+			//We'll have to look at the type of this member to know what file to write it to.
+			//For now, assume it's a simple refset
+			writeToRF2File(simpleRefsetDeltaFilename, rm.toRF2());
+		}
+		return rm.isDirty();
 	}
 
 	private boolean hasDirtyStatedRelationships(Concept c) {
