@@ -1816,11 +1816,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		//For now we'll assume that the first Axiom encountered in a group is the owning axiom
 		for (RelationshipGroup g : getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, true)) {
 			AxiomEntry a = g.getAxiomEntry();
-			List<RelationshipGroup> axiomGroups = groupsByAxiom.get(a.getId());
-			if (axiomGroups == null) {
-				axiomGroups = new ArrayList<>();
-				groupsByAxiom.put(a.getId(), axiomGroups);
-			}
+			List<RelationshipGroup> axiomGroups = groupsByAxiom.computeIfAbsent(a.getId(), k -> new ArrayList<>());
 			axiomGroups.add(g);
 		}
 		return groupsByAxiom;
@@ -1868,7 +1864,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public void addOtherRefsetMember(RefsetMember rm) {
 		//Remove any existing instance of this member first, as a change of state
 		//will not be stored, as the refset member will have the same id and so
-		//looks like it's already been stored.
+		//it looks like it's already been stored.
 		getOtherRefsetMembers().remove(rm);
 		getOtherRefsetMembers().add(rm);
 	}

@@ -558,6 +558,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 
 		conceptComponentOutput |= outputComponentAnnotations(c);
+
+		for (RefsetMember rm : c.getOtherRefsetMembers()) {
+			conceptComponentOutput |= outputRF2(rm);
+		}
 		return conceptComponentOutput;
 	}
 

@@ -454,14 +454,20 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		});
 
 		//We need to populate the concept SCTID before we can create axiom entries
-		tc.getConcept().setId(tc.getExistingConcept().getId());
+		Concept c = tc.getConcept();
+		String sctId = tc.getExistingConcept().getId();
+		c.setId(sctId);
 		//And we can apply that to the alternate identifiers early on so they don't show up as a change
-		tc.getConcept().getAlternateIdentifiers()
-				.forEach(a -> a.setReferencedComponentId(tc.getExistingConcept().getId()));
+		c.getAlternateIdentifiers()
+				.forEach(a -> a.setReferencedComponentId(sctId));
+		//Also for refset members and annotations
+		c.getOtherRefsetMembers().forEach(rm -> rm.setReferencedComponentId(sctId));
+		c.getComponentAnnotationEntries().forEach(a -> a.setReferencedComponentId(sctId));
+
 		//Copy the axiom entry from the existing concept so relationship changes can be applied there
-		tc.getConcept().setAxiomEntries(tc.getExistingConcept().getAxiomEntries(ActiveState.ACTIVE, false));
+		c.setAxiomEntries(tc.getExistingConcept().getAxiomEntries(ActiveState.ACTIVE, false));
 		convertStatedRelationshipsToAxioms(tc.getConcept(), true, true);
-		tc.getConcept().setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(tc.getConcept()));
+		c.setAxiomEntries(AxiomUtils.convertClassAxiomsToAxiomEntries(tc.getConcept()));
 
 		List<ComponentComparisonResult> componentComparisonResults = SnomedUtils.compareComponents(tc.getExistingConcept(), tc.getConcept(), skipForComparison);
 		if (ComponentComparisonResult.hasChanges(componentComparisonResults)) {
@@ -907,7 +913,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		for (String objectionableWord : getObjectionableWords()) {
 			if (externalConcept.getLongDisplayName() == null) {
 				LOGGER.debug("Unable to obtain display name for {}", externalConcept.getExternalIdentifier());
-			} else if (externalConcept.getLongDisplayName().toLowerCase().contains(" " + objectionableWord + " ")) {
+			} else if (normaliseLCN(externalConcept).contains(" " + objectionableWord + " ")) {
 				report(getTab(TAB_MODELING_ISSUES),
 						externalConcept.getExternalIdentifier(),
 						ContentPipelineManager.getSpecialInterestIndicator( externalConcept.getExternalIdentifier()),
@@ -917,6 +923,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 			}
 		}
 		return false;
+	}
+
+	private String normaliseLCN(ExternalConcept externalConcept) {
+		return " " + externalConcept.getLongDisplayName().toLowerCase() + " ";
 	}
 
 	protected boolean confirmExternalIdentifierExists(String externalIdentifier) throws TermServerScriptException {
