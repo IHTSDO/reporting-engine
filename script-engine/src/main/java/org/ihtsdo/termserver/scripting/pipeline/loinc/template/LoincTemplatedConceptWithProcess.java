@@ -11,9 +11,12 @@ import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_PART_SEDIMENTATION;
+
 public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
 	private static Concept processOutput;
+	private static Concept characterizes;
 
 	protected LoincTemplatedConceptWithProcess(ExternalConcept externalConcept) {
 		super(externalConcept);
@@ -25,6 +28,8 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 		if (processOutput == null) {
 			processOutput = gl.getConcept("704324001 |Process output (attribute)|");
 		}
+		characterizes = gl.getConcept("704321009 |Characterizes (attribute)|");
+		templatedConcept.typeMap.put("CHARACTERIZES", characterizes);
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_COMPONENT, processOutput);
 		templatedConcept.typeMap.put(LOINC_PART_TYPE_TIME, gl.getConcept("704323007 |Process duration (attribute)|"));
 
@@ -35,7 +40,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes(boolean expectNullMap) throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 
@@ -66,10 +71,15 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 			Concept kidneyStruct = gl.getConcept("64033007 |Kidney structure (body structure)|");
 			attributes.add(new RelationshipTemplate(agent, kidneyStruct));
 
-			Concept characterizes = gl.getConcept("704321009 |Characterizes (attribute)|");
 			Concept excreteProc = gl.getConcept("718500008 |Excretory process (qualifier value)| ");
 			attributes.add(new RelationshipTemplate(characterizes, excreteProc));
 			slotTermMap.put("CHARACTERIZES", "excretion");
+		} else if (loincDetail.getLDTColumnName().equals(PROPERTY)
+				&& loincDetail.getPartNumber().equals(LOINC_PART_SEDIMENTATION)) {
+			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			slotTermMap.put("PROPERTY", "Rate");
+			Concept sedProc = gl.getConcept("580161010000105 |Sedimentation process (qualifier value)|");
+			attributes.add(new RelationshipTemplate(characterizes, sedProc));
 		} else {
 			addProcessingFlag(ProcessingFlag.SUPPRESS_CHARACTERIZES_TERM);
 		}
