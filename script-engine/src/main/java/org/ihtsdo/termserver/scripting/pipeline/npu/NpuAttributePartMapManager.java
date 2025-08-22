@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.pipeline.AttributePartMapManager;
 import org.ihtsdo.termserver.scripting.pipeline.ContentPipelineManager;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
+import org.ihtsdo.termserver.scripting.pipeline.template.TemplatedConcept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 	}
 
 	@Override
-	public List<RelationshipTemplate> getPartMappedAttributeForType(int idxTab, String externalIdentifier, String partNum, Concept attributeType) throws TermServerScriptException {
+	public List<RelationshipTemplate> getPartMappedAttributeForType(TemplatedConcept templatedConcept, String partNum, Concept attributeType) throws TermServerScriptException {
 		//Now if the partNum contains a placeholder, we'll strip that out and look for the rest
 		for (String placeholder : PLACEHOLDER_ELEMENTS) {
 			if (partNum.contains(placeholder)) {
@@ -40,7 +41,7 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 				break;
 			}
 		}
-		return super.getPartMappedAttributeForType(idxTab, externalIdentifier, partNum, attributeType);
+		return super.getPartMappedAttributeForType(templatedConcept, partNum, attributeType);
 	}
 
 	@Override

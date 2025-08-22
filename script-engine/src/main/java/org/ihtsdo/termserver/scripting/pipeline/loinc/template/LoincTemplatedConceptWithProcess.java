@@ -99,7 +99,7 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 	private boolean componentIsSubstance() throws TermServerScriptException {
 		String loincPartNum = getLoincDetailOrThrow(COMPNUM_PN).getPartNumber();
 		Concept attributeType = typeMap.get(LOINC_PART_TYPE_COMPONENT);
-		List<RelationshipTemplate> attributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, getExternalIdentifier(), loincPartNum, attributeType);
+		List<RelationshipTemplate> attributes = cpm.getAttributePartManager().getPartMappedAttributeForType(this, loincPartNum, attributeType);
 		//Return true if any attribute value fsn contains "substance"
 		return attributes.stream()
 				.anyMatch(rt -> rt.getTarget().getFsn().contains("(substance)"));

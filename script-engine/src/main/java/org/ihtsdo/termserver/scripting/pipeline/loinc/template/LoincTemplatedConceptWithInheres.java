@@ -96,7 +96,7 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 				hasDetailForColName(COMPNUMSUFFIX_PN) &&
 				BioPhageSuffixExceptions.contains(getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber())) {
 			String partNum = getLoincDetailOrThrow(COMPNUMSUFFIX_PN).getPartNumber();
-			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(NOT_SET, getExternalIdentifier(), partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
+			List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(this, partNum, typeMap.get(LOINC_PART_TYPE_METHOD));
 			attributes.addAll(additionalAttributes);
 			addProcessingFlag(ProcessingFlag.SUPPRESS_METHOD_TERM);
 		}

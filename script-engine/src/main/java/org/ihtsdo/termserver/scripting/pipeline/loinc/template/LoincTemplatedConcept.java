@@ -377,11 +377,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 					addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 					//If this is a grouper, then we can't have any primitives, thank you.
 					if (getExternalConcept().isGrouperConcept()) {
-						cpm.report( cpm.getTab(TAB_MODELING_ISSUES),
-								getExternalIdentifier(),
-								getExternalConcept().getLongDisplayName(),
-								"Grouper concept with no mapping for " + loincDetail.getPartTypeName() + " excluded rather than marked primitive",
-								loincDetail);
+						getConcept().addIssue("Grouper concept with no mapping for " + loincDetail.getPartTypeName() + " excluded rather than marked primitive");
 						addProcessingFlag(ProcessingFlag.DROP_OUT);
 					}
 				}
@@ -393,11 +389,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				&& containsUnknownPhrase(loincDetail.getPartName())) {
 			//We don't want primitive groupers.  Drop out and report
 			if (getExternalConcept().isGrouperConcept()) {
-				int tab = cpm.getTab(TAB_MODELING_ISSUES);
-				cpm.report(tab, getExternalIdentifier(),
-					getExternalConcept().getLongDisplayName(),
-					"Grouper part features some unknown word",
-					loincDetail);
+				getConcept().addIssue("Grouper part features some unknown word");
 				addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
 			} else {
 				slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());
@@ -550,7 +542,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	private List<RelationshipTemplate> getAdditionalAttributes(LoincDetail loincDetail, Concept attributeType) throws TermServerScriptException {
 		String loincNum = getExternalIdentifier();
 		String loincPartNum = loincDetail.getPartNumber();
-		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
+		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(this, loincPartNum, attributeType);
 
 		if (additionalAttributes.isEmpty()) {
 			if (loincDetail.getPartNumber().equals(LoincScript.LOINC_PART_TIME)) {
