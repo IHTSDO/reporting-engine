@@ -60,7 +60,7 @@ public class LoincTemplatedConceptPanel extends LoincTemplatedConcept {
 	}
 
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes() {
+	protected List<RelationshipTemplate> determineComponentAttributes(boolean expectNullMap) {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 

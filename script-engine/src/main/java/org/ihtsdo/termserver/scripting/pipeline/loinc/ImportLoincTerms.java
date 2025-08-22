@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.pipeline.loinc;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -55,7 +54,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 	@Override
 	public TemplatedConcept getAppropriateTemplate(ExternalConcept externalConcept) throws TermServerScriptException {
 		return switch (externalConcept.getProperty()) {
-			case "ARat", "ArVRat", "CRat", "MRat", "NRat", "SRat", "VRat" -> LoincTemplatedConceptWithProcess.create(externalConcept);
+			case "ARat", "ArVRat", "CRat", "MRat", "NRat", "SRat", "VRat", "Sedimentation Rate" -> LoincTemplatedConceptWithProcess.create(externalConcept);
 			case "RelTime", "Time", "Vel", "RelVel" -> LoincTemplatedConceptWithProcessNoOutput.create(externalConcept);
 			case "NFr", "MFr", "CFr", "AFr",  "SFr", "VFr" -> LoincTemplatedConceptWithRelative.create(externalConcept);
 			case "ACnc", "ACnt", "Angle", "CCnc", "CCnt", "Diam", "EntCat", "EntLen", "EntMass", "EntNum", "EntSub",
@@ -83,7 +82,7 @@ public class ImportLoincTerms extends LoincScript implements LoincScriptConstant
 		if (loincDetailMap != null) {
 			if (loincDetailMap.containsKey("COMPNUM_PN")) {
 				String partNum = loincDetailMap.get("COMPNUM_PN").getPartNumber();
-				if (partNum.equals(LOINC_OBSERVATION_PART)) {
+				if (partNum.equals(LOINC_PART_OBSERVATION)) {
 					return LoincTemplatedConceptWithInheresNoComponent.create(externalConcept);
 				} else {
 					return LoincTemplatedConceptWithInheres.create(externalConcept);

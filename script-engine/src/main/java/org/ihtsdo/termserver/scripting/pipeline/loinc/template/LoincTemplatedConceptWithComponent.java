@@ -24,7 +24,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 	}
 	
 	@Override
-	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes(boolean expectNullMap) throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
@@ -54,7 +54,7 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 		LoincDetail loincDetail = (LoincDetail) part;
 		//Temporary rule.  If our target is Influenza, replace that with Influenza A, B & C
 		Concept influenzaAb = gl.getConcept("259856001 |Influenza antibody (substance)|");
-		if (rt.getTarget().equals(influenzaAb)) {
+		if (rt != null && rt.getTarget().equals(influenzaAb)) {
 			attributes.clear();
 			List<Concept> newAntibodies = List.of(
 					gl.getConcept("120753009 |Antibody to Influenza A virus (substance)|"),

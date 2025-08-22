@@ -153,22 +153,24 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			addProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT);
 		}
 
-		//Exception viii.2.c.  Where the SNOMED attribute contains "obtained by", then also keep the word specimen
-		if (rt.getTarget().getFsn().contains("obtained by")) {
-			addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
-		}
+		if (rt != null) {
+			//Exception viii.2.c.  Where the SNOMED attribute contains "obtained by", then also keep the word specimen
+			if (rt.getTarget().getFsn().contains("obtained by")) {
+				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
+			}
 
-		//If the value concept in the LP map file is to a concept < 49062001 |Device (physical object)|
-		//then LOINC Method -> SNOMED 424226004 |Using device (attribute)|.
-		if (gl.getDescendantsCache().getDescendants(DEVICE).contains(rt.getTarget())) {
-			rt.setType(USING_DEVICE);
-		}
+			//If the value concept in the LP map file is to a concept < 49062001 |Device (physical object)|
+			//then LOINC Method -> SNOMED 424226004 |Using device (attribute)|.
+			if (gl.getDescendantsCache().getDescendants(DEVICE).contains(rt.getTarget())) {
+				rt.setType(USING_DEVICE);
+			}
 
-		//If the component is Specimen Volume, then change the System from Direct Site to Inheres In
-		if (rt.getType().equals(DIRECT_SITE)) {
-			LoincDetail component = getLoincDetailForColNameIfPresent(COMPNUM_PN);
-			if (component != null && component.getPartNumber().equals(LOINC_SPECIMEN_VOLUME_PART)) {
-				rt.setType(INHERES_IN);
+			//If the component is Specimen Volume, then change the System from Direct Site to Inheres In
+			if (rt.getType().equals(DIRECT_SITE)) {
+				LoincDetail component = getLoincDetailForColNameIfPresent(COMPNUM_PN);
+				if (component != null && component.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
+					rt.setType(INHERES_IN);
+				}
 			}
 		}
 	}
@@ -216,7 +218,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//Patch up the to in "to [DIVISORS]" since we removed the slot
 			ptTemplateStr = ptTemplateStr.replace(" to  in", " in");
 		} else if (templateItem.equals(LOINC_PART_TYPE_COMPONENT)
-				&& ( hasProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT) ||  hasProcessingFlag(ProcessingFlag.ALLOW_BLANK_COMPONENT))) {
+				&& hasProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT)) {
 			//We're not expecting a component, so set a debug point if do have one
 			if (hasProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT)
 				&& !concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeMap.get(templateItem), ActiveState.ACTIVE).isEmpty()) {
@@ -331,8 +333,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		String partTypeName = loincDetail.getPartTypeName();
 		if (skipPartTypes.contains(partTypeName)
 				|| partTypeSeen.contains(partTypeName)
-				|| skipLDTColumnNames.contains(loincDetail.getLDTColumnName())
-		) {
+				|| skipLDTColumnNames.contains(loincDetail.getLDTColumnName())) {
 			return;
 		}
 
@@ -344,11 +345,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			if (!loincDetail.getLDTColumnName().equals(COMPNUM_PN)) {
 				return;
 			}
-			if (loincDetail.getPartNumber().equals(LOINC_SPECIMEN_VOLUME_PART)) {
+			if (loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
 				expectNullMap = true;
 			}
-			attributesToAdd = determineComponentAttributes();
-
+			attributesToAdd = determineComponentAttributes(expectNullMap);
 		} else if (loincDetail.getPartName().equals(NO_VALUE_SPECIFIED)) {
 			//Deliberately not setting the value is expected if this is a grouper
 			if (!getExternalConcept().isGrouperConcept()) {
@@ -363,7 +363,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			boolean attributeAdded = addAttributeFromDetail(attributesToAdd, loincDetail);
 			//Now if we didn't find a map, then for non-critical parts, we'll use the loinc part name anyway
 			if (!attributeAdded && useTypesInPrimitive.contains(loincDetail.getPartTypeName())) {
-				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
+				if (loincDetail.getPartNumber().equals(LoincScript.LOINC_PART_TIME)) {
 					expectNullMap = true;
 				} else {
 					//We don't have a map here, but we're going to allow the LOINC term to be used.
@@ -423,7 +423,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	}
 
 	//Relative and Ratio both use this default implementation.  The other templates override
-	protected List<RelationshipTemplate> determineComponentAttributes() throws TermServerScriptException {
+	protected List<RelationshipTemplate> determineComponentAttributes(boolean expectNullMap) throws TermServerScriptException {
 		//Following the rules detailed in https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
 		//With respect to the values read from Loinc_Detail_Type_1 file
 		List<RelationshipTemplate> attributes = new ArrayList<>();
@@ -435,7 +435,9 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			determineComponentAttributesWithSubParts(attributes, componentAttribType);
 		}
 
-		ensureComponentMappedOrRepresentedInTerm(attributes);
+		if (!expectNullMap) {
+			ensureComponentMappedOrRepresentedInTerm(attributes);
+		}
 		return attributes;
 	}
 
@@ -512,20 +514,24 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		LoincDetail loincDetail = (LoincDetail) part;
 		try {
 			if ((loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber()))
-				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals(LOINC_OBSERVATION_PART))) {
+				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals(LOINC_PART_OBSERVATION))) {
 				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
 			}
 
 			List<RelationshipTemplate> additionalAttributes = getAdditionalAttributes(loincDetail, attributeType);
-
 			attributes.addAll(additionalAttributes);
 
 			if (containsValue(AUTOMATED_TECHNIQUE, attributes)) {
 				addProcessingFlag(ProcessingFlag.ALLOW_TECHNIQUE);
 			}
 
-			for (RelationshipTemplate rt : additionalAttributes) {
-				applyTemplateSpecificModellingRules(attributes, part, rt);
+			//Even if we haven't picked up any attributes, we might still need to do some template specific processing
+			if (attributes.isEmpty()) {
+				applyTemplateSpecificModellingRules(attributes, part, null);
+			} else {
+				for (RelationshipTemplate rt : additionalAttributes) {
+					applyTemplateSpecificModellingRules(attributes, part, rt);
+				}
 			}
 			return !additionalAttributes.isEmpty();
 		} catch (TermServerScriptException e) {
@@ -547,14 +553,16 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), loincNum, loincPartNum, attributeType);
 
 		if (additionalAttributes.isEmpty()) {
-			if (loincDetail.getPartNumber().equals(LoincScript.LOINC_TIME_PART)) {
+			if (loincDetail.getPartNumber().equals(LoincScript.LOINC_PART_TIME)) {
 				//Rule xi if we have a time, then we don't need to populate that field
 				slotTermMap.put(loincDetail.getPartTypeName(), "");
-			} else if (loincDetail.getPartNumber().equals(LOINC_OBSERVATION_PART)) {
+			} else if (loincDetail.getPartNumber().equals(LOINC_PART_OBSERVATION)) {
 				//Rule 2d We're going to _expect_ the COMPONENT to be blank in this case
 				addProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT);
 				slotTermMap.put(loincDetail.getPartTypeName(), "");
-			} else if (loincDetail.getPartNumber().equals(LOINC_SPECIMEN_VOLUME_PART)) {
+			} else if (loincDetail.getPartNumber().equals(LOINC_PART_SEDIMENTATION)) {
+				//LE-54 No mapping for sedimentation yet.  Avoid throwing an exception here
+			} else if (loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
 				//We won't have a system since inheres-in will take specimen, so simplify the term template
 				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
 				setPreferredTermTemplate("[PROPERTY] of [COMPONENT] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
@@ -608,7 +616,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 		//And in fact, don't map this term at all
 		if (attributes.isEmpty()) {
 			attributes.add(null);
-			if (!hasProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT)
+			if ((!hasProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT) && !hasProcessingFlag(ProcessingFlag.ALLOW_UNMODELLED_COMPONENT))
 				&& !slotTermMap.containsKey(LOINC_PART_TYPE_COMPONENT)) {
 				addProcessingFlag(ProcessingFlag.DROP_OUT);
 			}
