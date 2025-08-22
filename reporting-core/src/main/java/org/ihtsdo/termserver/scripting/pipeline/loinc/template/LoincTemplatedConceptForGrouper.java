@@ -24,10 +24,7 @@ public class LoincTemplatedConceptForGrouper extends LoincTemplatedConcept {
 	protected List<RelationshipTemplate> determineComponentAttributes(boolean expectNullMap) throws TermServerScriptException {
 		// Rule ix.3.a.ii if we have subpart, drop out the concept
 		if (!hasNoSubParts()) {
-			int tab = cpm.getTab(TAB_MODELING_ISSUES);
-			cpm.report(tab, getExternalIdentifier(),
-				getExternalConcept().getLongDisplayName(),
-				"Grouper concept features subparts");
+			getConcept().addIssue("Grouper concept features subparts");
 			addProcessingFlag(ProcessingFlag.DROP_OUT);
 		}
 		return super.determineComponentAttributes(expectNullMap);

@@ -199,19 +199,14 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		//type would we use?
 		Concept attributeType = typeMap.get(part.getPartTypeName());
 		if (attributeType == null) {
-			cpm.report(cpm.getTab(TAB_MODELING_ISSUES),
-					getExternalIdentifier(),
-					ContentPipelineManager.getSpecialInterestIndicator(getExternalIdentifier()),
-					part.getPartNumber(),
-					"Type in context not identified - " + part.getPartTypeName() + " | " + this.getClass().getSimpleName(),
-					part.getPartName());
+			getConcept().addIssue("Type in context not identified - " + part.getPartTypeName() + " | " + this.getClass().getSimpleName());
 			return false;
 		}
 		return addAttributeFromDetailWithType(attributes, part, attributeType);
 	}
 
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, Part part, Concept attributeType) throws TermServerScriptException {
-		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(cpm.getTab(TAB_MODELING_ISSUES), getExternalIdentifier(), part.getPartNumber(), attributeType);
+		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(this, part.getPartNumber(), attributeType);
 		for (RelationshipTemplate rt : additionalAttributes) {
 			applyTemplateSpecificModellingRules(additionalAttributes, part, rt);
 		}
