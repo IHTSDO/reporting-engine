@@ -10,6 +10,8 @@ import org.ihtsdo.termserver.scripting.pipeline.domain.ExternalConcept;
 import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_PART_OBSERVATION;
+
 public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 
 	private LoincTemplatedConceptWithComponent(ExternalConcept externalConcept) {
@@ -43,6 +45,13 @@ public class LoincTemplatedConceptWithComponent extends LoincTemplatedConcept {
 				}
 			}
 			processSubComponents(attributes, componentAttribType);
+		}
+
+		if (getExternalConcept().getProperty().equals("PrThr")
+				&& detailPresent(COMPNUM_PN)
+				&& getLoincDetailOrThrow(COMPNUM_PN).getPartNumber().equals(LOINC_PART_OBSERVATION)) {
+				//If we're working with a property/threshold then we'll be saying "Presence of"
+				setPreferredTermTemplate("[PROPERTY] of [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
 		}
 
 		ensureComponentMappedOrRepresentedInTerm(attributes);
