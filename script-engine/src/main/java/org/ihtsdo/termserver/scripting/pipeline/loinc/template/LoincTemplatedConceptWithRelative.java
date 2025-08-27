@@ -55,6 +55,7 @@ public class LoincTemplatedConceptWithRelative extends LoincTemplatedConcept {
 				addProcessingFlag(ProcessingFlag.SUPPRESS_DIVISOR_TERM);
 			}
 		}
+		super.applyTemplateSpecificModellingRules(attributes, part, rt);
 	}
 
 	@Override

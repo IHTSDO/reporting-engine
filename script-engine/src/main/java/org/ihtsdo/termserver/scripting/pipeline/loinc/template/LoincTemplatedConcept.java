@@ -147,10 +147,20 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 
 	@Override
 	protected void applyTemplateSpecificModellingRules(List<RelationshipTemplate> attributes, Part part, RelationshipTemplate rt) throws TermServerScriptException {
+		LoincDetail loincDetail = (LoincDetail) part;
 		//Rules that apply to all templates:
 		if (part.getPartNumber().equals("LP36683-8")) {
 			//One off rule for ABO & Rh groups
 			addProcessingFlag(ProcessingFlag.SPLIT_TO_GROUP_PER_COMPONENT);
+		}
+
+		if ((loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber()))
+				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals(LOINC_PART_OBSERVATION))) {
+			addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
+		}
+
+		if (containsValue(AUTOMATED_TECHNIQUE, attributes)) {
+			addProcessingFlag(ProcessingFlag.ALLOW_TECHNIQUE);
 		}
 
 		if (rt != null) {
@@ -163,14 +173,6 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//then LOINC Method -> SNOMED 424226004 |Using device (attribute)|.
 			if (gl.getDescendantsCache().getDescendants(DEVICE).contains(rt.getTarget())) {
 				rt.setType(USING_DEVICE);
-			}
-
-			//If the component is Specimen Volume, then change the System from Direct Site to Inheres In
-			if (rt.getType().equals(DIRECT_SITE)) {
-				LoincDetail component = getLoincDetailForColNameIfPresent(COMPNUM_PN);
-				if (component != null && component.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
-					rt.setType(INHERES_IN);
-				}
 			}
 		}
 	}
@@ -228,8 +230,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			//We might have specified a slot for the component anyway eg as per rule 9 for Prid Observations
 			String replacement = slotTermMap.get(templateItem);
 			if (StringUtils.isEmpty(replacement)) {
-				ptTemplateStr = ptTemplateStr.replaceAll(regex, "")
-						.replace(" in ", "");
+				ptTemplateStr = ptTemplateStr.replaceAll(" of " + regex, "")
+						.replaceAll(regex, "");
 			} else {
 				ptTemplateStr = ptTemplateStr.replaceAll(regex, replacement);
 			}
@@ -347,6 +349,7 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 			}
 			if (loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
 				expectNullMap = true;
+				addProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT);
 			}
 			attributesToAdd = determineComponentAttributes(expectNullMap);
 		} else if (loincDetail.getPartName().equals(NO_VALUE_SPECIFIED)) {
@@ -505,17 +508,8 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, Part part, Concept attributeType) throws TermServerScriptException {
 		LoincDetail loincDetail = (LoincDetail) part;
 		try {
-			if ((loincDetail.getPartTypeName().contentEquals("SYSTEM") && allowSpecimenTermForLoincParts.contains(loincDetail.getPartNumber()))
-				|| (loincDetail.getLDTColumnName().equals(COMPNUM_PN) && loincDetail.getPartNumber().equals(LOINC_PART_OBSERVATION))) {
-				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
-			}
-
 			List<RelationshipTemplate> additionalAttributes = getAdditionalAttributes(loincDetail, attributeType);
 			attributes.addAll(additionalAttributes);
-
-			if (containsValue(AUTOMATED_TECHNIQUE, attributes)) {
-				addProcessingFlag(ProcessingFlag.ALLOW_TECHNIQUE);
-			}
 
 			//Even if we haven't picked up any attributes, we might still need to do some template specific processing
 			if (attributes.isEmpty()) {
@@ -552,12 +546,10 @@ public abstract class LoincTemplatedConcept extends TemplatedConcept implements 
 				//Rule 2d We're going to _expect_ the COMPONENT to be blank in this case
 				addProcessingFlag(ProcessingFlag.EXPECT_BLANK_COMPONENT);
 				slotTermMap.put(loincDetail.getPartTypeName(), "");
-			} else if (loincDetail.getPartNumber().equals(LOINC_PART_SEDIMENTATION)) {
-				//LE-54 No mapping for sedimentation yet.  Avoid throwing an exception here
-			} else if (loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
-				//We won't have a system since inheres-in will take specimen, so simplify the term template
-				addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
-				setPreferredTermTemplate("[PROPERTY] of [COMPONENT] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
+			} else if (loincDetail.getPartNumber().equals(LOINC_PART_SEDIMENTATION) ||
+					loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
+				//LE-54 No mapping for sedimentation or specimen volume yet.
+				//Avoid throwing an exception here - this mapping failure is expected
 			} else if (!skipSlotTermMapPopulation.contains(loincDetail.getPartTypeName())) {
 				//Rule 2.c If we don't have a part mapping, use what we do get in the FSN
 				slotTermMap.put(loincDetail.getPartTypeName(), loincDetail.getPartName());

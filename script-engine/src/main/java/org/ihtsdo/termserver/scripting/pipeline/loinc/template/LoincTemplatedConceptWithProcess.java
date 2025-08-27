@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_PART_SEDIMENTATION;
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_PART_SPECIMEN_VOLUME;
 
 public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 
@@ -82,6 +83,12 @@ public class LoincTemplatedConceptWithProcess extends LoincTemplatedConcept {
 			attributes.add(new RelationshipTemplate(characterizes, sedProc));
 		} else {
 			addProcessingFlag(ProcessingFlag.SUPPRESS_CHARACTERIZES_TERM);
+		}
+
+		if (loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
+			//For a process template, "specimen" will appear in the SYSTEM slot.
+			addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
+			setPreferredTermTemplate("[PROPERTY] in [TIME] in [SYSTEM] by [METHOD] using [DEVICE] [CHALLENGE]");
 		}
 
 		//Rule vi.6.b LP16409-2 Erythrocyte sedimentation rate

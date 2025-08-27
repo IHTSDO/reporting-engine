@@ -146,9 +146,6 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected void postModelling(TemplatedConcept tc) throws TermServerScriptException {
-		//Override this method in base class to do some final work with the successfully modelled concepts
-		//and also those being inactivated eg sorting out the ORD/OBS Refset Members in LOINC
-		validateTemplatedConcept(tc);
 		tc.populateAlternateIdentifier();
 	}
 
