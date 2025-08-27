@@ -1,0 +1,8 @@
+{
+  "name": "Decompression",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Decompression+%28procedure%29%7C+-+v1.0",
+  "version": 1.0,
+  "domain": "<<  424128006 |Decompression (procedure)|  MINUS (<<  424128006 |Decompression (procedure)|  :  260686004 |Method (attribute)|  != <<  281613004 |Decompression - action (qualifier value)|  )",
+  "logicalTemplate": "71388002 |Procedure (procedure)| : [[~0..1]] { [[~0..1]] 363702006 |Has focus (attribute)| = [[+id(< 404684003 |Clinical finding (finding)| OR < 71388002 |Procedure (procedure)| )]]}, [[~1..*]] { [[~1..1]] 260686004 |Method (attribute)| = [[+id(<< 281613004 |Decompression - action (qualifier value)| )]], [[~0..1]] 246513007 |Revision status (attribute)| = [[+id(<< 255231005 |Revision - value (qualifier value)| )]], [[~0..1]] 405813007 |Procedure site - Direct (attribute)| = [[+id(< 442083009 |Anatomical or acquired body structure (body structure)| )]], [[~0..1]] 363700003 |Direct morphology (attribute)| = [[+id(< 49755003 |Morphologically abnormal structure (morphologic abnormality)| )]], [[~0..2]] [[+id(< 405815000 |Procedure device (attribute)|)]] = [[+id(<< 49062001 |Device (physical object)| )]], [[~0..1]] 260507000 |Access (attribute)| = [[+id(< 309795001 |Surgical access values (qualifier value)| )]], [[~0..1]] 116688005 |Procedure approach (attribute)| = [[+id(< 103379005 |Procedural approach (qualifier value)| )]], [[~0..1]] 424244007 |Using energy (attribute)| = [[+id(< 78621006 |Physical force (physical force)| )]], [[~0..1]] 424361007 |Using substance (attribute)| = [[+id(<< 410942007 |Drug or medicament (substance)| )]] }"
+}
+
