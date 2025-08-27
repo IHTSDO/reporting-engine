@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.pipeline.Part;
 import org.ihtsdo.termserver.scripting.pipeline.loinc.domain.LoincDetail;
 
 import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_PART_OBSERVATION;
+import static org.ihtsdo.termserver.scripting.pipeline.loinc.LoincScript.LOINC_PART_SPECIMEN_VOLUME;
 
 /*
 See Processing instruction document https://docs.google.com/document/d/1rz2s3ga2dpdwI1WVfcQMuRXWi5RgpJOIdicgOz16Yzg/edit
@@ -85,6 +86,24 @@ public class LoincTemplatedConceptWithInheres extends LoincTemplatedConcept {
 			LoincDetail compNum = getLoincDetailOrThrow(COMPNUM_PN);
 			if (compNum.getPartNumber().equals("LP19429-7")) {
 				rt.setTarget(gl.getConcept("734842000 |Source (property) (qualifier value)|"));
+			}
+		}
+
+		if (loincDetail.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
+			//For an Inheres template, "specimen" will appear in the COMPONENT slot.
+			addProcessingFlag(ProcessingFlag.ALLOW_SPECIMEN);
+			setPreferredTermTemplate("[PROPERTY] of [SYSTEM] at [TIME] by [METHOD] using [DEVICE] [CHALLENGE]");
+			typeMap.remove(LOINC_PART_TYPE_COMPONENT);
+			typeMap.put(LOINC_PART_TYPE_SYSTEM, gl.getConcept("704319004 |Inheres in (attribute)|"));
+		}
+
+		//If the component is Specimen Volume, then change the System from Direct Site to Inheres In
+		if (rt != null && rt.getType().equals(DIRECT_SITE)) {
+			LoincDetail component = getLoincDetailForColNameIfPresent(COMPNUM_PN);
+			if (component != null && component.getPartNumber().equals(LOINC_PART_SPECIMEN_VOLUME)) {
+				rt.setType(INHERES_IN);
+				//And we also need to update the type map, so we can pick up the right attribute for terming
+				typeMap.put(LOINC_PART_TYPE_SYSTEM, INHERES_IN);
 			}
 		}
 
