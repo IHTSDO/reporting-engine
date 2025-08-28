@@ -57,7 +57,6 @@ public interface ScriptConstants extends RF2Constants {
 
 	Concept HAS_UNIT_OF_PRESENTATION = new Concept ("763032000","Has unit of presentation (attribute)");
 	Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
-	Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	Concept HAS_DISPOSITION = new Concept ("726542003", "Has disposition (attribute)");
 	Concept PLAYS_ROLE = new Concept("766939001","Plays role (attribute)");
 
@@ -71,7 +70,6 @@ public interface ScriptConstants extends RF2Constants {
 	
 	Concept PATHOLOGICAL_PROCESS = new Concept ("370135005", "Pathological process (attribute)");
 	
-	Concept NUMBER = new Concept("260299005", "Number (qualifier value)");
 	Concept PICOGRAM = new Concept ("258687006", "picogram (qualifier value)");
 	Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)");
 	Concept MICROGRAM = new Concept ("258685003", "microgram (qualifier value)"); 
@@ -88,43 +86,43 @@ public interface ScriptConstants extends RF2Constants {
 	Concept MILLION_UNIT = new Concept("396186001", "Million unit (qualifier value)");
 	
 	//Top Level hierarchies
-	Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString(), "SNOMED CT Concept (SNOMED RT+CTV3)");
-	Concept ORGANISM = new Concept ("410607006", "Organism (organism)");
 	Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
-	Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");
-	Concept SITN_WITH_EXP_CONTXT = new Concept ("243796009","Situation with explicit context (situation)");
-	Concept SPECIMEN = new Concept("123038009","Specimen (specimen)");
 	Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
+	Concept DEVICE = new Concept ("49062001","Device (physical object)");
 	Concept DISEASE = new Concept ("64572001", "Disease (disorder)");
 	Concept EVENT = new Concept("272379006", "Event (event)");
-	Concept DEVICE = new Concept ("49062001","Device (physical object)");
-	
-	Concept CAUSE_AGENT = new Concept ("246075003","Causative agent (attribute)");
-	Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
-	Concept OBSERVABLE_ENTITY = new Concept("363787002","Observable entity (observable entity)");
-	Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
-	Concept METHOD = new Concept("260686004","Method (attribute)");
+	Concept ORGANISM = new Concept ("410607006", "Organism (organism)");
+	Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");
+	Concept PROCEDURE_SITE = new Concept("363704007","Procedure site (attribute)|");
+	Concept PROCEDURE_SITE_DIRECT = new Concept("405813007","Procedure site - direct (attribute)|");
+	Concept PROCEDURE_SITE_INDIRECT = new Concept("405814001","Procedure site - indirect (attribute)|");
+	Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString(), "SNOMED CT Concept (SNOMED RT+CTV3)");
+	Concept SITN_WITH_EXP_CONTXT = new Concept ("243796009","Situation with explicit context (situation)");
+	Concept SPECIMEN = new Concept("123038009","Specimen (specimen)");
+
 	Concept AFTER = new Concept("255234002", "After (attribute)");
+	Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
 	Concept ASSOC_WITH = new Concept ("47429007", "Associated with (attribute)");
-	Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
-	Concept FINDING_SITE = new Concept ("363698007", "Finding site (attribute)");
-	Concept OCCURRENCE = new Concept ("246454002", "Occurrence (attribute)");
-	Concept ANAT_OR_ACQ_BODY_STRUCT = new Concept("442083009", "Anatomical or acquired body structure (body structure)");
-	Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
-	Concept SPECIAL_CONCEPT = new Concept("370115009", "Special concept (special concept)");
-	Concept HAS_DEVICE_CHARAC = new Concept("840562008", "Has device characteristic (attribute)");
-	Concept HAS_COMP_MATERIAL = new Concept("840560000", "Has compositional material (attribute)");
-	Concept DIRECT_SUBST = new Concept("363701004", "Direct substance (attribute)");
-	Concept DIRECT_SITE = new Concept("704327008","Direct site (attribute)");
-	Concept TECHNIQUE = new Concept("246501002","Technique (attribute)");
-	Concept USING_SUBST = new Concept("424361007", "Using substance (attribute)");
-	Concept USING_DEVICE = new Concept("424226004", "Using device (attribute)");
-	Concept INTERPRETS = new Concept("363714003", "Interprets (attribute)");
-	Concept HAS_INTERPRETATION = new Concept("363713009","Has interpretation (attribute)");
+	Concept CAUSE_AGENT = new Concept ("246075003","Causative agent (attribute)");
 	Concept COMPONENT = new Concept("246093002", "Component (attribute)");
-	Concept PROPERTY_ATTRIB = new Concept ("370130000", "Property (attribute)");
+	Concept DIRECT_DEVICE = new Concept("363699004", "Direct device (attribute)");
+	Concept DIRECT_SITE = new Concept("704327008","Direct site (attribute)");
+	Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
+	Concept FINDING_SITE = new Concept ("363698007", "Finding site (attribute)");
+	Concept HAS_DEVICE_CHARAC = new Concept("840562008", "Has device characteristic (attribute)");
+	Concept HAS_INTERPRETATION = new Concept("363713009","Has interpretation (attribute)");
+	Concept HAS_INTENT = new Concept("363703001", "Has intent (attribute)");
 	Concept INHERES_IN = new Concept("704319004", "Inheres in (attribute)");
+	Concept INTERPRETS = new Concept("363714003", "Interprets (attribute)");
+	Concept METHOD = new Concept("260686004","Method (attribute)");
+	Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
+	Concept OBSERVABLE_ENTITY = new Concept("363787002","Observable entity (observable entity)");
+	Concept OCCURRENCE = new Concept ("246454002", "Occurrence (attribute)");
+	Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
+	Concept PROPERTY_ATTRIB = new Concept ("370130000", "Property (attribute)");
+	Concept TECHNIQUE = new Concept("246501002","Technique (attribute)");
+	Concept USING_DEVICE = new Concept("424226004", "Using device (attribute)");
 
 	Concept LEFT = new Concept("7771000", "Left (qualifier value)");
 	Concept RIGHT = new Concept("24028007", "Right (qualifier value)|");
