@@ -35,7 +35,7 @@ public class MSSP1638_CloneAndReplaceLangRefsetDescriptions extends DeltaGenerat
 			delta.postInit();
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
-			if (!dryRun) {
+			if (!delta.dryRun) {
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			}
 		} finally {

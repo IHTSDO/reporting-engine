@@ -1,42 +1,31 @@
 package org.ihtsdo.termserver.scripting.fixes.one_offs;
 
-import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.otf.utils.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
-import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-public class INFRA15862_RemodelFluroAgniography extends BatchFix implements ScriptConstants {
+public class INFRA15862_RemodelFluroAngiography extends BatchFix implements ScriptConstants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(INFRA15862_RemodelFluroAgniography.class);
-
-	private Set<String> exclusionTexts;
-	private List<RelationshipGroup> addGroups = new ArrayList<>();
-	private RelationshipGroup matchGroup;
-
-	protected INFRA15862_RemodelFluroAgniography(BatchFix clone) {
+	protected INFRA15862_RemodelFluroAngiography(BatchFix clone) {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		INFRA15862_RemodelFluroAgniography fix = new INFRA15862_RemodelFluroAgniography(null);
+	Concept insertion;
+	Concept fluoroImaging;
+
+	enum Pass { FIRST_PASS, SECOND_PASS }
+	private Pass pass = Pass.FIRST_PASS;
+
+	public static void main(String[] args) throws TermServerScriptException {
+		INFRA15862_RemodelFluroAngiography fix = new INFRA15862_RemodelFluroAngiography(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
@@ -53,109 +42,99 @@ public class INFRA15862_RemodelFluroAgniography extends BatchFix implements Scri
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		subsetECL = "(< 71388002 |Procedure| : << 424226004 |using device| = << 86174004 |laparoscope)| ) MINUS << 73632009 |Laparoscopy|";
-		matchGroup = new RelationshipGroup(NOT_SET);
-		matchGroup.addRelationship(new RelationshipTemplate(METHOD, gl.getConcept("129284003 |Surgical action|")));
-		matchGroup.addRelationship(new RelationshipTemplate(PROCEDURE_SITE, gl.getConcept("818983003 |Abdomen|")));
+		subsetECL = "<< 1296925008 |Insertion of stent (procedure)|: 260686004 |Method| = << 312275004 |Fluoroscopic imaging - action (qualifier value)|, [0..0] 363703001 |Has intent (attribute)| = 429892002 |Guidance intent (qualifier value)|";
+		insertion = gl.getConcept("257867005 |Insertion - action (qualifier value)|");
+		fluoroImaging = gl.getConcept("312275004 |Fluoroscopic imaging - action (qualifier value)|");
+		String[] columnHeadings = new String[]{
+				"Task Key, Task Description, Concept SCTID,FSN, ,Severity, Action, Details, Details, Details, , ,",
+				"Concept SCTID,FSN,SemTag, Issue, Details, Expression,"};
+		String[] tabNames = new String[]{
+				"Processed",
+				"Excluded"};
+		super.postInit(tabNames, columnHeadings, false);
+	}
 
-		RelationshipGroup addGroup = new RelationshipGroup(RF2Constants.NOT_SET);
-		addGroup.addRelationship(new RelationshipTemplate(METHOD, gl.getConcept("129287005 |Incision - action (qualifier value)|")));
-		addGroup.addRelationship(new RelationshipTemplate(ScriptConstants.PROCEDURE_SITE_DIRECT, gl.getConcept("59380008 |Anterior abdominal wall structure (body structure)|")));
-		addGroups.add(addGroup);
-
-		addGroup = new RelationshipGroup(RF2Constants.NOT_SET);
-		addGroup.addRelationship(new RelationshipTemplate(METHOD, gl.getConcept("129433002 |inspection|")));
-		addGroup.addRelationship(new RelationshipTemplate(ScriptConstants.PROCEDURE_SITE, gl.getConcept("818983003 |Structure of abdominopelvic cavity and/or content of abdominopelvic cavity and/or anterior abdominal wall|")));
-		addGroup.addRelationship(new RelationshipTemplate(ScriptConstants.USING_DEVICE, gl.getConcept("86174004 |laparoscope|")));
-		addGroups.add(addGroup);
-
-		exclusionTexts = new HashSet<>();
-		super.postInit();
+	public int doFixSafely(Concept c) {
+		try {
+			return doFix(null, c, null);
+		} catch (TermServerScriptException e) {
+			reportSafely(SECONDARY_REPORT, c, "Processing failure", e.getMessage(), c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+			return NO_CHANGES_MADE;
+		}
 	}
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		int changesMade = 0;
-		try {
-			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-			changesMade += addOrReplaceRoleGroup(task, loadedConcept);
-			if (changesMade > 0) {
-				updateConcept(task, loadedConcept, info);
-			}
-		} catch (ValidationFailure v) {
-			report(task, concept, v);
-		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+		Concept loadedConcept = task == null? concept.clone() : loadConcept(concept, task.getBranchPath());
+		Concept device = identifyDeviceInInsertionRG(loadedConcept);
+		if (device != null) {
+			changesMade += enhanceImagingGroup(task, loadedConcept, device);
+		} else if (pass == Pass.FIRST_PASS) {
+			report(SECONDARY_REPORT, loadedConcept, "Failed to identify device in insertion RG", concept.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+		}
+		if (changesMade > 0 && pass == Pass.SECOND_PASS) {
+			updateConcept(task, loadedConcept, info);
+			report(task, loadedConcept, Severity.NONE, ReportActionType.INFO, loadedConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 		}
 		return changesMade;
 	}
 
-	private int addOrReplaceRoleGroup(Task t, Concept c) throws TermServerScriptException {
+	private Concept identifyDeviceInInsertionRG(Concept c) throws TermServerScriptException {
+		RelationshipGroup insertionGroup = identifyGroupContaining(c, "insertion", METHOD, insertion);
+		return insertionGroup.getValueForType(DIRECT_DEVICE);
+	}
+
+	private RelationshipGroup identifyGroupContaining(Concept c, String groupIdentifier, Concept type, Concept value) throws TermServerScriptException {
+		List<RelationshipGroup> matchingGroups = new ArrayList<>();
+		for (RelationshipGroup rg : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			for (Relationship r : rg.getRelationships()) {
+				if (r.getType().equals(type) && isTypeOf(r.getTarget(), value)) {
+					matchingGroups.add(rg);
+					break;
+				}
+			}
+		}
+		if (matchingGroups.isEmpty()) {
+			throw new TermServerScriptException("No " + groupIdentifier + " groups found");
+		} else if (matchingGroups.size() > 1) {
+			throw new TermServerScriptException("Multiple " + groupIdentifier + " groups found");
+		}
+		return matchingGroups.get(0);
+	}
+
+	private int enhanceImagingGroup(Task t, Concept c, Concept device) throws TermServerScriptException {
 		int changesMade = 0;
-		boolean matchFound = false;
-		int useGroup = SnomedUtils.getFirstFreeGroup(c);
-		RelationshipGroup matchingGroup = SnomedUtils.findMatchingGroup(c, matchGroup, CharacteristicType.STATED_RELATIONSHIP);
-		if (matchingGroup != null) {
-			useGroup = matchingGroup.getGroupId();
-			removeRelationshipGroup(t, c, matchingGroup);
-			changesMade++;
-		}
-
-		for (RelationshipGroup addGroup : addGroups) {
-			changesMade += addRelationshipGroup(t, c, addGroup, useGroup);
-			useGroup = SnomedUtils.getFirstFreeGroup(c);
-		}
-
-		report(t, c, Severity.LOW, ReportActionType.INFO, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+		RelationshipGroup groupToEnhance = identifyGroupContaining(c, "imaging", METHOD, fluoroImaging);
+		changesMade += addRelationshipIfRequired(t, c, groupToEnhance, HAS_INTENT, gl.getConcept("429892002 |Guidance intent (qualifier value)|"));
+		changesMade += addRelationshipIfRequired(t, c, groupToEnhance, DIRECT_DEVICE, device);
 		return changesMade;
 	}
 
-	private int addRelationshipGroup(Task t, Concept c, RelationshipGroup addGroup, int useGroup) throws TermServerScriptException {
-		int changesMade = NO_CHANGES_MADE;
-		addGroup.setGroupId(useGroup);
-		//TODO Check if we actually make changes here
-		//To do ancestor check, use local copy of concept to ensure it is populated into local hierarchy
-		Concept localConcept = gl.getConcept(c.getConceptId());
-		if (SnomedUtils.findMatchingOrDescendantGroup(localConcept, addGroup, CharacteristicType.STATED_RELATIONSHIP) != null) {
-			report(t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Group (or more specific variant) already present");
-		} else {
-			changesMade += c.addRelationshipGroup(addGroup, null);
-			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED);
+	private int addRelationshipIfRequired(Task t, Concept c, RelationshipGroup g, Concept type, Concept value) throws TermServerScriptException {
+		Concept existingType = g.getValueForType(type, true);
+		if (existingType == null) {
+			RelationshipTemplate rel = new RelationshipTemplate(type, value, CharacteristicType.STATED_RELATIONSHIP);
+			return addRelationship(t, c, rel, g.getGroupId(), RelationshipTemplate.Mode.UNIQUE_TYPE_IN_THIS_GROUP);
 		}
-		return changesMade;
+		return NO_CHANGES_MADE;
 	}
 
-	private boolean isExcluded(Concept c) {
-		String fsn = " " + c.getFsn().toLowerCase();
-		return isExcluded(fsn);
-	}
-	
-	private boolean isExcluded(String term) {
-		for (String exclusionWord : exclusionTexts) {
-			if (term.contains(exclusionWord)) {
-				return true;
-			}
-		}
-		return false;
+	private boolean isTypeOf(Concept target, Concept superType) throws TermServerScriptException {
+		return target.equals(superType) || target.getAncestors(NOT_SET).contains(superType);
 	}
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return findConcepts(subsetECL)
+		reportChangesWithoutTask = false;
+		List<Component> componentsToProcess = findConcepts(subsetECL)
 				.stream()
 				.filter(this::inScope)
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-				.filter(c -> !isExcluded(c))
-				.filter(c -> !alreadyFeaturesGroupsToBeAdded(c))
+				.sorted(SnomedUtils::compareSemTagFSN)
+				.filter(c -> doFixSafely(c) > NO_CHANGES_MADE)
 				.collect(Collectors.toList());
+		pass = Pass.SECOND_PASS;
+		return componentsToProcess;
 	}
 
-	private boolean alreadyFeaturesGroupsToBeAdded(Concept c) {
-		for (RelationshipGroup addGroup : addGroups) {
-			if (SnomedUtils.findMatchingGroup(c, addGroup, CharacteristicType.STATED_RELATIONSHIP) == null) {
-				return false;
-			}
-		}
-		return true;
-	}
 }
