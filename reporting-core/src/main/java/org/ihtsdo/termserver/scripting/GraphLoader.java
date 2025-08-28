@@ -91,9 +91,9 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		//Prevents instantiation by other than getGraphLoader()
 	}
 
-	public ModuleDependencyReferenceSet getMdrs() throws TermServerScriptException {
+	public ModuleDependencyReferenceSet getMdrs() {
 		if (mdrs == null) {
-			throw new TermServerScriptException("MDRS requested, but not loaded");
+			throw new IllegalStateException("MDRS requested, but not loaded");
 		}
 		return mdrs;
 	}
@@ -1024,7 +1024,6 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	 */
 	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
 		startingPoint.setDepth(currentDepth);
-
 		for (Concept child : startingPoint.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (currentDepth >= MAX_DEPTH) {
 				throw new TermServerScriptException("Maximum depth exceeded from " + startingPoint + " and inferred child " + child);

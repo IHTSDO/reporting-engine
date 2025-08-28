@@ -92,7 +92,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private boolean loadingRelease = false;
 	protected List<String> moduleFilter;
 	protected boolean scriptRequiresSnomedData = true;
-	
+	protected boolean reportChangesWithoutTask = true;
+
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 	private final List<String> finalWords = new ArrayList<>();
@@ -864,7 +865,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					validateConcept(t, c);
 				}
 				
-				LOGGER.debug("Updating state of " + c + (info == null?"":info));
+				LOGGER.debug("Updating state of {}{} on branch {}", c, (info == null?"":info), t.getBranchPath());
 				return tsClient.updateConcept(c, t.getBranchPath());
 			} catch (ValidationFailure e) {
 				throw e;
@@ -1700,7 +1701,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		incrementSummaryInformation("Report lines written");
 	}
 
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details);
 	}
 	
@@ -2181,13 +2182,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (groupId == SELFGROUPED) {
 			groupId = SnomedUtils.getFirstFreeGroup(c);
 		}
-		Relationship newRel = new Relationship (c, type, value, groupId);
-		//Copying relationships from elsewhere indicates they have not been released in their current condition
-		newRel.setReleased(false);
-		newRel.setDirty();
-		newRel.setAxiomEntry(assignToAxiom);
-		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
-		c.addRelationship(newRel);
+
+		if (t != null || reportChangesWithoutTask) {
+			Relationship newRel = new Relationship(c, type, value, groupId);
+			//Copying relationships from elsewhere indicates they have not been released in their current condition
+			newRel.setReleased(false);
+			newRel.setDirty();
+			newRel.setAxiomEntry(assignToAxiom);
+
+			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+			c.addRelationship(newRel);
+		}
 		changesMade++;
 		return changesMade;
 	}

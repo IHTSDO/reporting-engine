@@ -374,7 +374,7 @@ public class ArchiveManager implements ScriptConstants {
 			config.setPopulateReleaseFlag(config.isLoadEditionArchive());
 			//We only know if the components are released when loading an edition archive
 			Boolean isReleased = config.isLoadEditionArchive() ? true : null;
-			archiveImporter.loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
+			archiveImporter.loadArchive(snapshot, fsnOnly, SNAPSHOT, isReleased);
 		} catch (UnrecoverableTermServerScriptException unrecoverable) {
 			throw unrecoverable;
 		} catch (Exception e) {

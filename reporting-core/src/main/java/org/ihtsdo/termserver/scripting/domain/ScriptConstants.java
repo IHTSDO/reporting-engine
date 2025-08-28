@@ -23,6 +23,7 @@ public interface ScriptConstants extends RF2Constants {
 	String GFOLDER_GENERAL_QA = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
 	String GFOLDER_LOINC = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
 	String GFOLDER_MS = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+	String GFOLDER_NPU = "1019iuglVN-TXmEgEmWYkBKWNebH-8YgT"; //NPU
 	String GFOLDER_NUVA = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO"; //NUVA
 	String GFOLDER_QI = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
 	String GFOLDER_QI_NORMALIZATION = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl"; //QI / Normalization
@@ -109,13 +110,14 @@ public interface ScriptConstants extends RF2Constants {
 	Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
 	Concept FINDING_SITE = new Concept("363698007", "Finding site (attribute)");
 	Concept HAS_DEVICE_CHARAC = new Concept("840562008", "Has device characteristic (attribute)");
-	Concept HAS_INTERPRETATION = new Concept("363713009", "Has interpretation (attribute)");
+	Concept HAS_INTERPRETATION = new Concept("363713009","Has interpretation (attribute)");
+	Concept HAS_INTENT = new Concept("363703001", "Has intent (attribute)");
 	Concept INHERES_IN = new Concept("704319004", "Inheres in (attribute)");
 	Concept INTERPRETS = new Concept("363714003", "Interprets (attribute)");
-	Concept METHOD = new Concept("260686004", "Method (attribute)");
+	Concept METHOD = new Concept("260686004","Method (attribute)");
 	Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
-	Concept OBSERVABLE_ENTITY = new Concept("363787002", "Observable entity (observable entity)");
-	Concept OCCURRENCE = new Concept("246454002", "Occurrence (attribute)");
+	Concept OBSERVABLE_ENTITY = new Concept("363787002","Observable entity (observable entity)");
+	Concept OCCURRENCE = new Concept ("246454002", "Occurrence (attribute)");
 	Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
 	Concept PATHOLOGICAL_PROCESS = new Concept("370135005", "Pathological process (attribute)");
 	Concept PROCEDURE_SITE = new Concept("363704007", "Procedure site (attribute)|");
