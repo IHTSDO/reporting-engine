@@ -94,7 +94,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private boolean loadingRelease = false;
 	protected List<String> moduleFilter;
 	protected boolean scriptRequiresSnomedData = true;
-	
+	protected boolean reportChangesWithoutTask = true;
+
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 	private final List<String> finalWords = new ArrayList<>();
@@ -2193,13 +2194,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (groupId == SELFGROUPED) {
 			groupId = SnomedUtils.getFirstFreeGroup(c);
 		}
-		Relationship newRel = new Relationship (c, type, value, groupId);
-		//Copying relationships from elsewhere indicates they have not been released in their current condition
-		newRel.setReleased(false);
-		newRel.setDirty();
-		newRel.setAxiomEntry(assignToAxiom);
-		report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
-		c.addRelationship(newRel);
+
+		if (t != null || reportChangesWithoutTask) {
+			Relationship newRel = new Relationship(c, type, value, groupId);
+			//Copying relationships from elsewhere indicates they have not been released in their current condition
+			newRel.setReleased(false);
+			newRel.setDirty();
+			newRel.setAxiomEntry(assignToAxiom);
+
+			report(t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+			c.addRelationship(newRel);
+		}
 		changesMade++;
 		return changesMade;
 	}
