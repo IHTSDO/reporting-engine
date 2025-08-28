@@ -1226,6 +1226,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public Collection<Concept> findConceptsWithoutEffectiveTime(String ecl) throws TermServerScriptException {
 		Collection<Concept> concepts = findConcepts(ecl);
 		concepts.removeIf(Concept::hasEffectiveTime);
+
 		return concepts;
 	}
 	
