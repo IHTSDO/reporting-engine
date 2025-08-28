@@ -58,7 +58,6 @@ public interface ScriptConstants extends RF2Constants {
 
 	Concept HAS_UNIT_OF_PRESENTATION = new Concept ("763032000","Has unit of presentation (attribute)");
 	Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
-	Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	Concept HAS_DISPOSITION = new Concept ("726542003", "Has disposition (attribute)");
 	Concept PLAYS_ROLE = new Concept("766939001","Plays role (attribute)");
 
@@ -134,7 +133,6 @@ public interface ScriptConstants extends RF2Constants {
 	Concept TECHNIQUE = new Concept("246501002", "Technique (attribute)");
 	Concept USING_DEVICE = new Concept("424226004", "Using device (attribute)");
 	Concept USING_SUBST = new Concept("424361007", "Using substance (attribute)");
-
 
 	Concept LEFT = new Concept("7771000", "Left (qualifier value)");
 	String SCTID_LEFT = "7771000";
