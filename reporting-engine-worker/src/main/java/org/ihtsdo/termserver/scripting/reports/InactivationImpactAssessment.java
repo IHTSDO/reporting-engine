@@ -3,18 +3,15 @@ package org.ihtsdo.termserver.scripting.reports;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.EclCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.dao.ResourceDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.qi.AllKnownTemplates;
+import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -48,13 +45,9 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private String selectionCriteria;
 	private boolean isECL = false;
 
-	//The branch for a code system or project doesn't change between iterations, so we'll cache it
-	private Map<String, String> branchForProjectOrCodeSystem = new HashMap<>();
-
 	private Collection<Concept> inactivatingConcepts = new ArrayList<>();
 	private List<String> inactivatingConceptIds = new ArrayList<>();
-
-	private Map<String, DerivativeLocation> derivativeLocationMap;
+	private DerivativeHelper derivativeHelper;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -90,12 +83,15 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		includeInferred = jobRun.getParameters().getMandatoryBoolean(INCLUDE_INFERRED);
 
 		super.postInit(GFOLDER_ADHOC_REPORTS, tabNames, columnHeadings, false);
+
+		derivativeHelper = new DerivativeHelper(this);
+		derivativeHelper.initialise();
+
 		prepReferenceSetsAndConceptsToInactivate();
 	}
 
 	private void prepReferenceSetsAndConceptsToInactivate() throws TermServerScriptException {
 		referenceSets = findConcepts(REFSET_ECL);
-		importDerivativeLocations();
 		removeEmptyNoScopeAndDerivativeRefsets();
 		LOGGER.info("Recovered {} simple reference sets and maps", referenceSets.size());
 
@@ -135,7 +131,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			}
 			if (getConceptsCount("^" + refset) == 0) {
 				emptyReferenceSets.add(refset);
-			} else if (derivativeLocationMap.containsKey(refset.getId())) {
+			} else if (derivativeHelper.isDerivativeRefset(refset.getId())) {
 				derivativeRefsets.add(refset);
 			} else {
 				refsetSummary.put(refset, 0);
@@ -280,62 +276,18 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	}
 
 	private void checkDerivativeUsage() throws TermServerScriptException {
-		//These clients will be specific to this user cookie, so create fresh each run of report
-		Map<String, TermServerClient> serverTsClientMap = new HashMap<>();
-		Map<String, AuthoringServicesClient> serverAsClientMap = new HashMap<>();
-		for (DerivativeLocation location : derivativeLocationMap.values()) {
+		for (Concept refset : derivativeHelper.getDerivativeRefsetConcepts()) {
 			try {
-				checkInactivationsForDerivative(location, serverTsClientMap, serverAsClientMap);
+				EclCache eclCache = derivativeHelper.getEclCacheForDerivativeRefset(refset.getId());
+				if (isECL) {
+					reportRefsetInactivationsAgainstEcl(refset, eclCache);
+				} else {
+					reportRefsetInactivationsAgainstEnumeratedList(refset, eclCache);
+				}
 			} catch (IllegalStateException | TermServerScriptException e) {
 				report(PRIMARY_REPORT, e.getMessage());
 			}
 		}
-	}
-
-	private void checkInactivationsForDerivative(DerivativeLocation location, Map<String,TermServerClient> serverTsClientMap, Map<String,AuthoringServicesClient> serverAsClientMap) throws TermServerScriptException {
-		//Keep a map of server specific clients for each codeSystem / server combination.
-		//For SNOMEDCT-DERIVATIVES on the browser, for example, we should only need to do this once.
-		TermServerClient tsClient = serverTsClientMap.computeIfAbsent(location.server, k -> new TermServerClient(k, getAuthenticatedCookie()));
-		AuthoringServicesClient asClient = serverAsClientMap.computeIfAbsent(location.server, k -> new AuthoringServicesClient(getAsServerURL(k), getAuthenticatedCookie()));
-
-		//Now get an Ecl Cache which is specific to this server (via the tsClient) and the branch
-		//Watch that the same branch on another server will not be considered distinct so that's a danger point.
- 		String branch = branchForProjectOrCodeSystem.computeIfAbsent(location.getProjectOrCodeSystem(), k -> getBranchForDerivativeLocation(tsClient, asClient, location));
- 		EclCache eclCache = EclCache.getCache(branch, tsClient, gl, false);
-
-		//Refset might not be known to the current project, so create a temporary concept
-		Concept refset = new Concept(location.sctId);
-		refset.setPreferredSynonym(location.pt);
-		if (isECL) {
-			reportRefsetInactivationsAgainstEcl(refset, eclCache);
-		} else {
-			reportRefsetInactivationsAgainstEnumeratedList(refset, eclCache);
-		}
-	}
-
-	private String getAsServerURL(String serverUrl) {
-		return serverUrl.replace("snowstorm/snomed-ct", "");
-	}
-
-	private String getBranchForDerivativeLocation(TermServerClient tsClient, AuthoringServicesClient asClient, DerivativeLocation location) {
-		String errorMessage = "Unable to recover " ;
-		try {
-			//Look up a project if we have that, otherwise use the code system
-			if (location.project != null) {
-				errorMessage += "project " + location.project + " from " + location.server;
-				//For projects, we need to work with authoring-services.  Allow first time release so we don't check Metadata
-				return asClient.getProject(location.project, true).getBranchPath();
-			}
-			//What is the current branch for this CodeSystem?
-			errorMessage += "code system " + location.codeSystem + " from " + location.server;
-			CodeSystem cs = tsClient.getCodeSystem(location.codeSystem);
-			if (cs != null && cs.getLatestVersion() != null) {
-				return cs.getLatestVersion().getBranchPath();
-			}
-		} catch (RestClientException | TermServerScriptException e) {
-			errorMessage += " due to : " + e.getMessage();
-		}
-		throw new IllegalStateException(errorMessage);
 	}
 
 	private void checkHighVolumeUsage() throws TermServerScriptException {
@@ -415,53 +367,4 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}
-
-	private void importDerivativeLocations() throws TermServerScriptException {
-		derivativeLocationMap = new HashMap<>();
-		String fileName = "resources/derivative-locations.tsv";
-		LOGGER.debug("Loading {}", fileName );
-
-		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] columns = line.split("\t", -1);
-				//Is this the header row?
-				if (columns[0].equals("SCTID")) {
-					continue;
-				}
-
-				if (columns.length >= 5) {
-					DerivativeLocation location = new DerivativeLocation();
-					location.sctId = columns[0];
-					location.pt = columns[1];
-					location.server = columns[2];
-					location.codeSystem = hasDataOrNull(columns[3]);
-					location.project = hasDataOrNull(columns[4]);
-					derivativeLocationMap.put(location.sctId, location);
-				} else {
-					report(PRIMARY_REPORT, "Check " + fileName + " for correct format (5 columns): " + line);
-				}
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to read " + fileName, e);
-		}
-		LOGGER.info("Configured the location of {} derivatives", derivativeLocationMap.size());
-	}
-
-	private String hasDataOrNull(String str) {
-		return StringUtils.isEmpty(str)? null : str;
-	}
-
-	private class DerivativeLocation {
-		String sctId;
-		String pt;
-		String server;
-		String codeSystem;
-		String project;
-
-		public String getProjectOrCodeSystem() {
-			return project != null ? project : codeSystem;
-		}
-	}
-
 }
