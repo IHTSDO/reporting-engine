@@ -13,7 +13,8 @@ public class AxiomEntry extends RefsetMember implements ScriptConstants {
 	public static final String OWL_EXPRESSION = "owlExpression";
 	private static final String[] additionalFieldNames = new String[] {OWL_EXPRESSION};
 	private boolean isGCI = false;
-	
+
+	@Override
 	public AxiomEntry clone(String newComponentSctId, boolean keepIds) {
 		AxiomEntry clone = new AxiomEntry();
 		populateClone(clone, newComponentSctId, keepIds);

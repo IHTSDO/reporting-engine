@@ -10,7 +10,8 @@ public class MRCMModuleScope extends RefsetMember implements ScriptConstants {
 	public static final String RULE_REFSET_ID = "mrcmRuleRefsetId";
 
 	protected static String[] additionalFieldNames = new String[] {RULE_REFSET_ID};
-	
+
+	@Override
 	public MRCMModuleScope clone(String newComponentSctId, boolean keepIds) {
 		return (MRCMModuleScope) super.populateClone(new MRCMModuleScope(), newComponentSctId, keepIds);
 	}

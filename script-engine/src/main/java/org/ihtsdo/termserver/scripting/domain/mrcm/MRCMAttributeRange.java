@@ -13,7 +13,8 @@ public class MRCMAttributeRange extends RefsetMember implements ScriptConstants 
 	private static String CONTENT_TYPE_ID = "contentTypeId";
 	
 	protected static String[] additionalFieldNames = new String[] {RANGE_CONSTRAINT, ATTRIBUTE_RULE, RULE_STRENGTH_ID, CONTENT_TYPE_ID};
-	
+
+	@Override
 	public MRCMAttributeRange clone(String newComponentSctId, boolean keepIds) {
 		return (MRCMAttributeRange) populateClone(new MRCMAttributeRange(), newComponentSctId, keepIds);
 	}
