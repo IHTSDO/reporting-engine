@@ -96,9 +96,9 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		//Prevents instantiation by other than getGraphLoader()
 	}
 
-	public ModuleDependencyReferenceSet getMdrs() throws TermServerScriptException {
+	public ModuleDependencyReferenceSet getMdrs() {
 		if (mdrs == null) {
-			throw new TermServerScriptException("MDRS requested, but not loaded");
+			throw new IllegalStateException("MDRS requested, but not loaded");
 		}
 		return mdrs;
 	}

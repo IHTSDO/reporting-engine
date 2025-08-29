@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.managedService;
+package org.ihtsdo.termserver.scripting.fixes.managed_service;
 
 import java.io.IOException;
 import java.util.*;

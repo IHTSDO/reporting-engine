@@ -44,7 +44,8 @@ public class TermServerClient {
 
 	private static final String BRANCHES = "/branches/";
 	private static final String BROWSER = "/browser/";
-	private static final String MEMBERS = "/members/";
+	private static final String MEMBERS = "/members";
+	private static final String MEMBERS_SLASH = "/members/";
 	private static final String MEMBERS_REFSET = "/members?referenceSet=";
 	private static final String CONCEPTS = "/concepts";
 	private static final String RELATIONSHIPS = "/relationships";
@@ -626,7 +627,7 @@ public class TermServerClient {
 	}
 
 	private String getRefsetMembersUrl(String refSetMemberId, String branch) {
-		return this.serverUrl + "/" + branch + MEMBERS + refSetMemberId;
+		return this.serverUrl + "/" + branch + MEMBERS_SLASH + refSetMemberId;
 	}
 
 	private String getRelationshipUrl(String relationshipId, String branch) {
@@ -642,7 +643,7 @@ public class TermServerClient {
 	}
 
 	private String getRefsetMembersUrl(String branch) {
-		return this.serverUrl + "/" + branch + "/members";
+		return this.serverUrl + "/" + branch + MEMBERS;
 	}
 	
 	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
@@ -817,6 +818,19 @@ public class TermServerClient {
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
+	}
+
+	public RefsetMember createRefsetMember(RefsetMember rm, String branchPath) {
+		//If we're creating a new member, then we need to say it's not been released before
+		RefsetMember rmClone = rm.clone(null, true);
+		rmClone.setReleased(null);
+		String url = getRefsetMembersUrl(branchPath);
+		ResponseEntity<RefsetMember> response = restTemplate.exchange(
+				url,
+				HttpMethod.POST,
+				new HttpEntity<>(rmClone, headers),
+				RefsetMember.class);
+		return response.getBody();
 	}
 	
 	public RefsetMember updateRefsetMember(RefsetMember rm, String branchPath) {
