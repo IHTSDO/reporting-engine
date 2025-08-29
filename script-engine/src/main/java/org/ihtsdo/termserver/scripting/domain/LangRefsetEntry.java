@@ -14,6 +14,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 
 	protected static final String[] additionalFieldNames = new String[] {ACCEPTABILITY_ID};
 
+	@Override
 	public LangRefsetEntry clone(String descriptionSctId, boolean keepIds) {
 		LangRefsetEntry clone = new LangRefsetEntry();
 		clone.id = keepIds ? this.id : UUID.randomUUID().toString();

@@ -22,6 +22,7 @@ public class MRCMAttributeDomain extends RefsetMember implements ScriptConstants
 		return r;
 	}
 
+	@Override
 	public MRCMAttributeDomain clone(String newComponentSctId, boolean keepIds) {
 		return (MRCMAttributeDomain) populateClone(new MRCMAttributeDomain(), newComponentSctId, keepIds);
 	}

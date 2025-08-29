@@ -19,7 +19,8 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 	public static String TARGET_COMPONENT_ID = "targetComponentId";
 	
 	public static String[] additionalFieldNames = new String[] {TARGET_COMPONENT_ID};
-	
+
+	@Override
 	public AssociationEntry clone(String newComponentSctId, boolean keepIds) {
 		AssociationEntry clone = new AssociationEntry();
 		if (keepIds) {

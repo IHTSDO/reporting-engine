@@ -19,7 +19,8 @@ public class MRCMDomain extends RefsetMember implements ScriptConstants {
 	
 	protected static String[] additionalFieldNames = new String[] {DOMAIN_CONSTRAINT, PARENT_DOMAIN, PROXIMAL_PRIMITIVE_CONSTRAINT,
 			PROXIMAL_PRIMITIVE_REFINEMENT, DOMAIN_TEMPLATE_FOR_PRECOORDINATION, DOMAIN_TEMPLATE_FOR_POSTCOORDINATION, GUIDE_URL};
-	
+
+	@Override
 	public MRCMDomain clone(String newComponentSctId, boolean keepIds) {
 		return (MRCMDomain) populateClone(new MRCMDomain(), newComponentSctId, keepIds);
 	}
