@@ -157,18 +157,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 				ReportActionType action = ReportActionType.REFSET_MEMBER_INACTIVATED;
 				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 					if (inScope(l)) {
-						if (!dryRun) {
-							if (l.isReleasedSafely()) {
-								l.setActive(false);
-								tsClient.updateRefsetMember(l, t.getBranchPath());
-							} else {
-								tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
-							}
-						}
-						if (!l.isReleasedSafely()) {
-							action = ReportActionType.REFSET_MEMBER_DELETED;
-						}
-						report(t, c, Severity.LOW, action, "Active LRSM removed on inactive description", l);
+						inactivateOrDeleteRefsetMember(t, c, l, action);
 						changesMade++;
 					}
 				}
@@ -295,6 +284,29 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 			updateConcept(t, loaded, "");
 		}
 		return changesMade + directRefsetChanges;
+	}
+
+	private void inactivateOrDeleteRefsetMember(Task t, Concept c, LangRefsetEntry l, ReportActionType action) throws TermServerScriptException {
+		if (!dryRun) {
+			if (l.isReleasedSafely()) {
+				l.setActive(false);
+				//We've seen cases where we cannot update the refset member because something has deleted it from the branch
+				//so try to find it first, and then create it inactive if not found
+
+				RefsetMember rmLoaded = loadRefsetMember(l.getId(), project.getBranchPath());
+				if (rmLoaded == null) {
+					report(t, c, Severity.HIGH, ReportActionType.SKIPPING, "Unable to create inactive refset member, use RF2", l);
+				} else {
+					tsClient.updateRefsetMember(l, t.getBranchPath());
+				}
+			} else {
+				tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
+			}
+		}
+		if (!l.isReleasedSafely()) {
+			action = ReportActionType.REFSET_MEMBER_DELETED;
+		}
+		report(t, c, Severity.LOW, action, "Active LRSM removed on inactive description", l);
 	}
 
 	private int reactivateRemainingMemberIfRequired(Concept c, RefsetMember r,

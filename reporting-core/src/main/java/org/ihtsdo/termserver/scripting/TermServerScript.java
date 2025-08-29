@@ -807,17 +807,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 	
-	protected RefsetMember loadRefsetMember(String uuid) throws TermServerScriptException {
+	protected RefsetMember loadRefsetMember(String uuid) {
 		return loadRefsetMember(uuid, project.getBranchPath());
 	}
 	
-	protected RefsetMember loadRefsetMember(String uuid, String branch) throws TermServerScriptException {
-		LOGGER.debug("Loading refset member " + uuid + " from " + branch);
+	protected RefsetMember loadRefsetMember(String uuid, String branch) {
+		LOGGER.debug("Loading refset member {} from {}", uuid, branch);
 		return tsClient.getRefsetMember(uuid, branch);
 	}
 	
-	protected LangRefsetEntry loadLangRefsetMember(String uuid, String branch) throws TermServerScriptException {
-		LOGGER.debug("Loading refset member " + uuid + " from " + branch);
+	protected LangRefsetEntry loadLangRefsetMember(String uuid, String branch) {
+		LOGGER.debug("Loading langrefset member {} from {}", uuid, branch);
 		return tsClient.getLangRefsetMember(uuid, branch);
 	}
 	
@@ -826,11 +826,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			String previousBranchPath = getArchiveManager().getPreviousBranch(project);
 			project.setPreviousBranchPath(previousBranchPath);
 		}
-		LOGGER.debug("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
+		LOGGER.debug("Loading refset member {} from {}", uuid, project.getPreviousBranchPath());
 		return tsClient.getRefsetMember(uuid, project.getPreviousBranchPath());
 	}
 	
-	protected RefsetMember updateRefsetMember(RefsetMember rm) throws TermServerScriptException {
+	protected RefsetMember updateRefsetMember(RefsetMember rm) {
 		LOGGER.debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getId());
 		if (dryRun) {
 			return rm;
@@ -1896,7 +1896,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected boolean inScope(Component c, boolean includeExpectedExtensionModules) {
 		//RP-349 Allow MS customers to run reports against MAIN.
-		//In this case all concepts are "in scope" to allow MS customers to see
+		//In this case, all concepts are "in scope" to allow MS customers to see
 		//what changes to international concepts might affect them
 		if (project.getKey().equals("MAIN")) {
 			return true;

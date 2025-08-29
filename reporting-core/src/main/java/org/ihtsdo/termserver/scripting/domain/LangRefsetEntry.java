@@ -22,7 +22,11 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = descriptionSctId;
+		if (descriptionSctId == null) {
+			clone.referencedComponentId = this.referencedComponentId;
+		} else {
+			clone.referencedComponentId = descriptionSctId;
+		}
 		clone.setAcceptabilityId(getAcceptabilityId());
 		clone.setDirty(); //New components need to be written to any delta
 		clone.released = this.released;
