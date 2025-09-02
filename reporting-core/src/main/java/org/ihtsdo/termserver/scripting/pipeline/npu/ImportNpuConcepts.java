@@ -62,7 +62,7 @@ public class ImportNpuConcepts extends ContentPipelineManager implements NpuScri
 				"Category, NpuNum, Detail, , , "
 		};
 
-		super.postInit(tabNames, columnHeadings, false);
+		super.postInit(GFOLDER_NPU, tabNames, columnHeadings, false);
 
 		getReportManager().disableTab(getTab(TAB_IMPORT_STATUS));
 		//getReportManager().disableTab(getTab(TAB_ITEMS_OF_INTEREST));
