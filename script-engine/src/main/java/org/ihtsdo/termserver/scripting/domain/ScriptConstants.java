@@ -24,6 +24,7 @@ public interface ScriptConstants extends RF2Constants {
 	String GFOLDER_GENERAL_QA = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
 	String GFOLDER_LOINC = "1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"; //LOINC
 	String GFOLDER_MS = "1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"; //Managed Service
+	String GFOLDER_NPU = "1019iuglVN-TXmEgEmWYkBKWNebH-8YgT"; //NPU
 	String GFOLDER_NUVA = "19OR1N_vtMb0kUi2YyNo6jqT3DiFRfbPO"; //NUVA
 	String GFOLDER_QI = "1ndqzuQs7C-8ODbARPWh4xJVshWIDF9gN"; //QI
 	String GFOLDER_QI_NORMALIZATION = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl"; //QI / Normalization

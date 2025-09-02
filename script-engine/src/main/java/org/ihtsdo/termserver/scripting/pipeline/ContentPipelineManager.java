@@ -146,6 +146,7 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 	}
 
 	protected void postModelling(TemplatedConcept tc) throws TermServerScriptException {
+		validateTemplatedConcept(tc);
 		tc.populateAlternateIdentifier();
 	}
 

@@ -40,7 +40,6 @@ public abstract class LoincScript extends ContentPipelineManager implements Loin
 	}
 
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
-		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh");  //LOINC Folder
 		tabForFinalWords = SECONDARY_REPORT;
 		postInit(GFOLDER_LOINC, tabNames, columnHeadings, false);
 	}
