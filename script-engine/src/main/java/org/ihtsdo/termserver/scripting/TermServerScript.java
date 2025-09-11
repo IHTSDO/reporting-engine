@@ -92,6 +92,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int tabForFinalWords = PRIMARY_REPORT;
 	private boolean loadingRelease = false;
 	protected List<String> moduleFilter;
+	protected boolean scriptRequiresSnomedData = true;
 	
 	protected Set<String> whiteListedConceptIds = new HashSet<>();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
@@ -107,6 +108,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public static final String CONCEPTS_IN_FILE = "Concepts in file";
 	public static final String CONCEPTS_TO_PROCESS = "Concepts to process";
+	private static final String DUE_TO_STR = " due to ";
 	public static final String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static final String ISSUE_COUNT = "Issue count";
 	public static final String CRITICAL_ISSUE = "CRITICAL ISSUE";
@@ -541,7 +543,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				checkSettingsWithUser(jobRun);
 			}
 			init(jobRun);
-			loadProjectSnapshot(false);  //Load all descriptions
+
+			if (scriptRequiresSnomedData) {
+				loadProjectSnapshot(false);  //Load all descriptions
+			}
+
 			postInit();
 			runJob();
 			flushFilesWithWait(false);
@@ -1136,6 +1142,20 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 
+	protected int deleteRelationship(Task t, Relationship r) throws TermServerScriptException {
+		try {
+			LOGGER.debug((dryRun ?DRY_DELETING:DELETING), r);
+			if (!dryRun) {
+				tsClient.deleteRelationship(r.getRelationshipId(), t.getBranchPath());
+			}
+			report(t, r.getSource(), Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, r);
+			return CHANGE_MADE;
+		} catch (Exception e) {
+			report(t, r.getSource(), Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete relationship " + r.getId() + DUE_TO_STR + e.getMessage());
+			return NO_CHANGES_MADE;
+		}
+	}
+
 	protected int deleteDescription(Task t, Description d) throws TermServerScriptException {
 		try {
 			LOGGER.debug((dryRun ?DRY_DELETING:DELETING), d);
@@ -1175,7 +1195,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 			return CHANGE_MADE;
 		} catch (Exception e) {
-			report(t, null, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete refset member " + uuid + " due to " + e.getMessage());
+			report(t, null, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete refset member " + uuid + DUE_TO_STR + e.getMessage());
 			return NO_CHANGES_MADE;
 		}
 	}
@@ -1907,6 +1927,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public static void run(Class<? extends JobClass> jobClazz, String[] args, Map<String, String> parameters) throws TermServerScriptException {
+		quietenDownLogging();
 		JobRun jobRun = createJobRunFromArgs(jobClazz.getSimpleName(), args);
 		if (parameters != null) {
 			for (Map.Entry<String, String> entry : parameters.entrySet()) {
@@ -1926,7 +1947,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		} 
 		job.instantiate(jobRun, null);
 	}
-	
+
+	private static void quietenDownLogging() {
+		makeQuiet("org.semanticweb.owlapi.util.SAXParsers");
+		makeQuiet("ch.qos.logback.classic.util.ContextInitializer");
+		makeQuiet("ch.qos.logback.classic.util.DefaultJoranConfigurator");
+	}
+
+	private static void makeQuiet(String loggerName) {
+		((ch.qos.logback.classic.Logger)LoggerFactory.getLogger(loggerName)).setLevel(ch.qos.logback.classic.Level.ERROR);
+	}
+
 	public static void run(Class<? extends JobClass> jobClazz, Map<String, Object> parameters, String[] args) throws TermServerScriptException {
 		JobRun jobRun = createJobRunFromArgs(jobClazz.getSimpleName(), args);
 		if (parameters != null) {
@@ -2036,7 +2067,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				//We'll try and carry on without this parent.
 				return null;
 			}
-			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
+			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + DUE_TO_STR + assocs.size() + " associations");
 		} else {
 			if(assocs.size() > 1){
 				String assocStr = inactiveConcept.getAssociationTargets().toString(gl);

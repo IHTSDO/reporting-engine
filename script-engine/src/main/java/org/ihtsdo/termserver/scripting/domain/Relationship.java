@@ -117,6 +117,9 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	}
 
 	public String getRelationshipId() {
+		if (relationshipId == null && id != null) {
+			return id;
+		}
 		return relationshipId;
 	}
 

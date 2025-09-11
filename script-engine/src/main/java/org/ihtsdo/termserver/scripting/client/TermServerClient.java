@@ -47,6 +47,7 @@ public class TermServerClient {
 	private static final String MEMBERS = "/members/";
 	private static final String MEMBERS_REFSET = "/members?referenceSet=";
 	private static final String CONCEPTS = "/concepts";
+	private static final String RELATIONSHIPS = "/relationships";
 	private static final String DESCRIPTIONS = "/descriptions";
 	private static final String SEARCH_AFTER = "&searchAfter=";
 
@@ -196,7 +197,7 @@ public class TermServerClient {
 					LOGGER.info("Updated concept " + c.getConceptId());
 				} catch (RestClientResponseException e) {
 					tries++;
-					if (tries >= MAX_TRIES || e.getRawStatusCode() == 400) {
+					if (tries >= MAX_TRIES || e.getStatusCode().value() == 400) {
 						throw new TermServerScriptException("Failed to update concept: " + c + " after " + tries + " attempts due to " + e.getMessage(), e);
 					}
 					LOGGER.debug("Update of concept failed, trying again....",e);
@@ -225,32 +226,41 @@ public class TermServerClient {
 	public void deleteConcept(String sctId, String branchPath) throws TermServerScriptException {
 		try {
 			restTemplate.delete(getConceptsPath(sctId, branchPath));
-			LOGGER.info("Deleted concept " + sctId + " from " + branchPath);
+			LOGGER.info("Deleted concept {} from {}", sctId, branchPath);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to delete concept: " + sctId, e);
+		}
+	}
+
+	public void deleteRelationship(String sctId, String branchPath) throws TermServerScriptException {
+		try {
+			restTemplate.delete(getRelationshipsPath(sctId, branchPath));
+			LOGGER.info("Deleted relationship {} from {}", sctId , branchPath);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to delete relationship: " + sctId, e);
 		}
 	}
 
 	public void deleteDescription(String sctId, String branchPath) throws TermServerScriptException {
 		try {
 			restTemplate.delete(getDescriptionsPath(sctId,branchPath));
-			LOGGER.info("Deleted description " + sctId + " from " + branchPath);
+			LOGGER.info("Deleted description {} from {}", sctId, branchPath);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to delete description: " + sctId, e);
 		}
 	}
 	
-	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
+	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) {
 		return getConcepts(ecl, branchPath, CharacteristicType.INFERRED_RELATIONSHIP, searchAfter, limit);
 	}
 	
-	public ConceptCollection getConcepts(String ecl, String branchPath, CharacteristicType charType, String searchAfter, int limit) throws TermServerScriptException {
+	public ConceptCollection getConcepts(String ecl, String branchPath, CharacteristicType charType, String searchAfter, int limit) {
 		String eclType = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP)?"ecl":"statedEcl";
 		String criteria = SnomedUtils.makeMachineReadable(ecl);
 		return getConceptsMatchingCriteria(eclType, criteria, branchPath, searchAfter, limit);
 	}
 	
-	public ConceptCollection getConceptsMatchingCriteria(String eclType, String criteria, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
+	public ConceptCollection getConceptsMatchingCriteria(String eclType, String criteria, String branchPath, String searchAfter, int limit) {
 		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
 		//because RestTemplate does that for us.  So use curly braces to substitute in our criteria
 		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit;
@@ -279,6 +289,10 @@ public class TermServerClient {
 	
 	private String getConceptsPath(String sctId, String branchPath) {
 		return serverUrl + "/" + branchPath + CONCEPTS +"/" + sctId;
+	}
+
+	private String getRelationshipsPath(String sctId, String branchPath) {
+		return serverUrl + "/" + branchPath + RELATIONSHIPS +"/" + sctId;
 	}
 
 	private String getConceptsPath(String branchPath) {
@@ -539,7 +553,7 @@ public class TermServerClient {
 		//FormHttpMessageConverter uses ResourceHttpMessageConverter which can handle this
 		form.add("file", new FileSystemResource(archive)); 
 		HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(form, headers);
-		ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+		restTemplate.postForEntity(url, requestEntity, String.class);
 		
 		//Now wait for the import to complete
 		while(true) {
@@ -592,7 +606,7 @@ public class TermServerClient {
 		}
 	}
 
-	public void deleteRefsetMember(String refsetMemberId, String branch, boolean toForce) throws TermServerScriptException {
+	public void deleteRefsetMember(String refsetMemberId, String branch, boolean toForce) {
 			restTemplate.delete(getRefsetMemberUpdateUrl(refsetMemberId, branch, toForce));
 			LOGGER.info("Deleted refset member id: {}", refsetMemberId);
 	}
@@ -827,7 +841,7 @@ public class TermServerClient {
 	public List<CodeSystem> getCodeSystems() throws TermServerScriptException {
 		try {
 			String url = this.serverUrl + "/codesystems";
-			LOGGER.debug("Recovering codesystems from " + url);
+			LOGGER.debug("Recovering codesystems from {}", url);
 			return restTemplate.getForObject(url, CodeSystemCollection.class).getItems();
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
@@ -837,7 +851,7 @@ public class TermServerClient {
 	public CodeSystem getCodeSystem(String codeSystemName) throws TermServerScriptException {
 		try {
 			String url = this.serverUrl + "/codesystems/" + codeSystemName;
-			LOGGER.debug("Recovering codesystem from " + url);
+			LOGGER.debug("Recovering codesystem from {}", url);
 			return restTemplate.getForObject(url, CodeSystem.class);
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));

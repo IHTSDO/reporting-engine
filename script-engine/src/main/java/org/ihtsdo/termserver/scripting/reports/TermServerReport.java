@@ -43,7 +43,6 @@ public abstract class TermServerReport extends TermServerScript {
 	}
 
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
-
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
