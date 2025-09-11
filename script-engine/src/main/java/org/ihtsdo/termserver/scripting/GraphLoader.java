@@ -228,9 +228,15 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 						continue;
 					}
 				}
+
+				//This file may not be a released one, but if the existing relationship is marked as released, then the relationship remains released
+				Boolean thisRelIsReleased = isReleased;
+				if (existing != null && existing.isReleased() != null && existing.isReleasedSafely()) {
+					thisRelIsReleased = true;
+				}
 				
 				if (addRelationshipsToConcepts) {
-					addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased, previousState);
+					addRelationshipToConcept(characteristicType, lineItems, isDelta, thisRelIsReleased, previousState);
 				}
 				relationshipsLoaded++;
 			} else {
@@ -531,7 +537,10 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	 */
 	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased, String issue) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
-		r.setReleased(isReleased);
+		//Only set the released flag if it's not set already
+		if (r.isReleased() == null) {
+			r.setReleased(isReleased);
+		}
 		
 		if (issue != null) {
 			r.addIssue(issue);
@@ -747,6 +756,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				Concept c = getConcept(lineItems[REF_IDX_REFCOMPID]);
 				AlternateIdentifier altId = new AlternateIdentifier();
 				AlternateIdentifier.populatefromRf2(altId, lineItems);
+
+				//Only set the released flag if it's not set already
+				if (altId.isReleased() == null) {
+					altId.setReleased(isReleased);
+				}
 				c.addAlternateIdentifier(altId);
 
 				if (lineItems[IDX_ACTIVE].equals("1")) {
