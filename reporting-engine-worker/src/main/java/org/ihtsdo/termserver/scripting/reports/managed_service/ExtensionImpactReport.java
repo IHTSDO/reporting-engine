@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricDataUser;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricStatsGenerator;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -25,10 +26,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExtensionImpactReport.class);
 
 	private static final String INTERNATIONAL_RELEASE = "Proposed International Release Archive";
+	private static final String ECL_FILTER = "ECL Filter (optional)";
 	private static final String COMMON_HEADINGS = "SCTID, FSN, SemTag,";
-
-	private static final int COUNT_AS_NEW_CONCEPT = 1;
-	private static final int COUNT_AS_EXISTING_CONCEPT = 0;
 
 	private static final boolean RUN_INTEGRITY_CHECKS = true;  //Make false locally if required
 
@@ -41,10 +40,14 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	private String[][] columnNames;  //Used for both column names, and to track totals
 	private String proposedUpgrade;
+	private String ecl;
+	private DerivativeHelper derivativeHelper;
+	private Set<Concept> conceptsOfInterest;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250801T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250901T120000Z.zip");
+		params.put(ECL_FILTER, "^ 1303957004 |Nutrition Care Process Terminology reference set (foundation metadata concept)| or ^ 1157358007 |International Classification for Nursing Practice reference set (foundation metadata concept)| or ^ 816080008 |International Patient Summary (foundation metadata concept)|");
 		TermServerScript.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -146,10 +149,12 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		if (getJobRun() != null) {
 			getJobRun().setProject(origProject);
 		}
+
+		ecl = jobRun.getParamValue(ECL_FILTER);
 		
 		columnNames = new String[][] {	{"Has Inactivated Stated Parent", "Inactivated Concept Used As Stated Parent", "Has Inactivated Stated Attribute", "Inactivated Concept Used In Stated Modelling", "Has Inactivated Inferred Parent", "Inactivated Concept Used As Inferred Parent", "Inactivated with Extension Axiom"},
 										{"New Concept Requires Translation", "Updated FSN Requires Translation", "Updated FSN No Current Translation", "Translated Concept Inactivated - Replacement Requires Translation", "Translated Concept Inactivated - No Replacement Specified"}};
-		
+
 		String[] columnHeadings = new String[] {"Summary Item, Count",
 				COMMON_HEADINGS + formColumnNames(columnNames[0], true),
 				COMMON_HEADINGS + "Impact,Affected Concept,Historical Associations",
@@ -165,6 +170,9 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				"Non-core Axioms Detail" //SENARY_REPORT
 		};
 		super.postInit(GFOLDER_RELEASE_STATS, tabNames, columnHeadings, false);
+
+		derivativeHelper = new DerivativeHelper(this);
+		derivativeHelper.initialise();
 	}
 	
 	private String formColumnNames(String[] columnNames, boolean includeExamples) {
@@ -198,6 +206,13 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		
 		LOGGER.info("Populating map of all concepts used in stated modelling");
 		populateStatedModellingMap();
+
+		if (!StringUtils.isEmpty(ecl)) {
+			LOGGER.info("Finding concepts matching ECL: {}", ecl);
+			findConceptsOfInterest(ecl);
+		} else {
+			LOGGER.info("No ECL specified, all concepts in scope will be considered");
+		}
 		
 		//Work through the top level hierarchies
 		List<Concept> topLevelHierarchies = SnomedUtils.sort(ROOT_CONCEPT.getDescendants(IMMEDIATE_CHILD));
@@ -238,14 +253,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	}
 
 	private int[] reportInactivations(String sctId, String[] summaryNames, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache, String[] examples) throws TermServerScriptException {
-		int[] emptyCounts = new int[5];
-		int hasInactivatedStatedParent = 0;
-		int inactivatedConceptUsedAsStatedParent = 0;
-		int hasInactivatedStatedAttribute = 0;
-		int inactivatedConceptUsedInStatedModelling = 0;
-		int hasInactivatedInferredParent = 0;
-		int inactivatedConceptUsedAsInferredParent = 0;
-		int hasNonCoreAxioms = 0;
+		int[] emptyCounts = new int[7];
+
 		Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
 		//If this concept is already inactive, or doesn't yet exist we don't need to count it
 		if (currentConcept == null || !currentConcept.isActive()) {
@@ -258,112 +267,171 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			return emptyCounts;
 		}
 
+		InactivationStats inactivationStats = new InactivationStats();
+
+		countInactivatedConceptsUsedAsStatedParents(currentConcept, summaryNames, examples, inactivationStats);
+		countInactivatedConceptsUsedInStatedModelling(currentConcept, summaryNames, examples, inactivationStats);
+		countInactivatedConceptsUsedAsInferredParents(currentConcept, summaryNames, examples, inactivationStats, noInScopeDescendentsCache, yesInScopeDescendentsCache);
+		countInactivatedConceptsWithNonCoreAxioms(currentConcept, summaryNames, examples, inactivationStats);
+
+		return new int[] {
+				inactivationStats.hasInactivatedStatedParent,
+				inactivationStats.inactivatedConceptUsedAsStatedParent,
+				inactivationStats.hasInactivatedStatedAttribute,
+				inactivationStats.inactivatedConceptUsedInStatedModelling,
+				inactivationStats.hasInactivatedInferredParent,
+				inactivationStats.inactivatedConceptUsedAsInferredParent,
+				inactivationStats.hasNonCoreAxioms
+		};
+	}
+
+	private void countInactivatedConceptsUsedAsStatedParents(Concept currentConcept, String[] summaryNames, String[] examples, InactivationStats inactivationStats) throws TermServerScriptException {
+		boolean isCause = isConceptOfInterest(currentConcept.getId());
+
 		//The IMPACT is not the count of International Concepts involved,
 		//but how many _extension_ concepts each inactivated INT concept is used in.
+		boolean hasImpact = false;
 		Set<Concept> usedIn = usedAsStatedParentMap.get(currentConcept);
 		if (usedIn != null && !usedIn.isEmpty()) {
-			hasInactivatedStatedParent += usedIn.size();
-			inactivatedConceptUsedAsStatedParent++;
-			incrementSummaryInformation(summaryNames[0], usedIn.size());
-			incrementSummaryInformation(summaryNames[1]);
-			Concept exampleConcept = usedIn.iterator().next();
-			examples[0] = currentConcept + "\nParent of : " + exampleConcept;
 			String histAssocStr = historicalAssociationStrMap.get(currentConcept);
 			for (Concept detail : usedIn) {
-				report(TERTIARY_REPORT, currentConcept, "Becomes inactive, stated parent of", detail, histAssocStr);
+				if (isCause || isConceptOfInterest(detail.getId())) {
+					hasImpact = true;
+					inactivationStats.hasInactivatedStatedParent++;
+					incrementSummaryInformation(summaryNames[0]);
+					examples[0] = currentConcept + "\nParent of : " + detail;
+					//Only report if either the inactivated concept or the extension concept using it is of interest
+					report(TERTIARY_REPORT, currentConcept, "Becomes inactive, stated parent of", detail, histAssocStr);
+				}
+			}
+			if (hasImpact) {
+				inactivationStats.inactivatedConceptUsedAsStatedParent++;
+				incrementSummaryInformation(summaryNames[1]);
 			}
 		}
+	}
 
-		usedIn = usedInStatedModellingMap.get(currentConcept);
-		if (usedIn != null) {
-			hasInactivatedStatedAttribute += usedIn.size();
-			inactivatedConceptUsedInStatedModelling++;
-			incrementSummaryInformation(summaryNames[2], usedIn.size());
-			incrementSummaryInformation(summaryNames[3]);
-			Concept exampleConcept = usedIn.iterator().next();
-			examples[1] =  currentConcept + "\nUsed in : " + usedIn + "\n" + exampleConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+	private void countInactivatedConceptsUsedInStatedModelling(Concept currentConcept, String[] summaryNames, String[] examples, InactivationStats inactivationStats) throws TermServerScriptException {
+		boolean isCause = isConceptOfInterest(currentConcept.getId());
+
+		boolean hasImpact = false;
+		Set<Concept> usedIn = usedInStatedModellingMap.get(currentConcept);
+		if (usedIn != null && !usedIn.isEmpty()) {
 			String histAssocStr = historicalAssociationStrMap.get(currentConcept);
 			for (Concept detail : usedIn) {
-				report(TERTIARY_REPORT, currentConcept, "Becomes inactive, used in modelling of", detail, histAssocStr);
+				if (isCause || isConceptOfInterest(detail.getId())) {
+					hasImpact = true;
+					inactivationStats.hasInactivatedStatedAttribute++;
+					incrementSummaryInformation(summaryNames[2]);
+					examples[1] = currentConcept + "\nUsed in : " + usedIn + "\n" + detail.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+					report(TERTIARY_REPORT, currentConcept, "Becomes inactive, used in modelling of", detail, histAssocStr);
+				}
+			}
+			if (hasImpact) {
+				inactivationStats.inactivatedConceptUsedInStatedModelling++;
+				incrementSummaryInformation(summaryNames[3]);
 			}
 		}
+	}
+
+	private void countInactivatedConceptsUsedAsInferredParents(Concept currentConcept, String[] summaryNames, String[] examples, InactivationStats inactivationStats, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache) {
+		boolean isCause = isConceptOfInterest(currentConcept.getId());
 
 		//Does this concept have any inScope children?  We'll step this with new code
 		//to shortcut finding the complete set and allocating memory for that
+		boolean hasImpact = false;
 		if (hasInScopeDescendents(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
-			long countInferredChildren = currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).stream()
+			Set<Concept> inferredChildren = currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).stream()
 					.filter(this::inScope)
-					.count();
-			if (countInferredChildren > 0) {
-				hasInactivatedInferredParent++;
-				inactivatedConceptUsedAsInferredParent += countInferredChildren;
-				incrementSummaryInformation(summaryNames[4], (int)countInferredChildren);
-				incrementSummaryInformation(summaryNames[5]);
-				examples[2] = currentConcept + " inferred parent of " + currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).iterator().next();
+					.collect(Collectors.toSet());
+
+			if (!inferredChildren.isEmpty()) {
+				for (Concept detail : inferredChildren) {
+					if (isCause || isConceptOfInterest(detail.getId())) {
+						hasImpact = true;
+						inactivationStats.hasInactivatedInferredParent++;
+						incrementSummaryInformation(summaryNames[4]);
+						examples[2] = currentConcept + " inferred parent of " + currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).iterator().next();
+					}
+				}
+				if (hasImpact) {
+					inactivationStats.inactivatedConceptUsedAsInferredParent++;
+					incrementSummaryInformation(summaryNames[5]);
+				}
 			}
 		}
+	}
+
+	private void countInactivatedConceptsWithNonCoreAxioms(Concept currentConcept, String[] summaryNames, String[] examples, InactivationStats inactivationStats) throws TermServerScriptException {
+		boolean isCause = isConceptOfInterest(currentConcept.getId());
 
 		//Do we have non-core axioms on this core concept?
-		if (hasNonCoreAxioms(currentConcept)) {
-			hasNonCoreAxioms++;
+		if (isCause && hasNonCoreAxioms(currentConcept)) {
+			inactivationStats.hasNonCoreAxioms++;
 			examples[3] = currentConcept.toString();
 			incrementSummaryInformation(summaryNames[6]);
 			//And since we're not expecting very many of these, output each one on a detail tab
 			report(SENARY_REPORT, currentConcept, getFirstNonCoreAxiom(currentConcept));
 		}
-
-		return new int[] {
-			hasInactivatedStatedParent,
-			inactivatedConceptUsedAsStatedParent,
-			hasInactivatedStatedAttribute,
-			inactivatedConceptUsedInStatedModelling,
-			hasInactivatedInferredParent,
-			inactivatedConceptUsedAsInferredParent,
-			hasNonCoreAxioms
-		};
 	}
-
 
 	private void reportTranslations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
 		LOGGER.info("Reporting Translations Required");
-		int newConceptCount = 0;
-		int[] translationCounts = new int[4];
+		int[] translationCounts = new int[5];
+
 		Set<String> conceptReplacementSeen = new HashSet<>();
 		
 		for (String sctId : thisHierarchy) {
-			newConceptCount += countTranslations(sctId, translationCounts, summaryNames, conceptReplacementSeen);
+			int[] theseTranslationCounts = countTranslations(sctId, summaryNames, conceptReplacementSeen);
+			for (int i = 0; i < theseTranslationCounts.length; i++) {
+				translationCounts[i] += theseTranslationCounts[i];
+			}
 		}
-		report(QUATERNARY_REPORT, topLevelConcept, newConceptCount, translationCounts[0], translationCounts[1], translationCounts[2], translationCounts[3]);
+		report(QUATERNARY_REPORT, topLevelConcept,
+				translationCounts[0],
+				translationCounts[1],
+				translationCounts[2],
+				translationCounts[3],
+				translationCounts[4]);
 	}
 
-	private int countTranslations(String sctId, int[] translationCounts, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
+	private int[] countTranslations(String sctId, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
+		TranslationStats translationStats = new TranslationStats();
+
 		HistoricData datum = incomingData.get(sctId);
 		Concept currentConcept = gl.getConcept(sctId, false, false);  //Don't create or validate
-		//If this concept does not currently exist, then it's new, so it'll need a translation
+
 		if (currentConcept == null) {
 			//No need to check scope, this can only have come from the international edition
+			countNewConcepts(datum, summaryNames, translationStats);
+		} else if (SnomedUtils.isInternational(currentConcept)) {
+			if (datum == null) {
+				throw new TermServerScriptException(sctId + " is known to extension, is considered International and yet is not known to proposed update package.  Check date specified.  It must be in advance of current extension upgrade point");
+			}
+			compareCurrentConceptWithPreviousState(currentConcept, datum, summaryNames, translationStats, conceptReplacementSeen);
+		}
+		return new int[] {
+			translationStats.newConceptCount,
+			translationStats.changedFSNCount,
+			translationStats.changedFSNCountNoCurrent,
+			translationStats.translatedInactivatedCount,
+			translationStats.translatedInactivatedWithoutReplacement
+		};
+	}
+
+	private void countNewConcepts(HistoricData datum, String[] summaryNames, TranslationStats translationStats) throws TermServerScriptException {
+		String sctId = String.valueOf(datum.getConceptId());
+
+		if (isConceptOfInterest(sctId)) {
+			translationStats.newConceptCount++;
 			incrementSummaryInformation(summaryNames[0]);
 			String fsn = datum.getFsn();
 			String semTag = SnomedUtilsBase.deconstructFSN(fsn)[1];
 			report(QUINARY_REPORT, sctId, fsn, semTag, "New Concept", "", "", "");
-			return COUNT_AS_NEW_CONCEPT; //Count as new concept
 		}
-
-		//Now we don't need to worry about any changes to extension components - they've already been made
-		if (!SnomedUtils.isInternational(currentConcept)) {
-			return COUNT_AS_EXISTING_CONCEPT;
-		}
-
-		if (datum == null) {
-			throw new TermServerScriptException(sctId + " is known to extension, is considered International and yet is not known to proposed update package.  Check date specified.  It must be in advance of current extension upgrade point");
-		}
-		TranslationStats translationsStats = compareCurrentConceptWithPreviousState(currentConcept, datum, summaryNames, conceptReplacementSeen);
-		translationsStats.sumToArray(translationCounts);
-		return COUNT_AS_EXISTING_CONCEPT;
 	}
 
-	private TranslationStats compareCurrentConceptWithPreviousState(Concept currentConcept, HistoricData datum, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
-		TranslationStats translationStats = new TranslationStats();
+	private void compareCurrentConceptWithPreviousState(Concept currentConcept, HistoricData datum, String[] summaryNames, TranslationStats translationStats, Set<String> conceptReplacementSeen) throws TermServerScriptException {
 		checkForChangedFSN(currentConcept, datum, translationStats, summaryNames);
 
 		//Report translated concepts that have been inactivated where the replacement has not been translated
@@ -373,21 +441,25 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			//Can't use association entries because of course _this_ snapshot doesn't know
 			//about the inactivation.  Pull it from the datum instead
 			if (datum.getHistAssocTargets() == null) {
-				translationStats.translatedInactivatedWithoutReplacement++;
-				incrementSummaryInformation(summaryNames[4]);
-				LOGGER.warn("Concept {} has been inactivated but no replacement specified.  Check historical associations.", currentConcept);
+				if (isConceptOfInterest(currentConcept.getId())) {
+					translationStats.translatedInactivatedWithoutReplacement++;
+					incrementSummaryInformation(summaryNames[4]);
+					String fsn = datum.getFsn();
+					String semTag = SnomedUtilsBase.deconstructFSN(fsn)[1];
+					report(QUINARY_REPORT, datum.getConceptId(), fsn, semTag, "Translated concept has been inactivated but no replacement specified", currentConcept.getFsn(), getTranslatedFsn(currentConcept), getTranslatedPreferredSynonym(currentConcept));
+				}
 			} else {
 				checkHistoricalAssociationsForReplacements(datum, translationStats, summaryNames, conceptReplacementSeen);
 			}
 		}
-
-		return translationStats;
 	}
 
 	private void checkHistoricalAssociationsForReplacements(HistoricData datum, TranslationStats translationStats, String[] summaryNames, Set<String> conceptReplacementSeen) throws TermServerScriptException {
+		boolean isConceptOfInterest = isConceptOfInterest(String.valueOf(datum.getConceptId()));
+
 		for (String histAssocTarget : datum.getHistAssocTargets()) {
 			//Only count a given replacement once
-			if (!conceptReplacementSeen.contains(histAssocTarget)) {
+			if (!conceptReplacementSeen.contains(histAssocTarget) && (isConceptOfInterest || isConceptOfInterest(histAssocTarget))) {
 				Concept targetConcept = gl.getConcept(histAssocTarget, false, false);
 				//If we don't have this concept then it definitely won't have a translation
 				if (targetConcept == null || !hasTranslation(targetConcept)) {
@@ -407,7 +479,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	private void checkForChangedFSN(Concept currentConcept, HistoricData datum, TranslationStats translationStats, String[] summaryNames) throws TermServerScriptException {
 		//Has the FSN changed from what's currently here?
-		if (!currentConcept.getFsn().equals(datum.getFsn())) {
+		if (!currentConcept.getFsn().equals(datum.getFsn()) && isConceptOfInterest(currentConcept.getId())) {
 			String fsn = datum.getFsn();
 			String semTag = SnomedUtilsBase.deconstructFSN(fsn)[1];
 			if (hasTranslation(currentConcept)) {
@@ -454,6 +526,17 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			}
 		}
 		return hierarchy;
+	}
+
+	private void findConceptsOfInterest(String ecl) throws TermServerScriptException {
+		conceptsOfInterest = new HashSet<>();
+		conceptsOfInterest.addAll(findConceptsSafely(ecl));
+		for (Concept refset : derivativeHelper.getDerivativeRefsetConcepts()) {
+			if (ecl.contains(refset.getId())) {
+				EclCache eclCache = derivativeHelper.getEclCacheForDerivativeRefset(refset.getId());
+				conceptsOfInterest.addAll(eclCache.findConcepts(ecl));
+			}
+		}
 	}
 
 	private void populateStatedModellingMap() {
@@ -560,18 +643,26 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				.orElse(null);
 	}
 
+	private boolean isConceptOfInterest(String sctId) {
+		return conceptsOfInterest == null || conceptsOfInterest.stream().anyMatch(c -> c.getId().equals(sctId));
+	}
+
+	class InactivationStats {
+		int hasInactivatedStatedParent = 0;
+		int inactivatedConceptUsedAsStatedParent = 0;
+		int hasInactivatedStatedAttribute = 0;
+		int inactivatedConceptUsedInStatedModelling = 0;
+		int hasInactivatedInferredParent = 0;
+		int inactivatedConceptUsedAsInferredParent = 0;
+		int hasNonCoreAxioms = 0;
+	}
+
 	class TranslationStats {
+		int newConceptCount = 0;
 		int changedFSNCount = 0;
 		int changedFSNCountNoCurrent = 0;
 		int translatedInactivatedCount = 0;
 		int translatedInactivatedWithoutReplacement = 0;
-
-		void sumToArray(int[] counts) {
-			counts[0] += changedFSNCount;
-			counts[1] += changedFSNCountNoCurrent;
-			counts[2] += translatedInactivatedCount;
-			counts[3] += translatedInactivatedWithoutReplacement;
-		}
 	}
 
 }
