@@ -81,13 +81,11 @@ public class TermServerClient {
 	private final String serverUrl;
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
-	private final Set<SnowOwlClientEventListener> eventListeners;
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerClient.class);
 	public static boolean supportsIncludeUnpublished = true;
 
 	public TermServerClient(String serverUrl, String cookie) {
 		this.serverUrl = serverUrl;
-		eventListeners = new HashSet<>();
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		resty.withHeader("Cookie", cookie);
 		resty.authenticate(this.serverUrl, null,null);
@@ -319,9 +317,6 @@ public class TermServerClient {
 			resty.json(serverUrl + "/branches", RestyHelper.content(jsonObject, JSON_CONTENT_TYPE));
 			final String branchPath = parent + "/" + branchName;
 			LOGGER.info("Created branch {}", branchPath);
-			for (SnowOwlClientEventListener eventListener : eventListeners) {
-				eventListener.branchCreated(branchPath);
-			}
 			return branchPath;
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -365,10 +360,6 @@ public class TermServerClient {
 		} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
-	}
-
-	public void addEventListener(SnowOwlClientEventListener eventListener) {
-		eventListeners.add(eventListener);
 	}
 
 	/**

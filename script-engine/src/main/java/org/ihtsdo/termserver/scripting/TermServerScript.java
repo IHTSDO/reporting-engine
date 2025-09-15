@@ -197,7 +197,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected void init(String[] args) throws TermServerScriptException {
 		
 		if (args.length < 2) {
-			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file>]");
+			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file>] [--config <configuration string>]");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -667,6 +667,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				case "-task":
 				case "--task":
 					jobRun.setTask(parameter);
+					break;
+				case "--config":
+					jobRun.setAdditionalConfig(parameter);
 					break;
 				case "-headless":
 					jobRun.setParameter(RUN_HEADLESS,Integer.valueOf(parameter));
