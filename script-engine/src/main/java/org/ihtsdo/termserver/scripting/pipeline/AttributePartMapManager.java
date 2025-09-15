@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.pipeline;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import org.apache.commons.io.input.BOMInputStream;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -18,12 +18,12 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AttributePartMapManager.class);
 	private static final String MAP_IMPORT = "Map Import";
-	private static final int NOT_SET = -1;
 
-	private static final int IDX_PART_NUM = 0;
-	private static final int IDX_STATUS = 7;
-	private static final int IDX_NO_MAP = 6;
-	private static final int IDX_TARGET = 2;
+	// Fixed header names
+	public static final String COL_PART_NUM = "Source code";
+	public static final String COL_STATUS = "Status";
+	public static final String COL_NO_MAP = "No map flag";
+	public static final String COL_TARGET = "Target code";
 
 	protected ContentPipelineManager cpm;
 	protected GraphLoader gl;
@@ -79,11 +79,22 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 
 		try {
 			LOGGER.info("Loading Part Attribute Map File: {}", attributeMapFile);
-			try (BufferedReader br = new BufferedReader(new FileReader(attributeMapFile))) {
+			try (
+					BOMInputStream bomIn = BOMInputStream.builder()
+							.setInputStream(new FileInputStream(attributeMapFile))
+							// .setByteOrderMarks(...)   // optionally specify which BOMs to detect (defaults to UTF-8)
+							.setInclude(false)           // whether to include the BOM in the stream or exclude it
+							.get();
+					InputStreamReader isr = new InputStreamReader(bomIn, StandardCharsets.UTF_8);
+					BufferedReader br = new BufferedReader(isr)
+			) {
 				String line;
 				while ((line = br.readLine()) != null) {
 					lineNum++;
-					if (!line.isEmpty() && lineNum > 1) {
+					if (lineNum == 1) {
+						// Header line - discover indexes
+						ColIdx.initialize(line);
+					} else if (!line.isEmpty()) {
 						processPartFileLine(line, partsSeen, mappingNotes);
 					}
 				}
@@ -96,26 +107,27 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 
 	private void processPartFileLine(String line, Set<String> partsSeen, List<String> mappingNotes) throws TermServerScriptException {
 		String[] items = line.split("\t");
-		String partNum = items[IDX_PART_NUM];
+		String partNum = items[ColIdx.idx(COL_PART_NUM)];
 
 		if (partsSeen.contains(partNum)) {
 			//Have we seen this part before?  Map should now be unique
 			mappingNotes.add("Part / Attribute BaseFile contains duplicate entry for " + partNum);
-		} else if (items[IDX_NO_MAP].equals("true")) {
+		} else if (items[ColIdx.idx(COL_NO_MAP)].equals("true")) {
 			//And we can have items that report being mapped, but with 'no map' - warn about those.
 			mappingNotes.add("Map indicates part mapped to 'No Map'");
-		} else if (items[IDX_STATUS].equals("ACCEPTED") || (allowStatusMapped && items[IDX_STATUS].equals("MAPPED"))) {
+		} else if (items[ColIdx.idx(COL_STATUS)].equals("ACCEPTED") ||
+				(allowStatusMapped && items[ColIdx.idx(COL_STATUS)].equals("MAPPED"))) {
 			partsSeen.add(partNum);
-			Concept attributeValue = gl.getConcept(items[IDX_TARGET], false, true);
+			Concept attributeValue = gl.getConcept(items[ColIdx.idx(COL_TARGET)], false, true);
 			attributeValue = replaceValueIfRequired(mappingNotes, attributeValue);
 			if (attributeValue != null && attributeValue.isActive()) {
 				mappingNotes.add("Inactive concept");
 			}
 			partToAttributeMap.put(partNum, new RelationshipTemplate(null, attributeValue));
-		} else if (items[IDX_STATUS].equals("UNMAPPED")) {
+		} else if (items[ColIdx.idx(COL_STATUS)].equals("UNMAPPED")) {
 			//Skip this one without mentioning it
 		} else {
-			mappingNotes.add("Map indicates non-viable map status - " + items[IDX_STATUS]);
+			mappingNotes.add("Map indicates non-viable map status - " + items[ColIdx.idx(COL_STATUS)]);
 		}
 
 		if (!mappingNotes.isEmpty()) {
@@ -179,5 +191,27 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 
 	public void allowStatusMapped(boolean allowStatusMapped) {
 		this.allowStatusMapped = allowStatusMapped;
+	}
+
+	public static final class ColIdx {
+		// Runtime-discovered indexes
+		private static final Map<String, Integer> indexMap = new HashMap<>();
+
+		/** Discover column positions from header line */
+		public static void initialize(String headerLine) {
+			String[] headers = headerLine.split("\t", -1);
+			for (int i = 0; i < headers.length; i++) {
+				indexMap.put(headers[i].trim(), i);
+			}
+		}
+
+		/** Retrieve index for a given column name */
+		public static int idx(String columnName) {
+			Integer idx = indexMap.get(columnName);
+			if (idx == null) {
+				throw new IllegalStateException("Column not found in header: " + columnName);
+			}
+			return idx;
+		}
 	}
 }
