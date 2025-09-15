@@ -38,6 +38,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	public static final String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
 	private static final String CONCEPT_INACTIVATIONS = "Concepts to inactivate";
 	private static final String INCLUDE_INFERRED = "Include Inferred Relationships";
+	private static final String LOINC_BRANCH = "MAIN/SNOMEDCT-LOINCEXT/LE";
 	private Collection<Concept> referenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
 	private static final int CHUNK_SIZE = 200;
@@ -52,7 +53,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		// << 48694002 |Anxiety| OR 1237275009  //Found in the Nursing Issues Refset && EDQM respectively
-		params.put(CONCEPT_INACTIVATIONS, "246454002");
+		params.put(CONCEPT_INACTIVATIONS, "246454002, 387461009");
 		params.put(INCLUDE_INFERRED, "false");
 		TermServerScript.run(InactivationImpactAssessment.class, args, params);
 	}
@@ -182,6 +183,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		checkHistoricalAssociations();
 		checkMRCM();
 		checkTemplates();
+		checkLOINCUsage();
 	}
 
 	private void checkChildInactivation() throws TermServerScriptException {
@@ -358,6 +360,16 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		for (Concept c : inactivatingConcepts) {
 			for (Template t : listTemplatesUsingConcept(c)) {
 				report(c, "used in template ", t.getName());
+			}
+		}
+	}
+
+	private void checkLOINCUsage() throws TermServerScriptException {
+		EclCache eclCache = EclCache.getCache(LOINC_BRANCH, tsClient, gl, quiet);
+		for (Concept c : inactivatingConcepts) {
+			String ecl = "(* : * = (" + c.getId() + ")) {{ C moduleId=" + SCTID_LOINC_EXTENSION_MODULE + " }}";
+			for (Concept loincConcept : eclCache.findConcepts(ecl)) {
+				report(c, "used as attribute value in LOINC extension", loincConcept);
 			}
 		}
 	}
