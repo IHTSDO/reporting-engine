@@ -28,7 +28,7 @@ public class JiraHelper {
 	public static final String JIRA_FIELD_REVIEWER = "customfield_11000";
 
 	private static final String INCLUDED_FIELDS = "project, issuetype, type, summary, created, updated, status, reporter, assignee, comment, " + JIRA_FIELD_CSR_REQUEST_ID + ", " + JIRA_FIELD_REVIEWER;
-	
+
 	public Issue createJiraTicket(String projectKey, String summary, String description) throws TermServerScriptException {
 		Issue jiraIssue;
 		try {
