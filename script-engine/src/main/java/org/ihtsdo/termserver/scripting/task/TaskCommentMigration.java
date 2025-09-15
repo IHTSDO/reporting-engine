@@ -69,14 +69,13 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 		JiraHelper jiraHelper = new JiraHelper();
 		LOGGER.info("Fetching tasks from {} project in batches of 50", MIGRATE_PROJECT);
 
-		int startAt = 3100;
+		int startAt = 1400;
 		boolean dateLimitReached = false;
 
 		// calculate cutoff date = today minus 2 years
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.YEAR, -2);
 		Date cutoff = cal.getTime();
-
 
 		conn = getConnection();
 		try {
