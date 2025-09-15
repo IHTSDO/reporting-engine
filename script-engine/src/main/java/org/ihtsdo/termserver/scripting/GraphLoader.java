@@ -598,6 +598,14 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 			return null;
 		}
 	}
+
+	public Concept getConceptSafely (String identifier, boolean createIfRequired, boolean validateExists) {
+		try {
+			return getConcept(identifier, createIfRequired, validateExists);
+		} catch (TermServerScriptException e) {
+			return null;
+		}
+	}
 	
 	public Concept getConcept(Long sctId) throws TermServerScriptException {
 		return getConcept(sctId.toString(), true, true);

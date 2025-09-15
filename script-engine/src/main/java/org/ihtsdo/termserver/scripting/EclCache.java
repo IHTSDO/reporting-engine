@@ -33,12 +33,9 @@ public class EclCache implements ScriptConstants {
 	
 	static EclCache getCache(String branch, TermServerClient tsClient, GraphLoader gl, boolean quiet, CharacteristicType charType) {
 		String cacheKey = branch + "_" + charType;
-		
-		EclCache branchCache = branchCaches.get(cacheKey);
-		if (branchCache == null) {
-			branchCache = new EclCache(tsClient, branch);
-			branchCaches.put(cacheKey, branchCache);
-		}
+
+		EclCache branchCache = branchCaches.computeIfAbsent(cacheKey,
+				key -> new EclCache(tsClient, branch));
 		branchCache.gl = gl;
 		branchCache.quiet = quiet;
 		branchCache.charType = charType;
@@ -200,7 +197,6 @@ public class EclCache implements ScriptConstants {
 		boolean allRecovered = false;
 		String searchAfter = null;
 		int totalRecovered = 0;
-		boolean localStorePopulated = gl.getAllConcepts().size() > 100;
 		while (!allRecovered) {
 			try {
 					ConceptCollection collection = tsClient.getConcepts(ecl, branch, charType, searchAfter, PAGING_LIMIT);
@@ -211,7 +207,7 @@ public class EclCache implements ScriptConstants {
 					}
 					//Populate our local collection with either our locally loaded concepts if available, or
 				    //newly created Concept objects if not.
-					collectRecoveredConcepts(collection, allConcepts, localStorePopulated);
+					collectRecoveredConcepts(collection, allConcepts);
 					
 					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
 					//add to the set
@@ -235,19 +231,17 @@ public class EclCache implements ScriptConstants {
 		return allConcepts;
 	}
 
-	private void collectRecoveredConcepts(ConceptCollection collection, Set<Concept> allConcepts, boolean localStorePopulated) {
-		if (localStorePopulated) {
-			//Recover our locally held copy of these concepts so that we have the full hierarchy populated
-			List<Concept> localCopies = collection.getItems().stream()
-					.map(c -> gl.getConceptSafely(c.getId()))
-					.toList();
-			allConcepts.addAll(localCopies);
-		} else {
-			List<Concept> localCopies = collection.getItems().stream()
-					.map(c -> new Concept(c.getId(), c.getFsn()))
-					.toList();
-			allConcepts.addAll(localCopies);
-		}
+	private void collectRecoveredConcepts(ConceptCollection collection, Set<Concept> allConcepts) {
+			//Recover our locally held copy of these concepts (if we have them) so that we have the full hierarchy populated
+			allConcepts.addAll(collection.getItems().stream()
+					.map(this::createOrRecoverConcept)
+					.toList());
+	}
+
+	private Concept createOrRecoverConcept(Concept c) {
+		//Do we know about this concept?  Use the local copy if so
+		Concept localConcept = gl.getConceptSafely(c.getId(), false, false);
+		return localConcept == null ? c : localConcept;
 	}
 
 	public String getBranch() {
