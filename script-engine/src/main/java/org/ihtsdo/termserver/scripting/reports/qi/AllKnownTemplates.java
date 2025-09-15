@@ -325,7 +325,8 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			populateTemplates(null,"templates/procedures/Construction of stoma.json");
 			populateTemplates(null,"templates/procedures/Radiotherapy.json");
 			populateTemplates(null,"templates/procedures/Drainage.json");
-
+			populateTemplates(null,"templates/procedures/Exteriorization.json");
+			populateTemplates(null,"templates/procedures/Decompression.json");
 
 
 			//Do this one last to pick up whatever is left under Disease
