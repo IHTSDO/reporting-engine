@@ -18,6 +18,7 @@ public interface ScriptConstants extends RF2Constants {
 	String GFOLDER_ADHOC_REPORTS = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 	String GFOLDER_ADHOC_UPDATES = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 	String GFOLDER_BATCH_IMPORTS = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; //Batch Imports
+	String GFOLDER_CRS = "17p-Hs2YGkTIOz1fXpwhwvR9izG5lRS0z"; //CRS
 	String GFOLDER_DRUGS_MISSING = "1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT"; // Drugs Missing
 	String GFOLDER_EXTRACT_AND_PROMOTE = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 	String GFOLDER_GENERAL_QA = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA

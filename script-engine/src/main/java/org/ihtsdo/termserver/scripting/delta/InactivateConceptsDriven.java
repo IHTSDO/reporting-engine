@@ -30,7 +30,7 @@ public class InactivateConceptsDriven extends DeltaGenerator implements ScriptCo
 			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.flushFiles(false); //Need to flush files before zipping
-			if (!dryRun) {
+			if (!delta.dryRun) {
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			} else {
 				LOGGER.info("Dry run mode.  Skipping creation of archive");

@@ -110,7 +110,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptCon
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
 		taskSize = 5;
-		TermServerScript.setDryRun(true);
+		setDryRun(true);
 	}
 
 	@Override

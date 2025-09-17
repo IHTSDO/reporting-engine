@@ -54,10 +54,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			"[-headless <env_number>] " +
 			"[-task <taskKey>]";
 
-	protected static boolean debug = true;
-	protected static boolean dryRun = true;
-	protected static Integer headlessEnvironment = null;
-	protected static boolean reportAllDescriptions = false;
+	protected boolean debug = true;
+	protected boolean dryRun = true;
+	protected Integer headlessEnvironment = null;
+	protected boolean reportAllDescriptions = false;
 	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
 	protected String env;
@@ -125,6 +125,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	public static final String FILE = "File";
 	protected static final String DRY_RUN = "Dry Run";
+	protected static final String RUN_HEADLESS = "Run Headless";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
@@ -153,11 +154,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	private boolean asyncSnapshotCacheInProgress = false;
 
-	protected static void setDryRun(boolean b) {
+	protected void setDryRun(boolean b) {
 		dryRun = b;
 	}
 
-	protected static void setReportAllDescriptions(boolean b) {
+	protected void setReportAllDescriptions(boolean b) {
 		reportAllDescriptions = b;
 	}
 
@@ -443,6 +444,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
 		}
 
+		if (!StringUtils.isEmpty(jobRun.getParamValue(DRY_RUN))) {
+			dryRun = jobRun.getParamBoolean(DRY_RUN);
+		}
+
 		if (!StringUtils.isEmpty(jobRun.getParamValue(ECL))) {
 			subsetECL =jobRun.getParamValue(ECL);
 		}
@@ -658,7 +663,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					jobRun.setTask(parameter);
 					break;
 				case "-headless":
-					headlessEnvironment = Integer.valueOf(parameter);
+					jobRun.setParameter(RUN_HEADLESS,Integer.valueOf(parameter));
 					break;
 				default:
 					LOGGER.error(COMMAND_LINE_USAGE);

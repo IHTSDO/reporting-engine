@@ -170,11 +170,7 @@ public abstract class TermServerReport extends TermServerScript {
 	}
 
 	protected void populateSummaryTabAndTotal(int tabIdx) {
-		issueSummaryMap.entrySet().stream()
-				.filter(this::summaryItemSafeToCount)
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(tabIdx, (Component) null, e.getKey(), e.getValue()));
-
+		populateSummaryTab(tabIdx);
 		int total = issueSummaryMap.entrySet().stream()
 				.filter(this::summaryItemSafeToCount)
 				.map(Map.Entry::getValue)
@@ -183,7 +179,15 @@ public abstract class TermServerReport extends TermServerScript {
 		reportSafely(tabIdx, (Component) null, "TOTAL", total);
 	}
 
-	private boolean summaryItemSafeToCount(Map.Entry<String, Integer> mapEntry) {
+	protected void populateSummaryTab(int tabIdx) {
+		issueSummaryMap.entrySet().stream()
+				.filter(this::summaryItemSafeToCount)
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely(tabIdx, (Component) null, e.getKey(), e.getValue()));
+	}
+
+
+		private boolean summaryItemSafeToCount(Map.Entry<String, Integer> mapEntry) {
 		//Temporary work around because we're tracking a count of lines written in the same structure
 		//that some reports count specific issues
 		return !mapEntry.getKey().equals("Report lines written")

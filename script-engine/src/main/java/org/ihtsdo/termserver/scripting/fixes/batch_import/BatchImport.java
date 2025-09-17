@@ -71,7 +71,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 		selfDetermining = true;
 		populateEditPanel = true;
 		populateTaskDescription = true;
-		TermServerScript.setReportAllDescriptions(true);
+		setReportAllDescriptions(true);
 		conceptsLoaded = new HashMap<>();
 		moduleId = SCTID_CORE_MODULE;
 		maxFailures = 1500;

@@ -435,7 +435,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 	protected void init(JobRun jobRun) throws TermServerScriptException {
 		super.init(jobRun);
 		if (jobRun.getParamValue(DRY_RUN) != null) {
-			TermServerScript.setDryRun(!jobRun.getParamValue(DRY_RUN).equals("N"));
+			setDryRun(!jobRun.getParamValue(DRY_RUN).equals("N"));
 		}
 		if (jobRun.getParamValue(CONCEPTS_PER_TASK) != null) {
 			taskSize = Integer.parseInt(jobRun.getParamValue(CONCEPTS_PER_TASK));
