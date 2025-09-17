@@ -116,12 +116,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		return concepts.values();
 	}
 	
-	public void resetConfiguration() {
-		LOGGER.info("Resetting Graph Loader - configuration reset");
-		setRecordPreviousState(false);
-	}
 
 	public void reset() {
+		LOGGER.info("Resetting Graph Loader - configuration reset");
+		setRecordPreviousState(false);
+
 		LOGGER.info("Resetting Graph Loader - memory wipe");
 		concepts = new HashMap<>();
 		mdrs = null;
