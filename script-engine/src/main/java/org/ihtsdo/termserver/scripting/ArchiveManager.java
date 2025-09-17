@@ -98,18 +98,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 
 		if (underChangedOwnership) {
-			LOGGER.info("Resetting Archive Manager load flags");
-			String stackTrace = ExceptionUtils.getStackTrace(new Exception());
-			LOGGER.info("Temporary stack trace so we can see _why_ we're being reset: {}", stackTrace);
-			//Don't assume that just because we're being reused, we're loading the same files
-			singleton.loadEditionArchive = false;
-			singleton.loadDependencyPlusExtensionArchive = false;
-			singleton.populatePreviousTransitiveClosure = false;
-			singleton.ensureSnapshotPlusDeltaLoad = false;
-			singleton.loadOtherReferenceSets = false;
-			//Need to also reset the need for previous state in the graphloader, because it might
-			//not get fully reset if we run another report using the same data
-			singleton.gl.setRecordPreviousState(false);
+			singleton.reset();
 		} else if (!isBrandNew){
 			LOGGER.info("Archive Manager load flags retained - reusing.");
 		}
@@ -1007,10 +996,6 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	public void reset() {
-		reset(true);
-	}
-
-	public void reset(boolean fullReset) {
 		//Don't reset if we're still saving to disk - need that data!
 		while (ts.getAsyncSnapshotCacheInProgress()) {
 			LOGGER.warn("Snapshot cache still being written to disk.  Waiting for completion. Recheck in 5s.");
@@ -1021,20 +1006,19 @@ public class ArchiveManager implements ScriptConstants {
 				LOGGER.error("Exception encountered",e);
 			}
 		}
+
+		LOGGER.info("Resetting Archive Manager load flags");
+		String stackTrace = ExceptionUtils.getStackTrace(new Exception());
+		LOGGER.info("Temporary stack trace so we can see _why_ we're being reset: {}", stackTrace);
 		
-		//Do we need to reset?
-		if (this.gl.getAllConcepts().size() > 100) {
-			this.gl.reset();
-			this.gl.resetConfiguration();
-			this.currentlyHeldInMemory = null;
-		}
-		
-		if (fullReset) {
-			singleton.populateReleaseFlag = false;
-			singleton.loadEditionArchive = false;
-			singleton.loadDependencyPlusExtensionArchive = false;
-			singleton.populatePreviousTransitiveClosure = false;
-		}
+		gl.reset();
+		currentlyHeldInMemory = null;
+		loadEditionArchive = false;
+		populateReleaseFlag = false;
+		loadDependencyPlusExtensionArchive = false;
+		populatePreviousTransitiveClosure = false;
+		ensureSnapshotPlusDeltaLoad = false;
+		loadOtherReferenceSets = false;
 	}
 	
 	public boolean isRunIntegrityChecks() {

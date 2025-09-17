@@ -66,7 +66,7 @@ public class HistoricDataUser extends TermServerReport {
 
 		projectKey = getProject().getKey();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
-		getArchiveManager().reset(false);
+		getArchiveManager().reset();
 
 		boolean compareTwoSnapshots = recoverReleaseConfiguration();
 
