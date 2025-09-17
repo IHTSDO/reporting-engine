@@ -37,7 +37,7 @@ public class ApplyDeltaToArchive extends DeltaGenerator {
 		ApplyDeltaToArchive app = new ApplyDeltaToArchive();
 		try {
 			app.newIdsRequired = false;
-			dryRun = false;
+			app.dryRun = false;
 			app.init(args);
 			app.loadDeltaArchive();
 			app.applyDeltaToArchive();

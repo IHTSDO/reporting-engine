@@ -40,7 +40,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.startTimer();
 			delta.process();
-			if (!dryRun) {
+			if (!delta.dryRun) {
 				delta.flushFiles(false); //Need to flush files before zipping
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			}
@@ -48,7 +48,8 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 			delta.finish();
 		}
 	}
-	
+
+	@Override
 	public void postInit(String googleFolder) throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Concept SCTID,FSN, SemTag, Severity, Action, Description, Old, New, Notes",
@@ -84,6 +85,7 @@ public class CaseSignificanceFixForLanguage extends DeltaGenerator implements Sc
 		LOGGER.info("Skipped " + skippedDueToNotStartingWithLetter + " due to not starting with a letter");
 	}
 
+	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Description d = gl.getDescription(lineItems[0]);
 		return List.of(d);

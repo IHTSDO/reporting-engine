@@ -37,7 +37,7 @@ public class ReassertCoreModuleComponentInExtension extends DeltaGenerator {
 			delta.postInit(GFOLDER_ADHOC_UPDATES);
 			delta.process();
 			delta.getRF2Manager().flushFiles(true);  //Flush and Close
-			if (!dryRun) {
+			if (!delta.dryRun) {
 				SnomedUtils.createArchive(new File(delta.outputDirName));
 			}
 		} finally {

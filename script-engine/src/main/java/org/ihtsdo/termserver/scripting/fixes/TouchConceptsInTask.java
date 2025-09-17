@@ -29,7 +29,7 @@ public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 			fix.populateTaskDescription = false;
 			fix.reportNoChange = true;
 			fix.expectNullConcepts = true; //We'll only return an sctid the first time we see it.
-			dryRun = false;  //We're doing this for content that doesn't exist in the snapshot, only the task
+			fix.dryRun = false;  //We're doing this for content that doesn't exist in the snapshot, only the task
 			fix.validateConceptOnUpdate = false;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
