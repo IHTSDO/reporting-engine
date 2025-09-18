@@ -89,6 +89,7 @@ public class ArchiveManager implements ScriptConstants {
 				underChangedOwnership = true;
 			}
 			LOGGER.info("Archive manager under {} ownership due to change of report: {}", ownershipIndicator, ts.getClass().getSimpleName());
+			singleton.ts = ts;
 			singleton.gl = ts.getGraphLoader();
 		} else if (singleton.currentlyHeldInMemory != null && !singleton.currentlyHeldInMemory.equals(ts.getProject())) {
 			underChangedOwnership = true;
@@ -103,7 +104,6 @@ public class ArchiveManager implements ScriptConstants {
 			LOGGER.info("Archive Manager load flags retained - reusing.");
 		}
 
-		singleton.ts = ts;
 		return singleton;
 	}
 	
