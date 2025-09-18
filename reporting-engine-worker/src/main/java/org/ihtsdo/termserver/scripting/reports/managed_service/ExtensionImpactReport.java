@@ -530,7 +530,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	private void findConceptsOfInterest(String ecl) throws TermServerScriptException {
 		conceptsOfInterest = new HashSet<>();
-		conceptsOfInterest.addAll(findConceptsSafely(ecl));
 		for (Concept refset : derivativeHelper.getDerivativeRefsetConcepts()) {
 			if (ecl.contains(refset.getId())) {
 				EclCache eclCache = derivativeHelper.getEclCacheForDerivativeRefset(refset.getId());
