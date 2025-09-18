@@ -81,7 +81,6 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		projectKey = getProject().getKey();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
-		getArchiveManager().reset();
 
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
 				StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {

@@ -89,7 +89,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		boolean compareTwoSnapshots = false; 
 		previousTransitiveClosureNeeded = false;
 		LOGGER.info("International Release data being imported, wiping Graph Loader for safety.");
-		getArchiveManager().reset();
 		Project previousProject = project.clone();
 		SnapshotGenerator.setSkipSave(true); //This takes a copy of the graph in memory, so avoid for this expensive report.
 
@@ -100,10 +99,10 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			project.setMetadata(branch.getMetadata());
 			proposedUpgrade = "MAIN";
 		} else {
-			projectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
-			project.setKey(projectKey);
-			project.setBranchPath(projectKey);
-			proposedUpgrade = projectKey;
+			currentPositionProjectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
+			project.setKey(currentPositionProjectKey);
+			project.setBranchPath(currentPositionProjectKey);
+			proposedUpgrade = currentPositionProjectKey;
 		}
 
 		try {
@@ -127,7 +126,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}
-		projectKey = previousProject.getKey();
+		currentPositionProjectKey = previousProject.getKey();
 		project = previousProject;
 		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}

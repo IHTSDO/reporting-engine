@@ -302,7 +302,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.getAssociationEntries(ActiveState.ACTIVE, true).isEmpty()) {
-				incrementSummaryInformation(projectKey);
+				incrementSummaryInformation(currentPositionProjectKey);
 			}
 		}
 
@@ -310,7 +310,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
-				incrementSummaryInformation(projectKey);
+				incrementSummaryInformation(currentPositionProjectKey);
 			}
 		}
 	}

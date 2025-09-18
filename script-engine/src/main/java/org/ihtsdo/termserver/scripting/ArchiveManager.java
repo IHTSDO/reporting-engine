@@ -81,7 +81,7 @@ public class ArchiveManager implements ScriptConstants {
 			singleton.appContext = appContext;
 			isBrandNew = true;
 		}
-		
+
 		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
 			String ownershipIndicator = singleton.ts == null ? "first" : "new";
 			if (!isBrandNew) {
@@ -89,7 +89,6 @@ public class ArchiveManager implements ScriptConstants {
 				underChangedOwnership = true;
 			}
 			LOGGER.info("Archive manager under {} ownership due to change of report: {}", ownershipIndicator, ts.getClass().getSimpleName());
-			singleton.gl = ts.getGraphLoader();
 		} else if (singleton.currentlyHeldInMemory != null && !singleton.currentlyHeldInMemory.equals(ts.getProject())) {
 			underChangedOwnership = true;
 			LOGGER.info("Archive manager under changed ownership due to change of project. Previously {}, now {}", singleton.currentlyHeldInMemory, ts.getProject());
@@ -97,13 +96,15 @@ public class ArchiveManager implements ScriptConstants {
 			LOGGER.info("Archive manager being reused in: {}", ts.getClass().getSimpleName());
 		}
 
+		singleton.ts = ts;
+		singleton.gl = ts.getGraphLoader();
+
 		if (underChangedOwnership) {
 			singleton.reset();
 		} else if (!isBrandNew){
 			LOGGER.info("Archive Manager load flags retained - reusing.");
 		}
 
-		singleton.ts = ts;
 		return singleton;
 	}
 	
@@ -334,7 +335,7 @@ public class ArchiveManager implements ScriptConstants {
 						populateReleaseFlag = false;
 					}
 					//Do we also need a fresh snapshot here so we can have the 'released' flag?
-					//If we're loading an edition archive then that is - by definition all released.
+					//If we're loading an edition archive, then that is - by definition - all released.
 					if (ensureSnapshotPlusDeltaLoad && !populateReleaseFlag && !loadEditionArchive) {
 						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
