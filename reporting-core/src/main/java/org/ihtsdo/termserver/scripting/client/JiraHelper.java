@@ -23,7 +23,10 @@ public class JiraHelper {
 	public static final String TASK = "Task";
 	public static final String CONFIG_FILE_LOCATION = "secure/jira-api-secret.json";
 
-	private static final String INCLUDED_FIELDS = "summary, created, status, assignee, comment, customfield_10401";
+	public static final String JIRA_FIELD_CSR_REQUEST_ID = "customfield_10401";
+	public static final String JIRA_FIELD_REVIEWER = "customfield_11000";
+
+	private static final String INCLUDED_FIELDS = "project, summary, created, updated, status, reporter, assignee, comment, " + JIRA_FIELD_CSR_REQUEST_ID + ", " + JIRA_FIELD_REVIEWER;
 	
 	public Issue createJiraTicket(String projectKey, String summary, String description) throws TermServerScriptException {
 		Issue jiraIssue;

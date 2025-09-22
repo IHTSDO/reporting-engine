@@ -7,6 +7,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.client.JiraHelper;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
@@ -21,6 +22,7 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 	private static final Logger LOGGER = LoggerFactory.getLogger(TaskCommentMigration.class);
 
 	private static final String MIGRATE_PROJECT = "CRT";
+	private static final int START_AT = 50565;
 	private static final int BATCH_SIZE = 50;
 
 	private static final boolean USE_DATE_CUTOFF = false;
@@ -36,7 +38,7 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 	}
 
 	@Override
-	protected void init (JobRun jobRun) throws TermServerScriptException {
+	protected void init(JobRun jobRun) throws TermServerScriptException {
 		scriptRequiresSnomedData = false;
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(jobRun);
@@ -44,17 +46,17 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] tabNames = new String[] {
+		String[] tabNames = new String[]{
 				"Summary Counts",
 				"Data transmitted"
 		};
-		String[] columnHeadings = new String[] {
+		String[] columnHeadings = new String[]{
 				"Item, Count",
 				"Task, CRS ID, Comment, Date, Author, spare, "
 		};
 		postInit(GFOLDER_CRS, tabNames, columnHeadings, false);
 	}
-	
+
 	@Override
 	public Job getJob() {
 		return new Job()
@@ -71,7 +73,6 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 		JiraHelper jiraHelper = new JiraHelper();
 		LOGGER.info("Fetching tasks from {} project in batches of 50", MIGRATE_PROJECT);
 
-		int startAt = 0;
 		boolean dateLimitReached = false;
 
 		// calculate cutoff date = today minus 2 years
@@ -81,16 +82,17 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 
 
 		conn = getConnection();
+		int currentPosition = START_AT;
 		try {
 			while (!dateLimitReached) {
-				List<Issue> tasks = jiraHelper.getIssues(MIGRATE_PROJECT, BATCH_SIZE, startAt);
+				List<Issue> tasks = jiraHelper.getIssues(MIGRATE_PROJECT, BATCH_SIZE, currentPosition);
 
 				if (tasks == null || tasks.isEmpty()) {
 					LOGGER.info("No more issues returned by Jira. Stopping.");
 					break;
 				}
 
-				LOGGER.info("Recovered {} tasks (startAt={})", tasks.size(), startAt);
+				LOGGER.info("Recovered {} tasks (position={})", tasks.size(), currentPosition);
 
 				for (Issue task : tasks) {
 					processTask(task);
@@ -104,7 +106,7 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 							lastCreated, cutoff);
 					dateLimitReached = true;
 				} else {
-					startAt += BATCH_SIZE; // move to next page
+					currentPosition += BATCH_SIZE; // move to next page
 				}
 			}
 		} finally {
@@ -119,12 +121,7 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 			incrementSummaryInformation("Tasks Processed");
 			List<Comment> comments = task.getComments();  // get all comments for this issue
 			if (comments != null && !comments.isEmpty()) {
-				Long requestId = null;
-				try {
-					requestId = Long.parseLong((String)task.getField("customfield_10401"));
-				} catch (Exception e) {
-					// We'll deal with this via the
-				}
+				Long requestId = getRequestId(task);
 				if (requestId == null) {
 					LOGGER.warn("No CRS request found for Jira task {}", task.getKey());
 					report(SECONDARY_REPORT,
@@ -137,12 +134,8 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 					return;
 				}
 
-				if (requestAlreadyHasComments(requestId, conn)) {
-					LOGGER.warn("CRS request {} (Jira {}) already has comments. Skipping.", requestId, task.getKey());
-					return;
-				}
 				if (!firstTaskProcesssed) {
-					addFinalWords("First task processed: " +task.getKey());
+					addFinalWords("First task processed: " + task.getKey());
 					firstTaskProcesssed = true;
 				}
 				lastTaskProcesssed = task.getKey();
@@ -157,6 +150,16 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 		}
 	}
 
+	private static @Nullable Long getRequestId(Issue task) {
+		Long requestId = null;
+		try {
+			requestId = Long.parseLong((String) task.getField("customfield_10401"));
+		} catch (Exception e) {
+			// We'll deal with this via the
+		}
+		return requestId;
+	}
+
 	private Connection getConnection() throws TermServerScriptException {
 		try {
 			String[] configItems = this.getJobRun().getAdditionalConfig().split("\\|");
@@ -169,50 +172,51 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 		}
 	}
 
-	/*private Long findRequestIdForTask(Issue task, Connection conn) throws SQLException {
-		try (PreparedStatement ps = conn.prepareStatement(
-				"SELECT id FROM request WHERE jiraTicketId = ?")) {
-			ps.setString(1, task.getKey());
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					return rs.getLong("id");
-				}
-			}
-		}
-		return null;
-	}*/
-
-	private boolean requestAlreadyHasComments(Long requestId, Connection conn) throws SQLException {
-		try (PreparedStatement ps = conn.prepareStatement(
-				"SELECT 1 FROM request_comment WHERE request = ? LIMIT 1")) {
-			ps.setLong(1, requestId);
-			try (ResultSet rs = ps.executeQuery()) {
-				return rs.next();  // true if any comment exists
-			}
-		}
-	}
-
 	private void saveComments(Issue task, Long requestId, List<Comment> comments, Connection conn) throws SQLException {
-		String sql = "INSERT INTO request_comment " +
+		String insertSql = "INSERT INTO request_comment " +
 				"(body, user, internal, createDate, updateDate, request) " +
 				"VALUES (?, ?, ?, ?, ?, ?)";
 
-		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+		String existsSql = "SELECT 1 FROM request_comment " +
+				"WHERE body = ? AND user = ? AND createDate = ? AND request = ?";
+		int commentsSaved = 0;
+		try (PreparedStatement insertPs = conn.prepareStatement(insertSql);
+		     PreparedStatement existsPs = conn.prepareStatement(existsSql)) {
+
 			for (Comment comment : comments) {
-				ps.setString(1, comment.getBody());
-				ps.setString(2, comment.getAuthor().getName());
-				ps.setBoolean(3, false);  // Jira doesn’t have "internal"
-				ps.setTimestamp(4, new Timestamp(comment.getCreatedDate().getTime()));
-				ps.setTimestamp(5, new Timestamp(comment.getUpdatedDate() != null
+				String body = comment.getBody();
+				String user = comment.getAuthor().getName();
+				Timestamp created = new Timestamp(comment.getCreatedDate().getTime());
+
+				// check for existence
+				existsPs.setString(1, body);
+				existsPs.setString(2, user);
+				existsPs.setTimestamp(3, created);
+				existsPs.setLong(4, requestId);
+
+				try (ResultSet rs = existsPs.executeQuery()) {
+					if (rs.next()) {
+						incrementSummaryInformation("Comment already exists");
+						continue; // skip this comment
+					}
+				}
+
+				// not found → insert
+				insertPs.setString(1, body);
+				insertPs.setString(2, user);
+				insertPs.setBoolean(3, false);  // Jira doesn’t have "internal"
+				insertPs.setTimestamp(4, created);
+				insertPs.setTimestamp(5, new Timestamp(comment.getUpdatedDate() != null
 						? comment.getUpdatedDate().getTime()
 						: comment.getCreatedDate().getTime()));
-				ps.setLong(6, requestId);
-				ps.addBatch();
+				insertPs.setLong(6, requestId);
+				insertPs.addBatch();
+				commentsSaved++;
 				try {
 					report(SECONDARY_REPORT,
 							task.getKey(),
 							requestId,
-							comment.getBody(),
+							body,
 							comment.getCreatedDate().toString(),
 							comment.getAuthor().getDisplayName());
 					incrementSummaryInformation("Comment migrated");
@@ -220,11 +224,12 @@ public class TaskCommentMigration extends TermServerReport implements ReportClas
 					LOGGER.warn("Failed to report comments for task {}", task.getKey(), e);
 				}
 			}
+
 			if (!dryRun) {
-				ps.executeBatch();
-				LOGGER.info("Successfully saved {} comments for task {} / request {}", comments.size(), task.getKey(), requestId);
+				insertPs.executeBatch();
+				LOGGER.info("Successfully saved {}/{} new comments for task {} / request {}",
+						commentsSaved, comments.size(), task.getKey(), requestId);
 			}
 		}
 	}
-
 }
