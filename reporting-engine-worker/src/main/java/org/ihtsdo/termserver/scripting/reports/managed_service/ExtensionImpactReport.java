@@ -55,6 +55,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(INTERNATIONAL_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withOptions(INT)
+				.add(ECL_FILTER).withType(JobParameter.Type.ECL)
 				.build();
 
 		return new Job()
