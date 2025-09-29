@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
@@ -24,9 +25,15 @@ public class JiraHelper {
 
 	JiraClient client;
 	JiraConfig config;
+
 	public static final String TASK = "Task";
 	public static final String CONFIG_FILE_LOCATION = "secure/jira-api-secret.json";
-	
+
+	public static final String JIRA_FIELD_CSR_REQUEST_ID = "customfield_10401";
+	public static final String JIRA_FIELD_REVIEWER = "customfield_11000";
+
+	private static final String INCLUDED_FIELDS = "project, issuetype, type, summary, created, updated, status, reporter, assignee, comment, " + JIRA_FIELD_CSR_REQUEST_ID + ", " + JIRA_FIELD_REVIEWER;
+
 	public Issue createJiraTicket(String projectKey, String summary, String description) throws TermServerScriptException {
 		Issue jiraIssue;
 		try {
@@ -49,9 +56,23 @@ public class JiraHelper {
 		}
 	}
 
+	public List<Issue> getIssues(String projectKey, String additionalFields, boolean reverseOrder, int limit, int startAt) throws TermServerScriptException {
+		try {
+			JiraClient jira = getJiraClient();
+			String order = reverseOrder ? "DESC" : "ASC";
+			String fields = INCLUDED_FIELDS;
+			if (additionalFields != null && !additionalFields.isEmpty()) {
+				fields += "," + additionalFields;
+			}
+			String jql = String.format("project = %s ORDER BY created %s", projectKey, order);
+			return jira.searchIssues(jql, fields, limit, startAt).issues;
+		} catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException | JiraException e) {
+			throw new TermServerScriptException("Failed to fetch recent Jira issues", e);
+		}
+	}
+
 	/**
 	 * Get an instance of JiraClient that will make signed OAuth requests as the specified username.
-	 * @param username
 	 * @return
 	 * @throws IOException 
 	 * @throws InvalidKeySpecException 
