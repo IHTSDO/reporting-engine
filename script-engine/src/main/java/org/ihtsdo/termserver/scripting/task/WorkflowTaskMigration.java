@@ -4,6 +4,7 @@ import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
+import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -16,7 +17,7 @@ import org.snomed.otf.scheduler.domain.*;
 import java.sql.*;
 import java.util.*;
 
-public class WorkflowTaskMigration extends TermServerReport implements ReportClass {
+public class WorkflowTaskMigration extends JiraTaskMigrationBase implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowTaskMigration.class);
 
@@ -31,20 +32,11 @@ public class WorkflowTaskMigration extends TermServerReport implements ReportCla
 		"int-sca-author",
 		"snowstorm-support"
 	};
-	private Connection conn;
 	private boolean projectConfirmed = false;
-	private boolean firstTaskProcesssed = false;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> parameters = new HashMap<>();
 		TermServerScript.run(WorkflowTaskMigration.class, args, parameters);
-	}
-
-	@Override
-	protected void init(JobRun jobRun) throws TermServerScriptException {
-		scriptRequiresSnomedData = false;
-		summaryTabIdx = PRIMARY_REPORT;
-		super.init(jobRun);
 	}
 
 	@Override
@@ -78,7 +70,7 @@ public class WorkflowTaskMigration extends TermServerReport implements ReportCla
 		try {
 			LOGGER.info("Fetching tasks from {} project in batches of {}", MIGRATE_PROJECT, BATCH_SIZE);
 			while (true) {
-				List<Issue> tasks = jiraHelper.getIssues(MIGRATE_PROJECT, BATCH_SIZE, startAt);
+				List<Issue> tasks = jiraHelper.getIssues(MIGRATE_PROJECT, null, true, BATCH_SIZE, startAt);
 				if (tasks == null || tasks.isEmpty()) {
 					LOGGER.info("No more issues returned by Jira. Stopping.");
 					break;
@@ -316,7 +308,7 @@ public class WorkflowTaskMigration extends TermServerReport implements ReportCla
 			ps.setString(6, issue.getDescription());
 			ps.setString(7, issue.getSummary());
 			ps.setString(8, issue.getReporter() != null ? issue.getReporter().getName() : null);
-			ps.setString(9, mapStatus(issue.getStatus().getName()));
+			ps.setString(9, normaliseStatus(issue));
 			ps.setString(10, projectKey);
 			ps.setString(11, "AUTHORING"); // or AUTHORING depending on context
 			if (!dryRun) {
@@ -337,39 +329,28 @@ public class WorkflowTaskMigration extends TermServerReport implements ReportCla
 		return true;
 	}
 
-	private String mapStatus(String jiraStatus) {
-		switch (jiraStatus.toUpperCase()) {
-			case "OPEN":
-			case "TO DO":
-				return "NEW";
-			case "IN PROGRESS":
-				return "IN_PROGRESS";
-			case "IN REVIEW":
-				return "IN_REVIEW";
-			case "DONE":
-				return "COMPLETED";
-			case "PROMOTED":
-				return "PROMOTED";
-			case "DELETED":
-				return "DELETED";
-			case "COMPLETED":
-				return "COMPLETED";
-			case "REVIEW COMPLETED":
-				return "REVIEW_COMPLETED";
-			default:
-				return jiraStatus;
-		}
+	@Override
+	protected Long getCommentForeignKeyId(Issue issue) {
+		throw new IllegalStateException("Workflow migration does not include comments");
 	}
 
-	private Connection getConnection() throws TermServerScriptException {
-		try {
-			String[] configItems = this.getJobRun().getAdditionalConfig().split("\\|");
-			String user = configItems[0];
-			String password = configItems[1];
-			String url = "jdbc:mysql://" + configItems[3] + ":3306/" + configItems[2];
-			return DriverManager.getConnection(url, user, password);
-		} catch (SQLException e) {
-			throw new TermServerScriptException(e);
-		}
+	@Override
+	protected String getCommentTableName() {
+		throw new IllegalStateException("Workflow migration does not include comments");
+	}
+
+	@Override
+	protected String getCommentForeignKeyColumnName() {
+		throw new IllegalStateException("Workflow migration does not include comments");
+	}
+
+	@Override
+	protected String getCommentCreatedColumnName() {
+		throw new IllegalStateException("Workflow migration does not include comments");
+	}
+
+	@Override
+	protected String getCommentUpdatedColumnName() {
+		throw new IllegalStateException("Workflow migration does not include comments");
 	}
 }
