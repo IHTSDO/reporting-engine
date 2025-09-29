@@ -78,6 +78,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 			this.project = clone.getProject();
 			this.tsClient = clone.getTSClient();
 			this.scaClient = clone.getAuthoringServicesClient();
+			this.dryRun = clone.isDryRun();
 		}
 		this.headers = "TaskKey, TaskDesc, SCTID, FSN, ConceptType, Severity, ActionType, ";
 		taskHelper = new TaskHelper(this, taskThrottle, populateTaskDescription, taskPrefix);
