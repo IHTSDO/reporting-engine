@@ -43,7 +43,7 @@ public class JiraHelper {
 		return jiraIssue;
 	}
 	
-	public Issue getJiraTicket(String taskKey) throws TermServerScriptException {
+	public Issue getIssue(String taskKey) throws TermServerScriptException {
 		try {
 			return getJiraClient().getIssue(taskKey);
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException | JiraException e) {

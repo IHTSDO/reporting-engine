@@ -195,7 +195,7 @@ public class SingleTraceabilityService extends CommonTraceabilityService {
 		String author = null;
 
 		try {
-			Issue jiraIssue = jiraHelper.getJiraTicket(taskKey);
+			Issue jiraIssue = jiraHelper.getIssue(taskKey);
 			author = jiraIssue.getAssignee().getId();
 
 			//It might be that we have a 'name' and id is null

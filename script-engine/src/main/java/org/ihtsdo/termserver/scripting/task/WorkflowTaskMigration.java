@@ -24,6 +24,7 @@ public class WorkflowTaskMigration extends JiraTaskMigrationBase implements Repo
 	private static final String MIGRATE_PROJECT = "NO1";
 	private static final String PROJECT_OWNER = "pwilliams";
 	private static final int BATCH_SIZE = 50;
+	private static final String SINGLE_TASK_MIGRATION = "AUTHORTEST-622";
 
 	private static final String PROJECT_METADATA = "{\"projectMrcm\": true, \"projectLocked\": false, \"projectRebase\": true, \"taskPromotion\": true, \"projectPromotion\": true, \"projectTemplates\": true, \"projectSpellCheck\": true, \"projectScheduledRebase\": true}";
 
@@ -68,6 +69,18 @@ public class WorkflowTaskMigration extends JiraTaskMigrationBase implements Repo
 		conn = getConnection();
 
 		try {
+			if (SINGLE_TASK_MIGRATION != null) {
+				Issue task = jiraHelper.getIssue(SINGLE_TASK_MIGRATION);
+				if (task == null) {
+					throw new TermServerScriptException("No such task as " + SINGLE_TASK_MIGRATION);
+				}
+				LOGGER.info("Processing single task {}", SINGLE_TASK_MIGRATION);
+				projectConfirmed = true;
+				firstTaskProcesssed = true;
+				processTask(task);
+				return;
+			}
+
 			LOGGER.info("Fetching tasks from {} project in batches of {}", MIGRATE_PROJECT, BATCH_SIZE);
 			while (true) {
 				List<Issue> tasks = jiraHelper.getIssues(MIGRATE_PROJECT, null, true, BATCH_SIZE, startAt);
