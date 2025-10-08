@@ -1,9 +1,6 @@
-package org.ihtsdo.termserver.scripting;
+package org.ihtsdo.termserver.scripting.snapshot;
 
 import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -11,8 +8,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -20,13 +15,15 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.UnrecoverableTermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.dao.DataLoader;
 import org.ihtsdo.termserver.scripting.dao.S3Manager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +35,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ArchiveManager implements ScriptConstants {
+
+	private static final String SNAPSHOT = "snapshot";
 	
 	static ArchiveManager singleton;
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
@@ -52,24 +51,13 @@ public class ArchiveManager implements ScriptConstants {
 	protected GraphLoader gl;
 	protected TermServerScript ts;
 	protected ApplicationContext appContext;
-	protected SnapshotGenerator snapshotGenerator = null;
-	private boolean allowStaleData = false;
-	private boolean loadDependencyPlusExtensionArchive = false;
-	private boolean loadEditionArchive = false;
-	private boolean populateHierarchyDepth = true;  //Term contains X needs this
-	private boolean ensureSnapshotPlusDeltaLoad = false;
-	private boolean populatePreviousTransitiveClosure = false;
-	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
-	private boolean populateReleaseFlag = false;
-	private boolean runIntegrityChecks = true;
-	private boolean loadOtherReferenceSets = false;
+	private SnapshotConfiguration config = new SnapshotConfiguration();
 	private final List<String> integrityCheckIgnoreList = List.of(
 			"21000241105", // |Common French language reference set|
 			"763158003" // |Medicinal product (product)| Gets created as a constant, but does exist before 20180731
 	);
 	
 	private Project currentlyHeldInMemory;
-	private boolean useWindowsZipEncoding = false;
 
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 
@@ -118,12 +106,12 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	public boolean isLoadOtherReferenceSets() {
-		return loadOtherReferenceSets;
+		return config.isLoadOtherReferenceSets();
 	}
 
 	public void setLoadOtherReferenceSets(boolean loadOtherReferenceSets) {
 		LOGGER.info("Setting loadOtherReferenceSets to {}", loadOtherReferenceSets);
-		this.loadOtherReferenceSets = loadOtherReferenceSets;
+		config.setLoadOtherReferenceSets(loadOtherReferenceSets);
 	}
 
 	protected Branch loadBranch(Project project) throws TermServerScriptException {
@@ -230,8 +218,9 @@ public class ArchiveManager implements ScriptConstants {
 
 	public void loadSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		boolean writeSnapshotToCache = false;
+		ArchiveImporter archiveImporter = new ArchiveImporter(gl, config);
 		try {
-			if (loadDependencyPlusExtensionArchive) {
+			if (config.isLoadDependencyPlusExtensionArchive()) {
 				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
 					throw new TermServerScriptException("Told to load dependency + extension but no dependency package specified");
 				} else {
@@ -239,14 +228,14 @@ public class ArchiveManager implements ScriptConstants {
 					gl.reset();
 					File dependency = new File("releases", ts.getDependencyArchive());
 					if (dependency.exists()) {
-						loadArchive(dependency, fsnOnly, "Snapshot", true);
+						archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
 					} else {
 						//Can we find it in S3?
 						String cwd = new File("").getAbsolutePath();
 						LOGGER.info("Dependency Archive {} not found locally in {}, attempting to download from S3.", ts.getDependencyArchive(), cwd);
 						getArchiveDataLoader().download(dependency);
 						if (dependency.exists()) {
-							loadArchive(dependency, fsnOnly, "Snapshot", true);
+							archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
 						} else {
 							throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist and was not recovered from S3.");
 						}
@@ -261,7 +250,7 @@ public class ArchiveManager implements ScriptConstants {
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
 				LOGGER.info("Project key ('{}') identified as zip archive, loading Edition Archive", ts.getProject().getKey());
-				loadEditionArchive = true;
+				config.setLoadEditionArchive(true);
 			}
 
 			//Look for an expanded directory by preference
@@ -273,22 +262,15 @@ public class ArchiveManager implements ScriptConstants {
 			}
 			
 			if (!snapshot.exists()) {
-				//If it doesn't exist as a zip file locally either, we can try downloading it from S3
-				try {
-					String cwd = new File("").getAbsolutePath();
-					LOGGER.info("{} not found locally in {}, attempting to download from S3.", snapshot, cwd);
-					getArchiveDataLoader().download(snapshot);
-				} catch (TermServerScriptException e) {
-					LOGGER.info("Could not find {} in S3.", snapshot.getName());
-				}
+				downloadSnapshot(snapshot);
 			}
 			
-			boolean originalStateDataFlag = allowStaleData;
+			boolean originalStateDataFlag = config.isAllowStaleData();
 			//If we're loading a particular release, it will be stale
-			if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
-				loadEditionArchive = true;
-				allowStaleData = true;
-				if (loadEditionArchive && !snapshot.exists()) {
+			if (config.isLoadEditionArchive() || StringUtils.isNumeric(ts.getProject().getKey())) {
+				config.setLoadEditionArchive(true);
+				config.setAllowStaleData(true);
+				if (config.isLoadEditionArchive() && !snapshot.exists()) {
 					throw new TermServerScriptException ("Could not find " + snapshot + " to import");
 				}
 			}
@@ -296,9 +278,9 @@ public class ArchiveManager implements ScriptConstants {
 			Branch branch = null;
 			//Are we lacking data, or is our data out of date?  
 			boolean isStale = false;
-			if (snapshot.exists() && !allowStaleData) {
+			if (snapshot.exists() && !config.isAllowStaleData()) {
 				branch = loadBranch(ts.getProject());
-				isStale = checkIsStale(ts, branch, snapshot);
+				isStale = checkIsStale(branch, snapshot);
 				if (isStale) {
 					LOGGER.warn("{} snapshot held locally is stale.  Requesting delta to rebuild...", ts.getProject());
 				} else {
@@ -307,23 +289,23 @@ public class ArchiveManager implements ScriptConstants {
 			}
 
 			if (!snapshot.exists() ||
-					(isStale && !allowStaleData) ||
-					((ensureSnapshotPlusDeltaLoad || populateReleaseFlag) && !loadEditionArchive) ||
-					(populatePreviousTransitiveClosure && gl.getPreviousTC() == null)) {
+					(isStale && !config.isAllowStaleData()) ||
+					((config.isEnsureSnapshotPlusDeltaLoad() || config.isPopulateReleaseFlag()) && !config.isLoadEditionArchive()) ||
+					(config.isPopulatePreviousTransitiveClosure() && gl.getPreviousTC() == null)) {
 				
-				if ((ensureSnapshotPlusDeltaLoad || populateReleaseFlag) && !loadEditionArchive) {
+				if ((config.isEnsureSnapshotPlusDeltaLoad() || config.isPopulateReleaseFlag()) && !config.isLoadEditionArchive()) {
 					LOGGER.info("Generating fresh snapshot because 'ensureSnapshotPlusDeltaLoad' or 'populateReleaseFlag' is set, and not loading from edition archive");
-				} else if (populatePreviousTransitiveClosure && gl.getPreviousTC() == null) {
+				} else if (config.isPopulatePreviousTransitiveClosure() && gl.getPreviousTC() == null) {
 					LOGGER.info("Generating fresh snapshot because previous transitive closure must be populated");
 				}
-				generateSnapshot(ts.getProject());
-				populateReleaseFlag = true;
+				generateSnapshot(ts.getProject(), archiveImporter);
+				setPopulateReleaseFlag(true);
 				writeSnapshotToCache = true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
 				//We might already have this project in memory
 				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject()) && 
-						(ensureSnapshotPlusDeltaLoad == false || (ensureSnapshotPlusDeltaLoad && populateReleaseFlag))) {
+						(!config.isEnsureSnapshotPlusDeltaLoad() || (config.isEnsureSnapshotPlusDeltaLoad() && config.isPopulateReleaseFlag()))) {
 					LOGGER.info("{} already held in memory, no need to reload.  Resetting any issues held against components...", ts.getProject());
 					gl.makeReady();
 				} else {
@@ -331,58 +313,23 @@ public class ArchiveManager implements ScriptConstants {
 						//Make sure the Graph Loader is clean if we're loading a different project
 						LOGGER.info("{} being wiped to make room for {}", currentlyHeldInMemory.getKey(), ts.getProject());
 						gl.reset();
-						System.gc();
-						populateReleaseFlag = false;
+						config.setPopulateReleaseFlag(false);
 					}
 					//Do we also need a fresh snapshot here so we can have the 'released' flag?
 					//If we're loading an edition archive, then that is - by definition - all released.
-					if (ensureSnapshotPlusDeltaLoad && !populateReleaseFlag && !loadEditionArchive) {
+					if (config.isEnsureSnapshotPlusDeltaLoad() && !config.isPopulateReleaseFlag() && !config.isLoadEditionArchive()) {
 						LOGGER.info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
-						generateSnapshot(ts.getProject());
+						generateSnapshot(ts.getProject(), archiveImporter);
 						writeSnapshotToCache = true;
-						populateReleaseFlag = true;
+						config.setPopulateReleaseFlag(true);
 					} else {
-						LOGGER.info("Loading snapshot archive contents into memory: {}", snapshot);
-						try {
-							//This archive is 'current state' so we can't know what is released or not
-							//Unless it's an edition archive
-							populateReleaseFlag = loadEditionArchive;
-							//We only know if the components are released when loading an edition archive
-							Boolean isReleased = loadEditionArchive ? true : null;
-							loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
-						} catch (UnrecoverableTermServerScriptException unrecoverable) {
-							throw unrecoverable;
-						} catch (Exception e) {
-							LOGGER.error("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
-							if (!snapshot.getPath().startsWith("releases/")) {
-								LOGGER.info("Deleting {}", snapshot);
-								try {
-									if (snapshot.isFile()) {
-										snapshot.delete();
-									} else if (snapshot.isDirectory()) {
-										FileUtils.deleteDirectory(snapshot);
-									} else {
-										throw new TermServerScriptException (snapshot + " is neither file nor directory.");
-									}
-								} catch (Exception e2) {
-									LOGGER.error("Failed to delete snapshot {} due to ", snapshot, e2);
-								}
-							} else {
-								LOGGER.info("Not deleting {} as it's a release, but you should look at it!", snapshot);
-							}
-							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
-							//Next time round the snapshot on disk won't be detected and we'll take a different code path
-							if (!loadEditionArchive) {
-								LOGGER.warn("Attempting to regenerate...");
-								loadSnapshot(fsnOnly);
-							} 
-						}
+						loadSnapshotArchiveIntoMemory(fsnOnly, snapshot, archiveImporter);
 					}
 				}
 			}
 			currentlyHeldInMemory = ts.getProject();
-			allowStaleData = originalStateDataFlag;
+			config.setAllowStaleData(originalStateDataFlag);
 		} catch (Exception e) {
 			String msg = ExceptionUtils.getExceptionCause("Unable to load " + ts.getProject(), e);
 			if (e instanceof TermServerScriptException) {
@@ -394,10 +341,8 @@ public class ArchiveManager implements ScriptConstants {
 		LOGGER.info("Snapshot loading complete, checking integrity");
 		checkIntegrity(fsnOnly);
 
-		if (writeSnapshotToCache &&  snapshotGenerator != null) {
-			snapshotGenerator.writeSnapshotToCache(ts, SCTID_CORE_MODULE);
-		} else if (snapshotGenerator == null) {
-			LOGGER.warn("Snapshot generator not initialised, cannot write snapshot to cache");
+		if (writeSnapshotToCache ) {
+			archiveImporter.writeSnapshotToCache(ts, SCTID_CORE_MODULE);
 		}
 		
 		LOGGER.info("Setting all components to be clean");
@@ -408,7 +353,56 @@ public class ArchiveManager implements ScriptConstants {
 			.flatMap(c -> SnomedUtils.getAllComponents(c, true).stream())
 			.forEach(Component::setClean);
 	}
-	
+
+	private void downloadSnapshot(File snapshot) {
+		//If it doesn't exist as a zip file locally either, we can try downloading it from S3
+		try {
+			String cwd = new File("").getAbsolutePath();
+			LOGGER.info("{} not found locally in {}, attempting to download from S3.", snapshot, cwd);
+			getArchiveDataLoader().download(snapshot);
+		} catch (TermServerScriptException e) {
+			LOGGER.info("Could not find {} in S3.", snapshot.getName());
+		}
+	}
+
+	private void loadSnapshotArchiveIntoMemory(boolean fsnOnly, File snapshot, ArchiveImporter archiveImporter) throws TermServerScriptException {
+		LOGGER.info("Loading snapshot archive contents into memory: {}", snapshot);
+		try {
+			//This archive is 'current state' so we can't know what is released or not
+			//Unless it's an edition archive
+			config.setPopulateReleaseFlag(config.isLoadEditionArchive());
+			//We only know if the components are released when loading an edition archive
+			Boolean isReleased = config.isLoadEditionArchive() ? true : null;
+			archiveImporter.loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
+		} catch (UnrecoverableTermServerScriptException unrecoverable) {
+			throw unrecoverable;
+		} catch (Exception e) {
+			LOGGER.error("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
+			if (!snapshot.getPath().startsWith("releases/")) {
+				LOGGER.info("Deleting {}", snapshot);
+				try {
+					if (snapshot.isFile()) {
+						snapshot.delete();
+					} else if (snapshot.isDirectory()) {
+						FileUtils.deleteDirectory(snapshot);
+					} else {
+						throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+					}
+				} catch (Exception e2) {
+					LOGGER.error("Failed to delete snapshot {} due to ", snapshot, e2);
+				}
+			} else {
+				LOGGER.info("Not deleting {} as it's a release, but you should look at it!", snapshot);
+			}
+			//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
+			//Next time round the snapshot on disk won't be detected, and we'll take a different code path
+			if (!config.isLoadEditionArchive()) {
+				LOGGER.warn("Attempting to regenerate...");
+				loadSnapshot(fsnOnly);
+			}
+		}
+	}
+
 	private void checkIntegrity(boolean fsnOnly) throws TermServerScriptException {
 		if (gl.getAllConcepts().size() < 300000) {
 			throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
@@ -417,7 +411,7 @@ public class ArchiveManager implements ScriptConstants {
 		if (isRunIntegrityChecks()) {
 			//Ensure that every active parent other than root has at least one parent in both views
 			LOGGER.debug("Ensuring all concepts have parents and depth if required.");
-			StringBuffer integrityFailureMessage = new StringBuffer();
+			StringBuilder integrityFailureMessage = new StringBuilder();
 			//We need a separate copy of all concepts because we might modify it in passing if we encounter a phantom concept
 			for (Concept c : new ArrayList<>(gl.getAllConcepts())) {
 				if (integrityCheckIgnoreList.contains(c.getId())) {
@@ -430,7 +424,7 @@ public class ArchiveManager implements ScriptConstants {
 				
 				if (c.isActiveSafely() && !c.equals(ROOT_CONCEPT)) {
 					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
-					if (expectStatedParents) {
+					if (config.isExpectStatedParents()) {
 						checkParentalIntegrity(c, CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
 					}
 				} else if (!c.isActiveSafely()) {
@@ -443,7 +437,7 @@ public class ArchiveManager implements ScriptConstants {
 					}
 				}
 				
-				if (populateHierarchyDepth && c.isActiveSafely() && c.getDepth() == NOT_SET) {
+				if (config.isPopulateHierarchyDepth() && c.isActiveSafely() && c.getDepth() == NOT_SET) {
 					if (!integrityFailureMessage.isEmpty()) {
 						integrityFailureMessage.append(",\n");
 					}
@@ -485,7 +479,7 @@ public class ArchiveManager implements ScriptConstants {
 			//Now if we've imported all reference sets and we've got a phantom concept that's coming from an
 			//inactive referenceset member, then we're just going to report that as a "final word" rather than
 			//bomb out the entire report
-			if (loadOtherReferenceSets && msg.contains("*RM")) {
+			if (config.isLoadOtherReferenceSets() && msg.contains("*RM")) {
 				LOGGER.warn("Recording final words rather than throwing exception: {}", msg);
 				ts.addFinalWords(msg);
 				//And we're going to remove this concept so that we don't trip over it again
@@ -542,7 +536,7 @@ public class ArchiveManager implements ScriptConstants {
 		return "No non-concept components found.";
 	}
 
-	private boolean checkIsStale(TermServerScript ts, Branch branch, File snapshot) throws IOException {
+	private boolean checkIsStale(Branch branch, File snapshot) throws IOException {
 		Date branchHeadTime = new Date(branch.getHeadTimestamp());
 		BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
 		LocalDateTime snapshotCreation = LocalDateTime.ofInstant(Instant.ofEpochMilli(attr.creationTime().toMillis()), ZoneId.systemDefault());
@@ -555,7 +549,7 @@ public class ArchiveManager implements ScriptConstants {
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
-	private void generateSnapshot(Project project) throws TermServerScriptException, IOException {
+	private void generateSnapshot(Project project, ArchiveImporter archiveImporter) throws TermServerScriptException, IOException {
 		File snapshot = getSnapshotPath();
 		//Delete the current snapshot if it exists - will be stale
 		if (snapshot.isDirectory()) {
@@ -573,8 +567,7 @@ public class ArchiveManager implements ScriptConstants {
 		
 		//Now we need a recent delta to add to it
 		File delta = generateDelta(project);
-		snapshotGenerator = new SnapshotGenerator(ts);
-		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
+		archiveImporter.generateSnapshot(dependency, previous, delta, snapshot);
 	}
 
 	private File determineDependencyIfRequired(Project project) throws TermServerScriptException {
@@ -673,7 +666,7 @@ public class ArchiveManager implements ScriptConstants {
 			projectTaskKey += "_" + ts.getTaskKey();
 		}
 		
-		if (loadEditionArchive || 
+		if (config.isLoadEditionArchive() ||
 				StringUtils.isNumeric(projectTaskKey) ||
 				projectTaskKey.endsWith(fileExt)) {
 			if (projectTaskKey.endsWith(fileExt)) {
@@ -697,44 +690,9 @@ public class ArchiveManager implements ScriptConstants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	public void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
-		try {
-			boolean isDelta = (fileType.equals(DELTA));
-			//Are we loading an expanded or compressed archive?
-			if (archive.isDirectory()) {
-				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta, isReleased);
-			} else if (archive.getPath().endsWith(".zip")) {
-				LOGGER.debug("Loading archive file: {}", archive);
-				loadArchiveZip(archive, fsnOnly, fileType, isDelta, isReleased);
-			} else {
-				throw new TermServerScriptException("Unrecognised archive : " + archive);
-			}
-			
-			//Are we generating the transitive closure?
-			if (fileType.equals(SNAPSHOT) && populatePreviousTransitiveClosure) {
-				gl.populatePreviousTransitiveClosure();
-			}
-			
-			if(!isDelta && gl.isPopulateOriginalModuleMap()) {
-				gl.populateOriginalModuleMap();
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-		} catch (IllegalArgumentException e) {
-			if (!useWindowsZipEncoding) {
-				LOGGER.error("Failed to extract project state from archive {} due to {}", archive.getName(), e.getMessage());
-				LOGGER.error("Second attempt to load archive with Windows zip encoding enabled");
-				useWindowsZipEncoding = true;
-				loadArchive(archive, fsnOnly, fileType, isReleased);
-			} else {
-				throw e; //If we've already tried with Windows zip encoding, then we really can't load this archive
-			}
-		} finally {
-			useWindowsZipEncoding = false; //Reset this so that we don't use it inappropriately in the future
-		}
-	}
 
-	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuffer sb) {
+
+	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuilder sb) {
 		Set<Concept> parents = c.getParents(charType);
 		if (parents.isEmpty()) {
 			if (!sb.isEmpty()) {
@@ -777,7 +735,7 @@ public class ArchiveManager implements ScriptConstants {
 			//axioms if we detect a problem
 			Set<Concept> parentsFromRels = SnomedUtils.getTargets(c, new Concept[] {IS_A}, charType);
 			if (parentsFromRels.size() != parents.size()) {
-				if (sb.length() > 0) {
+				if (!sb.isEmpty()) {
 					sb.append(",\n");
 				}
 				sb.append(c + " has internal " + charType + " inconsistency between parents and parental relationship count");
@@ -785,215 +743,52 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException {
-		Charset encoding = useWindowsZipEncoding ? Charset.forName("windows-1252") : StandardCharsets.UTF_8;
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive), encoding);
-		ZipEntry ze = zis.getNextEntry();
-		try {
-			while (ze != null) {
-				if (!ze.isDirectory()) {
-					Path path = Paths.get(ze.getName());
-					loadFile(path, zis, fileType, isDelta, fsnOnly, isReleased);
-				}
-				ze = zis.getNextEntry();
-			}
-		} finally {
-			try{
-				zis.closeEntry();
-				zis.close();
-			} catch (Exception e){} //Well, we tried.
-		}
-	}
-	
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException {
-		try (Stream<Path> paths = Files.walk(dir.toPath())) {
-			paths.filter(Files::isRegularFile)
-			.forEach( path ->  {
-				try {
-					InputStream is = toInputStream(path);
-					loadFile(path, is , fileType, isDelta, fsnOnly, isReleased);
-					is.close();
-				} catch (Exception e) {
-					throw new RuntimeException ("Faied to load " + path + " due to " + e.getMessage(),e);
-				}
-			});
-		}
-	}
-	
-	private InputStream toInputStream(Path path) {
-		InputStream is;
-		try {
-			is = new BufferedInputStream(Files.newInputStream(path));
-		} catch (IOException e) {
-			throw new IllegalStateException("Unable to load " + path, e);
-		}
-		return is;
-	}
-
-	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, Boolean isReleased)  {
-		try {
-			String fileName = path.getFileName().toString();
-			//Skip zip file artifacts
-			if (fileName.contains("._")) {
-				return;
-			}
-			
-			if (fileName.contains(fileType)
-					&& !loadContentFile(is, fileName, fileType, isReleased, isDelta, fsnOnly)) {
-				loadReferenceSetFile(is, fileName, fileType, isReleased, fsnOnly);
-			}
-		} catch (TermServerScriptException | IOException e) {
-			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
-		}
-	}
-
-	private void loadReferenceSetFile(InputStream is, String fileName, String fileType, Boolean isReleased,
-			boolean fsnOnly) throws TermServerScriptException, IOException {
-		boolean loadTheReferenceSet = false;
-		if (loadMRCMFile(is, fileName, fileType, isReleased)) {
-			return;
-		}
-		
-		if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-			LOGGER.info("Loading Concept Inactivation Indicator {} file: {}", fileType, fileName);
-			gl.loadInactivationIndicatorFile(is, isReleased);
-		} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-			LOGGER.info("Loading Description Inactivation Indicator {} file: {}", fileType, fileName);
-			gl.loadInactivationIndicatorFile(is, isReleased);
-		} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-			LOGGER.info("Loading Concept/Description Inactivation Indicators {} file: {}", fileType, fileName);
-			gl.loadInactivationIndicatorFile(is, isReleased);
-		} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
-			LOGGER.info("Loading Historical Association File: {} file: {}", fileType, fileName);
-			gl.loadHistoricalAssociationFile(is, isReleased);
-		} else if (fileName.contains("ComponentAnnotationStringValue")) {
-			LOGGER.info("Loading ComponentAnnotationStringValue File: {} file: {}", fileType, fileName);
-			gl.loadComponentAnnotationFile(is, isReleased);
-		}  else if (fileName.contains("ssRefset_ModuleDependency")) {
-			LOGGER.info("Loading Module Dependency File: {} file: {}", fileType, fileName);
-			gl.loadModuleDependencyFile(is, isReleased);
-		} else if (loadOtherReferenceSets && fileName.contains("Refset")) {
-			loadTheReferenceSet = true;
-		}
-
-		//If we're loading all terms, load the language refset as well
-		if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
-			LOGGER.info("Loading {} Language Reference Set File - {}", fileType, fileName);
-			gl.loadLanguageFile(is, isReleased);
-		} else if (loadTheReferenceSet) {
-			gl.loadReferenceSets(is, fileName, isReleased);
-		}
-	}
-
-	private boolean loadMRCMFile(InputStream is, String fileName, String fileType, Boolean isReleased) throws TermServerScriptException, IOException {
-		if (fileName.contains("MRCMModuleScope")) {
-			LOGGER.info("Loading MRCM Module Scope File: {} file: {}", fileType, fileName);
-			gl.loadMRCMModuleScopeFile(is, isReleased);
-		} else if (fileName.contains("MRCMDomain")) {
-			LOGGER.info("Loading MRCM Domain File: {} file: {}", fileType, fileName);
-			gl.loadMRCMDomainFile(is, isReleased);
-		} else if (fileName.contains("MRCMAttributeRange")) {
-			LOGGER.info("Loading MRCM AttributeRange File: {} file: {}", fileType, fileName);
-			gl.loadMRCMAttributeRangeFile(is, isReleased);
-		} else if (fileName.contains("MRCMAttributeDomain")) {
-			LOGGER.info("Loading MRCM AttributeDomain File: {} file: {}", fileType, fileName);
-			gl.loadMRCMAttributeDomainFile(is, isReleased);
-		} else {
-			return false;
-		}
-		return true;
-	}
-
-	private boolean loadContentFile(InputStream is, String fileName, String fileType, Boolean isReleased, boolean isDelta, boolean fsnOnly) throws TermServerScriptException, IOException {
-		if (fileName.contains("sct2_Concept_" )) {
-			LOGGER.info("Loading Concept {} file: {}", fileType, fileName);
-			gl.loadConceptFile(is, isReleased);
-		} else if (fileName.contains("Identifier" )) {
-			LOGGER.info("Loading Alternate Identifier {} file: {}", fileType, fileName);
-			gl.loadAlternateIdentifierFile(is, isReleased);
-		} else if (fileName.contains("sct2_Relationship_" )) {
-			LOGGER.info("Loading Relationship {} file: {}", fileType, fileName);
-			gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
-			if (populateHierarchyDepth) {
-				LOGGER.info("Calculating concept depth...");
-				gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
-			}
-		} else if (fileName.contains("sct2_StatedRelationship_" )) {
-			LOGGER.info("Skipping StatedRelationship {} file: {}", fileType, fileName);
-		} else if (fileName.contains("sct2_RelationshipConcrete" )) {
-			LOGGER.info("Loading Concrete Relationship {} file: {}", fileType, fileName);
-			gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
-		} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
-				   fileName.contains("sct2_sRefset_OWLAxiom" )) {
-			LOGGER.info("Loading Axiom {} file: {}", fileType, fileName);
-			gl.loadAxioms(is, isDelta, isReleased);
-		} else if (fileName.contains("sct2_Description_" )) {
-			LOGGER.info("Loading Description {} file: {}", fileType, fileName);
-			int count = gl.loadDescriptionFile(is, fsnOnly, isReleased);
-			LOGGER.info("Loaded {} descriptions.", count);
-		} else if (fileName.contains("sct2_TextDefinition_" )) {
-			LOGGER.info("Loading Text Definition {} file: {}", fileType, fileName);
-			gl.loadDescriptionFile(is, fsnOnly, isReleased);
-		} else {
-			return false;
-		}
-		return true;
-	}
-
 	public boolean isAllowStaleData() {
-		return allowStaleData;
+		return config.isAllowStaleData();
 	}
 
 	public void setAllowStaleData(boolean allowStaleData) {
-		this.allowStaleData = allowStaleData;
+		config.setAllowStaleData(allowStaleData);
 	}
 
 	public boolean isLoadDependencyPlusExtensionArchive() {
-		return loadDependencyPlusExtensionArchive;
+		return config.isLoadDependencyPlusExtensionArchive();
 	}
 
 	public void setLoadDependencyPlusExtensionArchive(boolean loadDependencyPlusExtensionArchive) {
-		this.loadDependencyPlusExtensionArchive = loadDependencyPlusExtensionArchive;
-	}
-
-	public boolean isLoadEditionArchive() {
-		return loadEditionArchive;
+		config.setLoadDependencyPlusExtensionArchive(loadDependencyPlusExtensionArchive);
 	}
 
 	public void setLoadEditionArchive(boolean loadEditionArchive) {
-		this.loadEditionArchive = loadEditionArchive;
-	}
-
-	public boolean isPopulateHierarchyDepth() {
-		return populateHierarchyDepth;
+		config.setLoadEditionArchive(loadEditionArchive);
 	}
 
 	public void setPopulateHierarchyDepth(boolean populateHierarchyDepth) {
-		this.populateHierarchyDepth = populateHierarchyDepth;
+		config.setPopulateHierarchyDepth(populateHierarchyDepth);
 	}
 
 	public boolean isEnsureSnapshotPlusDeltaLoad() {
-		return ensureSnapshotPlusDeltaLoad;
+		return config.isEnsureSnapshotPlusDeltaLoad();
 	}
 
 	public void setEnsureSnapshotPlusDeltaLoad(boolean ensureSnapshotPlusDeltaLoad) {
-		this.ensureSnapshotPlusDeltaLoad = ensureSnapshotPlusDeltaLoad;
-	}
-
-	public boolean isPopulatePreviousTransitiveClosure() {
-		return populatePreviousTransitiveClosure;
+		config.setEnsureSnapshotPlusDeltaLoad(ensureSnapshotPlusDeltaLoad);
 	}
 
 	public void setPopulatePreviousTransitiveClosure(boolean populatePreviousTransitiveClosure) {
-		this.populatePreviousTransitiveClosure = populatePreviousTransitiveClosure;
-	}
-
-	public boolean isPopulateReleaseFlag() {
-		return populateReleaseFlag;
+		config.setPopulatePreviousTransitiveClosure(populatePreviousTransitiveClosure);
 	}
 
 	public void setPopulateReleaseFlag(boolean populateReleaseFlag) {
-		this.populateReleaseFlag = populateReleaseFlag;
+		config.setPopulateReleaseFlag(populateReleaseFlag);
+	}
+
+	public boolean isRunIntegrityChecks() {
+		return config.isRunIntegrityChecks();
+	}
+
+	public void setExpectStatedParents(boolean expectStatedParents) {
+		config.setExpectStatedParents(expectStatedParents);
 	}
 	
 	public void reset() {
@@ -1014,33 +809,18 @@ public class ArchiveManager implements ScriptConstants {
 		
 		gl.reset();
 		currentlyHeldInMemory = null;
-		loadEditionArchive = false;
-		populateReleaseFlag = false;
-		loadDependencyPlusExtensionArchive = false;
-		populatePreviousTransitiveClosure = false;
-		ensureSnapshotPlusDeltaLoad = false;
-		loadOtherReferenceSets = false;
+		config.reset();
 	}
-	
-	public boolean isRunIntegrityChecks() {
-		return runIntegrityChecks;
-	}
+
 
 	public void setRunIntegrityChecks(boolean runIntegrityChecks) {
 		if (!runIntegrityChecks) {
 			LOGGER.warn("INTEGRITY CHECK DISABLED - ARE YOU SURE?");
 		}
-		this.runIntegrityChecks = runIntegrityChecks;
+		config.setRunIntegrityChecks(runIntegrityChecks);
 		this.gl.setRunIntegrityChecks(runIntegrityChecks);
 	}
 
-	public boolean isExpectStatedParents() {
-		return expectStatedParents;
-	}
-
-	public void setExpectStatedParents(boolean expectStatedParents) {
-		this.expectStatedParents = expectStatedParents;
-	}
 
 	public S3Manager getS3Manager() throws TermServerScriptException {
 		return ((ArchiveDataLoader)getArchiveDataLoader()).getS3Manager();

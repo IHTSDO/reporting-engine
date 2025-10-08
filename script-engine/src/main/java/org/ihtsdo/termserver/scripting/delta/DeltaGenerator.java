@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobRun;
 
@@ -85,7 +85,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected void init (String[] args) throws TermServerScriptException {
 		//We definitely need to finish saving a snapshot to disk before we start making changes
 		//Otherwise if we run multiple times, we'll pick up changes from a previous run.
-		SnapshotGenerator.setRunAsynchronously(false);
+		ArchiveImporter.setRunAsynchronously(false);
 		initialiseGenerators(args);
 		
 		super.init(args);
