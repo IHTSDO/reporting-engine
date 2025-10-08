@@ -11,7 +11,7 @@ import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
@@ -80,7 +80,7 @@ public class ExtractExtensionComponents extends DeltaGeneratorWithAutoImport {
 			//sourceModuleIds = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//sourceModuleIds = "332351000009108"; //Vet Extension
 			init(args);
-			SnapshotGenerator.setSkipSave(true);
+			ArchiveImporter.setSkipSave(true);
 
 			conceptCreator = Rf2ConceptCreator.build(this);
 

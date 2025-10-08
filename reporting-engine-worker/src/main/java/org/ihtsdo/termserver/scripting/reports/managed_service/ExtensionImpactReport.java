@@ -12,7 +12,8 @@ import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricDataUser;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricStatsGenerator;
-import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -94,7 +95,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		previousTransitiveClosureNeeded = false;
 		LOGGER.info("International Release data being imported, wiping Graph Loader for safety.");
 		Project previousProject = project.clone();
-		SnapshotGenerator.setSkipSave(true); //This takes a copy of the graph in memory, so avoid for this expensive report.
+		ArchiveImporter.setSkipSave(true); //This takes a copy of the graph in memory, so avoid for this expensive report.
 
 		if (StringUtils.isEmpty(getJobRun().getParamValue(INTERNATIONAL_RELEASE))) {
 			Branch branch = tsClient.getBranch("MAIN");
@@ -625,8 +626,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	@Override
 	protected void recordFinalWords() throws TermServerScriptException {
 		report(PRIMARY_REPORT,"Proposed upgrade to", proposedUpgrade);
-		SnapshotGenerator.setSkipSave(false); //reset for subsequent reuse
-
+		ArchiveImporter.setSkipSave(false); //reset for subsequent reuse
 	}
 
 	private boolean hasNonCoreAxioms(Concept c) {

@@ -6,10 +6,10 @@ import java.lang.IllegalArgumentException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ArchiveManager;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.web.client.RestClientResponseException;
@@ -59,7 +59,7 @@ public class DuplicateLangInactAssocPlusCncFixPlusModFix extends BatchFix {
 	public void init(String[] args) throws TermServerScriptException {
 		ArchiveManager mgr = getArchiveManager();
 		mgr.setEnsureSnapshotPlusDeltaLoad(true);
-		SnapshotGenerator.setSkipSave(true); //No need to save to disk if we need a fresh copy every time. 
+		ArchiveImporter.setSkipSave(true); //No need to save to disk if we need a fresh copy every time.
 		//mgr.setRunIntegrityChecks(false);  //MSSP-1087
 		super.init(args);
 	}

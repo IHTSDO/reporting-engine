@@ -23,6 +23,7 @@ import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1977,7 +1978,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		job.instantiate(jobRun, null);
 	}
 
-	protected String getDependencyArchive() {
+	public String getDependencyArchive() {
 		return dependencyArchive;
 	}
 	
