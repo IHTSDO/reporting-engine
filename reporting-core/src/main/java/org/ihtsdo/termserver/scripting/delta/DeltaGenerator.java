@@ -120,6 +120,18 @@ public abstract class DeltaGenerator extends TermServerScript {
 			}
 		}
 	}
+
+	public IdGenerator getConIdGenerator() {
+		return conIdGenerator;
+	}
+
+	public IdGenerator getDescIdGenerator() {
+		return descIdGenerator;
+	}
+
+	public IdGenerator getRelIdGenerator() {
+		return relIdGenerator;
+	}
 	
 	protected IdGenerator initialiseIdGenerator(File file, PartitionIdentifier partition, String namespace) throws TermServerScriptException {
 		IdGenerator idGenerator = initialiseIdGenerator(file, partition);
@@ -195,7 +207,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	private void checkSourceAndTargetModulesWithUser() throws TermServerScriptException {
-		print ("Targetting which namespace? [" + nameSpace + "]: ");
+		print ("Targeting which namespace? [" + nameSpace + "]: ");
 		String response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			nameSpace = response;

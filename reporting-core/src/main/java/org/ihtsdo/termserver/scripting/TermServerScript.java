@@ -1712,7 +1712,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		incrementSummaryInformation("Report lines written");
 	}
 
-	protected boolean report(Concept c, Object...details) throws TermServerScriptException {
+	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		return report(PRIMARY_REPORT, c, details);
 	}
 	
