@@ -342,7 +342,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		//Does this concept have any inScope children?  We'll step this with new code
 		//to shortcut finding the complete set and allocating memory for that
 		boolean hasImpact = false;
-		if (hasInScopeDescendents(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
+		if (hasInScopeDescendants(currentConcept, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
 			Set<Concept> inferredChildren = currentConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).stream()
 					.filter(this::inScope)
 					.collect(Collectors.toSet());
@@ -573,7 +573,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		set.add(value);
 	}
 
-	private boolean hasInScopeDescendents(Concept c, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache) {
+	private boolean hasInScopeDescendants(Concept c, Set<Concept> noInScopeDescendentsCache, Set<Concept> yesInScopeDescendentsCache) {
 		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//If we already know that this concept has no descendants, then no need to check again
 			if (noInScopeDescendentsCache.contains(child)) {
@@ -584,7 +584,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				return true;
 			}
 			
-			if (inScope(child) || hasInScopeDescendents(child, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
+			if (inScope(child) || hasInScopeDescendants(child, noInScopeDescendentsCache, yesInScopeDescendentsCache)) {
 				yesInScopeDescendentsCache.add(child);
 				return true;
 			} else {
