@@ -8,5 +8,5 @@ public interface TermGenerationStrategy {
 	String suggestTerm(Concept concept, String termModifier);
 
 	boolean applyTermViaOverride(Concept original, Concept clone, String termModifier) throws TermServerScriptException;
-}
 
+}
