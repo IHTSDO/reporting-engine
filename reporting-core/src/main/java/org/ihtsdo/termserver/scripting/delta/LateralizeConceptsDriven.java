@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.util.ConceptLateralizer;
 import org.ihtsdo.termserver.scripting.util.TermGenerationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
