@@ -1781,6 +1781,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		for (Relationship r : clone.getRelationships()) {
 			r.setAxiom(null);
 			r.setAxiomEntry(null);
+			//But the stated relationships we can mark as _intended for axiom_ so we don't try and give them SCTIDs
+			if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)) {
+				r.setIntendedForAxiom(true);
+			}
 		}
 		return clone;
 	}
