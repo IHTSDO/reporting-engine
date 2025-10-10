@@ -5,8 +5,8 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 
 public interface TermGenerationStrategy {
 
-	String suggestTerm(Concept concept);
+	String suggestTerm(Concept concept, String termModifier);
 
-	boolean applyTermViaOverride(Concept original, Concept clone) throws TermServerScriptException;
+	boolean applyTermViaOverride(Concept original, Concept clone, String termModifier) throws TermServerScriptException;
 }
 

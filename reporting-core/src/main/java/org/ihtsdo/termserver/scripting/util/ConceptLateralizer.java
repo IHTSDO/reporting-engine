@@ -26,6 +26,7 @@ public class ConceptLateralizer implements ScriptConstants {
 	private static final String WITH_LATERALITY_SP = " with laterality ";
 
 	private Set<Concept> bodyStructures = null;
+	private Set<Concept> morphologicAbnormalities = null;
 	private GraphLoader gl;
 	private TermGenerationStrategy termStrategy;
 	private DeltaGenerator parent;
@@ -116,10 +117,10 @@ public class ConceptLateralizer implements ScriptConstants {
 
 	private void lateralizeGroup(RelationshipGroup g, Concept laterality, boolean overrideCurrentLaterality) throws TermServerScriptException {
 		for (Relationship r : g.getRelationships()) {
-			if (isBodyStructure(r.getTarget())) {
+			if (isBodyStructure(r.getTarget()) && !isMorphologicAbnormality(r.getTarget())) {
 				Concept lateralizedBodyStructure = findLateralizedCounterpart(r.getTarget(), laterality, overrideCurrentLaterality);
 				if (lateralizedBodyStructure == null) {
-					String msg = "Failed to find lateralized counterpart for " + r.getTarget() + WITH_LATERALITY_SP + laterality + " - continuing with unlateralized concept.";
+					String msg = "Failed to find lateralized counterpart for " + r.getTarget() + WITH_LATERALITY_SP + laterality + ".  Continuing with unlateralized concept model.";
 					parent.report(r.getSource(), RF2Constants.Severity.HIGH, RF2Constants.ReportActionType.VALIDATION_CHECK, msg);
 				} else {
 					r.setTarget(lateralizedBodyStructure);
@@ -129,15 +130,24 @@ public class ConceptLateralizer implements ScriptConstants {
 	}
 
 	private void lateralizeFsn(Concept original, Concept clone, Concept laterality) throws TermServerScriptException {
-		//Attempt progressive stategies to lateralize the FSN
-		String lateralityStr = laterality.getPreferredSynonym().toLowerCase();
-		if (!termStrategy.applyTermViaOverride(original, clone)
+		//Attempt progressive strategies to lateralize the FSN
+		String lateralityStr = getLateralityStr(laterality);
+		if (!termStrategy.applyTermViaOverride(original, clone, lateralityStr)
 				&& !lateralizeFsnUsingBodyStructureCutPoint(original, clone, lateralityStr)
 				&& !lateralizeFsnUsingAlternativeApproach(clone, lateralityStr, laterality)) {
-			String proposedPT = termStrategy.suggestTerm(clone);
+			String proposedPT = termStrategy.suggestTerm(clone, lateralityStr);
 			applyTermAsPtAndFsn(original, clone, proposedPT);
 		}
 		normalizeDescriptions(clone, laterality);
+	}
+
+	private String getLateralityStr(Concept laterality) {
+		return switch (laterality.getId()) {
+			case SCTID_LEFT -> "left";
+			case SCTID_RIGHT -> "right";
+			case SCTID_BILATERAL -> "bilateral";
+			default -> throw new IllegalArgumentException("Unexpected laterality: " + laterality);
+		};
 	}
 
 	public void applyTermAsPtAndFsn(Concept original, Concept clone, String proposedPT) throws TermServerScriptException {
@@ -160,8 +170,11 @@ public class ConceptLateralizer implements ScriptConstants {
 			return false;
 		}
 
-		if (laterality.equals(BILATERAL) || !lateralizedBodyStructurePT.contains("right")) {
-			lateralizedBodyStructurePT = lateralizedBodyStructurePT.replace("left", "right and left");
+		if (laterality.equals(BILATERAL) && !lateralizedBodyStructurePT.contains("right")) {
+			lateralizedBodyStructurePT = lateralizedBodyStructurePT.replace("left", "bilateral");
+			if (lateralizedBodyStructurePT.contains("eye") && !lateralizedBodyStructurePT.contains("eyes")) {
+				lateralizedBodyStructurePT = lateralizedBodyStructurePT.replace("eye", "eyes");
+			}
 		}
 
 		//If the body structure was not able to be lateralized, we'll need to force the laterality for the FSN
@@ -221,7 +234,7 @@ public class ConceptLateralizer implements ScriptConstants {
 					bothTerm = bothTerm.replace(" with ", "s with ");
 				} else if (bothTerm.contains(USING_SP)) {
 					bothTerm = bothTerm.replace(USING_SP, "s using ");
-				} else {
+				} else if (!bothTerm.endsWith("s")) {
 					bothTerm += "s";
 				}
 			}
@@ -421,6 +434,13 @@ public class ConceptLateralizer implements ScriptConstants {
 			bodyStructures = BODY_STRUCTURE.getDescendants(NOT_SET, RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP);
 		}
 		return bodyStructures.contains(checkMe);
+	}
+
+	private boolean isMorphologicAbnormality(Concept checkMe) throws TermServerScriptException {
+		if (morphologicAbnormalities == null) {
+			morphologicAbnormalities = MORPHOLOGIC_ABNORMALITY.getDescendants(NOT_SET, RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP);
+		}
+		return morphologicAbnormalities.contains(checkMe);
 	}
 
 }

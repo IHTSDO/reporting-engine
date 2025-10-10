@@ -8,6 +8,7 @@ import org.ihtsdo.termserver.scripting.util.ConceptLateralizer;
 import org.ihtsdo.termserver.scripting.util.TermGenerationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -37,6 +38,7 @@ public class LateralizeConceptsDriven extends DeltaGenerator implements ScriptCo
 		populateLateralizedInstructionMap();
 		List<Component> conceptsToLateralize = new ArrayList<>(lateralizedInstructionMap.keySet());
 		for (LateralizeInstruction li : lateralizedInstructionMap.values()) {
+			report(li.concept, Severity.NONE, ReportActionType.INFO, li.concept, li.concept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, LEFT, conceptsToLateralize);
 			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, RIGHT, conceptsToLateralize);
 			conceptLateralizer.createLateralizedConceptIfRequired(li.concept, BILATERAL, conceptsToLateralize);
@@ -64,19 +66,30 @@ public class LateralizeConceptsDriven extends DeltaGenerator implements ScriptCo
 	}
 
 	@Override
-	public boolean applyTermViaOverride(Concept original, Concept clone) throws TermServerScriptException {
+	public boolean applyTermViaOverride(Concept original, Concept clone, String lateralityStr) throws TermServerScriptException {
 		//Do we have an override for this concept?
 		LateralizeInstruction li = lateralizedInstructionMap.get(original);
 		if (li != null && li.pt != null) {
-			conceptLateralizer.applyTermAsPtAndFsn(original, clone, li.pt);
+			String pt = li.pt;
+			//The override is usually given as an example.  Modify for this specific laterality
+			if (lateralityStr.equals("right") && pt.contains("left")) {
+				pt = pt.replace("left", "right");
+			} else if (lateralityStr.contains("bilateral")) {
+				pt = pt.replace("left", "bilateral");
+				if (pt.contains("eye")) {
+					pt = pt.replace("eye", "eyes");
+				}
+			}
+			conceptLateralizer.applyTermAsPtAndFsn(original, clone, pt);
 			return true;
 		}
 		return false;
 	}
 
 	@Override
-	public String suggestTerm(Concept concept) {
-		return "";
+	public String suggestTerm(Concept concept, String termModifier) {
+		String suffix = termModifier.contains("bilateral")? " eyes" : " eye";
+		return concept.getPreferredSynonym() + " of " + termModifier + suffix;
 	}
 
 	class LateralizeInstruction {
