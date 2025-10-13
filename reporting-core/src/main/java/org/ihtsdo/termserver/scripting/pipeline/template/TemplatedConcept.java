@@ -397,6 +397,9 @@ public abstract class TemplatedConcept implements ScriptConstants, ConceptWrappe
 		//TO DO Detect GB Spelling and break out another term
 		try {
 			Description targetPt = rt.getTarget().getPreferredSynonym(US_ENG_LANG_REFSET);
+			if (targetPt == null) {
+				LOGGER.info("Check here that we didn't find a PT for {}", rt.getTarget());
+			}
 			String itemStr = targetPt.getTerm();
 			itemStr = applyTermTweaking(rt, itemStr);
 

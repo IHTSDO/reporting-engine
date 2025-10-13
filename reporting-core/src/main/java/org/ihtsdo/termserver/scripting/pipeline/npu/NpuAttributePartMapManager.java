@@ -96,6 +96,8 @@ public class NpuAttributePartMapManager extends AttributePartMapManager {
 				gl.getConcept("260073007|Human leukocyte antigen B allele (substance)|")));
 		hardCodedMappings.put("Hugo4944", List.of(
 				gl.getConcept("260082001|Human leukocyte antigen DQB1 allele (substance)|")));
+		hardCodedMappings.put("QU50106", List.of(
+				gl.getConcept("20071003000102 |Arbitrary substance concentration (property) (qualifier value)|")));
 	}
 
 }

@@ -62,7 +62,7 @@ public abstract class AttributePartMapManager implements ContentPipeLineConstant
 		} else if (!cpm.getMappingsAllowedAbsent().contains(partNum)) {
 			//Some special rules exist for certain parts, so we don't need to report if we have one of those.
 			String partStr = parts.get(partNum) == null ? "Part Not Known - " + partNum : parts.get(partNum).toString();
-			tc.getConcept().addIssue("No attribute mapping available fo" + partStr);
+			tc.getConcept().addIssue("No attribute mapping available for " + partStr);
 			cpm.addMissingMapping(partNum, tc.getExternalIdentifier());
 		}
 		return new ArrayList<>();

@@ -78,6 +78,36 @@ public abstract class NpuTemplatedConcept extends TemplatedConcept implements Np
 		checkAndRemoveDuplicateAttributes();
 	}
 
+	@Override
+	protected boolean addAttributeFromDetailWithType(List<RelationshipTemplate> attributes, Part part, Concept attributeType) throws TermServerScriptException {
+		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(this, part.getPartNumber(), attributeType);
+		//Did we fail to find a value when using a compound key?  Try the individual parts of they key if so, and mark the concept as primitive
+		if (part.getPartNumber().contains(",") && (additionalAttributes == null || additionalAttributes.isEmpty())) {
+			additionalAttributes = attemptPartialCompoundKeyLookup(part, attributeType);
+		}
+		for (RelationshipTemplate rt : additionalAttributes) {
+			applyTemplateSpecificModellingRules(additionalAttributes, part, rt);
+		}
+		attributes.addAll(additionalAttributes);
+		return !additionalAttributes.isEmpty();
+	}
+
+	private List<RelationshipTemplate> attemptPartialCompoundKeyLookup(Part part, Concept attributeType) throws TermServerScriptException {
+		String[] partialKeys = part.getPartNumber().split(",");
+		List<RelationshipTemplate> additionalAttributes = cpm.getAttributePartManager().getPartMappedAttributeForType(this, partialKeys[0], attributeType);
+
+		//Did we get one?
+		if (additionalAttributes != null && !additionalAttributes.isEmpty()) {
+			addProcessingFlag(ProcessingFlag.MARK_AS_PRIMITIVE);
+			//Do we also know about the other part?
+			Part otherPart = cpm.getPart(partialKeys[1].trim());
+			if (otherPart != null) {
+				slotTermAppendMap.put(part.getPartTypeName(), " with " + otherPart.getPartName());
+			}
+		}
+		return additionalAttributes;
+	}
+
 	private void populatePart(Part part) throws TermServerScriptException {
 		List<RelationshipTemplate> attributesToAdd = new ArrayList<>();
 		addAttributeFromDetail(attributesToAdd, part);

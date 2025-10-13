@@ -675,6 +675,10 @@ public abstract class ContentPipelineManager extends TermServerScript implements
 		return namespace;
 	}
 
+	public Part getPart(String partId) {
+		return partMap.getOrDefault(partId, null);
+	}
+
 	public void incrementSummaryCount(String category, String summaryItem) {
 		incrementSummaryCount(category, summaryItem, 1);
 	}
