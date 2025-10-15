@@ -97,6 +97,7 @@ public abstract class BatchFix extends TermServerScript implements ScriptConstan
 		} else {
 			allComponentsToProcess = super.processFile();
 		}
+		LOGGER.info("Identified {} components to process", allComponentsToProcess.size());
 		batchProcess(formIntoBatch(allComponentsToProcess));
 		return allComponentsToProcess;
 	}
