@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.one_offs;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -20,7 +21,24 @@ public class RP_1037_DescriptionsWithMg extends TermServerReport implements Repo
 	private List<MatchingSet> targetTexts = List.of(
 			new MatchingSet("mg"),
 			new MatchingSet("g"),
-			new MatchingSet("ml")
+			new MatchingSet("ml"),
+			new MatchingSet("mcg"),
+			new MatchingSet("unit"),
+			new MatchingSet("units"),
+			new MatchingSet("IU"),
+			new MatchingSet("mEq"),
+			new MatchingSet("microgram"),
+			new MatchingSet("milligram"),
+			new MatchingSet("micrograms"),
+			new MatchingSet("milligrams"),
+			new MatchingSet("grams"),
+			new MatchingSet("milliliter"),
+			new MatchingSet("microliter"),
+			new MatchingSet("microlitre"),
+			new MatchingSet("mL"),
+			new MatchingSet("nanogram"),
+			new MatchingSet("MBq"),
+			new MatchingSet("ppm")
 	);
 	public static void main(String[] args) throws TermServerScriptException {
 		TermServerScript.run(RP_1037_DescriptionsWithMg.class, new HashMap<>(), args);
@@ -41,7 +59,7 @@ public class RP_1037_DescriptionsWithMg extends TermServerReport implements Repo
 				"SCTID, FSN, SemTag, Text Matched, Descriptions, Case Significance"};
 		String[] tabNames = new String[] {
 				"Medicinal Product contains g/mg/ml",
-				"CDs not listed in first tab",
+				"Active CDs not listed in first tab",
 				"Anything else contains g/mg"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -98,6 +116,7 @@ public class RP_1037_DescriptionsWithMg extends TermServerReport implements Repo
 
 	private void reportCDsNotPreviouslyReported(List<Concept> drugsReported) throws TermServerScriptException {
 		List<Concept> allCDs = gl.getAllConcepts().stream()
+				.filter(Component::isActiveSafely)
 				.filter(c -> c.getFsn().contains("(clinical drug)"))
 				.toList();
 		List<Concept> notReported = allCDs.stream()
@@ -125,6 +144,7 @@ public class RP_1037_DescriptionsWithMg extends TermServerReport implements Repo
 		return d.getTerm().contains(ms.targetTextSpSp)
 				|| d.getTerm().endsWith(ms.targetTextSp)
 				|| sp_term.contains(ms.targetTextSpSlash)
+				|| sp_term.contains(ms.targetTextSlashSp)
 				|| term.equals(ms.targetText);
 	}
 
@@ -133,12 +153,14 @@ public class RP_1037_DescriptionsWithMg extends TermServerReport implements Repo
 		private String targetTextSp;
 		private String targetText;
 		private String targetTextSpSlash;
+		private String targetTextSlashSp;
 
 		public MatchingSet(String targetText) {
 			this.targetText = targetText;
 			this.targetTextSpSp = " " + targetText + " ";
 			this.targetTextSp = " " + targetText;
 			this.targetTextSpSlash = " " + targetText + "/";
+			this.targetTextSlashSp = "/" + targetText;
 		}
 	}
 
