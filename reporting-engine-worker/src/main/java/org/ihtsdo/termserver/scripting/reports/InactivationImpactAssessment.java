@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
@@ -12,13 +11,12 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.qi.AllKnownTemplates;
 import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
+import org.ihtsdo.termserver.scripting.util.HighVolumeUsageHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -138,9 +136,9 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 				refsetSummary.put(refset, 0);
 			}
 			try {
-				Thread.sleep(1 * 1000L);
+				Thread.sleep(1000L);
 			} catch (Exception e) {
-				//still need to work out what to do with interrupted sleeps
+				Thread.currentThread().interrupt();
 			}
 		}
 		referenceSets.removeAll(emptyReferenceSets);
@@ -272,7 +270,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			try {
 				Thread.sleep(1 * 200L);
 			} catch (Exception e) {
-				//still need to work out what to do with interrupted sleeps
+				Thread.currentThread().interrupt();
 			}
 		} while (conceptsProcessed < inactivatingConceptIds.size());
 	}
@@ -294,18 +292,11 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 
 	private void checkHighVolumeUsage() throws TermServerScriptException {
 		LOGGER.debug("Checking {} inactivating concepts against High Usage SCTIDs", inactivatingConceptIds.size());
-		String fileName = "resources/HighVolumeSCTIDs.txt";
-		LOGGER.debug("Loading {}", fileName );
-		try {
-			List<String> lines = Files.readLines(new File(fileName), StandardCharsets.UTF_8);
-			for (String line : lines) {
-				String id = line.split(TAB)[0];
-				if (inactivatingConceptIds.contains(id)) {
-					report(gl.getConcept(id), "High Volume Usage (UK)");
-				}
+		HighVolumeUsageHelper hvuHelper = new HighVolumeUsageHelper();
+		for (String sctid : inactivatingConceptIds) {
+			if (hvuHelper.hasRecentHighUsage(sctid) || hvuHelper.hasHighLifetimeUsage(sctid)) {
+				report(gl.getConcept(sctid), "High Volume Usage (UK)", hvuHelper.getUsage(sctid));
 			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
 	}
 
