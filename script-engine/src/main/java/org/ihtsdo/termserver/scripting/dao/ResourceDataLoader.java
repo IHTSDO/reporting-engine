@@ -31,7 +31,7 @@ public class ResourceDataLoader {
 	private static final String[] fileNames = new String[] {	"cs_words.tsv",
 																"acceptable_dose_forms.tsv",
 																"us-to-gb-terms-map.txt",
-																"HighVolumeSCTIDs.txt",
+																"aggregated_UK_usage_with_decile.tsv",
 																"legacy_int_release_summary.json",
 																"prepositions.txt",
 																"preposition-exceptions.txt",

@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.HighVolumeUsageHelper;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
@@ -210,22 +211,15 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	}
 	
 	private void checkHighVolumeUsage(List<String> inactivatedIds) throws TermServerScriptException {
-		String fileName = "resources/HighVolumeSCTIDs.txt";
 		Concept hvu = new Concept("0","High Volume Usage (UK)");
 		hvu.setModuleId(SCTID_CORE_MODULE);
-		LOGGER.debug("Loading {}", fileName);
-		try {
-			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
-			for (String line : lines) {
-				String id = line.split(TAB)[0];
-				if (inactivatedIds.contains(id)) {
-					Concept concept = gl.getConcept(id);
-					report(TERTIARY_REPORT, concept, "High Volume Usage", concept.getModuleId(), "N/A");
-					refsetSummary.getAndIncrement(hvu);
-				}
+		HighVolumeUsageHelper hvuHelper = new HighVolumeUsageHelper();
+		for (String sctid : inactivatedIds) {
+			if (hvuHelper.hasRecentHighUsage(sctid)) {
+				Concept c =  gl.getConcept(sctid);
+				report(TERTIARY_REPORT, c, "High Volume Usage", c.getModuleId(), hvuHelper.getUsage(sctid));
+				refsetSummary.getAndIncrement(hvu);
 			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
 	}
 
