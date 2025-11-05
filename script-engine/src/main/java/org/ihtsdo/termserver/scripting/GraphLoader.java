@@ -168,7 +168,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		LOGGER.info("free memory now: {}", freeMemoryStr);
 	}
 
-	public void loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased)
+	public void loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, Boolean isReleased)
 			throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -236,7 +236,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				}
 				
 				if (addRelationshipsToConcepts) {
-					addRelationshipToConcept(characteristicType, lineItems, isDelta, thisRelIsReleased, previousState);
+					addRelationshipToConcept(characteristicType, lineItems, thisRelIsReleased, previousState);
 				}
 				relationshipsLoaded++;
 			} else {
@@ -250,7 +250,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		return excludedModules.contains(moduleId);
 	}
 
-	public void loadAxioms(InputStream axiomStream, boolean isDelta, Boolean isReleased) 
+	public void loadAxioms(InputStream axiomStream, Boolean isReleased)
 			throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
 		String line;
@@ -270,7 +270,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				}
 				
 				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
-					LOGGER.debug("Axiom {} referenced a non concept identifier: {}", lineItems[REL_IDX_ID], lineItems[REF_IDX_REFCOMPID]);
+					LOGGER.debug("Axiom {} referenced a non concept identifier: {}", lineItems[IDX_ID], lineItems[REF_IDX_REFCOMPID]);
 				}
 				
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
@@ -309,10 +309,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 						AxiomRepresentation replacedAxiom = axiomService.convertAxiomToRelationships(replacedAxiomEntry.getOwlExpression());
 						//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 						if (replacedAxiom != null) {
-							Set<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
-							//Set the axiom on the relationships, otherwise they won't match existing ones
-							replacedRelationships.forEach(r -> r.setAxiomEntry(axiomEntry));
-							alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
+							modifyExistingStatedRelationshipsOnConcept(c, replacedAxiom, axiomEntry, replacedAxiomEntry, lineItems);
 						}
 					}
 					c.getAxiomEntries().add(axiomEntry);
@@ -368,7 +365,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 						
 						for (Relationship r : relationships) {
 							if (r.isActive()) {
-								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+								addRelationshipToConcept(r);
 							} else {
 								//Don't leave inactive stated relationships in the concept as they have no substance
 								//and cause problems with Sets because they don't have IDs and can't be distinguished
@@ -398,7 +395,19 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		}
 
 	}
-	
+
+	private void modifyExistingStatedRelationshipsOnConcept(Concept c, AxiomRepresentation replacedAxiom, AxiomEntry axiomEntry, AxiomEntry replacedAxiomEntry, String[] lineItems) throws TermServerScriptException {
+		try {
+			Set<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
+
+			//Set the axiom on the relationships, otherwise they won't match existing ones
+			replacedRelationships.forEach(r -> r.setAxiomEntry(axiomEntry));
+			alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
+		} catch (IllegalArgumentException e) {
+			throw new TermServerScriptException("Failure while processing axiom refset member " + lineItems[IDX_ID], e);
+		}
+	}
+
 	private void removeRelsNoLongerFeaturedInAxiom(Concept c, String axiomId, Set<Relationship> currentAxiomRels) {
 		List<Relationship> origSameAxiomRels = c.getRelationshipsFromAxiom(axiomId, ActiveState.ACTIVE);
 		//Remove those still part of the axiom to leave the ones that have been removed
@@ -527,15 +536,15 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		return r;
 	}
 	
-	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
-		addRelationshipToConcept(charType, lineItems,isDelta, isReleased, null);
+	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, Boolean isReleased) throws TermServerScriptException {
+		addRelationshipToConcept(charType, lineItems, isReleased, null);
 	}
 
 	/**
-	 * @param isReleased 
+	 * @param isReleased
 	 * @throws TermServerScriptException
 	 */
-	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased, String issue) throws TermServerScriptException {
+	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, Boolean isReleased, String issue) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
 		//Only set the released flag if it's not set already
 		if (r.isReleased() == null) {
@@ -558,10 +567,10 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 			r.setEffectiveTime(revertEffectiveTime);
 		}
 
-		addRelationshipToConcept(charType, r, isDelta);
+		addRelationshipToConcept(r);
 	}
 	
-	public void addRelationshipToConcept(CharacteristicType charType, Relationship r, boolean isDelta) throws TermServerScriptException {
+	public void addRelationshipToConcept(Relationship r) {
 		r.getSource().addRelationship(r);
 		
 		//Consider adding or removing parents if the relationship is ISA

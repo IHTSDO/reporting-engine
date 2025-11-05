@@ -63,10 +63,10 @@ public class ArchiveImporter implements ScriptConstants {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
 			if (archive.isDirectory()) {
-				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta, isReleased);
+				loadArchiveDirectory(archive, fsnOnly, fileType, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
 				LOGGER.debug("Loading archive file: {}", archive);
-				loadArchiveZip(archive, fsnOnly, fileType, isDelta, isReleased);
+				loadArchiveZip(archive, fsnOnly, fileType, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
@@ -95,7 +95,7 @@ public class ArchiveImporter implements ScriptConstants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException {
+	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws IOException {
 		Charset encoding = useWindowsZipEncoding ? Charset.forName("windows-1252") : StandardCharsets.UTF_8;
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive), encoding);
 		ZipEntry ze = zis.getNextEntry();
@@ -103,7 +103,7 @@ public class ArchiveImporter implements ScriptConstants {
 			while (ze != null) {
 				if (!ze.isDirectory()) {
 					Path path = Paths.get(ze.getName());
-					loadFile(path, zis, fileType, isDelta, fsnOnly, isReleased);
+					loadFile(path, zis, fileType, fsnOnly, isReleased);
 				}
 				ze = zis.getNextEntry();
 			}
@@ -117,13 +117,13 @@ public class ArchiveImporter implements ScriptConstants {
 		}
 	}
 
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException {
+	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, Boolean isReleased) throws IOException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
 					.forEach( path ->  {
 						try {
 							InputStream is = toInputStream(path);
-							loadFile(path, is , fileType, isDelta, fsnOnly, isReleased);
+							loadFile(path, is , fileType, fsnOnly, isReleased);
 							is.close();
 						} catch (Exception e) {
 							throw new IllegalStateException("Failed to load " + path + " due to " + e.getMessage(),e);
@@ -142,7 +142,7 @@ public class ArchiveImporter implements ScriptConstants {
 		return is;
 	}
 
-	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, Boolean isReleased)  {
+	private void loadFile(Path path, InputStream is, String fileType, boolean fsnOnly, Boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
 			//Skip zip file artifacts
@@ -151,7 +151,7 @@ public class ArchiveImporter implements ScriptConstants {
 			}
 
 			if (fileName.contains(fileType)
-					&& !loadContentFile(is, fileName, fileType, isReleased, isDelta, fsnOnly)) {
+					&& !loadContentFile(is, fileName, fileType, isReleased, fsnOnly)) {
 				loadReferenceSetFile(is, fileName, fileType, isReleased, fsnOnly);
 			}
 		} catch (TermServerScriptException | IOException e) {
@@ -216,7 +216,7 @@ public class ArchiveImporter implements ScriptConstants {
 		return true;
 	}
 
-	private boolean loadContentFile(InputStream is, String fileName, String fileType, Boolean isReleased, boolean isDelta, boolean fsnOnly) throws TermServerScriptException, IOException {
+	private boolean loadContentFile(InputStream is, String fileName, String fileType, Boolean isReleased, boolean fsnOnly) throws TermServerScriptException, IOException {
 		if (fileName.contains("sct2_Concept_" )) {
 			LOGGER.info("Loading Concept {} file: {}", fileType, fileName);
 			gl.loadConceptFile(is, isReleased);
@@ -225,7 +225,7 @@ public class ArchiveImporter implements ScriptConstants {
 			gl.loadAlternateIdentifierFile(is, isReleased);
 		} else if (fileName.contains("sct2_Relationship_" )) {
 			LOGGER.info("Loading Relationship {} file: {}", fileType, fileName);
-			gl.loadRelationships(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
+			gl.loadRelationships(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, is, true, isReleased);
 			if (config.isPopulateHierarchyDepth()) {
 				LOGGER.info("Calculating concept depth...");
 				gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
@@ -234,11 +234,11 @@ public class ArchiveImporter implements ScriptConstants {
 			LOGGER.info("Skipping StatedRelationship {} file: {}", fileType, fileName);
 		} else if (fileName.contains("sct2_RelationshipConcrete" )) {
 			LOGGER.info("Loading Concrete Relationship {} file: {}", fileType, fileName);
-			gl.loadRelationships(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
+			gl.loadRelationships(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, is, true, isReleased);
 		} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 				fileName.contains("sct2_sRefset_OWLAxiom" )) {
 			LOGGER.info("Loading Axiom {} file: {}", fileType, fileName);
-			gl.loadAxioms(is, isDelta, isReleased);
+			gl.loadAxioms(is, isReleased);
 		} else if (fileName.contains("sct2_Description_" )) {
 			LOGGER.info("Loading Description {} file: {}", fileType, fileName);
 			int count = gl.loadDescriptionFile(is, fsnOnly, isReleased);
