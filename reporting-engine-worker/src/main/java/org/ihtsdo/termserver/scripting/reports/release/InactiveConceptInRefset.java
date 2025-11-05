@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,38 +16,36 @@ import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.apache.commons.lang.StringUtils;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
-
-/**
- * RP-370 List concepts being inactivated in this release which also appear in known refsets
- */
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * RP-370 List concepts being inactivated in this release which also appear in known refsets
+ */
 public class InactiveConceptInRefset extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactiveConceptInRefset.class);
 
-	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
+	public static final String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
+	public static final String FALSE = "false";
 	private Collection<Concept> referenceSets;
 	private List<Concept> emptyReferenceSets;
 	private List<Concept> outOfScopeReferenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
 	private AtomicLongMap<Concept> moduleSummary = AtomicLongMap.create();
-	private static String INCLUDE_LAST_RELEASE = "Include latest Int release";
+	private static final String INCLUDE_LAST_RELEASE = "Include latest Int release";
 	private String lastReleaseEffectiveTime = null;
-	private static String EXT_REF_ONLY = "Extension Refsets Only";
+	private static final String EXT_REF_ONLY = "Extension Refsets Only";
 	private boolean extensionRefsetOnly = false;
 	public static final int CLAUSE_LIMIT = 100;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_LAST_RELEASE, "true");
-		params.put(EXT_REF_ONLY, "false");
+		params.put(EXT_REF_ONLY, FALSE);
 		TermServerScript.run(InactiveConceptInRefset.class, args, params);
 	}
 
@@ -100,7 +96,11 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			} else {
 				refsetSummary.put(refset, 0);
 			}
-			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
+			try {
+				Thread.sleep(1000L);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
 		referenceSets.removeAll(emptyReferenceSets);
 		referenceSets.removeAll(outOfScopeReferenceSets);
@@ -109,9 +109,9 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(INCLUDE_LAST_RELEASE).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
-				.add(EXT_REF_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
-				.add(UNPROMOTED_CHANGES_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
+				.add(INCLUDE_LAST_RELEASE).withType(Type.BOOLEAN).withMandatory().withDefaultValue(FALSE)
+				.add(EXT_REF_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue(FALSE)
+				.add(UNPROMOTED_CHANGES_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue(FALSE)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
@@ -154,7 +154,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			checkHighVolumeUsage(inactivatedConceptIds);
 		}
 		
-		LOGGER.debug("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
+		LOGGER.debug("Checking {} inactivated concepts against {} refsets", inactivatedConcepts.size(), referenceSets.size());
 		String viableRefsetECL = referenceSets.stream()
 				.map(Concept::getId)
 				.collect(Collectors.joining(" OR "));
@@ -186,7 +186,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			}
 			
 			count += inactiveConceptsSegment.size();
-			LOGGER.debug("Checked " + count + " inactive concepts");
+			LOGGER.debug("Checked {} inactive concepts", count);
 		}
 		
 		//Output summary counts
