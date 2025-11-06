@@ -14,7 +14,7 @@
 	</parent>
 
 	<modules>
-		<module>script-engine</module>
+		<module>reporting-core</module>
 		<module>reporting-engine-worker</module>
 		<module>schedule-manager</module>
 	</modules>

@@ -13,7 +13,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
-			<artifactId>script-engine</artifactId>
+			<artifactId>reporting-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
