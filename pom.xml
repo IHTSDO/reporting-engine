@@ -3,14 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.snomed.otf</groupId>
-	<version>7.9.0</version>
+	<version>7.10.0-SNAPSHOT</version>
 	<artifactId>reporting-engine</artifactId>
 	<packaging>pom</packaging>
 
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>3.12.0</version>
+		<version>3.13.0-SNAPSHOT</version>
 	</parent>
 
 	<modules>
