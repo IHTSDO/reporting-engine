@@ -6,11 +6,11 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.ihtsdo.termserver.scripting.fixes.BatchFix.DEFAULT_TASK_DESCRIPTION;
-
 public class TaskHelper {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TaskHelper.class);
+
+	public static final String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
 
 	private TermServerScript ts;
 	private boolean firstTaskCreated = false;

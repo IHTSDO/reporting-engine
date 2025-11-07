@@ -22,7 +22,6 @@ import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
@@ -1637,12 +1636,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		if (quiet) {
-			return;
-		}
-
-		//If we're using BatchFix methods in a non-BatchFix script, we'll use a more usual report method.
-		if (task == null && !(this instanceof BatchFix) && component != null && component instanceof Concept) {
-			report(PRIMARY_REPORT, (Concept)component, severity, actionType, details);
 			return;
 		}
 

@@ -12,8 +12,6 @@ import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

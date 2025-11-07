@@ -13,7 +13,6 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
@@ -27,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
-public class TemplateCompliance extends TemplateFix implements ReportClass {
+public class TemplateCompliance extends TemplateReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateCompliance.class);
 
@@ -38,14 +37,6 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 
 	List<Concept> alreadyReportAligned = new ArrayList<>();
 	List<Concept> alreadyReportedExcluded = new ArrayList<>();
-
-	public TemplateCompliance() {
-		super(null);
-	}
-
-	protected TemplateCompliance(BatchFix clone) {
-		super(clone);
-	}
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -101,12 +92,14 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 	}
 
 	@Override
+	public void runJob() throws TermServerScriptException {
+		List<Component> allComponentsToProcess = identifyComponentsToProcess();
+		//TO DO Will need to loop through these.
+	}
+
+	@Override
 	protected void init(JobRun jobRun) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"); // QI / Misaligned Concepts
-		selfDetermining = true;
-		reportNoChange = false;
-		populateEditPanel = true;
-		populateTaskDescription = true;
 		summaryTabIdx = SECONDARY_REPORT;
 		
 		if (inclusionWords == null) {
@@ -438,12 +431,6 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		outputMetaData();
 	}
 	
-	@Override
-	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		report(task, concept);
-		return CHANGE_MADE;
-	}
-
 	private void report(Task t, Concept c) throws TermServerScriptException {
 		//Collect the diagnostic information about why this concept didn't match any templates as a string
 		String diagnosticStr = "No diagnostic information available";
@@ -453,7 +440,6 @@ public class TemplateCompliance extends TemplateFix implements ReportClass {
 		report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
 	}
 
-	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 	
 		List<Component> inferredMisaligned = identifyComponentsToProcess(CharacteristicType.INFERRED_RELATIONSHIP);
