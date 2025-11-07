@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes.managedService.oneOffs;
+package org.ihtsdo.termserver.scripting.fixes.managed_service.one_offs;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

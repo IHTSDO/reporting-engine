@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.pipeline.loinc.oneOffs;
+package org.ihtsdo.termserver.scripting.pipeline.loinc.one_offs;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
