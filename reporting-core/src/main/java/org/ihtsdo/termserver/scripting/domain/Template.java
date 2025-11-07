@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
 import org.snomed.authoringtemplate.domain.logical.*;
-import org.ihtsdo.termserver.scripting.template.TemplateUtils;
+import org.ihtsdo.termserver.scripting.util.TemplateUtils;
 
 public class Template implements ScriptConstants {
 
