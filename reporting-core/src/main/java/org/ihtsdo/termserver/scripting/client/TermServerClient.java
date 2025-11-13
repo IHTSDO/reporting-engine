@@ -99,8 +99,8 @@ public class TermServerClient {
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.additionalMessageConverters(new FormHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
-				.setConnectTimeout(Duration.of(10, ChronoUnit.SECONDS))
-				.setReadTimeout(Duration.of(5, ChronoUnit.MINUTES))
+				.connectTimeout(Duration.of(10, ChronoUnit.SECONDS))
+				.readTimeout(Duration.of(5, ChronoUnit.MINUTES))
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
