@@ -3,9 +3,12 @@ package org.ihtsdo.termserver.scripting.client;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
+
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
@@ -93,16 +96,27 @@ public class TermServerClient {
 		headers = new HttpHeaders();
 		headers.add("Cookie", cookie);
 		headers.add("Accept", JSON_CONTENT_TYPE);
-		
+
+		RequestConfig requestConfig = RequestConfig.custom()
+				.setConnectionRequestTimeout(Timeout.ofSeconds(10))
+				.setResponseTimeout(Timeout.ofMinutes(5))
+				.build();
+
+		CloseableHttpClient httpClient = HttpClients.custom()
+				.setDefaultRequestConfig(requestConfig)
+				.build();
+
+		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
+
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(this.serverUrl)
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.additionalMessageConverters(new FormHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
-				.connectTimeout(Duration.of(10, ChronoUnit.SECONDS))
-				.readTimeout(Duration.of(5, ChronoUnit.MINUTES))
+				.requestFactory(() -> factory)
 				.build();
-		
+
+
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
 		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
 			@Override
