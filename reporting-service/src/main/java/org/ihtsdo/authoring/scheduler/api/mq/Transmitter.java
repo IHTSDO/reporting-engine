@@ -12,7 +12,7 @@ public class Transmitter {
 	@Autowired
 	private JmsTemplate jmsTemplate;
 	
-	@Value("${schedule.manager.queue.request}")
+	@Value("${reporting.service.queue.request}")
 	String requestQueueName;
 	
 	public void send (JobRun run) {

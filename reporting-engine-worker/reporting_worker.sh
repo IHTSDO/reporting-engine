@@ -13,7 +13,7 @@ source /root/.profile
 # RPW and RPW_Environment passed in via terraform
 #
 # Package and git repo release versions from Consul
-RPW_Version=`consul kv get consul/schedule-manager/${RPW_Env}/autoscaling/schedule.manager.version`
+RPW_Version=`consul kv get consul/reporting-service/${RPW_Env}/autoscaling/reporting.service.version`
 
 # For testing and manual override
 #RPW_Env="dev"
@@ -63,9 +63,9 @@ supervisorctl stop reporting-engine-worker || true;
 rp_config="/opt/reporting-engine-worker/application.properties"
 echo "Configuring $rp_config"
 if [ -e  $rp_config ];then
-	sed -i "/schedule.manager.queue.request/c\schedule.manager.queue.request = ${RPW_Environment}.schedule-manager.request" ${rp_config}
-	sed -i "/schedule.manager.queue.response/c\schedule.manager.queue.response = ${RPW_Environment}.schedule-manager.response" ${rp_config}
-	sed -i "/schedule.manager.queue.metadata/c\schedule.manager.queue.metadata = ${RPW_Environment}.schedule-manager.metadata" ${rp_config}
+	sed -i "/reporting.service.queue.request/c\reporting.service.queue.request = ${RPW_Environment}.reporting-service.request" ${rp_config}
+	sed -i "/reporting.service.queue.response/c\reporting.service.queue.response = ${RPW_Environment}.reporting-service.response" ${rp_config}
+	sed -i "/reporting.service.queue.metadata/c\reporting.service.queue.metadata = ${RPW_Environment}.reporting-service.metadata" ${rp_config}
 	sed -i "/reports.s3.cloud.path=/c\reports.s3.cloud.path=authoring/reporting-service/${RPW_Env}" ${rp_config}
 	
 	echo "reporting.worker.queue.service-alert = ${RPW_Env}.service-alert" >> $rp_config

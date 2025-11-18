@@ -24,10 +24,10 @@ public class Transmitter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Transmitter.class);
 
-	@Value("${schedule.manager.queue.response}")
+	@Value("${reporting.service.queue.response}")
 	String responseQueueName;
 	
-	@Value("${schedule.manager.queue.metadata}")
+	@Value("${reporting.service.queue.metadata}")
 	String metadataQueueName;
 	
 	@Value("${reporting.worker.queue.service-alert}")

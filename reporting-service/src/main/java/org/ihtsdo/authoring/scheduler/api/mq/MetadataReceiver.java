@@ -16,7 +16,7 @@ public class MetadataReceiver {
 	@Autowired
     ScheduleService service;
 	
-	@JmsListener(destination = "${schedule.manager.queue.metadata}")
+	@JmsListener(destination = "${reporting.service.queue.metadata}")
 	public void receiveMessage(JobMetadata metadata) {
 		LOGGER.info("Received metadata for {} jobs", metadata.getJobTypes().size());
 		service.processMetadata(metadata);

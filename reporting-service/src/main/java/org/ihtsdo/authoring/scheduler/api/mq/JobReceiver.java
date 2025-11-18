@@ -11,7 +11,7 @@ public class JobReceiver {
 	@Autowired
     ScheduleService service;
 
-	@JmsListener(destination = "${schedule.manager.queue.response}")
+	@JmsListener(destination = "${reporting.service.queue.response}")
 	public void receiveMessage(JobRun jobRun) {
 		service.processResponse(jobRun);
 	}

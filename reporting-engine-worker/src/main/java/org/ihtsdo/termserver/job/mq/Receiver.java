@@ -17,7 +17,7 @@ public class Receiver {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Receiver.class);
 
-	@JmsListener(destination = "${schedule.manager.queue.request}")
+	@JmsListener(destination = "${reporting.service.queue.request}")
 	public void receiveMessage(JobRun jobRun) {
 		String cookieStart = "AuthToken Missing";
 		if (!StringUtils.isEmpty(jobRun.getAuthToken()) && jobRun.getAuthToken().length() > 20) {

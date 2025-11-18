@@ -19,13 +19,13 @@ This document explains **how to run SRE locally** and the **engineering best-pra
 ```mermaid
 flowchart TD
     UI["Web UI / CLI / API Consumers"] --> Scheduler
-    Scheduler["Schedule-Manager (REST/API)"] -->|REST & WebSocket| Worker["Reporting-Engine-Worker"]
+    Service["Reporting-Service (REST/API)"] -->|REST & WebSocket| Worker["Reporting-Engine-Worker"]
     Worker -->|JMS| ActiveMQ[(ActiveMQ Broker)]
     Worker -->|REST| Snowstorm[(Snowstorm Terminology Server)]
-    Scheduler -->|SQL| MySQL[(MySQL 8.*)]
+    Service -->|SQL| MySQL[(MySQL 8.*)]
     Worker -->|S3 SDK| S3[(AWS S3)]
-    Scheduler -->|Config| Consul[(Consul)]
-    Scheduler -->|Secrets| Vault[(Hashicorp Vault)]
+    Service -->|Config| Consul[(Consul)]
+    Service -->|Secrets| Vault[(Hashicorp Vault)]
 ```
 
 <br/>
@@ -35,30 +35,30 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
+    participant Service
     participant MySQL
     participant ActiveMQ
     participant Worker
     participant Snowstorm
     participant S3
     User->>Scheduler: Trigger Report (REST/CLI)
-    Scheduler->>MySQL: Persist job & audit
-    Scheduler--)ActiveMQ: Publish report.jobs event
+    Service->>MySQL: Persist job & audit
+    Service--)ActiveMQ: Publish report.jobs event
     ActiveMQ-->>Worker: Consume job message
     Worker->>Snowstorm: Fetch necessary terminology data
     Worker->>S3: Upload intermediate / final artefacts
     Worker-->>ActiveMQ: Job status updates
     ActiveMQ-->>Scheduler: Asynchronous status updates
-    Scheduler-->>User: Subscribe / poll for progress
+    Service-->>User: Subscribe / poll for progress
 ```
 
 Key points:
 * **Stateless** services – job state lives in the DB or external stores, enabling horizontal scalability.
 * **Spring Scheduling, JMS & WebSocket** power asynchronous report generation and client notifications.
 * **Module-oriented** – the project is split into three independent Spring Boot applications:
-  * **`script-engine`** – rich library of Groovy/Java scripts for content analysis & fixes.
+  * **`reporting-core`** – library for working with snapshots in memory
   * **`reporting-engine-worker`** – headless worker that executes scripts on demand.
-  * **`schedule-manager`** – REST API & UI-facing facade that schedules work and persists metadata.
+  * **`reporting-service`** – REST API & UI-facing facade that schedules work and persists metadata.
 * Each module can be packaged as a fat **JAR** or a Debian **.deb** for production deployment under `supervisord`.
 
 ---
@@ -80,18 +80,17 @@ Key points:
 
 ```
 reporting-engine/
-  script-engine/               ← Core script library & CLI helpers
+  reporting-core/               ← Core library for building snapshots in memory
   reporting-engine-worker/     ← Worker microservice processing jobs
-  schedule-manager/            ← REST API & scheduling service
+  reporting-service/            ← REST API for continuously available database view
   docs/                        ← Additional documentation & HOWTOs
   pom.xml                      ← Parent Maven build descriptor
 ```
 
 Module conventions:
-* `scripting`             Domain-specific Groovy/Java scripts (under `script-engine/.../scripting`).
+* `scripting`             Domain-specific Groovy/Java scripts (under `reporting-core/.../scripting`).
 * `reports`               Pre-packaged report definitions.
-* `fixes`                 Automated content-fix scripts.
-* `rest`                  Spring MVC controllers and DTOs (schedule-manager).
+* `rest`                  Spring MVC controllers and DTOs (reporting-service).
 * `service`               Business logic, services & repositories.
 * `util`                  General-purpose helpers.
 
@@ -103,7 +102,7 @@ Module conventions:
 
 1. **JDK 17** (as defined by the parent BOM)
 2. **Maven 3.8+** (wrapper provided)
-3. **MySQL 8** running on `localhost:3306` with a database called `schedule_manager`.
+3. **MySQL 8** running on `localhost:3306` with a database called `reporting_service`.
 4. **ActiveMQ 5.x** (an embedded broker starts automatically for local dev, but external brokers are recommended for JMS testing).
 5. (Optional) **Snowstorm**, **Consul** & **Vault** if you want to mirror a production-like setup.
 
@@ -126,11 +125,11 @@ cd reporting-engine
 ### 4.3  Configuration
 
 1. Copy the default `application.properties` file from each module to an `*-local.properties` variant (already `.gitignored`).  
-   Example for *schedule-manager*:
+   Example for *reporting-service*:
    ```properties
    spring.datasource.username=<your-db-user>
    spring.datasource.password=<your-db-pwd>
-   schedule.manager.terminology.server.uri=http://localhost:8080/snowstorm/snomed-ct/
+   reporting.service.terminology.server.uri=http://localhost:8080/snowstorm/snomed-ct/
    re.jms.queue.prefix=local-re
    re.environment.shortname=local
    ```
@@ -141,7 +140,7 @@ cd reporting-engine
 ```bash
 # Start the Scheduler API
 java -Xms512m -Xmx2g \
-     -jar schedule-manager/target/schedule-manager-<VERSION>.jar \
+     -jar reporting-service/target/reporting-service-<VERSION>.jar \
      --server.port=8089 \
      --spring.profiles.active=local
 
@@ -151,7 +150,7 @@ java -Xms512m -Xmx2g \
      --spring.profiles.active=local
 ```
 
-Swagger UI for the API will be available at <http://localhost:8089/schedule-manager/swagger-ui/index.html>.
+Swagger UI for the API will be available at <http://localhost:8089/reporting-service/swagger-ui/index.html>.
 
 ---
 
@@ -172,7 +171,7 @@ Each module can run standalone:
 ```bash
 java -Xms512m -Xmx4g \
      -Dspring.profiles.active=prod \
-     -jar schedule-manager-<VERSION>.jar
+     -jar reporting-service-<VERSION>.jar
 ```
 
 ### 6.2  Debian package
@@ -180,7 +179,7 @@ java -Xms512m -Xmx4g \
 1. `./mvnw -Pdeb package`
 2. Copy the resulting `.deb` from each module to your server.
 3. ```bash
-   sudo dpkg -i schedule-manager-<VERSION>-all.deb
+   sudo dpkg -i reporting-service-<VERSION>-all.deb
    sudo systemctl restart supervisor        # if applicable
    ```
    Configuration lives under `/opt/<module>/` and logs under `/var/log/re/`.

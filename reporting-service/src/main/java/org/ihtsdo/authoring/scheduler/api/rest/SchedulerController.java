@@ -44,7 +44,7 @@ public class SchedulerController {
 	@Autowired
 	private BatchTools batchTools;
 
-	@Value("${schedule.manager.terminology.server.uri}")
+	@Value("${reporting.service.terminology.server.uri}")
 	String terminologyServerUrl;
 
 	private Map<String, List<JobCategory>> jobCache = new HashMap<>();

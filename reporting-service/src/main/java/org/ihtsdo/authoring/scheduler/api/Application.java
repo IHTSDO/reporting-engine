@@ -65,9 +65,9 @@ public class Application {
 	}
 
 	@Bean
-	public ModuleStorageCoordinator moduleStorageCoordinator(@Autowired ResourceManager resourceManager, @Value("${schedule.manager.terminology.server.uri}") final String terminologyServerUrl) {
+	public ModuleStorageCoordinator moduleStorageCoordinator(@Autowired ResourceManager resourceManager, @Value("${reporting.service.terminology.server.uri}") final String terminologyServerUrl) {
 		if (StringUtils.isEmpty(terminologyServerUrl)) {
-			throw new IllegalArgumentException("No value supplied for schedule.manager.terminology.server.uri in application.properties file (or Consul)");
+			throw new IllegalArgumentException("No value supplied for reporting.service.terminology.server.uri in application.properties file (or Consul)");
 		}
 		
 		return switch (Objects.requireNonNull(getEnvironment(terminologyServerUrl))) {

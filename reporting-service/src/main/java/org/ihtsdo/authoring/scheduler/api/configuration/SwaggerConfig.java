@@ -20,7 +20,7 @@ public class SwaggerConfig {
     @Bean
     public GroupedOpenApi apiDocs() {
         return GroupedOpenApi.builder()
-                .group("schedule-manager")
+                .group("reporting-service")
                 .packagesToScan("org.ihtsdo.snowowl.authoring.scheduler.api")
                 // Don't show the error or root endpoints in Swagger
                 .pathsToExclude("/error", "/")
