@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-
 public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
@@ -166,7 +165,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
-		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		Map<String, Acceptability> aMap = new HashMap<>();
 		for (String dialect : dialects) {
 			aMap.put(dialect, acceptability);
 		}
@@ -174,7 +173,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 	
 	public static Map<String, Acceptability> createPreferredAcceptableMap(String preferredRefset, String acceptableRefset) {
-		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		Map<String, Acceptability> aMap = new HashMap<>();
 		aMap.put(preferredRefset, Acceptability.PREFERRED);
 		aMap.put(acceptableRefset, Acceptability.ACCEPTABLE);
 		return aMap;
@@ -226,23 +225,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static Map<String, Acceptability> mergeAcceptabilityMap (Description left,Description right) {
 		return mergeAcceptabilityMap(left.getAcceptabilityMap(), right.getAcceptabilityMap());
 	}
-		
-	
-	/**
-	 * 2 points for preferred, 1 point for acceptable
-	 */
-	public static int accetabilityScore (Map<String, Acceptability> acceptabilityMap) {
-		int score = 0;
-		for (Acceptability a : acceptabilityMap.values()) {
-			if (a.equals(Acceptability.PREFERRED)) {
-				score += 2;
-			} else if (a.equals(Acceptability.ACCEPTABLE)) {
-				score += 1;
-			}
-		}
-		return score;
-	}
-	
+
 	public static String initialCapitalOnly (String str) {
 		if (str == null || str.isEmpty() || str.length() < 2) {
 			return str;
@@ -314,7 +297,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			outputFile = new File(zipFileName);
 			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(outputFile));
 			String rootLocation = dirToZip.getAbsolutePath() + File.separator;
-			LOGGER.info("Creating archive : " + zipFileName + " from files found in " + rootLocation);
+			LOGGER.info("Creating archive : {} from files found in {}", zipFileName, rootLocation);
 			addDir(rootLocation, dirToZip, out);
 			out.close();
 		} catch (IOException e) {
@@ -350,16 +333,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			in.close();
 		}
 	}
-	
-	public static boolean conceptHasActiveState(Concept c, ActiveState a) {
-		boolean hasActiveState = false;
-		if (a.equals(ActiveState.BOTH) ||
-			(a.equals(ActiveState.ACTIVE) && c.isActiveSafely()) ||
-			(a.equals(ActiveState.INACTIVE) && !c.isActiveSafely())) {
-			hasActiveState = true;
-		}
-		return hasActiveState;
-	}
+
 	//TODO See if the JSON will allow us to create the abstract "Component" which allows us to do this with one function
 	public static boolean descriptionHasActiveState(Description d, ActiveState a) {
 		boolean hasActiveState = false;
@@ -501,68 +475,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 	}
 
-	public static ChangeStatus promoteLangRefsetEntries(Description d, String[] dialects) throws TermServerScriptException {
-		//For each dialect check if we have an active existing entry that could be modified, 
-		//inactive entry that could be activated and/or modified
-		//or add a new entry
-		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
-		for (String thisDialectSctid : dialects) {
-			//Do we have an active entry we could change?
-			List<LangRefsetEntry> langRefsetEntries = d.getLangRefsetEntries(ActiveState.ACTIVE, thisDialectSctid);
-			if (langRefsetEntries.size() >1) {
-				throw new TermServerScriptException("Description has more than one active langrefset entry for a given dialect: " + d);
-			}
-			changeStatus = promoteLangRefsetEntry(d, langRefsetEntries);
-			//Have we achieved a PT?  Activate inactive term if not.
-			if (changeStatus.equals(ChangeStatus.NO_CHANGE_MADE)) {
-				changeStatus = promoteLangRefsetEntry(d, d.getLangRefsetEntries(ActiveState.INACTIVE, thisDialectSctid));
-			}
-			//Still no?  Create a new entry
-			if (changeStatus.equals(ChangeStatus.NO_CHANGE_MADE)) {
-				createLangRefsetEntry(d,thisDialectSctid, SCTID_PREFERRED_TERM);
-				changeStatus = ChangeStatus.CHANGE_MADE;
-			}
-		}
-		return changeStatus;
-	}
-
-	private static void createLangRefsetEntry(Description d,
-			String thisDialectSctid, String AcceptabilitySctid) {
-		LangRefsetEntry l = new LangRefsetEntry();
-		l.setId(UUID.randomUUID().toString());
-		l.setActive(true);
-		l.setModuleId(d.getModuleId());
-		l.setRefsetId(thisDialectSctid);
-		l.setReferencedComponentId(d.getDescriptionId());
-		l.setDirty();
-		d.getLangRefsetEntries().add(l);
-	}
-
-	private static ChangeStatus promoteLangRefsetEntry(Description d, List<LangRefsetEntry> langRefsetEntries) throws TermServerScriptException {
-		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
-		for (LangRefsetEntry thisDialectEntry : langRefsetEntries) {
-			if (!thisDialectEntry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
-				thisDialectEntry.setAcceptabilityId(SCTID_PREFERRED_TERM);
-				thisDialectEntry.setEffectiveTime(null);
-				thisDialectEntry.setActive(true);
-				thisDialectEntry.isDirty();
-				changeStatus = ChangeStatus.CHANGE_MADE;
-				break;
-			} else {
-				if (!thisDialectEntry.isActiveSafely()) {
-					thisDialectEntry.setEffectiveTime(null);
-					thisDialectEntry.setActive(true);
-					changeStatus = ChangeStatus.CHANGE_MADE;
-					break;
-				} else {
-					//dialect is preferred and is alreayd active so no change needed. Say this so that we don't try anything else
-					changeStatus = ChangeStatus.CHANGE_NOT_REQUIRED;
-				}
-			}
-		}
-		return changeStatus;
-	}
-	
 	public static CaseSignificance translateCaseSignificance(String caseSignificanceIndicatorStr) throws TermServerScriptException {
 		switch (caseSignificanceIndicatorStr) {
 			case "ENTIRE_TERM_CASE_SENSITIVE" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
@@ -1432,34 +1344,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return true;
 	}
 
-	public static Concept getHistoricalParent(Concept c) throws TermServerScriptException {
-		if (c.isActiveSafely()) {
-			throw new TermServerScriptException("Attempted to find historical parent of an active concept: " + c);
-		}
-		//TODO Sort the parent relationships by time so we get the one most recently inactivated
-		List<Concept> parents = c.getRelationships().stream()
-				.filter(r -> r.getType().equals(IS_A))
-				.map(r -> r.getTarget())
-				.collect(Collectors.toList());
-		
-		//Return the first one that is still active
-		for (Concept parent : parents) {
-			if (parent.isActiveSafely()) {
-				return parent;
-			}
-		}
-		
-		//Otherwise, find the parent's parent and see if that's 
-		//This could be done as a breadth first recursive search
-		for (Concept parent : parents) {
-			Concept grandParent = getHistoricalParent(parent);
-			if (grandParent != null) {
-				return grandParent;
-			}
-		}
-		return null;
-	}
-
 	public static String populateFSNs(String stl) throws TermServerScriptException {
 		//Loop through string and replace any numbers that aren't followed by a pipe
 		//with the full string
@@ -1570,16 +1454,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return matching;
 	}
 
-	public static int notNullCount(Concept[] concepts) {
-		int notNullCount = 0;
-		for (Concept concept : concepts) {
-			if (concept != null) {
-				notNullCount++;
-			}
-		}
-		return notNullCount;
-	}
-
 	public static int appearances(Concept[] concepts, Concept conceptOfInterest) {
 		int appearances = 0;
 		for (Concept concept : concepts) {
@@ -1641,9 +1515,14 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return findMatchingOrDescendantGroups(c,g,charType, false);
 	}
 
-	private static List<RelationshipGroup> findMatchingOrDescendantGroups(Concept c, RelationshipGroup g, CharacteristicType charType, boolean returnFirst) throws TermServerScriptException {
-		List<RelationshipGroup> matchingGroups = new  ArrayList<>();
-		nextPotentialMatch:
+	private static List<RelationshipGroup> findMatchingOrDescendantGroups(
+			Concept c,
+			RelationshipGroup g,
+			CharacteristicType charType,
+			boolean returnFirst) throws TermServerScriptException {
+
+		List<RelationshipGroup> matchingGroups = new ArrayList<>();
+
 		for (RelationshipGroup potentialMatch : c.getRelationshipGroups(charType)) {
 			//When considering descendant groups, it might be that some potentially matching group has additional attributes
 			//ie is more specific, and that's OK, we can still match.   So potential match can have more attributes than g, but not less
@@ -1658,6 +1537,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 				}
 			}
 		}
+
 		return matchingGroups;
 	}
 
@@ -2007,15 +1887,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		.sorted(SnomedUtils::compareSemTagFSN)
 		.toList();
 	}
-	
-	public static List<Concept> sortInactive(Collection<Concept> superSet) {
-		//We're going to sort on top level hierarchy, then alphabetically
-		return superSet.stream()
-		.filter(c -> !c.isActiveSafely())
-		.sorted(SnomedUtils::compareSemTagFSN)
-		.toList();
-	}
-	
+
 	public static int compareSemTagFSN(Concept c1, Concept c2) {
 		String[] fsnSemTag1 = SnomedUtilsBase.deconstructFSN(c1.getFsn());
 		String[] fsnSemTag2 = SnomedUtilsBase.deconstructFSN(c2.getFsn());
@@ -2091,11 +1963,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		
 		return false;
 	}
-	
-	public static boolean hasChangesSince(Component c, String fromET) {
-		return hasChangesSince(c, fromET, true);
-	}
-	
+
 	public static boolean hasChangesSince(Component c, String fromET, boolean inclusiveDate) {
 		if (StringUtils.isEmpty(c.getEffectiveTime())) {
 			return true;
@@ -2281,20 +2149,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return false;
 	}
 
-	public static int downgradeTermToAcceptable(Description d) {
-		//Get a list of all refsets that we have acceptability for and ensure
-		//that it's acceptable
-		int changesMade = 0;
-		Map<String, Acceptability> acceptablityMap = d.getAcceptabilityMap();
-		for (String refsetId : acceptablityMap.keySet()) {
-			if (acceptablityMap.get(refsetId).equals(Acceptability.PREFERRED)) {
-				changesMade++;
-				acceptablityMap.put(refsetId, Acceptability.ACCEPTABLE);
-			}
-		}
-		return changesMade;
-	}
-
 	public static int upgradeTermToPreferred(Description d) {
 		//Get a list of all refsets that we have acceptability for and ensure
 		//that it's acceptable
@@ -2320,17 +2174,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		}
 		return false;
 	}
-	
-	public static Concept getHierarchySafely(GraphLoader gl, Concept c) {
-		try {
-			return getHierarchy(gl, c);
-		} catch (TermServerScriptException e) {
-			LOGGER.error("Failed to determine hierarchy of " + c, e);
-		}
-		return NULL_CONCEPT;
-	}
-		
-	
+
 	public static Concept getHierarchy(GraphLoader gl, Concept c) throws TermServerScriptException {
 		TransitiveClosure tc = gl.getTransitiveClosure();
 		
@@ -2504,33 +2348,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return false;
 	}
 
-	/**Initial very basic implementation will not consider grouping 
-	 */
-	public static String getModelDifferences(Concept lhs, Concept rhs, CharacteristicType charType) {
-		String differences = "";
-		for (Relationship lhsR : lhs.getRelationships(charType, ActiveState.ACTIVE)) {
-			//Do we have this relationship on the RHS?
-			if (rhs.getRelationships(charType, lhsR.getType(), lhsR.getTarget(), ActiveState.ACTIVE).isEmpty()) {
-				differences += lineFeed(differences) + "Missing: " + lhsR.toShortPrettyString();
-			}
-		}
-		//Now do we have any on the other side that are considered 'extra'?
-		for (Relationship rhsR : rhs.getRelationships(charType, ActiveState.ACTIVE)) {
-			//Do we have this relationship on the RHS?
-			if (lhs.getRelationships(charType, rhsR.getType(), rhsR.getTarget(), ActiveState.ACTIVE).isEmpty()) {
-				differences += lineFeed(differences) + "Additional: " + rhsR.toShortPrettyString();
-			}
-		}
-		return differences;
-	}
-
-	private static String lineFeed(String str) {
-		if (!str.isEmpty()) {
-			return ",\n";
-		}
-		return "";
-	}
-	
 	public static String toExpression(DefinitionStatus definitionStatus, List<RelationshipGroup> groups) {
 		String expression = definitionStatus.equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
 		
@@ -2760,10 +2577,6 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	private static boolean hasSingleType(Component c) {
 		return c instanceof AxiomEntry || c instanceof Concept || c instanceof AlternateIdentifier;
-	}
-
-	public static String translateActiveStateToRF2(Component c) {
-		return c.isActiveSafely() ? "1" : "0";
 	}
 
 	public static List<String> extractSCTIDs(String input) {
