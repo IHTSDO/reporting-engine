@@ -1633,30 +1633,69 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static RelationshipGroup findMatchingOrDescendantGroup(Concept c, RelationshipGroup g, CharacteristicType charType) throws TermServerScriptException {
+		List<RelationshipGroup> matchingGroups = findMatchingOrDescendantGroups(c,g,charType, true);
+		return matchingGroups.isEmpty() ? null : matchingGroups.get(0);
+	}
+
+	public static List<RelationshipGroup> findMatchingOrDescendantGroups(Concept c, RelationshipGroup g, CharacteristicType charType) throws TermServerScriptException {
+		return findMatchingOrDescendantGroups(c,g,charType, false);
+	}
+
+	private static List<RelationshipGroup> findMatchingOrDescendantGroups(Concept c, RelationshipGroup g, CharacteristicType charType, boolean returnFirst) throws TermServerScriptException {
+		List<RelationshipGroup> matchingGroups = new  ArrayList<>();
 		nextPotentialMatch:
 		for (RelationshipGroup potentialMatch : c.getRelationshipGroups(charType)) {
-			if (potentialMatch.size() == g.size()) {
-				nextRelationship:
-				for (IRelationship r1 : potentialMatch.getIRelationships()) {
-					for (IRelationship r2 : g.getIRelationships()) {
-						if (r1.getType().equals(r2.getType()) || r1.getType().getAncestors(RF2Constants.NOT_SET).contains(r2.getType())) {
-							if (r1.isConcrete() && r2.isConcrete()) {
-								if (r1.getConcreteValue().equals(r2.getConcreteValue())) {
-									continue nextRelationship;
-								}
-							} else if (r1.getTarget().equals(r2.getTarget()) || r1.getTarget().getAncestors(RF2Constants.NOT_SET).contains(r2.getTarget())) {
-								continue nextRelationship;
-							}
-						}
-					}
-					//No match found for r1 in g.  Try next group.
-					continue nextPotentialMatch;
+			//When considering descendant groups, it might be that some potentially matching group has additional attributes
+			//ie is more specific, and that's OK, we can still match.   So potential match can have more attributes than g, but not less
+			if (potentialMatch.size() < g.size()) {
+				continue;
+			}
+
+			if (groupMatchesOrIsMoreSpecific(potentialMatch, g)) {
+				matchingGroups.add(potentialMatch);
+				if (returnFirst) {
+					return matchingGroups;
 				}
-				//All r1s found a match - we've found a group match
-				return potentialMatch;
 			}
 		}
-		return null;
+		return matchingGroups;
+	}
+
+	private static boolean groupMatchesOrIsMoreSpecific(RelationshipGroup potentialMatch, RelationshipGroup targetGroup) throws TermServerScriptException {
+		for (IRelationship r1 : targetGroup.getIRelationships()) {
+			if (!relationshipHasMatch(r1, potentialMatch)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean relationshipHasMatch(IRelationship r1, RelationshipGroup potentiallyMatchingGroup) throws TermServerScriptException {
+		for (IRelationship potentiallyMatchingRelationship : potentiallyMatchingGroup.getIRelationships()) {
+			if (typesMatchOrDescendant(potentiallyMatchingRelationship, r1) && valuesMatchOrDescendant(potentiallyMatchingRelationship, r1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean typesMatchOrDescendant(IRelationship potentiallyMatchingRelationship, IRelationship r2) throws TermServerScriptException {
+		return potentiallyMatchingRelationship.getType().equals(r2.getType()) || getLocalMemoryAncestors(potentiallyMatchingRelationship.getType()).contains(r2.getType());
+	}
+
+	private static Set<Concept> getLocalMemoryAncestors(Concept c) throws TermServerScriptException {
+		//We might have been fed a concept loaded from TS, so relationships are not backed by in-memory structure.
+		//revert to local memory concept before querying ancestors
+		Concept localMemory = GraphLoader.getGraphLoader().getConcept(c.getId());
+		return localMemory.getAncestors(RF2Constants.NOT_SET);
+	}
+
+	private static boolean valuesMatchOrDescendant(IRelationship r1, IRelationship r2) throws TermServerScriptException {
+		if (r1.isConcrete() && r2.isConcrete()) {
+			return r1.getConcreteValue().equals(r2.getConcreteValue());
+		}
+
+		return r1.getTarget().equals(r2.getTarget()) || getLocalMemoryAncestors(r1.getTarget()).contains(r2.getTarget());
 	}
 
 	public static boolean isFreeGroup(CharacteristicType charType, Concept c, int checkIfFree) {
@@ -2564,7 +2603,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static Concept findDeepestConcept(Collection<Concept> concepts, boolean ensureUnique) throws TermServerScriptException {
-		if (concepts == null || concepts.size() == 0) {
+		if (concepts == null || concepts.isEmpty()) {
 			throw new TermServerScriptException("Request to find maximum depth, but no set of concepts given to work with");
 		}
 		
@@ -2622,10 +2661,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	public static RelationshipTemplate createRelationshipTemplate(GraphLoader gl, String c1, String c2) throws TermServerScriptException {
-		return new  RelationshipTemplate(gl.getConcept(c1), gl.getConcept(c2));
+		return new RelationshipTemplate(c1 == null ? null : gl.getConcept(c1), c2 == null ? null : gl.getConcept(c2));
 	}
 
-	public static Set<Concept> getHistoricalAssocationTargets(Concept c, GraphLoader gl) throws TermServerScriptException {
+	public static Set<Concept> getHistoricalAssociationTargets(Concept c, GraphLoader gl) throws TermServerScriptException {
 		Set<Concept> targets = new HashSet<>();
 		for (AssociationEntry h : c.getAssociationEntries(ActiveState.ACTIVE)) {
 			targets.add(gl.getConcept(h.getTargetComponentId()));
@@ -2634,7 +2673,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 
 	//The array structure returned as pairs shows components from the left either
-	//changed or not present on the right, and visa versa.
+	//changed or not present on the right, and vice versa.
 	public static List<ComponentComparisonResult> compareComponents(Concept left, Concept right, Set<ComponentType> skipForComparison) {
 		List<ComponentComparisonResult> changeSet = new ArrayList<>();
 		//Find a match for every component, or list it.  Left is existing concept, right is the new one
