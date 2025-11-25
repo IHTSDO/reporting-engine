@@ -2,6 +2,6 @@
   "name": "[CT/MRI] guided [procedure] of [morphology] of [body structure] (procedure)",
   "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=38244537",
   "version": 2,
-  "domain": "<< 363679005 |Imaging (procedure)| : 260686004 |Method (attribute)| = ( << 312251004 |Computed tomography imaging - action (qualifier value)| OR << 312250003 |Magnetic resonance imaging - action (qualifier value)|",
+  "domain": "<< 363679005 |Imaging (procedure)| : 260686004 |Method (attribute)| = ( << 312251004 |Computed tomography imaging - action (qualifier value)| OR << 312250003 |Magnetic resonance imaging - action (qualifier value)| )",
   "logicalTemplate": "71388002 |Procedure (procedure)| : [[~0..1]]{[[~0..1]]  363702006 |Has focus (attribute)|  = [[+id(<<  404684003 |Clinical finding (finding)|  OR <<  71388002 |Procedure (procedure)| ) @focus]]}, [[~1..1]]{ [[~1..1]]  260686004 |Method (attribute)|  =  312250003 |Magnetic resonance imaging - action (qualifier value)| ,[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<<  442083009 |Anatomical or acquired body structure (body structure)| ) @bodyStructure]],[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  385420005 |Contrast media (substance)| ) @contrast]]}"
 }

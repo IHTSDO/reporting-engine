@@ -238,8 +238,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 			populateTemplates(null, "templates/morphologies/Retention.json");
 
-			populateTemplates(null, "templates/procedures/MRI.json");
-
 			populateTemplates(null, "templates/morphologies/Calculus.json");
 
 			populateTemplates(null, "templates/morphologies/Lateral displacement.json");
@@ -259,8 +257,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 					"templates/drugs/CD precise discrete.json",
 					"templates/drugs/CD precise continuous.json");
 
-			populateTemplates(null, "templates/procedures/CT Guided.json");
-
 			populateTemplates(null, "templates/morphologies/Misalignment.json");
 
 			populateTemplates(null, "templates/morphologies/Generic Morphologies.json");
@@ -271,31 +267,13 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 			populateTemplates(null, "templates/Poisoning.json");
 
-			populateTemplates(null, "templates/procedures/Stoma.json");
-
-			populateTemplates(null, "templates/procedures/CT of Body Structure with contrast.json");
-
-			populateTemplates(null, "templates/procedures/CT of Body Structure.json");
-
-			populateTemplates(null, "templates/procedures/CT Guided.json");
-
 			populateTemplates(null, "templates/Muscular dystrophy.json");
 
 			populateTemplates(null, "templates/Craniofacial cleft.json");
 
 			populateTemplates(null, "templates/Measurement.json");
 
-			populateTemplates(null, "templates/procedures/Anthrotomy.json");
-
-			populateTemplates(null, "templates/procedures/Angiography.json");
-
 			populateTemplates(null, "templates/Allergic Disease.json");
-
-			populateTemplates(null, "templates/procedures/Needle Biopsy.json");
-
-			populateTemplates(null, "templates/procedures/Imaging Guided Biopsy.json");
-
-			populateTemplates(null, "templates/procedures/Excision of cyst.json");
 
 			populateTemplates(null, "templates/Substance abuse.json");
 
@@ -305,28 +283,31 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 			populateTemplates(null, "templates/morphologies/Dislocation.json");
 
-			populateTemplates(null, "templates/procedures/InsertionOfStent.json");
-
 			populateTemplates(null, "templates/Toxic due to plant.json");
-
-			populateTemplates(null, "templates/procedures/Intubation.json");
 
 			populateTemplates(null, "templates/finding/Measurement Finding.json");
 
+			//Procedures
+			populateTemplates(null, "templates/procedures/Angiography.json");
+			populateTemplates(null, "templates/procedures/Anthrotomy.json");
+			populateTemplates(null, "templates/procedures/Construction of stoma.json");
+			populateTemplates(null, "templates/procedures/CT Guided.json");
+			populateTemplates(null, "templates/procedures/CT MRI of Morphology.json");
+			populateTemplates(null, "templates/procedures/CT of Body Structure with contrast.json");
+			populateTemplates(null, "templates/procedures/CT of Body Structure.json");
+			populateTemplates(null, "templates/procedures/Decompression.json");
+			populateTemplates(null, "templates/procedures/Drainage.json");
 			populateTemplates(null, "templates/procedures/Endoscopy.json");
-
+			populateTemplates(null, "templates/procedures/Excision of cyst.json");
+			populateTemplates(null, "templates/procedures/Exteriorization.json");
+			populateTemplates(null, "templates/procedures/Imaging Guided Biopsy.json");
+			populateTemplates(null, "templates/procedures/InsertionOfStent.json");
 			populateTemplates(null, "templates/procedures/Intubation.json");
-
+			populateTemplates(null, "templates/procedures/MRI.json");
+			populateTemplates(null, "templates/procedures/Needle Biopsy.json");
 			populateTemplates(null, "templates/procedures/Periodontal.json");
-			populateTemplates(null,"templates/finding/Measurement Finding.json");
-			populateTemplates(null,"templates/procedures/Endoscopy.json");
-			populateTemplates(null,"templates/procedures/Periodontal.json");
-			populateTemplates(null,"templates/procedures/Exteriorization.json");
-			populateTemplates(null,"templates/procedures/Construction of stoma.json");
-			populateTemplates(null,"templates/procedures/Radiotherapy.json");
-			populateTemplates(null,"templates/procedures/Drainage.json");
-			populateTemplates(null,"templates/procedures/Exteriorization.json");
-			populateTemplates(null,"templates/procedures/Decompression.json");
+			populateTemplates(null, "templates/procedures/Radiotherapy.json");
+			populateTemplates(null, "templates/procedures/Stoma.json");
 
 
 			//Do this one last to pick up whatever is left under Disease

@@ -16,7 +16,6 @@ import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.*;
 
 /**
@@ -53,7 +52,7 @@ public class TemplateServiceClient {
 		}
 	}
 	
-	public ConceptTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
+	public ConceptTemplate loadLogicalTemplate (String templateName) {
 		ResponseEntity<List<ConceptTemplate>> response = restTemplate.exchange(
 				TEMPLATES + templateName,
 				HttpMethod.GET,
@@ -63,7 +62,7 @@ public class TemplateServiceClient {
 		return (templates == null || templates.isEmpty()) ? null : templates.get(0);
 	}
 	
-	public LogicalTemplate parseLogicalTemplate (String logicalTemplateStr) throws JsonParseException, JsonMappingException, IOException {
+	public LogicalTemplate parseLogicalTemplate (String logicalTemplateStr) throws IOException {
 		return service.parseTemplate(logicalTemplateStr);
 	}
 	
