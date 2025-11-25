@@ -19,12 +19,17 @@ public class EclCache implements ScriptConstants {
 	private static final Map <String, EclCache> branchCaches = new HashMap<>();
 	private static final  int PAGING_LIMIT = 1000;
 
+	//Now if we have a simple ECL then we could use in-memory lookup which is cheap, but we also might have a lot
+	//of these, so cache that anyway even so, but only up to a limit so we're not caching eg all of clinical findings
+	private static final int DO_CACHE_AFTER_IN_MEMORY_LOOKUP_LIMIT = Integer.MAX_VALUE;
+
 	private final TermServerClient tsClient;
 	private GraphLoader gl;
 	private boolean quiet = false;
 	private CharacteristicType charType;
 	private final String branch;
-	
+	private Set<Integer> cacheActionAlreadyLogged = new HashSet<>();
+
 	private final Map <String, Collection<Concept>> expansionCache = new HashMap<>();
 
 	public static EclCache getCache(String branch, TermServerClient tsClient, GraphLoader gl, boolean quiet) {
@@ -61,12 +66,36 @@ public class EclCache implements ScriptConstants {
 	}
 	
 	protected Collection<Concept> findConcepts(String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
-		return findConcepts(ecl, useLocalStoreIfSimple, charType);
+		return findConcepts(ecl, useLocalStoreIfSimple, charType, new CacheTelemetry());
+	}
+
+	protected Collection<Concept> findConcepts(String ecl, boolean useLocalStoreIfSimple, CacheTelemetry telemetry) throws TermServerScriptException {
+		Collection<Concept> concepts = findConcepts(ecl, useLocalStoreIfSimple, charType, telemetry);
+
+		//If this is the first time we've seen these results, check for duplicates
+		if (telemetry.dataNewlyStoredInCache) {
+			LOGGER.debug("{} concepts recovered for {}, first time cache storage.", concepts.size(), ecl);
+			//Failure in the pagination can cause duplicates.  Check for this
+			Set<Concept> uniqConcepts = new HashSet<>(concepts);
+			if (uniqConcepts.size() != concepts.size()) {
+				LOGGER.warn("Duplicates detected {} vs {} - identifying...", concepts.size(), uniqConcepts.size());
+				//Work out what the actual duplication is
+				for (Concept c : uniqConcepts) {
+					concepts.remove(c);
+				}
+				for (Concept c : concepts) {
+					LOGGER.warn("Duplicate concept received from ECL: {}", c);
+				}
+				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
+			}
+		}
+		return concepts;
 	}
 	
-	protected Collection<Concept> findConcepts(String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType) throws TermServerScriptException {
+	protected Collection<Concept> findConcepts(String ecl, boolean useLocalStoreIfSimple, CharacteristicType charType, CacheTelemetry telemetry) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
 			LOGGER.warn("EclCache asked to find concepts but no ecl specified.  Returning empty set");
+			telemetry.requestInvalidOrEmpty = true;
 			return new ArrayList<>();
 		}
 		
@@ -84,23 +113,20 @@ public class EclCache implements ScriptConstants {
 			ecl = ecl.substring(1, ecl.length() -1).trim();
 		}
 
-		Collection<Concept> allConcepts = findConcepts(ecl, machineEcl, useLocalStoreIfSimple);
+		Collection<Concept> matchingConcepts = findConcepts(ecl, machineEcl, useLocalStoreIfSimple, telemetry);
 
-		if (allConcepts.isEmpty()) {
-			LOGGER.warn("ECL {} recovered 0 concepts.  Check?", ecl);
+		if (matchingConcepts.isEmpty()) {
+			LOGGER.warn("ECL {} recovered 0 concepts. Check? Invalidating cache.", ecl);
+			telemetry.requestInvalidOrEmpty = true;
 			expansionCache.remove(ecl);
-		} else {
-			//Seeing a transient issue where we're getting 0 concepts back on the first call, and the concepts back on a 
-			//subsequent call.  So for now, don't cache a null response, and we'll sleep / retry
-			//Cache this result
-			expansionCache.put(ecl, allConcepts);
 		}
-		return allConcepts;
+		return matchingConcepts;
 	}
 
-	private Collection<Concept> findConcepts(String ecl, String machineEcl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+	private Collection<Concept> findConcepts(String ecl, String machineEcl, boolean useLocalStoreIfSimple, CacheTelemetry telemetry) throws TermServerScriptException {
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {
+			telemetry.dataRecoveredUsingCache = true;
 			return getCachedConcepts(ecl);
 		} else if (machineEcl.contains(" OR ") && !machineEcl.contains("(")) {
 			//TODO Create class that holds these collections and can
@@ -108,23 +134,37 @@ public class EclCache implements ScriptConstants {
 			Collection<Concept> combinedSet = new HashSet<>();
 			for (String eclFragment : machineEcl.split(" OR ")) {
 				LOGGER.debug("Combining request for: {}", eclFragment);
-				combinedSet.addAll(findConcepts(eclFragment, useLocalStoreIfSimple));
+				combinedSet.addAll(findConcepts(eclFragment, useLocalStoreIfSimple, telemetry));
 			}
+			telemetry.dataNewlyStoredInCache = true;
 			expansionCache.put(ecl, combinedSet);
 			return combinedSet;
 		} else {
-			return recoverConceptsLocallyOrFromTS(ecl, useLocalStoreIfSimple);
+			return recoverConceptsLocallyOrFromTS(ecl, useLocalStoreIfSimple, telemetry);
 		}
 	}
 
-	private Collection<Concept> recoverConceptsLocallyOrFromTS(String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+	private Collection<Concept> recoverConceptsLocallyOrFromTS(String ecl, boolean useLocalStoreIfSimple, CacheTelemetry telemetry) throws TermServerScriptException {
 		boolean localStorePopulated = gl.getAllConcepts().size() > 100;
 		if (useLocalStoreIfSimple && localStorePopulated && ecl.equals("*")) {
+			telemetry.dataRecoveredUsingInMemoryLookup = true;
 			return gl.getAllConcepts();
 		} else if (useLocalStoreIfSimple && localStorePopulated && isSimple(ecl)){
-			return recoverConceptsLocally(ecl);
+			telemetry.dataRecoveredUsingInMemoryLookup = true;
+			Collection<Concept> conceptsRecoveredLocally = recoverConceptsLocally(ecl);
+			//Is this a reasonable amount to cached?
+			if (conceptsRecoveredLocally.size() <= DO_CACHE_AFTER_IN_MEMORY_LOOKUP_LIMIT) {
+				telemetry.dataNewlyStoredInCache = true;
+				expansionCache.put(ecl, conceptsRecoveredLocally);
+			}
+			return conceptsRecoveredLocally;
 		} else {
-			return recoverConceptsFromTS(ecl, charType);
+			telemetry.dataRecoveredUsingInMemoryLookup = false;
+			Collection<Concept> conceptsRecoveredFromTS =  recoverConceptsFromTS(ecl, charType);
+			//Always worth storing data recovered from TS in cache
+			telemetry.dataNewlyStoredInCache = true;
+			expansionCache.put(ecl, conceptsRecoveredFromTS);
+			return conceptsRecoveredFromTS;
 		}
 	}
 
@@ -152,7 +192,12 @@ public class EclCache implements ScriptConstants {
 				throw new IllegalStateException("ECL is not simple: " + ecl);
 			}
 		}
-		LOGGER.debug("Recovered {} concepts for simple ecl from local memory: {}", allConcepts.size(), ecl);
+		//We'll only report these simple local calls the first time
+		Integer eclHash = ecl.hashCode();
+		if (!cacheActionAlreadyLogged.contains(eclHash)) {
+			LOGGER.debug("Recovered {} concepts for simple ecl from local memory: {}", allConcepts.size(), ecl);
+			cacheActionAlreadyLogged.add(eclHash);
+		}
 		return allConcepts;
 	}
 
@@ -203,7 +248,7 @@ public class EclCache implements ScriptConstants {
 					totalRecovered += collection.getItems().size();
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
-						LOGGER.debug("Recovering {} concepts matching '{}'", collection.getTotal(), ecl);
+						LOGGER.debug("Recovering {} concepts from TS matching '{}'", collection.getTotal(), ecl);
 					}
 					//Populate our local collection with either our locally loaded concepts if available, or
 				    //newly created Concept objects if not.
@@ -250,5 +295,12 @@ public class EclCache implements ScriptConstants {
 
 	public String getServer() {
 		return tsClient.getServerUrl();
+	}
+
+	public static class CacheTelemetry {
+		boolean dataRecoveredUsingCache = false;
+		boolean dataRecoveredUsingInMemoryLookup = false;
+		boolean requestInvalidOrEmpty = false;
+		boolean dataNewlyStoredInCache = false;
 	}
 }

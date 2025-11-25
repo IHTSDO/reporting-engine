@@ -1287,27 +1287,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		EclCache cache = EclCache.getCache(branch, tsClient, gl, quiet, charType);
-		boolean wasCached = cache.isCached(ecl);
-		Collection<Concept> concepts = cache.findConcepts(ecl, useLocalStoreIfSimple);
-
-		//If this is the first time we've seen these results, check for duplicates
-		if (!wasCached) {
-			LOGGER.debug("{} concepts recovered for {}", concepts.size(), ecl);
-			//Failure in the pagination can cause duplicates.  Check for this
-			Set<Concept> uniqConcepts = new HashSet<>(concepts);
-			if (uniqConcepts.size() != concepts.size()) {
-				LOGGER.warn("Duplicates detected {} vs {} - identifying...", concepts.size(), uniqConcepts.size());
-				//Work out what the actual duplication is
-				for (Concept c : uniqConcepts) {
-					concepts.remove(c);
-				}
-				for (Concept c : concepts) {
-					LOGGER.warn("Duplicate concept received from ECL: {}", c);
-				}
-				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
-			}
-		}
-		return concepts; 
+		return cache.findConcepts(ecl, useLocalStoreIfSimple);
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {
