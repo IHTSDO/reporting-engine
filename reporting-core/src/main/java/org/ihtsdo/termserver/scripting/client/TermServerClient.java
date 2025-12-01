@@ -13,7 +13,6 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.Status;
-import org.ihtsdo.otf.rest.client.authoringservices.RestyOverrideAccept;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Review;
@@ -35,12 +34,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.*;
 
-import us.monoid.json.*;
-import us.monoid.web.*;
-
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 public class TermServerClient {
 
@@ -52,6 +49,7 @@ public class TermServerClient {
 	private static final String RELATIONSHIPS = "/relationships";
 	private static final String DESCRIPTIONS = "/descriptions";
 	private static final String SEARCH_AFTER = "&searchAfter=";
+	private static final String URL_SEPARATOR = "/";
 
     public enum ExtractType {
 		DELTA, SNAPSHOT, FULL
@@ -77,21 +75,15 @@ public class TermServerClient {
 		gson = gsonBuilder.create();
 	}
 	
-	private final Resty resty;
 	private final RestTemplate restTemplate;
 	private final HttpHeaders headers;
 	private final String serverUrl;
-	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerClient.class);
-	public static boolean supportsIncludeUnpublished = true;
 
 	public TermServerClient(String serverUrl, String cookie) {
 		this.serverUrl = serverUrl;
-		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
-		resty.withHeader("Cookie", cookie);
-		resty.authenticate(this.serverUrl, null,null);
-		
+
 		headers = new HttpHeaders();
 		headers.add("Cookie", cookie);
 		headers.add("Accept", JSON_CONTENT_TYPE);
@@ -166,7 +158,7 @@ public class TermServerClient {
 	public List<CodeSystemVersion> getCodeSystemVersions(String codeSystem) throws TermServerScriptException {
 		try {
 			String url = this.serverUrl + "/codesystems/" + codeSystem + "/versions?showFutureVersions=true";
-			LOGGER.debug("Recovering codesystem versions from " + url);
+			LOGGER.debug("Recovering codesystem versions from {}", url);
 			return restTemplate.getForObject(url, CodeSystemVersionCollection.class).getItems();
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
@@ -186,49 +178,87 @@ public class TermServerClient {
 
 	public Concept createConcept(Concept c, String branchPath) throws TermServerScriptException {
 		try {
-			Concept newConcept =  restTemplate.postForObject(getConceptBrowserPath(branchPath), new HttpEntity<>(c, headers), Concept.class);
-			LOGGER.info("Created concept: " + newConcept + " with " + c.getDescriptions().size() + " descriptions.");
+			Concept newConcept = restTemplate.postForObject(getConceptBrowserPath(branchPath), new HttpEntity<>(c, headers), Concept.class);
+			LOGGER.info("Created concept: {} with {} descriptions.", newConcept, c.getDescriptions().size());
 			return newConcept;
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
 	}
-
 	public Concept updateConcept(Concept c, String branchPath) throws TermServerScriptException {
-		try {
 			Preconditions.checkNotNull(c.getConceptId());
-			boolean updatedOK = false;
-			int tries = 0;
-			while (!updatedOK) {
-				try {
-					ResponseEntity<Concept> response = restTemplate.exchange(
-							getConceptBrowserPath(branchPath) + "/" + c.getConceptId(),
-							HttpMethod.PUT,
-							new HttpEntity<>(c, headers),
-							Concept.class);
-					c = response.getBody();
-					updatedOK = true;
-					LOGGER.info("Updated concept " + c.getConceptId());
-				} catch (RestClientResponseException e) {
-					tries++;
-					if (tries >= MAX_TRIES || e.getStatusCode().value() == 400) {
-						throw new TermServerScriptException("Failed to update concept: " + c + " after " + tries + " attempts due to " + e.getMessage(), e);
-					}
-					LOGGER.debug("Update of concept failed, trying again....",e);
-					Thread.sleep(30*1000); //Give the server 30 seconds to recover
-				}
+			String url = getConceptBrowserPath(branchPath) + URL_SEPARATOR + c.getConceptId();
+
+			ConceptUpdateAction action = new ConceptUpdateAction(c);
+			while (!action.updatedOK) {
+				attemptUpdateConcept(action, url);
 			}
-			return c;
-		} catch (Exception e) {
-			throw new TermServerScriptException(e);
+
+			return action.concept;
+	}
+
+	/**
+	 * Holds the concept, the success flag, and the current attempt count.
+	 */
+	private static class ConceptUpdateAction {
+		Concept concept;
+		boolean updatedOK;
+		int tries;
+
+		ConceptUpdateAction(Concept concept) {
+			this.concept = concept;
+			this.updatedOK = false;
+			this.tries = 0;
 		}
 	}
 
-	public Concept getConcept(String sctid, String branchPath) throws TermServerScriptException {
-		String url = getConceptBrowserPath(branchPath) + "/" + sctid;
+	private void attemptUpdateConcept(ConceptUpdateAction action, String url) throws TermServerScriptException {
+		action.tries++;
+
+		try {
+			ResponseEntity<Concept> response = restTemplate.exchange(
+					url,
+					HttpMethod.PUT,
+					new HttpEntity<>(action.concept, headers),
+					Concept.class
+			);
+			Concept updatedConcept = response.getBody();
+
+			if (updatedConcept == null) {
+				throw new TermServerScriptException("Could not update concept due to null concept received from " + url);
+			}
+
+			// Replace the concept reference in the action object
+			action.concept = updatedConcept;
+			action.updatedOK = true;
+
+			LOGGER.info("Updated concept {}", updatedConcept.getConceptId());
+		} catch (RestClientResponseException e) {
+			if (action.tries >= MAX_TRIES || e.getStatusCode().value() == 400) {
+				throw new TermServerScriptException(
+						"Failed to update concept: " + action.concept + " after " + action.tries + " attempts due to " + e.getMessage(), e
+				);
+			}
+
+			LOGGER.debug("Update of concept failed, trying again....", e);
+			try {
+				Thread.sleep(30 * 1000); // Give the server 30 seconds to recover
+			} catch (InterruptedException ie) {
+				Thread.currentThread().interrupt();
+				throw new TermServerScriptException("Interrupted while waiting to retry", ie);
+			}
+			// updatedOK remains false; the loop will retry
+		}
+	}
+
+
+	public Concept getConcept(String sctid, String branchPath) {
+		String url = getConceptBrowserPath(branchPath) + URL_SEPARATOR + sctid;
 		Concept concept = restTemplate.getForObject(url, Concept.class);
-		concept.setId(concept.getConceptId());  //RestTemplate is not calling the setter so this is cheaper
-		//than writing a custom deserializer
+		//RestTemplate is not calling the setter so this is cheaper than writing a custom deserializer
+		if (concept != null) {
+			concept.setId(concept.getConceptId());
+		}
 		return concept;
 	}
 
@@ -302,15 +332,15 @@ public class TermServerClient {
 	}
 	
 	private String getConceptsPath(String sctId, String branchPath) {
-		return serverUrl + "/" + branchPath + CONCEPTS +"/" + sctId;
+		return serverUrl + URL_SEPARATOR + branchPath + CONCEPTS +URL_SEPARATOR + sctId;
 	}
 
 	private String getRelationshipsPath(String sctId, String branchPath) {
-		return serverUrl + "/" + branchPath + RELATIONSHIPS +"/" + sctId;
+		return serverUrl + URL_SEPARATOR + branchPath + RELATIONSHIPS +URL_SEPARATOR + sctId;
 	}
 
 	private String getConceptsPath(String branchPath) {
-		return serverUrl + "/" + branchPath + CONCEPTS;
+		return serverUrl + URL_SEPARATOR + branchPath + CONCEPTS;
 	}
 
 	private String getConceptBrowserPath(String branchPath) {
@@ -322,27 +352,22 @@ public class TermServerClient {
 	}
 	
 	private String getDescriptionsPath(String id, String branchPath) {
-		return serverUrl + "/" + branchPath + DESCRIPTIONS + "/" + id;
+		return serverUrl + URL_SEPARATOR + branchPath + DESCRIPTIONS + URL_SEPARATOR + id;
 	}
 
 	public String createBranch(String parent, String branchName) throws TermServerScriptException {
 		try {
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("parent", parent);
-			jsonObject.put("name", branchName);
-			resty.json(serverUrl + "/branches", RestyHelper.content(jsonObject, JSON_CONTENT_TYPE));
-			final String branchPath = parent + "/" + branchName;
+			Map<String, Object> body = new HashMap<>();
+			body.put("parent", parent);
+			body.put("name", branchName);
+
+			HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+			restTemplate.postForObject(serverUrl + "/branches", request, Void.class);
+
+			String branchPath = parent + URL_SEPARATOR + branchName;
 			LOGGER.info("Created branch {}", branchPath);
 			return branchPath;
 		} catch (Exception e) {
-			throw new TermServerScriptException(e);
-		}
-	}
-
-	public JSONResource search(String query, String branchPath) throws TermServerScriptException {
-		try {
-			return resty.json(serverUrl + BROWSER + branchPath + "/descriptions?query=" + query);
-		} catch (IOException e) {
 			throw new TermServerScriptException(e);
 		}
 	}
@@ -384,9 +409,7 @@ public class TermServerClient {
 				if (!extractType.equals(ExtractType.SNAPSHOT)) {
 					throw new TermServerScriptException("Export type " + exportType + " not recognised");
 				}
-				if (supportsIncludeUnpublished) {
-					exportRequest.put("includeUnpublished", true);
-				}
+				exportRequest.put("includeUnpublished", true);
 			case UNPUBLISHED:
 				//Now leaving effective date blank if not specified
 				if (effectiveDate != null) {
@@ -437,7 +460,7 @@ public class TermServerClient {
 			throw new TermServerScriptException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}
-	
+
 	public void importArchive(String branchPath, ImportType importType, File archive)
 			throws TermServerScriptException {
 		Map<String, Object> importRequest = new HashMap<>();
@@ -445,15 +468,11 @@ public class TermServerClient {
 		importRequest.put("branchPath", branchPath);
 		LOGGER.info("Creating import job with {}", importRequest);
 		String importJobLocation = initiateImport(importRequest);
-		try {
-			importArchive(importJobLocation, archive);
-		} catch (JSONException|InterruptedException e) {
-			throw new TermServerScriptException("Failure importing to" + importJobLocation, e);
-		}
+		importArchive(importJobLocation, archive);
 	}
 
 
-	private void importArchive(String importJobLocation, File archive) throws JSONException, InterruptedException, TermServerScriptException {
+	private void importArchive(String importJobLocation, File archive) throws TermServerScriptException {
 		LOGGER.info("Importing {} in import job {}", archive, importJobLocation);
 		String url = importJobLocation + "/archive";
 		
@@ -469,9 +488,15 @@ public class TermServerClient {
 		
 		//Now wait for the import to complete
 		while(true) {
-			Thread.sleep(5 * 1000);
+			try {
+				Thread.sleep(5 * 1000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 			Map<String, String> responseJson = restTemplate.getForObject(importJobLocation, Map.class);
-			String responseJsonStr = new JSONObject(responseJson).toString(2);
+			JsonObject jsonObject = gson.toJsonTree(responseJson).getAsJsonObject();
+			String responseJsonStr = gson.toJson(jsonObject); // compact
+
 			//Have we either completed or failed?
 			String status = responseJson.get("status");
 			if (status == null) {
@@ -527,23 +552,23 @@ public class TermServerClient {
 	}
 
 	private String getRefsetMembersUrl(String refSetMemberId, String branch) {
-		return this.serverUrl + "/" + branch + MEMBERS + refSetMemberId;
+		return this.serverUrl + URL_SEPARATOR + branch + MEMBERS + refSetMemberId;
 	}
 
 	private String getRelationshipUrl(String relationshipId, String branch) {
-		return this.serverUrl + "/" + branch + "/relationships/" + relationshipId;
+		return this.serverUrl + URL_SEPARATOR + branch + "/relationships/" + relationshipId;
 	}
 
 	private String getRefsetMembersUrl(String branchPath, String referenceSet, String searchAfter) {
 		if (searchAfter == null || searchAfter.isEmpty()) {
-			return this.serverUrl + "/" + branchPath + MEMBERS_REFSET + referenceSet;
+			return this.serverUrl + URL_SEPARATOR + branchPath + MEMBERS_REFSET + referenceSet;
 		} else {
-			return this.serverUrl + "/" + branchPath + MEMBERS_REFSET + referenceSet + SEARCH_AFTER + searchAfter;
+			return this.serverUrl + URL_SEPARATOR + branchPath + MEMBERS_REFSET + referenceSet + SEARCH_AFTER + searchAfter;
 		}
 	}
 
 	private String getRefsetMembersUrl(String branch) {
-		return this.serverUrl + "/" + branch + "/members";
+		return this.serverUrl + URL_SEPARATOR + branch + "/members";
 	}
 	
 	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
@@ -564,28 +589,26 @@ public class TermServerClient {
 			throw new TermServerScriptException("Unable to update refset entry {}" + refsetEntry + " due to " + e.getMessage(), e);
 		}
 	}
-	
 
-	public void waitForCompletion(String branchPath, Classification classification) throws TermServerScriptException {
-		try {
-			String endPoint = this.serverUrl + "/" + branchPath + "/classifications/" + classification.getId();
-			Status status;
-			long sleptSecs = 0;
-			do {
-				JSONResource response = resty.json(endPoint);
-				String json = response.toObject().toString();
-				status = gson.fromJson(json, Status.class);
-				if (!status.isFinalState()) {
+	public void waitForCompletion(String branchPath, Classification classification) {
+		String endPoint = this.serverUrl + URL_SEPARATOR + branchPath + "/classifications/" + classification.getId();
+		Status status;
+		long sleptSecs = 0;
+		do {
+			String json = restTemplate.getForObject(endPoint, String.class);
+			status = gson.fromJson(json, Status.class);
+			if (!status.isFinalState()) {
+				try {
 					Thread.sleep(RETRY * 1000L);
-					sleptSecs += RETRY;
-					if (sleptSecs % 60 == 0) {
-						System.out.println("Waited for " + sleptSecs + " for classification " + classification.getId() + " on " + branchPath);
-					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
-			} while (!status.isFinalState());
-		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to recover status of classification " + classification.getId() + " due to " + e.getMessage(), e);
-		}
+				sleptSecs += RETRY;
+				if (sleptSecs % 60 == 0) {
+					LOGGER.info("Waited for {} for classification {} on {}",sleptSecs, classification.getId(), branchPath);
+				}
+			}
+		} while (!status.isFinalState());
 	}
 
 	public DroolsResponse[] validateConcept(Concept c, String branchPath) {
@@ -773,16 +796,14 @@ public class TermServerClient {
 	}
 	
 	public static String getParentBranchPath(String branchPath) {
-		int endIndex = branchPath.lastIndexOf("/");
+		int endIndex = branchPath.lastIndexOf(URL_SEPARATOR);
 		return branchPath.substring(0, endIndex);
 	}
 
-	public boolean adminRollbackCommit(Branch b) throws TermServerScriptException {
+	public void adminRollbackCommit(Branch b) throws TermServerScriptException {
 		String url = this.serverUrl + "/admin/" + b.getPath() + "/actions/rollback-commit?commitHeadTime=" + b.getHeadTimestamp();
-		HttpEntity<Map<String,Object>> entity = new HttpEntity<>(null);
 		try {
-			ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.POST, entity, Object.class);
-			return response.getStatusCode().is2xxSuccessful();
+			restTemplate.exchange(url, HttpMethod.POST, HttpEntity.EMPTY, Object.class);
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
 		}

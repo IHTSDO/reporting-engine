@@ -102,7 +102,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail, AdditionalDetail, ";
 	protected String secondaryReportColumns = "ActionDetail, ";
-	protected String tertiaryReportColumns = "ActionDetail, ";
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	public Scanner STDIN = new Scanner(System.in);
 	
@@ -111,7 +110,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private static final String DELETING = "Deleting {}";
 	private static final String DRY_DELETING = "Dry run deleting {}";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
-	public String tsRoot = "MAIN/";
 
 	public static final String AUTHOR = "Author";
 	public static final String CONCEPTS_IN_FILE = "Concepts in file";
@@ -125,6 +123,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String INCLUDE_ALL_LEGACY_ISSUES = "Include All Legacy Issues";
 	public static final String INPUT_FILE = "InputFile";
 	public static final String ISSUE_COUNT = "Issue count";
+	public static final String MAIN_SLASH = "MAIN/";
 	public static final String MODULES = "Modules";
 	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	public static final String RESTART_FROM_TASK = "Restart from task";
@@ -296,7 +295,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		} else {
 			if (runStandAlone) {
 				LOGGER.info("Running stand alone. Guessing project path to be MAIN/{}", projectName);
-				project.setBranchPath("MAIN/" + projectName);
+				project.setBranchPath(MAIN_SLASH + projectName);
 			} else {
 				try {
 					project = scaClient.getProject(projectName);
@@ -377,7 +376,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private void recoverProjectDetails() throws TermServerScriptException {
-		if (projectName.equals("MAIN") || projectName.startsWith("MAIN/")) {
+		if (projectName.equals("MAIN") || projectName.startsWith(MAIN_SLASH)) {
 			//MAIN is not a project.  Recover Main metadata from branch
 			project.setMetadata(tsClient.getBranch(projectName).getMetadata());
 		} else if (!StringUtils.isNumeric(projectName) && !projectName.endsWith(".zip")) {

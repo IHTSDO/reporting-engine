@@ -115,7 +115,7 @@ public interface ScriptConstants extends RF2Constants {
 	Concept INHERES_IN = new Concept("704319004", "Inheres in (attribute)");
 	Concept INTERPRETS = new Concept("363714003", "Interprets (attribute)");
 	Concept METHOD = new Concept("260686004","Method (attribute)");
-	Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
+	Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (namespace concept)");
 	Concept OBSERVABLE_ENTITY = new Concept("363787002","Observable entity (observable entity)");
 	Concept OCCURRENCE = new Concept ("246454002", "Occurrence (attribute)");
 	Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
