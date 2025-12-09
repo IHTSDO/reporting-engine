@@ -298,6 +298,7 @@ public class ArchiveManager implements ScriptConstants {
 				} else if (config.isPopulatePreviousTransitiveClosure() && gl.getPreviousTC() == null) {
 					LOGGER.info("Generating fresh snapshot because previous transitive closure must be populated");
 				}
+				gl.memoryWipe();
 				generateSnapshot(ts.getProject(), archiveImporter);
 				setPopulateReleaseFlag(true);
 				writeSnapshotToCache = true;

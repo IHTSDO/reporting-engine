@@ -122,6 +122,13 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		LOGGER.info("Resetting Graph Loader - configuration reset");
 		setRecordPreviousState(false);
 
+		memoryWipe();
+
+		System.gc();
+		outputMemoryUsage();
+	}
+
+	public void memoryWipe() {
 		LOGGER.info("Resetting Graph Loader - memory wipe");
 		concepts = new HashMap<>();
 		mdrs = null;
@@ -139,12 +146,12 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		duplicateLangRefsetIdsReported = new HashSet<>();
 		integrityWarnings = new ArrayList<>();
 		alternateIdentifierMap = new HashMap<>();
-		
+
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
 		previousTransitiveClosure = null;
 		transitiveClosure = null;
-		
+
 		fsnMap = null;
 		usptMap = null;
 		gbptMap = null;
@@ -156,11 +163,8 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		mrcmAttributeRangeManager.reset();
 		mrcmDomainManager.reset();
 		mrcmModuleScopeManager.reset();
-		
-		System.gc();
-		outputMemoryUsage();
 	}
-	
+
 	private void outputMemoryUsage() {
 		Runtime runtime = Runtime.getRuntime();
 		NumberFormat format = NumberFormat.getInstance();
