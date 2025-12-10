@@ -35,7 +35,7 @@ public class IdGenerator implements ScriptConstants{
 	 private static boolean configFileReset = false;
 
 	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
-		if (sctidFilename.toLowerCase().endsWith("dummy")) {
+		if (isDummyFile(sctidFilename)) {
 			return new IdGenerator(p);
 		}
 		
@@ -57,7 +57,14 @@ public class IdGenerator implements ScriptConstants{
 		
 		throw new TermServerScriptException("Unable to read sctids from " + sctidFilename);
 	}
-	
+
+	private static boolean isDummyFile(String sctidFilename) {
+        //remove the extension
+		int dotIndex = sctidFilename.lastIndexOf('.');
+		sctidFilename = (dotIndex == -1) ? sctidFilename : sctidFilename.substring(0, dotIndex);
+		return sctidFilename.toLowerCase().endsWith("dummy");
+	}
+
 	private IdGenerator(File sctidFile, PartitionIdentifier p) throws FileNotFoundException {
 		fileName = sctidFile.getAbsolutePath();
 		availableSctIds = new BufferedReader(new FileReader(sctidFile));
