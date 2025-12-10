@@ -31,6 +31,22 @@ public class DrugUtils implements ScriptConstants {
 	protected static final Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	protected static final Concept [] liquidUnits = new Concept [] { MICROLITER, MILLILITER, LITER };
 	protected static final Concept [] equivUnits = new Concept [] { UEQ, MEQ };
+
+	//Interesting thing here that 'milligram' is not - in general - considered to be case-sensitive, and yet
+	//because we normally start it with a lower case letter, in the Authoring Platform we mark it as CS
+	public static final List<MatchingSet> KNOWN_CASE_SENSITIVE_DRUG_UNITS = List.of(
+			new MatchingSet("mg"),
+			new MatchingSet("g"),
+			new MatchingSet("ml"),
+			new MatchingSet("mcg"),
+			new MatchingSet("unit"),
+			new MatchingSet("units"),
+			new MatchingSet("IU"),
+			new MatchingSet("mEq"),
+			new MatchingSet("mL"),
+			new MatchingSet("MBq"),
+			new MatchingSet("ppm")
+	);
 	
 	static Map<String, Concept> doseFormFSNConceptMap;
 	static Map<String, Concept> doseFormSynonymConceptMap;
@@ -502,5 +518,46 @@ public class DrugUtils implements ScriptConstants {
 
 	public static String getConceptAsNumberStr(Concept presStrength) {
 		throw new NotImplementedException();
+	}
+
+	public static boolean containsKnownCaseSensitiveDrugUnit(Description d) {
+		for (MatchingSet ms : KNOWN_CASE_SENSITIVE_DRUG_UNITS) {
+			if (containsTargetText(d, ms)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean containsTargetText(Description d, MatchingSet ms) {
+		//To avoid matching within terms, we'll use the target text padded with spaces.
+		//But this doesn't work if it's the last word, so also check for ending
+		String term = d.getTerm();
+		String spTerm = " " + term;
+		return d.getTerm().contains(ms.targetTextSpSp)
+				|| d.getTerm().endsWith(ms.targetTextSp)
+				|| spTerm.contains(ms.targetTextSpSlash)
+				|| spTerm.contains(ms.targetTextSlashSp)
+				|| term.equals(ms.targetText);
+	}
+
+	public static class MatchingSet {
+		private String targetTextSpSp;
+		private String targetTextSp;
+		private String targetText;
+		private String targetTextSpSlash;
+		private String targetTextSlashSp;
+
+		public String getTargetText() {
+			return targetText;
+		}
+
+		public MatchingSet(String targetText) {
+			this.targetText = targetText;
+			this.targetTextSpSp = " " + targetText + " ";
+			this.targetTextSp = " " + targetText;
+			this.targetTextSpSlash = " " + targetText + "/";
+			this.targetTextSlashSp = "/" + targetText;
+		}
 	}
 }

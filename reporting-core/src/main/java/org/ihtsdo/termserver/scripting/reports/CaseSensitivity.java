@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -48,8 +49,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, Object> params = new HashMap<>();
-		params.put(UNPROMOTED_CHANGES_ONLY, "Y");
-		params.put(RECENT_CHANGES_ONLY, "Y");
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
+		params.put(RECENT_CHANGES_ONLY, "N");
 		params.put(INCLUDE_SUB_ORG, "N");
 		TermServerScript.run(CaseSensitivity.class, params, args);
 	}
@@ -118,18 +119,18 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			if (!csUtils.isSourceOfTruthHierarchy(targetHierarchy)) {
 				List<Concept> hierarchyDescendants = new ArrayList<>(targetHierarchy.getDescendants(NOT_SET));
 				LOGGER.info("Checking case significance in target hierarchy: {}", targetHierarchy);
-				checkCaseSignificanceOfHierarchy(hierarchyDescendants);
+				checkCaseSignificanceOfHierarchy(targetHierarchy, hierarchyDescendants);
 				LOGGER.info("Completed hierarchy: {}", targetHierarchy);
 			}
 		}
 	}
 
-	private void checkCaseSignificanceOfHierarchy(List<Concept> hierarchyDescendants) throws TermServerScriptException {
+	private void checkCaseSignificanceOfHierarchy(Concept targetHierarchy, List<Concept> hierarchyDescendants) throws TermServerScriptException {
 		for (Concept c : hierarchyDescendants) {
 			if (inScopeForCsChecking(c)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (!d.getType().equals(DescriptionType.TEXT_DEFINITION)
-							&& checkCaseSignificance(c, d)) {
+							&& checkCaseSignificance(targetHierarchy, c, d)) {
 						break;
 					} else if (d.getType().equals(DescriptionType.TEXT_DEFINITION)
 							&& !d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
@@ -144,7 +145,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	/*
 	*@return - true if we've reported an issue on this concept
 	 */
-	private boolean checkCaseSignificance(Concept c, Description d) throws TermServerScriptException {
+	private boolean checkCaseSignificance(Concept targetHierarchy, Concept c, Description d) throws TermServerScriptException {
 		if (!inScopeForCsChecking(d)) {
 			return false;
 		}
@@ -167,6 +168,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		}
 		
 		if (reportedForStartingWithAcronymInfraction(c, d, caseSig, preferred)) {
+			return true;
+		}
+
+		if (targetHierarchy.equals(PHARM_BIO_PRODUCT) && reportedForDrugUnitInfraction(c, d, caseSig, preferred)) {
 			return true;
 		}
 
@@ -231,6 +236,21 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		}
 		return false;
 	}
+
+
+	private boolean reportedForDrugUnitInfraction(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
+		//Now if we're ci that's certainly wrong
+		//BUT if it's CS then it might be that we start with a known case-sensitive word, so let's check that
+		if (DrugUtils.containsKnownCaseSensitiveDrugUnit(d)
+			&& (caseSig.equals(ci)
+					|| (caseSig.equals(CS) && !csUtils.startsWithKnownCaseSensitiveTerm(c, d.getTerm())))) {
+				report(c, d, d.getEffectiveTime(),  preferred, caseSig, "Terms containing drug units should be cI");
+				countIssue(c);
+				return true;
+		}
+		return false;
+	}
+
 
 	private boolean reportedForTextDefinitionRuleOrAccepted(Concept c, Description d, String caseSig, String preferred) throws TermServerScriptException {
 		//Text Definitions must be CS
