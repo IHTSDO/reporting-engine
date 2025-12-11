@@ -52,8 +52,8 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(INCLUDE_ALL_LEGACY_ISSUES, "false");
-		params.put(UNPROMOTED_CHANGES_ONLY, "false");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
+		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		TermServerScript.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 

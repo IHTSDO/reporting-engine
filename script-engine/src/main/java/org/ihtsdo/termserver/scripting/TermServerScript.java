@@ -40,7 +40,6 @@ import com.google.gson.GsonBuilder;
 
 public abstract class TermServerScript extends Script implements ScriptConstants {
 
-	protected static final String EXCEPTION_ENCOUNTERED = "Exception encountered";
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerScript.class);
 	public static final String COMMAND_LINE_USAGE = "Usage: java <VM_ARGUMENTS> <TSScriptClass> " +
 			"[-a author] " +
@@ -75,7 +74,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected int processingLimit = NOT_SET;
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
-	protected List<File> inputFiles = new ArrayList<File>(Collections.nCopies(10, (File) null));
+	protected List<File> inputFiles = new ArrayList<>(Collections.nCopies(10, (File) null));
 	private String dependencyArchive;
 	protected String projectName;
 	private String reportName;
@@ -107,40 +106,36 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	public Scanner STDIN = new Scanner(System.in);
 	
-	public static final String CONCEPTS_IN_FILE = "Concepts in file";
-	public static final String CONCEPTS_TO_PROCESS = "Concepts to process";
+
 	private static final String DUE_TO_STR = " due to ";
-	public static final String REPORTED_NOT_PROCESSED = "Reported not processed";
-	public static final String ISSUE_COUNT = "Issue count";
-	public static final String CRITICAL_ISSUE = "CRITICAL ISSUE";
-	public static final String WHITE_LISTED_COUNT = "White Listed Count";
 	private static final String DELETING = "Deleting {}";
 	private static final String DRY_DELETING = "Dry run deleting {}";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
-	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
-	public static final String EXPECTED_PROTOCOL = "https://";
-	
-	
-	protected static final String AUTHOR = "Author";
-	public static final String Reviewer = "Reviewer";
+	public String tsRoot = "MAIN/";
+
+	public static final String AUTHOR = "Author";
+	public static final String CONCEPTS_IN_FILE = "Concepts in file";
 	public static final String CONCEPTS_PER_TASK = "Concepts per task";
+	public static final String CONCEPTS_TO_PROCESS = "Concepts to process";
+	public static final String CRITICAL_ISSUE = "CRITICAL ISSUE";
+	public static final String DRY_RUN = "Dry Run";
+	public static final String ECL = "ECL";
+	public static final String EXCEPTION_ENCOUNTERED = "Exception encountered";
+	public static final String EXPECTED_PROTOCOL = "https://";
+	public static final String INCLUDE_ALL_LEGACY_ISSUES = "Include All Legacy Issues";
+	public static final String INPUT_FILE = "InputFile";
+	public static final String ISSUE_COUNT = "Issue count";
+	public static final String MODULES = "Modules";
+	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	public static final String RESTART_FROM_TASK = "Restart from task";
-	
-	public static final String FILE = "File";
-	protected static final String DRY_RUN = "Dry Run";
-	protected static final String RUN_HEADLESS = "Run Headless";
-	protected static final String INPUT_FILE = "InputFile";
-	protected static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
-	protected static final String SUB_HIERARCHY = "Subhierarchy";
-	protected static final String ATTRIBUTE_TYPE = "Attribute Type";
-	protected static final String HIERARCHIES = "Hierarchies";
-	protected static final String INCLUDE_ALL_LEGACY_ISSUES = "Include All Legacy Issues";
-	protected static final String ECL = "ECL";
-	protected static final String MODULES = "Modules";
-	protected static final String TEMPLATE = "Template";
-	protected static final String TEMPLATE2 = "Template 2";
-	protected static final String TEMPLATE_NAME = "TemplateName";
-	protected static final String SERVER_URL = "ServerUrl";
+	public static final String RUN_HEADLESS = "Run Headless";
+	public static final String SERVER_URL = "ServerUrl";
+	public static final String SUB_HIERARCHY = "Subhierarchy";
+	public static final String TEMPLATE = "Template";
+	public static final String TEMPLATE2 = "Template 2";
+	public static final String TEMPLATE_NAME = "TemplateName";
+	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
+	public static final String WHITE_LISTED_COUNT = "White Listed Count";
 
 	protected ReportDataBroker reportDataBroker;
 

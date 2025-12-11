@@ -14,7 +14,6 @@ import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
 
-	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
 	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
 
 	protected boolean unpromotedChangesOnly = false;

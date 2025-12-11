@@ -106,7 +106,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				SUBSTANCE, CLINICAL_FINDING, BODY_STRUCTURE, PROCEDURE, SITN_WITH_EXP_CONTXT,
 				SPECIMEN, OBSERVABLE_ENTITY, EVENT, DISEASE, DEVICE, ORGANISM, METHOD,
 				USING_DEVICE, PROCEDURE_SITE, FINDING_SITE, MORPHOLOGIC_ABNORMALITY,
-				LEFT, RIGHT, BILATERAL);
+				NAMESPACE_CONCEPT, LEFT, RIGHT, BILATERAL);
 		for (Concept c : conceptsToReset) {
 			c.reset();
 			singleton.concepts.put(c.getConceptId(), c);

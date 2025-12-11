@@ -18,7 +18,6 @@ public interface ScriptConstants extends RF2Constants {
 	String GFOLDER_ADHOC_REPORTS = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 	String GFOLDER_ADHOC_UPDATES = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 	String GFOLDER_BATCH_IMPORTS = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; //Batch Imports
-	String GFOLDER_CRS = "17p-Hs2YGkTIOz1fXpwhwvR9izG5lRS0z"; //CRS
 	String GFOLDER_DRUGS_MISSING = "1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT"; // Drugs Missing
 	String GFOLDER_EXTRACT_AND_PROMOTE = "12ZyVGxnFVXZfsKIHxr3Ft2Z95Kdb7wPl"; //Extract and Promote
 	String GFOLDER_GENERAL_QA = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
@@ -57,7 +56,6 @@ public interface ScriptConstants extends RF2Constants {
 
 	Concept HAS_UNIT_OF_PRESENTATION = new Concept ("763032000","Has unit of presentation (attribute)");
 	Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
-	Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	Concept HAS_DISPOSITION = new Concept ("726542003", "Has disposition (attribute)");
 	Concept PLAYS_ROLE = new Concept("766939001","Plays role (attribute)");
 
@@ -69,7 +67,6 @@ public interface ScriptConstants extends RF2Constants {
 	Concept COUNT_BASE_ACTIVE_INGREDIENT = new Concept ("1142139005", "Count of base of active ingredient (attribute)");
 	Concept COUNT_OF_BASE_AND_MODIFICATION = new Concept ("1142141006", "Count of base and modification pair (attribute)");
 	
-	Concept NUMBER = new Concept("260299005", "Number (qualifier value)");
 	Concept PICOGRAM = new Concept ("258687006", "picogram (qualifier value)");
 	Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)");
 	Concept MICROGRAM = new Concept ("258685003", "microgram (qualifier value)"); 
@@ -103,16 +100,14 @@ public interface ScriptConstants extends RF2Constants {
 
 	//Attribute Types
 	Concept AFTER = new Concept("255234002", "After (attribute)");
-	Concept ANAT_OR_ACQ_BODY_STRUCT = new Concept("442083009", "Anatomical or acquired body structure (body structure)");
 	Concept ASSOC_MORPH = new Concept("116676008", "Associated morphology (attribute)");
 	Concept ASSOC_WITH = new Concept("47429007", "Associated with (attribute)");
 	Concept CAUSE_AGENT = new Concept("246075003", "Causative agent (attribute)");
 	Concept COMPONENT = new Concept("246093002", "Component (attribute)");
-	Concept DIRECT_SITE = new Concept("704327008", "Direct site (attribute)");
-	Concept DIRECT_SUBST = new Concept("363701004", "Direct substance (attribute)");
+	Concept DIRECT_DEVICE = new Concept("363699004", "Direct device (attribute)");
+	Concept DIRECT_SITE = new Concept("704327008","Direct site (attribute)");
 	Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
 	Concept FINDING_SITE = new Concept("363698007", "Finding site (attribute)");
-	Concept HAS_COMP_MATERIAL = new Concept("840560000", "Has compositional material (attribute)");
 	Concept HAS_DEVICE_CHARAC = new Concept("840562008", "Has device characteristic (attribute)");
 	Concept HAS_INTERPRETATION = new Concept("363713009", "Has interpretation (attribute)");
 	Concept INHERES_IN = new Concept("704319004", "Inheres in (attribute)");
@@ -127,11 +122,8 @@ public interface ScriptConstants extends RF2Constants {
 	Concept PROCEDURE_SITE_DIRECT = new Concept("405813007", "Procedure site - direct (attribute)|");
 	Concept PROCEDURE_SITE_INDIRECT = new Concept("405814001", "Procedure site - indirect (attribute)|");
 	Concept PROPERTY_ATTRIB = new Concept("370130000", "Property (attribute)");
-	Concept SPECIAL_CONCEPT = new Concept("370115009", "Special concept (special concept)");
 	Concept TECHNIQUE = new Concept("246501002", "Technique (attribute)");
 	Concept USING_DEVICE = new Concept("424226004", "Using device (attribute)");
-	Concept USING_SUBST = new Concept("424361007", "Using substance (attribute)");
-
 
 	Concept LEFT = new Concept("7771000", "Left (qualifier value)");
 	String SCTID_LEFT = "7771000";
