@@ -335,6 +335,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		return !leftModules.contains(SCTID_CORE_MODULE) && !rightModules.contains(SCTID_CORE_MODULE);
 	}
 
+	@SuppressWarnings("java:S5852")
 	private void outputResults() throws TermServerScriptException {
 		Map<TotalsIndex, Integer> descriptionTotals = new EnumMap<>(TotalsIndex.class);
 		Map<TotalsIndex, Integer> textDefinitionTotals = new EnumMap<>(TotalsIndex.class);
@@ -565,6 +566,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		report(FILE_COMPARISON_TAB, "");
 	}
 
+	@SuppressWarnings("java:S5852")
 	private void process(Path path, String filename) {
 		if (filename.matches(ASSOCIATION_REFSET_FILENAME)) {
 			processAssociationFile(path, filename, null);
