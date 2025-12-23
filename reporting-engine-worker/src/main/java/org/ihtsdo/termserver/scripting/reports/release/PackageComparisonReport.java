@@ -29,16 +29,16 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final int TIMEOUT_MINUTES = 30;
 	private static final int FILE_COMPARISON_TAB = MAX_REPORT_TABS;
 
-	private static final String CONCEPT_FILENAME = "sct2_Concept_";
-	private static final String DESCRIPTION_FILENAME = "sct2_Description_";
-	private static final String TEXT_DEFINITION_FILENAME = "sct2_TextDefinition_";
-	private static final String RELATIONSHIP_FILENAME = "sct2_Relationship_";
-	private static final String RELATIONSHIP_CONCRETE_VALUES_FILENAME = "sct2_RelationshipConcreteValues_";
-	private static final String OWL_EXPRESSION_FILENAME = "sct2_sRefset_OWLExpression";
-	private static final String LANGUAGE_REFSET_FILENAME = "der2_cRefset_Language";
-	private static final String ASSOCIATION_REFSET_FILENAME = "der2_cRefset_Association";
-	private static final String ATTRIBUTE_VALUE_REFSET_FILENAME = "der2_cRefset_AttributeValue";
-	private static final String MODULE_DEPENDENCY_REFSET_FILENAME = "der2_ssRefset_ModuleDependency";
+	private static final String CONCEPT_FILENAME = "sct2_Concept_.*";
+	private static final String DESCRIPTION_FILENAME = "sct2_Description_.*";
+	private static final String TEXT_DEFINITION_FILENAME = "sct2_TextDefinition_.*";
+	private static final String RELATIONSHIP_FILENAME = "sct2_Relationship_.*";
+	private static final String RELATIONSHIP_CONCRETE_VALUES_FILENAME = "sct2_RelationshipConcreteValues_.*";
+	private static final String OWL_EXPRESSION_FILENAME = "sct2_sRefset_.*OWLExpression.*";
+	private static final String LANGUAGE_REFSET_FILENAME = "der2_cRefset_.*Language.*";
+	private static final String ASSOCIATION_REFSET_FILENAME = "der2_cRefset_.*Association.*";
+	private static final String ATTRIBUTE_VALUE_REFSET_FILENAME = "der2_cRefset_.*AttributeValue.*";
+	private static final String MODULE_DEPENDENCY_REFSET_FILENAME = "der2_ssRefset_.*ModuleDependency.*";
 
 	public static final String SCTID_SE_REFSETID = "734138000";
 	public static final String SCTID_SP_REFSETID = "734139008";
@@ -87,9 +87,11 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		params.put(THIS_RELEASE, "au/snomed_ct_au_releases/2025-05-22T09:16:58/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20250531T120000Z.zip");
-		params.put(PREV_RELEASE, "au/snomed_ct_au_releases/2025-03-24T09:50:06/output-files/SnomedCT_ManagedServiceAU_PRODUCTION_AU1000036_20250331T120000Z.zip");
-		params.put(MODULES, "32506021000036107, 351000168100");
+		params.put(THIS_RELEASE, "edqm/snomed_ct_edqm_map_releases/2025-09-23T10:57:27/output-files/SnomedCT_SNOMEDEDQMMapPackage_PRODUCTION_20250930T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250701T120000Z.zip");
+		params.put(PREV_RELEASE, "edqm/snomed_ct_edqm_map_releases/2024-11-08T16:36:48/output-files/SnomedCT_SNOMEDEDQMMapPackage_PRODUCTION_20241130T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240701T120000Z.zip");
+		params.put(MODULES, "1237620007");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -356,59 +358,59 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			Map<TotalsIndex, Integer> fileTotalsEntry = entry.getValue();
 
 			// Output descriptions totals
-			if (isDescription && !filename.contains(DESCRIPTION_FILENAME)) {
+			if (isDescription && !filename.matches(DESCRIPTION_FILENAME)) {
 				report("Total Descriptions:", descriptionTotals, "Descriptions", totals[TAB_DESCS]);
 				isDescription = false;
 			}
 
 			// Output text definitions totals
-			if (isTextDefinition && !filename.contains(TEXT_DEFINITION_FILENAME)) {
+			if (isTextDefinition && !filename.matches(TEXT_DEFINITION_FILENAME)) {
 				report("Total Text Definitions:", textDefinitionTotals, "Text Definitions", totals[TAB_TEXT_DEFN]);
 				isTextDefinition = false;
 			}
 
 			// Output language refsets totals
-			if (isLanguageRefset && !filename.contains(LANGUAGE_REFSET_FILENAME)) {
+			if (isLanguageRefset && !filename.matches(LANGUAGE_REFSET_FILENAME)) {
 				report("Total Language Refsets:", languageRefsetTotals, "Language Refsets", totals[TAB_LANG]);
 				isLanguageRefset = false;
 			}
 
 			// Output associations totals
-			if (isAssociationRefset && !filename.contains(ASSOCIATION_REFSET_FILENAME)) {
+			if (isAssociationRefset && !filename.matches(ASSOCIATION_REFSET_FILENAME)) {
 				report("Associations", sumOfTabs(TAB_HIST, TAB_DESC_HIST));
 				isAssociationRefset = false;
 			}
 
-			if (filename.contains(DESCRIPTION_FILENAME)) {
+			if (filename.matches(DESCRIPTION_FILENAME)) {
 				isDescription = true;
 				report(filename, fileTotalsEntry, null, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
 					descriptionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
-			} else if (filename.contains(TEXT_DEFINITION_FILENAME)) {
+			} else if (filename.matches(TEXT_DEFINITION_FILENAME)) {
 				isTextDefinition = true;
 				report(filename, fileTotalsEntry, null, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
 					textDefinitionTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
-			} else if (filename.contains(LANGUAGE_REFSET_FILENAME)) {
+			} else if (filename.matches(LANGUAGE_REFSET_FILENAME)) {
 				isLanguageRefset = true;
 				report(filename, fileTotalsEntry, null, null);
 				for (TotalsIndex index : TotalsIndex.values()) {
 					languageRefsetTotals.compute(index, (k, v) -> v + fileTotalsEntry.get(index));
 				}
-			} else if (filename.contains(ASSOCIATION_REFSET_FILENAME)) {
+			} else if (filename.matches(ASSOCIATION_REFSET_FILENAME)) {
 				isAssociationRefset = true;
 				report(filename, fileTotalsEntry, null, null);
-			} else if (filename.contains(CONCEPT_FILENAME)) {
+			} else if (filename.matches(CONCEPT_FILENAME)) {
 				report(filename, fileTotalsEntry, "Concepts", totals[TAB_CONCEPTS]);
-			} else if (filename.contains(RELATIONSHIP_FILENAME)) {
+			} else if (filename.matches(RELATIONSHIP_FILENAME)) {
 				report(filename, fileTotalsEntry, "Relationships", totals[TAB_RELS]);
-			} else if (filename.contains(RELATIONSHIP_CONCRETE_VALUES_FILENAME)) {
+			} else if (filename.matches(RELATIONSHIP_CONCRETE_VALUES_FILENAME)) {
 				report(filename, fileTotalsEntry, "Concrete Values", totals[TAB_CD]);
-			} else if (filename.contains(OWL_EXPRESSION_FILENAME)) {
+			} else if (filename.matches(OWL_EXPRESSION_FILENAME)) {
 				report(filename, fileTotalsEntry, "Axioms", totals[TAB_AXIOMS]);
-			} else if (filename.contains(ATTRIBUTE_VALUE_REFSET_FILENAME)) {
+			} else if (filename.matches(ATTRIBUTE_VALUE_REFSET_FILENAME)) {
 				report(filename, fileTotalsEntry, "Attribute Values", sumOfTabs(TAB_INACT_IND, TAB_DESC_CNC, TAB_DESC_INACT));
 			} else {
 				fileTotalsWithoutComparison.put(filename, fileTotalsEntry);
@@ -444,7 +446,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 
 		// MOVED_MODULE and PROMOTED are only applicable for concepts when comparing editions
-		if (isExtension() || !filename.contains(CONCEPT_FILENAME)) {
+		if (isExtension() || !filename.matches(CONCEPT_FILENAME)) {
 			fileDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = fileDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A";
 		}
 
@@ -564,15 +566,15 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	}
 
 	private void process(Path path, String filename) {
-		if (filename.contains(ASSOCIATION_REFSET_FILENAME)) {
+		if (filename.matches(ASSOCIATION_REFSET_FILENAME)) {
 			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
-		} else if (filename.contains(CONCEPT_FILENAME)) {
+		} else if (filename.matches(CONCEPT_FILENAME)) {
 			processConceptFile(path, filename);
  		} else {
 			processFile(path, filename);
 		}
-		if (filename.contains(MODULE_DEPENDENCY_REFSET_FILENAME)) {
+		if (filename.matches(MODULE_DEPENDENCY_REFSET_FILENAME)) {
 			processMDRSFile(path, filename);
 		}
 	}
