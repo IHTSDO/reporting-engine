@@ -10,6 +10,8 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.HighVolumeUsageHelper;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.jetbrains.annotations.NotNull;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
@@ -75,7 +77,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Count",
 				"Id, FSN, SemTag, Count, Refset Module",
-				"Id, FSN, SemTag, Refset, Concept Module, Refset Module"};
+				"Id, FSN, SemTag, Refset, Concept Module, Refset Module, Reason, Assoc Type, Assoc Value"};
 		String[] tabNames = new String[] {
 				"Module Summary",
 				"Per Refset Counts",
@@ -128,24 +130,8 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 
 	@Override
 	public void runJob() throws TermServerScriptException {
-		//If we are including the last release then all concepts are in scope and
-		//inactivations from the previous international release are included
-		List<Concept> inactivatedConcepts;
-		if (lastReleaseEffectiveTime == null) {
-			//We're looking for concepts which are inactive and have no effective time
-			inactivatedConcepts = gl.getAllConcepts().stream()
-					.filter(c -> !c.isActiveSafely())
-					.filter(this::inScope)
-					.filter(c -> (!unpromotedChangesOnly || unpromotedChangesHelper.hasUnpromotedChange(c)))
-					.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
-					.toList();
-		} else {
-			inactivatedConcepts = gl.getAllConcepts().stream()
-					.filter(c -> !c.isActiveSafely())
-					.filter(c -> (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(lastReleaseEffectiveTime)))
-					.toList();
-		}
-		
+		List<Concept> inactivatedConcepts = getInactivatedConcepts();
+
 		if (!extensionRefsetOnly) {
 			LOGGER.debug("Checking {} inactivated concepts against High Usage SCTIDs", inactivatedConcepts.size());
 			List<String> inactivatedConceptIds = inactivatedConcepts.stream().
@@ -173,7 +159,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				}
 				
 				if (referenceSets.contains(refset)) {
-					report(TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId());
+					outputConcept(c, refset);
 					refsetSummary.getAndIncrement(refset);
 					moduleSummary.getAndIncrement(module);
 					countIssue(c);
@@ -188,28 +174,63 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			count += inactiveConceptsSegment.size();
 			LOGGER.debug("Checked {} inactive concepts", count);
 		}
-		
-		//Output summary counts
+
+		outputSummaryCounts();
+	}
+
+	private void outputConcept(Concept c, Concept refset) throws TermServerScriptException {
+		boolean reported = false;
+		InactivationIndicator i = c.getInactivationIndicator();
+		for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
+			String assocType = SnomedUtils.getAssociationType(a);
+			Concept assocValue = gl.getConcept(a.getTargetComponentId());
+			report(TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId(), i, assocType, assocValue);
+			reported = true;
+		}
+		if (!reported) {
+			report(TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId(), i, "N/A", "N/A");
+		}
+	}
+
+	private void outputSummaryCounts() throws TermServerScriptException {
 		for (Map.Entry<Concept, Long> entry : moduleSummary.asMap().entrySet()) {
 			Concept module = entry.getKey();
 			report(PRIMARY_REPORT, module, entry.getValue());
 		}
-		
-		//Output summary counts
+
 		for (Map.Entry<Concept, Long> entry : refsetSummary.asMap().entrySet()) {
 			Concept refset = entry.getKey();
 			report(SECONDARY_REPORT, refset, entry.getValue(), refset.getModuleId());
 		}
-		
+
 		for (Concept emptyRefset : emptyReferenceSets) {
 			report(SECONDARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey(), emptyRefset.getModuleId());
 		}
-		
+
 		for (Concept outOfScopeReferenceSet : outOfScopeReferenceSets) {
 			report(SECONDARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey(), outOfScopeReferenceSet.getModuleId());
 		}
 	}
-	
+
+	private @NotNull List<Concept> getInactivatedConcepts() {
+		//If we are including the last release then all concepts are in scope and
+		//inactivations from the previous international release are included
+		if (lastReleaseEffectiveTime == null) {
+			//We're looking for concepts which are inactive and have no effective time
+			return gl.getAllConcepts().stream()
+					.filter(c -> !c.isActiveSafely())
+					.filter(this::inScope)
+					.filter(c -> (!unpromotedChangesOnly || unpromotedChangesHelper.hasUnpromotedChange(c)))
+					.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
+					.toList();
+		} else {
+			return gl.getAllConcepts().stream()
+					.filter(c -> !c.isActiveSafely())
+					.filter(c -> (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(lastReleaseEffectiveTime)))
+					.toList();
+		}
+	}
+
 	private void checkHighVolumeUsage(List<String> inactivatedIds) throws TermServerScriptException {
 		Concept hvu = new Concept("0","High Volume Usage (UK)");
 		hvu.setModuleId(SCTID_CORE_MODULE);
