@@ -58,12 +58,18 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			expectedLanguages.remove("en");
 		}
 		
-		String[] columnHeadings = new String[] {"SCTID, FSN, SemTag, Descriptions"};
+		String[] columnHeadings = new String[] {
+				"SCTID, FSN, SemTag, Descriptions",
+				"SCTID, FSN, SemTag, Text Definitions"
+		};
 		if (verboseOutput) {
-			columnHeadings = new String[] {"SCTID, FSN, SemTag, Lang, DescriptionId, EffectiveTime, Term"};
+			columnHeadings = new String[] {
+					"SCTID, FSN, SemTag, Lang, DescriptionId, EffectiveTime, Term",
+					"SCTID, FSN, SemTag, Lang, TextDefinitionId, EffectiveTime, Term"
+			};
 		}
 		String[] tabNames = new String[] {	
-				"Translated Concepts"};
+				"Descriptions", "Text Definitions"};
 		super.postInit(tabNames, columnHeadings);
 	}
 	
@@ -103,24 +109,38 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		}
 		
 		for (Concept c : scopeAndSort(conceptsOfInterest)) {
-			if (verboseOutput) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (expectedLanguages.contains(d.getLang())) {
-						report(c, d.getLang(), d.getId(), d.getEffectiveTimeSafely(), d.getTerm());
-					}
-				}
-			} else {
-				String detail = c.getDescriptions(ActiveState.ACTIVE).stream()
-						.filter(Component::isActiveSafely)
-						.filter(d -> expectedLanguages.contains(d.getLang()))
-						.map(Description::toString)
-						.collect(Collectors.joining(",\n"));
-				report(c, detail);
-			}
+			outputConceptDescriptions(c);
 			countIssue(c);
 		}
 	}
-	
+
+	private void outputConceptDescriptions(Concept c) throws TermServerScriptException {
+		if (verboseOutput) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (expectedLanguages.contains(d.getLang())) {
+					int reportIdx = DescriptionType.TEXT_DEFINITION.equals(d.getType()) ? SECONDARY_REPORT : PRIMARY_REPORT;
+					report(reportIdx, c, d.getLang(), d.getId(), d.getEffectiveTimeSafely(), d.getTerm());
+				}
+			}
+		} else {
+			String descriptions = c.getDescriptions(ActiveState.ACTIVE, List.of(DescriptionType.FSN, DescriptionType.SYNONYM)).stream()
+					.filter(Component::isActiveSafely)
+					.filter(d -> expectedLanguages.contains(d.getLang()))
+					.map(Description::toString)
+					.collect(Collectors.joining(",\n"));
+			report(PRIMARY_REPORT, c, descriptions);
+
+			String textDefinitions = c.getDescriptions(ActiveState.ACTIVE, List.of(DescriptionType.TEXT_DEFINITION)).stream()
+					.filter(Component::isActiveSafely)
+					.filter(d -> expectedLanguages.contains(d.getLang()))
+					.map(Description::toString)
+					.collect(Collectors.joining(",\n"));
+			if (!textDefinitions.isEmpty()) {
+				report(SECONDARY_REPORT, c, textDefinitions);
+			}
+		}
+	}
+
 	private List<Concept> scopeAndSort(Collection<Concept> superSet) {
 		return superSet.stream()
 		.filter (this::inScope)
