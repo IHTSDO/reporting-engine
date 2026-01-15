@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,7 @@ public class TaskHelper {
 		return task;
 	}
 
-	public void createTask(Task task) throws TermServerScriptException {
+	public Task createTask(Task task) throws TermServerScriptException {
 		if (!ts.isDryRun()) {
 			if (firstTaskCreated) {
 				LOGGER.debug("Letting TS catch up - {}s nap.", taskThrottle);
@@ -66,16 +67,14 @@ public class TaskHelper {
 			task.setBranchPath(ts.getProject().getBranchPath());
 			LOGGER.info("Dry run task creation: {}", task.getKey());
 		}
+		return task;
 	}
 
 	private boolean attemptTaskCreation(Task task, int taskCreationAttempts) throws TermServerScriptException {
 		try {
 			LOGGER.debug("Creating jira task on project: {}", ts.getProject());
-			String taskDescription;
-			if (populateTaskDescription && task.size() <= 150) {
-				taskDescription = task.getDescriptionHTML();
-			} else {
-				taskDescription = DEFAULT_TASK_DESCRIPTION;
+			if (populateTaskDescription && task.size() > 150) {
+				task.setDescription(DEFAULT_TASK_DESCRIPTION);
 				if (task.size() > 150 && populateTaskDescription) {
 					LOGGER.warn("Task size {}, cannot populate Jira ticket description, even though populateTaskDescription flag set to true.", task.size());
 					populateTaskDescription = false;
@@ -83,11 +82,16 @@ public class TaskHelper {
 			}
 			String taskSummary = task.getSummary();
 			if (taskPrefix != null) {
-				taskSummary = taskPrefix + taskSummary;
+				task.setSummary(taskPrefix + taskSummary);
 			}
-			task.setKey(ts.getAuthoringServicesClient().createTask(ts.getProject().getKey(), taskSummary, taskDescription));
-			LOGGER.debug("Creating task branch in terminology server: {}", task);
-			task.setBranchPath(ts.getTSClient().createBranch(ts.getProject().getBranchPath(), task.getKey()));
+
+			LOGGER.debug("Creating task in authoring services: {}", task);
+			Task createdTSTask = ts.getAuthoringServicesClient().createTask(task);
+			task.setBranchPath(createdTSTask.getBranchPath());
+			task.setKey(createdTSTask.getKey());
+			LOGGER.debug("Creating task branch on terminology server: {}", task);
+			Branch createdBranch = ts.getTSClient().createBranch(createdTSTask);
+			task.setBranchPath(createdBranch.getPath());
 			ts.getTSClient().setAuthorFlag(task.getBranchPath(), "batch-change", "true");
 			return true;
 		} catch (Exception e) {

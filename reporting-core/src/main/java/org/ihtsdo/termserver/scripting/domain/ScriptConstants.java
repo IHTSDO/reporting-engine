@@ -113,6 +113,7 @@ public interface ScriptConstants extends RF2Constants {
 	Concept HAS_INTERPRETATION = new Concept("363713009","Has interpretation (attribute)");
 	Concept HAS_INTENT = new Concept("363703001", "Has intent (attribute)");
 	Concept INHERES_IN = new Concept("704319004", "Inheres in (attribute)");
+	Concept INHERENT_LOCATION = new Concept("718497002", "Inherent location (attribute)");
 	Concept INTERPRETS = new Concept("363714003", "Interprets (attribute)");
 	Concept METHOD = new Concept("260686004","Method (attribute)");
 	Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (namespace concept)");

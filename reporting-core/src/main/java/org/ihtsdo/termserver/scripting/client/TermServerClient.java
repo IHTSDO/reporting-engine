@@ -13,17 +13,18 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.Status;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Review;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.RF2Constants.CharacteristicType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Branch;
+import org.ihtsdo.termserver.scripting.domain.CodeSystem;
+import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.http.client.*;
@@ -45,6 +46,7 @@ public class TermServerClient {
 	private static final String BROWSER = "/browser/";
 	private static final String MEMBERS = "/members/";
 	private static final String MEMBERS_REFSET = "/members?referenceSet=";
+	private static final String MERGE_REVIEWS = "/merge-reviews/";
 	private static final String CONCEPTS = "/concepts";
 	private static final String RELATIONSHIPS = "/relationships";
 	private static final String DESCRIPTIONS = "/descriptions";
@@ -90,7 +92,7 @@ public class TermServerClient {
 
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectionRequestTimeout(Timeout.ofSeconds(10))
-				.setResponseTimeout(Timeout.ofMinutes(5))
+				.setResponseTimeout(Timeout.ofMinutes(15))
 				.build();
 
 		CloseableHttpClient httpClient = HttpClients.custom()
@@ -355,6 +357,27 @@ public class TermServerClient {
 		return serverUrl + URL_SEPARATOR + branchPath + DESCRIPTIONS + URL_SEPARATOR + id;
 	}
 
+	public Branch createBranch(TermServerLocation location) throws TermServerScriptException {
+		try {
+			String parent = StringUtils.substringBeforeLast(location.getBranchPath(), "/");
+			String branchName = StringUtils.substringAfterLast(location.getBranchPath(), "/");
+
+			if (StringUtils.isEmpty(parent) || StringUtils.isEmpty(branchName)) {
+				throw new TermServerScriptException("Invalid branch path: " + location.getBranchPath() + ". Must have at least one '/' and a leaf node.");
+			}
+			Map<String, Object> body = new HashMap<>();
+			body.put("parent", parent);
+			body.put("name", branchName);
+
+			HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+			Branch branch = restTemplate.postForObject(serverUrl + "/branches", request, Branch.class);
+			LOGGER.info("Created branch {}", branch);
+			return branch;
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
+		}
+	}
+
 	public String createBranch(String parent, String branchName) throws TermServerScriptException {
 		try {
 			Map<String, Object> body = new HashMap<>();
@@ -611,6 +634,59 @@ public class TermServerClient {
 		} while (!status.isFinalState());
 	}
 
+	public String getMergeReviewUrl(String mergeReviewId) {
+		return this.serverUrl + MERGE_REVIEWS + mergeReviewId;
+	}
+
+	public MergeReview waitForMergeReviewToComplete(String mergeReviewId) {
+		String endPoint = getMergeReviewUrl(mergeReviewId);
+		MergeReview mergeReview;
+		long sleptSecs = 0;
+		do {
+			if (sleptSecs == 0) {
+				LOGGER.debug("Waiting for  merge review {} from {}", mergeReviewId, endPoint);
+			}
+			mergeReview = restTemplate.getForObject(endPoint, MergeReview.class);
+			if (mergeReview == null) {
+				throw new IllegalStateException("Could not recover merge review from " + endPoint + " null returned from server.");
+			}
+			if (!mergeReview.isFinalState()) {
+				try {
+					Thread.sleep(RETRY * 1000L);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				sleptSecs += RETRY;
+				if (sleptSecs % 60 == 0) {
+					LOGGER.info("Waited for {} for mergeReview {} ",sleptSecs, mergeReviewId);
+				}
+			}
+		} while (!mergeReview.isFinalState());
+		return mergeReview;
+	}
+
+	public void saveMergeReviewAcceptedConcept (String mergeReviewId, Concept concept) {
+		String url = getMergeReviewUrl(mergeReviewId) + URL_SEPARATOR + concept.getId();
+		LOGGER.debug("Saving accepted concept {} for review {}", concept.getId(), mergeReviewId);
+		HttpEntity<Concept> request = new HttpEntity<>(concept, headers);
+		restTemplate.exchange(
+				url,
+				HttpMethod.POST,
+				request,
+				Void.class
+		);
+	}
+
+	public void applyMerge (String mergeReviewId) {
+		String url = getMergeReviewUrl(mergeReviewId) + "/apply";
+		restTemplate.exchange(
+				url,
+				HttpMethod.POST,
+				new HttpEntity<>(headers),
+				Void.class
+		);
+	}
+
 	public DroolsResponse[] validateConcept(Concept c, String branchPath) {
 		String url = getConceptBrowserValidationPath(branchPath);
 		HttpEntity<Concept> request = new HttpEntity<>(c, headers); 
@@ -809,4 +885,22 @@ public class TermServerClient {
 		}
 	}
 
+	public <T> Collection<T> getObjectCollection(String url, ParameterizedTypeReference<Collection<T>> typeRef) {
+		// Use ParameterizedTypeReference to avoid otf-common needing to know about Concept class
+		// which is different in Snowstorm, Reporting and elsewhere
+		LOGGER.debug("Recovering collection from {}",  url);
+		ResponseEntity<Collection<T>> response = restTemplate.exchange(
+				url,
+				HttpMethod.GET,
+				null,
+				typeRef
+		);
+
+		Collection<T> collection = response.getBody();
+		if (collection == null) {
+			throw new IllegalStateException("Failed to recover collection from " + url + " null returned from " + url);
+		}
+		LOGGER.debug("Recovered {} objects from {}", collection.size(), url);
+		return collection;
+	}
 }

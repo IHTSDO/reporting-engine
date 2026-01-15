@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.TermServerLocation;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -621,15 +622,19 @@ public class ArchiveManager implements ScriptConstants {
 		return buildArchiveDataLoader;
 	}
 	
-	public File generateDelta(Project project) throws IOException, TermServerScriptException {
-		return generateDelta(project, false);
+	public File generateDelta(TermServerLocation location) throws TermServerScriptException {
+		return generateDelta(location, false);
 	}
 
-	public File generateDelta(Project project, boolean unpromotedChangesOnly) throws IOException, TermServerScriptException {
-		File delta = File.createTempFile("delta_export-", ".zip");
-		delta.deleteOnExit();
-		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta, unpromotedChangesOnly);
-		return delta;
+	public File generateDelta(TermServerLocation location, boolean unpromotedChangesOnly) throws TermServerScriptException {
+		try {
+			File delta = File.createTempFile("delta_export-", ".zip");
+			delta.deleteOnExit();
+			ts.getTSClient().export(location.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta, unpromotedChangesOnly);
+			return delta;
+		} catch (TermServerScriptException|IOException e) {
+			throw new TermServerScriptException("Failed to generate delta from " + location, e);
+		}
 	}
 
 	private void ensureProjectMetadataPopulated(Project project) throws TermServerScriptException {

@@ -893,10 +893,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
-			LOGGER.debug("Validation clear: " + c);
+			LOGGER.debug("Validation clear: {}", c);
 		} else {
 			Set<String> warningsReported = new HashSet<>();
-			LOGGER.debug("Validation issues: " + validations.length);
+			LOGGER.debug("Validation issues: {}", validations.length);
 			for (DroolsResponse response : validations) {
 				if (response.getSeverity().equals(DroolsResponse.Severity.ERROR)) {
 					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage() + " on " + response.getComponentId());
@@ -913,36 +913,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 
-	/*private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {
-		//Check we've got the same number of active / inactive descriptions / relationships
-		int activeDescBefore = before.getDescriptions(ActiveState.ACTIVE).size();
-		int activeDescAfter = after.getDescriptions(ActiveState.ACTIVE).size();
-		
-		int inactiveDescBefore = before.getDescriptions(ActiveState.INACTIVE).size();
-		int inactiveDescAfter = after.getDescriptions(ActiveState.INACTIVE).size();
-
-		int activeStdRelBefore = before.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size();
-		int activeStdRelAfter = after.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size();
-	
-		int inactiveStdRelBefore = before.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE).size();
-		int inactiveStdRelAfter = after.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE).size();
-	
-		int activeInfRelBefore = before.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).size();
-		int activeInfRelAfter = after.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).size();
-	
-		int inactiveInfRelBefore = before.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE).size();
-		int inactiveInfRelAfter = after.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE).size();
-	
-		if (	activeDescBefore != activeDescAfter ||
-				inactiveDescBefore != inactiveDescAfter ||
-				activeStdRelBefore != activeStdRelAfter ||
-				inactiveStdRelBefore != inactiveStdRelAfter ||
-				activeInfRelBefore != activeInfRelAfter ||
-				inactiveInfRelBefore != inactiveInfRelAfter) {
-			throw new TermServerScriptException("Concept has not fully saved to TS, although no error was reported");
-		}
-	}*/
-	
 	protected Concept createConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		return createConcept(t, c,  info, true); //validate by default
 	}
