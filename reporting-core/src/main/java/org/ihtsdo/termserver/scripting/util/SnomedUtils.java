@@ -1891,26 +1891,36 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static int compareSemTagFSN(Concept c1, Concept c2) {
 		String[] fsnSemTag1 = SnomedUtilsBase.deconstructFSN(c1.getFsn());
 		String[] fsnSemTag2 = SnomedUtilsBase.deconstructFSN(c2.getFsn());
-		
-		if (fsnSemTag1[1] == null) {
-			if (!missingFsnReport.contains(c1.getId())) {
-				LOGGER.warn("FSN Encountered without semtag: {}", c1);
-				missingFsnReport.add(c1.getId());
-			}
-			return c1.getId().compareTo(c2.getId());
-		} else if (fsnSemTag2[1] == null) {
-			if (!missingFsnReport.contains(c2.getId())) {
-				LOGGER.warn("FSN Encountered without semtag: {}", c2);
-				missingFsnReport.add(c2.getId());
-			}
-			return c1.getId().compareTo(c2.getId());
+
+		String semTag1 = fsnSemTag1.length > 1 ? fsnSemTag1[1] : null;
+		String semTag2 = fsnSemTag2.length > 1 ? fsnSemTag2[1] : null;
+
+		// 1. Concepts WITH a semantic tag come before those WITHOUT
+		if (semTag1 == null && semTag2 != null) return 1;
+		if (semTag1 != null && semTag2 == null) return -1;
+
+		// Log once if missing
+		if (semTag1 == null && missingFsnReport.add(c1.getId())) {
+			LOGGER.warn("FSN encountered without semantic tag: {}", c1);
 		}
-		
-		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
-			return fsnSemTag1[0].compareTo(fsnSemTag2[0]);
+		if (semTag2 == null && missingFsnReport.add(c2.getId())) {
+			LOGGER.warn("FSN encountered without semantic tag: {}", c2);
 		}
-		return fsnSemTag1[1].compareTo(fsnSemTag2[1]);
+
+		// 2. If both have semantic tags, compare them
+		if (semTag1 != null) {
+			int semTagCompare = semTag1.compareTo(semTag2);
+			if (semTagCompare != 0) return semTagCompare;
+
+			// 3. Same semantic tag → compare FSN term
+			int fsnCompare = fsnSemTag1[0].compareTo(fsnSemTag2[0]);
+			if (fsnCompare != 0) return fsnCompare;
+		}
+
+		// 4. Final stable tie-breaker
+		return c1.getId().compareTo(c2.getId());
 	}
+
 
 	public static boolean isCore(Component c) {
 		return c.getModuleId().equals(SCTID_CORE_MODULE)

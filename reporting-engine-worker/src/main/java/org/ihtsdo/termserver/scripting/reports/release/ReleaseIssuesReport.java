@@ -315,6 +315,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		multipleLangRef();
 		multiplePTs();
 		multipleFSNs();
+		noCncIndicators();
 		if (isMS()) {
 			unexpectedLangCodeMS();
 		} else {
@@ -383,6 +384,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Component referencedComponent : c.getReferencedComponents(gl)) {
 				//What is the module of the referenced component?
 				String referencedModule = referencedComponent.getModuleId();
+				if (referencedModule == null) {
+					LOGGER.error("Referenced component {} has no moduleId", referencedComponent);
+					continue;
+				}
 				if (!referencedModule.equals(moduleId) &&
 					!gl.getMdrs().getDependencies(moduleId).contains(referencedModule)) {
 					Concept owningConcept = gl.getComponentOwner(c.getId());
@@ -1007,6 +1012,22 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					}
 				} else {
 					fsnMap.put(d.getLang(), d);
+				}
+			}
+		}
+	}
+
+	private void noCncIndicators() throws TermServerScriptException {
+		String issueStr = "CNC Indicators are no longer used.";
+		initialiseSummary(issueStr);
+		for (Concept c : allConceptsSorted) {
+			for (Description d : c.getDescriptions()) {
+				if (inScope(d)) {
+					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), i);
+						}
+					}
 				}
 			}
 		}
