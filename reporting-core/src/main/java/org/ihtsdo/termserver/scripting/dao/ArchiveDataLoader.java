@@ -47,21 +47,28 @@ public class ArchiveDataLoader implements DataLoader {
 	@Override
 	public void download (File archive) throws TermServerScriptException {
 		if (s3Manager.isUseCloud()) {
+			//Make sure the directory we're going to write to actually exists
+			File parentDir = archive.getParentFile();
+			if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
+				throw new TermServerScriptException(
+						"Failed to create directory for archive: " + parentDir.getAbsolutePath()
+				);
+			}
+
 			try {
 				ResourceManager resourceManager = s3Manager.getResourceManager();
-
+				LOGGER.info("Downloading {} from S3", archive.getName());
 				try (InputStream input = resourceManager.readResourceStream(archive.getName());
 					OutputStream out = new FileOutputStream(archive);) {
-					LOGGER.info("Downloading " + archive.getName() + " from S3");
 					IOUtils.copy(input, out);
 					LOGGER.info("Download complete");
 				}
 			} catch (Throwable  t) {
-				final String msg = "Error when trying to download " + archive.getName() + " from S3 via :" +  archiveLoaderConfig;
+				final String msg = "Error when trying to download " + archive.getName() + " from S3 via: " +  archiveLoaderConfig;
 				throw new TermServerScriptException(msg, t);
 			}
 		} else {
-			LOGGER.info("ArchiveDataLoader set to local source. Will expect " + archive + " to be available.");
+			LOGGER.info("ArchiveDataLoader set to local source. Will expect {} to be available.", archive);
 		}
 	}
 

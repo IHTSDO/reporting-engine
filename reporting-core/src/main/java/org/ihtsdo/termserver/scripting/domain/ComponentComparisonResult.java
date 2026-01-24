@@ -5,7 +5,7 @@ import java.util.List;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
 public class ComponentComparisonResult {
-	
+
 	enum Result { NO_MATCH, DIFFERS, MATCHES }
 	
 	Component left;
@@ -68,6 +68,11 @@ public class ComponentComparisonResult {
 
 	public boolean isMatch() {
 		return comparisonResult.equals(Result.MATCHES);
+	}
+
+	public ComponentComparisonResult recordResult(boolean matches) {
+		comparisonResult = matches ? Result.MATCHES : Result.DIFFERS;
+		return this;
 	}
 	
 	@Override

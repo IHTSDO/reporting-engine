@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service;
 public class ArchiveManager implements ScriptConstants {
 
 	private static final String SNAPSHOT = "Snapshot";
+	private static final String RELEASES_SLASH = "releases/";
 	
 	static ArchiveManager singleton;
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
@@ -380,7 +381,7 @@ public class ArchiveManager implements ScriptConstants {
 			throw unrecoverable;
 		} catch (Exception e) {
 			LOGGER.error("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
-			if (!snapshot.getPath().startsWith("releases/")) {
+			if (!snapshot.getPath().startsWith(RELEASES_SLASH)) {
 				LOGGER.info("Deleting {}", snapshot);
 				try {
 					if (snapshot.isFile()) {
@@ -575,7 +576,7 @@ public class ArchiveManager implements ScriptConstants {
 	private File determineDependencyIfRequired(Project project) throws TermServerScriptException {
 		File dependency = null;
 		if (project.getMetadata().getDependencyPackage() != null) {
-			dependency = new File (dataStoreRoot + "releases/"  + project.getMetadata().getDependencyPackage());
+			dependency = new File (dataStoreRoot + RELEASES_SLASH  + project.getMetadata().getDependencyPackage());
 			if (!dependency.exists()) {
 				getArchiveDataLoader().download(dependency);
 			}
@@ -585,7 +586,7 @@ public class ArchiveManager implements ScriptConstants {
 	}
 
 	public File determinePreviousPackage(Project project) throws TermServerScriptException {
-		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
+		File previous = new File (dataStoreRoot + RELEASES_SLASH  + project.getMetadata().getPreviousPackage());
 		if (!previous.exists()) {
 			getArchiveDataLoader().download(previous);
 		}
@@ -678,13 +679,13 @@ public class ArchiveManager implements ScriptConstants {
 			if (projectTaskKey.endsWith(fileExt)) {
 				fileExt = "";
 			}
-			return new File (dataStoreRoot + "releases/" + projectTaskKey + fileExt);
+			return new File (dataStoreRoot + RELEASES_SLASH + projectTaskKey + fileExt);
 		} else {
 			//Do we have a release effective time as a project?  Or a branch release
 			String releaseBranch = detectReleaseBranch(projectTaskKey);
 			if (releaseBranch != null) {
 				LOGGER.info("Release branch determined to be numeric: {}", releaseBranch);
-				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
+				return new File (dataStoreRoot + RELEASES_SLASH + releaseBranch + ".zip");
 			} else  {
 				return new File (dataStoreRoot + "snapshots/" + projectTaskKey + "_" + ts.getEnv());
 			}

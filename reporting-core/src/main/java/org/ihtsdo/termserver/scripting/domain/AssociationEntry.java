@@ -34,7 +34,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newComponentSctId;
 		clone.setTargetComponentId(this.getTargetComponentId());
-		clone.isDirty = true; //New components need to be written to any delta
+		clone.setDirty(); //New components need to be written to any delta
 		clone.released = this.released;
 		return clone;
 	}
@@ -106,7 +106,7 @@ public class AssociationEntry extends RefsetMember implements ScriptConstants {
 
 	public void setTargetComponentId(String targetComponentId) {
 		if (getTargetComponentId() != null && !getTargetComponentId().equals(targetComponentId)) {
-			isDirty = true;
+			setDirty();
 		}
 		setField(TARGET_COMPONENT_ID, targetComponentId);
 	}

@@ -20,7 +20,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newComponentSctId;
 		clone.setInactivationReasonId(getInactivationReasonId());
-		clone.isDirty = true; //New components need to be written to any delta
+		clone.setDirty(); //New components need to be written to any delta
 		clone.released = this.released;
 		return clone;
 	}
@@ -39,7 +39,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = this.getReferencedComponentId();
 		clone.setInactivationReasonId(getInactivationReasonId());
-		clone.isDirty = true; //New components need to be written to any delta
+		clone.setDirty(); //New components need to be written to any delta
 		clone.released = this.released;
 		return clone;
 	}
@@ -102,7 +102,7 @@ public class InactivationIndicatorEntry extends RefsetMember implements ScriptCo
 	}
 	public void setInactivationReasonId(String inactivationReasonId) {
 		if (getInactivationReasonId() != null && !getInactivationReasonId().equals(inactivationReasonId)) {
-			isDirty = true;
+			setDirty();
 		}
 		setField(VALUE_ID,inactivationReasonId);
 	}

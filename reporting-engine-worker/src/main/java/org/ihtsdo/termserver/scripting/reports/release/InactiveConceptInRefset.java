@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.HighVolumeUsageHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.jetbrains.annotations.NotNull;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
@@ -212,7 +211,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		}
 	}
 
-	private @NotNull List<Concept> getInactivatedConcepts() {
+	private List<Concept> getInactivatedConcepts() {
 		//If we are including the last release then all concepts are in scope and
 		//inactivations from the previous international release are included
 		if (lastReleaseEffectiveTime == null) {

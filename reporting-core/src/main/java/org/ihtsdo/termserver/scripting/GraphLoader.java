@@ -628,7 +628,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	public boolean conceptKnown(String sctId) {
 		return concepts.containsKey(sctId);
 	}
-	
+
+	public Concept getConcept(String identifier, boolean validateExists) throws TermServerScriptException {
+		return getConcept(identifier, false, validateExists);
+	}
+
 	public Concept getConcept(String identifier, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
 		//Have we been passed a full identifier for the concept eg SCTID |FSN| ?
 		if (StringUtils.isEmpty(identifier)) {

@@ -9,7 +9,6 @@ import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
@@ -186,7 +185,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		}
 
 		@Override
-		public int compareTo(@NotNull Annotation otherAnnotation) {
+		public int compareTo(Annotation otherAnnotation) {
 			if (this.annotationType.equals(otherAnnotation.annotationType)) {
 				return this.annotationValue.compareTo(otherAnnotation.annotationValue);
 			} else {

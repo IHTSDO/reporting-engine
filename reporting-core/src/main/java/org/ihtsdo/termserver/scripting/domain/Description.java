@@ -218,7 +218,7 @@ public class Description extends Component implements ScriptConstants, Serializa
 	public void setTerm(String term) {
 		//Are we changing the term?
 		if (this.term != null && !this.term.equalsIgnoreCase(term)) {
-			isDirty = true;
+			setDirty();
 		}
 		
 		if (padTerm) {
@@ -323,7 +323,7 @@ public class Description extends Component implements ScriptConstants, Serializa
 		clone.conceptId = this.conceptId;
 		clone.type = this.type;
 		clone.lang = this.lang;
-		clone.term = this.term;
+		clone.setTerm(this.term);
 		clone.caseSignificance = this.caseSignificance;
 		if (this.released != null) {
 			clone.setReleased(keepIds ? this.released : false);
