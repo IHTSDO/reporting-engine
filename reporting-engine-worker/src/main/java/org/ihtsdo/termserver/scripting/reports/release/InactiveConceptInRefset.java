@@ -45,7 +45,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INCLUDE_LAST_RELEASE, "true");
+		params.put(INCLUDE_LAST_RELEASE, FALSE);
 		params.put(EXT_REF_ONLY, FALSE);
 		TermServerScript.run(InactiveConceptInRefset.class, args, params);
 	}
@@ -76,11 +76,15 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Count",
 				"Id, FSN, SemTag, Count, Refset Module",
-				"Id, FSN, SemTag, Refset, Concept Module, Refset Module, Reason, Assoc Type, Assoc Value"};
+				"Id, FSN, SemTag, Module, Refset, Refset Module, Reason, Assoc Type, Assoc Value",
+				"Id, FSN, SemTag, Module, Usage, Reason, Assoc Type, Assoc Value"
+		};
 		String[] tabNames = new String[] {
 				"Module Summary",
 				"Per Refset Counts",
-				"Concepts Inactivated in Refsets"};
+				"Inactivated Concepts in Refsets",
+				"Inactivated UK High Volume Usage Concepts"
+		};
 		super.postInit(tabNames, columnHeadings);
 	}
 
@@ -183,11 +187,25 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
 			String assocType = SnomedUtils.getAssociationType(a);
 			Concept assocValue = gl.getConcept(a.getTargetComponentId());
-			report(TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId(), i, assocType, assocValue);
+			report(TERTIARY_REPORT, c, c.getModuleId(), refset, refset.getModuleId(), i, assocType, assocValue);
 			reported = true;
 		}
 		if (!reported) {
-			report(TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId(), i, "N/A", "N/A");
+			report(TERTIARY_REPORT, c, c.getModuleId(), refset, refset.getModuleId(), i, "N/A", "N/A");
+		}
+	}
+
+	private void outputConcept(Concept c, HighVolumeUsageHelper.Usage usage) throws TermServerScriptException {
+		boolean reported = false;
+		InactivationIndicator i = c.getInactivationIndicator();
+		for (AssociationEntry a : c.getAssociationEntries(ActiveState.ACTIVE, true)) {
+			String assocType = SnomedUtils.getAssociationType(a);
+			Concept assocValue = gl.getConcept(a.getTargetComponentId());
+			report(QUATERNARY_REPORT, c, c.getModuleId(), usage, i, assocType, assocValue);
+			reported = true;
+		}
+		if (!reported) {
+			report(QUATERNARY_REPORT, c, c.getModuleId(), usage, i, "N/A", "N/A");
 		}
 	}
 
@@ -237,7 +255,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		for (String sctid : inactivatedIds) {
 			if (hvuHelper.hasRecentHighUsage(sctid)) {
 				Concept c =  gl.getConcept(sctid);
-				report(TERTIARY_REPORT, c, "High Volume Usage", c.getModuleId(), hvuHelper.getUsage(sctid));
+				outputConcept(c, hvuHelper.getUsage(sctid));
 				refsetSummary.getAndIncrement(hvu);
 			}
 		}
