@@ -85,7 +85,7 @@ public class TaskHelper {
 				task.setSummary(taskPrefix + taskSummary);
 			}
 
-			LOGGER.debug("Creating task in authoring services: {}", task);
+			LOGGER.debug("Creating task using authoring services: {}", task);
 			Task createdTSTask = ts.getAuthoringServicesClient().createTask(task);
 			task.setBranchPath(createdTSTask.getBranchPath());
 			task.setKey(createdTSTask.getKey());
@@ -97,7 +97,7 @@ public class TaskHelper {
 		} catch (Exception e) {
 			taskCreationAttempts++;
 			try {
-				ts.getAuthoringServicesClient().deleteTask(ts.getProject().getKey(), task.getKey(), true);  //Don't worry if deletion fails
+				ts.getAuthoringServicesClient().deleteTask(task, true);  //Don't worry if deletion fails
 			} catch (Exception e2) {
 				//Don't worry about failing to delete the task, we can do that directly in JIRA
 			}

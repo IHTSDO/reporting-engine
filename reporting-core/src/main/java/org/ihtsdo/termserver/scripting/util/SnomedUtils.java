@@ -2572,4 +2572,12 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 				.map(a -> (includeScheme? "" : (a.getIdentifierSchemeId() +  ": ")) + a.getAlternateIdentifier())
 				.collect(Collectors.joining(", \n"));
 	}
+
+	public static boolean containsRelsWithTargets(Set<Relationship> rels, List<Concept> targets) {
+		Set<Concept> relTargets = rels.stream()
+				.map(Relationship::getTarget)
+				.collect(Collectors.toSet());
+
+		return relTargets.containsAll(targets);
+	}
 }
