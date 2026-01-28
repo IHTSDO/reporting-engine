@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -157,6 +158,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			String[] descInactivationIds = getDescInactivationIds(c);
 			String[] histAssocIds = getHistAssocIds(c);
 			String[] descHistAssocIds = getDescHistAssocIds(c);
+			String[] annotationIds = getAnnotationIds(c);
 			String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
 			String histAssocTargets = getHistAssocTargets(c);
 			ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, intermediatePrimitiveIndicator,
@@ -165,7 +167,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 					axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 					inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
 					c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE],
-					descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], histAssocTargets);
+					descInactivationIds[ACTIVE], descInactivationIds[INACTIVE], histAssocTargets,
+					annotationIds[ACTIVE], annotationIds[INACTIVE]);
 		}
 	}
 
@@ -331,6 +334,30 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.map(RefsetMember::getId)
 		.collect(Collectors.joining(","));
 		
+		return results;
+	}
+
+	private String[] getAnnotationIds(Concept c) {
+		String[] results = new String[2];
+
+		List<String> annotationIds = new ArrayList<>();
+		List<String> annotationIdsInact = new ArrayList<>();
+
+		for (Component comp : SnomedUtils.getAllComponents(c)) {
+			for (ComponentAnnotationEntry a : comp.getComponentAnnotationEntries()) {
+				if (inScope(a)) {
+					if (a.isActiveSafely()) {
+						annotationIds.add(a.getId());
+					} else {
+						annotationIdsInact.add(a.getId());
+					}
+				}
+			}
+		}
+
+		results[ACTIVE] = String.join(",", annotationIds);
+		results[INACTIVE] = String.join(",", annotationIdsInact);
+
 		return results;
 	}
 

@@ -33,238 +33,258 @@ public class HistoricData implements RF2Constants {
 	private List<String> descHistAssocIdsInact;
 	private List<String> descInactivationIds;
 	private List<String> descInactivationIdsInact;
-	private List<String> histAssocTargets;public long getConceptId() {
-	    return conceptId;
+	private List<String> histAssocTargets;
+	private List<String> annotationIds;
+	private List<String> annotationIdsInact;
+
+	public long getConceptId() {
+		return conceptId;
 	}
 
 	public void setConceptId(long conceptId) {
-	    this.conceptId = conceptId;
+		this.conceptId = conceptId;
 	}
 
 	public String getFsn() {
-	    return fsn;
+		return fsn;
 	}
 
 	public void setFsn(String fsn) {
-	    this.fsn = fsn;
+		this.fsn = fsn;
 	}
 
 	public boolean isActive() {
-	    return isActive;
+		return isActive;
 	}
 
 	public void setActive(boolean isActive) {
-	    this.isActive = isActive;
+		this.isActive = isActive;
 	}
 
 	public boolean isSD() {
-	    return isSD;
+		return isSD;
 	}
 
 	public void setSD(boolean isSD) {
-	    this.isSD = isSD;
+		this.isSD = isSD;
 	}
 
 	public String getHierarchy() {
-	    return hierarchy;
+		return hierarchy;
 	}
 
 	public void setHierarchy(String hierarchy) {
-	    this.hierarchy = hierarchy;
+		this.hierarchy = hierarchy;
 	}
 
 	public boolean isIP() {
-	    return isIP;
+		return isIP;
 	}
 
 	public void setIP(boolean isIP) {
-	    this.isIP = isIP;
+		this.isIP = isIP;
 	}
 
 	public boolean hasSdDescendant() {
-	    return hasSdDescendant;
+		return hasSdDescendant;
 	}
 
 	public void setHasSdDescendant(boolean hasSdDescendant) {
-	    this.hasSdDescendant = hasSdDescendant;
+		this.hasSdDescendant = hasSdDescendant;
 	}
 
 	public boolean hasSdAncestor() {
-	    return hasSdAncestor;
+		return hasSdAncestor;
 	}
 
 	public void setHasSdAncestor(boolean hasSdAncestor) {
-	    this.hasSdAncestor = hasSdAncestor;
+		this.hasSdAncestor = hasSdAncestor;
 	}
 
 	public void setHashCode(int hashCode) {
-	    this.hashCode = hashCode;
+		this.hashCode = hashCode;
 	}
 
 	public String getModuleId() {
-	    return moduleId;
+		return moduleId;
 	}
 
 	public void setModuleId(String moduleId) {
-	    this.moduleId = moduleId;
+		this.moduleId = moduleId;
 	}
 
 	public List<String> getRelIds() {
-	    return relIds;
+		return relIds;
 	}
 
 	public void setRelIds(List<String> relIds) {
-	    this.relIds = relIds;
+		this.relIds = relIds;
 	}
 
 	public List<String> getDescIds() {
-	    return descIds;
+		return descIds;
 	}
 
 	public void setDescIds(List<String> descIds) {
-	    this.descIds = descIds;
+		this.descIds = descIds;
 	}
 
 	public List<String> getAxiomIds() {
-	    return axiomIds;
+		return axiomIds;
 	}
 
 	public void setAxiomIds(List<String> axiomIds) {
-	    this.axiomIds = axiomIds;
+		this.axiomIds = axiomIds;
 	}
 
 	public List<String> getLangRefsetIds() {
-	    return langRefsetIds;
+		return langRefsetIds;
 	}
 
 	public void setLangRefsetIds(List<String> langRefsetIds) {
-	    this.langRefsetIds = langRefsetIds;
+		this.langRefsetIds = langRefsetIds;
 	}
 
 	public List<String> getInactivationIds() {
-	    return inactivationIds;
+		return inactivationIds;
 	}
 
 	public void setInactivationIds(List<String> inactivationIds) {
-	    this.inactivationIds = inactivationIds;
+		this.inactivationIds = inactivationIds;
 	}
 
 	public List<String> getHistAssocIds() {
-	    return histAssocIds;
+		return histAssocIds;
 	}
 
 	public void setHistAssocIds(List<String> histAssocIds) {
-	    this.histAssocIds = histAssocIds;
+		this.histAssocIds = histAssocIds;
 	}
 
 	public List<String> getRelIdsInact() {
-	    return relIdsInact;
+		return relIdsInact;
 	}
 
 	public void setRelIdsInact(List<String> relIdsInact) {
-	    this.relIdsInact = relIdsInact;
+		this.relIdsInact = relIdsInact;
 	}
 
 	public List<String> getDescIdsInact() {
-	    return descIdsInact;
+		return descIdsInact;
 	}
 
 	public void setDescIdsInact(List<String> descIdsInact) {
-	    this.descIdsInact = descIdsInact;
+		this.descIdsInact = descIdsInact;
 	}
 
 	public List<String> getAxiomIdsInact() {
-	    return axiomIdsInact;
+		return axiomIdsInact;
 	}
 
 	public void setAxiomIdsInact(List<String> axiomIdsInact) {
-	    this.axiomIdsInact = axiomIdsInact;
+		this.axiomIdsInact = axiomIdsInact;
 	}
 
 	public List<String> getLangRefsetIdsInact() {
-	    return langRefsetIdsInact;
+		return langRefsetIdsInact;
 	}
 
 	public void setLangRefsetIdsInact(List<String> langRefsetIdsInact) {
-	    this.langRefsetIdsInact = langRefsetIdsInact;
+		this.langRefsetIdsInact = langRefsetIdsInact;
 	}
 
 	public List<String> getInactivationIdsInact() {
-	    return inactivationIdsInact;
+		return inactivationIdsInact;
 	}
 
 	public void setInactivationIdsInact(List<String> inactivationIdsInact) {
-	    this.inactivationIdsInact = inactivationIdsInact;
+		this.inactivationIdsInact = inactivationIdsInact;
 	}
 
 	public List<String> getHistAssocIdsInact() {
-	    return histAssocIdsInact;
+		return histAssocIdsInact;
 	}
 
 	public void setHistAssocIdsInact(List<String> histAssocIdsInact) {
-	    this.histAssocIdsInact = histAssocIdsInact;
+		this.histAssocIdsInact = histAssocIdsInact;
 	}
 
 	public boolean hasAttributes() {
-	    return hasAttributes;
+		return hasAttributes;
 	}
 
 	public void setHasAttributes(boolean hasAttributes) {
-	    this.hasAttributes = hasAttributes;
+		this.hasAttributes = hasAttributes;
 	}
 
 	public List<String> getDescHistAssocIds() {
-	    return descHistAssocIds;
+		return descHistAssocIds;
 	}
 
 	public void setDescHistAssocIds(List<String> descHistAssocIds) {
-	    this.descHistAssocIds = descHistAssocIds;
+		this.descHistAssocIds = descHistAssocIds;
 	}
 
 	public List<String> getDescHistAssocIdsInact() {
-	    return descHistAssocIdsInact;
+		return descHistAssocIdsInact;
 	}
 
 	public void setDescHistAssocIdsInact(List<String> descHistAssocIdsInact) {
-	    this.descHistAssocIdsInact = descHistAssocIdsInact;
+		this.descHistAssocIdsInact = descHistAssocIdsInact;
 	}
 
 	public List<String> getDescInactivationIds() {
-	    return descInactivationIds;
+		return descInactivationIds;
 	}
 
 	public void setDescInactivationIds(List<String> descInactivationIds) {
-	    this.descInactivationIds = descInactivationIds;
+		this.descInactivationIds = descInactivationIds;
 	}
 
 	public List<String> getDescInactivationIdsInact() {
-	    return descInactivationIdsInact;
+		return descInactivationIdsInact;
 	}
 
 	public void setDescInactivationIdsInact(List<String> descInactivationIdsInact) {
-	    this.descInactivationIdsInact = descInactivationIdsInact;
+		this.descInactivationIdsInact = descInactivationIdsInact;
 	}
 
 	public List<String> getHistAssocTargets() {
-	    return histAssocTargets;
+		return histAssocTargets;
 	}
 
 	public void setHistAssocTargets(List<String> histAssocTargets) {
-	    this.histAssocTargets = histAssocTargets;
+		this.histAssocTargets = histAssocTargets;
 	}
 
-		@Override
-		public int hashCode() {
-			return hashCode;
-		}
+	public List<String> getAnnotationIds() {
+		return annotationIds;
+	}
 
-		@Override
-		public boolean equals(Object o) {
-			if (o instanceof HistoricData datum) {
-				return this.conceptId == datum.conceptId;
-			}
-			return false;
+	public void setAnnotationIds(List<String> annotationIds) {
+		this.annotationIds = annotationIds;
+	}
+
+	public List<String> getAnnotationIdsInact() {
+		return annotationIdsInact;
+	}
+
+	public void setAnnotationIdsInact(List<String> annotationIdsInact) {
+		this.annotationIdsInact = annotationIdsInact;
+	}
+
+	@Override
+	public int hashCode() {
+		return hashCode;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof HistoricData datum) {
+			return this.conceptId == datum.conceptId;
 		}
+		return false;
+	}
 
 	public static HistoricData fromLine(String line, boolean minimalSet) {
 		int idx = 0;
@@ -299,6 +319,8 @@ public class HistoricData implements RF2Constants {
 			datum.descInactivationIds = Arrays.asList(lineItems[++idx].split(","));
 			datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
 			datum.histAssocTargets = Arrays.asList(lineItems[++idx].split(","));
+			datum.annotationIds = Arrays.asList(lineItems[++idx].split(","));
+			datum.annotationIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		} else {
 			idx++;
 			datum.hierarchy = lineItems[++idx];

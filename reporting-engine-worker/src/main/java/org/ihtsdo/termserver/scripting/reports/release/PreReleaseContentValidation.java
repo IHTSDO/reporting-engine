@@ -5,6 +5,7 @@ import java.util.stream.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
@@ -28,14 +29,15 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 
 	private static final String STD_HEADER = "SCTID, FSN, SemTag";
 
+	private List<Concept> allConceptsSorted;
 	private List<Concept> allActiveConceptsSorted;
 	private List<Concept> allInactiveConceptsSorted;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230630T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20230531T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260201T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260101T120000Z.zip");
 
 		TermServerScript.run(PreReleaseContentValidation.class, args, params);
 	}
@@ -88,7 +90,8 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			getJobRun().setProject(origProject);
 		}
 
-		String[] columnHeadings = new String[] {"Summary Item, Count",
+		String[] columnHeadings = new String[] {
+				"Summary Item, Count",
 				"SCTID, FSN, SemTag, New Hierarchy, Old Hierarchy",
 				"SCTID, FSN, SemTag, Old FSN, Difference",
 				STD_HEADER,
@@ -96,8 +99,11 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				"SCTID, FSN, SemTag, Defn Status Change",
 				STD_HEADER,
 				"SCTID, FSN, SemTag, Text Definition",
-				STD_HEADER};
-		String[] tabNames = new String[] {	"Summary Counts",
+				STD_HEADER,
+				STD_HEADER
+		};
+		String[] tabNames = new String[] {
+				"Summary Counts",
 				"Hierarchy Switches",
 				"FSN Changes",
 				"Inactivated",
@@ -105,23 +111,26 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				"DefnStatus",
 				"New FSNs",
 				"Text Defn",
-				"ICD-O"};
+				"Inactivated Annotations",
+				"ICD-O"
+		};
 		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override
 	public void runJob() throws TermServerScriptException {
 
-		allActiveConceptsSorted = gl.getAllConcepts().stream()
-				.filter(Component::isActiveSafely)
+		allConceptsSorted = gl.getAllConcepts().stream()
 				.filter(this::inScope)
 				.sorted(SnomedUtils::compareSemTagFSN)
 				.toList();
 
-		allInactiveConceptsSorted =gl.getAllConcepts().stream()
+		allActiveConceptsSorted = allConceptsSorted.stream()
+				.filter(Component::isActiveSafely)
+				.toList();
+
+		allInactiveConceptsSorted = allConceptsSorted.stream()
 				.filter(c -> !c.isActiveSafely())
-				.filter(this::inScope)
-				.sorted(SnomedUtils::compareSemTagFSN)
 				.toList();
 
 		LOGGER.info("Loading Previous Data");
@@ -145,10 +154,13 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		LOGGER.info("Checking for New FSNs");
 		checkForNewFSNs();
 
-		LOGGER.info("Check for New / Changed Text Definitions");
+		LOGGER.info("Checking for New / Changed Text Definitions");
 		checkForUpsertedTextDefinitions();
 
-		LOGGER.info("Check for ICD-O changes");
+		LOGGER.info("Checking for inactivated annotations");
+		checkForInactivatedAnnotations();
+
+		LOGGER.info("Checking for ICD-O changes");
 		checkForICDOChanges();
 
 		LOGGER.info("Compiling Summary Counts");
@@ -182,11 +194,9 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			try {
 				//Was this concept in the previous release and if so, has it switched?
 				HistoricData prevDatum = prevData.get(c.getId());
-				if (prevDatum != null) {
-					if (!prevDatum.getFsn().equals(c.getFsn())) {
-						report(TERTIARY_REPORT, c, prevDatum.getFsn(), StringUtils.difference(c.getFsn(), prevDatum.getFsn()));
-						incrementSummaryInformation(summaryItem);
-					}
+				if (prevDatum != null && !prevDatum.getFsn().equals(c.getFsn())) {
+					report(TERTIARY_REPORT, c, prevDatum.getFsn(), StringUtils.difference(c.getFsn(), prevDatum.getFsn()));
+					incrementSummaryInformation(summaryItem);
 				}
 			} catch (Exception e) {
 				report(TERTIARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
@@ -201,14 +211,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			try {
 				//Was this concept in the previous release and if so, has it switched?
 				HistoricData prevDatum = prevData.get(c.getId());
-				if (prevDatum != null) {
-					if (prevDatum.isActive()) {
-						report(QUATERNARY_REPORT, c);
-						incrementSummaryInformation(summaryItem);
-					}
+				if (prevDatum != null && prevDatum.isActive()) {
+					report(QUATERNARY_REPORT, c);
+					incrementSummaryInformation(summaryItem);
 				}
 			} catch (Exception e) {
-				report(QUATERNARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(QUATERNARY_REPORT, c, "Error recovering inactivated concept: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -220,14 +228,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			try {
 				//Was this concept in the previous release and if so, has it switched?
 				HistoricData prevDatum = prevData.get(c.getId());
-				if (prevDatum != null) {
-					if (!prevDatum.isActive()) {
-						report(QUINARY_REPORT, c);
-						incrementSummaryInformation(summaryItem);
-					}
+				if (prevDatum != null && !prevDatum.isActive()) {
+					report(QUINARY_REPORT, c);
+					incrementSummaryInformation(summaryItem);
 				}
 			} catch (Exception e) {
-				report(QUINARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(QUINARY_REPORT, c, "Error recovering reactivated concept: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -242,15 +248,13 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 			try {
 				//Was this concept in the previous release and if so, has it switched?
 				HistoricData prevDatum = prevData.get(c.getId());
-				if (prevDatum != null) {
-					//If what was SD is now P, or visa versa, report
-					if (prevDatum.isSD() == c.isPrimitive()) {
-						report(SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
-						incrementSummaryInformation(c.isPrimitive()?summaryItem1:summaryItem2);
-					}
+				//If what was SD is now P, or visa versa, report
+				if (prevDatum != null && prevDatum.isSD() == c.isPrimitive()) {
+					report(SENARY_REPORT, c, c.isPrimitive()?"SD->P":"P->SD");
+					incrementSummaryInformation(c.isPrimitive()?summaryItem1:summaryItem2);
 				}
 			} catch (Exception e) {
-				report(SENARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(SENARY_REPORT, c, "Error recovering definition status change: " + ExceptionUtils.getExceptionCause("", e));
 			}
 		}
 	}
@@ -288,13 +292,44 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				}
 
 			} catch (Exception e) {
-				report(OCTONARY_REPORT, c, "Error recovering FSN: " + ExceptionUtils.getExceptionCause("", e));
+				report(OCTONARY_REPORT, c, "Error recovering text definition: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
+
+	private void checkForInactivatedAnnotations() throws TermServerScriptException {
+		String summaryItem = "Inactivated Annotations";
+		initialiseSummaryInformation(summaryItem);
+		for (Concept c : allConceptsSorted ) {
+			try {
+				HistoricData prevDatum = prevData.get(c.getId());
+				// Was this concept in the previous release
+				if (prevDatum != null) {
+					// Get list of active annotations for this concept in the previous release
+					List<String> annotationIds = prevDatum.getAnnotationIds();
+					if (!annotationIds.isEmpty()) {
+						findInactivatedAnnotations(c, annotationIds, summaryItem);
+					}
+				}
+			} catch (Exception e) {
+				report(NONARY_REPORT, c, "Error recovering inactivated annotation: " + ExceptionUtils.getExceptionCause("", e));
+			}
+		}
+	}
+
+	private void findInactivatedAnnotations(Concept c, List<String> annotationIds, String summaryItem) throws TermServerScriptException {
+		for (Component comp : SnomedUtils.getAllComponents(c)) {
+			for (ComponentAnnotationEntry a : comp.getComponentAnnotationEntries()) {
+				if (!a.isActiveSafely() && annotationIds.contains(a.getId())) {
+					report(NONARY_REPORT, c, a);
+					incrementSummaryInformation(summaryItem);
+				}
 			}
 		}
 	}
 
 	private void checkForICDOChanges() throws TermServerScriptException {
-		report(NONARY_REPORT, "ICDO Refset Members not available");
+		report(DENARY_REPORT, "ICDO Refset Members not available");
 	}
 
 	private void compileSummaryCounts() {
