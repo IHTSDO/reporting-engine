@@ -28,6 +28,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	private static final char LINE_CREATED_INDICATOR = '>';
 	private static final int TIMEOUT_MINUTES = 30;
 	private static final int FILE_COMPARISON_TAB = MAX_REPORT_TABS;
+	private static final int MDRS_TAB = FILE_COMPARISON_TAB + 1;
 
 	private static final String CONCEPT_FILENAME = "sct2_Concept_.*";
 	private static final String DESCRIPTION_FILENAME = "sct2_Description_.*";
@@ -61,7 +62,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	};
 	
 	private final String[] columnHeadings = new String[] {
-			"Filename, New, Changed, Inactivated, Reactivated, Moved Module, Promoted, New Inactive, Changed Inactive, Deleted, Header, Total",
+			"Filename, New, Changed, Inactivated, Reactivated, New Inactive, Changed Inactive, Deleted, Total, Moved Module, Promoted, Header",
 			"id, effectiveTime, active, moduleId, refsetId, referencedComponentId, sourceEffectiveTime, targetEffectiveTime"
 	};
 
@@ -75,23 +76,21 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		CHANGED,
 		INACTIVATED,
 		REACTIVATED,
-		MOVED_MODULE,
-		PROMOTED,
 		NEW_INACTIVE,
 		CHANGED_INACTIVE,
 		DELETED,
-		HEADER,
-		TOTAL
+		TOTAL,
+		MOVED_MODULE,
+		PROMOTED,
+		HEADER
 	}
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		params.put(THIS_RELEASE, "edqm/snomed_ct_edqm_map_releases/2025-09-23T10:57:27/output-files/SnomedCT_SNOMEDEDQMMapPackage_PRODUCTION_20250930T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20250701T120000Z.zip");
-		params.put(PREV_RELEASE, "edqm/snomed_ct_edqm_map_releases/2024-11-08T16:36:48/output-files/SnomedCT_SNOMEDEDQMMapPackage_PRODUCTION_20241130T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20240701T120000Z.zip");
-		params.put(MODULES, "1237620007");
+		params.put(THIS_RELEASE, "us/snomed_ct_us_releases/2026-01-09T17:46:13/output-files/xSnomedCT_ManagedServiceUS_PREPRODUCTION_US1000124_20260301T120000Z.zip");
+		params.put(PREV_RELEASE, "us/snomed_ct_us_releases/2025-07-18T11:22:32/output-files/SnomedCT_ManagedServiceUS_PRODUCTION_US1000124_20250901T120000Z.zip");
+		params.put(MODULES, "731000124108, 5991000124107");
 
 		TermServerScript.run(PackageComparisonReport.class, args, params);
 	}
@@ -446,8 +445,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			fileDetails[index.ordinal() + 1] = fileTotals.get(index);
 		}
 
-		// MOVED_MODULE and PROMOTED are only applicable for concepts when comparing editions
-		if (isExtension() || !filename.matches(CONCEPT_FILENAME)) {
+		// MOVED_MODULE and PROMOTED are only applicable when comparing editions
+		if (isExtension()) {
 			fileDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = fileDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A";
 		}
 
@@ -467,8 +466,8 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = scsTotals[IDX_MOVED_MODULE];
 				scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = scsTotals[IDX_PROMOTED];
 			} else {
-				scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = "N/A";
-				scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A";
+				scsDetails[TotalsIndex.MOVED_MODULE.ordinal() + 1] = "N/A"; // missing in SCS
+				scsDetails[TotalsIndex.PROMOTED.ordinal() + 1] = "N/A"; // missing in SCS
 			}
 			scsDetails[TotalsIndex.NEW_INACTIVE.ordinal() + 1] = scsTotals[IDX_NEW_INACTIVE];
 			scsDetails[TotalsIndex.CHANGED_INACTIVE.ordinal() + 1] = scsTotals[IDX_CHANGED_INACTIVE];
@@ -480,8 +479,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 							scsTotals[IDX_CHANGED] +
 							scsTotals[IDX_INACTIVATED] +
 							scsTotals[IDX_REACTIVATED] +
-							scsTotals[IDX_MOVED_MODULE] +
-							scsTotals[IDX_PROMOTED] +
 							scsTotals[IDX_NEW_INACTIVE] +
 							scsTotals[IDX_CHANGED_INACTIVE];
 
@@ -515,16 +512,13 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 					continue;
 				}
 
-				switch (ch) {
-					// For the same component deleted indicator always comes before created indicator in the file
-					case LINE_DELETED_INDICATOR:
-						// Previous release entry
-						countPreviousReleaseEntry(created, deleted, value);
-						break;
-					case LINE_CREATED_INDICATOR:
-						// Current release entry
-						countCurrentReleaseEntry(created, deleted, value);
-						break;
+				// For the same component deleted indicator always comes before created indicator in the file
+				if (ch == LINE_DELETED_INDICATOR) {
+					// Previous release entry
+					countPreviousReleaseEntry(created, deleted, value);
+				} else {
+					// Current release entry
+					countCurrentReleaseEntry(created, deleted, value);
 				}
 			}
 
@@ -571,8 +565,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		if (filename.matches(ASSOCIATION_REFSET_FILENAME)) {
 			processAssociationFile(path, filename, null);
 			processAssociationFile(path, filename, Set.of(SCTID_SE_REFSETID, SCTID_SP_REFSETID));
-		} else if (filename.matches(CONCEPT_FILENAME)) {
-			processConceptFile(path, filename);
  		} else {
 			processFile(path, filename);
 		}
@@ -609,50 +601,23 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
 				String key = data[IDX_ID];
 				String moduleId = data[IDX_MODULEID];
-				String effectiveTime = data[IDX_EFFECTIVETIME];
 
-				switch (ch) {
-					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
-					case LINE_DELETED_INDICATOR:
-						if (inScope(moduleId)) {
-							// Previous release entry
-							deleted.put(key, data);
-						}
-						break;
-					case LINE_CREATED_INDICATOR:
-						// Current release entry
-						if (deleted.containsKey(key)) {
-							String[] oldValue = deleted.remove(key);
-
-							if (inScope(moduleId)) {
-								ValuePair valuePair = new ValuePair(oldValue, data);
-
-								if (valuePair.isInactivated()) {
-									count(totals, TotalsIndex.INACTIVATED);
-								} else if (valuePair.isReactivated()) {
-									count(totals, TotalsIndex.REACTIVATED);
-								} else if (isChanged(effectiveTime)) {
-									if (valuePair.isActive()) {
-										count(totals, TotalsIndex.CHANGED);
-									} else if (valuePair.isInactive()) {
-										count(totals, TotalsIndex.CHANGED_INACTIVE);
-									}
-								}
-							}
-						} else if (inScope(moduleId)) {
-							created.put(key, data);
-						}
-						break;
+				// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
+				if (ch == LINE_DELETED_INDICATOR) {
+					// Previous release entry
+					deleted.put(key, data);
+				} else {
+					// Current release entry
+					if (deleted.containsKey(key)) {
+						String[] oldValue = deleted.remove(key);
+						countChanged(oldValue, data, totals);
+					} else if (inScope(moduleId)) {
+						created.put(key, data);
+					}
 				}
 			}
 
-			// Calculate created and deleted totals
-			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.DELETED, deleted.size());
-
-			// Calculate total of all changes
-			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
+			calculateTotals(totals, created, deleted);
 
 			fileTotals.put(filename, totals);
 
@@ -660,6 +625,20 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 			LOGGER.error("Error processing file: {}", filename);
 			throw new TermServerRuntimeException(e.getMessage());
 		}
+	}
+
+	private void calculateTotals(Map<TotalsIndex, Integer> totals, Map<String, String[]> created, Map<String, String[]> deleted) {
+		deleted.values().removeIf(data -> !inScope(data[IDX_MODULEID]));
+
+		// Calculate created and deleted totals
+		totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+		totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
+		totals.put(TotalsIndex.DELETED, deleted.size());
+
+		// Calculate total of all changes except and module changes
+		totals.put(TotalsIndex.TOTAL, totals.entrySet().stream()
+				.filter(e -> e.getKey().compareTo(TotalsIndex.TOTAL) < 0)
+				.map(Map.Entry::getValue).reduce(0, Integer::sum));
 	}
 
 	private void processAssociationFile(Path path, String filename, Set<String> refsetIds) {
@@ -689,56 +668,30 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				// 3 - moduleId
 				// 4 - refsetId, etc
 				String[] data = line.substring(2).split(FIELD_DELIMITER);
-				String key = data[ASSOC_IDX_ID];
-				String moduleId = data[ASSOC_IDX_MODULEID];
-				String effectiveTime = data[ASSOC_IDX_EFFECTIVETIME];
 
 				if (refsetIds != null && !refsetIds.contains(data[ASSOC_IDX_REFSETID])) {
 					continue;
 				}
 
-				switch (ch) {
-					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
-					case LINE_DELETED_INDICATOR:
-						// Previous release entry
-						if (inScope(moduleId)) {
-							deleted.put(key, data);
-						}
-						break;
-					case LINE_CREATED_INDICATOR:
-						// Current release entry
-						if (deleted.containsKey(key)) {
-							String[] oldValue = deleted.remove(key);
+				String key = data[ASSOC_IDX_ID];
+				String moduleId = data[ASSOC_IDX_MODULEID];
 
-							if (inScope(moduleId)) {
-								ValuePair valuePair = new ValuePair(oldValue, data);
-
-								if (valuePair.isInactivated()) {
-									count(totals, TotalsIndex.INACTIVATED);
-								} else if (valuePair.isReactivated()) {
-									count(totals, TotalsIndex.REACTIVATED);
-								} else if (isChanged(effectiveTime)) {
-									if (valuePair.isActive()) {
-										count(totals, TotalsIndex.CHANGED);
-									} else if (valuePair.isInactive()) {
-										count(totals, TotalsIndex.CHANGED_INACTIVE);
-									}
-								}
-							}
-						} else if (inScope(moduleId)) {
-							created.put(key, data);
-						}
-						break;
+				// For the same component in diff file, the "deleted" indicator always comes before the "created" indicator in the file
+				if (ch == LINE_DELETED_INDICATOR) {
+					// Previous release entry
+					deleted.put(key, data);
+				} else {
+					// Current release entry
+					if (deleted.containsKey(key)) {
+						String[] oldValue = deleted.remove(key);
+						countChanged(oldValue, data, totals);
+					} else if (inScope(moduleId)) {
+						created.put(key, data);
+					}
 				}
 			}
 
-			// Calculate created and deleted totals
-			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.DELETED, deleted.size());
-
-			// Calculate total of all changes
-			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
+			calculateTotals(totals, created, deleted);
 
 			fileTotals.put(filename + " " + (refsetIds == null ? "[ALL REFSETS]" : "[SEP REFSETS: " + String.join(",", refsetIds) + "]"), totals);
 
@@ -748,89 +701,29 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		}
 	}
 
-	private void processConceptFile(Path path, String filename) {
-		Map<String, String[]> created = new HashMap<>();
-		Map<String, String[]> deleted = new HashMap<>();
+	private void countChanged(String[] oldValue, String[] newValue, Map<TotalsIndex, Integer> totals) {
+		if (inScope(newValue[IDX_MODULEID])) {
+			ValuePair valuePair = new ValuePair(oldValue, newValue);
 
-		Map<TotalsIndex, Integer> totals = new EnumMap<>(TotalsIndex.class);
-
-		for (TotalsIndex index : TotalsIndex.values()) {
-			totals.put(index, 0);
-		}
-
-		try (BufferedReader br = new BufferedReader(new FileReader(path + File.separator + filename, StandardCharsets.UTF_8))) {
-			String line;
-
-			while ((line = br.readLine()) != null) {
-				char ch = line.charAt(0);
-
-				if (!(ch == LINE_DELETED_INDICATOR || ch == LINE_CREATED_INDICATOR)) {
-					continue;
-				}
-
-				// Start from index = 2 to exclude "<" or ">" and the following space and split into parts:
-				// 0 - id
-				// 1 - effectiveTime
-				// 2 - active
-				// 3 - moduleId
-				// 4 - definitionStatusId
-				String[] data = line.substring(2).split(FIELD_DELIMITER);
-				String key = data[CON_IDX_ID];
-				String effectiveTime = data[CON_IDX_EFFECTIVETIME];
-
-				switch (ch) {
-					// For the same component, the "deleted" indicator always comes before the "created" indicator in the file
-					case LINE_DELETED_INDICATOR:
-						// Previous release entry
-						deleted.put(key, data);
-						break;
-					case LINE_CREATED_INDICATOR:
-						// Current release entry
-						if (deleted.containsKey(key)) {
-							String[] oldValue = deleted.remove(key);
-
-							if (inScope(data[IDX_MODULEID])) {
-								ValuePair valuePair = new ValuePair(oldValue, data);
-
-								if (valuePair.isMovedModule()) {
-									// Moved into this module
-									count(totals, TotalsIndex.MOVED_MODULE);
-								} else {
-									if (valuePair.isInactivated()) {
-										count(totals, TotalsIndex.INACTIVATED);
-									} else if (valuePair.isReactivated()) {
-										count(totals, TotalsIndex.REACTIVATED);
-									} else if (isChanged(effectiveTime)) {
-										if (valuePair.isActive()) {
-											count(totals, TotalsIndex.CHANGED);
-										} else if (valuePair.isInactive()) {
-											count(totals, TotalsIndex.CHANGED_INACTIVE);
-										}
-									}
-								}
-							} else if (moduleFilter.contains(oldValue[IDX_MODULEID])) {
-								count(totals, TotalsIndex.PROMOTED);
-							}
-						} else if (inScope(data[IDX_MODULEID])) {
-							created.put(key, data);
-						}
-						break;
+			if (valuePair.isMovedModule()) {
+				// Moved into this module
+				count(totals, TotalsIndex.MOVED_MODULE);
+			} else {
+				if (valuePair.isInactivated()) {
+					count(totals, TotalsIndex.INACTIVATED);
+				} else if (valuePair.isReactivated()) {
+					count(totals, TotalsIndex.REACTIVATED);
+				} else if (isChanged(newValue[IDX_EFFECTIVETIME])) {
+					if (valuePair.isActive()) {
+						count(totals, TotalsIndex.CHANGED);
+					} else if (valuePair.isInactive()) {
+						count(totals, TotalsIndex.CHANGED_INACTIVE);
+					}
 				}
 			}
-
-			// Calculate created and deleted totals
-			totals.put(TotalsIndex.NEW, created.values().stream().filter(data -> ACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.NEW_INACTIVE, created.values().stream().filter(data -> INACTIVE_FLAG.equals(data[IDX_ACTIVE])).toList().size());
-			totals.put(TotalsIndex.DELETED, deleted.size());
-
-			// Calculate total of all changes
-			totals.put(TotalsIndex.TOTAL, totals.values().stream().reduce(0, Integer::sum));
-
-			fileTotals.put(filename, totals);
-
-		} catch (IOException | IndexOutOfBoundsException e) {
-			LOGGER.error("Error processing concept file: {}", filename);
-			throw new TermServerRuntimeException(e.getMessage());
+		} else if (inScope(oldValue[IDX_MODULEID])) {
+			// Promoted out of this module
+			count(totals, TotalsIndex.PROMOTED);
 		}
 	}
 
@@ -887,28 +780,27 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 		List<List<String[]>> changedList = new ArrayList<>(changed.values());
 		changedList.sort(new SortMDRS());
 
-		report(FILE_COMPARISON_TAB + 1, "Changed MDRS records: " + changedList.size());
+		report(MDRS_TAB, "Changed MDRS records: " + changedList.size());
 		for (List<String[]> oldAndNewdata : changedList) {
-			report(FILE_COMPARISON_TAB + 1, (Object[]) oldAndNewdata.get(0));
-			report(FILE_COMPARISON_TAB + 1, (Object[]) oldAndNewdata.get(1));
-			report(FILE_COMPARISON_TAB + 1, "");
+			report(MDRS_TAB, (Object[]) oldAndNewdata.get(0));
+			report(MDRS_TAB, (Object[]) oldAndNewdata.get(1));
+			report(MDRS_TAB, "");
 		}
 
 		// Output created entries
-		report(FILE_COMPARISON_TAB + 1, "Created MDRS records: " + created.size());
+		report(MDRS_TAB, "Created MDRS records: " + created.size());
 		for (String[] data : created.values()) {
-			report(FILE_COMPARISON_TAB + 1, (Object[]) data);
+			report(MDRS_TAB, (Object[]) data);
 		}
-		report(FILE_COMPARISON_TAB + 1, "");
+		report(MDRS_TAB, "");
 
 		// Output deleted entries
-		report(FILE_COMPARISON_TAB + 1, "Deleted MDRS records: " + deleted.size());
+		report(MDRS_TAB, "Deleted MDRS records: " + deleted.size());
 		for (String[] data : deleted.values()) {
-			report(FILE_COMPARISON_TAB + 1, (Object[]) data);
+			report(MDRS_TAB, (Object[]) data);
 		}
-		report(FILE_COMPARISON_TAB + 1, "");
+		report(MDRS_TAB, "");
 	}
-
 
 	private void count(Map<TotalsIndex, Integer> totals, TotalsIndex index) {
 		totals.compute(index, (k, v) -> v + 1);
