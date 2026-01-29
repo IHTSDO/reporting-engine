@@ -18,6 +18,7 @@ import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.AcceptableCharacterValidator;
 import org.ihtsdo.termserver.scripting.util.DialectChecker;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
@@ -70,6 +71,8 @@ import static org.ihtsdo.termserver.scripting.util.UnacceptableCharacters.*;
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
+	record UnwantedChar(String ch, String label, String issueStr) {}
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
 
 	private static final String CANNOT_READ = "Cannot read ";
@@ -109,7 +112,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
 		params.put(UNPROMOTED_CHANGES_ONLY, "N");
 		TermServerScript.run(ReleaseIssuesReport.class, args, params);
 	}
@@ -326,6 +329,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 		LOGGER.info("...duplicate semantic tags");
 		duplicateSemanticTags();
+
+		getReportManager().flushFiles(false);
 		
 		LOGGER.info("...parent hierarchies (~20 seconds)");
 		parentsInSameTopLevelHierarchy();
@@ -1182,43 +1187,87 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	//ISRS-414 Descriptions which contain a non-breaking space
 	private void unexpectedCharacters () throws TermServerScriptException {
-		String [][] unwantedChars = new String[][] {
-			{ ZEROSP , "Zero-sized space" },
-			{ NBSPSTR , "Non-breaking space" },
-			{ LONG_DASH , "MsWord style dash" },
-			{ EN_DASH , "EN dash" },
-			{ EM_DASH , "EM dash" },
-			{ "--" , "Double dash" },
-			{ RIGHT_APOS , "Right apostrophe" },
-			{ LEFT_APOS , "Left apostrophe" },
-			{ RIGHT_QUOTE , "Right quote" },
-			{ LEFT_QUOTE , "Left quote" },
-			{ GRAVE_ACCENT , "Grave accent" },
-			{ ACUTE_ACCENT , "Acute accent" },
-			{ SOFT_HYPHEN , "Soft hyphen" }
-		};
-		
-		for (String[] unwantedChar : unwantedChars) {
-			String issueStr = "Unexpected character(s) - " + unwantedChar[1];
-			initialiseSummary(issueStr);
-			
-			for (Concept c : allActiveConceptsSorted) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (inScope(d)) {
-						if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
-							String legacy = getLegacyIndicator(d);
-							String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
-							reportAndIncrementSummary(c, "Y".equals(legacy), issueStr, legacy, isActive(c,d),msg, d);
-							//Only report the first violation for each concept
-							break; //Or if we didn't report one due to being promoted, we're not going to report the others
-						}
+		AcceptableCharacterValidator acv = AcceptableCharacterValidator.getInstance();
+		String validatorIssueStr = "Acceptable character violation";
+		initialiseSummary(validatorIssueStr);
+		List<UnwantedChar> unwantedCharChecks = initialiseUnwantedCharChecks();
+
+
+		for (Concept c : allActiveConceptsSorted) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (!inScope(d)) {
+					continue;
+				}
+
+				String term = d.getTerm();
+				String legacy = getLegacyIndicator(d);
+
+				// 1) Unwanted character checks
+				for (UnwantedChar uc : unwantedCharChecks) {
+					int pos = term.indexOf(uc.ch());
+					if (pos != NOT_SET && !allowableException(c, uc.ch(), term)) {
+						String msg = "At position: " + pos;
+						reportAndIncrementSummary(
+								c,
+								"Y".equals(legacy),
+								uc.issueStr(),
+								legacy,
+								isActive(c, d),
+								msg,
+								d
+						);
+						break; // only first violation per concept
 					}
+				}
+
+				// 2) Acceptable character validation (exactly once per description)
+				for (AcceptableCharacterValidator.ValidationIssue issue : acv.validateString(term)) {
+					reportAndIncrementSummary(
+							c,
+							"Y".equals(legacy),
+							validatorIssueStr,
+							legacy,
+							isActive(c, d),
+							issue.toString(),
+							d
+					);
 				}
 			}
 		}
+	}
+
+	private List<UnwantedChar> initialiseUnwantedCharChecks() {
+		String [][] unwantedChars = new String[][] {
+				{ ZEROSP , "Zero-sized space" },
+				{ NBSPSTR , "Non-breaking space" },
+				{ LONG_DASH , "MsWord style dash" },
+				{ EN_DASH , "EN dash" },
+				{ EM_DASH , "EM dash" },
+				{ "--" , "Double dash" },
+				{ RIGHT_APOS , "Right apostrophe" },
+				{ LEFT_APOS , "Left apostrophe" },
+				{ RIGHT_QUOTE , "Right quote" },
+				{ LEFT_QUOTE , "Left quote" },
+				{ GRAVE_ACCENT , "Grave accent" },
+				{ ACUTE_ACCENT , "Acute accent" },
+				{ SOFT_HYPHEN , "Soft hyphen" }
+		};
+
+		List<UnwantedChar> unwantedCharChecks = Arrays.stream(unwantedChars)
+				.map(uc -> new UnwantedChar(
+						uc[0],
+						uc[1],
+						"Unexpected character(s) - " + uc[1]
+				))
+				.toList();
+
+		for (UnwantedChar uc : unwantedCharChecks) {
+			initialiseSummary(uc.issueStr());
+		}
+		return unwantedCharChecks;
 	}
 
 	private boolean allowableException(Concept c, String unwantedChars, String term) {

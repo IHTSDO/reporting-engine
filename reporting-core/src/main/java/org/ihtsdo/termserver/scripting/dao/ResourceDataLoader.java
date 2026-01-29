@@ -28,16 +28,19 @@ import java.io.OutputStream;
 public class ResourceDataLoader {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceDataLoader.class);
 
-	private static final String[] fileNames = new String[] {	"cs_words.tsv",
+	private static final String[] fileNames = new String[] {
+																"acceptable_characters.tsv",
 																"acceptable_dose_forms.tsv",
-																"us-to-gb-terms-map.txt",
 																"aggregated_UK_usage_with_decile.tsv",
+																"cs_words.tsv",
+																"derivative-locations.tsv",
 																"legacy_int_release_summary.json",
-																"prepositions.txt",
 																"preposition-exceptions.txt",
+																"prepositions.txt",
 																"repeated-word-exceptions.txt",
-																"derivative-locations.tsv"};
-	
+																"us-to-gb-terms-map.txt"
+														};
+
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;
 	
