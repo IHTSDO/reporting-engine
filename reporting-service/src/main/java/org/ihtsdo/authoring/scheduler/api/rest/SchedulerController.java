@@ -53,27 +53,33 @@ public class SchedulerController {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerController.class);
 
-	private static final String X_AUTH_TOK = "X-AUTH-token";
-	private static final String X_AUTH_USER = "X-AUTH-username";
+	private static final String X_AUTH_TOKEN = "X-AUTH-token";
+	private static final String X_AUTH_USERNAME = "X-AUTH-username";
+	private static final String X_AUTH_ROLES = "X-AUTH-roles";
+	private static final String ROLE_SNOWSTORM_SUPPORT = "ROLE_snowstorm-support";
 
 	private static class AuthData {
 		public final String authToken;
 		public final String userName;
+		public final String roles;
 
-		public AuthData(String authToken, String userName) {
+		public AuthData(String authToken, String userName, String roles) {
 			this.authToken = authToken;
 			this.userName = userName;
+			this.roles = roles;
 		}
 	}
 
 	private AuthData getAuthData(HttpServletRequest request) throws BusinessServiceException {
-		String authToken = request.getHeader(X_AUTH_TOK);
-		String userName = request.getHeader(X_AUTH_USER);
+		String authToken = request.getHeader(X_AUTH_TOKEN);
+		String userName = request.getHeader(X_AUTH_USERNAME);
+		String roles = request.getHeader(X_AUTH_ROLES);
 
 		if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(userName)) {
 			//Are local override values available?
 			authToken = config.getOverrideToken();
 			userName = config.getOverrideUsername();
+			roles = config.getOverrideRoles();
 
 			if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(userName)) {
 				throw new BusinessServiceException("Failed to recover authentication details from HTTP headers");
@@ -82,7 +88,7 @@ public class SchedulerController {
 			}
 		}
 
-		return new AuthData(authToken, userName);
+		return new AuthData(authToken, userName, roles);
 	}
 
 	@Operation(summary="List Job Types")
@@ -95,7 +101,7 @@ public class SchedulerController {
 	@Operation(summary="List job type categories")
 	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs/{typeName}")
-	public synchronized List<JobCategory> listJobTypeCategories(@PathVariable final String typeName) throws BusinessServiceException {
+	public synchronized List<JobCategory> listJobTypeCategories(HttpServletRequest request, @PathVariable final String typeName) throws BusinessServiceException {
 		//Do we need to refresh the cache?
 		if (new Date().getTime() - lastCacheUpdate.getTime() > CACHE_TIMEOUT) {
 			jobCache.clear();
@@ -103,16 +109,19 @@ public class SchedulerController {
 		}
 
 		//Do we have the data cached?
-		if (jobCache.containsKey(typeName)) {
-			return jobCache.get(typeName);
+		if (!jobCache.containsKey(typeName)) {
+			LOGGER.info("Populating cache of known jobs for type: {}.  Refresh scheduled for 30mins.", typeName);
+			List<JobCategory> jobCategories = scheduleService.listJobTypeCategories(typeName).stream()
+					.filter(jc -> !jc.getJobs().isEmpty())
+					.map(this::reverseParameterOptions)
+					.toList();
+			jobCache.put(typeName, jobCategories);
 		}
-		LOGGER.info("Populating cache of known jobs for type: {}.  Refresh scheduled for 30mins.", typeName);
-		List<JobCategory> jobCategories = scheduleService.listJobTypeCategories(typeName).stream()
-				.filter(jc -> !jc.getJobs().isEmpty())
-				.map(this::reverseParameterOptions)
-				.toList();
-		jobCache.put(typeName, jobCategories);
-		return jobCategories;
+
+		if (!getAuthData(request).roles.contains(ROLE_SNOWSTORM_SUPPORT)) {
+			return jobCache.get(typeName).stream().filter(jobCategory -> !JobCategory.DEVOPS.equals(jobCategory.getName())).toList();
+		}
+		return jobCache.get(typeName);
 	}
 
 	private JobCategory reverseParameterOptions(JobCategory jobCategory) {
@@ -128,7 +137,6 @@ public class SchedulerController {
 						jobParameter.setValues(reversedDefaultValues);
 					}
 				}
-
 			}
 		}
 		return jobCategory;

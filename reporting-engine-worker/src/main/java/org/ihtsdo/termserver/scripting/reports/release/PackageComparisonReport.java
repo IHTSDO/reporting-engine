@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportConfiguration;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -136,8 +135,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				.add(PREV_RELEASE).withType(JobParameter.Type.BUILD_ARCHIVE)
 				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
-				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.GOOGLE.name())
-				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.CSV.name())
 				.build();
 
 		return new Job()

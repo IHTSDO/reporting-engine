@@ -1,0 +1,78 @@
+package org.ihtsdo.termserver.scripting.reports.release.browser;
+
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.reports.release.SummaryComponentStats;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.script.dao.ReportConfiguration;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@SuppressWarnings("java:S110")
+public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(BrowserReleaseStatsGenerator.class);
+
+	public static void main(String[] args) throws TermServerScriptException {
+		Map<String, String> params = new HashMap<>();
+
+		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20260321T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20260301T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20260221T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20260201T120000Z.zip");
+		params.put(MODULES, "11000220105,1601000220105");
+
+		params.put(REPORT_OUTPUT_TYPES, "S3");
+		params.put(REPORT_FORMAT_TYPE, "JSON");
+		TermServerScript.run(BrowserReleaseStatsGenerator.class, args, params);
+	}
+
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withMandatory()
+				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
+				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withMandatory()
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
+				.add(MODULES).withType(JobParameter.Type.STRING)
+				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.S3.name())
+				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.JSON.name())
+				.build();
+
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DEVOPS))
+				.withName("Browser Release Stats Generator")
+				.withDescription("This report generates release statistics for the browser.")
+				.withParameters(params)
+				.withTag(INT)
+				.withTag(MS)
+				.withProductionStatus(Job.ProductionStatus.PROD_READY)
+				.withExpectedDuration(30)
+				.build();
+	}
+
+	@Override
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
+		if (!StringUtils.isEmpty(prevDependency)) {
+			LOGGER.info("Setting previous dependency archive to {}", prevDependency);
+			setDependencyArchive(prevDependency);
+		}
+		super.loadProjectSnapshot(fsnOnly);
+	}
+
+	@Override
+	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
+		if (!StringUtils.isEmpty(thisDependency)) {
+			LOGGER.info("Setting current dependency archive to {}", thisDependency);
+			setDependencyArchive(thisDependency);
+		}
+		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+	}
+
+}

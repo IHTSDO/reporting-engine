@@ -7,7 +7,6 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportConfiguration.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +28,6 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20241001T120000Z.zip");
 
 		params.put(MODULES, "57091000202101,51000202101,57101000202106");  //NZ Module
-		//REPORT_OUTPUT_TYPES, "S3"
-		//REPORT_FORMAT_TYPE, "JSON"
 		
 		TermServerScript.run(SummaryComponentStatsExtensions.class, args, params);
 	}
@@ -43,8 +40,6 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
 				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
-				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportOutputType.GOOGLE.name())
-				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportFormatType.CSV.name())
 				.build();
 		
 		return new Job()

@@ -71,4 +71,8 @@ public class WebSecurityConfig {
 		return overrideUsername;
 	}
 
+	public String getOverrideRoles() {
+		return overrideRoles;
+	}
+
 }
