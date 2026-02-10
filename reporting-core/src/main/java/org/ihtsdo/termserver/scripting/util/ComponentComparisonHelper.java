@@ -36,16 +36,23 @@ public final class ComponentComparisonHelper {
 		logCheck(left, right);
 
 		List<Component> leftComponents = getFilteredSortedComponents(left, skipForComparison);
-		List<Component> rightComponents = getFilteredComponents(right, skipForComparison);
-		Map<String, Component> rightById = mapRightComponentsById(rightComponents);
+		List<Component> rightComponents = getFilteredSortedComponents(right, skipForComparison);
+
+		Map<Class<?>, List<Component>> rightComponentsByClass = rightComponents.stream()
+				.collect(Collectors.groupingBy(Component::getClass));
+
+		Map<String, Component> rightComponentsById = rightComponents.stream()
+				.filter(c -> c.getId() != null)
+				.collect(Collectors.toMap(Component::getId, Function.identity()));
 
 		Set<Component> matchedRight = new HashSet<>();
 
 		for (Component leftComponent : leftComponents) {
+			List<Component> rightComponentsOfSameClass = rightComponentsByClass.get(leftComponent.getClass());
 			boolean matched = compareLeftComponent(
 					leftComponent,
-					rightComponents,
-					rightById,
+					rightComponentsOfSameClass,
+					rightComponentsById,
 					matchedRight,
 					changeSet
 			);
@@ -56,7 +63,6 @@ public final class ComponentComparisonHelper {
 		}
 
 		addNewRightComponents(leftComponents, rightComponents, matchedRight, changeSet);
-
 		return changeSet;
 	}
 
@@ -82,44 +88,32 @@ public final class ComponentComparisonHelper {
 	private static List<Component> getFilteredSortedComponents(
 			Concept concept,
 			Set<ComponentType> skipForComparison) {
-
+		//Note that we're sorting so that we match active components before inactive ones
 		return SnomedUtils.getAllComponents(concept).stream()
 				.filter(c -> !skipForComparison.contains(c.getComponentType()))
 				.sorted(Comparator.comparing(Component::isActiveSafely).reversed())
 				.toList();
 	}
 
-	private static List<Component> getFilteredComponents(
-			Concept concept,
-			Set<ComponentType> skipForComparison) {
-
-		return SnomedUtils.getAllComponents(concept).stream()
-				.filter(c -> !skipForComparison.contains(c.getComponentType()))
-				.toList();
-	}
-
-	private static Map<String, Component> mapRightComponentsById(List<Component> rightComponents) {
-		return rightComponents.stream()
-				.filter(c -> c.getId() != null)
-				.collect(Collectors.toMap(Component::getId, Function.identity()));
-	}
-
 	// ------------------------------------------------------------
 	// Left → Right comparison
 	// ------------------------------------------------------------
-
 	private static boolean compareLeftComponent(
 			Component left,
-			List<Component> rightComponents,
+			List<Component> rightComponentsOfSameClass,
 			Map<String, Component> rightById,
 			Set<Component> matchedRight,
 			List<ComponentComparisonResult> changeSet) {
 
+		//If there are no right components of the same class, there's no point in trying to match anything
+		if (rightComponentsOfSameClass == null || rightComponentsOfSameClass.isEmpty()) {
+			return false;
+		}
+
 		if (matchById(left, rightById, matchedRight, changeSet)) {
 			return true;
 		}
-
-		return matchByHeuristics(left, rightComponents, matchedRight, changeSet);
+		return matchByHeuristics(left, rightComponentsOfSameClass, matchedRight, changeSet);
 	}
 
 	private static boolean matchById(
@@ -145,12 +139,13 @@ public final class ComponentComparisonHelper {
 
 	private static boolean matchByHeuristics(
 			Component left,
-			List<Component> rightComponents,
+			List<Component> rightComponentsOfSameClass,
 			Set<Component> matchedRight,
 			List<ComponentComparisonResult> changeSet) {
 
-		for (Component right : rightComponents) {
-			if (matchedRight.contains(right) || !sameClass(left, right)) {
+		for (Component right : rightComponentsOfSameClass) {
+			if (matchedRight.contains(right)) {
+				//Already matched this right component to another left component, so skip it
 				continue;
 			}
 
@@ -170,19 +165,21 @@ public final class ComponentComparisonHelper {
 	// ------------------------------------------------------------
 	// Right-only components
 	// ------------------------------------------------------------
-
 	private static void addNewRightComponents(
 			List<Component> leftComponents,
 			List<Component> rightComponents,
 			Set<Component> matchedRight,
 			List<ComponentComparisonResult> changeSet) {
 
+		Map<Class<?>, List<Component>> leftComponentsByClass = leftComponents.stream()
+				.collect(Collectors.groupingBy(Component::getClass));
+
 		for (Component right : rightComponents) {
 			if (matchedRight.contains(right)) {
 				continue;
 			}
-
-			if (!existsEquivalentLeft(right, leftComponents)) {
+			List<Component> leftComponentsWithThisClass = leftComponentsByClass.get(right.getClass());
+			if (leftComponentsWithThisClass == null || !existsEquivalentLeft(right, leftComponentsWithThisClass)) {
 				changeSet.add(new ComponentComparisonResult(null, right));
 			}
 		}
@@ -190,11 +187,10 @@ public final class ComponentComparisonHelper {
 
 	private static boolean existsEquivalentLeft(
 			Component right,
-			List<Component> leftComponents) {
+			List<Component> leftComponentsOfSameClass) {
 
-		for (Component left : leftComponents) {
-			if (sameClass(left, right)
-					&& (right.matchesMutableFields(left)
+		for (Component left : leftComponentsOfSameClass) {
+			if ((right.matchesMutableFields(left)
 					|| hasSingleType(right)
 					|| areRefsetMembersForSameReferencedComponent(left, right))) {
 				return true;
@@ -224,10 +220,6 @@ public final class ComponentComparisonHelper {
 		return hasSingleType(left)
 				|| areRefsetMembersForSameReferencedComponent(left, right)
 				|| areAltIdsForSameSchemeAndReferencedComponent(left, right);
-	}
-
-	private static boolean sameClass(Component a, Component b) {
-		return a.getClass().equals(b.getClass());
 	}
 
 	private static void recordMatch(

@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -1125,22 +1126,23 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	public void setAxiomEntries(List<AxiomEntry> axiomEntries) {
 		this.axiomEntries = axiomEntries;
 	}
-	
+
 	public List<AxiomEntry> getAxiomEntries(ActiveState activeState, boolean includeGCIs) {
-		return switch (activeState) {
-			case BOTH -> getAxiomEntries();
-			case ACTIVE -> getAxiomEntries().stream()
-					.filter(Component::isActiveSafely)
-					.filter(a -> includeGCIs || !a.isGCI())
-					.collect(Collectors.toList());
-			case INACTIVE -> getAxiomEntries().stream()
-					.filter(a -> !a.isActiveSafely())
-					.filter(a -> includeGCIs || !a.isGCI())
-					.collect(Collectors.toList());
+		Predicate<AxiomEntry> gciPredicate =
+				includeGCIs ? a -> true : a -> !a.isGCI();
+
+		Predicate<AxiomEntry> statePredicate = switch (activeState) {
+			case BOTH -> a -> true;
+			case ACTIVE -> Component::isActiveSafely;
+			case INACTIVE -> a -> !a.isActiveSafely();
 			default -> throw new IllegalStateException("Unknown state " + activeState);
 		};
+
+		return getAxiomEntries().stream()
+				.filter(gciPredicate.and(statePredicate))
+				.collect(Collectors.toList());
 	}
-	
+
 	//id	effectiveTime	active	moduleId	definitionStatusId
 	public String[] toRF2() throws TermServerScriptException {
 		if (active == null) {

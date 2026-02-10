@@ -2065,15 +2065,12 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		List<Component> components = new ArrayList<>();
 		
 		components.add(c);
-		
-		c.getInactivationIndicatorEntries().stream()
-			.forEach(components::add);
-		
-		c.getAssociationEntries().stream()
-			.forEach(components::add);
-		
-		c.getAxiomEntries().stream()
-			.forEach(components::add);
+
+		components.addAll(c.getInactivationIndicatorEntries());
+
+		components.addAll(c.getAssociationEntries());
+
+		components.addAll(c.getAxiomEntries(ActiveState.BOTH, false));
 		
 		c.getRelationships().stream()
 			.filter(r -> r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP))
