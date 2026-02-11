@@ -198,11 +198,6 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		if (!newActiveState) {
 			//If the concept has been made active, then set DefnStatus
 			setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-			
-			//And inactivate all relationships
-			for (Relationship r : relationships) {
-				r.setActive(false);
-			}
 		}
 	}
 
@@ -1350,6 +1345,16 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		clone.statedChildren = statedChildren == null? new HashSet<>() : new HashSet<>(getStatedChildren());
 		clone.inferredParents = inferredParents == null? new HashSet<>() : new HashSet<>(inferredParents);
 		clone.statedParents = statedParents == null? new HashSet<>() : new HashSet<>(statedParents);
+
+		//Copy other refsets
+		for (RefsetMember rm : getOtherRefsetMembers()) {
+			RefsetMember rmClone = rm.clone(keepIds?rm.getId():null, keepIds);
+			rmClone.setEffectiveTime(keepIds?rm.getEffectiveTime():null);
+			clone.getOtherRefsetMembers().add(rmClone);
+			if (populateUUIDs && rm.getId() == null) {
+				rmClone.setId(UUID.randomUUID().toString());
+			}
+		}
 		
 		//If we're keeping IDs, copy any inactivation indicators and historical associations also.
 		if (keepIds) {
