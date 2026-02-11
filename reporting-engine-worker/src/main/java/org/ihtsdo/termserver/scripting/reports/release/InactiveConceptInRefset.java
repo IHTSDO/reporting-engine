@@ -45,7 +45,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INCLUDE_LAST_RELEASE, FALSE);
+		params.put(INCLUDE_LAST_RELEASE, "true");
 		params.put(EXT_REF_ONLY, FALSE);
 		TermServerScript.run(InactiveConceptInRefset.class, args, params);
 	}
@@ -150,7 +150,8 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		int count = 0;
 		for (List<Concept> inactiveConceptsSegment : Iterables.partition(inactivatedConcepts, CLAUSE_LIMIT)) {
-			Collection<RefsetMember> members = findRefsetMembers(inactiveConceptsSegment, viableRefsetECL);
+			List<String> referencedComponentIds = inactiveConceptsSegment.stream().map(Concept::getConceptId).toList();
+			Collection<RefsetMember> members = searchMembers(referencedComponentIds, viableRefsetECL);
 			for (RefsetMember m : members) {
 				Concept refset = gl.getConcept(m.getRefsetId());
 				Concept module = gl.getConcept(refset.getModuleId());

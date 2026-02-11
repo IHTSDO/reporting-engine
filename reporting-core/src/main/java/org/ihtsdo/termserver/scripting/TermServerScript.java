@@ -1195,7 +1195,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public Collection<RefsetMember> findRefsetMembers(List<Concept> refCompIds, String refsetFilter) throws TermServerScriptException {
+		// Find reference set members using GET request
 		return tsClient.findRefsetMembers(project.getBranchPath(), refCompIds, refsetFilter);
+	}
+
+	public Collection<RefsetMember> searchMembers(List<String> referencedComponentIds, String refsetFilter) throws TermServerScriptException {
+		// Find reference set members using bulk POST request
+		return tsClient.searchMembers(project.getBranchPath(), referencedComponentIds, refsetFilter);
 	}
 	
 	public int getConceptsCount(String ecl) throws TermServerScriptException {

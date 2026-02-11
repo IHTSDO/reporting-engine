@@ -593,6 +593,10 @@ public class TermServerClient {
 	private String getRefsetMembersUrl(String branch) {
 		return this.serverUrl + URL_SEPARATOR + branch + "/members";
 	}
+
+	private String getSearchMembersUrl(String branch) {
+		return this.serverUrl + URL_SEPARATOR + branch + "/members/search";
+	}
 	
 	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
 		return getRefsetMembersUrl(refSetMemberId, branch) + "?force=" + toForce;
@@ -778,7 +782,39 @@ public class TermServerClient {
 			throw new TermServerScriptException(e);
 		}
 	}
-	
+
+	@SuppressWarnings("java:S2259")
+	public Collection<RefsetMember> searchMembers(String branchPath, List<String> referencedComponentIds, String referenceSet) throws TermServerScriptException {
+		try {
+			Collection<RefsetMember> members = new ArrayList<>();
+			String url = getSearchMembersUrl(branchPath);
+
+			Map<String, Object> body = new HashMap<>();
+			body.put("referenceSet", referenceSet);
+			body.put("referencedComponentIds", referencedComponentIds);
+
+			HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+			RefsetMemberCollection memberCollection = restTemplate.postForObject(url, request, RefsetMemberCollection.class);
+			members.addAll(memberCollection.getItems());
+
+			int totalExpected = memberCollection.getTotal();
+			String searchAfter = memberCollection.getSearchAfter();
+
+			while (members.size() < totalExpected) {
+				memberCollection = restTemplate.postForObject(url + SEARCH_AFTER + searchAfter, request, RefsetMemberCollection.class);
+				members.addAll(memberCollection.getItems());
+				searchAfter = memberCollection.getSearchAfter();
+			}
+
+			return members;
+
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
+		}
+	}
+
+
 	public Collection<RefsetMember> findRefsetMembers(String branchPath, String refsetId, Boolean isNullEffectiveTime) throws TermServerScriptException {
 		try {
 			Collection<RefsetMember> members = new ArrayList<>(); 
