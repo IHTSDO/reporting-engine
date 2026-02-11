@@ -421,10 +421,8 @@ public class ArchiveManager implements ScriptConstants {
 					continue;
 				}
 				
-				if (checkForPhantomConcept(c)) {
-					continue;  //In this case we did find a phantom concept, but we'll skip and keep going
-				}
-				
+				checkForPhantomConcept(c, integrityFailureMessage);
+
 				if (c.isActiveSafely() && !c.equals(ROOT_CONCEPT)) {
 					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
 					if (config.isExpectStatedParents()) {
@@ -471,7 +469,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 
-	private boolean checkForPhantomConcept(Concept c) {
+	private void checkForPhantomConcept(Concept c, StringBuilder integrityFailureMessage) {
 		if (c.getActive() == null) {
 			//Now SOMETHING had a reference to this concept, so let's try and work out what and
 			//report that, rather than talk about a concept that doesn't exist
@@ -487,12 +485,13 @@ public class ArchiveManager implements ScriptConstants {
 				ts.addFinalWords(msg);
 				//And we're going to remove this concept so that we don't trip over it again
 				ts.getGraphLoader().removeConcept(c);
-				return true;
 			} else {
-				throw new IllegalStateException(msg);
+				if (!integrityFailureMessage.isEmpty()) {
+					integrityFailureMessage.append(",\n");
+				}
+				integrityFailureMessage.append(msg);
 			}
 		}
-		return false;
 	}
 
 	private String determineSourceofPhantomConcept(Concept c) {
@@ -699,27 +698,25 @@ public class ArchiveManager implements ScriptConstants {
 
 
 
-	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuilder sb) {
+	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuilder integrityFailureMessage) {
 		Set<Concept> parents = c.getParents(charType);
 		if (parents.isEmpty()) {
-			if (!sb.isEmpty()) {
-				sb.append(",\n");
+			if (!integrityFailureMessage.isEmpty()) {
+				integrityFailureMessage.append(",\n");
 			}
-			sb.append(c).append(" has no ").append(charType).append(" parents.");
+			integrityFailureMessage.append(c).append(" has no ").append(charType).append(" parents.");
 		}
 		
 		for (Concept parent : parents) {
-			if (checkForPhantomConcept(parent)) {
-				continue;
-			}
+			checkForPhantomConcept(parent, integrityFailureMessage);
 			if (!parent.isActiveSafely()) {
-				if (!sb.isEmpty()) {
-					sb.append(",\n");
+				if (!integrityFailureMessage.isEmpty()) {
+					integrityFailureMessage.append(",\n");
 				}
-				sb.append(c).append(" has inactive ").append(charType).append(" parent: ").append(parent);
+				integrityFailureMessage.append(c).append(" has inactive ").append(charType).append(" parent: ").append(parent);
 			}
 		}
-		
+
 		//Check that we've captured those parents correctly
 		//Looping through existing objects rather than calling getRelationships so we're 
 		//not creating new collections.   getRelationships does all the looping anyway, so no cheaper.
@@ -729,10 +726,10 @@ public class ArchiveManager implements ScriptConstants {
 					&& r.getType().equals(IS_A)) {
 				parentRelCount++;
 				if (!parents.contains(r.getTarget())) {
-					if (sb.length() > 0) {
-						sb.append(",\n");
+					if (!integrityFailureMessage.isEmpty()) {
+						integrityFailureMessage.append(",\n");
 					}
-					sb.append(c + " has internal " + charType + " inconsistency between parents and parental relationship for parent " + r.getTarget());
+					integrityFailureMessage.append(c + " has internal " + charType + " inconsistency between parents and parental relationship for parent " + r.getTarget());
 				}
 			}
 		}
@@ -742,10 +739,10 @@ public class ArchiveManager implements ScriptConstants {
 			//axioms if we detect a problem
 			Set<Concept> parentsFromRels = SnomedUtils.getTargets(c, new Concept[] {IS_A}, charType);
 			if (parentsFromRels.size() != parents.size()) {
-				if (!sb.isEmpty()) {
-					sb.append(",\n");
+				if (!integrityFailureMessage.isEmpty()) {
+					integrityFailureMessage.append(",\n");
 				}
-				sb.append(c + " has internal " + charType + " inconsistency between parents and parental relationship count");
+				integrityFailureMessage.append(c + " has internal " + charType + " inconsistency between parents (" + parents.size() + ") and parental relationship count (" + parentsFromRels.size() + ").");
 			}
 		}
 	}
