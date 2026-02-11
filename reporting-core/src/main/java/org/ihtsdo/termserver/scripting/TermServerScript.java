@@ -521,7 +521,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public void instantiate(JobRun jobRun, ApplicationContext appContext) {
 		try {
 			LOGGER.debug("Instantiating {} to process request for {}", this.getClass().getName(), jobRun.getJobName());
-			LOGGER.debug("Application context has {}been supplied", (appContext == null?"not " : ""));
+			LOGGER.debug("Application context has {}been supplied{}", (appContext == null?"not " : ""), (appContext == null?", hopefully running on a developer's local machine!" : "."));
 			this.appContext = appContext;
 			this.jobRun = jobRun;
 			this.dependencyArchive = jobRun.getDependencyPackage();

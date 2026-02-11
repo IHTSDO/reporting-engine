@@ -396,14 +396,14 @@ public class Description extends Component implements ScriptConstants, Serializa
 		setAcceptability(refsetId, acceptability, false);
 	}
 
-	public void setAcceptability(String refsetId, Acceptability acceptability, boolean isReplacement) throws TermServerScriptException {
+	public void setAcceptability(String refsetId, Acceptability acceptability, boolean skipUpdatingRefsetMembers) throws TermServerScriptException {
 		if (acceptabilityMap == null) {
 			acceptabilityMap = new HashMap<> ();
 		}
 
 		acceptabilityMap.put(refsetId, acceptability);
 		
-		if (!isReplacement) {
+		if (!skipUpdatingRefsetMembers) {
 			// Also, if we are working with RF2 loaded content, we need to make the same change to the entries.
 			boolean refsetEntrySet = false;
 
@@ -433,13 +433,13 @@ public class Description extends Component implements ScriptConstants, Serializa
 		}
 	}
 	
-	public void removeAcceptability(String refsetId, boolean includeLangRefsetEntries) {
+	public void removeAcceptability(String refsetId, boolean skipUpdatingRefsetMembers) {
 		//If we've no acceptability yet, then nothing to do here
 		if (acceptabilityMap != null) {
 			acceptabilityMap.remove(refsetId);
 		}
 
-		if (includeLangRefsetEntries) {
+		if (!skipUpdatingRefsetMembers) {
 			//And also work through the refset entries, inactivating if released and deleting if not
 			List<LangRefsetEntry> lrs = new ArrayList<>(getLangRefsetEntries(ActiveState.BOTH, refsetId));
 			for (LangRefsetEntry l : lrs) {

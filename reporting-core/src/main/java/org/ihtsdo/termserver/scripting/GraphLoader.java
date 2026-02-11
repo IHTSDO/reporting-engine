@@ -276,7 +276,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
 					LOGGER.debug("Axiom {} referenced a non concept identifier: {}", lineItems[IDX_ID], lineItems[REF_IDX_REFCOMPID]);
 				}
-				
+
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 
@@ -368,14 +368,14 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 						}
 						
 						for (Relationship r : relationships) {
-							if (r.isActive()) {
+							if (r.isActiveSafely()) {
 								addRelationshipToConcept(r);
 							} else {
 								//Don't leave inactive stated relationships in the concept as they have no substance
 								//and cause problems with Sets because they don't have IDs and can't be distinguished
 								//from the same relationship inserted back in a 2nd time as active
 								//But do we have any relationships for this axiom, or has it been inactive for a while?
-								if (c.getRelationships(axiomEntry).size() > 0) {
+								if (!c.getRelationships(axiomEntry).isEmpty()) {
 									c.removeRelationship(r, true);
 								}
 							}
@@ -403,7 +403,6 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	private void modifyExistingStatedRelationshipsOnConcept(Concept c, AxiomRepresentation replacedAxiom, AxiomEntry axiomEntry, AxiomEntry replacedAxiomEntry, String[] lineItems) throws TermServerScriptException {
 		try {
 			Set<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
-
 			//Set the axiom on the relationships, otherwise they won't match existing ones
 			replacedRelationships.forEach(r -> r.setAxiomEntry(axiomEntry));
 			alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
@@ -936,7 +935,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				//dialect, then allow that to overwrite an earlier value with a different UUID
 
 				//Do we have an existing entry for this description & dialect that is later and inactive?
-				boolean clearToAdd = true;
+				boolean okToSetOverallDescriptionAcceptability = true;
 				List<LangRefsetEntry> allExisting = d.getLangRefsetEntries(ActiveState.BOTH, langRefsetEntry.getRefsetId());
 				for (LangRefsetEntry existing : allExisting) {
 					//If we have two active for the same description, and neither has an effectiveTime delete the one that hasn't been published
@@ -945,15 +944,23 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 						checkForActiveDuplication(d, existing, langRefsetEntry);
 					}
 
-					//If the existing langrefset is later than this new row, don't add the new row
+
 					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) < 0) {
-						clearToAdd = false;
+						//If the existing langrefset is later than this new row, don't add the new row
+						okToSetOverallDescriptionAcceptability = false;
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
 						//As long as they have different UUIDs, it's OK to have the same effective time
 						//But we'll ignore the inactivation, since there's still an active row
 						if (!langRefsetEntry.isActiveSafely()) {
-							clearToAdd = false;
+							okToSetOverallDescriptionAcceptability = false;
 						}
+					} else if (existing.getEffectiveTime() != null
+							&& SnomedUtils.isEmpty(langRefsetEntry)
+							&& !existing.getId().equals(langRefsetEntry.getId()) &&
+							existing.isActiveSafely() && !langRefsetEntry.isActiveSafely()) {
+						//The existing entry is older than the new entry, which has no effective time, but
+						//the older one remains effective, so we're not going to modify the overall setting of the description
+						okToSetOverallDescriptionAcceptability = false;
 					} else {
 						//New entry is later or same effective time as one we already know about
 						if (!SnomedUtils.isEmpty(existing.getEffectiveTime()) && !existing.getId().equals(langRefsetEntry.getId())) {
@@ -962,6 +969,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 								String existingStr = existing.toStringWithModule();
 								String newStr = langRefsetEntry.toStringWithModule();
 								LOGGER.error("Attempt to remove published entry: {} by {}", existingStr, newStr);
+							}
+							//In the case of having two entries with different Ids, then if _either_ says the description is
+							//preferred, then we'll take that as an overall preferred. Otherwise ignore.
+							if (langRefsetEntry.getAcceptabilityId().equals(SCTID_ACCEPTABLE_TERM)) {
+								okToSetOverallDescriptionAcceptability = false;
 							}
 						} else {
 							d.getLangRefsetEntries().remove(existing);
@@ -973,12 +985,12 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				//but we'll only set the acceptability on the description if the above code decided it was safe
 				d.getLangRefsetEntries().add(langRefsetEntry);
 
-				if (clearToAdd) {
+				if (okToSetOverallDescriptionAcceptability) {
 					if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
 						Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
-						d.setAcceptability(lineItems[LANG_IDX_REFSETID], a);
+						d.setAcceptability(lineItems[LANG_IDX_REFSETID], a, true);
 					} else {
-						d.removeAcceptability(lineItems[LANG_IDX_REFSETID], false);
+						d.removeAcceptability(lineItems[LANG_IDX_REFSETID], true);
 					}
 				}
 			} else {

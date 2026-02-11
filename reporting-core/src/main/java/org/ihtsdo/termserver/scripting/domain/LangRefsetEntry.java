@@ -8,9 +8,9 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
-public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
+public class LangRefsetEntry extends RefsetMember implements ScriptConstants {
 
-	public static String ACCEPTABILITY_ID = "acceptabilityId";
+	public static final String ACCEPTABILITY_ID = "acceptabilityId";
 
 	protected static final String[] additionalFieldNames = new String[] {ACCEPTABILITY_ID};
 
@@ -18,7 +18,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	public LangRefsetEntry clone(String descriptionSctId, boolean keepIds) {
 		LangRefsetEntry clone = new LangRefsetEntry();
 		clone.id = keepIds ? this.id : UUID.randomUUID().toString();
-		clone.effectiveTime = keepIds ? this.effectiveTime :null;
+		clone.setEffectiveTime(keepIds ? this.effectiveTime :null);
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
@@ -145,7 +145,7 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 	public static LangRefsetEntry withDefaults(Description d, String refsetId, String acceptabilityId) {
 		LangRefsetEntry entry = new LangRefsetEntry();
 		entry.id = UUID.randomUUID().toString();
-		entry.effectiveTime = null;
+		entry.setEffectiveTime(null);
 		entry.active = true;
 		entry.refsetId = refsetId;
 		entry.referencedComponentId = d.getDescriptionId();
