@@ -53,19 +53,19 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 	private Set<Concept> createMPFOs = new HashSet<>();
 	private Set<Concept> knownMPFOs = new HashSet<>();
 
-	private String[] substanceExceptions = new String[] {}; //"liposome"
-	private String[] complexExceptions = new String[] {}; // "lipid", "phospholipid", "cholesteryl"
+	private String[] substanceExceptions = new String[]{}; //"liposome"
+	private String[] complexExceptions = new String[]{}; // "lipid", "phospholipid", "cholesteryl"
 
 	private Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
 
 	private Set<String> suppress = new HashSet<>();
 	protected boolean reportMissingUnderlyingCDs = false;
-	
+
 	private boolean newConceptsOnly = true;
 
 	private Set<Concept> gaseousSubstances;
 
-	TermGenerator termGenerator;
+	TermGenerator termGenerator = new DrugTermGenerator(this);
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -74,9 +74,12 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	@Override
 	public void runJob() throws TermServerScriptException {
-		processFile();
+		for (Component c : identifyComponentsToProcess()) {
+			checkConcept((Concept) c);
+		}
+
 	}
-	
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
@@ -92,7 +95,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 				.withParameters(params)
 				.build();
 	}
-	
+
 	@Override
 	protected void preInit() throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
@@ -102,17 +105,17 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {
-				"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
-				"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details, Details",
+		String[] columnHeadings = new String[]{
+				"SCTID, FSN, SemTag, Severity, ActionType, Details",
+				"SCTID, FSN, SemTag, Severity, ActionType, Details",
 				"Suppressed Concepts"};
-		String[] tabNames = new String[] {
+		String[] tabNames = new String[]{
 				"Missing MP/MPF Concepts",
 				"Processing Issues",
 				"Suppressed Concepts"};
 
 		super.postInit(GFOLDER_DRUGS_MISSING, tabNames, columnHeadings, false);
-		
+
 		populateKnownConcepts();
 
 		//We'll just report the results, no need to expose the working
@@ -171,35 +174,35 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 		}
 	}
 
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+	public int checkConcept(Concept c) throws TermServerScriptException {
 		List<Concept> conceptsRequired = new ArrayList<>();
 		ConceptType[] targetTypes;
-		
+
 		//What do we expect to create based on this type of this input concept?
-		switch (concept.getConceptType()) {
-			case CLINICAL_DRUG : 
-				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT_FORM};
+		switch (c.getConceptType()) {
+			case CLINICAL_DRUG:
+				targetTypes = new ConceptType[]{ConceptType.MEDICINAL_PRODUCT_FORM};
 				break;
-			case MEDICINAL_PRODUCT_FORM : 
-				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT,
-													ConceptType.MEDICINAL_PRODUCT_FORM_ONLY };
+			case MEDICINAL_PRODUCT_FORM:
+				targetTypes = new ConceptType[]{ConceptType.MEDICINAL_PRODUCT,
+						ConceptType.MEDICINAL_PRODUCT_FORM_ONLY};
 				break;
-			case MEDICINAL_PRODUCT_FORM_ONLY :
-				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT,
-													ConceptType.MEDICINAL_PRODUCT_FORM };
+			case MEDICINAL_PRODUCT_FORM_ONLY:
+				targetTypes = new ConceptType[]{ConceptType.MEDICINAL_PRODUCT,
+						ConceptType.MEDICINAL_PRODUCT_FORM};
 				break;
-			case MEDICINAL_PRODUCT : 
-				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT_ONLY};
+			case MEDICINAL_PRODUCT:
+				targetTypes = new ConceptType[]{ConceptType.MEDICINAL_PRODUCT_ONLY};
 				break;
 			case MEDICINAL_PRODUCT_ONLY:
-				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT};
+				targetTypes = new ConceptType[]{ConceptType.MEDICINAL_PRODUCT};
 				break;
-			default : throw new IllegalStateException("Unexpected driver concept type: " + concept.getConceptType());
+			default:
+				throw new IllegalStateException("Unexpected driver concept type: " + c.getConceptType());
 		}
-	
+
 		for (ConceptType targetType : targetTypes) {
-			Concept required = calculateDrugRequired(loadedConcept, targetType);
+			Concept required = calculateDrugRequired(c, targetType);
 			//Need to check again if we need this concept, because an MPF could cause MP and MPFO to come into being
 			if (targetType.equals(ConceptType.MEDICINAL_PRODUCT) && isContained(required, knownMPs)) {
 				continue;
@@ -211,33 +214,28 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 		}
 		int changesMade = 0;
 		for (Concept required : conceptsRequired) {
-			termGenerator.ensureTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP);
+			termGenerator.ensureTermsConform(null, required, CharacteristicType.STATED_RELATIONSHIP);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
-			report(task, concept, Severity.NONE, ReportActionType.INFO, "Concept suggests need for : " + required.getFsn());
+			report(PRIMARY_REPORT, c, Severity.NONE, ReportActionType.INFO, "Concept suggests need for : " + required.getFsn());
 
 			String expression = required.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-			required = createConcept(task, required, info);
-			if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-				required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) ||
+					required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
-				String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+				String currentParents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 						.stream()
 						.filter(parent -> parent.getConceptType().equals(invalidParentType))
 						.map(Concept::toString)
 						.collect(Collectors.joining(",\n"));
 				//If we don't detect problems with the parents, then don't report anything
 				if (!currentParents.isEmpty()) {
-					report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Existing parents problematic due to same drug class level as this concept : " + currentParents);
+					report(PRIMARY_REPORT, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Existing parents problematic due to same drug class level as this concept : " + currentParents);
 				}
 			}
-			task.addAfter(required, concept);
-			//With the CD reported, we don't actually need to load it in the edit panel
-			task.remove(concept);
-			report(task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
-			addSummaryInformation("Concept created: " +required, "");
+			report(PRIMARY_REPORT, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
+			addSummaryInformation("Concept created: " + required, "");
 			incrementSummaryInformation(ISSUE_COUNT);
-			report(task, required, Severity.LOW, ReportActionType.INFO, expression);
-		
+			report(PRIMARY_REPORT, required, Severity.LOW, ReportActionType.INFO, expression);
 			changesMade++;
 		}
 		return changesMade;
@@ -253,12 +251,12 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 			if (straw.getStatedAttribSum() != needle.getStatedAttribSum()) {
 				continue;
 			}
-			
+
 			//We need to filter out the "Plays role" attribute since we don't know when those might pop up and we
 			//don't model them for our missing concepts
 			Set<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
-											.filter(r -> !r.getType().equals(PLAYS_ROLE))
-											.collect(Collectors.toSet());
+					.filter(r -> !r.getType().equals(PLAYS_ROLE))
+					.collect(Collectors.toSet());
 
 			for (Relationship thisRel : needleRels) {
 				boolean relMatchFound = false;
@@ -287,49 +285,49 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 		}
 		return false;
 	}
-	
+
 	private Concept calculateDrugRequired(Concept c, ConceptType targetType) throws TermServerScriptException {
 		//For each ingredient, find the base substance (if relevant) and create 
 		//an MPF using the dose form
-		Concept drug = SnomedUtils.createConcept(null,null,MEDICINAL_PRODUCT);
+		Concept drug = SnomedUtils.createConcept(null, null, MEDICINAL_PRODUCT);
 		drug.setConceptType(targetType);
-		
+
 		//Only if we're creating an MPF, include the dose form
-		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY) ) {
-			Concept doseForm = SnomedUtils.getTarget(c, new Concept[] {HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
+		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
+			Concept doseForm = SnomedUtils.getTarget(c, new Concept[]{HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
 			if (doseForm == null) {
 				throw new IllegalStateException("MPF with no active stated dose form: " + c);
 			}
 			doseForm = SnomedUtils.getHighestAncestorBefore(doseForm, PHARM_DOSE_FORM);
-			Relationship formRel = new Relationship (drug, HAS_MANUFACTURED_DOSE_FORM, doseForm, UNGROUPED);
+			Relationship formRel = new Relationship(drug, HAS_MANUFACTURED_DOSE_FORM, doseForm, UNGROUPED);
 			drug.addRelationship(formRel);
 		}
-		
+
 		Set<Concept> baseIngredients = DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)
-									.stream()
-									.map(i -> DrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
-									.collect(Collectors.toSet());
-		
+				.stream()
+				.map(i -> DrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
+				.collect(Collectors.toSet());
+
 		if (baseIngredients.isEmpty()) {
-			throw new ValidationFailure(c,"Zero ingredients found.");
+			throw new ValidationFailure(c, "Zero ingredients found.");
 		}
-		
+
 		//Only if we're creating an "Only", include the ingredient count
 		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
 			String count = Integer.toString(baseIngredients.size());
-			Relationship countRel = new Relationship (drug, COUNT_BASE_ACTIVE_INGREDIENT, count, UNGROUPED, ConcreteValue.ConcreteValueType.INTEGER);
+			Relationship countRel = new Relationship(drug, COUNT_BASE_ACTIVE_INGREDIENT, count, UNGROUPED, ConcreteValue.ConcreteValueType.INTEGER);
 			drug.addRelationship(countRel);
 		}
-		
+
 		//Active ingredient is now self grouped
 		int groupId = 0;
 		for (Concept base : baseIngredients) {
-			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, ++groupId);
+			Relationship ingredRel = new Relationship(drug, HAS_ACTIVE_INGRED, base, ++groupId);
 			drug.addRelationship(ingredRel);
 		}
 		return drug;
 	}
-	
+
 	public boolean inScope(Concept c) {
 		return !newConceptsOnly || (!c.hasEffectiveTime() && !c.isReleased());
 	}
@@ -364,11 +362,11 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY)) {
 				reviewMPO(c, allAffected);
 			} else {
-				report(SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Unexpected concept type: " + c.getConceptType());
+				report(SECONDARY_REPORT, c, Severity.HIGH, ReportActionType.SKIPPING, "Unexpected concept type: " + c.getConceptType());
 			}
 		} catch (Exception e) {
 			String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
-			report(SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
+			report(SECONDARY_REPORT, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
 			LOGGER.warn(msg);
 		}
 	}
@@ -385,10 +383,10 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 				.toList();
 		for (Concept currentMPF : currentMPFs) {
 			//Some dose forms are allowed to be more specific
-			Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
+			Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[]{HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
 			if (!allowMoreSpecificDoseForms.contains(doseForm)) {
 				if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
-					report(SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+					report(SECONDARY_REPORT, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 					return;
 				}
 			}
@@ -430,7 +428,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 				.toList();
 		for (Concept currentMP : currentMPs) {
 			if (SnomedUtils.hasMoreSpecificModel(currentMP, mp, AncestorsCache.getAncestorsCache())) {
-				report(SECONDARY_REPORT, (Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				report(SECONDARY_REPORT, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 				return;
 			}
 		}
@@ -457,7 +455,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 					}
 				}
 			} else if (reportMissingUnderlyingCDs) {
-				report((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO: " + mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			}
 		}
 	}
@@ -472,7 +470,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 					allAffected.add(c);
 				}
 			} else if (reportMissingUnderlyingCDs) {
-				report(SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP: " +  mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			}
 		}
 	}
@@ -491,7 +489,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 					allAffected.add(c);
 				}
 			} else if (reportMissingUnderlyingCDs) {
-				report((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO", mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO: " + mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			}
 		}
 	}
@@ -510,7 +508,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 					allAffected.add(c);
 				}
 			} else if (reportMissingUnderlyingCDs) {
-				report((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			}
 		}
 	}
@@ -524,7 +522,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 		return false;
 	}
 
-	private boolean isSuppressed (Concept c) throws TermServerScriptException {
+	private boolean isSuppressed(Concept c) throws TermServerScriptException {
 		termGenerator.ensureTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP);
 		//Are we suppressing this concept?
 		//RP-915 Don't report suppressed concepts
@@ -533,22 +531,31 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	private boolean containsExceptionSubstance(Concept c) throws TermServerScriptException {
 		for (Concept ingred : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
-			for (String exceptionStr: substanceExceptions) {
+			for (String exceptionStr : substanceExceptions) {
 				if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
-					report(SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
+					report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
 					return true;
 				}
 			}
-			
+
 			if (ingred.getFsn().toLowerCase().contains("complex")) {
-				for (String exceptionStr: complexExceptions) {
+				for (String exceptionStr : complexExceptions) {
 					if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
-						report(SECONDARY_REPORT, (Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
+						report(SECONDARY_REPORT, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
 						return true;
 					}
 				}
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public boolean report(int reportIdx, Concept c, Object... details) throws TermServerScriptException {
+		//If our concept does not have an SCTID, we'll call it "NEW_SCTID" so we don't see null | fsn in the report
+		if (c.getConceptId() == null) {
+			c.setId("NEW_SCTID");
+		}
+		return super.report(reportIdx, c, details);
 	}
 }

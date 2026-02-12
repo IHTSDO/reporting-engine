@@ -42,6 +42,7 @@ public class ArchiveManager implements ScriptConstants {
 	
 	static ArchiveManager singleton;
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
+	private static boolean systemInitialised = false;
 
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;
@@ -64,21 +65,24 @@ public class ArchiveManager implements ScriptConstants {
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 
 	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
+		LOGGER.info("Calling ArchiveManager.getArchiveManager with ts: {}, singleton.ts: {}, brandNew: {}", ts, singleton == null ? null : singleton.ts, singleton == null);
+
 		boolean isBrandNew = false;
 		boolean underChangedOwnership = false;
+
+		// This should only happen when we run the report locally outside Spring context
+		// Otherwise singleton is initialised on ApplicationReady event in init() method below
 		if (singleton == null) {
 			singleton = new ArchiveManager();
 			singleton.appContext = appContext;
-			isBrandNew = true;
 		}
 
-		if (singleton.ts == null || !singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
-			String ownershipIndicator = singleton.ts == null ? "first" : "new";
-			if (!isBrandNew) {
-				ownershipIndicator = "changed";
-				underChangedOwnership = true;
-			}
-			LOGGER.info("Archive manager under {} ownership due to change of report: {}", ownershipIndicator, ts.getClass().getSimpleName());
+		if (singleton.ts == null) {
+			isBrandNew = true;
+			LOGGER.info("Archive manager under first ownership due to assignment of report: {}", ts.getClass().getSimpleName());
+		} else if (!singleton.ts.getClass().getSimpleName().equals(ts.getClass().getSimpleName())) {
+			underChangedOwnership = true;
+			LOGGER.info("Archive manager under changed ownership due to change of report. Previously {}, now {}", singleton.ts.getClass().getSimpleName(), ts.getClass().getSimpleName());
 		} else if (singleton.currentlyHeldInMemory != null && !singleton.currentlyHeldInMemory.equals(ts.getProject())) {
 			underChangedOwnership = true;
 			LOGGER.info("Archive manager under changed ownership due to change of project. Previously {}, now {}", singleton.currentlyHeldInMemory, ts.getProject());
@@ -99,10 +103,20 @@ public class ArchiveManager implements ScriptConstants {
 	}
 	
 	@EventListener(ApplicationReadyEvent.class)
-	public void init() {
+	public void init(ApplicationReadyEvent event) {
+		LOGGER.info("ArchiveManager.init: assigning {} to singleton {}", this, singleton);
+		if (singleton != null && singleton != this) {
+			LOGGER.warn("ArchiveManager.init: REASSIGNING singleton from {} to {}", singleton, this);
+		}
 		singleton = this;
+		singleton.appContext = event.getApplicationContext();
+		systemInitialised = true;
 	}
-	
+
+	public static boolean isSystemInitialised() {
+		return systemInitialised;
+	}
+
 	private ArchiveManager () {
 		//Only access via singleton above
 	}
