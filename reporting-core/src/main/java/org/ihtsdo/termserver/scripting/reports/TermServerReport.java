@@ -155,7 +155,7 @@ public abstract class TermServerReport extends TermServerScript {
 		return allIps;
 	}
 
-	private boolean containsFdConcept(Collection<Concept> concepts) {
+	protected boolean containsFdConcept(Collection<Concept> concepts) {
 		for (Concept c : concepts) {
 			if (c.isActiveSafely() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				return true;
@@ -163,6 +163,7 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 		return false;
 	}
+
 	protected void populateSummaryTabAndTotal() {
 		populateSummaryTabAndTotal(SECONDARY_REPORT);
 	}
