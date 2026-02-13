@@ -53,7 +53,9 @@ public class ArchiveImporter implements ScriptConstants {
 		LOGGER.info("Loading previous snapshot {}", previousSnapshot);
 		loadArchive(previousSnapshot, false, "Snapshot", true);
 
-		LOGGER.info("Loading delta {}", delta);
+		double sizeMb = delta.length() / (1024d * 1024d);
+		String sizeMbStr = String.format("%.2f", sizeMb);
+		LOGGER.info("Loading delta {} of size {}Mb", delta, sizeMbStr);
 		loadArchive(delta, false, "Delta", false);
 		gl.finalizeMRCM();
 	}
