@@ -104,6 +104,7 @@ public interface ScriptConstants extends RF2Constants {
 	Concept ASSOC_MORPH = new Concept("116676008", "Associated morphology (attribute)");
 	Concept ASSOC_WITH = new Concept("47429007", "Associated with (attribute)");
 	Concept CAUSE_AGENT = new Concept("246075003", "Causative agent (attribute)");
+	Concept CHARACTERIZES = new Concept("704321009", "Characterizes (attribute)");
 	Concept COMPONENT = new Concept("246093002", "Component (attribute)");
 	Concept DIRECT_DEVICE = new Concept("363699004", "Direct device (attribute)");
 	Concept DIRECT_SITE = new Concept("704327008","Direct site (attribute)");
