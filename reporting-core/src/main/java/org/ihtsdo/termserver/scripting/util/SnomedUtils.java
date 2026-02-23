@@ -2305,7 +2305,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	public static Set<Concept> getRecentlyTouchedConcepts(Collection<Concept> concepts) {
 		return concepts.stream()
-				.filter(c -> hasNewChanges(c))
+				.filter(SnomedUtils::hasNewChanges)
 				.collect(Collectors.toSet());
 	}
 

@@ -166,4 +166,20 @@ public class LangRefsetEntry extends RefsetMember implements ScriptConstants {
 		return additionalFieldNames;
 	}
 
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		LangRefsetEntry otherLR = (LangRefsetEntry) other;
+		//Now the referenced component id wouldn't normally be considered mutable, but we
+		//need to make sure this LR applies to the same description, because matching on
+		//the acceptability is just too likely!
+		// Ensure both LRs reference the same component (null-safe)
+		if (!Objects.equals(this.getReferencedComponentId(), otherLR.getReferencedComponentId())) {
+			return false;
+		}
+
+		// Compare acceptability (non-null but Objects.equals is still safe and consistent)
+		return Objects.equals(this.getAcceptabilityId(), otherLR.getAcceptabilityId());
+	}
+
+
 }
