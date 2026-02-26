@@ -557,7 +557,7 @@ public class DrugUtils implements ScriptConstants {
 			this.targetTextSpSp = " " + targetText + " ";
 			this.targetTextSp = " " + targetText;
 			this.targetTextSpSlash = " " + targetText + "/";
-			this.targetTextSlashSp = "/" + targetText;
+			this.targetTextSlashSp = "/" + targetText + " ";
 		}
 	}
 }

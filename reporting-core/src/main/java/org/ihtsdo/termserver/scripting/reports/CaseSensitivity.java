@@ -316,9 +316,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			|| (strictness.equals(Strictness.LAX) && (isInHierarchyKnownToBeLikelyCS(c) || isProbableEponym(d) || checkKnownSpecialCases(c,d)))) {
 				//Probably OK
 			} else {
-				//Now it might be that our term does not feature a capital, but it has a word that's all LOWER case, which is never the less case sensitive
+				//Now it might be that our term does not feature a capital, but it has a word that's all LOWER case, which is nevertheless case-sensitive
 				//like p-tert-butylphenol
 				if (!csUtils.containsKnownLowerCaseWord(term)
+						&& !isDrugWithCaseSensitiveUnit(c, d)
 						&& !(USE_ORGANISM_TAXONOMY_WORD_TRIGGERS_CS_RULE && organismExistsWithTaxonomicTerm(c, term))) {
 					report(c, d, d.getEffectiveTime(), preferred, caseSig, "Case sensitive term does not have capital after first letter");
 					countIssue(c);
@@ -327,6 +328,11 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			}
 		}
 		return false;
+	}
+
+	private boolean isDrugWithCaseSensitiveUnit(Concept c, Description d) {
+		String semTag = SnomedUtilsBase.deconstructFSN(c.getFSNDescription().getTerm())[1];
+		return semTag.equals("(clinical drug)") && DrugUtils.containsKnownCaseSensitiveDrugUnit(d);
 	}
 
 	private boolean organismExistsWithTaxonomicTerm(Concept c, String term) throws TermServerScriptException {
