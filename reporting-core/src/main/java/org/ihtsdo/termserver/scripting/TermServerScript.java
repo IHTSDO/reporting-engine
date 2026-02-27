@@ -1204,7 +1204,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return tsClient.searchMembers(project.getBranchPath(), referencedComponentIds, refsetFilter);
 	}
 	
-	public int getConceptsCount(String ecl) throws TermServerScriptException {
+	public int getConceptsCount(String ecl) {
 		return tsClient.getConceptsCount(ecl, project.getBranchPath());
 	}
 	
