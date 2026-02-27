@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.client;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 
 import org.apache.hc.core5.util.Timeout;
@@ -41,6 +42,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 public class TermServerClient {
+
+	private static final int MAX_LOCK_RETRIES = 3;
+	private static final long LOCK_RETRY_SLEEP_MS = 20_000L;
 
 	private static final String BRANCHES = "/branches/";
 	private static final String BROWSER = "/browser/";
@@ -244,7 +248,7 @@ public class TermServerClient {
 
 			LOGGER.debug("Update of concept failed, trying again....", e);
 			try {
-				Thread.sleep(30 * 1000); // Give the server 30 seconds to recover
+				Thread.sleep(30 * 1000L); // Give the server 30 seconds to recover
 			} catch (InterruptedException ie) {
 				Thread.currentThread().interrupt();
 				throw new TermServerScriptException("Interrupted while waiting to retry", ie);
@@ -315,17 +319,17 @@ public class TermServerClient {
 		}
 
 		url += "&" + eclType + "={criteria}";
-		System.out.println("Calling: " + url + " with criteria = '" + criteria + "'");
+		LOGGER.info("Calling: {} with criteria = '{}'", url, criteria);
 		return restTemplate.getForObject(url, ConceptCollection.class, criteria);
 	}
 	
-	public int getConceptsCount(String ecl, String branchPath) throws TermServerScriptException {
+	public int getConceptsCount(String ecl, String branchPath) {
 		String url = getConceptsPath(branchPath) + "?active=true&limit=1";
 		ecl = SnomedUtils.makeMachineReadable(ecl);
 		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
 		//because RestTemplate does that for us.  So use curly braces to substitute in our ecl
 		url += "&ecl={ecl}";
-		System.out.println("Calling " + url + " with ecl parameter: " + ecl);
+		LOGGER.info("Calling {} with ecl parameter: {}", url, ecl);
 		return restTemplate.getForObject(url, ConceptCollection.class, ecl).getTotal();
 	}
 
@@ -378,37 +382,21 @@ public class TermServerClient {
 		}
 	}
 
-	public String createBranch(String parent, String branchName) throws TermServerScriptException {
-		try {
-			Map<String, Object> body = new HashMap<>();
-			body.put("parent", parent);
-			body.put("name", branchName);
-
-			HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-			restTemplate.postForObject(serverUrl + "/branches", request, Void.class);
-
-			String branchPath = parent + URL_SEPARATOR + branchName;
-			LOGGER.info("Created branch {}", branchPath);
-			return branchPath;
-		} catch (Exception e) {
-			throw new TermServerScriptException(e);
-		}
-	}
-
 	public String getServerUrl() {
 		return serverUrl;
 	}
 
-	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation, boolean unpromotedChangesOnly)
+	public File export(String branchPath,
+	                   String effectiveDate,
+	                   ExportType exportType,
+	                   ExtractType extractType,
+	                   File saveLocation,
+	                   boolean unpromotedChangesOnly)
 			throws TermServerScriptException {
-		Map<String, Object> exportRequest = prepareExportRequest(branchPath, effectiveDate, exportType, extractType, unpromotedChangesOnly);
-		LOGGER.info("Initiating export with {}", exportRequest);
-		String exportLocationURL = initiateExport(exportRequest);
-		//INFRA-1489 Workaround
-		if (!exportLocationURL.startsWith("https://")) {
-			exportLocationURL = exportLocationURL.replace("http:/", "https://");
-			System.err.println("Malformed export location received, corrected to https://");
-		}
+
+		Map<String, Object> exportRequest =
+				prepareExportRequest(branchPath, effectiveDate, exportType, extractType, unpromotedChangesOnly);
+
 		if (saveLocation == null) {
 			try {
 				saveLocation = File.createTempFile("ts-extract", ".zip");
@@ -416,29 +404,61 @@ public class TermServerClient {
 				throw new TermServerScriptException(e);
 			}
 		}
-		File recoveredArchive = recoverExportedArchive(exportLocationURL, saveLocation);
-		return recoveredArchive;
+
+		int attempt = 0;
+		while (true) {
+			attempt++;
+			try {
+				LOGGER.info("Initiating export attempt {}/{} with {}", attempt, MAX_LOCK_RETRIES, exportRequest);
+				String exportLocationURL = initiateExport(exportRequest);
+
+				// INFRA-1489 Workaround
+				if (!exportLocationURL.startsWith("https://")) {
+					exportLocationURL = exportLocationURL.replace("http:/", "https://");
+					LOGGER.warn("Malformed export location received, corrected to https://");
+				}
+
+				return recoverExportedArchive(exportLocationURL, saveLocation);
+			} catch (RestClientException e) {
+				if (isLockedBranchError(e) && attempt < MAX_LOCK_RETRIES) {
+					LOGGER.warn("Branch locked during export attempt {}/{}. " +
+									"Sleeping 20 seconds before restarting export from start...",
+							attempt, MAX_LOCK_RETRIES);
+
+					sleepBeforeRetry();
+					continue;
+				}
+				throw new TermServerScriptException("Unable to complete export after " + attempt + " attempt(s)", e);
+			}
+		}
 	}
-	
-	private Map<String, Object> prepareExportRequest(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, boolean unpromotedChangesOnly)
+
+	private Map<String, Object> prepareExportRequest(String branchPath,
+	                                                 String effectiveDate,
+	                                                 ExportType exportType,
+	                                                 ExtractType extractType,
+	                                                 boolean unpromotedChangesOnly)
 			throws TermServerScriptException {
+
 		Map<String, Object> exportRequest = new HashMap<>();
 		exportRequest.put("type", extractType);
 		exportRequest.put("branchPath", branchPath);
 		exportRequest.put("unpromotedChangesOnly", unpromotedChangesOnly);
+
 		switch (exportType) {
-			case MIXED:  //Snapshot allows for both published and unpublished, where unpublished
-				//content would get the transient effective Date
+			case MIXED:
 				if (!extractType.equals(ExtractType.SNAPSHOT)) {
 					throw new TermServerScriptException("Export type " + exportType + " not recognised");
 				}
 				exportRequest.put("includeUnpublished", true);
+				break;
+
 			case UNPUBLISHED:
-				//Now leaving effective date blank if not specified
 				if (effectiveDate != null) {
 					exportRequest.put("transientEffectiveTime", effectiveDate);
 				}
 				break;
+
 			case PUBLISHED:
 				if (effectiveDate == null) {
 					throw new TermServerScriptException("Cannot export published data without an effective date");
@@ -447,40 +467,73 @@ public class TermServerClient {
 				exportRequest.put("deltaEndEffectiveTime", effectiveDate);
 				exportRequest.put("transientEffectiveTime", effectiveDate);
 				break;
-			
+
 			default:
 				throw new TermServerScriptException("Export type " + exportType + " not recognised");
 		}
+
 		return exportRequest;
 	}
 
-	private String initiateExport(Map<String, Object> exportRequest) throws TermServerScriptException {
+	private String initiateExport(Map<String, Object> exportRequest)
+			throws TermServerScriptException {
 		try {
-			HttpEntity<?> entity = new HttpEntity<>(exportRequest, headers ); // for request
-			HttpEntity<String> response = restTemplate.exchange(serverUrl + "/exports", HttpMethod.POST, entity, String.class);
-			return response.getHeaders().get("Location").get(0);
-		} catch (Exception e) {
+			HttpEntity<?> entity = new HttpEntity<>(exportRequest, headers);
+			HttpEntity<String> response =
+					restTemplate.exchange(serverUrl + "/exports", HttpMethod.POST, entity, String.class);
+
+			URI location = response.getHeaders().getLocation();
+			return Optional.ofNullable(location)
+					.map(URI::toString)
+					.orElseThrow(() -> new TermServerScriptException(
+							"Export initiated but no Location header returned"));
+		} catch (RestClientException e) {
 			throw new TermServerScriptException("Failed to initiate export", e);
 		}
 	}
-	
-	private File recoverExportedArchive(String exportLocationURL,  final File saveLocation) throws TermServerScriptException {
+
+	private File recoverExportedArchive(String exportLocationURL,
+	                                    final File saveLocation)
+			throws RestClientException {
+
+		LOGGER.info("Recovering exported archive from {}", exportLocationURL);
+		LOGGER.info("Saving exported archive to {}", saveLocation);
+		RequestCallback requestCallback = request ->
+				request.getHeaders().setAccept(Arrays.asList(
+						MediaType.APPLICATION_OCTET_STREAM,
+						MediaType.ALL));
+
+		restTemplate.execute(
+				exportLocationURL + "/archive",
+				HttpMethod.GET,
+				requestCallback,
+				clientHttpResponse -> {
+					try (FileOutputStream fos = new FileOutputStream(saveLocation)) {
+						StreamUtils.copy(clientHttpResponse.getBody(), fos);
+					}
+					return null;
+				});
+
+		if (saveLocation.length() == 0) {
+			throw new RestClientException("Archive recovered as 0 bytes");
+		}
+
+		LOGGER.debug("Extract recovery complete");
+		return saveLocation;
+	}
+
+	private boolean isLockedBranchError(RestClientException e) {
+		return e.getMessage() != null &&
+				e.getMessage().toLowerCase().contains("locked");
+	}
+
+	private void sleepBeforeRetry() throws TermServerScriptException {
 		try {
-			LOGGER.info("Recovering exported archive from {}", exportLocationURL);
-			LOGGER.info("Saving exported archive to {}", saveLocation);
-			RequestCallback requestCallback = request -> request.getHeaders()
-					.setAccept(Arrays.asList(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL));
-			restTemplate.execute(exportLocationURL + "/archive", HttpMethod.GET, requestCallback, clientHttpResponse -> {
-				StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(saveLocation));
-				return null;
-			});
-			if (saveLocation.length() == 0) {
-				throw new RestClientException("Archive recovered as 0 bytes");
-			}
-			LOGGER.debug("Extract recovery complete");
-			return saveLocation;
-		} catch (RestClientException e) {
-			throw new TermServerScriptException("Unable to recover exported archive from " + exportLocationURL, e);
+			Thread.sleep(LOCK_RETRY_SLEEP_MS);
+		} catch (InterruptedException ie) {
+			Thread.currentThread().interrupt();
+			throw new TermServerScriptException(
+					"Retry interrupted while waiting for locked branch", ie);
 		}
 	}
 
@@ -493,7 +546,6 @@ public class TermServerClient {
 		String importJobLocation = initiateImport(importRequest);
 		importArchive(importJobLocation, archive);
 	}
-
 
 	private void importArchive(String importJobLocation, File archive) throws TermServerScriptException {
 		LOGGER.info("Importing {} in import job {}", archive, importJobLocation);
