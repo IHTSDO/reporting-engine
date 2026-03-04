@@ -118,7 +118,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 		}
 	}
 
-	private void removeEmptyNoScopeAndDerivativeRefsets() throws TermServerScriptException {
+	private void removeEmptyNoScopeAndDerivativeRefsets() {
 		LOGGER.info("Checking local refsets for emptiness, out of scope and derivative refsets");
 		List<Concept> emptyReferenceSets = new ArrayList<>();
 		List<Concept> outOfScopeReferenceSets = new ArrayList<>();
