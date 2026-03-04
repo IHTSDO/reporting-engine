@@ -1514,7 +1514,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						if (subsetECL.equals("*")) {
 							reportName += spacer + "All_Concepts";
 						} else {
-							Concept simpleECLRoot = gl.getConcept(subsetECL.replaceAll("<", "").trim());
+							Concept simpleECLRoot = gl.getConcept(subsetECL.replaceAll("[<^]", "").trim());
 							if (simpleECLRoot.getDescriptions().size() > 0) {
 								reportName += spacer + simpleECLRoot.toStringPref();
 							} else {

@@ -88,7 +88,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		super.postInit(tabNames, columnHeadings);
 	}
 
-	private void removeEmptyAndNoScopeRefsets() throws TermServerScriptException {
+	private void removeEmptyAndNoScopeRefsets() {
 		emptyReferenceSets = new ArrayList<>();
 		outOfScopeReferenceSets = new ArrayList<>();
 		for (Concept refset : referenceSets) {
