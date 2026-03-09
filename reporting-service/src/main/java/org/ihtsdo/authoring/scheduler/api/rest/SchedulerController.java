@@ -144,7 +144,7 @@ public class SchedulerController {
 		if (!authData.roles.contains("ROLE_snowstorm-support")) {
 			return jobCategories.stream().filter(jobCategory -> !JobCategory.DEVOPS.equals(jobCategory.getName())).toList();
 		} else {
-			return jobCategories;
+			return jobCategories.stream().toList();
 		}
 	}
 
