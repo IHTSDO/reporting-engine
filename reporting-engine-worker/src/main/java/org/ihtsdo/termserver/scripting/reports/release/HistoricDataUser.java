@@ -40,9 +40,7 @@ public class HistoricDataUser extends TermServerReport {
 
 	public static final boolean DEBUG_TO_FILE = false;
 
-	protected String thisRelease;
 	protected String prevRelease;
-
 	protected String thisDependency;
 	protected String prevDependency;
 

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ComponentAnnotationEntry;
@@ -145,6 +146,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 
 		for (Concept c : gl.getAllConcepts()) {
 			String active = c.isActiveSafely() ? "Y" : "N";
+			Description usPTDesc = c.getPreferredSynonym(RF2Constants.US_ENG_LANG_REFSET);
+			String usPT = usPTDesc != null ? usPTDesc.getTerm() : null;
 			String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			String hierarchy = getHierarchy(tc, c, new LinkedList<>());
 			String intermediatePrimitiveIndicator = intermediatePrimitives.contains(c) ? "Y" : "N";
@@ -161,8 +164,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			String[] annotationIds = getAnnotationIds(c);
 			String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
 			String histAssocTargets = getHistAssocTargets(c);
-			ouput(fw, c.getConceptId(), c.getFsn(), active, defStatus, hierarchy, intermediatePrimitiveIndicator,
-					sdDescendant, sdAncestor,
+			ouput(fw, c.getConceptId(), c.getFsn(), usPT, active, defStatus, hierarchy,
+					intermediatePrimitiveIndicator, sdDescendant, sdAncestor,
 					relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE],
 					axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 					inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],

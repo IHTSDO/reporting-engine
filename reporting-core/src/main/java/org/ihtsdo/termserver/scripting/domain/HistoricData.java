@@ -8,6 +8,7 @@ import java.util.List;
 public class HistoricData implements RF2Constants {
 	private long conceptId;
 	private String fsn;
+	private String usPT;
 	private boolean isActive;
 	private boolean isSD;
 	private String hierarchy;
@@ -45,12 +46,16 @@ public class HistoricData implements RF2Constants {
 		this.conceptId = conceptId;
 	}
 
-	public String getFsn() {
-		return fsn;
-	}
+	public String getFsn() { return fsn; }
 
 	public void setFsn(String fsn) {
 		this.fsn = fsn;
+	}
+
+	public String getUsPT() { return usPT; }
+
+	public void setUsPT(String usPT) {
+		this.usPT = usPT;
 	}
 
 	public boolean isActive() {
@@ -293,6 +298,7 @@ public class HistoricData implements RF2Constants {
 		datum.conceptId = Long.parseLong(lineItems[idx]);
 		datum.hashCode = Long.hashCode(datum.conceptId);
 		datum.fsn = lineItems[++idx];
+		datum.usPT = lineItems[++idx];
 		datum.isActive = lineItems[++idx].equals("Y");
 		if (!minimalSet) {
 			datum.isSD = lineItems[++idx].equals("SD");
