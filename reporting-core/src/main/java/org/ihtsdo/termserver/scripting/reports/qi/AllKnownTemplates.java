@@ -300,6 +300,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			populateTemplates(null, "templates/procedures/Endoscopy.json");
 			populateTemplates(null, "templates/procedures/Excision of cyst.json");
 			populateTemplates(null, "templates/procedures/Exteriorization.json");
+			populateTemplates(null, "templates/procedures/FluroAngiograpyAndStent.json");
 			populateTemplates(null, "templates/procedures/Imaging Guided Biopsy.json");
 			populateTemplates(null, "templates/procedures/InsertionOfStent.json");
 			populateTemplates(null, "templates/procedures/Intubation.json");
@@ -308,7 +309,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			populateTemplates(null, "templates/procedures/Periodontal.json");
 			populateTemplates(null, "templates/procedures/Radiotherapy.json");
 			populateTemplates(null, "templates/procedures/Stoma.json");
-
 
 			//Do this one last to pick up whatever is left under Disease
 			populateTemplates("<< 64572001 |Disease (disorder)|", "templates/Disease.json");
