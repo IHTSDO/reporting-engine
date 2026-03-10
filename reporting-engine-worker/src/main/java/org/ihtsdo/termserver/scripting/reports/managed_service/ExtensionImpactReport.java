@@ -505,7 +505,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		String currentTerm = isFSN ? currentConcept.getFsn() : usPT;
 		String incomingTerm = isFSN ? incomingState.getFsn() : incomingState.getUsPT();
 
-		if (currentTerm.equals(incomingTerm)) {
+		if (incomingTerm.equals(currentTerm)) {
 			return;
 		}
 		

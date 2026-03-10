@@ -56,6 +56,7 @@ public class SchedulerController {
 	private static final String X_AUTH_TOKEN = "X-AUTH-token";
 	private static final String X_AUTH_USERNAME = "X-AUTH-username";
 	private static final String X_AUTH_ROLES = "X-AUTH-roles";
+	private static final String ROLE_SNOWSTORM_SUPPORT = "ROLE_snowstorm-support";
 
 	private static class AuthData {
 		public final String authToken;
@@ -101,7 +102,6 @@ public class SchedulerController {
 	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs/{typeName}")
 	public synchronized List<JobCategory> listJobTypeCategories(HttpServletRequest request, @PathVariable final String typeName) throws BusinessServiceException {
-		AuthData authData = getAuthData(request);
 		//Do we need to refresh the cache?
 		if (new Date().getTime() - lastCacheUpdate.getTime() > CACHE_TIMEOUT) {
 			jobCache.clear();
@@ -109,16 +109,16 @@ public class SchedulerController {
 		}
 
 		//Do we have the data cached?
-		if (jobCache.containsKey(typeName)) {
-			return filterJobCategories(jobCache.get(typeName), authData);
+		if (!jobCache.containsKey(typeName)) {
+			LOGGER.info("Populating cache of known jobs for type: {}.  Refresh scheduled for 30mins.", typeName);
+			List<JobCategory> jobCategories = scheduleService.listJobTypeCategories(typeName).stream()
+					.filter(jc -> !jc.getJobs().isEmpty())
+					.map(this::reverseParameterOptions)
+					.toList();
+			jobCache.put(typeName, jobCategories);
 		}
-		LOGGER.info("Populating cache of known jobs for type: {}.  Refresh scheduled for 30mins.", typeName);
-		List<JobCategory> jobCategories = scheduleService.listJobTypeCategories(typeName).stream()
-				.filter(jc -> !jc.getJobs().isEmpty())
-				.map(this::reverseParameterOptions)
-				.toList();
-		jobCache.put(typeName, jobCategories);
-		return filterJobCategories(jobCategories, authData);
+
+		return jobCache.get(typeName);
 	}
 
 	private JobCategory reverseParameterOptions(JobCategory jobCategory) {
@@ -141,7 +141,7 @@ public class SchedulerController {
 	}
 
 	private List<JobCategory> filterJobCategories(List<JobCategory> jobCategories, AuthData authData) {
-		if (!authData.roles.contains("ROLE_snowstorm-support")) {
+		if (!authData.roles.contains(ROLE_SNOWSTORM_SUPPORT)) {
 			return jobCategories.stream().filter(jobCategory -> !JobCategory.DEVOPS.equals(jobCategory.getName())).toList();
 		} else {
 			return jobCategories.stream().toList();

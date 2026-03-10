@@ -1,7 +1,8 @@
-package org.ihtsdo.termserver.scripting.reports.release;
+package org.ihtsdo.termserver.scripting.reports.release.browser;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.reports.release.SummaryComponentStats;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportConfiguration;
 
@@ -33,9 +34,10 @@ public class ReleaseStatsEditions extends SummaryComponentStats {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DEVOPS))
 				.withName("Release Stats for Editions")
-				.withDescription("This report generates release statistics for the browser.")
+				.withDescription("This report generates release statistics for the browser. This report is for projects packaged as editions only.")
 				.withParameters(params)
-				.withTag(INT).withTag(MS)
+				.withTag(INT)
+				.withTag(MS)
 				.withProductionStatus(Job.ProductionStatus.PROD_READY)
 				.withExpectedDuration(30)
 				.build();
