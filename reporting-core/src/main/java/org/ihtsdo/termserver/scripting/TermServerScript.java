@@ -611,7 +611,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//like selfDetermining = true;
 	}
 
-	protected void runJob () throws TermServerScriptException {
+	public void runJob () throws TermServerScriptException {
 		throw new TermServerScriptException("Override this method in concrete class");
 	}
 
