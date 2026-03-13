@@ -46,7 +46,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
 	private Map<Concept, Set<Concept>> usedAsStatedParentMap;
 	private Map<Concept, String> historicalAssociationStrMap;
-	
+	private final Map<String, String> fsnToSctIdMap = new TreeMap<>();
+
 	private String[][] columnNames;  //Used for both column names, and to track totals
 	private String proposedUpgrade;
 	private String ecl;
@@ -164,20 +165,26 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		columnNames = new String[][] {	{"Has Inactivated Stated Parent", "Inactivated Concept Used As Stated Parent", "Has Inactivated Stated Attribute", "Inactivated Concept Used In Stated Modelling", "Has Inactivated Inferred Parent", "Inactivated Concept Used As Inferred Parent", "Inactivated with Extension Axiom"},
 										{"New Concept Requires Translation", "Updated FSN May Require Translation", "Updated FSN Concept Not Translated", "Updated PT Requires Translation", "Updated PT Concept Not Translated", "Translated Concept Inactivated - Replacement Not Translated", "Translated Concept Inactivated - No Replacement Specified"}};
 
-		String[] columnHeadings = new String[] {"Summary Item, Count",
+		String[] columnHeadings = new String[] {
+				"Summary Item, Count",
 				COMMON_HEADINGS + formColumnNames(columnNames[0], true),
 				COMMON_HEADINGS + "Impact,Affected Concept,Historical Associations",
 				COMMON_HEADINGS + formColumnNames(columnNames[1], false),
 				COMMON_HEADINGS + "Impact Information,Existing Term,Proposed Term,Translation",
-				COMMON_HEADINGS + "Axioms Affected"};
+				COMMON_HEADINGS + "Axioms Affected",
+				COMMON_HEADINGS + "Incoming International Concept,Duplicate FSN"
+		};
 		
-		String[] tabNames = new String[]{"Summary Counts",  //PRIMARY
+		String[] tabNames = new String[]{
+				"Summary Counts",  //PRIMARY
 				"Inactivations",   //SECONDARY
 				"Inactivation Detail",  //TERTIARY
 				"Translations",   //QUAD
 				"Translation Detail", //QUINARY
-				"Non-core Axioms Detail" //SENARY_REPORT
+				"Non-core Axioms Detail", //SENARY_REPORT
+				"FSN Duplicates" //SEPTENARY_REPORT
 		};
+
 		super.postInit(GFOLDER_RELEASE_STATS, tabNames, columnHeadings, false);
 
 		derivativeHelper = new DerivativeHelper(this);
@@ -234,6 +241,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		//We can now populate all the of the total columns
 		writeTotalRow(SECONDARY_REPORT, columnNames[0], true);
 		writeTotalRow(QUATERNARY_REPORT, columnNames[1], false);
+
+		reportFsnDuplicates();
 	}
 
 	private void reportInactivations(Concept topLevelConcept, Set<String> thisHierarchy, String[] summaryNames) throws TermServerScriptException {
@@ -570,6 +579,38 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		int outputColumnOffset = isFSN ? 0 : 2;
 		int summaryIndex = outputColumnOffset + (translated ? 1 : 2);
 		incrementSummaryInformation(summaryNames[summaryIndex]);
+	}
+
+	private void lookForDuplicateFsn(Concept c) throws TermServerScriptException {
+		Description fsnDescription = c.getFSNDescription();
+		if (fsnDescription != null) {
+			String fsn = fsnDescription.getTerm();
+			String incomingConceptId = fsnToSctIdMap.get(fsn.toLowerCase());
+			if (incomingConceptId != null) {
+				// If a lower case duplicate is found, check the FSN's case significance
+				CaseSignificance cs = fsnDescription.getCaseSignificance();
+				// Report as a duplicate if either case-insensitive or an exact match
+				if (CaseSignificance.CASE_INSENSITIVE.equals(cs) || (fsn.equals(incomingData.get(incomingConceptId).getFsn()))) {
+					report(SEPTENARY_REPORT, c, incomingConceptId, fsn);
+					incrementSummaryInformation("FSN Duplicates");
+				}
+			}
+		}
+	}
+
+	private void reportFsnDuplicates() throws TermServerScriptException {
+		LOGGER.info("Populating a map of FSN to SCTID for the incoming International release");
+		// Convert FSN to a lower case for case-insensitive comparison
+		incomingData.values().stream()
+				.filter(HistoricData::isActive)
+				.forEach(v -> fsnToSctIdMap.put(v.getFsn().toLowerCase(), String.valueOf(v.getConceptId())));
+
+		LOGGER.info("Looking for FSN duplicates in the incoming International release");
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActiveSafely() && inScope(c)) {
+				lookForDuplicateFsn(c);
+			}
+		}
 	}
 
 	private void writeTotalRow(int tabNum, String[] columnNames, boolean includeExamples) throws TermServerScriptException {
