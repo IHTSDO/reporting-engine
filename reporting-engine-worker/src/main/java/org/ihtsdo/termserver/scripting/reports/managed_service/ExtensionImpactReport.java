@@ -46,7 +46,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
 	private Map<Concept, Set<Concept>> usedAsStatedParentMap;
 	private Map<Concept, String> historicalAssociationStrMap;
-	private final Map<String, String> fsnToSctIdMap = new TreeMap<>();
+	private final Map<String, String> fsnToSctIdMap = new HashMap<>();
 
 	private String[][] columnNames;  //Used for both column names, and to track totals
 	private String proposedUpgrade;
@@ -586,7 +586,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		if (fsnDescription != null) {
 			String fsn = fsnDescription.getTerm();
 			String incomingConceptId = fsnToSctIdMap.get(fsn.toLowerCase());
-			if (incomingConceptId != null) {
+			if (incomingConceptId != null && !incomingConceptId.equals(c.getConceptId())) {
 				// If a lower case duplicate is found, check the FSN's case significance
 				CaseSignificance cs = fsnDescription.getCaseSignificance();
 				// Report as a duplicate if either case-insensitive or an exact match
