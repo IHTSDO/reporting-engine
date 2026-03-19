@@ -89,14 +89,4 @@ public class ArchiveValidator extends Script {
 		return null;
 	}
 
-	@Override
-	public String detectReleaseBranch() {
-		return null;
-	}
-
-	@Override
-	public String getEnv() {
-		return null;
-	}
-
 }

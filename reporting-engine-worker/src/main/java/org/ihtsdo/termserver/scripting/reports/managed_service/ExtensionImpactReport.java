@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricDataUser;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricStatsGenerator;
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
 import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -93,12 +93,12 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 
 		if (!RUN_INTEGRITY_CHECKS) {
-			getArchiveManager().setRunIntegrityChecks(false);
+			getSnapshotConfiguration().setRunIntegrityChecks(false);
 		}
 	}
 	
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		boolean compareTwoSnapshots = false; 
 		previousTransitiveClosureNeeded = false;
 		LOGGER.info("International Release data being imported, wiping Graph Loader for safety.");
@@ -120,8 +120,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 		try {
 			incomingDataKey = project.getKey();
-			ArchiveManager mgr = getArchiveManager();
-			mgr.loadSnapshot(fsnOnly);
+			ArchiveManager2 mgr = getArchiveManager();
+			mgr.loadSnapshot(this);
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.runJob();
 			//Generate a map of historical associations now, since they won't be available in the target location
@@ -135,21 +135,21 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 									throw new IllegalStateException(e);
 								}
 							}));
-			mgr.reset();
+			mgr.reset(this);
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}
 		currentPositionProjectKey = previousProject.getKey();
 		project = previousProject;
-		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		loadCurrentPosition(compareTwoSnapshots);
 	}
 
 	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
 		thisDependency = project.getMetadata().getDependencyPackage();
 		LOGGER.info("Setting dependency archive: {}", thisDependency);
 		setDependencyArchives(List.of(thisDependency));
-		super.loadCurrentPosition(false, fsnOnly);
+		super.loadCurrentPosition(false);
 	}
 
 	@Override

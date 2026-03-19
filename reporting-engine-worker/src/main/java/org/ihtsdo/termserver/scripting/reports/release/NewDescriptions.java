@@ -32,8 +32,8 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		getArchiveManager().setRunIntegrityChecks(false);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setRunIntegrityChecks(false);
 
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		subsetECL = run.getParamValue(ECL);

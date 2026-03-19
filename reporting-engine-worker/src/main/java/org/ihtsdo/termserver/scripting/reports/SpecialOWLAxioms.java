@@ -25,7 +25,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		headers = "SCTID, FSN, Semtag, Axiom Type, Axiom";
 		additionalReportColumns="";
 		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports

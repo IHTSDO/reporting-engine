@@ -57,7 +57,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 
 		if (!StringUtils.isEmpty(run.getParamValue(CONCEPT_IDS))) {
 			getConceptsOfInterest(run.getMandatoryParamValue(CONCEPT_IDS));
@@ -78,7 +78,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 	}
 
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		projectKey = getProject().getKey();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
 
@@ -109,16 +109,17 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		String task = getJobRun().getTask();
 		getJobRun().setTask(null);
 		try {
-			ArchiveManager mgr = getArchiveManager();
+			throw new TermServerScriptException("Historic Data Generation needs revisited");
+			/*ArchiveManager mgr = getArchiveManager();
 			mgr.setLoadEditionArchive(true);
 			mgr.loadSnapshot(fsnOnly);
 			populateConceptState();
 			mgr.reset();
-			getJobRun().setTask(task);
+			getJobRun().setTask(task);*/
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}
-		loadCurrentPosition();
+		//loadCurrentPosition();
 	}
 
 	private void populateConceptState() throws TermServerScriptException {
@@ -129,7 +130,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		LOGGER.info("Populated 'previous' state of {} concepts", conceptStates.size());
 	}
 
-	protected void loadCurrentPosition() throws TermServerScriptException {
+	/*protected void loadCurrentPosition() throws TermServerScriptException {
 		LOGGER.info("Previous Data Generated, now loading 'current' position");
 		ArchiveManager mgr = getArchiveManager();
 		//We cannot just add in the project delta because it might be that - for an extension
@@ -137,7 +138,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		mgr.setLoadEditionArchive(false);
 		getProject().setKey(projectKey);
 		mgr.loadSnapshot(false);
-	}
+	}*/
 
 	@Override
 	public void postInit() throws TermServerScriptException {

@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.BranchMetadata;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -116,14 +116,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
-		this.ignoreInputFileForReportName = true;
+		this.setIgnoreInputFileForReportName(true);
 		super.init(run);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
 		includeSecondaryCounts = true;
 
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		getArchiveManager().setLoadOtherReferenceSets(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
 		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 
 		inputFiles.add(0, new File("resources/prepositions.txt"));
@@ -872,7 +872,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private void unexpectedLangCodeMS() throws TermServerScriptException {
 		//We need a branch to be able to run this query
-		if (getArchiveManager().isLoadDependencyPlusExtensionArchive()) {
+		if (getSnapshotConfiguration().isLoadDependencyPlusExtensionArchive()) {
 			LOGGER.info("Unable to determine appropriate langCode for LangRefsets when working with archive package");
 			return;
 		}
@@ -910,7 +910,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		refsetLangCodeMap.put(GB_ENG_LANG_REFSET, "en");
 
 		//Now the optionalLanguageRefsets are laid out nicely
-		Metadata metadata = project.getMetadata();
+		BranchMetadata metadata = project.getMetadata();
 		refsetLangCodeMap.putAll(metadata.getLangRefsetLangMapping());
 		return refsetLangCodeMap;
 	}

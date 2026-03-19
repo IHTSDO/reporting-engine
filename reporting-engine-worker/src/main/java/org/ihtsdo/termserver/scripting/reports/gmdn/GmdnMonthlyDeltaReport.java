@@ -108,7 +108,7 @@ public class GmdnMonthlyDeltaReport extends TermServerReport implements ReportCl
     }
 
     @Override
-    protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+    protected void loadProjectSnapshot() throws TermServerScriptException {
         LOGGER.info("Skipping Snapshot load - not required for this report {}", REPORT_NAME);
     }
 

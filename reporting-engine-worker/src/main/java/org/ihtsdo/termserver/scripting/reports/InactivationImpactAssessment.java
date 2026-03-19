@@ -65,7 +65,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
 		}
 		
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		super.init(run);
 	}
 

@@ -3,7 +3,7 @@ application-local.properties
 historic-data
 reports/*
 *.txt
-releases/*
+releases
 csr.txt
 output*
 running_id_config.txt

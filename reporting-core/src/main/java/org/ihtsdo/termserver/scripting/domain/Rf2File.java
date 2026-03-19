@@ -1,12 +1,6 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,6 +8,9 @@ import java.util.Set;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+
+import org.snomed.FileType;
+
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class Rf2File implements ScriptConstants {

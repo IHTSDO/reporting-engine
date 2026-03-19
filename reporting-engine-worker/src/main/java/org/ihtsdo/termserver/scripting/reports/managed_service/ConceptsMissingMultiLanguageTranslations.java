@@ -34,7 +34,7 @@ public class ConceptsMissingMultiLanguageTranslations extends TermServerReport i
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1mvrO8P3n94YmNqlWZkPJirmFKaFUnE0o"); //Managed Service
-		getArchiveManager().setRunIntegrityChecks(false);
+		getSnapshotConfiguration().setRunIntegrityChecks(false);
 		subsetECL = run.getParamValue(ECL);
 		includeIntConcepts = !run.getParamBoolean(EXTENSION_CONCEPTS_ONLY);
 		includeUntranslatedConcepts = false;

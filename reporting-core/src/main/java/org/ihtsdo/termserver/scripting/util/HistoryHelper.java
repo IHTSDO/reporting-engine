@@ -6,6 +6,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.module.storage.ModuleMetadata;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +45,8 @@ public class HistoryHelper implements ScriptConstants {
 	private void init() throws TermServerScriptException {
 		//Load the full concept file and record the earliest publication date for each concept
 		LOGGER.info("Loading concept full file to determine earliest publication date");
-		File previousPackage = ts.getArchiveManager().determinePreviousPackage(ts.getProject());
+		ModuleMetadata previousRelease = ts.getArchiveManager().getCurrentConfiguration().getPreviousRelease();
+		File previousPackage = previousRelease.getFile();
 		loadArchiveZip(previousPackage);
 		LOGGER.info("Completed import of historical data for {} concepts", orginalPublicationDates.size());
 	}

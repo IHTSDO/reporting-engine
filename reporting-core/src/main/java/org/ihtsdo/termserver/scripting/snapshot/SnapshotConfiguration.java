@@ -1,17 +1,30 @@
 package org.ihtsdo.termserver.scripting.snapshot;
 
-public class SnapshotConfiguration {
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.TermServerLocation;
+import org.snomed.module.storage.CurrentPreviousModuleMetadataPair;
+import org.snomed.module.storage.ModuleMetadata;
+
+public class SnapshotConfiguration implements TermServerLocation {
+
+	enum SnapshotSourceType { PROJECT, BRANCH_PATH, PUBLISHED_ARCHIVE, CODE_SYSTEM_VERSION}
+
+	//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
+	private boolean loadDependencyPlusExtensionArchive = false;
+	private boolean ensureSnapshotPlusDeltaLoad = false;
+
+	private CurrentPreviousModuleMetadataPair currentPreviousModuleMetadataPair;
 
 	private boolean allowStaleData = false;
-	private boolean loadDependencyPlusExtensionArchive = false;
 	private boolean loadEditionArchive = false;
 	private boolean populateHierarchyDepth = true;  //Term contains X needs this
-	private boolean ensureSnapshotPlusDeltaLoad = false;
 	private boolean populatePreviousTransitiveClosure = false;
 	private boolean expectStatedParents = true;  //UK Edition doesn't provide these, so don't look for them.
 	private boolean populateReleaseFlag = false;
 	private boolean runIntegrityChecks = true;
 	private boolean loadOtherReferenceSets = false;
+
+	private SnapshotSourceType snapshotSourceType = null;
+	private String sourceName;
 
 	public boolean isAllowStaleData() {
 		return allowStaleData;
@@ -93,6 +106,21 @@ public class SnapshotConfiguration {
 		this.loadOtherReferenceSets = loadOtherReferenceSets;
 	}
 
+	public SnapshotSourceType getSnapshotSourceType() {
+		return snapshotSourceType;
+	}
+
+	public void setSnapshotSourceType(SnapshotSourceType snapshotSource) {
+		this.snapshotSourceType = snapshotSource;
+	}
+
+	public String getSourceName() {
+		return sourceName;
+	}
+
+	public void setSourceName(String sourceName) {
+		this.sourceName = sourceName;
+	}
 
 	public void reset() {
 		loadEditionArchive = false;
@@ -101,5 +129,33 @@ public class SnapshotConfiguration {
 		populatePreviousTransitiveClosure = false;
 		ensureSnapshotPlusDeltaLoad = false;
 		loadOtherReferenceSets = false;
+	}
+
+	public boolean isCompatibleWithExisting(SnapshotConfiguration existing) {
+		//If the source type or name is different, we definitely need to reload
+		if (existing.getSnapshotSourceType() != getSnapshotSourceType() || !existing.getSourceName().equals(getSourceName())) {
+			return false;
+		}
+
+		//If we need the release populated and we don't have it, then we need to reload
+		if (isPopulateReleaseFlag() && !existing.isPopulateReleaseFlag()) {
+			return false;
+		}
+
+		//Similarly, if we need a Snapshot+Delta load and we don't have it, then we need to reload
+		return !isEnsureSnapshotPlusDeltaLoad() || existing.isEnsureSnapshotPlusDeltaLoad();
+	}
+
+	@Override
+	public String getBranchPath() {
+		//Do we have a branch path?
+		if (!snapshotSourceType.equals(SnapshotSourceType.BRANCH_PATH)) {
+			throw new IllegalStateException("SnapshotConfiguration is not configured for a branch path");
+		}
+		return sourceName;
+	}
+
+	public ModuleMetadata getPreviousRelease() {
+		return currentPreviousModuleMetadataPair.getPreviousRelease();
 	}
 }

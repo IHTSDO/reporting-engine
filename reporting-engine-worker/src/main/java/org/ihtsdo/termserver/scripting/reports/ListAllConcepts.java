@@ -44,7 +44,7 @@ public class ListAllConcepts extends TermServerReport implements ReportClass {
 		super.init(run);
 		newConceptsOnly = run.getMandatoryParamBoolean(NEW_CONCEPTS_ONLY);
 		//We only need a fresh delta export if we're checking for new concepts via the isReleased flag
-		this.getArchiveManager().setEnsureSnapshotPlusDeltaLoad(newConceptsOnly);
+		this.getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(newConceptsOnly);
 		extensionOnly = run.getMandatoryParamBoolean(EXTENSION_ONLY);
 		targetTypes = run.getParameters().getValues(TERM_TYPES);
 	}

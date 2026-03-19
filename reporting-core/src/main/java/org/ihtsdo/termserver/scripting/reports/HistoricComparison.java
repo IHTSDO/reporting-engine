@@ -82,7 +82,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 		
 		//Now load in the end release
 		project = new Project(endRelease, "MAIN");
-		getArchiveManager().loadSnapshot(true);
+		getArchiveManager().loadSnapshot(this);
 		
 		//Now compare our current data to the historic
 		doHistoricComparison();

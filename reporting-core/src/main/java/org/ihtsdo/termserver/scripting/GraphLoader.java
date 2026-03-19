@@ -793,7 +793,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		}
 	}
 
-	public int loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException {
+	public int loadDescriptionFile(InputStream descStream, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -817,51 +817,49 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 					}
 				}
 				
-				if (!fsnOnly || lineItems[DES_IDX_TYPEID].equals(SCTID_FSN)) {
-					//We might already have information about this description, eg langrefset entries
-					Description d = getDescription(lineItems[DES_IDX_ID]);
-					
-					//If the term is null, then this is the first we've seen of this description, so no
-					//need to record its previous state.
-					if (isRecordPreviousState() && !isReleased && d.getTerm() != null) {
-						d.setPreviousState(d.getMutableFields());
-					}
-					
-					//If we've already received a newer version of this component, say
-					//by loading INT first and a published MS 2nd, then skip
+				//We might already have information about this description, eg langrefset entries
+				Description d = getDescription(lineItems[DES_IDX_ID]);
 
-					//If we're loading a cached snapshot, then we don't know if the record is released or not
-					//so in that case, we don't expected to see any previous verison, so don't skip in that case
-					if (!StringUtils.isEmpty(d.getEffectiveTime()) 
-							&& (isReleased != null && isReleased)
-							&& (d.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-						//System.out.println("Skipping incoming published description row, older than that held");
-						continue;
-					}
-					
-					//But if the module is not known, it's new
-					String revertEffectiveTime = null;
-					if (detectNoChangeDelta && !isReleased && d.getModuleId() != null) {
-						revertEffectiveTime = detectNoChangeDelta(c, d, lineItems);
-					}
-					Description.fillFromRf2(d,lineItems);
-					//Now we might have changed the moduleId if the delta is in another module, but this 
-					//doesn't make the RF2 "dirty" because that change hasn't been made by THIS process
-					d.setClean();
-					
-					if (revertEffectiveTime != null) {
-						d.setEffectiveTime(revertEffectiveTime);
-					}
-					
-					//Only set the released flag if it's not set already
-					if (d.isReleased() == null) {
-						d.setReleased(isReleased);
-					}
-					
-					c.addDescription(d);
-					count++;
+				//If the term is null, then this is the first we've seen of this description, so no
+				//need to record its previous state.
+				if (isRecordPreviousState() && !isReleased && d.getTerm() != null) {
+					d.setPreviousState(d.getMutableFields());
 				}
-			} else {
+
+				//If we've already received a newer version of this component, say
+				//by loading INT first and a published MS 2nd, then skip
+
+				//If we're loading a cached snapshot, then we don't know if the record is released or not
+				//so in that case, we don't expected to see any previous verison, so don't skip in that case
+				if (!StringUtils.isEmpty(d.getEffectiveTime())
+						&& (isReleased != null && isReleased)
+						&& (d.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
+					//Skipping incoming published description row, older than that held
+					continue;
+				}
+
+				//But if the module is not known, it's new
+				String revertEffectiveTime = null;
+				if (detectNoChangeDelta && !isReleased && d.getModuleId() != null) {
+					revertEffectiveTime = detectNoChangeDelta(c, d, lineItems);
+				}
+				Description.fillFromRf2(d,lineItems);
+				//Now we might have changed the moduleId if the delta is in another module, but this
+				//doesn't make the RF2 "dirty" because that change hasn't been made by THIS process
+				d.setClean();
+
+				if (revertEffectiveTime != null) {
+					d.setEffectiveTime(revertEffectiveTime);
+				}
+
+				//Only set the released flag if it's not set already
+				if (d.isReleased() == null) {
+					d.setReleased(isReleased);
+				}
+
+				c.addDescription(d);
+				count++;
+		} else {
 				isHeader = false;
 			}
 		}

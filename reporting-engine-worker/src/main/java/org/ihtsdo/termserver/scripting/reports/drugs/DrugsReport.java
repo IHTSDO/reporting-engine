@@ -57,7 +57,7 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
-		getArchiveManager().setPopulateReleaseFlag(true);
+		getSnapshotConfiguration().setPopulateReleaseFlag(true);
 	}
 
 	protected Job getDrugJob(String reportName, String reportDescription) {

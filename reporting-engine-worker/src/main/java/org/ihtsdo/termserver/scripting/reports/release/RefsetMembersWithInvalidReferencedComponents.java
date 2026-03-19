@@ -114,10 +114,8 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 			throw new TermServerScriptException("Cannot include legacy issues when only checking unpromoted changes");
 		}
 		super.init(run);
-		getArchiveManager().setLoadOtherReferenceSets(true);
-		//We need a new import each time incase the previous run did not load the other refsets
-		//TODO We could set another flag to track if 'otherRefsets' are in memory or not
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 	}
 
 	@Override

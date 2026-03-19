@@ -1,7 +1,7 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.BranchMetadata;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MetadataDeserializer;
 
 import com.google.gson.annotations.Expose;
@@ -13,7 +13,7 @@ public class Branch {
 	@SerializedName("metadata")
 	@Expose
 	@JsonAdapter(MetadataDeserializer.class)
-	private Metadata metadata;
+	private BranchMetadata metadata;
 	@SerializedName("baseTimestamp")
 	@Expose
 	private Long baseTimestamp;
@@ -47,7 +47,7 @@ public class Branch {
 	 * @param headTimestamp
 	 * @param metadata
 	 */
-	public Branch(Metadata metadata, Long baseTimestamp, Long headTimestamp, Boolean deleted, String path, String state) {
+	public Branch(BranchMetadata metadata, Long baseTimestamp, Long headTimestamp, Boolean deleted, String path, String state) {
 		super();
 		this.metadata = metadata;
 		this.baseTimestamp = baseTimestamp;
@@ -57,15 +57,15 @@ public class Branch {
 		this.state = state;
 	}
 
-	public Metadata getMetadata() {
+	public BranchMetadata getMetadata() {
 		return metadata;
 	}
 
-	public void setMetadata(Metadata metadata) {
+	public void setMetadata(BranchMetadata metadata) {
 		this.metadata = metadata;
 	}
 
-	public Branch withMetadata(Metadata metadata) {
+	public Branch withMetadata(BranchMetadata metadata) {
 		this.metadata = metadata;
 		return this;
 	}
